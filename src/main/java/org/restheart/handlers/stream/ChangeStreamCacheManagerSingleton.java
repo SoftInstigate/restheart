@@ -29,24 +29,27 @@ import org.restheart.cache.CacheFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
-public class CacheManagerSingleton {
+public class ChangeStreamCacheManagerSingleton {
 
-    private Cache<String, CacheableChangeStreamCursor> CACHE = CacheFactory.createLocalCache(1000,
+    private Cache<CacheableChangeStreamKey, CacheableChangeStreamCursor> CACHE = CacheFactory.createLocalCache(1000,
             Cache.EXPIRE_POLICY.NEVER, 0);
 
-    public static CacheManagerSingleton getInstance() {
+    public static ChangeStreamCacheManagerSingleton getInstance() {
 
         return CacheManagerSingletonHolder.INSTANCE;
 
     }
 
-    public static void cacheChangeStreamCursor(String uriPath, CacheableChangeStreamCursor cacheableCursor) {
-        CacheManagerSingleton.getInstance().CACHE.put(uriPath, cacheableCursor);
+    public static void cacheChangeStreamCursor(CacheableChangeStreamKey key, CacheableChangeStreamCursor cacheableCursor) {
+        ChangeStreamCacheManagerSingleton.getInstance().CACHE.put(key, cacheableCursor);
     }
 
-    public static CacheableChangeStreamCursor getCachedChangeStreamIterable(String uriPath) {
+    public static CacheableChangeStreamCursor getCachedChangeStreamIterable(CacheableChangeStreamKey key) {
 
-        Optional<CacheableChangeStreamCursor> result = CacheManagerSingleton.getInstance().CACHE.get(uriPath);
+        Optional<CacheableChangeStreamCursor> result 
+                = ChangeStreamCacheManagerSingleton
+                        .getInstance()
+                        .CACHE.get(key);
 
         if (result != null) {
             return result.get();
@@ -57,34 +60,35 @@ public class CacheManagerSingleton {
 
     public static Collection<Optional<CacheableChangeStreamCursor>> getCachedChangeStreams() {
 
-        Map<String, Optional<CacheableChangeStreamCursor>> result
-                = CacheManagerSingleton
+        Map<CacheableChangeStreamKey, Optional<CacheableChangeStreamCursor>> result
+                = ChangeStreamCacheManagerSingleton
                         .getInstance().CACHE
                         .asMap();
+
         return result.values();
     }
     
-    public static Map<String, Optional<CacheableChangeStreamCursor>> getCacheAsMap() {
+    public static Map<CacheableChangeStreamKey, Optional<CacheableChangeStreamCursor>> getCacheAsMap() {
 
-        return CacheManagerSingleton
+        return ChangeStreamCacheManagerSingleton
                 .getInstance().CACHE
                 .asMap();
     }
 
-    public static Set<String> getChangeStreamsUriSet() {
-        return CacheManagerSingleton.getInstance().CACHE
+    public static Set<CacheableChangeStreamKey> getChangeStreamsKeySet() {
+        return ChangeStreamCacheManagerSingleton.getInstance().CACHE
                 .asMap()
                 .keySet();
     }
 
-    public static void removeChangeStream(String uriPath) {
-        CacheManagerSingleton.getInstance().CACHE
-                .invalidate(uriPath);
+    public static void removeChangeStream(CacheableChangeStreamKey key) {
+        ChangeStreamCacheManagerSingleton.getInstance().CACHE
+                .invalidate(key);
     }
 
     private static class CacheManagerSingletonHolder {
 
-        private static final CacheManagerSingleton INSTANCE = new CacheManagerSingleton();
+        private static final ChangeStreamCacheManagerSingleton INSTANCE = new ChangeStreamCacheManagerSingleton();
     }
 
     /**

@@ -17,35 +17,31 @@
  */
 package org.restheart.handlers.stream;
 
-import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.changestream.ChangeStreamDocument;
-import io.undertow.websockets.core.WebSocketChannel;
-import java.util.HashSet;
-import java.util.Set;
-import org.bson.Document;
+import java.util.List;
+import org.bson.BsonDocument;
 
 /**
  *
  * @author omartrasatti
  */
-public class CacheableChangeStreamCursor {
+public class CacheableChangeStreamKey {
 
-    private MongoCursor<ChangeStreamDocument<Document>> iterator = null;
-    private Set<WebSocketChannel> sessions = new HashSet<>();
+    private String url = null;
+    private List<BsonDocument> aVars = null;
 
-    public CacheableChangeStreamCursor(MongoCursor<ChangeStreamDocument<Document>> iterator) {
-        this.iterator = iterator;
-    }
-    
-    public MongoCursor<ChangeStreamDocument<Document>> getIterator() {
-        return this.iterator;
+    public CacheableChangeStreamKey(String url,
+            List<BsonDocument> aVars) {
+
+        this.url = url;
+        this.aVars = aVars;
+
     }
 
-    public void addSession(WebSocketChannel channel) {
-        this.sessions.add(channel);
+    public String getUrl() {
+        return this.url;
     }
-    
-    public Set<WebSocketChannel> getSessions() {
-        return this.sessions;
+
+    public List<BsonDocument> getAVars() {
+        return this.aVars;
     }
 }
