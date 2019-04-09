@@ -9,41 +9,29 @@ Background:
 # SUCCESSFULL SCENARIOS SECTION
 
 @requires-mongodb-3.6 @requires-replica-set
-Scenario: Delete a Change Stream resource.
-    Given path coll + '/_streams/changeStreamOperation/toBeDeletedStream'
-    When method delete
-    Then status 204
-
-@requires-mongodb-3.6 @requires-replica-set
-Scenario: GET the Change Stream resources associated to given changeStreamOperation
-    Given path coll + '/_streams/changeStreamOperation'
-    When method get
-    Then status 200
-
-@requires-mongodb-3.6 @requires-replica-set
-Scenario: Open Change Stream resources and listen for "globalNotificationsStream" ws message after POSTing a document.
+Scenario: Connect to a change stream resources w/o stage paramethers and listen for WebSocket message after POSTing a document.
     
     # Establish WebSocket connection to get notified.
-    Given def streamPath = '/_streams/changeStreamOperation/globalNotificationsStream'
+    Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:18080'
-    And def handler = function(notification) { java.lang.Thread.sleep(1000); karate.signal(notification) }
+    And def handler = function(notification) { java.lang.Thread.sleep(4000); karate.signal(notification) }
     And def host = baseUrl + coll + streamPath    
     Then def socket = karate.webSocket(host, handler)
-
+    
+    * print host
     Given path coll
     And request {}
-
     When method POST
     And def result = karate.listen(5000)
     Then match result == '#notnull'
 
 @requires-mongodb-3.6 @requires-replica-set
-Scenario: Open a Change Stream resources and listen for "targettedDataNotificationsStream" message after POSTing a document. Only changes for documents that meets the changeStreamOperation's stage condition ($match) should be notified.
+Scenario: Connect to a change stream resources w/ stage paramethers and listen for WebSocket message after POSTing a document. Only changes for documents that meets the change stream's stage condition ($match) should be notified.
 
     # Establish WebSocket connection to get notified.
-    Given def streamPath = '/_streams/changeStreamOperationWithStageParam/targettedDataNotificationsStream'
+    Given def streamPath = '/_streams/changeStreamWithStageParam?avars={"param": "test"}'
     And def baseUrl = 'http://localhost:18080'
-    And def handler = function(notification) { java.lang.Thread.sleep(1000); karate.signal(notification) }
+    And def handler = function(notification) { java.lang.Thread.sleep(4000); karate.signal(notification) }
     And def host = baseUrl + coll + streamPath
     Then def socket = karate.webSocket(host, handler)
     
@@ -66,12 +54,7 @@ Scenario: Open a Change Stream resources and listen for "targettedDataNotificati
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: Performing a simple GET request on a Change Stream resource (Expected 400 Bad Request)
 
-    Given path coll + '/_streams/changeStreamOperation/globalNotificationsStream'
+    Given path coll + '/_streams/changeStream'
     When method get
     Then status 400
 
-@requires-mongodb-3.6 @requires-replica-set
-Scenario:  GET the list of opened streams on a changeStreamOperation w/o opened streams (Expected 404 Not Found)
-    Given path coll + '/_streams/emptyChangeStreamOperation'
-    When method get
-    Then status 404

@@ -18,9 +18,6 @@ Scenario: Setup test environment
 
 # Step 2: Create test collection
     Given path coll
-    And request {"streams": [{"stages": [], "uri": "changeStreamOperation" }, {"stages": [], "uri": "emptyChangeStreamOperation" }, {"stages": [{"_$match": {"fullDocument.targettedProperty": {"_$var": "param"}}}], "uri": "changeStreamOperationWithStageParam" }]}
+    And request {"streams": [{"stages": [], "uri": "changeStream" }, {"stages": [{"_$match": {"fullDocument.targettedProperty": {"_$var": "param"}}}], "uri": "changeStreamWithStageParam" }]}
     When method PUT
     Then status 201
-
-# Step 3: Open test streams
-    * call read('./features/open_test_streams.feature')

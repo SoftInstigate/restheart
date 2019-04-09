@@ -17,15 +17,18 @@
  */
 package org.restheart.handlers.stream;
 
+import com.mongodb.client.ChangeStreamIterable;
 import io.undertow.Handlers;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 import io.undertow.websockets.WebSocketProtocolHandshakeHandler;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.bson.BsonDocument;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -35,8 +38,16 @@ import org.restheart.utils.ResponseHelper;
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
 public class GetChangeStreamHandler extends PipedHttpHandler {
+
+    private final String CONNECTION_HEADER_KEY = "connection";
+    private final String CONNECTION_HEADER_VALUE = "upgrade";
+    private final String UPGRADE_HEADER_KEY = "upgrade";
+    private final String UPGRADE_HEADER_VALUE = "websocket";
+
     private static WebSocketProtocolHandshakeHandler WEBSOCKET_HANDLER = Handlers
             .websocket(new ChangeStreamWebsocketCallback());
+
+    public static final AttachmentKey<List<BsonDocument>> AVARS_ATTACHMENT_KEY = AttachmentKey.create(List.class);
 
     public GetChangeStreamHandler() {
         super();
@@ -65,90 +76,91 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
             return;
         }
 
-        if (context.getChangeStreamIdentifier() != null) {
+        if (isWebSocketHandshakeRequest(exchange)) {
 
-            if (exchange.getRequestHeaders().get("connection").getFirst().toLowerCase().equals("upgrade")) {
-                String changeStreamUri = getWsUri(context);
-
-                if (changeStreamIsOpen(changeStreamUri)) {
-                    WEBSOCKET_HANDLER.handleRequest(exchange);
-                } else {
-                    ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_FOUND,
-                            "WebSocket resource hasnt been initialized");
-                    next(exchange, context);
-                }
-            } else {
-                ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
-                        "No Upgrade header has been found into request headers");
-                next(exchange, context);
+            if (!isRequestedChangeStreamAlreadyOpen(exchange.getRelativePath(), context)) {
+                openChangeStream(exchange.getRelativePath(), context);
             }
+
+            exchange.putAttachment(AVARS_ATTACHMENT_KEY, getResolvedStagesAsList(context));
+
+            WEBSOCKET_HANDLER.handleRequest(exchange);
 
         } else {
-            ArrayList<BsonDocument> data = getOpenedChangeStreamsRequestData(context);
-            long size = data.size();
-
-            if (size == 0) {
-                ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_FOUND,
-                        "No streams are notifying for this changeStreamOperation");
-                next(exchange, context);
-            }
-
-            context.setResponseContent(new ChangeStreamResultRepresentationFactory()
-                    .getRepresentation(exchange, context, data, size).asBsonDocument());
-            context.setResponseStatusCode(HttpStatus.SC_OK);
+            ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
+                    "No Upgrade header has been found into request headers");
             next(exchange, context);
-
         }
 
     }
 
-    private boolean resourceBelongsToChangeStreamOperation(String URI, RequestContext context) {
-        String[] uriPath = URI.split("/");
-        return uriPath[4].equals(context.getChangeStreamOperation());
+    private boolean isWebSocketHandshakeRequest(HttpServerExchange exchange) {
+        return exchange.getRequestHeaders()
+                .get(CONNECTION_HEADER_KEY)
+                .getFirst().toLowerCase()
+                .equals(CONNECTION_HEADER_VALUE)
+                && exchange.getRequestHeaders()
+                        .get(UPGRADE_HEADER_KEY)
+                        .getFirst().toLowerCase()
+                        .equals(UPGRADE_HEADER_VALUE);
     }
 
-    private String getResourceIdentifier(String URI) {
-        String[] uriPath = URI.split("/");
-        return uriPath[5];
-    }
+    private boolean isRequestedChangeStreamAlreadyOpen(String changeStreamUri, RequestContext context) throws QueryVariableNotBoundException, Exception {
 
-    private String getWsUri(RequestContext context) {
+        boolean result = false;
 
-        String result = "/" + context.getDBName() + "/" + context.getCollectionName() + "/_streams/"
-                + context.getChangeStreamOperation() + "/" + context.getChangeStreamIdentifier();
+        Set<CacheableChangeStreamKey> openedChangeStreams
+                = ChangeStreamCacheManagerSingleton.getChangeStreamsKeySet();
+
+        CacheableChangeStreamKey requestedStreamKey
+                = new CacheableChangeStreamKey(changeStreamUri, getResolvedStagesAsList(context));
+
+        for (CacheableChangeStreamKey key : openedChangeStreams) {
+
+            if (key.getAVars().equals(requestedStreamKey.getAVars())
+                    && key.getUrl().equals(requestedStreamKey.getUrl())) {
+                result = true;
+            }
+        }
 
         return result;
     }
 
-    private boolean changeStreamIsOpen(String changeStreamUri) {
+    private List<BsonDocument> getResolvedStagesAsList(RequestContext context) throws InvalidMetadataException, QueryVariableNotBoundException, Exception {
 
-        Set<String> openedChangeStreamsUriSet = CacheManagerSingleton.getChangeStreamsUriSet();
+        String changesStreamOperation = context.getChangeStreamOperation();
 
-        return openedChangeStreamsUriSet.contains(changeStreamUri);
+        List<ChangeStreamOperation> streams = ChangeStreamOperation.getFromJson(context.getCollectionProps());
+        Optional<ChangeStreamOperation> _query = streams.stream().filter(q -> q.getUri().equals(changesStreamOperation))
+                .findFirst();
+
+        if (!_query.isPresent()) {
+            throw new QueryNotFoundException("Query does not exist");
+        }
+
+        ChangeStreamOperation pipeline = _query.get();
+
+        List<BsonDocument> resolvedStages = pipeline.getResolvedStagesAsList(context.getAggreationVars());
+        return resolvedStages;
     }
 
-    private ArrayList<BsonDocument> getOpenedChangeStreamsRequestData(RequestContext context) {
+    private ChangeStreamIterable initChangeStream(RequestContext context) throws QueryVariableNotBoundException, Exception {
 
-        ArrayList<BsonDocument> data = new ArrayList<>();
-        Set<String> changeStreamUriSet = CacheManagerSingleton.getChangeStreamsUriSet();
+        return getDatabase()
+                .getCollection(context.getDBName(), context.getCollectionName())
+                .watch(
+                        getResolvedStagesAsList(context)
+                );
 
-        if (!changeStreamUriSet.isEmpty()) {
+    }
 
-            for (String resource : changeStreamUriSet) {
+    private void openChangeStream(String changeStreamUri, RequestContext context) throws Exception {
 
-                if (resourceBelongsToChangeStreamOperation(resource, context)) {
-
-                    CacheableChangeStreamCursor cachedChangeStreamIterable = CacheManagerSingleton
-                            .getCachedChangeStreamIterable(resource);
-
-                    List<BsonDocument> aVars = cachedChangeStreamIterable.getAVars();
-
-                    String jsonString = "{'" + getResourceIdentifier(resource) + "': " + aVars.toString() + "}";
-
-                    data.add(BsonDocument.parse(jsonString));
-                }
-            }
-        }
-        return data;
+        ChangeStreamCacheManagerSingleton.cacheChangeStreamCursor(
+                new CacheableChangeStreamKey(changeStreamUri,
+                        getResolvedStagesAsList(context)),
+                new CacheableChangeStreamCursor(
+                        initChangeStream(context).iterator())
+        );
     }
 }
