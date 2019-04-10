@@ -211,20 +211,17 @@ class CollectionDAO {
                     eager);
         }
 
-        int _pagesize = pagesize;
-
         // in case there is not cursor in the pool to reuse
         FindIterable<BsonDocument> cursor;
 
         if (_cursor == null) {
             cursor = getFindIterable(cs, coll, sortBy, filters, hint, keys);
-            cursor.skip(toskip);
+            cursor.skip(toskip).limit(pagesize);
 
             MongoCursor<BsonDocument> mc = cursor.iterator();
 
-            while (_pagesize > 0 && mc.hasNext()) {
+            while (mc.hasNext()) {
                 ret.add(mc.next());
-                _pagesize--;
             }
         } else {
             int alreadySkipped;
@@ -257,9 +254,8 @@ class CollectionDAO {
                         System.currentTimeMillis() - startSkipping);
             }
 
-            while (_pagesize > 0 && mc.hasNext()) {
+            for (int cont = pagesize; cont > 0 && mc.hasNext(); cont--) {
                 ret.add(mc.next());
-                _pagesize--;
             }
         }
 
