@@ -247,7 +247,8 @@ public class ClientSessionImpl
     }
     
     public static UUID getSid(ClientSession cs) {
-        if (cs.getServerSession() != null
+        if (cs != null
+                && cs.getServerSession() != null
                 && cs.getServerSession()
                         .getIdentifier() != null
                 && cs.getServerSession()
