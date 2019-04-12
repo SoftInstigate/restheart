@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -31,6 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.restheart.hal.Representation;
 import static org.restheart.test.integration.AbstactIT.url;
+import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 
@@ -40,7 +41,7 @@ import org.restheart.utils.HttpStatus;
  */
 public class PutDocumentIT extends HttpClientAbstactIT {
 
-    private final String DB = "test-put-document-db";
+    private final String DB = TEST_DB_PREFIX + "-put-document-db";
     private final String COLL = "coll";
 
     private HttpResponse resp;
@@ -63,7 +64,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
         // *** PUT tmpdoc
         response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put tmp doc", response, HttpStatus.SC_CREATED);
-        
+
         // try to put without etag
         response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Representation.HAL_JSON_MEDIA_TYPE));
         check("check put tmp doc without etag", response, HttpStatus.SC_OK);
@@ -118,9 +119,9 @@ public class PutDocumentIT extends HttpClientAbstactIT {
                 .header("content-type", "application/json")
                 .body("{'a':1}")
                 .asString();
-        
+
         Assert.assertEquals(HttpStatus.SC_CREATED, resp.getStatus());
-        
+
         resp = Unirest.put(url(DB, COLL, "testPutWithWrongFilter"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
@@ -130,7 +131,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
 
         Assert.assertEquals(HttpStatus.SC_NOT_FOUND, resp.getStatus());
     }
-    
+
     @Test
     public void testPutDocumentDotNotation() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid1"))
@@ -174,15 +175,15 @@ public class PutDocumentIT extends HttpClientAbstactIT {
                 .header("content-type", "application/json")
                 .body("{ '$push': {'array': 'a'}, '$inc': { 'count': 100 } }")
                 .asString();
-        
+
         Assert.assertEquals("check response status of create test data", org.apache.http.HttpStatus.SC_BAD_REQUEST, resp.getStatus());
-        
+
         resp = Unirest.put(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{ '$currentDate': {'timestamp': { '$type': 'date' }}}")
                 .asString();
-        
+
         Assert.assertEquals("check response status of create test data with $currentDate operator", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
 
         resp = Unirest.get(url(DB, COLL, "docid2"))

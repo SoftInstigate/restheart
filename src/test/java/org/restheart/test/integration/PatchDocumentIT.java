@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -31,6 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.restheart.hal.Representation;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -39,7 +40,7 @@ import org.restheart.utils.HttpStatus;
  */
 public class PatchDocumentIT extends HttpClientAbstactIT {
 
-    private final String DB = "test-patch-document-db";
+    private final String DB = TEST_DB_PREFIX + "-patch-document-db";
     private final String COLL = "coll";
 
     private HttpResponse resp;
@@ -240,14 +241,15 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 $date != null
                 && $date.isNumber());
     }
-    
+
     /**
      * issue https://github.com/SoftInstigate/restheart/issues/232
-     * 
-     * PATCH not existing document with $addToSet operator lead to response code 500
-     * document is however created as expected
-     * @throws Exception 
-     */    
+     *
+     * PATCH not existing document with $addToSet operator lead to response code
+     * 500 document is however created as expected
+     *
+     * @throws Exception
+     */
     @Test
     public void testPatchDocumentIssue232() throws Exception {
         resp = Unirest.patch(url(DB, COLL, "issue232"))
@@ -257,7 +259,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 .asString();
 
         Assert.assertEquals("check response status of patch test data", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
-        
+
         resp = Unirest.patch(url(DB, COLL, "issue232"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")

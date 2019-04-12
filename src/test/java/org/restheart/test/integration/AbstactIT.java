@@ -58,7 +58,7 @@ public abstract class AbstactIT {
      * dbs starting with this prefix will be automatically deleted after test
      * execution
      */
-    protected static final String TEST_DB_PREFIX = "test";
+    public static final String TEST_DB_PREFIX = "test";
 
     protected static final HttpHost HTTP_HOST = new HttpHost("127.0.0.1", 18080, HTTP);
 
@@ -112,7 +112,6 @@ public abstract class AbstactIT {
             sb.append("/")
                     .append(TEST_DB_PREFIX)
                     .append(dbname);
-
             if (parts != null) {
                 for (String part : parts) {
                     sb.append("/").append(part);
