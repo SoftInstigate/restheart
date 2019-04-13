@@ -12,9 +12,9 @@ cleanup() {
 }
 trap cleanup ERR INT TERM
 
-# if you want to run integration tests against a different version of MongoDB
-# export the MONGO_VERSION variable.
-# For example: export MONGO_VERSION=3.4 && ./bin/integration-tests.sh
+# if you want to run integration tests against a different version of MongoDB set the MONGO_VERSION variable.
+# For example, on a bash shell:
+# $ MONGO_VERSION=3.4 ./bin/integration-tests.sh
 if [[ -z $MONGO_VERSION ]]; then
     MONGO_VERSION=3.6
 fi
