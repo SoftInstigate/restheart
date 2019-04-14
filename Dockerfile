@@ -1,17 +1,10 @@
-FROM openjdk:8u191-jre-alpine
+FROM gcr.io/distroless/java:8
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
-#RUN apk upgrade --update
-RUN apk add --no-cache libstdc++ curl ca-certificates bash
-
 WORKDIR /opt/restheart
 COPY Docker/etc/* /opt/restheart/etc/
-COPY Docker/entrypoint.sh /opt/restheart/
 COPY target/restheart.jar /opt/restheart/
 
-RUN chmod +x /opt/restheart/entrypoint.sh
-
-ENTRYPOINT ["./entrypoint.sh"]
-CMD ["etc/restheart.yml"]
+ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart.jar", "etc/restheart.yml", "--envFile", "etc/config.properties"]
 EXPOSE 8080 4443
