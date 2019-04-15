@@ -75,6 +75,7 @@ import static org.fusesource.jansi.Ansi.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
 import static org.restheart.Configuration.RESTHEART_VERSION;
+import org.restheart.db.MongoDBReactiveClientSingleton;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.GzipEncodingHandler;
@@ -440,8 +441,11 @@ public class Bootstrapper {
 
         try {
             MongoDBClientSingleton.init(configuration);
+            MongoDBReactiveClientSingleton.init(configuration);
             //force setup
             MongoDBClientSingleton.getInstance();
+            MongoDBReactiveClientSingleton.getInstance();
+
             LOGGER.info("MongoDB connection pool initialized");
             LOGGER.info("MongoDB version {}",
                     ansi().fg(MAGENTA).a(MongoDBClientSingleton.getServerVersion()).reset().toString());

@@ -1,673 +1,677 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>org.restheart</groupId>
-  <artifactId>restheart</artifactId>
-  <version>4.0.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
-  <name>Restheart</name>
-  <description>
-    RESTHeart the Web API for MongoDB.
-  </description>
-  <url>http://www.restheart.org</url>
-  <inceptionYear>2014</inceptionYear>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.restheart</groupId>
+    <artifactId>restheart</artifactId>
+    <version>4.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <name>Restheart</name>
+    <description>
+        RESTHeart the Web API for MongoDB.
+    </description>
+    <url>http://www.restheart.org</url>
+    <inceptionYear>2014</inceptionYear>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
-    <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
-    <dependency.locations.enabled>false</dependency.locations.enabled>
-    <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
-    <skipITs>true</skipITs>
-  </properties>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
+        <dependency.locations.enabled>false</dependency.locations.enabled>
+        <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
+        <skipITs>true</skipITs>
+    </properties>
 
-  <!-- Project Information -->
-  <organization>
-    <name>SoftInstigate</name>
-    <url>http://www.softinstigate.com</url>
-  </organization>
+    <!-- Project Information -->
+    <organization>
+        <name>SoftInstigate</name>
+        <url>http://www.softinstigate.com</url>
+    </organization>
 
-  <licenses>
-    <license>
-      <name>GNU AFFERO GENERAL PUBLIC LICENSE</name>
-      <url>http://www.gnu.org/licenses/agpl-3.0.html</url>
-      <distribution>repo</distribution>
-      <comments>A business-friendly OSS license</comments>
-    </license>
-    <license>
-      <name>RESTHeart COMMERCIAL LICENSE</name>
-      <url>https://github.com/SoftInstigate/restheart/blob/master/COMM-LICENSE.txt</url>
-      <distribution>manual</distribution>
-      <comments>Optional commercial license</comments>
-    </license>
-  </licenses>
+    <licenses>
+        <license>
+            <name>GNU AFFERO GENERAL PUBLIC LICENSE</name>
+            <url>http://www.gnu.org/licenses/agpl-3.0.html</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+        <license>
+            <name>RESTHeart COMMERCIAL LICENSE</name>
+            <url>https://github.com/SoftInstigate/restheart/blob/master/COMM-LICENSE.txt</url>
+            <distribution>manual</distribution>
+            <comments>Optional commercial license</comments>
+        </license>
+    </licenses>
 
-  <developers>
-    <developer>
-      <id>ujibang</id>
-      <name>Andrea</name>
-      <email>andrea@softinstigate.com</email>
-      <url>https://www.linkedin.com/in/adicesare</url>
-      <organization>SoftInstigate</organization>
-      <organizationUrl>http://www.softinstigate.com</organizationUrl>
-      <roles>
-        <role>architect</role>
-        <role>developer</role>
-      </roles>
-      <timezone>+1</timezone>
-      <properties>
-        <picUrl>https://pbs.twimg.com/profile_images/491316822101479424/dfngbj7q.jpeg</picUrl>
-      </properties>
-    </developer>
-    <developer>
-      <id>mkj6</id>
-      <name>Maurizio</name>
-      <email>maurizio@softinstigate.com</email>
-      <url>http://www.maurizioturatti.com</url>
-      <organization>SoftInstigate</organization>
-      <organizationUrl>http://www.softinstigate.com</organizationUrl>
-      <roles>
-        <role>developer</role>
-      </roles>
-      <timezone>+1</timezone>
-      <properties>
-        <picUrl>https://pbs.twimg.com/profile_images/510140480999272448/Ht9Rn6gz.jpeg</picUrl>
-      </properties>
-    </developer>
-  </developers>
+    <developers>
+        <developer>
+            <id>ujibang</id>
+            <name>Andrea</name>
+            <email>andrea@softinstigate.com</email>
+            <url>https://www.linkedin.com/in/adicesare</url>
+            <organization>SoftInstigate</organization>
+            <organizationUrl>http://www.softinstigate.com</organizationUrl>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>+1</timezone>
+            <properties>
+                <picUrl>https://pbs.twimg.com/profile_images/491316822101479424/dfngbj7q.jpeg</picUrl>
+            </properties>
+        </developer>
+        <developer>
+            <id>mkj6</id>
+            <name>Maurizio</name>
+            <email>maurizio@softinstigate.com</email>
+            <url>http://www.maurizioturatti.com</url>
+            <organization>SoftInstigate</organization>
+            <organizationUrl>http://www.softinstigate.com</organizationUrl>
+            <roles>
+                <role>developer</role>
+            </roles>
+            <timezone>+1</timezone>
+            <properties>
+                <picUrl>https://pbs.twimg.com/profile_images/510140480999272448/Ht9Rn6gz.jpeg</picUrl>
+            </properties>
+        </developer>
+    </developers>
 
-  <issueManagement>
-    <url>https://github.com/SoftInstigate/restheart/issues</url>
-    <system>GitHub Issues</system>
-  </issueManagement>
+    <issueManagement>
+        <url>https://github.com/SoftInstigate/restheart/issues</url>
+        <system>GitHub Issues</system>
+    </issueManagement>
 
-  <distributionManagement>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
-    <repository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-  </distributionManagement>
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
-  <repositories>
-    <repository>
-      <id>jitpack.io</id>
-      <url>https://jitpack.io</url>
-    </repository>
-  </repositories>
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 
-  <scm>
-    <url>https://github.com/SoftInstigate/restheart</url>
-    <connection>scm:git:git@github.com:SoftInstigate/restheart.git</connection>
-    <developerConnection>scm:git:git@github.com:SoftInstigate/restheart.git</developerConnection>
-  </scm>
+    <scm>
+        <url>https://github.com/SoftInstigate/restheart</url>
+        <connection>scm:git:git@github.com:SoftInstigate/restheart.git</connection>
+        <developerConnection>scm:git:git@github.com:SoftInstigate/restheart.git</developerConnection>
+    </scm>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver</artifactId>
-      <version>3.9.1</version>
-    </dependency>
-
-    <!-- update undertow dependency to avoid warning log message:
-    WARNING: An illegal reflective access operation has occurred -->
-    <dependency>
-      <groupId>org.jboss.xnio</groupId>
-      <artifactId>xnio-nio</artifactId>
-      <version>3.7.0.Final</version>
-    </dependency>
+    <dependencies>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver</artifactId>
+            <version>3.9.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-reactivestreams</artifactId>
+            <version>1.11.0</version>
+        </dependency>
+        <!-- update undertow dependency to avoid warning log message:
+        WARNING: An illegal reflective access operation has occurred -->
+        <dependency>
+            <groupId>org.jboss.xnio</groupId>
+            <artifactId>xnio-nio</artifactId>
+            <version>3.7.0.Final</version>
+        </dependency>
         
-    <!-- update undertow dependency to avoid warning log message:
-    WARNING: An illegal reflective access operation has occurred -->
-    <dependency>
-      <groupId>org.jboss.threads</groupId>
-      <artifactId>jboss-threads</artifactId>
-      <version>2.3.3.Final</version>
-    </dependency>
+        <!-- update undertow dependency to avoid warning log message:
+        WARNING: An illegal reflective access operation has occurred -->
+        <dependency>
+            <groupId>org.jboss.threads</groupId>
+            <artifactId>jboss-threads</artifactId>
+            <version>2.3.3.Final</version>
+        </dependency>
         
-    <dependency>
-      <groupId>io.undertow</groupId>
-      <artifactId>undertow-core</artifactId>
-      <version>2.0.17.Final</version>
-    </dependency>
+        <dependency>
+            <groupId>io.undertow</groupId>
+            <artifactId>undertow-core</artifactId>
+            <version>2.0.17.Final</version>
+        </dependency>
 
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <!-- WARNING: v 27.0.1-jre fails integration tests, don't upgrade! -->
-      <version>27.0-jre</version>
-    </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <!-- WARNING: v 27.0.1-jre fails integration tests, don't upgrade! -->
+            <version>27.0-jre</version>
+        </dependency>
 
-    <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-      <version>1.23</version>
-    </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.23</version>
+        </dependency>
 
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.2.3</version>
-    </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
+        </dependency>
         
-    <dependency>
-      <groupId>org.kohsuke</groupId>
-      <artifactId>akuma</artifactId>
-      <version>1.10</version>
-    </dependency>
+        <dependency>
+            <groupId>org.kohsuke</groupId>
+            <artifactId>akuma</artifactId>
+            <version>1.10</version>
+        </dependency>
 
-    <dependency>
-      <groupId>org.fusesource.jansi</groupId>
-      <artifactId>jansi</artifactId>
-      <version>1.17.1</version>
-    </dependency>
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+            <version>1.17.1</version>
+        </dependency>
 
-    <dependency>
-      <groupId>com.github.everit-org.json-schema</groupId>
-      <artifactId>org.everit.json.schema</artifactId>
-      <version>1.6.0</version>
-    </dependency>
+        <dependency>
+            <groupId>com.github.everit-org.json-schema</groupId>
+            <artifactId>org.everit.json.schema</artifactId>
+            <version>1.6.0</version>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.tika</groupId>
-      <artifactId>tika-core</artifactId>
-      <version>1.20</version>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>1.20</version>
+        </dependency>
 
-    <dependency>
-      <groupId>io.dropwizard.metrics</groupId>
-      <artifactId>metrics-core</artifactId>
-      <version>4.0.5</version>
-    </dependency>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>4.0.5</version>
+        </dependency>
 
-    <dependency>
-      <groupId>com.beust</groupId>
-      <artifactId>jcommander</artifactId>
-      <version>1.72</version>
-    </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>1.72</version>
+        </dependency>
 
-    <dependency>
-      <groupId>com.github.spullara.mustache.java</groupId>
-      <artifactId>compiler</artifactId>
-      <version>0.9.6</version>
-      <type>jar</type>
-    </dependency>
+        <dependency>
+            <groupId>com.github.spullara.mustache.java</groupId>
+            <artifactId>compiler</artifactId>
+            <version>0.9.6</version>
+            <type>jar</type>
+        </dependency>
 
-    <!-- BEGIN Test dependencies -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
+        <!-- BEGIN Test dependencies -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>com.intuit.karate</groupId>
-      <artifactId>karate-apache</artifactId>
-      <version>0.9.1</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-apache</artifactId>
+            <version>0.9.1</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>com.intuit.karate</groupId>
-      <artifactId>karate-junit4</artifactId>
-      <version>0.9.1</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-junit4</artifactId>
+            <version>0.9.1</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>2.23.4</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>2.23.4</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>fluent-hc</artifactId>
-      <version>4.5.6</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>fluent-hc</artifactId>
+            <version>4.5.6</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>com.mashape.unirest</groupId>
-      <artifactId>unirest-java</artifactId>
-      <version>1.4.9</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>com.mashape.unirest</groupId>
+            <artifactId>unirest-java</artifactId>
+            <version>1.4.9</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>com.eclipsesource.minimal-json</groupId>
-      <artifactId>minimal-json</artifactId>
-      <version>0.9.5</version>
-      <scope>test</scope>
-    </dependency>
-    <!-- END Test dependencies -->
-  </dependencies>
+        <dependency>
+            <groupId>com.eclipsesource.minimal-json</groupId>
+            <artifactId>minimal-json</artifactId>
+            <version>0.9.5</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- END Test dependencies -->
+    </dependencies>
 
-  <build>
-    <testResources>
-      <testResource>
-        <directory>src/test/java</directory>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
-      </testResource>
-      <testResource>
-        <directory>src/test/resources</directory>
-      </testResource>
-    </testResources>
-    <finalName>${project.artifactId}-${project.version}-nodeps</finalName>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.0.0-M2</version>
-        <executions>
-          <execution>
-            <id>enforce-versions</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <requireMavenVersion>
-                  <version>3.3</version>
-                </requireMavenVersion>
-                <requireReleaseDeps>
-                  <message>No Snapshots Allowed!</message>
-                  <excludes/>
-                </requireReleaseDeps>
-                <requireJavaVersion>
-                  <version>1.8</version>
-                </requireJavaVersion>
-              </rules>
-              <fail>true</fail>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.1</version>
-        <configuration>
-          <finalName>${project.artifactId}</finalName>
-          <createDependencyReducedPom>true</createDependencyReducedPom>
-          <filters>
-            <filter>
-              <artifact>*:*</artifact>
-              <excludes>
-                <exclude>META-INF/*.SF</exclude>
-                <exclude>META-INF/*.DSA</exclude>
-                <exclude>META-INF/*.RSA</exclude>
-                <exclude>META-INF/*.txt</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <!-- removing overlapping classes, defined also in guava -->
-              <artifact>com.google.guava:failureaccess</artifact>
-              <excludes>
-                <exclude>com/google/common/util/concurrent/internal/InternalFutureFailureAccess.class</exclude>
-                <exclude>com/google/common/util/concurrent/internal/InternalFutures.class</exclude>
-              </excludes>
-            </filter>
-          </filters>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
-                </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
-                  <addHeader>false</addHeader>
-                </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-                  <resource>META-INF/LICENSE.txt</resource>
-                  <file>LICENSE.txt</file>
-                </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
-                  <resource>META-INF/COMM-LICENSE.txt</resource>
-                  <file>COMM-LICENSE.txt</file>
-                </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>org.restheart.Bootstrapper</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>3.1.1</version>
-        <executions>
-          <execution>
-            <id>bin</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <id>bin</id>
-              <appendAssemblyId>false</appendAssemblyId>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <descriptors>
-                <descriptor>assembly.xml</descriptor>
-              </descriptors>
-              <attach>false</attach>
-              <tarLongFileMode>posix</tarLongFileMode>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.1.1</version>
-        <configuration>
-          <archive>
-            <manifest>
-              <addClasspath>true</addClasspath>
-              <mainClass>org.restheart.Bootstrapper</mainClass>
-              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-            </manifest>
-            <manifestEntries>
-              <Build-Time>${maven.build.timestamp}</Build-Time>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.0</version>
-        <configuration>
-          <debug>true</debug>
-          <!--<compilerArgument>-Xlint</compilerArgument>-->
-          <showDeprecation>true</showDeprecation>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.22.1</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.8</version>
-        <executions>
-          <execution>
-            <id>start-server</id>
-            <!--
-            NOTE: in order to execute the integration test suite you need to be on
-            Linux, OSX or Solaris and have MongoDB started on default port without authentication.
-            Simpler alternative:
-                1) Start Docker
-                2) Execute the bash script ./bin/integration-tests.sh
-            -->
-            <phase>pre-integration-test</phase>
-            <configuration>
-              <skip>${skipITs}</skip>
-              <target>
-                <echo>Running integration tests against a forked RESTHeart's instance...</echo>
-                <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
-                  <arg value="${basedir}/etc/test/restheart-integrationtest.yml"/>
-                  <arg value="--fork"/>
-                </exec>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>stop-server</id>
-            <phase>post-integration-test</phase>
-            <configuration>
-              <skip>${skipITs}</skip>
-              <target>
-                <echo>Stopping forked RESTHeart's instance...</echo>
-                <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
-                  <arg value="${basedir}/etc/test/restheart-integrationtest.yml"/>
-                </exec>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.sonatype.plugins</groupId>
-        <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.8</version>
-        <extensions>true</extensions>
-        <configuration>
-          <serverId>ossrh</serverId>
-          <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-          <autoReleaseAfterClose>true</autoReleaseAfterClose>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
-  <profiles>
-    <profile>
-      <id>report</id>
-      <build>
+    <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/java</directory>
+                <excludes>
+                    <exclude>**/*.java</exclude>
+                </excludes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+        </testResources>
+        <finalName>${project.artifactId}-${project.version}-nodeps</finalName>
         <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-site-plugin</artifactId>
-            <version>3.7.1</version>
-          </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.0.0-M2</version>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>3.3</version>
+                                </requireMavenVersion>
+                                <requireReleaseDeps>
+                                    <message>No Snapshots Allowed!</message>
+                                    <excludes/>
+                                </requireReleaseDeps>
+                                <requireJavaVersion>
+                                    <version>1.8</version>
+                                </requireJavaVersion>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-project-info-reports-plugin</artifactId>
-            <version>3.0.0</version>
-          </plugin>
-
-          <plugin>
-            <groupId>com.github.github</groupId>
-            <artifactId>site-maven-plugin</artifactId>
-            <version>0.12</version>
-            <configuration>
-              <server>github</server>
-              <message>Creating site for ${project.version}</message>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>site</goal>
-                </goals>
-                <phase>site</phase>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-checkstyle-plugin</artifactId>
-            <version>3.0.0</version>
-            <dependencies>
-              <dependency>
-                <groupId>com.puppycrawl.tools</groupId>
-                <artifactId>checkstyle</artifactId>
-                <version>8.18</version>
-              </dependency>
-            </dependencies>
-            <configuration>
-              <configLocation>${checkstyle.file.path}</configLocation>
-            </configuration>
-          </plugin>
-
-        </plugins>
-      </build>
-      <reporting>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-report-plugin</artifactId>
-            <version>2.22.1</version>
-            <reportSets>
-              <reportSet>
-                <id>integration-tests</id>
-                <reports>
-                  <report>failsafe-report-only</report>
-                </reports>
-              </reportSet>
-            </reportSets>
-          </plugin>
-
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>versions-maven-plugin</artifactId>
-            <version>2.7</version>
-            <reportSets>
-              <reportSet>
-                <reports>
-                  <report>dependency-updates-report</report>
-                  <report>plugin-updates-report</report>
-                  <report>property-updates-report</report>
-                </reports>
-              </reportSet>
-            </reportSets>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-checkstyle-plugin</artifactId>
-            <version>3.0.0</version>
-            <configuration>
-              <configLocation>${checkstyle.file.path}</configLocation>
-            </configuration>
-            <reportSets>
-              <reportSet>
-                <reports>
-                  <report>checkstyle</report>
-                </reports>
-              </reportSet>
-            </reportSets>
-          </plugin>
-
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>findbugs-maven-plugin</artifactId>
-            <version>3.0.5</version>
-          </plugin>
-
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-pmd-plugin</artifactId>
-            <version>3.11.0</version>
-          </plugin>
-
-        </plugins>
-      </reporting>
-    </profile>
-
-    <profile>
-      <id>release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-enforcer-plugin</artifactId>
-            <version>3.0.0-M2</version>
-            <executions>
-              <execution>
-                <id>enforce-versions-release</id>
-                <goals>
-                  <goal>enforce</goal>
-                </goals>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.1</version>
                 <configuration>
-                  <rules>
-                    <dependencyConvergence/>
-                  </rules>
-                  <fail>false</fail>
+                    <finalName>${project.artifactId}</finalName>
+                    <createDependencyReducedPom>true</createDependencyReducedPom>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                                <exclude>META-INF/*.txt</exclude>
+                            </excludes>
+                        </filter>
+                        <filter>
+                            <!-- removing overlapping classes, defined also in guava -->
+                            <artifact>com.google.guava:failureaccess</artifact>
+                            <excludes>
+                                <exclude>com/google/common/util/concurrent/internal/InternalFutureFailureAccess.class</exclude>
+                                <exclude>com/google/common/util/concurrent/internal/InternalFutures.class</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
                 </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <version>1.6</version>
-            <executions>
-              <execution>
-                <id>sign-artifacts</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                                    <addHeader>false</addHeader>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                                    <resource>META-INF/LICENSE.txt</resource>
+                                    <file>LICENSE.txt</file>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                                    <resource>META-INF/COMM-LICENSE.txt</resource>
+                                    <file>COMM-LICENSE.txt</file>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>org.restheart.Bootstrapper</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <id>bin</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <id>bin</id>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <finalName>${project.artifactId}-${project.version}</finalName>
+                            <descriptors>
+                                <descriptor>assembly.xml</descriptor>
+                            </descriptors>
+                            <attach>false</attach>
+                            <tarLongFileMode>posix</tarLongFileMode>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.1</version>
                 <configuration>
-                  <keyname>SoftInstigate</keyname>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>org.restheart.Bootstrapper</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                        </manifest>
+                        <manifestEntries>
+                            <Build-Time>${maven.build.timestamp}</Build-Time>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <version>3.0.1</version>
-            <executions>
-              <execution>
-                <id>attach-sources</id>
-                <goals>
-                  <goal>jar-no-fork</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.0.1</version>
-            <configuration>
-              <additionalparam>-Xdoclint:none</additionalparam>
-              <failOnError>false</failOnError>
-            </configuration>
-            <executions>
-              <execution>
-                <id>attach-javadocs</id>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
+                    <debug>true</debug>
+                    <!--<compilerArgument>-Xlint</compilerArgument>-->
+                    <showDeprecation>true</showDeprecation>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.22.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>start-server</id>
+                        <!--
+                        NOTE: in order to execute the integration test suite you need to be on
+                        Linux, OSX or Solaris and have MongoDB started on default port without authentication.
+                        Simpler alternative:
+                            1) Start Docker
+                            2) Execute the bash script ./bin/integration-tests.sh
+                        -->
+                        <phase>pre-integration-test</phase>
+                        <configuration>
+                            <skip>${skipITs}</skip>
+                            <target>
+                                <echo>Running integration tests against a forked RESTHeart's instance...</echo>
+                                <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
+                                    <arg value="${basedir}/etc/test/restheart-integrationtest.yml"/>
+                                    <arg value="--fork"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop-server</id>
+                        <phase>post-integration-test</phase>
+                        <configuration>
+                            <skip>${skipITs}</skip>
+                            <target>
+                                <echo>Stopping forked RESTHeart's instance...</echo>
+                                <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
+                                    <arg value="${basedir}/etc/test/restheart-integrationtest.yml"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.8</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
         </plugins>
-      </build>
-    </profile>
-  </profiles>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>report</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-site-plugin</artifactId>
+                        <version>3.7.1</version>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-project-info-reports-plugin</artifactId>
+                        <version>3.0.0</version>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>com.github.github</groupId>
+                        <artifactId>site-maven-plugin</artifactId>
+                        <version>0.12</version>
+                        <configuration>
+                            <server>github</server>
+                            <message>Creating site for ${project.version}</message>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>site</goal>
+                                </goals>
+                                <phase>site</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.puppycrawl.tools</groupId>
+                                <artifactId>checkstyle</artifactId>
+                                <version>8.18</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <configLocation>${checkstyle.file.path}</configLocation>
+                        </configuration>
+                    </plugin>
+
+                </plugins>
+            </build>
+            <reporting>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-report-plugin</artifactId>
+                        <version>2.22.1</version>
+                        <reportSets>
+                            <reportSet>
+                                <id>integration-tests</id>
+                                <reports>
+                                    <report>failsafe-report-only</report>
+                                </reports>
+                            </reportSet>
+                        </reportSets>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>versions-maven-plugin</artifactId>
+                        <version>2.7</version>
+                        <reportSets>
+                            <reportSet>
+                                <reports>
+                                    <report>dependency-updates-report</report>
+                                    <report>plugin-updates-report</report>
+                                    <report>property-updates-report</report>
+                                </reports>
+                            </reportSet>
+                        </reportSets>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <configuration>
+                            <configLocation>${checkstyle.file.path}</configLocation>
+                        </configuration>
+                        <reportSets>
+                            <reportSet>
+                                <reports>
+                                    <report>checkstyle</report>
+                                </reports>
+                            </reportSet>
+                        </reportSets>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>findbugs-maven-plugin</artifactId>
+                        <version>3.0.5</version>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-pmd-plugin</artifactId>
+                        <version>3.11.0</version>
+                    </plugin>
+
+                </plugins>
+            </reporting>
+        </profile>
+
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <version>3.0.0-M2</version>
+                        <executions>
+                            <execution>
+                                <id>enforce-versions-release</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <dependencyConvergence/>
+                                    </rules>
+                                    <fail>false</fail>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <keyname>SoftInstigate</keyname>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <configuration>
+                            <additionalparam>-Xdoclint:none</additionalparam>
+                            <failOnError>false</failOnError>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
