@@ -75,7 +75,7 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-
+        
         if (isWebSocketHandshakeRequest(exchange)) {
 
             if (!isRequestedChangeStreamAlreadyOpen(exchange.getRelativePath(), context)) {

@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
+import static org.restheart.db.DAOUtils.LOGGER;
 
 /**
  *
@@ -31,13 +32,35 @@ import org.restheart.cache.CacheFactory;
  */
 public class ChangeStreamCacheManagerSingleton {
 
-    private Cache<CacheableChangeStreamKey, CacheableChangeStreamCursor> CACHE = CacheFactory.createLocalCache(1000,
-            Cache.EXPIRE_POLICY.NEVER, 0);
+    private static final long CACHE_SIZE = 10000;
+    private static final long CACHE_TTL = 1000;
+
+    private final Cache<CacheableChangeStreamKey, CacheableChangeStreamCursor> CACHE = CacheFactory.createLocalCache(
+            CACHE_SIZE,
+            Cache.EXPIRE_POLICY.AFTER_WRITE,
+            CACHE_TTL,
+            (Map.Entry<CacheableChangeStreamKey, Optional<CacheableChangeStreamCursor>> entry) -> {
+                if (entry.getValue().get().getSessions().size() > 0) {
+                    ChangeStreamCacheManagerSingleton
+                        .cacheChangeStreamCursor(entry.getKey(), entry.getValue().get());
+                } else {
+                    String message = "Removing change stream without clients listening for notifications; [url]: ";
+                    message += entry.getKey().getUrl() + "; ";
+                    message += "[stages]: ";
+                    message += entry.getKey().getAVars().toString();
+                    LOGGER.info(message);
+                }
+            });
 
     public static ChangeStreamCacheManagerSingleton getInstance() {
 
         return CacheManagerSingletonHolder.INSTANCE;
 
+    }
+
+    public static void cleanUp() {
+        ChangeStreamCacheManagerSingleton
+                .getInstance().CACHE.cleanUp();
     }
 
     public static void cacheChangeStreamCursor(CacheableChangeStreamKey key, CacheableChangeStreamCursor cacheableCursor) {
@@ -46,10 +69,9 @@ public class ChangeStreamCacheManagerSingleton {
 
     public static CacheableChangeStreamCursor getCachedChangeStreamIterable(CacheableChangeStreamKey key) {
 
-        Optional<CacheableChangeStreamCursor> result 
+        Optional<CacheableChangeStreamCursor> result
                 = ChangeStreamCacheManagerSingleton
-                        .getInstance()
-                        .CACHE.get(key);
+                        .getInstance().CACHE.get(key);
 
         if (result != null) {
             return result.get();
@@ -67,7 +89,7 @@ public class ChangeStreamCacheManagerSingleton {
 
         return result.values();
     }
-    
+
     public static Map<CacheableChangeStreamKey, Optional<CacheableChangeStreamCursor>> getCacheAsMap() {
 
         return ChangeStreamCacheManagerSingleton

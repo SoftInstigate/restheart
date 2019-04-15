@@ -33,6 +33,8 @@ public interface Cache<K,V> {
     
     public void put(K key, V value);
     
+    public void cleanUp();
+    
     public void invalidate(K key);
     
     public Map<K, Optional<V>> asMap();

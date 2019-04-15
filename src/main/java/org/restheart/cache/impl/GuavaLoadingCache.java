@@ -79,4 +79,9 @@ public class GuavaLoadingCache<K, V> implements org.restheart.cache.LoadingCache
     public Map<K, Optional<V>> asMap() {
         return wrapped.asMap();
     }
+
+    @Override
+    public void cleanUp() {
+        wrapped.cleanUp();
+    }
 }

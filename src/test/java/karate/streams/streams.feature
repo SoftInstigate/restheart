@@ -10,15 +10,15 @@ Background:
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: Connect to a change stream resources w/o stage paramethers and listen for WebSocket message after POSTing a document.
-    
+
+
     # Establish WebSocket connection to get notified.
     Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:18080'
-    And def handler = function(notification) { java.lang.Thread.sleep(4000); karate.signal(notification) }
-    And def host = baseUrl + coll + streamPath    
+    And def handler = function(notification) { karate.signal(notification) }
+    And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
     
-    * print host
     Given path coll
     And request {}
     When method POST
@@ -29,13 +29,12 @@ Scenario: Connect to a change stream resources w/o stage paramethers and listen 
 Scenario: Connect to a change stream resources w/ stage paramethers and listen for WebSocket message after POSTing a document. Only changes for documents that meets the change stream's stage condition ($match) should be notified.
 
     # Establish WebSocket connection to get notified.
-    Given def streamPath = '/_streams/changeStreamWithStageParam?avars={"param": "test"}'
+    Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
     And def baseUrl = 'http://localhost:18080'
-    And def handler = function(notification) { java.lang.Thread.sleep(4000); karate.signal(notification) }
-    And def host = baseUrl + coll + streamPath
+    And def handler = function(notification) { karate.signal(notification) }
+    And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
     
-
     Given path coll
     When request {}
     And method POST

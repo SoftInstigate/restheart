@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers.stream;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import io.undertow.websockets.WebSocketConnectionCallback;
 import io.undertow.websockets.core.AbstractReceiveListener;
@@ -29,16 +28,19 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.logging.Level;
 import org.bson.BsonDocument;
 import org.bson.Document;
-import org.restheart.db.MongoDBClientSingleton;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import org.restheart.db.MongoDBReactiveClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xnio.Options;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -51,14 +53,37 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
 
     private static boolean ALREADY_NOTIFYING = false;
     private static boolean CHECK_ONE_MORE_TIME = false;
-    private static boolean FIRST_CLIENT_CONNECTED = false;
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(ChangeStreamWebsocketCallback.class);
 
-    private static final Consumer<ChangeStreamDocument> CHECK_FOR_NOTIFICATIONS = (ChangeStreamDocument x) -> {
-        notifyClients();
-    };
+    public ChangeStreamWebsocketCallback() {
+
+        MongoDBReactiveClientSingleton
+                .getInstance()
+                .getClient()
+                .watch().subscribe(new Subscriber<ChangeStreamDocument>() {
+                    @Override
+                    public void onSubscribe(final Subscription s) {
+                        s.request(Long.MAX_VALUE);
+                    }
+
+                    @Override
+                    public void onNext(final ChangeStreamDocument changeStreamDocument) {
+                        notifyClients();
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        System.out.println("Failed");
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        System.out.println("Completed");
+                    }
+                });
+    }
 
     @Override
     public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
@@ -69,67 +94,36 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
 
                 webSocketChannel.close();
 
+                ChangeStreamCacheManagerSingleton.cleanUp();
+
                 Collection<Optional<CacheableChangeStreamCursor>> streams
                         = ChangeStreamCacheManagerSingleton.getCachedChangeStreams();
 
                 streams.stream().map((_stream) -> _stream.get())
-                        .forEachOrdered((stream) -> {
+                        .forEach((stream) -> {
                             clearClosedChannels(stream.getSessions());
                         });
 
-                clearStreams();
-            }
-
-            protected void onPong(WebSocketChannel webSocketChannel, StreamSourceFrameChannel channel) throws IOException {
-                LOGGER.debug("PONG MESSAGE RECEIVED");
             }
         });
 
         addChannelToCursorSessions(exchange, channel);
 
         channel.resumeReceives();
-
-        if (!FIRST_CLIENT_CONNECTED) {
-            FIRST_CLIENT_CONNECTED = true;
-            MongoClient client = MongoDBClientSingleton.getInstance().getClient();
-            client.watch().forEach(CHECK_FOR_NOTIFICATIONS);
-        }
-
-    }
-
-    private void clearStreams() {
-        Collection<Optional<CacheableChangeStreamCursor>> streams
-                = ChangeStreamCacheManagerSingleton.getCachedChangeStreams();
-
-        streams.stream().map((_stream) -> _stream.get())
-                .filter((stream) -> (!isAnyClientListeningForNotifications(stream)))
-                .forEachOrdered((stream) -> {
-                    clearStreamFromCache(stream);
-                });
-    }
-
-    private void clearStreamFromCache(CacheableChangeStreamCursor stream) {
-        Map<CacheableChangeStreamKey, Optional<CacheableChangeStreamCursor>> cacheMap
-                = ChangeStreamCacheManagerSingleton.getCacheAsMap();
-
-        cacheMap.entrySet().stream()
-                .filter((entry) -> (entry.getValue().get().equals(stream)))
-                .forEachOrdered((entry) -> {
-            cacheMap.remove(entry.getKey());
-        });
-    }
-
-    private boolean isAnyClientListeningForNotifications(CacheableChangeStreamCursor stream) {
-        return stream.getSessions().size() > 0;
     }
 
     private void clearClosedChannels(Set<WebSocketChannel> channels) {
+        
+        Set<WebSocketChannel> toBeRemoved = new HashSet<>();
 
         channels.stream().filter((channel) -> (!channel.isOpen()))
                 .forEachOrdered((channel) -> {
-                    channels.remove(channel);
+                    toBeRemoved.add(channel);
                 });
-
+        
+        toBeRemoved.stream().forEach((channel) -> {
+            channels.remove(channel);
+        });
     }
 
     private void addChannelToCursorSessions(WebSocketHttpExchange exchange, WebSocketChannel channel) {
@@ -152,10 +146,11 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
     }
 
     public static void notifyClients() {
-        if (ALREADY_NOTIFYING == false) {
 
+        if (ALREADY_NOTIFYING == false) {
             ALREADY_NOTIFYING = true;
 
+            ChangeStreamCacheManagerSingleton.cleanUp();
             checkCursorsForNotifications();
 
             ALREADY_NOTIFYING = false;
@@ -175,7 +170,6 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
                 = stream.getIterator().tryNext();
 
         if (changeStreamDocument != null) {
-            // Move ahead cursor over changes
             while (stream.getIterator().tryNext() != null) {
             }
 
@@ -191,11 +185,13 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
         streams.stream().map((_stream) -> _stream.get())
                 .filter((stream) -> (cursorHasNotification(stream)))
                 .forEachOrdered((stream) -> {
+                    LOGGER.debug("Sending notifications to listening WebSockets; [clients]: " + stream.getSessions().toString());
                     pushNotifications(stream.getSessions());
                 });
     }
 
     private static void pushNotifications(Set<WebSocketChannel> channels) {
+
         channels.forEach((channel) -> {
             WebSockets.sendText(NOTIFICATION_MESSAGE, channel, null);
         });
