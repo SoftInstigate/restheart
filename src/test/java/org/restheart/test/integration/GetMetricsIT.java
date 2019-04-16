@@ -55,8 +55,8 @@ public class GetMetricsIT extends HttpClientAbstactIT {
         assertEquals("check content type", Resource.JSON_MEDIA_TYPE, entity.getContentType().getValue());
 
         String content = EntityUtils.toString(entity);
-        assertTrue(content.contains("\"version\" : \"3.0.0\""));
-        assertTrue(content.contains("\"DB.GET\" : {"));
+        assertTrue(content.contains("\"version\": \"3.0.0\""));
+        assertTrue(content.contains("\"METRICS.GET\": {"));
     }
 
     @Test
