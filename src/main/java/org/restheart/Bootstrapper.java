@@ -440,8 +440,8 @@ public class Bootstrapper {
                 configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
 
         try {
-            MongoDBClientSingleton.init(configuration);
-            MongoDBReactiveClientSingleton.init(configuration);
+            MongoDBClientSingleton.init(configuration.getMongoUri());
+            MongoDBReactiveClientSingleton.init(configuration.getMongoUri());
             //force setup
             MongoDBClientSingleton.getInstance();
             MongoDBReactiveClientSingleton.getInstance();

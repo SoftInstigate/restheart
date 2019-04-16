@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -31,7 +31,8 @@ import org.junit.Test;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BulkRequestsIT extends AbstactIT {
-    private final String DB = "test-bulk-requests-db";
+
+    private final String DB = TEST_DB_PREFIX + "-bulk-requests-db";
     private final String COLL = "coll";
 
     HttpResponse resp;
@@ -194,7 +195,7 @@ public class BulkRequestsIT extends AbstactIT {
                 .asString();
 
         Assert.assertEquals("check response status of create test data", HttpStatus.SC_OK, resp.getStatus());
-        
+
         resp = Unirest.get(url(DB, COLL))
                 .queryString("filter", "{'tobedeleted':{'$exists': true}}")
                 .queryString("count", "")
@@ -274,7 +275,7 @@ public class BulkRequestsIT extends AbstactIT {
                 && count.asInt() == 1);
 
     }
-    
+
     @Test
     public void testBulkPatchWithoutFilter() throws Exception {
         // this update
@@ -295,7 +296,7 @@ public class BulkRequestsIT extends AbstactIT {
                 .asString();
 
         Assert.assertEquals("check response status of create test data", HttpStatus.SC_OK, resp.getStatus());
-        
+
         resp = Unirest.get(url(DB, COLL))
                 .queryString("filter", "{'tobepatched':{'$exists': true}}")
                 .queryString("count", "")
@@ -353,29 +354,29 @@ public class BulkRequestsIT extends AbstactIT {
                 modified != null
                 && modified.isNumber()
                 && modified.asInt() == 3);
-        
+
         JsonValue matched = result.asObject().get("matched");
 
         Assert.assertTrue("check rhresult element to have the 'matched' numeric property equal to 3",
                 matched != null
                 && matched.isNumber()
                 && matched.asInt() == 3);
-        
+
         resp = Unirest.get(url(DB, COLL))
                 .queryString("filter", "{'tobepatched':true}")
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
-        
+
         rbody = Json.parse(resp.getBody().toString());
-        
+
         embedded = rbody.asObject().get("_embedded");
-        
+
         JsonValue rhdoc = embedded.asObject().get("rh:doc");
-        
+
         JsonValue doc = rhdoc.asArray().get(0);
-        
+
         JsonValue newprop = doc.asObject().get("newprop");
-        
+
         Assert.assertTrue("check patched doc to have the 'newprop' property",
                 newprop != null
                 && newprop.isNumber()

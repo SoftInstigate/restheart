@@ -21,6 +21,7 @@ import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -69,7 +70,7 @@ public abstract class AbstractPT {
         Map<String, Object> configuration = (Map<String, Object>) yaml.load(ymlSB.toString());
 
         try {
-            MongoDBClientSingleton.init(new Configuration(configuration, true));
+            MongoDBClientSingleton.init(new Configuration(Paths.get("etc/test/restheart-integrationtest.yml")).getMongoUri());
         } catch (ConfigurationException ex) {
             System.exit(-1);
         }

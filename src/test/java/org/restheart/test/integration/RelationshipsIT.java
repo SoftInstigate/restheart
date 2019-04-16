@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,13 +25,14 @@ import org.apache.http.HttpStatus;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RelationshipsIT extends AbstactIT {
 
-    private final String DB = "test-rel-db";
+    private final String DB = TEST_DB_PREFIX + "-rel-db";
     private final String COLL_PARENT = "parent";
     private final String COLL_CHILDREN = "children";
 
@@ -58,7 +59,7 @@ public class RelationshipsIT extends AbstactIT {
                 + "'target-coll': 'children', "
                 + "'type':'MANY_TO_MANY' "
                 + "}]}";
-        
+
         // create parent collection
         resp = Unirest.put(url(DB, COLL_PARENT))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)

@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -33,6 +33,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.restheart.representation.Resource;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
+import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -41,7 +42,7 @@ import org.restheart.utils.HttpStatus;
  */
 public class PostCollectionIT extends HttpClientAbstactIT {
 
-    private final String DB = "test-post-collection-db";
+    private final String DB = TEST_DB_PREFIX + "-post-collection-db";
     private final String COLL = "coll";
 
     private com.mashape.unirest.http.HttpResponse resp;
@@ -174,15 +175,15 @@ public class PostCollectionIT extends HttpClientAbstactIT {
                 .header("content-type", "application/json")
                 .body("{ '_id': 'docid2', '$currentDate': {'timestamp': true } }")
                 .asString();
-        
+
         Assert.assertEquals("check response status of create test data with $currentDate operator", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
-        
+
         resp = Unirest.get(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .asString();
-        
+
         Assert.assertEquals("check response status of get test data", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
-        
+
         JsonValue rbody = Json.parse(resp.getBody().toString());
 
         Assert.assertTrue("check data to be a json object",
