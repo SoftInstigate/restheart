@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -62,6 +62,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
     }
 
     private void testGetIndexes(URI uri) throws Exception {
+        System.out.println("@@@@ testGetIndexes URI=" + uri.toString());
         Response resp = adminExecutor.execute(Request.Get(uri));
 
         HttpResponse httpResp = resp.returnResponse();
@@ -121,10 +122,10 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         assertNotNull("check not null _embedded.rh:index[0]._id", rhindex0.get("_id"));
         assertNotNull("check not null _embedded.rh:index[0].key", rhindex0.get("key"));
     }
-    
-    private final String DB = "-indexes-db";
+
+    private final String DB = TEST_DB_PREFIX + "-indexes-db";
     private final String COLL = "coll";
-    
+
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -142,23 +143,22 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
 
         // create indexes
-        
-        resp = Unirest.put(url(DB, COLL, "_indexes", "test_idx_pos"))
+        resp = Unirest.put(url(DB, COLL, "_indexes", TEST_DB_PREFIX + "_idx_pos"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'keys': {'a':1}}")
                 .asString();
-        
+
         Assert.assertEquals("create index " + DB.concat("/").concat(COLL).concat("/_indexes/test_idx_pos"), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
-        
-        resp = Unirest.put(url(DB, COLL, "_indexes", "test_idx_neg"))
+
+        resp = Unirest.put(url(DB, COLL, "_indexes", TEST_DB_PREFIX + "_idx_neg"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .body("{'keys':{'a':-1}}")
                 .asString();
-        
+
         Assert.assertEquals("create index " + DB.concat("/").concat(COLL).concat("/_indexes/test_idx_neg"), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
-        
+
         // create docs
         resp = Unirest.put(url(DB, COLL, "one"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -176,7 +176,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
 
         Assert.assertEquals("create doc two", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
     }
-    
+
     @Test
     public void testGetHintStringFormat() throws Exception {
         com.mashape.unirest.http.HttpResponse resp = Unirest.get(url(DB, COLL))
@@ -190,9 +190,9 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         JsonValue _rbody = Json.parse(resp.getBody().toString());
 
         Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
-        
+
         JsonObject rbody = _rbody.asObject();
-        
+
         assertNotNull("check not null _embedded", rbody.get("_embedded"));
 
         assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
@@ -210,12 +210,12 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
 
         JsonObject doc = (JsonObject) rhdoc.get(0);
-        
+
         JsonValue a = doc.get("a");
-        
+
         Assert.assertTrue("doc prop a is a number", a.isNumber());
         Assert.assertTrue("doc prop a equals 1", a.asInt() == 1);
-        
+
         resp = Unirest.get(url(DB, COLL))
                 .queryString("hint", "-a")
                 .queryString("sort", "{}")
@@ -225,11 +225,11 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         Assert.assertEquals("test get collection", org.apache.http.HttpStatus.SC_OK, resp.getStatus());
 
         _rbody = Json.parse(resp.getBody().toString());
-        
+
         Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
 
         rbody = _rbody.asObject();
-        
+
         assertNotNull("check not null _embedded", rbody.get("_embedded"));
 
         assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
@@ -247,13 +247,13 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
 
         doc = (JsonObject) rhdoc.get(0);
-        
+
         a = doc.get("a");
-        
+
         Assert.assertTrue("doc prop a is a number", a.isNumber());
         Assert.assertTrue("doc prop a equals 2", a.asInt() == 2);
     }
-    
+
     @Test
     public void testGetHintObjectFormat() throws Exception {
         com.mashape.unirest.http.HttpResponse resp = Unirest.get(url(DB, COLL))
@@ -267,9 +267,9 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         JsonValue _rbody = Json.parse(resp.getBody().toString());
 
         Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
-        
+
         JsonObject rbody = _rbody.asObject();
-        
+
         assertNotNull("check not null _embedded", rbody.get("_embedded"));
 
         assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
@@ -287,12 +287,12 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
 
         JsonObject doc = (JsonObject) rhdoc.get(0);
-        
+
         JsonValue a = doc.get("a");
-        
+
         Assert.assertTrue("doc prop a is a number", a.isNumber());
         Assert.assertTrue("doc prop a equals 1", a.asInt() == 1);
-        
+
         resp = Unirest.get(url(DB, COLL))
                 .queryString("hint", "{'a':-1}")
                 .queryString("sort", "{}")
@@ -306,7 +306,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         Assert.assertTrue("response body is a document", _rbody != null && _rbody.isObject());
 
         rbody = _rbody.asObject();
-        
+
         assertNotNull("check not null _embedded", rbody.get("_embedded"));
 
         assertTrue("check _embedded to be a json object", (rbody.get("_embedded") instanceof JsonObject));
@@ -324,9 +324,9 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         assertTrue("check _embedded.rh:coll[0] to be a json object", (rhdoc.get(0) instanceof JsonObject));
 
         doc = (JsonObject) rhdoc.get(0);
-        
+
         a = doc.get("a");
-        
+
         Assert.assertTrue("doc prop a is a number", a.isNumber());
         Assert.assertTrue("doc prop a equals 2", a.asInt() == 2);
     }

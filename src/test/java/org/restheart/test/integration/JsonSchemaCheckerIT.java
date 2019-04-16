@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -29,13 +29,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonSchemaCheckerIT extends AbstactIT {
 
-    private final String DB = "test-jsonschema-db";
+    private final String DB = TEST_DB_PREFIX + "-jsonschema-db";
     private final String COLL_BASIC = "coll_basic";
     private final String COLL_CHILD = "coll_child";
     private final String SCHEMA_STORE = "_schemas";
@@ -92,7 +93,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
                 .header("content-type", "application/json")
                 .body("{'checkers': [ { 'name': 'jsonSchema', 'args': { 'schemaId': 'basic' }, 'skipNotSupported': true } ] }")
                 .asString();
-        
+
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL_BASIC), HttpStatus.SC_CREATED, resp.getStatus());
 
         // create test child
@@ -135,10 +136,10 @@ public class JsonSchemaCheckerIT extends AbstactIT {
 
         Assert.assertTrue("response body is a document", rbody != null && rbody.isObject());
     }
-    
+
     /**
      * @see https://github.com/SoftInstigate/restheart/issues/241
-     * @throws Exception 
+     * @throws Exception
      */
     @Test
     public void testPutSchemaWithBsonType() throws Exception {
@@ -148,7 +149,6 @@ public class JsonSchemaCheckerIT extends AbstactIT {
                 .body(getResourceFile("schemas/schemaWithBsonType.json"))
                 .asString();
 
-        
         Assert.assertEquals("test create schema with dollar prefixed field", HttpStatus.SC_CREATED, resp.getStatus());
     }
     

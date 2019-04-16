@@ -4,6 +4,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import java.nio.file.Paths;
 import org.bson.BsonDocument;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -16,6 +17,7 @@ import static org.restheart.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.db.MongoDBClientSingleton;
+import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 
 /**
  * this is to proof the advantage of dbcursor preallocation engine strategy it
@@ -34,7 +36,7 @@ public class SkipTimeTest {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        MongoDBClientSingleton.init(new Configuration());
+        MongoDBClientSingleton.init(new Configuration(Paths.get("etc/test/restheart-integrationtest.yml")).getMongoUri());
     }
 
     @AfterClass
@@ -55,8 +57,9 @@ public class SkipTimeTest {
     @Test
     public void testSkip() {
 
+
         final Database dbsDAO = new DatabaseImpl();
-        MongoCollection<BsonDocument> coll = dbsDAO.getCollection("test", "huge");
+        MongoCollection<BsonDocument> coll = dbsDAO.getCollection(TEST_DB_PREFIX, "huge");
 
         long tot = 0;
 
@@ -81,7 +84,7 @@ public class SkipTimeTest {
     public void testTwoSkips() {
 
         final Database dbsDAO = new DatabaseImpl();
-        MongoCollection<BsonDocument> coll = dbsDAO.getCollection("test", "huge");
+        MongoCollection<BsonDocument> coll = dbsDAO.getCollection(TEST_DB_PREFIX, "huge");
 
         long tot = 0;
 

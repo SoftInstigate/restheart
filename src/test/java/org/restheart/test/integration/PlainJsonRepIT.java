@@ -26,13 +26,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.restheart.utils.JsonUtils;
+import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PlainJsonRepIT extends AbstactIT {
 
-    private final String DB = "test-pj-db";
+    private final String DB = TEST_DB_PREFIX + "-pj-db";
     private final String COLL = "coll";
 
     HttpResponse<String> resp;

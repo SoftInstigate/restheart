@@ -703,7 +703,6 @@ public class Configuration {
      */
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.configurationFileMap = conf;
-
         this.silent = silent;
 
         ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE_KEY, true);
@@ -773,7 +772,6 @@ public class Configuration {
         defaultStaticResourcesMounts.add(browserStaticResourcesMountArgs);
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
-
         metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
 
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
@@ -1062,7 +1060,8 @@ public class Configuration {
             envValue = System.getenv(shellKey);
         }
         if (null != envValue) {
-            LOGGER.warn(">>> Overriding parameter '{}' with environment variable '{}={}' <<<", key, shellKey, envValue);
+            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
+                    shellKey, key, envValue);
         }
         return envValue;
     }
