@@ -1,15 +1,2 @@
 #!/bin/bash
-set -e
-
-echo "###### Building Docker image..."
-
-cd "$(dirname ${BASH_SOURCE[0]})"/..
-
-git submodule update --init --recursive
-mvn clean package
-RHVERSION=$(./bin/project-version.sh)
-export RHVERSION
-echo "###### Building Docker image for RESTHeart Version $RHVERSION"
-docker build -t softinstigate/restheart .
-docker tag softinstigate/restheart "softinstigate/restheart:$RHVERSION"
-echo "###### Docker image successfully built."
+docker run -it --rm --name my-maven-project -v "$PWD":/usr/src/app  -v "$HOME"/.m2:/root/.m2 -w /usr/src/app maven:3.6-jdk-8 mvn clean package
