@@ -18,13 +18,9 @@
 package org.restheart.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.UUID;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.db.sessions.ClientSessionFactory;
-import org.restheart.db.sessions.ClientSessionImpl;
-import org.restheart.db.sessions.Txn;
-import static org.restheart.db.sessions.Txn.TransactionStatus.IN;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
@@ -39,13 +35,37 @@ import org.slf4j.LoggerFactory;
 public class ClientSessionInjectorHandler extends PipedHttpHandler {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(ClientSessionInjectorHandler.class);
+    
+    public static ClientSessionInjectorHandler getInstance() {
+        if (ClientSessionInjectorHandlerHolder.INSTANCE == null) {
+            throw new IllegalStateException("Singleton not initialized");
+        }
+        
+        return ClientSessionInjectorHandlerHolder.INSTANCE;
+    }
 
+    private static class ClientSessionInjectorHandlerHolder {
+        private static ClientSessionInjectorHandler INSTANCE = null;
+    }
+    
+    public static void build(PipedHttpHandler next) {
+        if (ClientSessionInjectorHandlerHolder.INSTANCE != null) {
+            throw new IllegalStateException("Singleton already initialized");
+        }
+        
+        ClientSessionInjectorHandlerHolder.INSTANCE 
+                = new ClientSessionInjectorHandler(next);
+    }
+    
+    private ClientSessionFactory clientSessionFactory 
+            = ClientSessionFactory.getInstance();
+    
     /**
      * Creates a new instance of DbPropsInjectorHandler
      *
      * @param next
      */
-    public ClientSessionInjectorHandler(PipedHttpHandler next) {
+    private ClientSessionInjectorHandler(PipedHttpHandler next) {
         super(next);
     }
 
@@ -65,68 +85,33 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        String _sid = exchange.getQueryParameters()
-                .get(RequestContext.CLIENT_SESSION_KEY).getFirst();
-
-        UUID sid;
-
         try {
-            sid = UUID.fromString(_sid);
-        } catch (IllegalArgumentException iae) {
+            context.setClientSession(getClientSessionFactory()
+                    .getClientSession(exchange));
+        } catch (IllegalArgumentException ex) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
-                    "Invalid session id");
+                    ex.getMessage());
             next(exchange, context);
             return;
         }
 
-        ClientSessionImpl cs;
-
-        if (exchange.getQueryParameters()
-                .containsKey(RequestContext.TXNID_KEY)) {
-            String _txnId = exchange.getQueryParameters()
-                    .get(RequestContext.TXNID_KEY).getFirst();
-
-            long txnId = -1;
-
-            try {
-                txnId = Long.parseLong(_txnId);
-            } catch (NumberFormatException nfe) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        context,
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "Invalid txn");
-                next(exchange, context);
-                return;
-            }
-
-            cs = ClientSessionFactory
-                    .getTxnClientSession(sid,
-                            new Txn(txnId, Txn.TransactionStatus.IN));
-
-            LOGGER.debug("Request is executed in session {} with {}",
-                    _sid,
-                    cs.getTxnServerStatus());
-
-            if (cs.getTxnServerStatus().getStatus() == IN) {
-                cs.setMessageSentInCurrentTransaction(true);
-
-                if (!cs.hasActiveTransaction()) {
-                    cs.startTransaction();
-                }
-            }
-        } else {
-            cs = ClientSessionFactory
-                    .getClientSession(sid);
-
-            LOGGER.debug("Request is executed in session {}", _sid);
-        }
-
-        context.setClientSession(cs);
-
         next(exchange, context);
+    }
+
+    /**
+     * @return the clientSessionFactory
+     */
+    public ClientSessionFactory getClientSessionFactory() {
+        return clientSessionFactory;
+    }
+
+    /**
+     * @param clientSessionFactory the clientSessionFactory to set
+     */
+    public void setClientSessionFactory(ClientSessionFactory clientSessionFactory) {
+        this.clientSessionFactory = clientSessionFactory;
     }
 }
