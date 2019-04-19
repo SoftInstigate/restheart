@@ -113,12 +113,6 @@
       <version>3.10.2</version>
     </dependency>
     
-    <dependency>
-      <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver-reactivestreams</artifactId>
-      <version>1.11.0</version>
-    </dependency>
-        
     <!-- update undertow dependency to avoid warning log message:
     WARNING: An illegal reflective access operation has occurred -->
     <dependency>
