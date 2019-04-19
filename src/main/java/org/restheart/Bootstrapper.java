@@ -783,7 +783,7 @@ public class Bootstrapper {
                         new ClientSessionInjectorHandler(
                                 new DbPropsInjectorHandler(
                                         new CollectionPropsInjectorHandler(
-                                                new RequestDispatcherHandler()
+                                                RequestDispatcherHandler.getInstance()
                                         ))));
 
         PathHandler paths = path();

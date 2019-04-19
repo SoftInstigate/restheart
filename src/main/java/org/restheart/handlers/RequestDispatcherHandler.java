@@ -90,10 +90,18 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
     private final ResponseSenderHandler responseSenderHandler
             = new ResponseSenderHandler(null);
 
+    public static RequestDispatcherHandler getInstance() {
+        return RequestDispatcherHandlerHolder.INSTANCE;
+    }
+    
+    private static class RequestDispatcherHandlerHolder {
+        private static final RequestDispatcherHandler INSTANCE = new RequestDispatcherHandler();
+    }
+    
     /**
      * Creates a new instance of RequestDispacherHandler
      */
-    public RequestDispatcherHandler() {
+    private RequestDispatcherHandler() {
         this(true);
     }
 
@@ -109,6 +117,104 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
         if (initialize) {
             defaultInit();
         }
+    }
+    
+    /**
+     * Handle the request, delegating to the proper PipedHttpHandler
+     *
+     * @param exchange the HttpServerExchange
+     * @param context the RequestContext
+     * @throws Exception
+     */
+    @Override
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        if (context.getType() == TYPE.INVALID) {
+            LOGGER.debug(
+                    "This is a bad request: returning a <{}> HTTP code",
+                    HttpStatus.SC_BAD_REQUEST);
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_BAD_REQUEST,
+                    "bad request");
+            responseSenderHandler.handleRequest(exchange, context);
+            return;
+        }
+
+        if (context.getMethod() == METHOD.OTHER) {
+            LOGGER.debug(
+                    "This method is not allowed: returning a <{}> HTTP code",
+                    HttpStatus.SC_METHOD_NOT_ALLOWED);
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_METHOD_NOT_ALLOWED,
+                    "method " + context.getMethod().name() + " not allowed");
+            responseSenderHandler.handleRequest(exchange, context);
+            return;
+        }
+
+        if (context.isReservedResource()) {
+            LOGGER.debug(
+                    "The resource is reserved: returning a <{}> HTTP code",
+                    HttpStatus.SC_FORBIDDEN);
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_FORBIDDEN,
+                    "reserved resource");
+            responseSenderHandler.handleRequest(exchange, context);
+            return;
+        }
+
+        final PipedHttpHandler httpHandler
+                = getPipedHttpHandler(context.getType(), context.getMethod());
+
+        if (httpHandler != null) {
+            before(exchange, context);
+            httpHandler.handleRequest(exchange, context);
+            after(exchange, context);
+        } else {
+            LOGGER.error(
+                    "Can't find PipedHttpHandler({}, {})",
+                    context.getType(), context.getMethod());
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    context,
+                    HttpStatus.SC_METHOD_NOT_ALLOWED,
+                    "method " + context.getMethod().name() + " not allowed");
+            responseSenderHandler.handleRequest(exchange, context);
+        }
+    }
+    
+    /**
+     * Given a type and method, return the appropriate PipedHttpHandler which
+     * can handle this request
+     *
+     * @param type
+     * @param method
+     * @return the PipedHttpHandler
+     */
+    public PipedHttpHandler getPipedHttpHandler(TYPE type, METHOD method) {
+        Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
+        return methodsMap != null ? methodsMap.get(method) : null;
+    }
+
+    /**
+     * Given a type and method, put in a PipedHttpHandler
+     *
+     * @param type the DB type
+     * @param method the HTTP method
+     * @param handler the PipedHttpHandler
+     */
+    public void putPipedHttpHandler(TYPE type, METHOD method, PipedHttpHandler handler) {
+        LOGGER.trace("putPipedHttpHandler( {}, {}, {} )", type, method, getHandlerToLog(handler).getClass().getCanonicalName());
+        Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
+        if (methodsMap == null) {
+            methodsMap = new HashMap<>();
+            handlersMultimap.put(type, methodsMap);
+        }
+        methodsMap.put(method, handler);
     }
 
     /**
@@ -546,36 +652,6 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                         new RepresentationTransformer()));
     }
 
-    /**
-     * Given a type and method, return the appropriate PipedHttpHandler which
-     * can handle this request
-     *
-     * @param type
-     * @param method
-     * @return the PipedHttpHandler
-     */
-    public PipedHttpHandler getPipedHttpHandler(TYPE type, METHOD method) {
-        Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
-        return methodsMap != null ? methodsMap.get(method) : null;
-    }
-
-    /**
-     * Given a type and method, put in a PipedHttpHandler
-     *
-     * @param type the DB type
-     * @param method the HTTP method
-     * @param handler the PipedHttpHandler
-     */
-    void putPipedHttpHandler(TYPE type, METHOD method, PipedHttpHandler handler) {
-        LOGGER.trace("putPipedHttpHandler( {}, {}, {} )", type, method, getHandlerToLog(handler).getClass().getCanonicalName());
-        Map<METHOD, PipedHttpHandler> methodsMap = handlersMultimap.get(type);
-        if (methodsMap == null) {
-            methodsMap = new HashMap<>();
-            handlersMultimap.put(type, methodsMap);
-        }
-        methodsMap.put(method, handler);
-    }
-
     private PipedHttpHandler getHandlerToLog(PipedHttpHandler handler) {
         if (handler instanceof BeforeWriteCheckHandler
                 || handler instanceof RequestTransformerHandler
@@ -603,73 +679,5 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
      * @param context the RequestContext
      */
     void after(HttpServerExchange exchange, RequestContext context) {
-    }
-
-    /**
-     * Handle the request, delegating to the proper PipedHttpHandler
-     *
-     * @param exchange the HttpServerExchange
-     * @param context the RequestContext
-     * @throws Exception
-     */
-    @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.getType() == TYPE.INVALID) {
-            LOGGER.debug(
-                    "This is a bad request: returning a <{}> HTTP code",
-                    HttpStatus.SC_BAD_REQUEST);
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_BAD_REQUEST,
-                    "bad request");
-            responseSenderHandler.handleRequest(exchange, context);
-            return;
-        }
-
-        if (context.getMethod() == METHOD.OTHER) {
-            LOGGER.debug(
-                    "This method is not allowed: returning a <{}> HTTP code",
-                    HttpStatus.SC_METHOD_NOT_ALLOWED);
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_METHOD_NOT_ALLOWED,
-                    "method " + context.getMethod().name() + " not allowed");
-            responseSenderHandler.handleRequest(exchange, context);
-            return;
-        }
-
-        if (context.isReservedResource()) {
-            LOGGER.debug(
-                    "The resource is reserved: returning a <{}> HTTP code",
-                    HttpStatus.SC_FORBIDDEN);
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_FORBIDDEN,
-                    "reserved resource");
-            responseSenderHandler.handleRequest(exchange, context);
-            return;
-        }
-
-        final PipedHttpHandler httpHandler
-                = getPipedHttpHandler(context.getType(), context.getMethod());
-
-        if (httpHandler != null) {
-            before(exchange, context);
-            httpHandler.handleRequest(exchange, context);
-            after(exchange, context);
-        } else {
-            LOGGER.error(
-                    "Can't find PipedHttpHandler({}, {})",
-                    context.getType(), context.getMethod());
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_METHOD_NOT_ALLOWED,
-                    "method " + context.getMethod().name() + " not allowed");
-            responseSenderHandler.handleRequest(exchange, context);
-        }
     }
 }
