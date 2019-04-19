@@ -17,12 +17,9 @@
  */
 package org.restheart.db.sessions;
 
-import com.mongodb.ClientSessionOptions;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;
-import com.mongodb.MongoQueryException;
 import com.mongodb.client.internal.MongoClientDelegate;
-import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.connection.Cluster;
 import com.mongodb.internal.session.ServerSessionPool;
 import java.lang.reflect.InvocationTargetException;
@@ -30,10 +27,7 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import static java.util.Collections.singletonList;
 import java.util.List;
-import java.util.UUID;
 import org.restheart.db.MongoDBClientSingleton;
-import static org.restheart.db.sessions.ClientSessionFactory.createClientSession;
-import org.restheart.db.sessions.Txn.TransactionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,174 +89,6 @@ public class SessionsUtils {
             LOGGER.error("error invokng MongoClient.getCluster() through reflection", ex);
             return null;
         }
-    }
-
-    /**
-     * Warn: requires two round trips to server
-     *
-     * @param sid
-     * @return the txn status from server
-     */
-    public static Txn getTxnServerStatus(UUID sid) {
-        var options = Sid.getSessionOptions(sid);
-
-        var cso = ClientSessionOptions
-                .builder()
-                .causallyConsistent(options.isCausallyConsistent())
-                .build();
-
-        var cs = createClientSession(
-                sid,
-                cso,
-                MCLIENT.getReadConcern(),
-                MCLIENT.getWriteConcern(),
-                MCLIENT.getReadPreference(),
-                null);
-
-        // set txnId on ServerSession
-        if (cs.getServerSession().getTransactionNumber()
-                < 1) {
-            ((ServerSessionImpl) cs.getServerSession())
-                    .setTransactionNumber(1);
-        }
-
-        try {
-            if (!cs.hasActiveTransaction()) {
-                cs.setMessageSentInCurrentTransaction(true);
-                cs.startTransaction();
-            }
-            propagateSession(cs);
-            return new Txn(1, TransactionStatus.IN);
-        } catch (MongoQueryException mqe) {
-            var num = getTxnNumFromExc(mqe);
-
-            if (num > 1) {
-                cs.setServerSessionTransactionNumber(num);
-                try {
-                    propagateSession(cs);
-                    return new Txn(num, TransactionStatus.IN);
-                } catch (MongoQueryException mqe2) {
-                    return new Txn(num, getTxnStateFromExc(mqe2));
-                }
-            } else {
-                return new Txn(num, getTxnStateFromExc(mqe));
-            }
-        }
-    }
-
-    /**
-     * Warn: requires a round trip to the server
-     *
-     * @param cs
-     * @throws MongoQueryException
-     */
-    public static void propagateSession(ClientSessionImpl cs)
-            throws MongoQueryException {
-        LOGGER.debug("*********** round trip to server to propagate session");
-        MCLIENT
-                .getDatabase("foo")
-                .getCollection("bar")
-                .find(cs)
-                .limit(1)
-                .projection(eq("_id", 1))
-                .first();
-    }
-
-    private static final String TXT_NUM_ERROR_MSG_PREFIX_STARTED = "because a newer transaction ";
-    private static final String TXT_NUM_ERROR_MSG_SUFFIX_STARTED = " has already started";
-
-    private static final String TXT_NUM_ERROR_MSG_PREFIX_ABORTED = "Transaction ";
-    private static final String TXT_NUM_ERROR_MSG_SUFFIX_ABORTED = " has been aborted";
-
-    private static final String TXT_NUM_ERROR_MSG_PREFIX_COMMITTED = "Transaction ";
-    private static final String TXT_NUM_ERROR_MSG_SUFFIX_COMMITTED = " has been committed";
-
-    private static final String TXT_NUM_ERROR_MSG_PREFIX_NONE = "Given transaction number ";
-    private static final String TXT_NUM_ERROR_MSG_SUFFIX_NONE = " does not match any in-progress transactions";
-
-    /**
-     * gets the actual txn id from error messages
-     *
-     * @param mqe
-     * @return
-     */
-    private static long getTxnNumFromExc(MongoQueryException mqe) {
-        if (mqe.getErrorCode() == 225 && mqe.getErrorMessage() != null) {
-            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_STARTED)
-                    + TXT_NUM_ERROR_MSG_PREFIX_STARTED.length();
-            int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_STARTED);
-
-            if (start >= 0 && end >= 0) {
-                String numStr = mqe.getErrorMessage().substring(start, end).trim();
-
-                return Long.parseLong(numStr);
-            }
-        } else if (mqe.getErrorCode() == 251 && mqe.getErrorMessage() != null) {
-            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_ABORTED)
-                    + TXT_NUM_ERROR_MSG_PREFIX_ABORTED.length();
-            int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_ABORTED);
-
-            if (start >= 0 && end >= 0) {
-                String numStr = mqe.getErrorMessage().substring(start, end).trim();
-
-                return Long.parseLong(numStr);
-            }
-
-            start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_NONE)
-                    + TXT_NUM_ERROR_MSG_PREFIX_NONE.length();
-            end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_NONE);
-
-            if (start >= 0 && end >= 0) {
-                String numStr = mqe.getErrorMessage().substring(start, end).trim();
-
-                return Long.parseLong(numStr);
-            }
-        } else if (mqe.getErrorCode() == 256 && mqe.getErrorMessage() != null) {
-            int start = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_PREFIX_COMMITTED)
-                    + TXT_NUM_ERROR_MSG_PREFIX_COMMITTED.length();
-            int end = mqe.getErrorMessage().indexOf(TXT_NUM_ERROR_MSG_SUFFIX_COMMITTED);
-
-            if (start >= 0 && end >= 0) {
-                String numStr = mqe.getErrorMessage().substring(start, end).trim();
-
-                return Long.parseLong(numStr);
-            }
-        }
-
-        LOGGER.debug("***** query error not handled {}: {}",
-                mqe.getErrorCode(),
-                mqe.getErrorMessage());
-
-        throw mqe;
-    }
-
-    /**
-     * get txn status from error messag
-     *
-     * @param mqe
-     * @return
-     */
-    private static TransactionStatus getTxnStateFromExc(MongoQueryException mqe) {
-        if (mqe.getErrorCode() == 251) {
-            if (mqe.getErrorMessage().contains(
-                    "does not match any in-progress transactions")) {
-                return TransactionStatus.NONE;
-            } else if (mqe.getErrorMessage().contains(
-                    "has been aborted")) {
-                return TransactionStatus.ABORTED;
-            }
-        } else if (mqe.getErrorCode() == 256) {
-            if (mqe.getErrorMessage().contains(
-                    "has been committed")) {
-                return TransactionStatus.COMMITTED;
-            }
-        }
-
-        LOGGER.debug("***** query error not handled {}: {}",
-                mqe.getErrorCode(),
-                mqe.getErrorMessage());
-
-        throw mqe;
     }
 
     public static MongoClientDelegate getMongoClientDelegate() {

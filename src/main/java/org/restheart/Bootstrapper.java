@@ -662,7 +662,7 @@ public class Bootstrapper {
             LOGGER.info("HTTPS listener bound at {}:{}",
                     configuration.getHttpsHost(), configuration.getHttpsPort());
 
-            if (configuration.getHttpsHost().equals("127.0.0.1") 
+            if (configuration.getHttpsHost().equals("127.0.0.1")
                     || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
                 LOGGER.warn("HTTPS listener is bound to localhost. "
                         + "Remote systems will be unable to connect to this server.");
@@ -673,8 +673,8 @@ public class Bootstrapper {
             builder.addHttpListener(configuration.getHttpPort(), configuration.getHttpsHost());
             LOGGER.info("HTTP listener bound at {}:{}",
                     configuration.getHttpHost(), configuration.getHttpPort());
-            
-            if (configuration.getHttpsHost().equals("127.0.0.1") 
+
+            if (configuration.getHttpsHost().equals("127.0.0.1")
                     || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
                 LOGGER.warn("HTTP listener is bound to localhost. "
                         + "Remote systems will be unable to connect to this server.");
@@ -685,8 +685,8 @@ public class Bootstrapper {
             builder.addAjpListener(configuration.getAjpPort(), configuration.getAjpHost());
             LOGGER.info("Ajp listener bound at {}:{}",
                     configuration.getAjpHost(), configuration.getAjpPort());
-            
-            if (configuration.getAjpHost().equals("127.0.0.1") 
+
+            if (configuration.getAjpHost().equals("127.0.0.1")
                     || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
                 LOGGER.warn("HTTPS listener is bound to localhost. "
                         + "Remote systems will be unable to connect to this server.");
@@ -778,13 +778,13 @@ public class Bootstrapper {
      * @return a GracefulShutdownHandler
      */
     private static GracefulShutdownHandler getHandlersPipe() {
+        ClientSessionInjectorHandler.build(new DbPropsInjectorHandler(
+                new CollectionPropsInjectorHandler(
+                        RequestDispatcherHandler.getInstance())));
+
         PipedHttpHandler coreHandlerChain
                 = new AccountInjectorHandler(
-                        new ClientSessionInjectorHandler(
-                                new DbPropsInjectorHandler(
-                                        new CollectionPropsInjectorHandler(
-                                                RequestDispatcherHandler.getInstance()
-                                        ))));
+                        ClientSessionInjectorHandler.getInstance());
 
         PathHandler paths = path();
         PathTemplateHandler pathsTemplates = pathTemplate(false);

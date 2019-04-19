@@ -38,6 +38,6 @@ public class SimpleServerSessionPool extends ServerSessionPool {
 
     @Override
     public ServerSession get() {
-        return ClientSessionFactory.createServerSession(sid);
+        return ClientSessionFactory.getInstance().createServerSession(sid);
     }
 }

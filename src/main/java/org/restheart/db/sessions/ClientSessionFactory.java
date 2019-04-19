@@ -21,9 +21,9 @@ import com.mongodb.ClientSessionOptions;
 import com.mongodb.MongoClient;
 import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
-import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
 import com.mongodb.session.ServerSession;
+import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import org.bson.BsonBinary;
 import org.bson.BsonDocument;
@@ -33,6 +33,7 @@ import static org.bson.assertions.Assertions.notNull;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.UuidCodec;
 import org.restheart.db.MongoDBClientSingleton;
+import org.restheart.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,16 +44,28 @@ import org.slf4j.LoggerFactory;
 public class ClientSessionFactory {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(ClientSessionFactory.class);
+    
+    public static ClientSessionFactory getInstance() {
+        return ClientSessionFactoryHolder.INSTANCE;
+    }
 
-    private static MongoClient MCLIENT = MongoDBClientSingleton
+    private static class ClientSessionFactoryHolder {
+        private static final ClientSessionFactory INSTANCE
+                = new ClientSessionFactory();
+    }
+    
+    private ClientSessionFactory() {
+    }
+
+    protected MongoClient mClient = MongoDBClientSingleton
             .getInstance()
             .getClient();
 
-    public static ServerSession createServerSession(UUID sid) {
+    public ServerSession createServerSession(UUID sid) {
         return new ServerSessionImpl(createServerSessionIdentifier(sid));
     }
 
-    private static BsonBinary createServerSessionIdentifier(UUID sid) {
+    private BsonBinary createServerSessionIdentifier(UUID sid) {
         UuidCodec uuidCodec = new UuidCodec(UuidRepresentation.STANDARD);
         BsonDocument holder = new BsonDocument();
         BsonDocumentWriter bsonDocumentWriter = new BsonDocumentWriter(holder);
@@ -66,32 +79,37 @@ public class ClientSessionFactory {
     }
 
     /**
-     * 
-     * @param sid
-     * @return 
+     *
+     * @param exchange
+     * @return
+     * @throws IllegalArgumentException
      */
-    public static ClientSessionImpl getClientSession(UUID sid) {
-        return getTxnClientSession(sid, null);
+    public ClientSessionImpl getClientSession(HttpServerExchange exchange)
+            throws IllegalArgumentException {
+        String _sid = exchange.getQueryParameters()
+                .get(RequestContext.CLIENT_SESSION_KEY).getFirst();
+
+        UUID sid;
+
+        try {
+            sid = UUID.fromString(_sid);
+        } catch (IllegalArgumentException iae) {
+            throw new IllegalArgumentException("Invalid session id");
+        }
+
+        var cs = getClientSession(sid);
+
+        LOGGER.debug("Request is executed in session {}", _sid);
+
+        return cs;
     }
-    
+
     /**
-     * 
-     * Warn: requires a round trip to the server
-     * 
+     *
      * @param sid
-     * @return 
+     * @return
      */
-    public static ClientSessionImpl getTxnClientSession(UUID sid) {
-        return getTxnClientSession(sid, SessionsUtils.getTxnServerStatus(sid));
-    }
-    
-    /**
-     * 
-     * @param sid
-     * @param txnServerStatus
-     * @return 
-     */
-    public static ClientSessionImpl getTxnClientSession(UUID sid, Txn txnServerStatus) {
+    public ClientSessionImpl getClientSession(UUID sid) {
         var options = Sid.getSessionOptions(sid);
 
         ClientSessionOptions cso = ClientSessionOptions
@@ -99,33 +117,19 @@ public class ClientSessionFactory {
                 .causallyConsistent(options.isCausallyConsistent())
                 .build();
 
-        ClientSessionImpl cs = createClientSession(
-                sid,
+        return createClientSession(sid,
                 cso,
-                MCLIENT.getReadConcern(),
-                MCLIENT.getWriteConcern(),
-                MCLIENT.getReadPreference(),
-                null);
-
-        if (txnServerStatus != null) {
-            cs.setTxnServerStatus(txnServerStatus);
-            cs.setTransactionState(txnServerStatus.getStatus());
-            cs.setServerSessionTransactionNumber(txnServerStatus.getTxnId());
-            
-            ((ServerSessionImpl) cs.getServerSession())
-                    .setTransactionNumber(txnServerStatus.getTxnId());
-        }
-
-        return cs;
+                mClient.getReadConcern(),
+                mClient.getWriteConcern(),
+                mClient.getReadPreference());
     }
 
-    static ClientSessionImpl createClientSession(
+    ClientSessionImpl createClientSession(
             UUID sid,
             final ClientSessionOptions options,
             final ReadConcern readConcern,
             final WriteConcern writeConcern,
-            final ReadPreference readPreference,
-            final Txn txnServerStatus) {
+            final ReadPreference readPreference) {
         notNull("readConcern", readConcern);
         notNull("writeConcern", writeConcern);
         notNull("readPreference", readPreference);
@@ -134,79 +138,14 @@ public class ClientSessionFactory {
         ClientSessionOptions mergedOptions = ClientSessionOptions
                 .builder(options)
                 .causallyConsistent(true)
-                .defaultTransactionOptions(
-                        TransactionOptions.merge(
-                                options.getDefaultTransactionOptions(),
-                                TransactionOptions.builder()
-                                        .readConcern(readConcern)
-                                        .writeConcern(writeConcern)
-                                        .readPreference(readPreference)
-                                        .build()))
                 .build();
 
         ClientSessionImpl cs = new ClientSessionImpl(
                 new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
-                MCLIENT,
+                mClient,
                 mergedOptions,
-                SessionsUtils.getMongoClientDelegate(),
-                txnServerStatus);
+                SessionsUtils.getMongoClientDelegate());
 
         return cs;
-
-    }
-}
-
-final class ServerSessionImpl implements ServerSession {
-    interface Clock {
-        long millis();
-    }
-
-    private Clock clock = new Clock() {
-        @Override
-        public long millis() {
-            return System.currentTimeMillis();
-        }
-    };
-
-    private final BsonDocument identifier;
-    private long transactionNumber = 0;
-    private volatile long lastUsedAtMillis = clock.millis();
-    private volatile boolean closed;
-
-    ServerSessionImpl(final BsonBinary identifier) {
-        this.identifier = new BsonDocument("id", identifier);
-    }
-
-    void close() {
-        closed = true;
-    }
-
-    long getLastUsedAtMillis() {
-        return lastUsedAtMillis;
-    }
-
-    @Override
-    public long getTransactionNumber() {
-        return transactionNumber;
-    }
-    
-    public void setTransactionNumber(long number) {
-        this.transactionNumber = number;
-    }
-
-    @Override
-    public BsonDocument getIdentifier() {
-        lastUsedAtMillis = clock.millis();
-        return identifier;
-    }
-
-    @Override
-    public long advanceTransactionNumber() {
-        return transactionNumber++;
-    }
-    
-    @Override
-    public boolean isClosed() {
-        return closed;
     }
 }
