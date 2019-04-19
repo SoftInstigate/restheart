@@ -41,7 +41,6 @@ import org.restheart.handlers.document.DeleteDocumentHandler;
 import org.restheart.handlers.document.GetDocumentHandler;
 import org.restheart.handlers.document.PatchDocumentHandler;
 import org.restheart.handlers.document.PutDocumentHandler;
-import org.restheart.handlers.stream.GetChangeStreamHandler;
 import org.restheart.handlers.files.DeleteBucketHandler;
 import org.restheart.handlers.files.DeleteFileHandler;
 import org.restheart.handlers.files.FileMetadataHandler;
@@ -537,12 +536,6 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                 new RequestTransformerHandler(
                         new PostSessionHandler(
                                 DEFAULT_RESP_TRANFORMERS)));
-
-        // *** CHANGE_STREAM handler
-        putPipedHttpHandler(TYPE.CHANGE_STREAM, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetChangeStreamHandler(
-                                responseSenderHandler)));
 
         // *** SCHEMA handlers
         putPipedHttpHandler(TYPE.SCHEMA_STORE, METHOD.GET,
