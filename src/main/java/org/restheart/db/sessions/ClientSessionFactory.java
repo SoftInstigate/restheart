@@ -54,7 +54,7 @@ public class ClientSessionFactory {
                 = new ClientSessionFactory();
     }
     
-    private ClientSessionFactory() {
+    protected ClientSessionFactory() {
     }
 
     protected MongoClient mClient = MongoDBClientSingleton
