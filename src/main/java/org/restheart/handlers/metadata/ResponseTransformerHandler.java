@@ -22,6 +22,7 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.metadata.RequestTransformerHandler.LOGGER;
 import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.metadata.transformers.GlobalTransformer;
 import org.restheart.metadata.transformers.RequestTransformer;
@@ -145,49 +146,57 @@ public class ResponseTransformerHandler
             RequestContext context,
             List<RequestTransformer> rts)
             throws InvalidMetadataException {
+        NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
+        
         // execute request transformers
         rts.stream()
                 .filter(rt -> rt.getPhase() == PHASE.RESPONSE)
                 .forEachOrdered(rt -> {
-                    NamedSingletonsFactory nsf = NamedSingletonsFactory
-                            .getInstance();
+                    try {
+                        Transformer t = (Transformer) nsf
+                                .get("transformers", rt.getName());
 
-                    Transformer t = (Transformer) nsf
-                            .get("transformers", rt.getName());
+                        BsonDocument confArgs
+                                = nsf.getArgs("transformers", rt.getName());
 
-                    BsonDocument confArgs
-                            = nsf.getArgs("transformers", rt.getName());
-
-                    if (t == null) {
-                        throw new IllegalArgumentException("cannot find singleton "
+                        if (rt.getScope() == SCOPE.THIS) {
+                            t.transform(
+                                    exchange,
+                                    context,
+                                    context.getResponseContent(),
+                                    rt.getArgs(),
+                                    confArgs);
+                        } else if (context.getResponseContent() != null
+                                && context.getResponseContent().isDocument()
+                                && context.getResponseContent()
+                                        .asDocument()
+                                        .containsKey("_embedded")) {
+                            applyChildrenTransformLogic(exchange,
+                                    context,
+                                    t,
+                                    rt.getArgs(),
+                                    confArgs);
+                        } else if (context.isDocument()) {
+                            t.transform(
+                                    exchange,
+                                    context,
+                                    context.getResponseContent(),
+                                    rt.getArgs(),
+                                    confArgs);
+                        }
+                    } catch (IllegalArgumentException iae) {
+                        String err = "Cannot find '"
                                 + rt.getName()
-                                + " in singleton group transformers");
-                    }
-
-                    if (rt.getScope() == SCOPE.THIS) {
-                        t.transform(
-                                exchange,
-                                context,
-                                context.getResponseContent(),
-                                rt.getArgs(),
-                                confArgs);
-                    } else if (context.getResponseContent() != null
-                            && context.getResponseContent().isDocument()
-                            && context.getResponseContent()
-                                    .asDocument()
-                                    .containsKey("_embedded")) {
-                        applyChildrenTransformLogic(exchange,
-                                context,
-                                t,
-                                rt.getArgs(),
-                                confArgs);
-                    } else if (context.isDocument()) {
-                        t.transform(
-                                exchange,
-                                context,
-                                context.getResponseContent(),
-                                rt.getArgs(),
-                                confArgs);
+                                + "' in singleton group 'transformers'";
+                        LOGGER.warn(err);
+                        context.addWarning(err);
+                    } catch (Throwable t) {
+                        String err = "Error executing transformer '"
+                                + rt.getName() 
+                                + "': " 
+                                + t.getMessage();
+                        LOGGER.warn(err);
+                        context.addWarning(err);
                     }
                 });
     }

@@ -63,7 +63,7 @@ public abstract class TransformerHandler extends PipedHttpHandler {
             try {
                 applyCollRTransformer(exchange, context);
             } catch (InvalidMetadataException e) {
-                context.addWarning("error applying transformer: " + e.getMessage());
+                context.addWarning("Error applying transformer: " + e.getMessage());
             }
         }
 
@@ -71,7 +71,7 @@ public abstract class TransformerHandler extends PipedHttpHandler {
             try {
                 applyDbTransformer(exchange, context);
             } catch (InvalidMetadataException e) {
-                context.addWarning("error applying transformer: " + e.getMessage());
+                context.addWarning("Error applying transformer: " + e.getMessage());
             }
         }
 
