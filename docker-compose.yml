@@ -23,10 +23,10 @@ services:
          - backend
       ports:
          - "8080:8080"
-      ### Uncoment below if you want to mount a local configuration folder
+      ### Uncoment and edit below if you want to mount a local configuration folder
       ### to overwrite default restheart.yml
       #volumes:
-      #   - ./etc:/opt/restheart/etc:ro
+         #- ./Docker/etc:/opt/restheart/etc:ro
 
    mongodb:
       image: mongo:3.6
