@@ -70,7 +70,7 @@ public class ErrorHandler implements HttpHandler {
             next.handleRequest(exchange);
         } catch (MongoTimeoutException nte) {
             RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-
+            
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     errorContext,
@@ -80,7 +80,7 @@ public class ErrorHandler implements HttpHandler {
             sender.handleRequest(exchange, errorContext);
         } catch (MongoExecutionTimeoutException mete) {
             RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-
+            
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     errorContext,
@@ -91,14 +91,13 @@ public class ErrorHandler implements HttpHandler {
             sender.handleRequest(exchange, errorContext);
         } catch (MongoBulkWriteException mce) {
             MongoBulkWriteException bmce = mce;
-            
 
             BulkResultRepresentationFactory rf = new BulkResultRepresentationFactory();
 
             Resource rep = rf.getRepresentation(exchange, bmce);
 
             RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-
+            
             ResponseHelper.endExchangeWithRepresentation(
                     exchange,
                     errorContext,
