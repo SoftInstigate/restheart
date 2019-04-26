@@ -71,15 +71,15 @@ public class NamedSingletonsFactory {
             Object _singletons = group.get(SINGLETONS_KEY);
 
             if (_gname == null || !(_gname instanceof String)) {
-                throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + GROUP_KEY + " is not a String");
+                throw new IllegalArgumentException("Wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + GROUP_KEY + " is not a String");
             }
 
             if (_ginterfaze == null || !(_ginterfaze instanceof String)) {
-                throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + INTERFACE_KEY + " is not a String");
+                throw new IllegalArgumentException("Wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + INTERFACE_KEY + " is not a String");
             }
 
             if (_singletons == null || !(_singletons instanceof List)) {
-                throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + SINGLETONS_KEY + " is not a List");
+                throw new IllegalArgumentException("Wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + SINGLETONS_KEY + " is not a List");
             }
 
             String gName = (String) _gname;
@@ -91,16 +91,16 @@ public class NamedSingletonsFactory {
             try {
                 interfazeClass = Class.forName(ginterfaze);
             } catch (ClassNotFoundException ex) {
-                throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; interface class " + ginterfaze + " not found", ex);
+                throw new IllegalArgumentException("Wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; interface class " + ginterfaze + " not found", ex);
             }
 
             if (!interfazeClass.isInterface()) {
-                throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; interface class " + INTERFACE_KEY + " is not an interface");
+                throw new IllegalArgumentException("Wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; interface class " + INTERFACE_KEY + " is not an interface");
             }
 
             singletons.forEach(_entry -> {
                 if (!(_entry instanceof Map)) {
-                    throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + SINGLETONS_KEY + " is not a List of Maps");
+                    throw new IllegalArgumentException("Wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + SINGLETONS_KEY + " is not a List of Maps");
                 }
 
                 Map entry = (Map) _entry;
@@ -109,11 +109,11 @@ public class NamedSingletonsFactory {
                 Object _sClazz = entry.get(SINGLETON_CLASS_KEY);
 
                 if (_sName == null || !(_sName instanceof String)) {
-                    throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + SINGLETONS_KEY + "." + SINGLETON_NAME_KEY + " is not a String");
+                    throw new IllegalArgumentException("Wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + SINGLETONS_KEY + "." + SINGLETON_NAME_KEY + " is not a String");
                 }
 
                 if (_sClazz == null || !(_sClazz instanceof String)) {
-                    throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + SINGLETONS_KEY + "." + INTERFACE_KEY + " is not a String");
+                    throw new IllegalArgumentException("Wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the property " + SINGLETONS_KEY + "." + INTERFACE_KEY + " is not a String");
                 }
 
                 String sName = (String) _sName;
@@ -129,14 +129,14 @@ public class NamedSingletonsFactory {
                             .getConstructor()
                             .newInstance();
                 } catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | InvocationTargetException ex) {
-                    throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; error instantiation singleton of class " + sClazz, ex);
+                    throw new IllegalArgumentException("Wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; error instantiation singleton of class " + sClazz, ex);
                 }
 
                 if (!interfazeClass.isAssignableFrom(singletonClass)) {
-                    throw new IllegalArgumentException("wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the singleton of class " + sClazz + " does not implements the group interface " + ginterfaze);
+                    throw new IllegalArgumentException("Wrong configuration for " + Configuration.METADATA_NAMED_SINGLETONS_KEY + "; the singleton of class " + sClazz + " does not implements the group interface " + ginterfaze);
                 }
 
-                LOGGER.debug("added singleton {} of class {} to group {}", sName, sClazz, gName);
+                LOGGER.debug("Added singleton {} of class {} to group {}", sName, sClazz, gName);
                 SINGLETONS_CACHE.put(gName + SEPARATOR + sName, singleton);
 
                 Object _args = entry.get(SINGLETON_ARGS_KEY);
@@ -157,13 +157,13 @@ public class NamedSingletonsFactory {
         Optional op = SINGLETONS_CACHE.get(group + SEPARATOR + name);
 
         if (op == null) {
-            throw new IllegalArgumentException("no singleton configured with name: " + name);
+            throw new IllegalArgumentException("No singleton configured with name: " + name);
         }
 
         if (op.isPresent()) {
             return op.get();
         } else {
-            throw new IllegalArgumentException("no singleton configured with name: " + name);
+            throw new IllegalArgumentException("No singleton configured with name: " + name);
         }
     }
 
