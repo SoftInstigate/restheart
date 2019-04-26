@@ -25,6 +25,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.metadata.RequestTransformerHandler.LOGGER;
 import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.metadata.checkers.Checker;
 import org.restheart.metadata.checkers.Checker.PHASE;
@@ -104,13 +105,6 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                         BsonDocument confArgs = nsf.getArgs(ROOT_KEY,
                                 requestChecker.getName());
 
-                        if (checker == null) {
-                            throw new IllegalArgumentException(
-                                    "cannot find singleton "
-                                    + requestChecker.getName()
-                                    + " in singleton group checkers");
-                        }
-
                         return applyChecker(exchange,
                                 context,
                                 requestChecker.skipNotSupported(),
@@ -118,8 +112,19 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                                 requestChecker.getArgs(),
                                 confArgs);
                     } catch (IllegalArgumentException ex) {
-                        context.addWarning("error applying checker: "
-                                + ex.getMessage());
+                        String err = "Cannot find '"
+                                + requestChecker.getName()
+                                + "' in singleton group 'checkers'";
+                        LOGGER.warn(err);
+                        context.addWarning(err);
+                        return false;
+                    } catch (Throwable t) {
+                        String err = "Error executing checker '"
+                                + requestChecker.getName()
+                                + "': "
+                                + t.getMessage();
+                        LOGGER.warn(err);
+                        context.addWarning(err);
                         return false;
                     }
                 });

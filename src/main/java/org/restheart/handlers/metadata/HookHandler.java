@@ -74,22 +74,33 @@ public class HookHandler extends PipedHttpHandler {
             }
             
             if (mdHooks != null) {
+                NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
+                
                 for (HookMetadata mdHook : mdHooks) {
                     Hook wh;
                     BsonDocument confArgs;
 
                     try {
-                        NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
+                        wh = (Hook) nsf.get("hooks", mdHook.getName());
 
-                        wh = (Hook) nsf
-                                .get("hooks", mdHook.getName());
-
-                        confArgs
-                                = nsf.getArgs("hooks", mdHook.getName());
+                        confArgs = nsf.getArgs("hooks", mdHook.getName());
                     } catch (IllegalArgumentException ex) {
-                        context.addWarning("error applying hook: "
-                                + ex.getMessage());
-
+                        String err = "Cannot find singleton '"
+                                + mdHook.getName()
+                                + "' in singleton group 'hooks'";
+                        LOGGER.warn(err);
+                        
+                        wh = null;
+                        confArgs = null;
+                    } catch (Throwable t) {
+                        String err = "Error executing hook '"
+                                + mdHook.getName()
+                                + "': "
+                                + t.getMessage();
+                        
+                        LOGGER.warn(err);
+                        context.addWarning(err);
+                        
                         wh = null;
                         confArgs = null;
                     }

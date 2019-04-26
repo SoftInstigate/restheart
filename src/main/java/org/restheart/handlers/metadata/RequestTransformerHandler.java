@@ -106,7 +106,7 @@ public class RequestTransformerHandler
 
     @Override
     void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context) {
-        // execture global request tranformers
+        // execute global request tranformers
         getGlobalTransformers().stream()
                 .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
                 .forEachOrdered(gt -> {
@@ -135,46 +135,53 @@ public class RequestTransformerHandler
             throws InvalidMetadataException {
         NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
 
-        // executure request tranformers
+        // execute request tranformers
         rts.stream().filter((rt)
                 -> (rt.getPhase() == RequestTransformer.PHASE.REQUEST))
                 .forEachOrdered((RequestTransformer rt) -> {
+                    try {
+                        Transformer t = (Transformer) nsf
+                                .get("transformers", rt.getName());
 
-                    Transformer t = (Transformer) nsf
-                            .get("transformers", rt.getName());
+                        BsonDocument confArgs
+                                = nsf.getArgs("transformers", rt.getName());
 
-                    BsonDocument confArgs
-                            = nsf.getArgs("transformers", rt.getName());
+                        BsonValue requestContent = context.getContent() == null
+                                ? new BsonDocument()
+                                : context.getContent();
 
-                    if (t == null) {
-                        throw new IllegalArgumentException(
-                                "cannot find singleton "
+                        if (requestContent.isDocument()) {
+                            t.transform(
+                                    exchange,
+                                    context,
+                                    requestContent,
+                                    rt.getArgs(),
+                                    confArgs);
+                        } else if (context.isPost()
+                                && requestContent.isArray()) {
+                            requestContent.asArray().stream().forEachOrdered(
+                                    (doc) -> {
+                                        t.transform(
+                                                exchange,
+                                                context,
+                                                doc,
+                                                rt.getArgs(),
+                                                confArgs);
+                                    });
+                        }
+                    } catch (IllegalArgumentException iae) {
+                        String err = "Cannot find '"
                                 + rt.getName()
-                                + " in singleton group transformers");
-                    }
-
-                    BsonValue requestContent = context.getContent() == null
-                            ? new BsonDocument()
-                            : context.getContent();
-
-                    if (requestContent.isDocument()) {
-                        t.transform(
-                                exchange,
-                                context,
-                                requestContent,
-                                rt.getArgs(),
-                                confArgs);
-                    } else if (context.isPost()
-                            && requestContent.isArray()) {
-                        requestContent.asArray().stream().forEachOrdered(
-                                (doc) -> {
-                                    t.transform(
-                                            exchange,
-                                            context,
-                                            doc,
-                                            rt.getArgs(),
-                                            confArgs);
-                                });
+                                + "' in singleton group 'transformers'";
+                        LOGGER.warn(err);
+                        context.addWarning(err);
+                    } catch (Throwable t) {
+                        String err = "Error executing transformer '"
+                                + rt.getName() 
+                                + "': " 
+                                + t.getMessage();
+                        LOGGER.warn(err);
+                        context.addWarning(err);
                     }
                 });
     }
