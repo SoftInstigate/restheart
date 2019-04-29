@@ -28,10 +28,16 @@ import static org.restheart.db.sessions.Sid.longToBytes;
 public class SessionOptions {
     public static final int CAUSALLY_CONSISTENT_FLAG = 0x20; // 0010 0000
 
+    public static final String CAUSALLY_CONSISTENT_PROP = "causallyConsistent";
+    
     private final boolean causallyConsistent;
 
     public SessionOptions(boolean causallyConsistent) {
         this.causallyConsistent = causallyConsistent;
+    }
+    
+    public SessionOptions() {
+        this(true);
     }
 
     public SessionOptions(UUID sid) {

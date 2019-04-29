@@ -22,7 +22,9 @@ import com.mongodb.MongoClientException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.UUID;
+import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.db.MongoDBClientSingleton;
@@ -81,9 +83,9 @@ public class PostSessionHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-
+        
         try {
-            UUID sid = Sid.randomUUID(new SessionOptions(true));
+            UUID sid = Sid.randomUUID(options(context));
 
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
@@ -110,5 +112,35 @@ public class PostSessionHandler extends PipedHttpHandler {
         }
 
         next(exchange, context);
+    }
+    
+    private SessionOptions options(RequestContext context) {
+        final BsonValue _content = context.getContent();
+        
+        // must be an object
+        if (!_content.isDocument()) {
+            return new SessionOptions();
+        }
+        
+        BsonDocument content = _content.asDocument();
+
+        BsonValue _ops = content.get("ops");
+        
+        // must be an object, optional
+        if (_ops != null 
+                && _ops.isDocument()
+                && _ops.asDocument()
+                        .containsKey(SessionOptions.CAUSALLY_CONSISTENT_PROP)
+                && _ops.asDocument().get(SessionOptions.CAUSALLY_CONSISTENT_PROP)
+                        .isBoolean()
+                ) {
+            
+            return new SessionOptions(_ops.asDocument()
+                    .get(SessionOptions.CAUSALLY_CONSISTENT_PROP)
+                    .asBoolean()
+                    .getValue());
+        } else {
+            return new SessionOptions();
+        }
     }
 }
