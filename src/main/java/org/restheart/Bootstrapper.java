@@ -74,7 +74,6 @@ import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
-import static org.restheart.Configuration.RESTHEART_VERSION;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.GzipEncodingHandler;
@@ -112,8 +111,6 @@ public class Bootstrapper {
 
     private static boolean IS_FORKED;
     private static String ENVIRONMENT_FILE;
-    private static final Set<Entry<Object, Object>> MANIFEST_ENTRIES = FileUtils.findManifestInfo();
-    private static String BUILD_TIME;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrapper.class);
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
@@ -136,7 +133,6 @@ public class Bootstrapper {
      */
     public static void main(final String[] args) throws ConfigurationException, IOException {
         parseCommandLineParameters(args);
-        BUILD_TIME = extractBuildTime();
         configuration = loadConfiguration();
         run();
     }
@@ -168,17 +164,6 @@ public class Bootstrapper {
             cmd.usage();
             System.exit(1);
         }
-    }
-
-    private static String extractBuildTime() {
-        if (MANIFEST_ENTRIES != null) {
-            for (Entry<Object, Object> entry : MANIFEST_ENTRIES) {
-                if (entry.getKey().toString().equals("Build-Time")) {
-                    return (String) entry.getValue();
-                }
-            }
-        }
-        return null;
     }
 
     private static Configuration loadConfiguration() throws FileNotFoundException, UnsupportedEncodingException, IOException {
@@ -275,6 +260,10 @@ public class Bootstrapper {
     }
 
     private static void logWindowsStart() {
+        String version = Version.getInstance().getVersion() == null
+                ? "unknown, not packaged"
+                : Version.getInstance().getVersion();
+        
         String info = String.format("  {%n"
                 + "    \"Version\": \"%s\",%n"
                 + "    \"Instance-Name\": \"%s\",%n"
@@ -282,17 +271,19 @@ public class Bootstrapper {
                 + "    \"Environment\": \"%s\",%n"
                 + "    \"Build-Time\": \"%s\"%n"
                 + "  }",
-                ansi().fg(MAGENTA).a(RESTHEART_VERSION).reset().toString(),
+                ansi().fg(MAGENTA).a(version).reset().toString(),
                 ansi().fg(MAGENTA).a(getInstanceName()).reset().toString(),
                 ansi().fg(MAGENTA).a(CONF_FILE_PATH).reset().toString(),
                 ansi().fg(MAGENTA).a(ENVIRONMENT_FILE).reset().toString(),
-                ansi().fg(MAGENTA).a(BUILD_TIME).reset().toString());
+                ansi().fg(MAGENTA).a(Version.getInstance().getBuildTime()).reset().toString());
 
         LOGGER.info("Starting {}\n{}", ansi().fg(RED).a(RESTHEART).reset().toString(), info);
     }
 
     private static void logManifestInfo() {
         if (LOGGER.isDebugEnabled()) {
+            final Set<Entry<Object, Object>> MANIFEST_ENTRIES = FileUtils.findManifestInfo();
+
             if (MANIFEST_ENTRIES != null) {
                 LOGGER.debug("Build Information: {}", MANIFEST_ENTRIES.toString());
             } else {

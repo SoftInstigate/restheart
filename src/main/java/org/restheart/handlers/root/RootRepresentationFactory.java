@@ -23,7 +23,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.Configuration;
-import static org.restheart.Configuration.RESTHEART_VERSION;
+import org.restheart.Version;
 import org.restheart.representation.AbstractRepresentationFactory;
 import org.restheart.representation.Link;
 import org.restheart.representation.Resource;
@@ -84,12 +84,12 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     private void addSpecialProperties(
             final Resource rep,
             RequestContext context) {
-        if (RESTHEART_VERSION == null) {
+        if (Version.getInstance().getVersion() == null) {
             rep.addProperty("_restheart_version",
                     new BsonString("unknown, not packaged"));
         } else {
             rep.addProperty("_restheart_version",
-                    new BsonString(RESTHEART_VERSION));
+                    new BsonString(Version.getInstance().getVersion()));
         }
 
         rep.addProperty("_type", new BsonString(context.getType().name()));
