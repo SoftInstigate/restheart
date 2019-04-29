@@ -26,6 +26,8 @@ import com.github.mustachejava.MustacheFactory;
 import com.github.mustachejava.MustacheNotFoundException;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ScanResult;
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.pathTemplate;
 import static io.undertow.Handlers.resource;
@@ -263,7 +265,7 @@ public class Bootstrapper {
         String version = Version.getInstance().getVersion() == null
                 ? "Unknown, not packaged"
                 : Version.getInstance().getVersion();
-        
+
         String info = String.format("  {%n"
                 + "    \"Version\": \"%s\",%n"
                 + "    \"Instance-Name\": \"%s\",%n"
@@ -471,7 +473,17 @@ public class Bootstrapper {
             LOGGER.info("Pid file {}", pidFilePath);
         }
 
-        // run initialized if defined
+        // run initializer defined in configuration
+        runConfInitializer();
+
+        // run initializer extensions
+        runInitializerExtensions();
+
+        LOGGER.info(ansi().fg(GREEN).a("RESTHeart started").reset().toString());
+    }
+
+    @SuppressWarnings("deprecation")
+    private static void runConfInitializer() {
         if (configuration.getInitializerClass() != null) {
             try {
 
@@ -497,15 +509,59 @@ public class Bootstrapper {
                     | IllegalAccessException
                     | InvocationTargetException
                     | NoSuchMethodException t) {
-                LOGGER.error(ansi().fg(RED).a(
-                        "Wrong configuration for intializer {}")
-                        .reset().toString(),
+                LOGGER.error(
+                        "Wrong configuration for intializer {}",
                         configuration.getInitializerClass(),
                         t);
             }
         }
+    }
 
-        LOGGER.info(ansi().fg(GREEN).a("RESTHeart started").reset().toString());
+    /**
+     * runs the initializers defined via @Initializer annotation
+     */
+    private static void runInitializerExtensions() {
+        String annotationClass = "org.restheart.extensions.Initializer";
+
+        try (ScanResult scanResult = new ClassGraph()
+                .enableAnnotationInfo()
+                .scan()) {
+
+            var cil = scanResult
+                    .getClassesWithAnnotation(annotationClass);
+
+            for (var ci : cil) {
+                Object i;
+
+                try {
+                    i = ci.loadClass(false)
+                            .getConstructor()
+                            .newInstance();
+
+                    if (i instanceof Runnable) {
+                        try {
+                            ((Runnable) i).run();
+                        } catch (Throwable t) {
+                            LOGGER.error("Error executing initializer {}",
+                                    ci.getName(),
+                                    t);
+                        }
+                    } else {
+                        LOGGER.error("Extension class {} annotated with "
+                                + "@Initializer must implement interface Runnable",
+                                ci.getName());
+                    }
+
+                } catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException
+                        | NoSuchMethodException t) {
+                    LOGGER.error("Error executing initializer {}",
+                            ci.getName(),
+                            t);
+                }
+            }
+        }
     }
 
     private static String getInstanceName() {

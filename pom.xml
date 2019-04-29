@@ -196,6 +196,12 @@
       <version>0.9.6</version>
       <type>jar</type>
     </dependency>
+    
+    <dependency>
+      <groupId>io.github.classgraph</groupId>
+      <artifactId>classgraph</artifactId>
+      <version>4.8.25</version>
+    </dependency>
 
     <!-- BEGIN Test dependencies -->
     <dependency>
