@@ -1688,6 +1688,7 @@ public class Configuration {
     /**
      * @return the initializerClass
      */
+    @Deprecated
     public String getInitializerClass() {
         return initializerClass;
     }

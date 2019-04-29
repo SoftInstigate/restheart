@@ -17,11 +17,22 @@
  */
 package org.restheart.init;
 
+import org.restheart.extensions.Initializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@Deprecated
-public interface Initializer {
-    public void init();
+@Initializer
+public class TestExtensionInitializer implements Runnable {
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger("org.restheart.init.TestExtensionInitializer");
+
+    @Override
+    public void run() {
+        LOGGER.info("TestExtensionInitializer executed!!");
+        throw new RuntimeException("Aaa");
+    }
 }
