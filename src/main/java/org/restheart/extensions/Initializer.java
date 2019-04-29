@@ -26,5 +26,8 @@ import java.lang.annotation.RetentionPolicy;
  */
 @Retention(RetentionPolicy.RUNTIME) 
 public @interface Initializer {
-    int priority() default 10;
+    /**
+     * Defines the order of execution (less is higher priority)
+     */
+    int priority() default 10; 
 }

@@ -25,14 +25,13 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@Initializer
-public class TestExtensionInitializer implements Runnable {
+@Initializer(priority = 1)
+public class ExampleInitializer implements Runnable {
     private static final Logger LOGGER = LoggerFactory
             .getLogger("org.restheart.init.TestExtensionInitializer");
 
     @Override
     public void run() {
-        LOGGER.info("TestExtensionInitializer executed!!");
-        throw new RuntimeException("Aaa");
+        LOGGER.trace("TestExtensionInitializer executed!!");
     }
 }
