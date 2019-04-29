@@ -261,7 +261,7 @@ public class Bootstrapper {
 
     private static void logWindowsStart() {
         String version = Version.getInstance().getVersion() == null
-                ? "unknown, not packaged"
+                ? "Unknown, not packaged"
                 : Version.getInstance().getVersion();
         
         String info = String.format("  {%n"
@@ -287,7 +287,7 @@ public class Bootstrapper {
             if (MANIFEST_ENTRIES != null) {
                 LOGGER.debug("Build Information: {}", MANIFEST_ENTRIES.toString());
             } else {
-                LOGGER.debug("Build Information: {}", "unknown, not packaged");
+                LOGGER.debug("Build Information: {}", "Unknown, not packaged");
             }
         }
     }

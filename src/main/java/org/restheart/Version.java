@@ -17,9 +17,9 @@
  */
 package org.restheart;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
-import org.joda.time.Instant;
 import org.restheart.utils.FileUtils;
 
 /**
