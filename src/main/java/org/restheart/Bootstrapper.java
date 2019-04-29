@@ -27,6 +27,7 @@ import com.github.mustachejava.MustacheNotFoundException;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
 import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.pathTemplate;
@@ -65,6 +66,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -529,6 +531,22 @@ public class Bootstrapper {
 
             var cil = scanResult
                     .getClassesWithAnnotation(annotationClass);
+            
+            // sort @Initializers by priority
+            cil.sort(new Comparator<ClassInfo>() {
+                @Override
+                public int compare(ClassInfo ci1, ClassInfo ci2) {
+                    var ai1 =  (org.restheart.extensions.Initializer) ci1
+                            .getAnnotationInfo(annotationClass)
+                            .loadClassAndInstantiate();
+                    
+                    var ai2 =  (org.restheart.extensions.Initializer) ci2
+                            .getAnnotationInfo(annotationClass)
+                            .loadClassAndInstantiate();
+                    
+                    return Integer.compare(ai1.priority(), ai2.priority());
+                }
+            });
 
             for (var ci : cil) {
                 Object i;

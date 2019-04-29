@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @SuppressWarnings( "deprecation" )
+@Deprecated
 public class TestInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInitializer.class);
 
