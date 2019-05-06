@@ -72,6 +72,8 @@ public class CollectionRepresentationFactory
     private static final String RHFILE = "rh:file";
     private static final String RHSCHEMA = "rh:schema";
     private static final String RHDOC = "rh:doc";
+    
+    private static final String STREAMS_ELEMENT_NAME = "streams";
 
     public static void addSpecialProperties(
             final Resource rep,
@@ -170,6 +172,7 @@ public class CollectionRepresentationFactory
 
         addSizeAndTotalPagesProperties(size, context, rep);
         addAggregationsLinks(context, rep, requestPath);
+        addStreamsLinks(context, rep, requestPath);
         addSchemaLinks(rep, context);
         addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
 
@@ -245,6 +248,36 @@ public class CollectionRepresentationFactory
                                         requestPath
                                         + "/"
                                         + RequestContext._AGGREGATIONS + "/"
+                                        + uri));
+                    }
+                }
+            });
+        }
+    }
+    
+    private void addStreamsLinks(
+            final RequestContext context,
+            final Resource rep,
+            final String requestPath) {
+        BsonValue _streams = context
+                .getCollectionProps()
+                .get(STREAMS_ELEMENT_NAME);
+
+        if (_streams != null && _streams.isArray()) {
+            BsonArray streams = _streams.asArray();
+
+            streams.forEach(q -> {
+                if (q.isDocument()) {
+                    BsonValue _uri = q.asDocument().get("uri");
+
+                    if (_uri != null && _uri.isString()) {
+                        String uri = _uri.asString().getValue();
+
+                        rep.addLink(
+                                new Link(uri,
+                                        requestPath
+                                        + "/"
+                                        + RequestContext._STREAMS + "/"
                                         + uri));
                     }
                 }
