@@ -30,4 +30,5 @@
     </root>
     
     <logger name="org.restheart" level="INFO"/>
+    <logger name="com.restheart" level="INFO"/>
 </configuration>
