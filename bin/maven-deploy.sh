@@ -7,14 +7,14 @@ if [[ "$MAVEN_DEPLOY" == "true" ]]; then
         export RESTHEART_VERSION
         if [[ "$RESTHEART_VERSION" ]]; then
             mvn clean verify -DskipITs=false -Dkarate.options="$KARATE_OPS"
-            echo "###### Building Docker image for RESTHeart $RESTHEART_VERSION";
-            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-            docker build -t softinstigate/restheart:$RESTHEART_VERSION . ;
-            if [[ $RESTHEART_VERSION != *-SNAPSHOT ]]; then
-                docker push softinstigate/restheart:$RESTHEART_VERSION;
-            fi
             echo "###### Branch is $TRAVIS_BRANCH";
             if [ "$TRAVIS_BRANCH" == "master" ]; then
+                echo "###### Building Docker image for RESTHeart $RESTHEART_VERSION";
+                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                docker build -t softinstigate/restheart:$RESTHEART_VERSION . ;
+                if [[ $RESTHEART_VERSION != *-SNAPSHOT ]]; then
+                    docker push softinstigate/restheart:$RESTHEART_VERSION;
+                fi
                 echo "###### On master branch. Tagging image softinstigate/restheart:$RESTHEART_VERSION as latest";
                 docker tag softinstigate/restheart:$RESTHEART_VERSION softinstigate/restheart:latest;
                 docker push softinstigate/restheart:latest;
