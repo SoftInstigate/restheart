@@ -24,7 +24,7 @@ This preamble is part of this Agreement.
 1.4. Licensee intends to use as many RESTHeart Instances as allowed by the purchased License Keys.
 1.5. RESTHeart has been chosen and considered suitable by the Licensee according to its needs.
 1.6. The Licensee is aware that the hardware resources used for RESTHeart shall be adapted according to its use and that all the requirements indicated in the Documentation must be met.
-1.7. Definitions. In this Licence, the following terms have the following meaning:
+1.7. Definitions. In this License, the following terms have the following meaning:
    a. RESTHeart instance: any installation of RESTHeart and Derivative Works of RESTHeart capable of being executed as a single process in a production execution environment regardless the used technology, including but not limited to bare metal servers, virtual machines or containers. Installations made for testing or development purposes don’t constitute RESTHeart instances.
    b. License Key: a verifiable file, cryptographically signed by the Licensor, containing additional information on the License (including but not limited to those that specifies how many RESTHeart instances the Licensee is allowed to execute and how) that can purchased by the Licensee in order to acquire the rights to use RESTHeart under the Terms and Conditions defined in this License and in the information contained in the License Key itself.
    c. License Key Activation: the technical process described in the Documentation accompanying the License Keys by which the Licensee accepts the Terms and Conditions of this License according to article 3 and binds the License Key to the allowed RESTHeart Instances.
@@ -40,7 +40,7 @@ This preamble is part of this Agreement.
 2.4. The License grants the Licensee the right to modify RESTHeart or part of it in accordance with the provisions of art. 4, also through authorized third parties.
 
 3. ACCEPTANCE OF THE LICENSE
-The provisions of this Licence are accepted during the License Key Activation process by first checking the two checkboxes "I Accept the Agreement" and "I explicitly accept..." and then clicking on the button "Activate the License Key" placed under the bottom of a window displaying the text of this Licence or by affirming consent in any other similar way, in accordance with the rules of applicable law. Clicking on that button indicates your clear and irrevocable acceptance of this Licence and all of its terms and conditions.
+The provisions of this License are accepted during the License Key Activation process by first checking the two checkboxes "I Accept the Agreement" and "I explicitly accept..." and then clicking on the button "Activate the License Key" placed under the bottom of a window displaying the text of this License or equivalently by specifying the program startup option "ACCEPT_LICENSE_AGREEMENT=true" or by affirming consent in any other similar way, in accordance with the rules of applicable law. The execution of the License Key Activation process indicates your clear and irrevocable acceptance of this License and all of its terms and conditions.
 
 4. USE OF RESTHeart
 4.1. The Licensee holds the right to install and use as many RESTHeart instances (including Derivative Works) as defined in the purchased License Keys, under the conditions established by the Free License with express exemption from the following conditions:
