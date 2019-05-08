@@ -131,6 +131,5 @@ public class GetRootIT extends HttpClientAbstactIT {
 
         assertNotNull("check not null self", links.get("self"));
         assertNotNull("check not null rh:paging", links.get("rh:paging"));
-        assertNotNull("check not null curies", links.get("curies"));
     }
 }

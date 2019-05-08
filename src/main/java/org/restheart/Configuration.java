@@ -36,10 +36,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
+import static org.restheart.ConfigurationKeys.*;
+import static org.restheart.db.DAOUtils.LOGGER;
 import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
@@ -50,497 +51,74 @@ import org.yaml.snakeyaml.Yaml;
  */
 public class Configuration {
     /**
-     * URL pointing to the online documentation specific for this version.
-     */
-    public static final String RESTHEART_ONLINE_DOC_URL = "http://restheart.org/curies/3.0";
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
-
-    /**
-     * default mongo uri mongodb://127.0.0.1
-     */
-    public static final String DEFAULT_MONGO_URI = "mongodb://127.0.0.1";
-    public static final String DEFAULT_ROUTE = "127.0.0.1";
-
-    /**
-     * default ajp host 127.0.0.1.
-     */
-    public static final String DEFAULT_AJP_HOST = DEFAULT_ROUTE;
-
-    /**
-     * default ajp port 8009.
-     */
-    public static final int DEFAULT_AJP_PORT = 8009;
-
-    /**
-     * default http host 127.0.0.1.
-     */
-    public static final String DEFAULT_HTTP_HOST = DEFAULT_ROUTE;
-
-    /**
-     * default http port 8080.
-     */
-    public static final int DEFAULT_HTTP_PORT = 8080;
-
-    /**
-     * default https host 127.0.0.1.
-     */
-    public static final String DEFAULT_HTTPS_HOST = DEFAULT_ROUTE;
-
-    /**
-     * default https port 4443.
-     */
-    public static final int DEFAULT_HTTPS_PORT = 4443;
-
-    /**
-     * default restheart instance name default
-     */
-    public static final String DEFAULT_INSTANCE_NAME = "default";
-
-    /**
-     * default represetation format
-     */
-    public static final REPRESENTATION_FORMAT DEFAULT_REPRESENTATION_FORMAT
-            = REPRESENTATION_FORMAT.SHAL;
-
-    /**
-     * default am implementation class.
-     */
-    public static final String DEFAULT_AM_IMPLEMENTATION_CLASS = null;
-
-    /**
-     * default idm implementation class.
-     */
-    public static final String DEFAULT_IDM_IMPLEMENTATION_CLASS = null;
-
-    /**
-     * default authMechanism implementation class.
-     */
-    public static final String DEFAULT_AUTH_MECHANISM_IMPLEMENTATION_CLASS = null;
-
-    /**
-     * default db etag check policy
-     */
-    public static final ETAG_CHECK_POLICY DEFAULT_DB_ETAG_CHECK_POLICY
-            = ETAG_CHECK_POLICY.REQUIRED_FOR_DELETE;
-
-    /**
-     * default coll etag check policy
-     */
-    public static final ETAG_CHECK_POLICY DEFAULT_COLL_ETAG_CHECK_POLICY
-            = ETAG_CHECK_POLICY.REQUIRED_FOR_DELETE;
-
-    /**
-     * default doc etag check policy
-     */
-    public static final ETAG_CHECK_POLICY DEFAULT_DOC_ETAG_CHECK_POLICY
-            = ETAG_CHECK_POLICY.OPTIONAL;
-
-    /**
-     * default doc etag check policy
-     */
-    public static final int DEFAULT_MAX_DOC_ETAG_CHECK_POLICY = 1000;
-
-    /**
-     * default value for max-pagesize
-     */
-    public static final int DEFAULT_MAX_PAGESIZE = 1000;
-
-    /**
-     * default value for max-pagesize
-     */
-    public static final int DEFAULT_DEFAULT_PAGESIZE = 100;
-
-    /**
-     * default value for cursor batch size
-     */
-    public static final int DEFAULT_CURSOR_BATCH_SIZE = 1000;
-
-    /**
-     * the key for the local-cache-enabled property.
-     */
-    public static final String LOCAL_CACHE_ENABLED_KEY = "local-cache-enabled";
-
-    /**
-     * the key for the local-cache-ttl property.
-     */
-    public static final String LOCAL_CACHE_TTL_KEY = "local-cache-ttl";
-
-    /**
-     * the key for the schema-cache-enabled property.
-     */
-    public static final String SCHEMA_CACHE_ENABLED_KEY = "schema-cache-enabled";
-
-    /**
-     * the key for the schema-cache-ttl property.
-     */
-    public static final String SCHEMA_CACHE_TTL_KEY = "schema-cache-ttl";
-
-    /**
-     * the key for the force-gzip-encoding property.
-     */
-    public static final String FORCE_GZIP_ENCODING_KEY = "force-gzip-encoding";
-
-    /**
-     * the key for the direct-buffers property.
-     */
-    public static final String DIRECT_BUFFERS_KEY = "direct-buffers";
-
-    /**
-     * the key for the buffer-size property.
-     */
-    public static final String BUFFER_SIZE_KEY = "buffer-size";
-
-    /**
-     * the key for the worker-threads property.
-     */
-    public static final String WORKER_THREADS_KEY = "worker-threads";
-
-    /**
-     * the key for the io-threads property.
-     */
-    public static final String IO_THREADS_KEY = "io-threads";
-
-    /**
-     * the key for the requests-limit property.
-     */
-    public static final String REQUESTS_LIMIT_KEY = "requests-limit";
-
-    /**
-     * the key for the query-time-limit property.
-     */
-    public static final String QUERY_TIME_LIMIT_KEY = "query-time-limit";
-
-    /**
-     * the key for the aggregation-time-limit property
-     */
-    private static final String AGGREGATION_TIME_LIMIT_KEY = "aggregation-time-limit";
-
-    /**
-     * The key for enabling check that aggregation variables contains operators.
-     */
-    public static final String AGGREGATION_CHECK_OPERATORS = "aggregation-check-operators";
-
-    /**
-     * the key for the enable-log-file property.
-     */
-    public static final String ENABLE_LOG_FILE_KEY = "enable-log-file";
-
-    /**
-     * the key for the enable-log-console property.
-     */
-    public static final String ENABLE_LOG_CONSOLE_KEY = "enable-log-console";
-
-    /**
-     * the key for the log-level property.
-     */
-    public static final String LOG_LEVEL_KEY = "log-level";
-
-    /**
-     * the key for the log-file-path property.
-     */
-    public static final String LOG_FILE_PATH_KEY = "log-file-path";
-
-    /**
-     * the key for the requests-log-tracing-headers property.
-     */
-    public static final String REQUESTS_LOG_TRACE_HEADERS_KEY = "requests-log-trace-headers";
-
-    /**
-     * the key for the implementation-class property.
-     */
-    public static final String IMPLEMENTATION_CLASS_KEY = "implementation-class";
-
-    /**
-     * the key for the access-manager property.
-     */
-    public static final String ACCESS_MANAGER_KEY = "access-manager";
-
-    /**
-     * the key for the idm property.
-     */
-    public static final String IDM_KEY = "idm";
-
-    /**
-     * the key for the auth Mechanism.
-     */
-    public static final String AUTH_MECHANISM_KEY = "auth-mechanism";
-
-    /**
-     * the key for the mongo-uri property.
-     */
-    public static final String MONGO_URI_KEY = "mongo-uri";
-
-    /**
-     * the key for the mongo-mounts property.
-     */
-    public static final String MONGO_MOUNTS_KEY = "mongo-mounts";
-
-    /**
-     * the key for the what property.
-     */
-    public static final String MONGO_MOUNT_WHAT_KEY = "what";
-
-    /**
-     * the key for the where property.
-     */
-    public static final String MONGO_MOUNT_WHERE_KEY = "where";
-
-    /**
-     * the key for the auth-db property.
-     */
-    public static final String MONGO_AUTH_DB_KEY = "auth-db";
-
-    /**
-     * the key for the password property.
-     */
-    public static final String MONGO_PASSWORD_KEY = "password";
-
-    /**
-     * the key for the user property.
-     */
-    public static final String MONGO_USER_KEY = "user";
-
-    /**
-     * the key for the application-logic-mounts property.
-     */
-    public static final String APPLICATION_LOGIC_MOUNTS_KEY = "application-logic-mounts";
-
-    /**
-     * the key for the application-logic-mounts property.
-     */
-    public static final String METADATA_NAMED_SINGLETONS_KEY = "metadata-named-singletons";
-
-    /**
-     * the key for the args property.
-     */
-    public static final String APPLICATION_LOGIC_MOUNT_ARGS_KEY = "args";
-
-    /**
-     * the key for the what property.
-     */
-    public static final String APPLICATION_LOGIC_MOUNT_WHAT_KEY = "what";
-
-    /**
-     * the key for the where property.
-     */
-    public static final String APPLICATION_LOGIC_MOUNT_WHERE_KEY = "where";
-
-    /**
-     * the key for the static-resources-mounts property.
-     */
-    public static final String STATIC_RESOURCES_MOUNTS_KEY = "static-resources-mounts";
-
-    /**
-     * the key for the what property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_WHAT_KEY = "what";
-
-    /**
-     * the key for the where property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_WHERE_KEY = "where";
-
-    /**
-     * the key for the welcome-file property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY = "welcome-file";
-
-    /**
-     * the key for the embedded property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_EMBEDDED_KEY = "embedded";
-
-    /**
-     * the key for the certpassword property.
-     */
-    public static final String CERT_PASSWORD_KEY = "certpassword";
-
-    /**
-     * the key for the keystore-password property.
-     */
-    public static final String KEYSTORE_PASSWORD_KEY = "keystore-password";
-
-    /**
-     * the key for the keystore-file property.
-     */
-    public static final String KEYSTORE_FILE_KEY = "keystore-file";
-
-    /**
-     * the key for the use-embedded-keystore property.
-     */
-    public static final String USE_EMBEDDED_KEYSTORE_KEY = "use-embedded-keystore";
-
-    /**
-     * the key for the ajp-host property.
-     */
-    public static final String AJP_HOST_KEY = "ajp-host";
-
-    /**
-     * the key for the ajp-port property.
-     */
-    public static final String AJP_PORT_KEY = "ajp-port";
-
-    /**
-     * the key for the ajp-listener property.
-     */
-    public static final String AJP_LISTENER_KEY = "ajp-listener";
-
-    /**
-     * the key for the http-host property.
-     */
-    public static final String HTTP_HOST_KEY = "http-host";
-
-    /**
-     * the key for the http-port property.
-     */
-    public static final String HTTP_PORT_KEY = "http-port";
-
-    /**
-     * the key for http-listener the property.
-     */
-    public static final String HTTP_LISTENER_KEY = "http-listener";
-
-    /**
-     * the key for the https-host property.
-     */
-    private static final String HTTPS_HOST_KEY = "https-host";
-
-    /**
-     * the key for the https-port property.
-     */
-    private static final String HTTPS_PORT_KEY = "https-port";
-
-    /**
-     * the key for the https-listener property.
-     */
-    public static final String HTTPS_LISTENER = "https-listener";
-
-    /**
-     * the key for the instance-name property.
-     */
-    public static final String INSTANCE_NAME_KEY = "instance-name";
-
-    /**
-     * the key for the instance-base-url property.
-     */
-    public static final String INSTANCE_BASE_URL_KEY = "instance-base-url";
-
-    /**
-     * the key for the instance-name property.
-     */
-    public static final String REPRESENTATION_FORMAT_KEY = "default-representation-format";
-
-    /**
-     * the key for the eager-cursor-allocation-pool-size property.
-     */
-    public static final String EAGER_POOL_SIZE = "eager-cursor-allocation-pool-size";
-
-    /**
-     * the key for the eager-cursor-allocation-linear-slice-width property.
-     */
-    public static final String EAGER_LINEAR_SLICE_WIDHT = "eager-cursor-allocation-linear-slice-width";
-
-    /**
-     * the key for the eager-cursor-allocation-linear-slice-delta property.
-     */
-    public static final String EAGER_LINEAR_SLICE_DELTA = "eager-cursor-allocation-linear-slice-delta";
-
-    /**
-     * the key for the eager-cursor-allocation-linear-slice-heights property.
-     */
-    public static final String EAGER_LINEAR_HEIGHTS = "eager-cursor-allocation-linear-slice-heights";
-
-    /**
-     * the key for the eager-cursor-allocation-random-slice-min-width property.
-     */
-    public static final String EAGER_RND_SLICE_MIN_WIDHT = "eager-cursor-allocation-random-slice-min-width";
-
-    /**
-     * the key for the eager-cursor-allocation-random-slice-max-cursors
-     * property.
-     */
-    public static final String EAGER_RND_MAX_CURSORS = "eager-cursor-allocation-random-max-cursors";
-
-    /**
-     * the key for the auth-token-enabled property.
-     */
-    public static final String AUTH_TOKEN_ENABLED = "auth-token-enabled";
-
-    /**
-     * the key for the auth-token-ttl property.
-     */
-    public static final String AUTH_TOKEN_TTL = "auth-token-ttl";
-
-    /**
-     * the key for the etag-check-policy property.
-     */
-    public static final String ETAG_CHECK_POLICY_KEY = "etag-check-policy";
-
-    /**
-     * the key for the etag-check-policy.db property.
-     */
-    public static final String ETAG_CHECK_POLICY_DB_KEY = "db";
-
-    /**
-     * the key for the etag-check-policy.coll property.
-     */
-    public static final String ETAG_CHECK_POLICY_COLL_KEY = "coll";
-
-    /**
-     * the key for the etag-check-policy.doc property.
-     */
-    public static final String ETAG_CHECK_POLICY_DOC_KEY = "doc";
-
-    /**
-     * Force http requests logging even if DEBUG is not set
-     */
-    public static final String LOG_REQUESTS_LEVEL_KEY = "requests-log-level";
-
-    /**
-     * Set metrics gathering level (can be ALL, COLLECTION, DATABASE, ROOT,
-     * OFF), gradually gathering less specific metrics. Every level contain the
-     * upper level as well.
-     */
-    public static final String METRICS_GATHERING_LEVEL_KEY = "metrics-gathering-level";
-
-    /**
-     * The key for enabling the Ansi console (for logging with colors)
-     */
-    public static final String ANSI_CONSOLE_KEY = "ansi-console";
-
-    /**
-     * The key for specifying an initializer class
-     */
-    public static final String INITIALIZER_CLASS_KEY = "initializer-class";
-
-    /**
-     * The key for specifying the max pagesize
-     */
-    public static final String MAX_PAGESIZE_KEY = "max-pagesize";
-
-    /**
-     * The key for specifying the default pagesize
-     */
-    public static final String DEFAULT_PAGESIZE_KEY = "default-pagesize";
-
-    /**
-     * The key for specifying the cursor batch size
-     */
-    public static final String CURSOR_BATCH_SIZE_KEY = "cursor-batch-size";
-
-    /**
-     * The key to allow unescaped chars in URL
-     */
-    public static final String ALLOW_UNESCAPED_CHARACTERS_IN_URL = "allow-unescaped-characters-in-url";
-
-    /**
      * undertow connetction options
      *
      * @see
      * http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
      */
     public static final String CONNECTION_OPTIONS_KEY = "connection-options";
+    
+    private boolean silent = false;
+    private final boolean httpsListener;
+    private final int httpsPort;
+    private final String httpsHost;
+    private final boolean httpListener;
+    private final int httpPort;
+    private final String httpHost;
+    private final boolean ajpListener;
+    private final int ajpPort;
+    private final String ajpHost;
+    private final String instanceName;
+    private final String instanceBaseURL;
+    private final REPRESENTATION_FORMAT defaultRepresentationFormat;
+    private final boolean useEmbeddedKeystore;
+    private final String keystoreFile;
+    private final String keystorePassword;
+    private final String certPassword;
+    private final MongoClientURI mongoUri;
+    private final List<Map<String, Object>> mongoMounts;
+    private final List<Map<String, Object>> staticResourcesMounts;
+    private final List<Map<String, Object>> applicationLogicMounts;
+    private final List<Map<String, Object>> metadataNamedSingletons;
+    private final List<Map<String, Object>> extensions;
+    private final String logFilePath;
+    private final Level logLevel;
+    private final boolean logToConsole;
+    private final boolean logToFile;
+    private final List<String> traceHeaders;
+    private final boolean localCacheEnabled;
+    private final long localCacheTtl;
+    private final boolean schemaCacheEnabled;
+    private final long schemaCacheTtl;
+    private final int requestsLimit;
+    private final int ioThreads;
+    private final int workerThreads;
+    private final int bufferSize;
+    private final boolean directBuffers;
+    private final boolean forceGzipEncoding;
+    private final int eagerPoolSize;
+    private final int eagerLinearSliceWidht;
+    private final int eagerLinearSliceDelta;
+    private final int[] eagerLinearSliceHeights;
+    private final int eagerRndSliceMinWidht;
+    private final int eagerRndMaxCursors;
+    private final boolean authTokenEnabled;
+    private final int authTokenTtl;
+    private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
+    private final ETAG_CHECK_POLICY collEtagCheckPolicy;
+    private final ETAG_CHECK_POLICY docEtagCheckPolicy;
+    private final Map<String, Object> connectionOptions;
+    private final Integer logExchangeDump;
+    private final METRICS_GATHERING_LEVEL metricsGatheringLevel;
+    private final long queryTimeLimit;
+    private final long aggregationTimeLimit;
+    private final boolean aggregationCheckOperators;
+    private final boolean ansiConsole;
+    private final String initializerClass;
+    private final int cursorBatchSize;
+    private final int defaultPagesize;
+    private final int maxPagesize;
+    private final boolean allowUnescapedCharactersInUrl;
 
     @SuppressWarnings("unchecked")
     private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
@@ -587,66 +165,6 @@ public class Configuration {
 
         return ret;
     }
-    private boolean silent = false;
-    private final boolean httpsListener;
-    private final int httpsPort;
-    private final String httpsHost;
-    private final boolean httpListener;
-    private final int httpPort;
-    private final String httpHost;
-    private final boolean ajpListener;
-    private final int ajpPort;
-    private final String ajpHost;
-    private final String instanceName;
-    private final String instanceBaseURL;
-    private final REPRESENTATION_FORMAT defaultRepresentationFormat;
-    private final boolean useEmbeddedKeystore;
-    private final String keystoreFile;
-    private final String keystorePassword;
-    private final String certPassword;
-    private final MongoClientURI mongoUri;
-    private final List<Map<String, Object>> mongoMounts;
-    private final List<Map<String, Object>> staticResourcesMounts;
-    private final List<Map<String, Object>> applicationLogicMounts;
-    private final List<Map<String, Object>> metadataNamedSingletons;
-    private final String logFilePath;
-    private final Level logLevel;
-    private final boolean logToConsole;
-    private final boolean logToFile;
-    private final List<String> traceHeaders;
-    private final boolean localCacheEnabled;
-    private final long localCacheTtl;
-    private final boolean schemaCacheEnabled;
-    private final long schemaCacheTtl;
-    private final int requestsLimit;
-    private final int ioThreads;
-    private final int workerThreads;
-    private final int bufferSize;
-    private final boolean directBuffers;
-    private final boolean forceGzipEncoding;
-    private final int eagerPoolSize;
-    private final int eagerLinearSliceWidht;
-    private final int eagerLinearSliceDelta;
-    private final int[] eagerLinearSliceHeights;
-    private final int eagerRndSliceMinWidht;
-    private final int eagerRndMaxCursors;
-    private final boolean authTokenEnabled;
-    private final int authTokenTtl;
-    private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
-    private final ETAG_CHECK_POLICY collEtagCheckPolicy;
-    private final ETAG_CHECK_POLICY docEtagCheckPolicy;
-    private final Map<String, Object> connectionOptions;
-    private final Integer logExchangeDump;
-    private final METRICS_GATHERING_LEVEL metricsGatheringLevel;
-    private final long queryTimeLimit;
-    private final long aggregationTimeLimit;
-    private final boolean aggregationCheckOperators;
-    private final boolean ansiConsole;
-    private final String initializerClass;
-    private final int cursorBatchSize;
-    private final int defaultPagesize;
-    private final int maxPagesize;
-    private final boolean allowUnescapedCharactersInUrl;
 
     /**
      * the configuration map
@@ -763,6 +281,7 @@ public class Configuration {
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
         metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
+        extensions = getAsListOfMaps(conf, EXTENSIONS_KEY, new ArrayList<>());
 
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
                 URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
@@ -897,7 +416,7 @@ public class Configuration {
         maxPagesize = getAsIntegerOrDefault(conf, MAX_PAGESIZE_KEY,
                 DEFAULT_MAX_PAGESIZE);
 
-        allowUnescapedCharactersInUrl = getAsBooleanOrDefault(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
+        allowUnescapedCharactersInUrl = getAsBooleanOrDefault(conf, ALLOW_UNESCAPED_CHARS_IN_URL, true);
     }
 
     @Override
@@ -925,6 +444,7 @@ public class Configuration {
                 + ", staticResourcesMounts=" + staticResourcesMounts
                 + ", applicationLogicMounts=" + applicationLogicMounts
                 + ", metadataNamedSingletons=" + metadataNamedSingletons
+                + ", extensions=" + extensions
                 + ", logFilePath=" + logFilePath
                 + ", logLevel=" + logLevel
                 + ", logToConsole=" + logToConsole
@@ -1525,6 +1045,13 @@ public class Configuration {
      */
     public List<Map<String, Object>> getMetadataNamedSingletons() {
         return Collections.unmodifiableList(metadataNamedSingletons);
+    }
+    
+    /**
+     * @return the extensions
+     */
+    public List<Map<String, Object>> getExtensions() {
+        return Collections.unmodifiableList(extensions);
     }
 
     /**

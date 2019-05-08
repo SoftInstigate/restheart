@@ -38,7 +38,7 @@ import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import org.restheart.Bootstrapper;
-import org.restheart.Configuration;
+import static org.restheart.ConfigurationKeys.DEFAULT_CURSOR_BATCH_SIZE;
 import static org.restheart.handlers.RequestContext.META_COLLNAME;
 import static org.restheart.handlers.RequestContext.COLL_META_DOCID_PREFIX;
 import org.restheart.utils.HttpStatus;
@@ -59,7 +59,7 @@ class CollectionDAO {
                     ? Bootstrapper
                             .getConfiguration()
                             .getCursorBatchSize()
-                    : Configuration.DEFAULT_CURSOR_BATCH_SIZE;
+                    : DEFAULT_CURSOR_BATCH_SIZE;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
     private static final BsonDocument FIELDS_TO_RETURN;

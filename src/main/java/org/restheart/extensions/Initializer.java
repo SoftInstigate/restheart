@@ -24,10 +24,16 @@ import java.lang.annotation.RetentionPolicy;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@Retention(RetentionPolicy.RUNTIME) 
+@Retention(RetentionPolicy.RUNTIME)
 public @interface Initializer {
+    /**
+     * Defines the name of the initializer that can be used in the configuration
+     * file to pass arguments
+     */
+    String name();
+
     /**
      * Defines the order of execution (less is higher priority)
      */
-    int priority() default 10; 
+    int priority() default 10;
 }

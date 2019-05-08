@@ -22,15 +22,14 @@ import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.http.HttpHost;
 import org.apache.http.client.fluent.Executor;
 import org.restheart.Configuration;
 import org.restheart.ConfigurationException;
+import static org.restheart.ConfigurationKeys.MONGO_URI_KEY;
 import org.restheart.db.MongoDBClientSingleton;
-import org.yaml.snakeyaml.Yaml;
 
 /**
  *
@@ -57,20 +56,20 @@ public abstract class AbstractPT {
             }
         });
 
-        Configuration conf;
-
         StringBuilder ymlSB = new StringBuilder();
 
         if (mongoUri != null) {
-            ymlSB.append(Configuration.MONGO_URI_KEY).append(": ").append(mongoUri).append("\n");
+            ymlSB.append(MONGO_URI_KEY)
+                    .append(": ")
+                    .append(mongoUri)
+                    .append("\n");
         }
 
-        Yaml yaml = new Yaml();
-
-        Map<String, Object> configuration = (Map<String, Object>) yaml.load(ymlSB.toString());
-
         try {
-            MongoDBClientSingleton.init(new Configuration(Paths.get("etc/test/restheart-integrationtest.yml")).getMongoUri());
+            MongoDBClientSingleton.init(new Configuration(
+                    Paths
+                            .get("etc/test/restheart-integrationtest.yml"))
+                    .getMongoUri());
         } catch (ConfigurationException ex) {
             System.exit(-1);
         }
@@ -90,10 +89,12 @@ public abstract class AbstractPT {
                 port = uri.getPort();
                 scheme = uri.getScheme();
             } catch (URISyntaxException ex) {
-                Logger.getLogger(LoadPutPT.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(LoadPutPT.class.getName())
+                        .log(Level.SEVERE, null, ex);
             }
 
-            httpExecutor.authPreemptive(new HttpHost(host, port, scheme)).auth(new HttpHost(host), id, pwd);
+            httpExecutor.authPreemptive(new HttpHost(host, port, scheme))
+                    .auth(new HttpHost(host), id, pwd);
         }
     }
 

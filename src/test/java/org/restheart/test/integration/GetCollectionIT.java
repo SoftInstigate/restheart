@@ -291,7 +291,6 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         }
 
         assertNotNull("check not null rh:paging", links.get("rh:paging"));
-        assertNotNull("check not null curies", links.get("curies"));
     }
 
     @Test

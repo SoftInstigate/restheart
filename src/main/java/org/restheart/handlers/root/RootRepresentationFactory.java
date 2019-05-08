@@ -71,11 +71,6 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
             addPaginationLinks(exchange, context, size, rep);
 
             addLinkTemplates(rep, requestPath);
-
-            //curies
-            rep.addLink(new Link("rh", "curies",
-                    Configuration.RESTHEART_ONLINE_DOC_URL
-                    + "/{rel}.html", true), true);
         }
 
         return rep;

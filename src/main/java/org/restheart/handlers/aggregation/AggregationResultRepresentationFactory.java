@@ -21,13 +21,11 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.restheart.Configuration;
 import org.restheart.representation.AbstractRepresentationFactory;
 import org.restheart.representation.Link;
 import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.HAL_MODE;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -73,11 +71,6 @@ public class AggregationResultRepresentationFactory
             addPaginationLinks(exchange, context, size, rep);
 
             addLinkTemplates(rep, requestPath);
-
-            // curies
-            rep.addLink(new Link("rh", "curies",
-                    Configuration.RESTHEART_ONLINE_DOC_URL
-                    + "/{rel}.html", true), true);
         }
 
         return rep;
