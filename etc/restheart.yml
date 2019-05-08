@@ -138,13 +138,13 @@ application-logic-mounts:
       where: /csv
       
       
-### Extensions
+### Extensions arguments
 
-# 
+# This section allows to pass optional configuration arguments to extensions
 
-extensions:
+extensions-args:
       exampleInitializer:
-          #disabled: !
+          disabled: !
           args:
             message: Example Initializer executed
             log-level: INFO

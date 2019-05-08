@@ -23,8 +23,9 @@ import io.github.classgraph.ScanResult;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.bson.BsonDocument;
 import org.restheart.Bootstrapper;
@@ -42,17 +43,15 @@ public class ExtensionsRegistry {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(ExtensionsRegistry.class);
 
-    private static final Map<String, BsonDocument> confs = new HashMap<>();
-    private static final Map<String, String> descriptions = new HashMap<>();
+    private final Set<ExtensionRecord> initializers = new LinkedHashSet<>();
 
-    private final Map<String, Consumer<BsonDocument>> initializers = new LinkedHashMap<>();
+    private final Map<String, BsonDocument> confs = consumeConfiguration();
 
     private final ScanResult scanResult = new ClassGraph()
             .enableAnnotationInfo()
             .scan();
 
     private ExtensionsRegistry() {
-        consumeConfiguration();
         findInitializers();
     }
 
@@ -68,25 +67,15 @@ public class ExtensionsRegistry {
      *
      * @return the initializers sorted by priority as map(name -> instance)
      */
-    public Map<String, Consumer<BsonDocument>> getInitializers() {
+    public Set<ExtensionRecord> getInitializers() {
         return initializers;
     }
 
-    public String getDescription(String name) {
-        return descriptions.get(name);
-    }
-
-    /**
-     *
-     * @return the configuration of the extension called 'name'
-     */
-    public BsonDocument getConf(String name) {
-        return confs.get(name);
-    }
-
-    private void consumeConfiguration() {
+    private Map<String, BsonDocument> consumeConfiguration() {
         Map<String, Map<String, Object>> extensions = Bootstrapper.getConfiguration()
                 .getExtensions();
+
+        Map<String, BsonDocument> confs = new HashMap<>();
 
         extensions.forEach((name, params) -> {
             if (!params.containsKey(EXTENSION_DISABLED_KEY)) {
@@ -103,6 +92,8 @@ public class ExtensionsRegistry {
                 confs.put(name, args);
             }
         });
+
+        return confs;
     }
 
     /**
@@ -129,36 +120,37 @@ public class ExtensionsRegistry {
             });
 
             for (var ci : cil) {
-                String name = annotationParam(ci, annotationClassName, "name");
-
                 // confs does not contain names of disabled extensions
-                if (confs.containsKey(name)) {
-                    Object i;
+                Object i;
 
-                    try {
-                        i = ci.loadClass(false)
-                                .getConstructor()
-                                .newInstance();
+                try {
+                    i = ci.loadClass(false)
+                            .getConstructor()
+                            .newInstance();
 
-                        if (i instanceof Consumer) {
-                            this.initializers.put(name, (Consumer) i);
-                            this.descriptions.put(name, annotationParam(ci,
-                                    annotationClassName,
-                                    "description"));
-                        } else {
-                            LOGGER.error("Extension class {} annotated with "
-                                    + "@Initializer must implement interface Consumer",
-                                    ci.getName());
-                        }
+                    String name = annotationParam(ci, annotationClassName, "name");
+                    String description = annotationParam(ci, annotationClassName, "description");
 
-                    } catch (InstantiationException
-                            | IllegalAccessException
-                            | InvocationTargetException
-                            | NoSuchMethodException t) {
-                        LOGGER.error("Error instantiating initializer {}",
+                    if (i instanceof Consumer) {
+                        this.initializers.add(new ExtensionRecord(
+                                name,
+                                description,
                                 ci.getName(),
-                                t);
+                                (Consumer) i,
+                                confs.get(name)));
+                    } else {
+                        LOGGER.error("Extension class {} annotated with "
+                                + "@Initializer must implement interface Consumer",
+                                ci.getName());
                     }
+
+                } catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException
+                        | NoSuchMethodException t) {
+                    LOGGER.error("Error instantiating initializer {}",
+                            ci.getName(),
+                            t);
                 }
             }
         }

@@ -531,14 +531,17 @@ public class Bootstrapper {
      * runs the initializers defined with @Initializer annotation
      */
     private static void runInitializers() {
-        var extReg = ExtensionsRegistry.getInstance();
-
-        extReg.getInitializers().forEach((name, initializer) -> {
+        ExtensionsRegistry.
+                getInstance()
+                .getInitializers()
+                .stream()
+                .filter(record -> !record.isDisabled())
+                .forEachOrdered(record -> {
             try {
-                initializer.accept(extReg.getConf(name));
+                record.getInstance().accept(record.getConfArgs());
             } catch (Throwable t) {
                 LOGGER.error("Error executing initializer {}",
-                        initializer.getClass().getName(),
+                        record.getName(),
                         t);
             }
         });
