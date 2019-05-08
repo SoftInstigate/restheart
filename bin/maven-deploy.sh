@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-if [[ "$MAVEN_DEPLOY" == "true" && "$TRAVIS_PULL_REQUEST" == "false" ]];
+if [[ "$MAVEN_DEPLOY" == "true" && "$TRAVIS_PULL_REQUEST" == "false" ]]; then
     RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null);
     export RESTHEART_VERSION
     if [[ "$RESTHEART_VERSION" ]]; then
