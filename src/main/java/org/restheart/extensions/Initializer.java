@@ -31,6 +31,11 @@ public @interface Initializer {
      * file to pass arguments
      */
     String name();
+    
+    /**
+     * Describes the initializer
+     */
+    String description();
 
     /**
      * Defines the order of execution (less is higher priority)

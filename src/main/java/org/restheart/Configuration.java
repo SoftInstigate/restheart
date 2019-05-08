@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -57,7 +58,7 @@ public class Configuration {
      * http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
      */
     public static final String CONNECTION_OPTIONS_KEY = "connection-options";
-    
+
     private boolean silent = false;
     private final boolean httpsListener;
     private final int httpsPort;
@@ -80,7 +81,7 @@ public class Configuration {
     private final List<Map<String, Object>> staticResourcesMounts;
     private final List<Map<String, Object>> applicationLogicMounts;
     private final List<Map<String, Object>> metadataNamedSingletons;
-    private final List<Map<String, Object>> extensions;
+    private final Map<String, Map<String, Object>> extensions;
     private final String logFilePath;
     private final Level logLevel;
     private final boolean logToConsole;
@@ -281,7 +282,7 @@ public class Configuration {
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
         metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
-        extensions = getAsListOfMaps(conf, EXTENSIONS_KEY, new ArrayList<>());
+        extensions = getAsMapOfMaps(conf, EXTENSIONS_KEY, new LinkedHashMap<>());
 
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
                 URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
@@ -548,6 +549,41 @@ public class Configuration {
         } else {
             if (!silent) {
                 LOGGER.debug("parameters group {} not specified in the configuration file.", key);
+            }
+            return defaultVal;
+        }
+    }
+
+    /**
+     *
+     * @param conf
+     * @param key
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, Object>> getAsMapOfMaps(
+            final Map<String, Object> conf,
+            final String key,
+            final Map<String, Map<String, Object>> defaultVal) {
+        if (conf == null) {
+            if (!silent) {
+                LOGGER.debug("parameters {} not specified in the configuration file.", key);
+            }
+            return defaultVal;
+        }
+
+        Object o = conf.get(key);
+
+        if (o instanceof Map) {
+            try {
+                return (Map<String, Map<String, Object>>) o;
+            } catch (Throwable t) {
+                LOGGER.warn("Invalid configuration parameter {}", key);
+                return defaultVal;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.debug("parameters {} not specified in the configuration file.", key);
             }
             return defaultVal;
         }
@@ -1046,12 +1082,12 @@ public class Configuration {
     public List<Map<String, Object>> getMetadataNamedSingletons() {
         return Collections.unmodifiableList(metadataNamedSingletons);
     }
-    
+
     /**
      * @return the extensions
      */
-    public List<Map<String, Object>> getExtensions() {
-        return Collections.unmodifiableList(extensions);
+    public Map<String, Map<String, Object>> getExtensions() {
+        return Collections.unmodifiableMap(extensions);
     }
 
     /**

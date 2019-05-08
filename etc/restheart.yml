@@ -144,9 +144,10 @@ application-logic-mounts:
 
 extensions:
       exampleInitializer:
-          enabled: true
+          #disabled: !
           args:
             message: Example Initializer executed
+            log-level: INFO
 
 ### Metadata Named Singletons
 
