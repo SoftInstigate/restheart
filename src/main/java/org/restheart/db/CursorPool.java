@@ -70,7 +70,7 @@ public class CursorPool {
             = new ThreadPoolExecutor(
                     1, 2,
                     1, TimeUnit.MINUTES,
-                    new ArrayBlockingQueue(1),
+                    new ArrayBlockingQueue<>(1),
                     new ThreadFactoryBuilder()
                             .setDaemon(true)
                             .setNameFormat("cursor-pool-populator-%d")

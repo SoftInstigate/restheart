@@ -1,5 +1,6 @@
 package org.restheart.utils;
 
+import org.restheart.handlers.metrics.MetricsJsonGenerator;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 import java.util.concurrent.TimeUnit;

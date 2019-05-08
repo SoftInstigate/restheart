@@ -61,6 +61,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@SuppressWarnings("unchecked")
 public class LoadGetPT extends AbstractPT {
 
     private boolean printData = false;

@@ -30,7 +30,7 @@ import org.restheart.db.sessions.ClientSessionImpl;
  */
 public class CursorPoolEntryKey {
     private final ClientSession session;
-    private final MongoCollection collection;
+    private final MongoCollection<BsonDocument> collection;
     private final BsonDocument sort;
     private final BsonDocument filter;
     private final BsonDocument keys;
@@ -40,7 +40,7 @@ public class CursorPoolEntryKey {
 
     public CursorPoolEntryKey(
             ClientSession session,
-            MongoCollection collection,
+            MongoCollection<BsonDocument> collection,
             BsonDocument sort,
             BsonDocument filter,
             BsonDocument keys,
@@ -71,7 +71,7 @@ public class CursorPoolEntryKey {
     /**
      * @return the collection
      */
-    public MongoCollection getCollection() {
+    public MongoCollection<BsonDocument> getCollection() {
         return collection;
     }
 

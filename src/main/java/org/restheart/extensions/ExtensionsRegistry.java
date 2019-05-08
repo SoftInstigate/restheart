@@ -41,7 +41,7 @@ public class ExtensionsRegistry {
 
     private final Map<String, BsonValue> confArgs = new HashMap<>();
     
-    private final Set<Consumer> initializers = new LinkedHashSet<>();
+    private final Set<Consumer<BsonValue>> initializers = new LinkedHashSet<>();
     
 
     private final ScanResult scanResult = new ClassGraph()
@@ -64,7 +64,7 @@ public class ExtensionsRegistry {
      *
      * @return the initializers sorted by priority
      */
-    public Set<Consumer> getInitializers() {
+    public Set<Consumer<BsonValue>> getInitializers() {
         return initializers;
     }
     
@@ -79,6 +79,7 @@ public class ExtensionsRegistry {
     /**
      * runs the initializers defined via @Initializer annotation
      */
+    @SuppressWarnings("unchecked")
     private void findInitializers() {
         String annotationClass = "org.restheart.extensions.Initializer";
 

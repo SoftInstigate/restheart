@@ -17,6 +17,7 @@
  */
 package org.restheart.db.sessions;
 
+import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;
 import com.mongodb.client.internal.MongoClientDelegate;
@@ -56,7 +57,7 @@ public class SessionsUtils {
                 MCLIENT);
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"unchecked", "deprecation"})
     public static Cluster getCluster() {
         try {
             Class clazz = Class.forName("com.mongodb.Mongo");
@@ -74,9 +75,11 @@ public class SessionsUtils {
         }
     }
 
+    
+    @SuppressWarnings({"unchecked", "deprecation"})
     public static ServerSessionPool getServerSessionPool() {
         try {
-            Class clazz = Class.forName("com.mongodb.Mongo");
+            Class clazz = Class.<Mongo>forName("com.mongodb.Mongo");
             Method getServerSessionPool = clazz.getDeclaredMethod("getServerSessionPool");
             getServerSessionPool.setAccessible(true);
 
