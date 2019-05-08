@@ -90,6 +90,6 @@ public class Version {
                             }
                         })
                         .findFirst()
-                        .orElse((Instant) Instant.now());
+                        .orElse(Instant.now());
     }
 }

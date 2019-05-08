@@ -1,4 +1,4 @@
-package org.restheart.handlers;
+package org.restheart.handlers.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
@@ -10,6 +10,8 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.db.DatabaseImpl;
+import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
 import org.restheart.utils.SharedMetricRegistryProxy;
 
 /**

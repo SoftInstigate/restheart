@@ -69,6 +69,13 @@ public class SessionOptions {
     }
 
     @Override
+    public int hashCode() {
+        return java.util.Objects.hash(causallyConsistent);
+    }
+    
+    
+
+    @Override
     public String toString() {
         return "SessionOptions(causallyConsistent= "
                 + this.causallyConsistent

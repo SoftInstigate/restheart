@@ -120,7 +120,6 @@ public class FileUtils {
             try (FileWriter fw = new FileWriter(pidFile.toFile())) {
 
                 fw.write(String.valueOf(LIBC.getpid()));
-                fw.close();
             }
         } catch (IOException e) {
             LOGGER.warn("error writing pid file", e);

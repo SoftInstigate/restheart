@@ -72,6 +72,7 @@ import java.util.function.Consumer;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+import org.bson.BsonValue;
 import static org.fusesource.jansi.Ansi.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
@@ -88,7 +89,7 @@ import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.extensions.ExtensionsRegistry;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.GzipEncodingHandler;
-import org.restheart.handlers.MetricsInstrumentationHandler;
+import org.restheart.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -532,7 +533,7 @@ public class Bootstrapper {
     private static void runInitializers() {
         var extReg = ExtensionsRegistry.getInstance();
 
-        for (Consumer initializer : extReg.getInitializers()) {
+        for (Consumer<BsonValue> initializer : extReg.getInitializers()) {
             try {
                 initializer.accept(extReg.getConfArgs(null));
             } catch (Throwable t) {

@@ -1,4 +1,4 @@
-package org.restheart.utils;
+package org.restheart.handlers.metrics;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -27,6 +27,7 @@ import org.bson.BsonValue;
  * at
  * https://github.com/iZettle/dropwizard-metrics/blob/v3.1.2/metrics-json/src/main/java/com/codahale/metrics/json/MetricsModule.java
  */
+@SuppressWarnings("unchecked")
 public class MetricsJsonGenerator {
 
     private static String singular(TimeUnit timeUnit) {

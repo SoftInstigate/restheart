@@ -26,6 +26,7 @@ import org.restheart.cache.Cache;
  *
  * @author mturatti
  */
+@SuppressWarnings("unchecked")
 public class GuavaCacheTest {
 
     public GuavaCacheTest() {

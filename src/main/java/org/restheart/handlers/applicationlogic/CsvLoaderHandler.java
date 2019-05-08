@@ -66,6 +66,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
+@SuppressWarnings("unchecked")
 public class CsvLoaderHandler extends ApplicationLogicHandler {
 
     public static final String CVS_CONTENT_TYPE = "text/csv";
