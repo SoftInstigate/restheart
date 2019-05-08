@@ -51,7 +51,7 @@ import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.handlers.metrics.MetricsJsonGenerator;
 import org.restheart.utils.ResponseHelper;
-import org.restheart.utils.SharedMetricRegistryProxy;
+import org.restheart.handlers.metrics.SharedMetricRegistryProxy;
 
 /**
  * A handler for dropwizard.io metrics that can return both default metrics JSON

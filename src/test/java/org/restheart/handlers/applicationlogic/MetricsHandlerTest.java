@@ -18,7 +18,7 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
 
 import org.restheart.Configuration;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.SharedMetricRegistryProxy;
+import org.restheart.handlers.metrics.SharedMetricRegistryProxy;
 
 public class MetricsHandlerTest {
 
