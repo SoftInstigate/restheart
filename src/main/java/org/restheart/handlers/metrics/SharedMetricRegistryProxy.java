@@ -1,4 +1,4 @@
-package org.restheart.utils;
+package org.restheart.handlers.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;

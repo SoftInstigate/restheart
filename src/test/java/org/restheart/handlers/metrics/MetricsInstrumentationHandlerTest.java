@@ -11,7 +11,6 @@ import static org.mockito.Mockito.*;
 import org.restheart.Configuration;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.SharedMetricRegistryProxy;
 
 public class MetricsInstrumentationHandlerTest {
 

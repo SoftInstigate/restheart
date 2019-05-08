@@ -12,7 +12,6 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.utils.SharedMetricRegistryProxy;
 
 /**
  * Handler to measure calls to restheart. Will only take actions if metrics
