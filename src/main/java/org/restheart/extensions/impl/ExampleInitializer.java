@@ -53,7 +53,7 @@ public class ExampleInitializer implements Consumer<BsonDocument> {
     }
     
     private static Level logLevelArg(BsonDocument confArgs) {
-        Level level = Level.TRACE;
+        Level level = Level.INFO;
         
         if (confArgs != null
                 && confArgs.containsKey("log-level")
@@ -76,7 +76,7 @@ public class ExampleInitializer implements Consumer<BsonDocument> {
                 && confArgs.get("message").isString()) {
             message = confArgs.get("message").asString().getValue();
         } else {
-            throw new IllegalArgumentException("Wrong configureation: "
+            throw new IllegalArgumentException("Wrong configuration: "
                     + "missing 'message' configuration argument");
         }
         

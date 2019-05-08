@@ -282,7 +282,7 @@ public class Configuration {
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
         metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
-        extensions = getAsMapOfMaps(conf, EXTENSIONS_KEY, new LinkedHashMap<>());
+        extensions = getAsMapOfMaps(conf, EXTENSIONS_ARGS_KEY, new LinkedHashMap<>());
 
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
                 URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))

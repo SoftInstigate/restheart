@@ -75,7 +75,7 @@ public interface ConfigurationKeys {
     /**
      * the key for the extensions property.
      */
-    public static final String EXTENSIONS_KEY = "extensions";
+    public static final String EXTENSIONS_ARGS_KEY = "extensions-args";
     
     /**
      * the key for the extension enabled property.
