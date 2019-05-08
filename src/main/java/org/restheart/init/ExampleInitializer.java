@@ -20,18 +20,20 @@ package org.restheart.init;
 import org.restheart.extensions.Initializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.function.Consumer;
+import org.bson.BsonValue;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@Initializer(priority = 1)
-public class ExampleInitializer implements Runnable {
+@Initializer(name = "exampleInitializer", priority = 100)
+public class ExampleInitializer implements Consumer<BsonValue> {
     private static final Logger LOGGER = LoggerFactory
             .getLogger("org.restheart.init.TestExtensionInitializer");
 
     @Override
-    public void run() {
-        LOGGER.trace("TestExtensionInitializer executed!!");
+    public void accept(BsonValue confArgs) {
+        LOGGER.info("TestExtensionInitializer executed!!");
     }
 }

@@ -184,10 +184,6 @@ public class CollectionRepresentationFactory
 
             addPaginationLinks(exchange, context, size, rep);
             addLinkTemplates(context, rep, requestPath);
-
-            // curies
-            rep.addLink(new Link("rh", "curies", Configuration.RESTHEART_ONLINE_DOC_URL
-                    + "/{rel}.html", true), true);
         }
 
         return rep;

@@ -136,6 +136,17 @@ application-logic-mounts:
       where: /ic
     - what: org.restheart.handlers.applicationlogic.CsvLoaderHandler
       where: /csv
+      
+      
+### Extensions
+
+# 
+
+extensions:
+      exampleInitializer:
+          enabled: true
+          args:
+            message: Example Initializer executed
 
 ### Metadata Named Singletons
 
@@ -291,6 +302,7 @@ query-time-limit: {{{query-time-limit}}}
 
 # Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
 aggregation-time-limit: {{{aggregation-time-limit}}}
+
 # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
 io-threads: 2
 

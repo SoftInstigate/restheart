@@ -112,11 +112,6 @@ public class IndexesRepresentationFactory {
             }
 
             rep.addLink(new Link("rh:indexes", requestPath));
-
-            rep.addLink(new Link("rh",
-                    "curies",
-                    Configuration.RESTHEART_ONLINE_DOC_URL
-                    + "/{rel}.html", true), true);
         }
 
         return rep;

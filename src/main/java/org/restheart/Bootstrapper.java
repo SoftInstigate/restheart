@@ -26,9 +26,6 @@ import com.github.mustachejava.MustacheFactory;
 import com.github.mustachejava.MustacheNotFoundException;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ScanResult;
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.pathTemplate;
 import static io.undertow.Handlers.resource;
@@ -66,19 +63,29 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
+import static org.restheart.ConfigurationKeys.APPLICATION_LOGIC_MOUNT_ARGS_KEY;
+import static org.restheart.ConfigurationKeys.APPLICATION_LOGIC_MOUNT_WHAT_KEY;
+import static org.restheart.ConfigurationKeys.APPLICATION_LOGIC_MOUNT_WHERE_KEY;
+import static org.restheart.ConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
+import static org.restheart.ConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
 import org.restheart.db.MongoDBClientSingleton;
+import org.restheart.extensions.ExtensionsRegistry;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.GzipEncodingHandler;
 import org.restheart.handlers.MetricsInstrumentationHandler;
@@ -479,7 +486,7 @@ public class Bootstrapper {
         runConfInitializer();
 
         // run initializer extensions
-        runInitializerExtensions();
+        runInitializers();
 
         LOGGER.info(ansi().fg(GREEN).a("RESTHeart started").reset().toString());
     }
@@ -520,64 +527,18 @@ public class Bootstrapper {
     }
 
     /**
-     * runs the initializers defined via @Initializer annotation
+     * runs the initializers defined with @Initializer annotation
      */
-    private static void runInitializerExtensions() {
-        String annotationClass = "org.restheart.extensions.Initializer";
+    private static void runInitializers() {
+        var extReg = ExtensionsRegistry.getInstance();
 
-        try (ScanResult scanResult = new ClassGraph()
-                .enableAnnotationInfo()
-                .scan()) {
-
-            var cil = scanResult
-                    .getClassesWithAnnotation(annotationClass);
-            
-            // sort @Initializers by priority
-            cil.sort(new Comparator<ClassInfo>() {
-                @Override
-                public int compare(ClassInfo ci1, ClassInfo ci2) {
-                    var ai1 =  (org.restheart.extensions.Initializer) ci1
-                            .getAnnotationInfo(annotationClass)
-                            .loadClassAndInstantiate();
-                    
-                    var ai2 =  (org.restheart.extensions.Initializer) ci2
-                            .getAnnotationInfo(annotationClass)
-                            .loadClassAndInstantiate();
-                    
-                    return Integer.compare(ai1.priority(), ai2.priority());
-                }
-            });
-
-            for (var ci : cil) {
-                Object i;
-
-                try {
-                    i = ci.loadClass(false)
-                            .getConstructor()
-                            .newInstance();
-
-                    if (i instanceof Runnable) {
-                        try {
-                            ((Runnable) i).run();
-                        } catch (Throwable t) {
-                            LOGGER.error("Error executing initializer {}",
-                                    ci.getName(),
-                                    t);
-                        }
-                    } else {
-                        LOGGER.error("Extension class {} annotated with "
-                                + "@Initializer must implement interface Runnable",
-                                ci.getName());
-                    }
-
-                } catch (InstantiationException
-                        | IllegalAccessException
-                        | InvocationTargetException
-                        | NoSuchMethodException t) {
-                    LOGGER.error("Error executing initializer {}",
-                            ci.getName(),
-                            t);
-                }
+        for (Consumer initializer : extReg.getInitializers()) {
+            try {
+                initializer.accept(extReg.getConfArgs(null));
+            } catch (Throwable t) {
+                LOGGER.error("Error executing initializer {}",
+                        initializer.getClass().getName(),
+                        t);
             }
         }
     }
@@ -854,12 +815,12 @@ public class Bootstrapper {
         // check that all mounts are either all paths or all path templates
         boolean allPathTemplates = configuration.getMongoMounts()
                 .stream()
-                .map(m -> (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY))
+                .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
                 .allMatch(url -> isPathTemplate(url));
 
         boolean allPaths = configuration.getMongoMounts()
                 .stream()
-                .map(m -> (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY))
+                .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
                 .allMatch(url -> !isPathTemplate(url));
 
         final PipedHttpHandler baseChain = new MetricsInstrumentationHandler(
@@ -876,8 +837,8 @@ public class Bootstrapper {
                     + " or all path templates");
         } else {
             configuration.getMongoMounts().stream().forEach(m -> {
-                String url = (String) m.get(Configuration.MONGO_MOUNT_WHERE_KEY);
-                String db = (String) m.get(Configuration.MONGO_MOUNT_WHAT_KEY);
+                String url = (String) m.get(MONGO_MOUNT_WHERE_KEY);
+                String db = (String) m.get(MONGO_MOUNT_WHAT_KEY);
 
                 PipedHttpHandler pipe = new RequestContextInjectorHandler(
                         url,
@@ -950,11 +911,11 @@ public class Bootstrapper {
         if (!conf.getStaticResourcesMounts().isEmpty()) {
             conf.getStaticResourcesMounts().stream().forEach(sr -> {
                 try {
-                    String path = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHAT_KEY);
-                    String where = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHERE_KEY);
-                    String welcomeFile = (String) sr.get(Configuration.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY);
+                    String path = (String) sr.get(STATIC_RESOURCES_MOUNT_WHAT_KEY);
+                    String where = (String) sr.get(STATIC_RESOURCES_MOUNT_WHERE_KEY);
+                    String welcomeFile = (String) sr.get(STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY);
 
-                    Boolean embedded = (Boolean) sr.get(Configuration.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY);
+                    Boolean embedded = (Boolean) sr.get(STATIC_RESOURCES_MOUNT_EMBEDDED_KEY);
                     if (embedded == null) {
                         embedded = false;
                     }
@@ -1040,7 +1001,7 @@ public class Bootstrapper {
 
                 } catch (Throwable t) {
                     LOGGER.error("Cannot bind static resources to {}",
-                            sr.get(Configuration.STATIC_RESOURCES_MOUNT_WHERE_KEY), t);
+                            sr.get(STATIC_RESOURCES_MOUNT_WHERE_KEY), t);
                 }
             });
         }
@@ -1061,9 +1022,9 @@ public class Bootstrapper {
         if (!conf.getApplicationLogicMounts().isEmpty()) {
             conf.getApplicationLogicMounts().stream().forEach((Map<String, Object> al) -> {
                 try {
-                    String alClazz = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHAT_KEY);
-                    String alWhere = (String) al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY);
-                    Object alArgs = al.get(Configuration.APPLICATION_LOGIC_MOUNT_ARGS_KEY);
+                    String alClazz = (String) al.get(APPLICATION_LOGIC_MOUNT_WHAT_KEY);
+                    String alWhere = (String) al.get(APPLICATION_LOGIC_MOUNT_WHERE_KEY);
+                    Object alArgs = al.get(APPLICATION_LOGIC_MOUNT_ARGS_KEY);
 
                     if (alWhere == null || !alWhere.startsWith("/")) {
                         LOGGER.error("Cannot pipe application logic handler {}."
@@ -1114,7 +1075,7 @@ public class Bootstrapper {
                         | SecurityException
                         | InvocationTargetException t) {
                     LOGGER.error("Cannot pipe application logic handler {}",
-                            al.get(Configuration.APPLICATION_LOGIC_MOUNT_WHERE_KEY), t);
+                            al.get(APPLICATION_LOGIC_MOUNT_WHERE_KEY), t);
                 }
             }
             );

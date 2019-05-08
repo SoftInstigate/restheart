@@ -98,11 +98,6 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             addSpecialProperties(rep, context.getType(), context.getDbProps());
 
             addLinkTemplates(context, rep, requestPath);
-
-            // curies
-            rep.addLink(new Link("rh", "curies",
-                    Configuration.RESTHEART_ONLINE_DOC_URL
-                    + "/{rel}.html", true), true);
         }
 
         return rep;
@@ -159,10 +154,6 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
         rep.addLink(new Link("rh:paging", requestPath
                 + "{?page}{&pagesize}", true));
-
-        rep.addLink(new Link("rh", "curies",
-                Configuration.RESTHEART_ONLINE_DOC_URL
-                + "/{rel}.html", true), true);
     }
 
     private void embeddedCollections(

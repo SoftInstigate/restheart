@@ -101,7 +101,6 @@ public class GetIndexesIT extends HttpClientAbstactIT {
 
         assertNotNull("check not null self", links.get("self"));
         assertNotNull("check not null rh:coll", links.get("rh:coll"));
-        assertNotNull("check not null curies", links.get("curies"));
 
         assertTrue("check _embedded to be a json object", (json.get("_embedded") instanceof JsonObject));
 
