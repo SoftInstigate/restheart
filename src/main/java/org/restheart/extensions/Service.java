@@ -25,20 +25,20 @@ import java.lang.annotation.RetentionPolicy;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Initializer {
+public @interface Service {
     /**
-     * Defines the name of the initializer that can be used in the configuration
-     * file to pass arguments
+     * Defines the name of the service that can be used in the configuration
+     * file to define the confArgs to pass to it or to disable it
      */
     String name();
     
     /**
-     * Describes the initializer
+     * Describes the service
      */
     String description();
 
     /**
-     * Defines the order of execution (less is higher priority)
+     * Defines the service uri
      */
-    int priority() default 10;
+    String uri();
 }
