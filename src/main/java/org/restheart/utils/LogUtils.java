@@ -15,25 +15,38 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.init;
+package org.restheart.utils;
 
-import org.restheart.extensions.Initializer;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.util.function.Consumer;
-import org.bson.BsonValue;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@Initializer(name = "exampleInitializer", priority = 100)
-public class ExampleInitializer implements Consumer<BsonValue> {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger("org.restheart.init.TestExtensionInitializer");
+public class LogUtils {
+    public static enum Level {
+        TRACE, DEBUG, INFO, WARN, ERROR
+    }
 
-    @Override
-    public void accept(BsonValue confArgs) {
-        LOGGER.info("TestExtensionInitializer executed!!");
+    public static void log(Logger logger, Level level, String format, Object... argArray) {
+        if (logger != null && level != null) {
+            switch (level) {
+                case TRACE:
+                    logger.trace(format, argArray);
+                    break;
+                case DEBUG:
+                    logger.debug(format, argArray);
+                    break;
+                case INFO:
+                    logger.info(format, argArray);
+                    break;
+                case WARN:
+                    logger.warn(format, argArray);
+                    break;
+                case ERROR:
+                    logger.error(format, argArray);
+                    break;
+            }
+        }
     }
 }

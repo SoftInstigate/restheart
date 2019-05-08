@@ -533,15 +533,15 @@ public class Bootstrapper {
     private static void runInitializers() {
         var extReg = ExtensionsRegistry.getInstance();
 
-        for (Consumer<BsonValue> initializer : extReg.getInitializers()) {
+        extReg.getInitializers().forEach((name, initializer) -> {
             try {
-                initializer.accept(extReg.getConfArgs(null));
+                initializer.accept(extReg.getConf(name));
             } catch (Throwable t) {
                 LOGGER.error("Error executing initializer {}",
                         initializer.getClass().getName(),
                         t);
             }
-        }
+        });
     }
 
     private static String getInstanceName() {

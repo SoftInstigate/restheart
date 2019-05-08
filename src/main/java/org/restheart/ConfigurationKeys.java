@@ -80,7 +80,7 @@ public interface ConfigurationKeys {
     /**
      * the key for the extension enabled property.
      */
-    public static final String EXTENSION_ENAMBLED_KEY = "enabled";
+    public static final String EXTENSION_DISABLED_KEY = "disabled";
     
     /**
      * the key for the extension args property.
