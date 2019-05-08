@@ -103,10 +103,10 @@ mongo-mounts:
 # If embedded is true, the resources are either included in the restheart.jar or in the classpath
 
 static-resources-mounts:
-    - what: browser
-      where: /browser
-      welcome-file: browser.html
-      embedded: true
+  - what: browser
+    where: /browser
+    welcome-file: browser.html
+    embedded: true
 
 ### Initializer
 
@@ -128,26 +128,32 @@ static-resources-mounts:
 # CacheInvalidator bound to /_logic/ic that invalidates a db or collection cache entry
 
 application-logic-mounts:
-    - what: org.restheart.handlers.applicationlogic.PingHandler
-      where: /ping
-      args:
-          msg: "ciao from the restheart team"
-    - what: org.restheart.handlers.applicationlogic.CacheInvalidator
-      where: /ic
-    - what: org.restheart.handlers.applicationlogic.CsvLoaderHandler
-      where: /csv
+  - what: org.restheart.handlers.applicationlogic.PingHandler
+    where: /ping
+    args:
+        msg: "ciao from the restheart team"
+  - what: org.restheart.handlers.applicationlogic.CacheInvalidator
+    where: /ic
+  - what: org.restheart.handlers.applicationlogic.CsvLoaderHandler
+    where: /csv
       
-      
-### Extensions arguments
 
-# This section allows to pass optional configuration arguments to extensions
+### Extensions configuration
+
+# It is possible to define an object with the extension's name (as defined in its 
+# annotation) with the following properties:
+# - disabled (optional): if defined will disable the extension (any value will work)
+# - args (optional): the object will be passed to the extension is its confArgs argument
 
 extensions-args:
-      exampleInitializer:
-          disabled: !
-          args:
-            message: Example Initializer executed
-            log-level: INFO
+  exampleInitializer:
+    #disabled: !
+    args:
+      message: Example Initializer executed
+      log-level: INFO
+  pingService:
+    args:
+        msg: "Hello World!"
 
 ### Metadata Named Singletons
 
