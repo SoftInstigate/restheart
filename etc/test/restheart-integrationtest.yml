@@ -121,9 +121,8 @@ static-resources-mounts:
 
 ### Plugins configuration
 
-# The execution method of all plugins accepts the argument 'confArgs'. 
-# Set the value of 'confArgs' defining an object with the same name of the plugin 
-# (as defined in its @Register annotation).
+# All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object 
+# with the same name of the plugin (as defined in its @Register annotation).
 # The special property 'disabled' allows disabling the plugin (any value will work)
 
 plugins-args:
