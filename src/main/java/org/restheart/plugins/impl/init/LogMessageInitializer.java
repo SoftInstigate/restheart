@@ -15,11 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.init;
+package org.restheart.plugins.impl.init;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.bson.BsonDocument;
+import org.restheart.plugins.init.Initializer;
+import org.restheart.plugins.init.RegisterInitializer;
 import org.restheart.utils.LogUtils;
 import org.restheart.utils.LogUtils.Level;
 
