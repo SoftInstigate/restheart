@@ -108,14 +108,6 @@ static-resources-mounts:
     welcome-file: browser.html
     embedded: true
 
-### Initializer
-
-# A custom initializer implmenting the org.restheart.init.Initializer interface
-# Can be used to inizialize data or add global transformers and checkers
-# See org.restheart.init.TestInitializer for a simple example
-
-#initializer-class: org.restheart.init.TestInitializer
-
 #### Application Logic
 
 # RESTHeart has a pipeline architecture where specialized undertow handlers are chained to serve the requests.
@@ -138,22 +130,22 @@ application-logic-mounts:
     where: /csv
       
 
-### Extensions configuration
+### Plugins configuration
 
-# It is possible to define an object with the extension's name (as defined in its 
-# annotation) with the following properties:
-# - disabled (optional): if defined will disable the extension (any value will work)
-# - args (optional): the object will be passed to the extension is its confArgs argument
+# The execution method of all plugins accepts the argument 'confArgs'. 
+# Set the value of 'confArgs' defining an object with the same name of the plugin 
+# (as defined in its @Register annotation).
+# The special property 'disabled' allows disabling the plugin (any value will work)
 
-extensions-args:
-  exampleInitializer:
-    #disabled: !
-    args:
-      message: Example Initializer executed
-      log-level: INFO
+plugins-args:
+  logMessageInitializer:
+    disabled: !
+    message: Hello World!
+    log-level: INFO
+  addBodyToWriteResponsesInitializer:
+    disabled: !
   pingService:
-    args:
-        msg: "Hello World!"
+    msg: Hello World!
 
 ### Metadata Named Singletons
 

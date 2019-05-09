@@ -15,30 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.extensions;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+package org.restheart.plugins;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@Retention(RetentionPolicy.RUNTIME)
-public @interface Service {
-    /**
-     * Defines the name of the service that can be used in the configuration
-     * file to define the confArgs to pass to it or to disable it
-     */
-    String name();
+public interface Plugin {
     
-    /**
-     * Describes the service
-     */
-    String description();
-
-    /**
-     * Defines the service uri
-     */
-    String uri();
 }

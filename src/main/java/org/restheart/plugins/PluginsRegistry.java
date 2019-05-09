@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.extensions;
+package org.restheart.plugins;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
@@ -26,24 +26,23 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import org.bson.BsonDocument;
 import org.restheart.Bootstrapper;
-import static org.restheart.ConfigurationKeys.EXTENSION_ARGS_KEY;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static org.restheart.ConfigurationKeys.EXTENSION_DISABLED_KEY;
+import org.restheart.plugins.init.Initializer;
+import org.restheart.plugins.init.RegisterInitializer;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ExtensionsRegistry {
+public class PluginsRegistry {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(ExtensionsRegistry.class);
+            .getLogger(PluginsRegistry.class);
 
-    private final Set<ExtensionRecord> initializers = new LinkedHashSet<>();
+    private final Set<PluginRecord<Initializer>> initializers = new LinkedHashSet<>();
 
     private final Map<String, BsonDocument> confs = consumeConfiguration();
 
@@ -51,46 +50,42 @@ public class ExtensionsRegistry {
             .enableAnnotationInfo()
             .scan();
 
-    private ExtensionsRegistry() {
+    private PluginsRegistry() {
         findInitializers();
     }
 
-    public static ExtensionsRegistry getInstance() {
+    public static PluginsRegistry getInstance() {
         return ExtensionsRegistryHolder.INSTANCE;
     }
 
     private static class ExtensionsRegistryHolder {
-        private static final ExtensionsRegistry INSTANCE = new ExtensionsRegistry();
+        private static final PluginsRegistry INSTANCE = new PluginsRegistry();
     }
 
     /**
      *
      * @return the initializers sorted by priority as map(name -> instance)
      */
-    public Set<ExtensionRecord> getInitializers() {
+    public Set<PluginRecord<Initializer>> getInitializers() {
         return initializers;
     }
 
     private Map<String, BsonDocument> consumeConfiguration() {
-        Map<String, Map<String, Object>> extensions = Bootstrapper.getConfiguration()
-                .getExtensions();
+        Map<String, Map<String, Object>> pluginsArgs = Bootstrapper
+                .getConfiguration()
+                .getPluginsArgs();
 
         Map<String, BsonDocument> confs = new HashMap<>();
 
-        extensions.forEach((name, params) -> {
-            if (!params.containsKey(EXTENSION_DISABLED_KEY)) {
-
-                BsonDocument args;
-                Object _args = params.get(EXTENSION_ARGS_KEY);
-
-                if (_args instanceof Map) {
-                    args = JsonUtils.toBsonDocument((Map) _args);
-                } else {
-                    args = new BsonDocument();
-                }
-
-                confs.put(name, args);
+        pluginsArgs.forEach((name, params) -> {
+            BsonDocument args;
+            if (params instanceof Map) {
+                args = JsonUtils.toBsonDocument((Map) params);
+            } else {
+                args = new BsonDocument();
             }
+
+            confs.put(name, args);
         });
 
         return confs;
@@ -101,7 +96,7 @@ public class ExtensionsRegistry {
      */
     @SuppressWarnings("unchecked")
     private void findInitializers() {
-        String annotationClassName = "org.restheart.extensions.Initializer";
+        String annotationClassName = RegisterInitializer.class.getName();
 
         try (this.scanResult) {
             var cil = scanResult
@@ -120,7 +115,6 @@ public class ExtensionsRegistry {
             });
 
             for (var ci : cil) {
-                // confs does not contain names of disabled extensions
                 Object i;
 
                 try {
@@ -131,16 +125,16 @@ public class ExtensionsRegistry {
                     String name = annotationParam(ci, annotationClassName, "name");
                     String description = annotationParam(ci, annotationClassName, "description");
 
-                    if (i instanceof Consumer) {
-                        this.initializers.add(new ExtensionRecord(
+                    if (i instanceof Initializer) {
+                        this.initializers.add(new PluginRecord(
                                 name,
                                 description,
                                 ci.getName(),
-                                (Consumer) i,
+                                (Initializer) i,
                                 confs.get(name)));
                     } else {
-                        LOGGER.error("Extension class {} annotated with "
-                                + "@Initializer must implement interface Consumer",
+                        LOGGER.error("Plugin class {} annotated with "
+                                + "@RegisterInitializer must implement interface Initalizer",
                                 ci.getName());
                     }
 
@@ -148,7 +142,7 @@ public class ExtensionsRegistry {
                         | IllegalAccessException
                         | InvocationTargetException
                         | NoSuchMethodException t) {
-                    LOGGER.error("Error instantiating initializer {}",
+                    LOGGER.error("Error registering initializer {}",
                             ci.getName(),
                             t);
                 }

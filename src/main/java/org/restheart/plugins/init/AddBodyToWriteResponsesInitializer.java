@@ -15,9 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.init;
+package org.restheart.plugins.init;
 
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonDocument;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.metadata.ResponseTransformerHandler;
 import org.restheart.metadata.transformers.GlobalTransformer;
@@ -31,13 +32,15 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@SuppressWarnings( "deprecation" )
-@Deprecated
-public class TestInitializer implements Initializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestInitializer.class);
+@RegisterInitializer(
+        name = "addBodyToWriteResponsesInitializer", 
+        priority = 100, 
+        description = "An initializer that plugs a transformer to add a body to write responses with updated and old version of the written document.")
+public class AddBodyToWriteResponsesInitializer implements Initializer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AddBodyToWriteResponsesInitializer.class);
 
     @Override
-    public void init() {
+    public void init(BsonDocument confArgs) {
         ResponseTransformerHandler.getGlobalTransformers().add(
                 new GlobalTransformer(new WriteResultTransformer(),
                         new RequestContextPredicate() {
@@ -54,6 +57,5 @@ public class TestInitializer implements Initializer {
         );
 
         LOGGER.info("Added WriteResultTransformer as global transformer");
-        LOGGER.info("It adds to write requests a response body with new and old document data");
     }
 }

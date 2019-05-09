@@ -15,26 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.extensions;
+package org.restheart.plugins;
 
-import java.util.function.Consumer;
 import org.bson.BsonDocument;
+import org.restheart.ConfigurationKeys;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ExtensionRecord {
+public class PluginRecord<T extends Plugin> {
     private final String name;
     private final String description;
     private final String className;
-    private final Consumer<BsonDocument> instance;
+    private final T instance;
     private final BsonDocument confArgs;
 
-    public ExtensionRecord(String name,
+    public PluginRecord(String name,
             String description,
             String className,
-            Consumer<BsonDocument> instance,
+            T instance,
             BsonDocument confArgs) {
         this.name = name;
         this.description = description;
@@ -70,7 +70,7 @@ public class ExtensionRecord {
     public boolean isDisabled() {
         return getConfArgs() == null 
                 ? false 
-                : getConfArgs().containsKey("disabled");
+                : getConfArgs().containsKey(ConfigurationKeys.PLUGIN_DISABLED_KEY);
     }
 
     /**
@@ -83,7 +83,7 @@ public class ExtensionRecord {
     /**
      * @return the instance
      */
-    public Consumer<BsonDocument> getInstance() {
+    public T getInstance() {
         return instance;
     }
 }

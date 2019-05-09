@@ -15,12 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.extensions.impl;
+package org.restheart.plugins.init;
 
-import org.restheart.extensions.Initializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.function.Consumer;
 import org.bson.BsonDocument;
 import org.restheart.utils.LogUtils;
 import org.restheart.utils.LogUtils.Level;
@@ -29,16 +27,16 @@ import org.restheart.utils.LogUtils.Level;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@Initializer(
-        name = "exampleInitializer", 
+@RegisterInitializer(
+        name = "logMessageInitializer", 
         priority = 100, 
         description = "An initializer that logs the message specified in the configuration file.")
-public class ExampleInitializer implements Consumer<BsonDocument> {
+public class LogMessageInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(ExampleInitializer.class);
+            .getLogger(LogMessageInitializer.class);
 
     @Override
-    public void accept(BsonDocument confArgs) {
+    public void init(BsonDocument confArgs) {
         
         try {
             LogUtils.log(

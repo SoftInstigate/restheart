@@ -68,11 +68,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Consumer;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import org.bson.BsonValue;
 import static org.fusesource.jansi.Ansi.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
@@ -86,7 +84,7 @@ import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WELCOME_FIL
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.extensions.ExtensionsRegistry;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.GzipEncodingHandler;
 import org.restheart.handlers.metrics.MetricsInstrumentationHandler;
@@ -104,7 +102,7 @@ import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
 import org.restheart.handlers.injectors.DbPropsInjectorHandler;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.injectors.RequestContextInjectorHandler;
-import org.restheart.init.Initializer;
+import org.restheart.plugins.init.Initializer;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
@@ -483,62 +481,24 @@ public class Bootstrapper {
             LOGGER.info("Pid file {}", pidFilePath);
         }
 
-        // run initializer defined in configuration
-        runConfInitializer();
-
         // run initializer extensions
         runInitializers();
 
         LOGGER.info(ansi().fg(GREEN).a("RESTHeart started").reset().toString());
     }
 
-    @SuppressWarnings("deprecation")
-    private static void runConfInitializer() {
-        if (configuration.getInitializerClass() != null) {
-            try {
-
-                Object o = Class
-                        .forName(configuration.getInitializerClass())
-                        .getConstructor()
-                        .newInstance();
-
-                if (o instanceof Initializer) {
-                    try {
-                        ((Initializer) o).init();
-                        LOGGER.info(
-                                "initializer {} executed",
-                                configuration.getInitializerClass());
-                    } catch (Throwable t) {
-                        LOGGER.error("Error executing intializer {}",
-                                configuration.getInitializerClass(),
-                                t);
-                    }
-                }
-            } catch (ClassNotFoundException
-                    | InstantiationException
-                    | IllegalAccessException
-                    | InvocationTargetException
-                    | NoSuchMethodException t) {
-                LOGGER.error(
-                        "Wrong configuration for intializer {}",
-                        configuration.getInitializerClass(),
-                        t);
-            }
-        }
-    }
-
     /**
      * runs the initializers defined with @Initializer annotation
      */
     private static void runInitializers() {
-        ExtensionsRegistry.
+        PluginsRegistry.
                 getInstance()
                 .getInitializers()
                 .stream()
                 .filter(record -> !record.isDisabled())
                 .forEachOrdered(record -> {
             try {
-                record.getInstance().accept(record.getConfArgs());
+                record.getInstance().init(record.getConfArgs());
             } catch (Throwable t) {
                 LOGGER.error("Error executing initializer {}",
                         record.getName(),
