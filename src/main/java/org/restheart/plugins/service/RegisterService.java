@@ -37,9 +37,4 @@ public @interface RegisterService {
      * Describes the service
      */
     String description();
-
-    /**
-     * Defines the service uri
-     */
-    String uri();
 }
