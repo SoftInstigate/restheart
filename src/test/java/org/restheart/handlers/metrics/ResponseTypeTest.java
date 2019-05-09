@@ -1,9 +1,9 @@
-package org.restheart.handlers.applicationlogic;
+package org.restheart.handlers.metrics;
 
 import static org.junit.Assert.*;
 import org.junit.Test;
-import org.restheart.handlers.applicationlogic.MetricsHandler.ResponseType;
-import org.restheart.handlers.applicationlogic.MetricsHandler.ResponseType.AcceptHeaderEntry;
+import org.restheart.handlers.metrics.MetricsHandler.ResponseType;
+import org.restheart.handlers.metrics.MetricsHandler.ResponseType.AcceptHeaderEntry;
 
 /**
  * TODO: fillme

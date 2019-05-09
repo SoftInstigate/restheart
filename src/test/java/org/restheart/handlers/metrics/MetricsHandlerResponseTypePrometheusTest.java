@@ -1,5 +1,6 @@
-package org.restheart.handlers.applicationlogic;
+package org.restheart.handlers.metrics;
 
+import org.restheart.handlers.metrics.MetricsHandler;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import org.junit.Before;
