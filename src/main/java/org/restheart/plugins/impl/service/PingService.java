@@ -15,32 +15,37 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.applicationlogic;
+package org.restheart.plugins.impl.service;
 
+import org.restheart.plugins.service.Service;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
-import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
+import org.restheart.plugins.service.RegisterService;
 import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PingHandler extends ApplicationLogicHandler {
+@RegisterService(name = "pingService",
+        description = "Ping service",
+        uri = "/ping")
+public class PingService extends Service {
 
     private final String msg;
 
     /**
      *
-     * @param next
-     * @param args
+     * @param confArgs arguments optionally specified in the configuration file
      */
-    public PingHandler(PipedHttpHandler next, Map<String, Object> args) {
-        super(next, args);
+    public PingService(Map<String, Object> confArgs) {
+        super(confArgs);
 
-        this.msg = (String) args.get("msg");
+        this.msg =  confArgs.containsKey("msg") 
+                ? (String) confArgs.get("msg") 
+                : "ping";
     }
 
     /**

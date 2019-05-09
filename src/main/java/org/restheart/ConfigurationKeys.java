@@ -256,29 +256,9 @@ public interface ConfigurationKeys {
     public static final String MONGO_USER_KEY = "user";
 
     /**
-     * the key for the application-logic-mounts property.
-     */
-    public static final String APPLICATION_LOGIC_MOUNTS_KEY = "application-logic-mounts";
-
-    /**
-     * the key for the application-logic-mounts property.
+     * the key for the  metadata-named-singleton property.
      */
     public static final String METADATA_NAMED_SINGLETONS_KEY = "metadata-named-singletons";
-
-    /**
-     * the key for the args property.
-     */
-    public static final String APPLICATION_LOGIC_MOUNT_ARGS_KEY = "args";
-
-    /**
-     * the key for the what property.
-     */
-    public static final String APPLICATION_LOGIC_MOUNT_WHAT_KEY = "what";
-
-    /**
-     * the key for the where property.
-     */
-    public static final String APPLICATION_LOGIC_MOUNT_WHERE_KEY = "where";
 
     /**
      * the key for the static-resources-mounts property.

@@ -15,16 +15,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.applicationlogic;
+package org.restheart.plugins.impl.service;
 
+import org.restheart.plugins.service.Service;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.Map;
 import org.restheart.Bootstrapper;
-import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.plugins.service.RegisterService;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -32,15 +33,17 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class CacheInvalidator extends ApplicationLogicHandler {
+@RegisterService(name = "cacheInvalidator",
+        description = "Service to invalidate the db and collection metadata cache",
+        uri = "/ci")
+public class CacheInvalidator extends Service {
 
     /**
      *
-     * @param next
-     * @param args
+     * @param confArgs arguments optionally specified in the configuration file
      */
-    public CacheInvalidator(PipedHttpHandler next, Map<String, Object> args) {
-        super(next, args);
+    public CacheInvalidator(Map<String, Object> confArgs) {
+        super(confArgs);
     }
 
     /**

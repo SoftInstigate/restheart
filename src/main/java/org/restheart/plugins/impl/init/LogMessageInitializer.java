@@ -17,6 +17,7 @@
  */
 package org.restheart.plugins.impl.init;
 
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.bson.BsonDocument;
@@ -38,7 +39,7 @@ public class LogMessageInitializer implements Initializer {
             .getLogger(LogMessageInitializer.class);
 
     @Override
-    public void init(BsonDocument confArgs) {
+    public void init(Map<String, Object> confArgs) {
         
         try {
             LogUtils.log(
@@ -52,15 +53,15 @@ public class LogMessageInitializer implements Initializer {
         }
     }
     
-    private static Level logLevelArg(BsonDocument confArgs) {
+    private static Level logLevelArg(Map<String, Object> confArgs) {
         Level level = Level.INFO;
         
         if (confArgs != null
                 && confArgs.containsKey("log-level")
-                && confArgs.get("log-level").isString()) {
+                && confArgs.get("log-level") instanceof String) {
 
             try {
-                level = LogUtils.Level.valueOf(confArgs.get("log-level").asString().getValue());
+                level = LogUtils.Level.valueOf((String)confArgs.get("log-level"));
             } catch (Throwable t) {
             }
         }
@@ -68,13 +69,13 @@ public class LogMessageInitializer implements Initializer {
         return level;
     }
     
-    private static String messageArg(BsonDocument confArgs) throws IllegalArgumentException {
+    private static String messageArg(Map<String, Object> confArgs) throws IllegalArgumentException {
         String message;
         
         if (confArgs != null
                 && confArgs.containsKey("message")
-                && confArgs.get("message").isString()) {
-            message = confArgs.get("message").asString().getValue();
+                && confArgs.get("message")  instanceof String) {
+            message = (String) confArgs.get("message");
         } else {
             throw new IllegalArgumentException("Wrong configuration: "
                     + "missing 'message' configuration argument");

@@ -74,9 +74,6 @@ import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
-import static org.restheart.ConfigurationKeys.APPLICATION_LOGIC_MOUNT_ARGS_KEY;
-import static org.restheart.ConfigurationKeys.APPLICATION_LOGIC_MOUNT_WHAT_KEY;
-import static org.restheart.ConfigurationKeys.APPLICATION_LOGIC_MOUNT_WHERE_KEY;
 import static org.restheart.ConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.ConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY;
@@ -94,7 +91,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestDispatcherHandler;
 import org.restheart.handlers.RequestLoggerHandler;
 import org.restheart.handlers.metrics.TracingInstrumentationHandler;
-import org.restheart.handlers.applicationlogic.ApplicationLogicHandler;
+import org.restheart.plugins.service.Service;
 import org.restheart.handlers.injectors.AccountInjectorHandler;
 import org.restheart.handlers.injectors.BodyInjectorHandler;
 import org.restheart.handlers.injectors.ClientSessionInjectorHandler;
@@ -102,7 +99,6 @@ import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
 import org.restheart.handlers.injectors.DbPropsInjectorHandler;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.injectors.RequestContextInjectorHandler;
-import org.restheart.plugins.init.Initializer;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
@@ -497,14 +493,14 @@ public class Bootstrapper {
                 .stream()
                 .filter(record -> !record.isDisabled())
                 .forEachOrdered(record -> {
-            try {
-                record.getInstance().init(record.getConfArgs());
-            } catch (Throwable t) {
-                LOGGER.error("Error executing initializer {}",
-                        record.getName(),
-                        t);
-            }
-        });
+                    try {
+                        record.getInstance().init(record.getConfArgs());
+                    } catch (Throwable t) {
+                        LOGGER.error("Error executing initializer {}",
+                                record.getName(),
+                                t);
+                    }
+                });
     }
 
     private static String getInstanceName() {
@@ -825,7 +821,7 @@ public class Bootstrapper {
         }
 
         pipeStaticResourcesHandlers(configuration, paths);
-        pipeApplicationLogicHandlers(configuration, paths);
+        pipeServices(configuration, paths);
 
         return buildGracefulShutdownHandler(paths);
     }
@@ -972,78 +968,60 @@ public class Bootstrapper {
     }
 
     /**
-     * pipeApplicationLogicHandlers
+     * pipe services
      *
      * @param conf
      * @param paths
-     * @param authenticationMechanism
-     * @param identityManager
-     * @param accessManager
      */
-    private static void pipeApplicationLogicHandlers(
+    private static void pipeServices(
             final Configuration conf,
             final PathHandler paths) {
-        if (!conf.getApplicationLogicMounts().isEmpty()) {
-            conf.getApplicationLogicMounts().stream().forEach((Map<String, Object> al) -> {
-                try {
-                    String alClazz = (String) al.get(APPLICATION_LOGIC_MOUNT_WHAT_KEY);
-                    String alWhere = (String) al.get(APPLICATION_LOGIC_MOUNT_WHERE_KEY);
-                    Object alArgs = al.get(APPLICATION_LOGIC_MOUNT_ARGS_KEY);
+        PluginsRegistry.getInstance().getServices().stream().forEach(srv -> {
+            var srvConfArgs = srv.getConfArgs();
 
-                    if (alWhere == null || !alWhere.startsWith("/")) {
-                        LOGGER.error("Cannot pipe application logic handler {}."
-                                + " Parameter 'where' must start with /", alWhere);
-                        return;
-                    }
-
-                    if (alArgs != null && !(alArgs instanceof Map)) {
-                        LOGGER.error("Cannot pipe application logic handler {}."
-                                + "Args are not defined as a map. It is a ",
-                                alWhere, alWhere.getClass());
-                        return;
-
-                    }
-
-                    Object o = Class.forName(alClazz)
-                            .getConstructor(PipedHttpHandler.class, Map.class)
-                            .newInstance(null, (Map) alArgs);
-
-                    if (o instanceof ApplicationLogicHandler) {
-                        ApplicationLogicHandler alHandler = (ApplicationLogicHandler) o;
-
-                        PipedHttpHandler handler
-                                = new RequestContextInjectorHandler(
-                                        "/_logic",
-                                        "*",
-                                        conf.getAggregationCheckOperators(),
-                                        new BodyInjectorHandler(alHandler));
-
-                        paths.addPrefixPath("/_logic" + alWhere,
-                                new TracingInstrumentationHandler(
-                                        new RequestLoggerHandler(
-                                                new CORSHandler(
-                                                        handler))));
-                        LOGGER.info("URL {} bound to application logic handler {}.",
-                                "/_logic".concat(alWhere), alClazz);
-                    } else {
-                        LOGGER.error("Cannot pipe application logic handler {}."
-                                + " Class {} does not extend ApplicationLogicHandler",
-                                alWhere, alClazz);
-                    }
-
-                } catch (ClassNotFoundException
-                        | IllegalAccessException
-                        | IllegalArgumentException
-                        | InstantiationException
-                        | NoSuchMethodException
-                        | SecurityException
-                        | InvocationTargetException t) {
-                    LOGGER.error("Cannot pipe application logic handler {}",
-                            al.get(APPLICATION_LOGIC_MOUNT_WHERE_KEY), t);
-                }
+            if (srvConfArgs == null
+                    || !srvConfArgs.containsKey("uri")
+                    || srvConfArgs.get("uri") == null) {
+                LOGGER.error("Cannot start service {}:"
+                        + " the configuration property 'uri' is not defined",
+                        srv.getName());
+                return;
             }
-            );
-        }
+            
+            if (!(srvConfArgs.get("uri") instanceof String)) {
+                LOGGER.error("Cannot start service {}:"
+                        + " the configuration property 'uri' must be a string", 
+                        srv.getName());
+                
+                return;
+            }
+
+            var uri = (String) srvConfArgs.get("uri");
+
+            if (!uri.startsWith("/")) {
+                LOGGER.error("Cannot start service {}:"
+                        + " the configuration property 'uri' must start with /", 
+                        srv.getName(),
+                        uri);
+                
+                return;
+            }
+
+            PipedHttpHandler handler
+                    = new RequestContextInjectorHandler(
+                            "/",
+                            "*",
+                            conf.getAggregationCheckOperators(),
+                            new BodyInjectorHandler(srv.getInstance()));
+
+            paths.addPrefixPath(uri,
+                    new TracingInstrumentationHandler(
+                            new RequestLoggerHandler(
+                                    new CORSHandler(handler))));
+
+            LOGGER.info("URI {} bound to service {}.",
+                    uri, srv.getName());
+        });
     }
 
     /**

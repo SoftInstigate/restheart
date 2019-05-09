@@ -79,7 +79,6 @@ public class Configuration {
     private final MongoClientURI mongoUri;
     private final List<Map<String, Object>> mongoMounts;
     private final List<Map<String, Object>> staticResourcesMounts;
-    private final List<Map<String, Object>> applicationLogicMounts;
     private final List<Map<String, Object>> metadataNamedSingletons;
     private final Map<String, Map<String, Object>> pluginsArgs;
     private final String logFilePath;
@@ -267,8 +266,6 @@ public class Configuration {
 
         mongoMounts = getAsListOfMaps(conf, MONGO_MOUNTS_KEY, mongoMountsDefault);
 
-        applicationLogicMounts = getAsListOfMaps(conf, APPLICATION_LOGIC_MOUNTS_KEY, new ArrayList<>());
-
         HashMap<String, Object> browserStaticResourcesMountArgs = new HashMap<>();
 
         browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHAT_KEY, "browser");
@@ -440,7 +437,6 @@ public class Configuration {
                 + ", mongoUri=" + mongoUri
                 + ", mongoMounts=" + mongoMounts
                 + ", staticResourcesMounts=" + staticResourcesMounts
-                + ", applicationLogicMounts=" + applicationLogicMounts
                 + ", metadataNamedSingletons=" + metadataNamedSingletons
                 + ", plugins-args=" + pluginsArgs
                 + ", logFilePath=" + logFilePath
@@ -1056,13 +1052,6 @@ public class Configuration {
      */
     public boolean getAggregationCheckOperators() {
         return aggregationCheckOperators;
-    }
-
-    /**
-     * @return the applicationLogicMounts
-     */
-    public List<Map<String, Object>> getApplicationLogicMounts() {
-        return Collections.unmodifiableList(applicationLogicMounts);
     }
 
     /**

@@ -17,7 +17,7 @@
  */
 package org.restheart.plugins;
 
-import org.bson.BsonDocument;
+import java.util.Map;
 import org.restheart.ConfigurationKeys;
 
 /**
@@ -29,13 +29,13 @@ public class PluginRecord<T extends Plugin> {
     private final String description;
     private final String className;
     private final T instance;
-    private final BsonDocument confArgs;
+    private final Map<String, Object> confArgs;
 
     public PluginRecord(String name,
             String description,
             String className,
             T instance,
-            BsonDocument confArgs) {
+            Map<String, Object> confArgs) {
         this.name = name;
         this.description = description;
         this.instance = instance;
@@ -76,7 +76,7 @@ public class PluginRecord<T extends Plugin> {
     /**
      * @return the confArgs
      */
-    public BsonDocument getConfArgs() {
+    public Map<String, Object> getConfArgs() {
         return confArgs;
     }
 

@@ -16,9 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Abstract handler to define custom application logic services and some generic
- * example implementations
+ * Implementations of Service
  * 
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.handlers.applicationlogic;
+package org.restheart.plugins.impl.service;
