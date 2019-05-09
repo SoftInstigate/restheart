@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.init;
+package org.restheart.plugins.impl.init;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
@@ -25,6 +25,8 @@ import org.restheart.metadata.transformers.GlobalTransformer;
 import org.restheart.metadata.transformers.RequestTransformer;
 import org.restheart.metadata.transformers.WriteResultTransformer;
 import org.restheart.handlers.RequestContextPredicate;
+import org.restheart.plugins.init.Initializer;
+import org.restheart.plugins.init.RegisterInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
