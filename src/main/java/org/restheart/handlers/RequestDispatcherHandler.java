@@ -24,7 +24,7 @@ import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AggregationTransformer;
 import org.restheart.handlers.aggregation.GetAggregationHandler;
-import org.restheart.handlers.applicationlogic.MetricsHandler;
+import org.restheart.handlers.metrics.MetricsHandler;
 import org.restheart.handlers.bulk.BulkDeleteDocumentsHandler;
 import org.restheart.handlers.bulk.BulkPatchDocumentsHandler;
 import org.restheart.handlers.bulk.BulkPostCollectionHandler;

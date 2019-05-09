@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.applicationlogic;
+package org.restheart.plugins.impl.service;
 
+import org.restheart.plugins.service.Service;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import io.undertow.server.HttpServerExchange;
@@ -43,14 +44,15 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.metadata.transformers.Transformer;
+import org.restheart.plugins.service.RegisterService;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * application logic handler to upload a csv file in a collection query
- * parameters:<br>
+ * service to upload a csv file in a collection<br>
+ * query parameters:<br>
  * - db=&lt;db_name&gt; *required<br>
  * - coll=&lt;collection_name&gt; *required<br>
  * - id=&lt;id_column_index&gt; optional (default: no _id column, each row will
@@ -67,14 +69,17 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @SuppressWarnings("unchecked")
-public class CsvLoaderHandler extends ApplicationLogicHandler {
+@RegisterService(name = "csvLoader",
+        description = "Service to upload a csv file in a collection",
+        uri = "/csv")
+public class CsvLoader extends Service {
 
     public static final String CVS_CONTENT_TYPE = "text/csv";
 
     public static final String FILTER_PROPERTY = "_filter";
 
     private static final Logger LOGGER
-            = LoggerFactory.getLogger(CsvLoaderHandler.class);
+            = LoggerFactory.getLogger(CsvLoader.class);
 
     private static final BsonString ERROR_QPARAM = new BsonString(
             "query parameters: "
@@ -106,11 +111,10 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
     /**
      * Creates a new instance of CsvLoaderHandler
      *
-     * @param next
-     * @param args
+     * @param confArgs arguments optionally specified in the configuration file
      */
-    public CsvLoaderHandler(PipedHttpHandler next, Map<String, Object> args) {
-        super(next, args);
+    public CsvLoader(Map<String, Object> confArgs) {
+        super(confArgs);
     }
 
     @Override
@@ -210,8 +214,6 @@ public class CsvLoaderHandler extends ApplicationLogicHandler {
                         .send(getError(
                                 HttpStatus.SC_NOT_IMPLEMENTED,
                                 ERROR_WRONG_METHOD));
-
-                exchange.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
             }
 
             exchange.endExchange();

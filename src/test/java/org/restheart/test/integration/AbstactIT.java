@@ -163,7 +163,7 @@ public abstract class AbstactIT {
         // clear cache
         deleted.stream().forEach(db -> {
             try {
-                HttpResponse resp = Unirest.post(HTTP_HOST.toURI() + "/_logic/ic")
+                HttpResponse resp = Unirest.post(HTTP_HOST.toURI() + "/ic")
                         .basicAuth(ADMIN_ID, ADMIN_PWD)
                         .queryString("db", db)
                         .asJson();

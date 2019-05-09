@@ -18,7 +18,7 @@
 package org.restheart.plugins.impl.init;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
+import java.util.Map;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.metadata.ResponseTransformerHandler;
 import org.restheart.metadata.transformers.GlobalTransformer;
@@ -42,7 +42,7 @@ public class AddBodyToWriteResponsesInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(AddBodyToWriteResponsesInitializer.class);
 
     @Override
-    public void init(BsonDocument confArgs) {
+    public void init(Map<String, Object> confArgs) {
         ResponseTransformerHandler.getGlobalTransformers().add(
                 new GlobalTransformer(new WriteResultTransformer(),
                         new RequestContextPredicate() {

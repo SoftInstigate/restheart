@@ -119,27 +119,6 @@ static-resources-mounts:
       welcome-file: browser.html
       embedded: true
 
-#### Application Logic
-
-# RESTHeart has a pipeline architecture where specialized undertow handlers are chained to serve the requests.
-# In order to provide additional application logic, custom hanlders pipes can be bound under the /_logic URL.
-# The custom hanlder must extends the org.restheart.handlers.ApplicationLogicHandler class
-# Use application-logic-mounts to configure custom handlers.
-
-# In the following example two built-in application logic handlers are defined:
-# PingHandler bound to /_logic/ping that implements a simple ping service
-# CacheInvalidator bound to /_logic/ic that invalidates a db or collection cache entry
-
-application-logic-mounts:
-    - what: org.restheart.handlers.applicationlogic.PingHandler
-      where: /ping
-      args:
-          msg: "ciao from the restheart team"
-    - what: org.restheart.handlers.applicationlogic.CacheInvalidator
-      where: /ic
-    - what: org.restheart.handlers.applicationlogic.CsvLoaderHandler
-      where: /csv
-
 ### Plugins configuration
 
 # The execution method of all plugins accepts the argument 'confArgs'. 
@@ -150,8 +129,17 @@ application-logic-mounts:
 plugins-args:
   logMessageInitializer:
     disabled: !
+    message: Hello World!
+    log-level: INFO
   addBodyToWriteResponsesInitializer:
     disabled: !
+  pingService:
+    uri: /ping
+    msg: Hello World!
+  cacheInvalidator:
+    uri: /ic
+  csvLoader:
+    uri: /csv
 
 ### Metadata Named Singletons
 

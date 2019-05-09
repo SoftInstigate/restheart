@@ -15,19 +15,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.init;
+package org.restheart.plugins.service;
 
 import java.util.Map;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.plugins.Plugin;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Initializer extends Plugin {
+public abstract class Service extends PipedHttpHandler implements Plugin {
+
     /**
-     * 
+     * The configuration properties passed to this handler.
+     */
+    protected final Map<String, Object> confArgs;
+
+    /**
+     * Creates a new instance of the Service
+     *
      * @param confArgs arguments optionally specified in the configuration file
      */
-    void init(Map<String, Object> confArgs);
+    public Service(Map<String, Object> confArgs) {
+        super();
+        this.confArgs = confArgs;
+    }
 }

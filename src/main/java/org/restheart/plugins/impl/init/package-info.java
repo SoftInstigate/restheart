@@ -15,30 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.applicationlogic;
-
-import java.util.Map;
-import org.restheart.handlers.PipedHttpHandler;
-
 /**
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * Implementations of Initializer
+ * 
+* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public abstract class ApplicationLogicHandler extends PipedHttpHandler {
-
-    /**
-     * The configuration properties passed to this handler.
-     */
-    protected final Map<String, Object> args;
-
-    /**
-     * Creates a new instance of the ApplicationLogicHandler
-     *
-     * @param next
-     * @param args
-     */
-    public ApplicationLogicHandler(PipedHttpHandler next, Map<String, Object> args) {
-        super(next);
-        this.args = args;
-    }
-}
+package org.restheart.plugins.impl.init;

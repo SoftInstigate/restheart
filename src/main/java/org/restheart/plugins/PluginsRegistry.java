@@ -19,20 +19,19 @@ package org.restheart.plugins;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ScanResult;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import org.bson.BsonDocument;
 import org.restheart.Bootstrapper;
-import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.restheart.plugins.init.Initializer;
 import org.restheart.plugins.init.RegisterInitializer;
+import org.restheart.plugins.service.RegisterService;
+import org.restheart.plugins.service.Service;
 
 /**
  *
@@ -44,14 +43,13 @@ public class PluginsRegistry {
 
     private final Set<PluginRecord<Initializer>> initializers = new LinkedHashSet<>();
 
-    private final Map<String, BsonDocument> confs = consumeConfiguration();
+    private final Set<PluginRecord<Service>> services = new LinkedHashSet<>();
 
-    private final ScanResult scanResult = new ClassGraph()
-            .enableAnnotationInfo()
-            .scan();
+    private final Map<String, Map<String, Object>> confs = consumeConfiguration();
 
     private PluginsRegistry() {
         findInitializers();
+        findServices();
     }
 
     public static PluginsRegistry getInstance() {
@@ -64,41 +62,47 @@ public class PluginsRegistry {
 
     /**
      *
-     * @return the initializers sorted by priority as map(name -> instance)
+     * @return the initializers sorted by priority
      */
     public Set<PluginRecord<Initializer>> getInitializers() {
         return initializers;
     }
 
-    private Map<String, BsonDocument> consumeConfiguration() {
+    /**
+     * @return the services
+     */
+    public Set<PluginRecord<Service>> getServices() {
+        return services;
+    }
+
+    private Map<String, Map<String, Object>> consumeConfiguration() {
         Map<String, Map<String, Object>> pluginsArgs = Bootstrapper
                 .getConfiguration()
                 .getPluginsArgs();
 
-        Map<String, BsonDocument> confs = new HashMap<>();
+        Map<String, Map<String, Object>> confs = new HashMap<>();
 
         pluginsArgs.forEach((name, params) -> {
-            BsonDocument args;
             if (params instanceof Map) {
-                args = JsonUtils.toBsonDocument((Map) params);
+                confs.put(name, (Map) params);
             } else {
-                args = new BsonDocument();
+                confs.put(name, new HashMap<>());
             }
-
-            confs.put(name, args);
         });
 
         return confs;
     }
 
     /**
-     * runs the initializers defined via @Initializer annotation
+     * finds the initializers defined via @RegisterInitializer annotation
      */
     @SuppressWarnings("unchecked")
     private void findInitializers() {
         String annotationClassName = RegisterInitializer.class.getName();
 
-        try (this.scanResult) {
+        try (var scanResult = new ClassGraph()
+                .enableAnnotationInfo()
+                .scan()) {
             var cil = scanResult
                     .getClassesWithAnnotation(annotationClassName);
 
@@ -143,6 +147,65 @@ public class PluginsRegistry {
                         | InvocationTargetException
                         | NoSuchMethodException t) {
                     LOGGER.error("Error registering initializer {}",
+                            ci.getName(),
+                            t);
+                }
+            }
+        }
+    }
+
+    /**
+     * finds the service defined via @RegisterServic annoetation
+     */
+    @SuppressWarnings("unchecked")
+    private void findServices() {
+        String annotationClassName = RegisterService.class.getName();
+
+        try (var scanResult = new ClassGraph()
+                .enableAnnotationInfo()
+                .scan()) {
+            var cil = scanResult
+                    .getClassesWithAnnotation(annotationClassName);
+
+            for (var ci : cil) {
+                Object srv;
+
+                try {
+                    String name = annotationParam(ci,
+                            annotationClassName,
+                            "name");
+
+                    String description = annotationParam(ci,
+                            annotationClassName,
+                            "description");
+
+                    srv = ci.loadClass(false)
+                            .getConstructor(Map.class)
+                            .newInstance(confs.get(name));
+
+                    if (srv instanceof Service) {
+                        this.services.add(
+                                new PluginRecord(
+                                        name,
+                                        description,
+                                        ci.getName(),
+                                        (Service) srv,
+                                        confs.get(name)));
+                    } else {
+                        LOGGER.error("Plugin class {} annotated with "
+                                + "@RegisterService must extend abstract class Service",
+                                ci.getName());
+                    }
+
+                } catch (NoSuchMethodException nsme) {
+                    LOGGER.error("Plugin class {} annotated with "
+                            + "@RegisterService must have a constructor "
+                            + "with single argument of type Map<String, Object>",
+                            ci.getName());
+                } catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException t) {
+                    LOGGER.error("Error registering service {}",
                             ci.getName(),
                             t);
                 }
