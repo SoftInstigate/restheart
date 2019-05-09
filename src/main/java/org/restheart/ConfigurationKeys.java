@@ -73,19 +73,14 @@ public interface ConfigurationKeys {
             = Resource.REPRESENTATION_FORMAT.SHAL;
 
     /**
-     * the key for the extensions property.
+     * the key for the pluging-args property.
      */
-    public static final String EXTENSIONS_ARGS_KEY = "extensions-args";
+    public static final String PLUGINS_ARGS_KEY = "plugins-args";
     
     /**
-     * the key for the extension enabled property.
+     * the key for the plugin disabled property.
      */
-    public static final String EXTENSION_DISABLED_KEY = "disabled";
-    
-    /**
-     * the key for the extension args property.
-     */
-    public static final String EXTENSION_ARGS_KEY = "args";
+    public static final String PLUGIN_DISABLED_KEY = "disabled";
     
     /**
      * default db etag check policy
@@ -467,11 +462,6 @@ public interface ConfigurationKeys {
      * The key for enabling the Ansi console (for logging with colors)
      */
     public static final String ANSI_CONSOLE_KEY = "ansi-console";
-
-    /**
-     * The key for specifying an initializer class
-     */
-    public static final String INITIALIZER_CLASS_KEY = "initializer-class";
 
     /**
      * The key for specifying the max pagesize

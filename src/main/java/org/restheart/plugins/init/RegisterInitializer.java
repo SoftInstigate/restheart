@@ -15,13 +15,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.init;
+package org.restheart.plugins.init;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 /**
- *
+ * Annotation to register an Initializer
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@Deprecated
-public interface Initializer {
-    public void init();
+@Retention(RetentionPolicy.RUNTIME)
+public @interface RegisterInitializer {
+    /**
+     * Defines the name of the initializer that can be used in the configuration
+     * file to pass arguments
+     */
+    String name();
+    
+    /**
+     * Describes the initializer
+     */
+    String description();
+
+    /**
+     * Defines the order of execution (less is higher priority)
+     */
+    int priority() default 10;
 }

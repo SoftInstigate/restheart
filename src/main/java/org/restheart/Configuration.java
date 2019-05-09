@@ -81,7 +81,7 @@ public class Configuration {
     private final List<Map<String, Object>> staticResourcesMounts;
     private final List<Map<String, Object>> applicationLogicMounts;
     private final List<Map<String, Object>> metadataNamedSingletons;
-    private final Map<String, Map<String, Object>> extensions;
+    private final Map<String, Map<String, Object>> pluginsArgs;
     private final String logFilePath;
     private final Level logLevel;
     private final boolean logToConsole;
@@ -115,7 +115,6 @@ public class Configuration {
     private final long aggregationTimeLimit;
     private final boolean aggregationCheckOperators;
     private final boolean ansiConsole;
-    private final String initializerClass;
     private final int cursorBatchSize;
     private final int defaultPagesize;
     private final int maxPagesize;
@@ -282,7 +281,7 @@ public class Configuration {
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
         metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
-        extensions = getAsMapOfMaps(conf, EXTENSIONS_ARGS_KEY, new LinkedHashMap<>());
+        pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
 
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
                 URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
@@ -406,8 +405,6 @@ public class Configuration {
 
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY, Maps.newHashMap());
 
-        initializerClass = getAsStringOrDefault(conf, INITIALIZER_CLASS_KEY, null);
-
         cursorBatchSize = getAsIntegerOrDefault(conf, CURSOR_BATCH_SIZE_KEY,
                 DEFAULT_CURSOR_BATCH_SIZE);
 
@@ -445,7 +442,7 @@ public class Configuration {
                 + ", staticResourcesMounts=" + staticResourcesMounts
                 + ", applicationLogicMounts=" + applicationLogicMounts
                 + ", metadataNamedSingletons=" + metadataNamedSingletons
-                + ", extensions=" + extensions
+                + ", plugins-args=" + pluginsArgs
                 + ", logFilePath=" + logFilePath
                 + ", logLevel=" + logLevel
                 + ", logToConsole=" + logToConsole
@@ -479,7 +476,6 @@ public class Configuration {
                 + ", aggregationTimeLimit=" + aggregationTimeLimit
                 + ", aggregationCheckOperators=" + aggregationCheckOperators
                 + ", ansiConsole=" + ansiConsole
-                + ", initializerClass=" + initializerClass
                 + ", cursorBatchSize=" + cursorBatchSize
                 + ", defaultPagesize=" + defaultPagesize
                 + ", maxPagesize=" + maxPagesize
@@ -1084,10 +1080,10 @@ public class Configuration {
     }
 
     /**
-     * @return the extensions
+     * @return the pluginsArgs
      */
-    public Map<String, Map<String, Object>> getExtensions() {
-        return Collections.unmodifiableMap(extensions);
+    public Map<String, Map<String, Object>> getPluginsArgs() {
+        return Collections.unmodifiableMap(pluginsArgs);
     }
 
     /**
@@ -1246,14 +1242,6 @@ public class Configuration {
      */
     public boolean gatheringAboveOrEqualToLevel(METRICS_GATHERING_LEVEL level) {
         return getMetricsGatheringLevel().compareTo(level) >= 0;
-    }
-
-    /**
-     * @return the initializerClass
-     */
-    @Deprecated
-    public String getInitializerClass() {
-        return initializerClass;
     }
 
     /**
