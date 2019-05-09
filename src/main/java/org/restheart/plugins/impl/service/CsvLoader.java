@@ -70,8 +70,7 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("unchecked")
 @RegisterService(name = "csvLoader",
-        description = "Service to upload a csv file in a collection",
-        uri = "/csv")
+        description = "Service to upload a csv file in a collection")
 public class CsvLoader extends Service {
 
     public static final String CVS_CONTENT_TYPE = "text/csv";

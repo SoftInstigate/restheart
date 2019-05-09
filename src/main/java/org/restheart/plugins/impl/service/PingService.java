@@ -30,8 +30,7 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterService(name = "pingService",
-        description = "Ping service",
-        uri = "/ping")
+        description = "Ping service")
 public class PingService extends Service {
 
     private final String msg;
