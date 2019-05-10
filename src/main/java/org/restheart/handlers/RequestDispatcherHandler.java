@@ -66,7 +66,7 @@ import org.restheart.handlers.transformers.MetaRequestTransformer;
 import org.restheart.handlers.transformers.SizeRequestTransformer;
 import org.restheart.handlers.transformers.RepresentationTransformer;
 import org.restheart.handlers.sessions.PostSessionHandler;
-import org.restheart.metadata.RequestTransformer.PHASE;
+import org.restheart.metadata.TransformerMetadata.PHASE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;

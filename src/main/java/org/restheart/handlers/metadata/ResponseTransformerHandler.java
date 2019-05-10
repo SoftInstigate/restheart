@@ -23,9 +23,9 @@ import java.util.NoSuchElementException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.plugins.GlobalTransformer;
-import org.restheart.metadata.RequestTransformer;
-import org.restheart.metadata.RequestTransformer.PHASE;
-import org.restheart.metadata.RequestTransformer.SCOPE;
+import org.restheart.metadata.TransformerMetadata;
+import org.restheart.metadata.TransformerMetadata.PHASE;
+import org.restheart.metadata.TransformerMetadata.SCOPE;
 import org.restheart.plugins.PluginsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +86,7 @@ public class ResponseTransformerHandler
                 || context.isSchema())
                 && context.getCollectionProps() != null
                 && context.getCollectionProps()
-                        .containsKey(RequestTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(TransformerMetadata.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -105,7 +105,7 @@ public class ResponseTransformerHandler
                 || context.isSchema())
                 && context.getDbProps() != null
                 && context.getDbProps()
-                        .containsKey(RequestTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(TransformerMetadata.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -114,7 +114,7 @@ public class ResponseTransformerHandler
         getGlobalTransformers().stream()
                 .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
                 .forEachOrdered(gt -> {
-                    if (gt.getScope() == RequestTransformer.SCOPE.THIS) {
+                    if (gt.getScope() == TransformerMetadata.SCOPE.THIS) {
                         gt.transform(
                                 exchange,
                                 context,
@@ -142,7 +142,7 @@ public class ResponseTransformerHandler
     void applyTransformLogic(
             HttpServerExchange exchange,
             RequestContext context,
-            List<RequestTransformer> rts)
+            List<TransformerMetadata> rts)
             throws InvalidMetadataException {
         // execute request transformers
         rts.stream()

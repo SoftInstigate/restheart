@@ -23,7 +23,7 @@ import java.util.List;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.metadata.RequestTransformer;
+import org.restheart.metadata.TransformerMetadata;
 import org.restheart.plugins.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ public class TransformersListHandler extends PipedHttpHandler {
             = LoggerFactory.getLogger(TransformersListHandler.class);
 
     private final List<Transformer> transformers;
-    private final RequestTransformer.PHASE phase;
+    private final TransformerMetadata.PHASE phase;
 
     /**
      * Creates a new instance of TransformerHandler
@@ -51,7 +51,7 @@ public class TransformersListHandler extends PipedHttpHandler {
      */
     public TransformersListHandler(
             PipedHttpHandler next,
-            RequestTransformer.PHASE phase,
+            TransformerMetadata.PHASE phase,
             Transformer... transformers) {
         super(next);
 
@@ -84,7 +84,7 @@ public class TransformersListHandler extends PipedHttpHandler {
             throws InvalidMetadataException {
         BsonValue data;
 
-        if (this.phase == RequestTransformer.PHASE.REQUEST) {
+        if (this.phase == TransformerMetadata.PHASE.REQUEST) {
             data = context.getContent();
         } else {
             data = context.getResponseContent();

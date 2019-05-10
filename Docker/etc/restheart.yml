@@ -149,15 +149,6 @@ metadata-named-singletons:
         - name: checkContentSize
           class: org.restheart.metadata.checkers.ContentSizeChecker
 
-    # hooks group used by handler:
-    # org.restheart.handlers.metadata.HookHandler
-    # More information in hook javadoc
-    - group: hooks
-      interface: org.restheart.metadata.hooks.Hook
-      singletons:
-        - name: snooper
-          class: org.restheart.metadata.hooks.SnooperHook
-
 ### Security
 
 # Check if aggregation variables use operators. allowing operators in aggregation variables 

@@ -22,7 +22,7 @@ import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContextPredicate;
-import org.restheart.metadata.RequestTransformer;
+import org.restheart.metadata.TransformerMetadata;
 
 /**
  * wraps a transformer with args and confArgs to be added as a global
@@ -33,8 +33,8 @@ import org.restheart.metadata.RequestTransformer;
 public class GlobalTransformer {
     private final Transformer transformer;
     private final RequestContextPredicate predicate;
-    private final RequestTransformer.PHASE phase;
-    private final RequestTransformer.SCOPE scope;
+    private final TransformerMetadata.PHASE phase;
+    private final TransformerMetadata.SCOPE scope;
     private final BsonValue args;
     private final BsonValue confArgs;
 
@@ -50,8 +50,8 @@ public class GlobalTransformer {
      */
     public GlobalTransformer(Transformer transformer,
             RequestContextPredicate predicate,
-            RequestTransformer.PHASE phase,
-            RequestTransformer.SCOPE scope,
+            TransformerMetadata.PHASE phase,
+            TransformerMetadata.SCOPE scope,
             BsonValue args,
             BsonValue confArgs) {
         this.transformer = transformer;
@@ -82,14 +82,14 @@ public class GlobalTransformer {
     /**
      * @return the phase
      */
-    public RequestTransformer.PHASE getPhase() {
+    public TransformerMetadata.PHASE getPhase() {
         return phase;
     }
 
     /**
      * @return the scope
      */
-    public RequestTransformer.SCOPE getScope() {
+    public TransformerMetadata.SCOPE getScope() {
         return scope;
     }
 

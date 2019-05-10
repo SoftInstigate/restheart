@@ -27,7 +27,7 @@ import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.plugins.GlobalTransformer;
-import org.restheart.metadata.RequestTransformer;
+import org.restheart.metadata.TransformerMetadata;
 import org.restheart.plugins.Transformer;
 
 /**
@@ -95,14 +95,14 @@ public abstract class TransformerHandler extends PipedHttpHandler {
 
     abstract void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context);
 
-    abstract void applyTransformLogic(HttpServerExchange exchange, RequestContext context, List<RequestTransformer> dbRts) throws InvalidMetadataException;
+    abstract void applyTransformLogic(HttpServerExchange exchange, RequestContext context, List<TransformerMetadata> dbRts) throws InvalidMetadataException;
 
     void applyDbTransformer(
             HttpServerExchange exchange,
             RequestContext context)
             throws InvalidMetadataException {
-        List<RequestTransformer> dbRts
-                = RequestTransformer
+        List<TransformerMetadata> dbRts
+                = TransformerMetadata
                         .getFromJson(context.getDbProps());
 
         applyTransformLogic(exchange, context, dbRts);
@@ -112,8 +112,8 @@ public abstract class TransformerHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws InvalidMetadataException {
-        List<RequestTransformer> collRts
-                = RequestTransformer
+        List<TransformerMetadata> collRts
+                = TransformerMetadata
                         .getFromJson(context.getCollectionProps());
 
         applyTransformLogic(exchange, context, collRts);
