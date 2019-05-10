@@ -28,10 +28,6 @@ import java.util.Set;
 import org.restheart.Bootstrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.plugins.init.Initializer;
-import org.restheart.plugins.init.RegisterInitializer;
-import org.restheart.plugins.service.RegisterService;
-import org.restheart.plugins.service.Service;
 
 /**
  *
@@ -98,27 +94,33 @@ public class PluginsRegistry {
      */
     @SuppressWarnings("unchecked")
     private void findInitializers() {
-        String annotationClassName = RegisterInitializer.class.getName();
+        String registerPluginAnnotationClassName = RegisterPlugin.class.getName();
+        String initializerIntefaceClassName = Initializer.class.getName();
 
         try (var scanResult = new ClassGraph()
                 .enableAnnotationInfo()
                 .scan()) {
-            var cil = scanResult
-                    .getClassesWithAnnotation(annotationClassName);
+            var registeredPlugins = scanResult
+                    .getClassesWithAnnotation(registerPluginAnnotationClassName);
+                    
+            var initializers = scanResult
+                    .getClassesImplementing(initializerIntefaceClassName);
+            
+            var registeredInitializers = registeredPlugins.intersect(initializers);
 
             // sort @Initializers by priority
-            cil.sort(new Comparator<ClassInfo>() {
+            registeredInitializers.sort(new Comparator<ClassInfo>() {
                 @Override
                 public int compare(ClassInfo ci1, ClassInfo ci2) {
-                    int p1 = annotationParam(ci1, annotationClassName, "priority");
+                    int p1 = annotationParam(ci1, registerPluginAnnotationClassName, "priority");
 
-                    int p2 = annotationParam(ci2, annotationClassName, "priority");
+                    int p2 = annotationParam(ci2, registerPluginAnnotationClassName, "priority");
 
                     return Integer.compare(p1, p2);
                 }
             });
 
-            for (var ci : cil) {
+            for (var ci : registeredInitializers) {
                 Object i;
 
                 try {
@@ -126,8 +128,8 @@ public class PluginsRegistry {
                             .getConstructor()
                             .newInstance();
 
-                    String name = annotationParam(ci, annotationClassName, "name");
-                    String description = annotationParam(ci, annotationClassName, "description");
+                    String name = annotationParam(ci, registerPluginAnnotationClassName, "name");
+                    String description = annotationParam(ci, registerPluginAnnotationClassName, "description");
 
                     if (i instanceof Initializer) {
                         this.initializers.add(new PluginRecord(
@@ -159,27 +161,34 @@ public class PluginsRegistry {
      */
     @SuppressWarnings("unchecked")
     private void findServices() {
-        String annotationClassName = RegisterService.class.getName();
-
+        String registerPluginAnnotationClassName = RegisterPlugin.class.getName();
+        String serviceClassName = Service.class.getName();
+        
+        
         try (var scanResult = new ClassGraph()
                 .enableAnnotationInfo()
                 .scan()) {
-            var cil = scanResult
-                    .getClassesWithAnnotation(annotationClassName);
+            var registeredPlugins = scanResult
+                    .getClassesWithAnnotation(registerPluginAnnotationClassName);
+            
+            var services = scanResult
+                    .getSubclasses(serviceClassName);
+            
+            var registeredServices = registeredPlugins.intersect(services);
 
-            for (var ci : cil) {
+            for (var registeredService : registeredServices) {
                 Object srv;
 
                 try {
-                    String name = annotationParam(ci,
-                            annotationClassName,
+                    String name = annotationParam(registeredService,
+                            registerPluginAnnotationClassName,
                             "name");
 
-                    String description = annotationParam(ci,
-                            annotationClassName,
+                    String description = annotationParam(registeredService,
+                            registerPluginAnnotationClassName,
                             "description");
 
-                    srv = ci.loadClass(false)
+                    srv = registeredService.loadClass(false)
                             .getConstructor(Map.class)
                             .newInstance(confs.get(name));
 
@@ -188,25 +197,25 @@ public class PluginsRegistry {
                                 new PluginRecord(
                                         name,
                                         description,
-                                        ci.getName(),
+                                        registeredService.getName(),
                                         (Service) srv,
                                         confs.get(name)));
                     } else {
                         LOGGER.error("Plugin class {} annotated with "
                                 + "@RegisterService must extend abstract class Service",
-                                ci.getName());
+                                registeredService.getName());
                     }
 
                 } catch (NoSuchMethodException nsme) {
                     LOGGER.error("Plugin class {} annotated with "
                             + "@RegisterService must have a constructor "
                             + "with single argument of type Map<String, Object>",
-                            ci.getName());
+                            registeredService.getName());
                 } catch (InstantiationException
                         | IllegalAccessException
                         | InvocationTargetException t) {
                     LOGGER.error("Error registering service {}",
-                            ci.getName(),
+                            registeredService.getName(),
                             t);
                 }
             }

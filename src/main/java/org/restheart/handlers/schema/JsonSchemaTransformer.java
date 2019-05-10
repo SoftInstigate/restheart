@@ -26,7 +26,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.RequestContext;
-import org.restheart.metadata.transformers.Transformer;
+import org.restheart.plugins.Transformer;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

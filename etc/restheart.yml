@@ -116,11 +116,11 @@ static-resources-mounts:
 
 plugins-args:
   logMessageInitializer:
-    disabled: !
+    #disabled: !
     message: Hello World!
     log-level: INFO
   addBodyToWriteResponsesInitializer:
-    disabled: !
+    #disabled: !
   pingService:
     uri: /ping
     msg: Hello World!
@@ -147,24 +147,6 @@ metadata-named-singletons:
         class: org.restheart.metadata.checkers.JsonPathConditionsChecker
       - name: checkContentSize
         class: org.restheart.metadata.checkers.ContentSizeChecker
-
-  # transformers group used by handlers:
-  # org.restheart.handlers.metadata.RequestTransformerMetadataHandler and
-  # org.restheart.handlers.metadata.ResponseTransformerMetadataHandler
-  # More information in transformers javadoc
-  - group: transformers
-    interface: org.restheart.metadata.transformers.Transformer
-    singletons:
-      - name: addRequestProperties
-        class: org.restheart.metadata.transformers.RequestPropsInjecterTransformer
-      - name: filterProperties
-        class: org.restheart.metadata.transformers.FilterTransformer
-      - name: stringsToOids
-        class: org.restheart.metadata.transformers.ValidOidsStringsAsOidsTransformer
-      - name: oidsToStrings
-        class: org.restheart.metadata.transformers.OidsAsStringsTransformer
-      - name: writeResult
-        class: org.restheart.metadata.transformers.WriteResultTransformer
           
     # hooks group used by handler:
     # org.restheart.handlers.metadata.HookHandler

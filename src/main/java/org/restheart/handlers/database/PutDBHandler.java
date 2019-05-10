@@ -26,7 +26,7 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.metadata.InvalidMetadataException;
-import org.restheart.metadata.transformers.RequestTransformer;
+import org.restheart.metadata.RequestTransformer;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 

@@ -91,7 +91,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestDispatcherHandler;
 import org.restheart.handlers.RequestLoggerHandler;
 import org.restheart.handlers.metrics.TracingInstrumentationHandler;
-import org.restheart.plugins.service.Service;
+import org.restheart.plugins.Service;
 import org.restheart.handlers.injectors.AccountInjectorHandler;
 import org.restheart.handlers.injectors.BodyInjectorHandler;
 import org.restheart.handlers.injectors.ClientSessionInjectorHandler;

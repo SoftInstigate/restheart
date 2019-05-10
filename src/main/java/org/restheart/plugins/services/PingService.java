@@ -15,21 +15,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.service.impl;
+package org.restheart.plugins.services;
 
-import org.restheart.plugins.service.Service;
+import org.restheart.plugins.Service;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
-import org.restheart.plugins.service.RegisterService;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterService(name = "pingService",
+@RegisterPlugin(name = "pingService",
         description = "Ping service")
 public class PingService extends Service {
 

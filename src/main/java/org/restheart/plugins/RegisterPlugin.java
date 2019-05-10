@@ -15,31 +15,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.init;
+package org.restheart.plugins;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * Annotation to register an Initializer
+ * Annotation to register a Plugin
  * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RegisterInitializer {
+public @interface RegisterPlugin {
     /**
-     * Defines the name of the initializer that can be used in the configuration
-     * file to pass arguments
+     * Defines the name of the plugin. The name can be used in the configuration
+     * file to pass confArgs
      */
     String name();
     
     /**
-     * Describes the initializer
+     * Describes the plugin
      */
     String description();
-
+    
     /**
-     * Defines the order of execution (less is higher priority)
+     * Set the order of execution (less is higher priority)
      */
     int priority() default 10;
 }
