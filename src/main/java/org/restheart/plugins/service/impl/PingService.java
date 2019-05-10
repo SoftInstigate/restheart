@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.impl.service;
+package org.restheart.plugins.service.impl;
 
 import org.restheart.plugins.service.Service;
 import io.undertow.server.HttpServerExchange;

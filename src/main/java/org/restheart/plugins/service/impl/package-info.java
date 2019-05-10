@@ -20,4 +20,4 @@
  * 
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.plugins.impl.service;
+package org.restheart.plugins.service.impl;
