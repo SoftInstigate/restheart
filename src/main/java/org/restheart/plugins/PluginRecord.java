@@ -18,7 +18,9 @@
 package org.restheart.plugins;
 
 import java.util.Map;
+import org.bson.BsonDocument;
 import org.restheart.ConfigurationKeys;
+import org.restheart.utils.JsonUtils;
 
 /**
  *
@@ -78,6 +80,15 @@ public class PluginRecord<T extends Plugin> {
      */
     public Map<String, Object> getConfArgs() {
         return confArgs;
+    }
+    
+    /**
+     * @return the confArgs
+     */
+    public BsonDocument getConfArgsAsBsonDocument() {
+        return confArgs == null 
+           ?     null
+        : JsonUtils.toBsonDocument(confArgs);
     }
 
     /**

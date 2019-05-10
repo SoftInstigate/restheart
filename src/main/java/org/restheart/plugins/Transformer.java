@@ -30,7 +30,7 @@ import org.restheart.handlers.RequestContext;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Transformer {
+public interface Transformer extends Plugin {
     /**
      * contentToTransform can be directly manipulated or
      * RequestContext.setResponseContent(BsonValue value) for response phase and

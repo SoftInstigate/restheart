@@ -116,11 +116,11 @@ static-resources-mounts:
 
 plugins-args:
   logMessageInitializer:
-    #disabled: !
+    disabled: !
     message: Hello World!
     log-level: INFO
   addBodyToWriteResponsesInitializer:
-    #disabled: !
+    disabled: !
   pingService:
     uri: /ping
     msg: Hello World!

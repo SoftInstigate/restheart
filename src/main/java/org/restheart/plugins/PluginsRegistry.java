@@ -22,8 +22,10 @@ import io.github.classgraph.ClassInfo;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import org.restheart.Bootstrapper;
 import org.slf4j.Logger;
@@ -37,15 +39,24 @@ public class PluginsRegistry {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(PluginsRegistry.class);
 
-    private final Set<PluginRecord<Initializer>> initializers = new LinkedHashSet<>();
+    private static final String REGISTER_PLUGIN_CLASS_NAME = RegisterPlugin.class
+            .getName();
 
-    private final Set<PluginRecord<Service>> services = new LinkedHashSet<>();
+    private final Set<PluginRecord<Initializer>> initializers
+            = new LinkedHashSet<>();
+
+    private final Set<PluginRecord<Service>> services
+            = new LinkedHashSet<>();
+
+    private final Map<String, PluginRecord<Transformer>> transformers
+            = new LinkedHashMap<>();
 
     private final Map<String, Map<String, Object>> confs = consumeConfiguration();
 
     private PluginsRegistry() {
         findInitializers();
         findServices();
+        findTransformers();
     }
 
     public static PluginsRegistry getInstance() {
@@ -71,6 +82,21 @@ public class PluginsRegistry {
         return services;
     }
 
+    /**
+     * @param name
+     * @return the transformer called name
+     */
+    public PluginRecord<Transformer> getTransformer(String name)
+            throws NoSuchElementException {
+        if (!transformers.containsKey(name)) {
+            throw new NoSuchElementException("Transformer "
+                    + name
+                    + " is not registered");
+        } else {
+            return transformers.get(name);
+        }
+    }
+
     private Map<String, Map<String, Object>> consumeConfiguration() {
         Map<String, Map<String, Object>> pluginsArgs = Bootstrapper
                 .getConfiguration()
@@ -90,37 +116,34 @@ public class PluginsRegistry {
     }
 
     /**
-     * finds the initializers defined via @RegisterInitializer annotation
+     * finds the initializers
      */
     @SuppressWarnings("unchecked")
     private void findInitializers() {
-        String registerPluginAnnotationClassName = RegisterPlugin.class.getName();
-        String initializerIntefaceClassName = Initializer.class.getName();
-
         try (var scanResult = new ClassGraph()
                 .enableAnnotationInfo()
                 .scan()) {
             var registeredPlugins = scanResult
-                    .getClassesWithAnnotation(registerPluginAnnotationClassName);
-                    
-            var initializers = scanResult
-                    .getClassesImplementing(initializerIntefaceClassName);
-            
-            var registeredInitializers = registeredPlugins.intersect(initializers);
+                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+
+            var listOfType = scanResult.getClassesImplementing(Initializer.class
+                    .getName());
+
+            var registeredInitializers = registeredPlugins.intersect(listOfType);
 
             // sort @Initializers by priority
             registeredInitializers.sort(new Comparator<ClassInfo>() {
                 @Override
                 public int compare(ClassInfo ci1, ClassInfo ci2) {
-                    int p1 = annotationParam(ci1, registerPluginAnnotationClassName, "priority");
+                    int p1 = annotationParam(ci1, "priority");
 
-                    int p2 = annotationParam(ci2, registerPluginAnnotationClassName, "priority");
+                    int p2 = annotationParam(ci2, "priority");
 
                     return Integer.compare(p1, p2);
                 }
             });
 
-            for (var ci : registeredInitializers) {
+            registeredInitializers.stream().forEachOrdered(ci -> {
                 Object i;
 
                 try {
@@ -128,22 +151,15 @@ public class PluginsRegistry {
                             .getConstructor()
                             .newInstance();
 
-                    String name = annotationParam(ci, registerPluginAnnotationClassName, "name");
-                    String description = annotationParam(ci, registerPluginAnnotationClassName, "description");
+                    String name = annotationParam(ci, "name");
+                    String description = annotationParam(ci, "description");
 
-                    if (i instanceof Initializer) {
-                        this.initializers.add(new PluginRecord(
-                                name,
-                                description,
-                                ci.getName(),
-                                (Initializer) i,
-                                confs.get(name)));
-                    } else {
-                        LOGGER.error("Plugin class {} annotated with "
-                                + "@RegisterInitializer must implement interface Initalizer",
-                                ci.getName());
-                    }
-
+                    this.initializers.add(new PluginRecord(
+                            name,
+                            description,
+                            ci.getName(),
+                            (Initializer) i,
+                            confs.get(name)));
                 } catch (InstantiationException
                         | IllegalAccessException
                         | InvocationTargetException
@@ -152,63 +168,48 @@ public class PluginsRegistry {
                             ci.getName(),
                             t);
                 }
-            }
+            });
         }
     }
 
     /**
-     * finds the service defined via @RegisterServic annoetation
+     * finds the services
      */
     @SuppressWarnings("unchecked")
     private void findServices() {
-        String registerPluginAnnotationClassName = RegisterPlugin.class.getName();
-        String serviceClassName = Service.class.getName();
-        
-        
         try (var scanResult = new ClassGraph()
                 .enableAnnotationInfo()
                 .scan()) {
             var registeredPlugins = scanResult
-                    .getClassesWithAnnotation(registerPluginAnnotationClassName);
-            
-            var services = scanResult
-                    .getSubclasses(serviceClassName);
-            
-            var registeredServices = registeredPlugins.intersect(services);
+                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
 
-            for (var registeredService : registeredServices) {
+            var listOfType = scanResult.getSubclasses(Service.class.getName());
+
+            var registeredServices = registeredPlugins.intersect(listOfType);
+
+            registeredServices.stream().forEach(registeredService -> {
                 Object srv;
 
                 try {
                     String name = annotationParam(registeredService,
-                            registerPluginAnnotationClassName,
                             "name");
 
                     String description = annotationParam(registeredService,
-                            registerPluginAnnotationClassName,
                             "description");
 
                     srv = registeredService.loadClass(false)
                             .getConstructor(Map.class)
                             .newInstance(confs.get(name));
 
-                    if (srv instanceof Service) {
-                        this.services.add(
-                                new PluginRecord(
-                                        name,
-                                        description,
-                                        registeredService.getName(),
-                                        (Service) srv,
-                                        confs.get(name)));
-                    } else {
-                        LOGGER.error("Plugin class {} annotated with "
-                                + "@RegisterService must extend abstract class Service",
-                                registeredService.getName());
-                    }
-
+                    this.services.add(new PluginRecord(
+                            name,
+                            description,
+                            registeredService.getName(),
+                            (Service) srv,
+                            confs.get(name)));
                 } catch (NoSuchMethodException nsme) {
                     LOGGER.error("Plugin class {} annotated with "
-                            + "@RegisterService must have a constructor "
+                            + "@RegisterPlugin must have a constructor "
                             + "with single argument of type Map<String, Object>",
                             registeredService.getName());
                 } catch (InstantiationException
@@ -218,14 +219,61 @@ public class PluginsRegistry {
                             registeredService.getName(),
                             t);
                 }
-            }
+            });
+        }
+    }
+
+    /**
+     * finds the services
+     */
+    @SuppressWarnings("unchecked")
+    private void findTransformers() {
+        try (var scanResult = new ClassGraph()
+                .enableAnnotationInfo()
+                .scan()) {
+            var registeredPlugins = scanResult
+                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+
+            var listOfType = scanResult.getClassesImplementing(Transformer.class.getName());
+
+            var registeredTransformers = registeredPlugins.intersect(listOfType);
+
+            registeredTransformers.stream().forEach(registeredTransformer -> {
+                Object transformer;
+
+                try {
+                    String name = annotationParam(registeredTransformer,
+                            "name");
+
+                    String description = annotationParam(registeredTransformer,
+                            "description");
+
+                    transformer = registeredTransformer.loadClass(false)
+                            .getConstructor()
+                            .newInstance();
+
+                    this.transformers.put(
+                            name, new PluginRecord(
+                                    name,
+                                    description,
+                                    registeredTransformer.getName(),
+                                    (Transformer) transformer,
+                                    confs.get(name)));
+                } catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException
+                        | NoSuchMethodException t) {
+                    LOGGER.error("Error registering transformer {}",
+                            registeredTransformer.getName(),
+                            t);
+                }
+            });
         }
     }
 
     private static <T extends Object> T annotationParam(ClassInfo ci,
-            String annotationClassName,
             String param) {
-        var annotationInfo = ci.getAnnotationInfo(annotationClassName);
+        var annotationInfo = ci.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME);
         var annotationParamVals = annotationInfo.getParameterValues();
 
         // The Route annotation has a parameter named "path"
