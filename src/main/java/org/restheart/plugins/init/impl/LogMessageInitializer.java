@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.impl.init;
+package org.restheart.plugins.init.impl;
 
 import java.util.Map;
 import org.slf4j.Logger;
