@@ -42,8 +42,8 @@ import org.restheart.plugins.RegisterPlugin;
  *
  */
 @RegisterPlugin(name = "filterProperties",
-        description = "Transformer that filters out a the properties specified "
-                + "by the args property of the transformer metadata object")
+        description = "Filters out a the properties specified "
+                + "by the args property of the transformer metadata object.")
 public class FilterTransformer implements Transformer {
 
     /**

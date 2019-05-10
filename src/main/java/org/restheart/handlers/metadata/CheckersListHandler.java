@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.metadata.checkers.Checker;
+import org.restheart.plugins.Checker;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;

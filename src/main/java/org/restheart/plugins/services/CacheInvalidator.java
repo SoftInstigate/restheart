@@ -34,7 +34,7 @@ import org.restheart.utils.ResponseHelper;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "cacheInvalidator",
-        description = "Service to invalidate the db and collection metadata cache")
+        description = "Invalidates the db and collection metadata cache.")
 public class CacheInvalidator extends Service {
 
     /**

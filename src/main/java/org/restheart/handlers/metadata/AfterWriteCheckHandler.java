@@ -30,9 +30,9 @@ import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
-import org.restheart.metadata.checkers.Checker;
-import org.restheart.metadata.checkers.GlobalChecker;
-import org.restheart.metadata.checkers.RequestChecker;
+import org.restheart.plugins.Checker;
+import org.restheart.plugins.GlobalChecker;
+import org.restheart.metadata.CheckerMetadata;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -141,7 +141,7 @@ public class AfterWriteCheckHandler
                 || context.getType() == RequestContext.TYPE.FILES_BUCKET
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE))
                 && context.getCollectionProps()
-                        .containsKey(RequestChecker.ROOT_KEY)
+                        .containsKey(CheckerMetadata.ROOT_KEY)
                 && (context.getDbOperationResult() != null
                 && context.getDbOperationResult().getHttpCode() < 300);
     }

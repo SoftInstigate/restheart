@@ -14,7 +14,7 @@ import org.restheart.plugins.RegisterPlugin;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(name = "writeResult",
-        description = "Transformer that adds a body to write responses with "
+        description = "Adds a body to write responses with "
                 + "updated and old version of the written document.")
 public class WriteResultTransformer implements Transformer {
 

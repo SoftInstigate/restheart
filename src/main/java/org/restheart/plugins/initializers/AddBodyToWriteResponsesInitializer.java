@@ -37,15 +37,14 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "addBodyToWriteResponsesInitializer", 
         priority = 100, 
-        description = "An initializer that plugs a transformer to add a body to "
-                + "write responses with updated and old version of the written "
-                + "document.")
+        description = "Add writeResult to global transformers set.")
 public class AddBodyToWriteResponsesInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(AddBodyToWriteResponsesInitializer.class);
 
     @Override
     public void init(Map<String, Object> confArgs) {
-        TransformerHandler.getGlobalTransformers().add(new GlobalTransformer(new WriteResultTransformer(),
+        TransformerHandler.getGlobalTransformers().add(
+                new GlobalTransformer(new WriteResultTransformer(),
                         new RequestContextPredicate() {
                     @Override
                     public boolean resolve(HttpServerExchange hse, RequestContext context) {

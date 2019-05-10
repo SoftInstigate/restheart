@@ -66,9 +66,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @RegisterPlugin(name = "addRequestProperties",
-        description = "Transformer that adds properties to the request. "
-                + "It is usually applied to REQUEST phase to store properties "
-                + "evaluated server side ObjectId with strings.")
+        description = "Adds properties to the request body")
 public class RequestPropsInjecterTransformer implements Transformer {
     static final Logger LOGGER
             = LoggerFactory.getLogger(RequestPropsInjecterTransformer.class);

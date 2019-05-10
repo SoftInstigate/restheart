@@ -23,12 +23,10 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.plugins.GlobalTransformer;
 import org.restheart.metadata.TransformerMetadata;
 import org.restheart.metadata.TransformerMetadata.PHASE;
 import org.restheart.plugins.PluginsRegistry;
-import org.restheart.plugins.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

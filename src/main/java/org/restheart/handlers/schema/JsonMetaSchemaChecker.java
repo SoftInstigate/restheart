@@ -28,8 +28,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.restheart.handlers.RequestContext;
-import org.restheart.metadata.checkers.Checker;
-import org.restheart.metadata.checkers.CheckersUtils;
+import org.restheart.plugins.Checker;
+import org.restheart.plugins.checkers.CheckersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

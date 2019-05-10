@@ -41,7 +41,7 @@ import org.bson.json.JsonParseException;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.representation.Resource;
 import org.restheart.handlers.RequestContext;
-import org.restheart.metadata.NamedSingletonsFactory;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Transformer;
 import org.restheart.utils.HttpStatus;
@@ -69,7 +69,7 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("unchecked")
 @RegisterPlugin(name = "csvLoader",
-        description = "Service to upload a csv file in a collection")
+        description = "Uploads a csv file in a collection.")
 public class CsvLoader extends Service {
 
     public static final String CVS_CONTENT_TYPE = "text/csv";
@@ -385,7 +385,8 @@ class CsvRequestParams {
         String transformerName = _tranformer != null ? _tranformer.size() > 0 ? _tranformer.getFirst() : null : null;
 
         if (transformerName != null) {
-            transformer = (Transformer) NamedSingletonsFactory.getInstance().get("transformers", transformerName);
+            transformer = PluginsRegistry.getInstance()
+                    .getTransformer(transformerName).getInstance();
         } else {
             transformer = null;
         }

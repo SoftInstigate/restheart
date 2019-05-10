@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.checkers;
+package org.restheart.plugins.checkers;
 
+import org.restheart.plugins.Checker;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +86,10 @@ import org.slf4j.LoggerFactory;
  * "^\\u0022[A-Z0-9._%+-]+@[A-Z0-9.-]+\\u005C\\u005C.[A-Z]{2,6}\\u0022$"}
  *
  */
+@RegisterPlugin(
+        name = "checkContent",
+        description = "Checks the request content by using conditions "
+        + " based on json path expressions.")
 public class JsonPathConditionsChecker implements Checker {
     static final Logger LOGGER = LoggerFactory.getLogger(JsonPathConditionsChecker.class);
 
@@ -116,9 +122,9 @@ public class JsonPathConditionsChecker implements Checker {
     public PHASE getPhase(RequestContext context) {
         if (context.getMethod() == RequestContext.METHOD.PATCH
                 || CheckersUtils
-                .doesRequestUsesDotNotation(context.getContent())
+                        .doesRequestUsesDotNotation(context.getContent())
                 || CheckersUtils
-                .doesRequestUsesUpdateOperators(context.getContent())) {
+                        .doesRequestUsesUpdateOperators(context.getContent())) {
             return PHASE.AFTER_WRITE;
         } else {
             return PHASE.BEFORE_WRITE;

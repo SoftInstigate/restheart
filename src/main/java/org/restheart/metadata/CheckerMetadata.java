@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.checkers;
+package org.restheart.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,7 @@ import org.restheart.handlers.metadata.InvalidMetadataException;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestChecker {
+public class CheckerMetadata {
 
     public final static String ROOT_KEY = "checkers";
     public final static String NAME_KEY = "name";
@@ -39,7 +39,7 @@ public class RequestChecker {
         return props.get(ROOT_KEY);
     }
 
-    public static List<RequestChecker> getFromJson(BsonDocument props)
+    public static List<CheckerMetadata> getFromJson(BsonDocument props)
             throws InvalidMetadataException {
         BsonValue _scs = getProps(props);
 
@@ -52,7 +52,7 @@ public class RequestChecker {
 
         BsonArray scs = _scs.asArray();
 
-        List<RequestChecker> ret = new ArrayList<>();
+        List<CheckerMetadata> ret = new ArrayList<>();
 
         for (BsonValue o : scs.getValues()) {
             if (o.isDocument()) {
@@ -68,7 +68,7 @@ public class RequestChecker {
         return ret;
     }
 
-    private static RequestChecker getSingleFromJson(BsonDocument props)
+    private static CheckerMetadata getSingleFromJson(BsonDocument props)
             throws InvalidMetadataException {
         BsonValue _name = props.get(NAME_KEY);
 
@@ -110,7 +110,7 @@ public class RequestChecker {
             skipNotSupported = _skipNotSupported.asBoolean().getValue();
         }
 
-        return new RequestChecker(name, _args, skipNotSupported);
+        return new CheckerMetadata(name, _args, skipNotSupported);
     }
 
     private final String name;
@@ -122,7 +122,7 @@ public class RequestChecker {
      * @param checker
      * @param args
      */
-    public RequestChecker(String checker, BsonArray args) {
+    public CheckerMetadata(String checker, BsonArray args) {
         this.name = checker;
         this.args = args;
         this.skipNotSupported = false;
@@ -135,7 +135,7 @@ public class RequestChecker {
      * @param skipNotSupported false if the checker should fail if it does not
      * support the request
      */
-    public RequestChecker(
+    public CheckerMetadata(
             String checker,
             BsonValue args,
             boolean skipNotSupported) {

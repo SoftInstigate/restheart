@@ -20,7 +20,7 @@ package org.restheart.handlers.metadata;
 import java.util.ArrayList;
 import java.util.List;
 import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.metadata.checkers.GlobalChecker;
+import org.restheart.plugins.GlobalChecker;
 
 /**
  *
