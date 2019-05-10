@@ -19,15 +19,14 @@ package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import org.bson.BsonDocument;
+import java.util.NoSuchElementException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.plugins.GlobalTransformer;
 import org.restheart.metadata.RequestTransformer;
 import org.restheart.metadata.RequestTransformer.PHASE;
 import org.restheart.metadata.RequestTransformer.SCOPE;
-import org.restheart.plugins.Transformer;
+import org.restheart.plugins.PluginsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,18 +144,15 @@ public class ResponseTransformerHandler
             RequestContext context,
             List<RequestTransformer> rts)
             throws InvalidMetadataException {
-        NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
-        
         // execute request transformers
         rts.stream()
                 .filter(rt -> rt.getPhase() == PHASE.RESPONSE)
                 .forEachOrdered(rt -> {
                     try {
-                        Transformer t = (Transformer) nsf
-                                .get("transformers", rt.getName());
-
-                        BsonDocument confArgs
-                                = nsf.getArgs("transformers", rt.getName());
+                        var tr = PluginsRegistry.getInstance()
+                                .getTransformer(rt.getName());
+                        var t = tr.getInstance();
+                        var confArgs = tr.getConfArgsAsBsonDocument();
 
                         if (rt.getScope() == SCOPE.THIS) {
                             t.transform(
@@ -183,12 +179,9 @@ public class ResponseTransformerHandler
                                     rt.getArgs(),
                                     confArgs);
                         }
-                    } catch (IllegalArgumentException iae) {
-                        String err = "Cannot find '"
-                                + rt.getName()
-                                + "' in singleton group 'transformers'";
-                        LOGGER.warn(err);
-                        context.addWarning(err);
+                    } catch (NoSuchElementException iae) {
+                        LOGGER.warn(iae.getMessage());
+                        context.addWarning(iae.getMessage());
                     } catch (Throwable t) {
                         String err = "Error executing transformer '"
                                 + rt.getName() 

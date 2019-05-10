@@ -27,6 +27,7 @@ import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.plugins.GlobalTransformer;
 import org.restheart.metadata.RequestTransformer;
 import org.restheart.metadata.RequestTransformer.PHASE;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -133,18 +134,16 @@ public class RequestTransformerHandler
             RequestContext context,
             List<RequestTransformer> rts)
             throws InvalidMetadataException {
-        NamedSingletonsFactory nsf = NamedSingletonsFactory.getInstance();
 
         // execute request tranformers
         rts.stream().filter((rt)
                 -> (rt.getPhase() == RequestTransformer.PHASE.REQUEST))
                 .forEachOrdered((RequestTransformer rt) -> {
                     try {
-                        Transformer t = (Transformer) nsf
-                                .get("transformers", rt.getName());
-
-                        BsonDocument confArgs
-                                = nsf.getArgs("transformers", rt.getName());
+                        var tr = PluginsRegistry.getInstance()
+                                .getTransformer(rt.getName());
+                        var t = tr.getInstance();
+                        var confArgs = tr.getConfArgsAsBsonDocument();
 
                         BsonValue requestContent = context.getContent() == null
                                 ? new BsonDocument()
