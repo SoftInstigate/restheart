@@ -15,12 +15,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.transformers;
+package org.restheart.plugins;
 
+import org.restheart.plugins.Transformer;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContextPredicate;
+import org.restheart.metadata.RequestTransformer;
 
 /**
  * wraps a transformer with args and confArgs to be added as a global

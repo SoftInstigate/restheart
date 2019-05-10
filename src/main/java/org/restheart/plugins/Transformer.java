@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.transformers;
+package org.restheart.plugins;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
@@ -57,7 +57,6 @@ public interface Transformer {
      * property
      * @param confArgs the args specified in the configuration file via args
      * property
-     * @return true if completed successfully
      */
     default void transform(
             HttpServerExchange exchange,

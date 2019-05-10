@@ -22,13 +22,12 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.handlers.metadata.RequestTransformerHandler.LOGGER;
 import org.restheart.metadata.NamedSingletonsFactory;
-import org.restheart.metadata.transformers.GlobalTransformer;
-import org.restheart.metadata.transformers.RequestTransformer;
-import org.restheart.metadata.transformers.RequestTransformer.PHASE;
-import org.restheart.metadata.transformers.RequestTransformer.SCOPE;
-import org.restheart.metadata.transformers.Transformer;
+import org.restheart.plugins.GlobalTransformer;
+import org.restheart.metadata.RequestTransformer;
+import org.restheart.metadata.RequestTransformer.PHASE;
+import org.restheart.metadata.RequestTransformer.SCOPE;
+import org.restheart.plugins.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

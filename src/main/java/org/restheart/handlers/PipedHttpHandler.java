@@ -15,7 +15,7 @@ import org.restheart.db.OperationResult;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.Relationship;
 import org.restheart.metadata.checkers.RequestChecker;
-import org.restheart.metadata.transformers.RequestTransformer;
+import org.restheart.metadata.RequestTransformer;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 

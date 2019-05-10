@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.service.impl;
+package org.restheart.plugins.services;
 
-import org.restheart.plugins.service.Service;
+import org.restheart.plugins.Service;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.Map;
@@ -25,7 +25,7 @@ import org.restheart.Bootstrapper;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
-import org.restheart.plugins.service.RegisterService;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -33,7 +33,7 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterService(name = "cacheInvalidator",
+@RegisterPlugin(name = "cacheInvalidator",
         description = "Service to invalidate the db and collection metadata cache")
 public class CacheInvalidator extends Service {
 

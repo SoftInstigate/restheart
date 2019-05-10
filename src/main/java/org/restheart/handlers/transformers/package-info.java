@@ -15,26 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.service;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
 /**
- * Annotation to register a Service
+ * Transformers used internally in the handlers chain
  * 
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@Retention(RetentionPolicy.RUNTIME)
-public @interface RegisterService {
-    /**
-     * Defines the name of the service that can be used in the configuration
-     * file to define the confArgs to pass to it or to disable it
-     */
-    String name();
-    
-    /**
-     * Describes the service
-     */
-    String description();
-}
+package org.restheart.handlers.transformers;

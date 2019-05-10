@@ -15,13 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.transformers;
+package org.restheart.plugins.transformers;
 
+import org.restheart.plugins.Transformer;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
+import org.restheart.plugins.RegisterPlugin;
 
 /**
  *
@@ -31,14 +33,17 @@ import org.restheart.handlers.RequestContext;
  * the properties to filter out are passed in the args argumenet as an array of
  * strings.
  *
- * If added to the REQUEST phase, it avoids properties to be stored, if added to
- * the RESPONSE phase, it hides stored properties.
+ * When applied to the REQUEST phase, it avoids properties to be stored, when
+ * applied to the RESPONSE phase, it hides stored properties.
  *
  * <br>Example that removes the property 'password' from the response:
  * <br>rts:=[{name:"filterProperties", "phase":"RESPONSE", "scope":"CHILDREN",
  * args:["password"]}]
  *
  */
+@RegisterPlugin(name = "filterProperties",
+        description = "Transformer that filters out a the properties specified "
+                + "by the args property of the transformer metadata object")
 public class FilterTransformer implements Transformer {
 
     /**

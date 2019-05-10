@@ -15,18 +15,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.init.impl;
+package org.restheart.plugins.initializers;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.metadata.ResponseTransformerHandler;
-import org.restheart.metadata.transformers.GlobalTransformer;
-import org.restheart.metadata.transformers.RequestTransformer;
-import org.restheart.metadata.transformers.WriteResultTransformer;
+import org.restheart.plugins.GlobalTransformer;
+import org.restheart.metadata.RequestTransformer;
+import org.restheart.plugins.transformers.WriteResultTransformer;
 import org.restheart.handlers.RequestContextPredicate;
-import org.restheart.plugins.init.Initializer;
-import org.restheart.plugins.init.RegisterInitializer;
+import org.restheart.handlers.metadata.TransformerHandler;
+import org.restheart.plugins.Initializer;
+import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@RegisterInitializer(
+@RegisterPlugin(
         name = "addBodyToWriteResponsesInitializer", 
         priority = 100, 
         description = "An initializer that plugs a transformer to add a body to write responses with updated and old version of the written document.")
@@ -43,7 +43,7 @@ public class AddBodyToWriteResponsesInitializer implements Initializer {
 
     @Override
     public void init(Map<String, Object> confArgs) {
-        ResponseTransformerHandler.getGlobalTransformers().add(
+        TransformerHandler.getGlobalTransformers().add(
                 new GlobalTransformer(new WriteResultTransformer(),
                         new RequestContextPredicate() {
                     @Override

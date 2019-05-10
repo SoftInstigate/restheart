@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.transformers;
+package org.restheart.plugins.transformers;
 
+import org.restheart.plugins.Transformer;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,6 +28,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.RequestContext;
+import org.restheart.plugins.RegisterPlugin;
 
 /**
  *
@@ -40,6 +42,9 @@ import org.restheart.handlers.RequestContext;
  * "553f59d2e4b041ceaac64e33" }, a: 1 }
  *
  */
+@RegisterPlugin(name = "oidsToStrings",
+        description = "Transformer that replaces strings that are valid ObjectIds"
+        + " with ObjectIds.")
 public class ValidOidsStringsAsOidsTransformer implements Transformer {
 
     /**

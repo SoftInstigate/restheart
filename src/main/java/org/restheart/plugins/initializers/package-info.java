@@ -15,19 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.init;
-
-import java.util.Map;
-import org.restheart.plugins.Plugin;
-
 /**
- *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * Implementations of Initializer
+ * 
+* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Initializer extends Plugin {
-    /**
-     * 
-     * @param confArgs arguments optionally specified in the configuration file
-     */
-    void init(Map<String, Object> confArgs);
-}
+package org.restheart.plugins.initializers;

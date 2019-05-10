@@ -22,7 +22,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 import static org.restheart.handlers.RequestContext._META;
-import org.restheart.metadata.transformers.Transformer;
+import org.restheart.plugins.Transformer;
 
 /**
  *

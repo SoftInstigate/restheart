@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins.service.impl;
+package org.restheart.plugins.services;
 
-import org.restheart.plugins.service.Service;
+import org.restheart.plugins.Service;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import io.undertow.server.HttpServerExchange;
@@ -40,11 +40,10 @@ import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.representation.Resource;
-import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.NamedSingletonsFactory;
-import org.restheart.metadata.transformers.Transformer;
-import org.restheart.plugins.service.RegisterService;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Transformer;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -69,7 +68,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @SuppressWarnings("unchecked")
-@RegisterService(name = "csvLoader",
+@RegisterPlugin(name = "csvLoader",
         description = "Service to upload a csv file in a collection")
 public class CsvLoader extends Service {
 

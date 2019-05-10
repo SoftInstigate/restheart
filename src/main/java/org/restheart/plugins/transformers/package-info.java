@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Implementations of Service
- * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * Request transformers
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.plugins.service.impl;
+package org.restheart.plugins.transformers;

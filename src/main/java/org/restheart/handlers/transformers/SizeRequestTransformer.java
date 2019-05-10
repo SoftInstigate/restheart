@@ -21,7 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
-import org.restheart.metadata.transformers.Transformer;
+import org.restheart.plugins.Transformer;
 
 /**
  *

@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.transformers;
+package org.restheart.plugins.transformers;
 
+import org.restheart.plugins.Transformer;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
@@ -30,6 +31,7 @@ import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +65,10 @@ import org.slf4j.LoggerFactory;
  * <br>injected properties are: userName:"andrea", remoteIp:"127.0.0.1"
  *
  */
+@RegisterPlugin(name = "addRequestProperties",
+        description = "Transformer that adds properties to the request. "
+                + "It is usually applied to REQUEST phase to store properties "
+                + "evaluated server side ObjectId with strings.")
 public class RequestPropsInjecterTransformer implements Transformer {
     static final Logger LOGGER
             = LoggerFactory.getLogger(RequestPropsInjecterTransformer.class);
