@@ -50,13 +50,17 @@ public class PluginsRegistry {
 
     private final Map<String, PluginRecord<Transformer>> transformers
             = new LinkedHashMap<>();
-
+    
+    private final Map<String, PluginRecord<Hook>> hooks
+            = new LinkedHashMap<>();
+    
     private final Map<String, Map<String, Object>> confs = consumeConfiguration();
 
     private PluginsRegistry() {
         findInitializers();
         findServices();
         findTransformers();
+        findHooks();
     }
 
     public static PluginsRegistry getInstance() {
@@ -94,6 +98,21 @@ public class PluginsRegistry {
                     + " is not registered");
         } else {
             return transformers.get(name);
+        }
+    }
+    
+    /**
+     * @param name
+     * @return the hook called name
+     */
+    public PluginRecord<Hook> getHook(String name)
+            throws NoSuchElementException {
+        if (!hooks.containsKey(name)) {
+            throw new NoSuchElementException("Hook "
+                    + name
+                    + " is not registered");
+        } else {
+            return hooks.get(name);
         }
     }
 
@@ -224,7 +243,7 @@ public class PluginsRegistry {
     }
 
     /**
-     * finds the services
+     * finds the transformers
      */
     @SuppressWarnings("unchecked")
     private void findTransformers() {
@@ -265,6 +284,54 @@ public class PluginsRegistry {
                         | NoSuchMethodException t) {
                     LOGGER.error("Error registering transformer {}",
                             registeredTransformer.getName(),
+                            t);
+                }
+            });
+        }
+    }
+    
+    /**
+     * finds the hooks
+     */
+    @SuppressWarnings("unchecked")
+    private void findHooks() {
+        try (var scanResult = new ClassGraph()
+                .enableAnnotationInfo()
+                .scan()) {
+            var registeredPlugins = scanResult
+                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+
+            var listOfType = scanResult.getClassesImplementing(Hook.class.getName());
+
+            var registeredHooks = registeredPlugins.intersect(listOfType);
+
+            registeredHooks.stream().forEach(registeredHook -> {
+                Object hook;
+
+                try {
+                    String name = annotationParam(registeredHook,
+                            "name");
+
+                    String description = annotationParam(registeredHook,
+                            "description");
+
+                    hook = registeredHook.loadClass(false)
+                            .getConstructor()
+                            .newInstance();
+
+                    this.hooks.put(
+                            name, new PluginRecord(
+                                    name,
+                                    description,
+                                    registeredHook.getName(),
+                                    (Hook) hook,
+                                    confs.get(name)));
+                } catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException
+                        | NoSuchMethodException t) {
+                    LOGGER.error("Error registering hook {}",
+                            registeredHook.getName(),
                             t);
                 }
             });

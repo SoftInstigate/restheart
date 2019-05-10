@@ -15,12 +15,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.hooks;
+package org.restheart.plugins.hooks;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
+import org.restheart.plugins.Hook;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +31,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@RegisterPlugin(
+        name = "snooper", 
+        description = "An example hook that logs request and response info.")
 public class SnooperHook implements Hook {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(SnooperHook.class);

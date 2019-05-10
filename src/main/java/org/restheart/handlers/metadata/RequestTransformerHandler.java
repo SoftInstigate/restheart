@@ -25,8 +25,8 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.NamedSingletonsFactory;
 import org.restheart.plugins.GlobalTransformer;
-import org.restheart.metadata.RequestTransformer;
-import org.restheart.metadata.RequestTransformer.PHASE;
+import org.restheart.metadata.TransformerMetadata;
+import org.restheart.metadata.TransformerMetadata.PHASE;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.Transformer;
 import org.slf4j.Logger;
@@ -79,7 +79,7 @@ public class RequestTransformerHandler
                 || context.isSchema())
                 && context.getCollectionProps() != null
                 && context.getCollectionProps()
-                        .containsKey(RequestTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(TransformerMetadata.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -102,7 +102,7 @@ public class RequestTransformerHandler
                 || context.isSchema())
                 && context.getDbProps() != null
                 && context.getDbProps()
-                        .containsKey(RequestTransformer.RTS_ELEMENT_NAME));
+                        .containsKey(TransformerMetadata.RTS_ELEMENT_NAME));
     }
 
     @Override
@@ -132,13 +132,13 @@ public class RequestTransformerHandler
     void applyTransformLogic(
             HttpServerExchange exchange,
             RequestContext context,
-            List<RequestTransformer> rts)
+            List<TransformerMetadata> rts)
             throws InvalidMetadataException {
 
         // execute request tranformers
         rts.stream().filter((rt)
-                -> (rt.getPhase() == RequestTransformer.PHASE.REQUEST))
-                .forEachOrdered((RequestTransformer rt) -> {
+                -> (rt.getPhase() == TransformerMetadata.PHASE.REQUEST))
+                .forEachOrdered((TransformerMetadata rt) -> {
                     try {
                         var tr = PluginsRegistry.getInstance()
                                 .getTransformer(rt.getName());

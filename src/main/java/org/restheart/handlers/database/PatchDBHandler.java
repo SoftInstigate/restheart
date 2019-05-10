@@ -26,7 +26,7 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.metadata.InvalidMetadataException;
-import org.restheart.metadata.RequestTransformer;
+import org.restheart.metadata.TransformerMetadata;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -106,9 +106,9 @@ public class PatchDBHandler extends PipedHttpHandler {
         BsonDocument content = _content.asDocument();
 
         // check RTL metadata
-        if (content.containsKey(RequestTransformer.RTS_ELEMENT_NAME)) {
+        if (content.containsKey(TransformerMetadata.RTS_ELEMENT_NAME)) {
             try {
-                RequestTransformer.getFromJson(content);
+                TransformerMetadata.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,

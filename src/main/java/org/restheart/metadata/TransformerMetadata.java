@@ -29,7 +29,7 @@ import org.restheart.handlers.metadata.InvalidMetadataException;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestTransformer {
+public class TransformerMetadata {
 
     public static final String RTS_ELEMENT_NAME = "rts";
 
@@ -38,7 +38,7 @@ public class RequestTransformer {
     public static final String RT_SCOPE_ELEMENT_NAME = "scope";
     public static final String RT_ARGS_ELEMENT_NAME = "args";
 
-    public static List<RequestTransformer> getFromJson(BsonDocument props) throws InvalidMetadataException {
+    public static List<TransformerMetadata> getFromJson(BsonDocument props) throws InvalidMetadataException {
         BsonValue _rts = props.get(RTS_ELEMENT_NAME);
 
         if (_rts == null || !_rts.isArray()) {
@@ -47,7 +47,7 @@ public class RequestTransformer {
 
         BsonArray rts = _rts.asArray();
 
-        List<RequestTransformer> ret = new ArrayList<>();
+        List<TransformerMetadata> ret = new ArrayList<>();
 
         for (BsonValue o : rts.getValues()) {
             if (o.isDocument()) {
@@ -60,7 +60,7 @@ public class RequestTransformer {
         return ret;
     }
 
-    private static RequestTransformer getSingleFromJson(BsonDocument props) throws InvalidMetadataException {
+    private static TransformerMetadata getSingleFromJson(BsonDocument props) throws InvalidMetadataException {
         BsonValue _phase = props.get(RT_PHASE_ELEMENT_NAME);
         BsonValue _scope = props.get(RT_SCOPE_ELEMENT_NAME);
         BsonValue _name = props.get(RT_NAME_ELEMENT_NAME);
@@ -94,7 +94,7 @@ public class RequestTransformer {
         }
         String name = _name.asString().getValue();
 
-        return new RequestTransformer(phase, scope, name, _args);
+        return new TransformerMetadata(phase, scope, name, _args);
     }
 
     private final String name;
@@ -110,7 +110,7 @@ public class RequestTransformer {
      * configuration file
      * @param args
      */
-    public RequestTransformer(PHASE phase, SCOPE scope, String name, BsonValue args) {
+    public TransformerMetadata(PHASE phase, SCOPE scope, String name, BsonValue args) {
         this.phase = phase;
         this.scope = scope;
         this.name = name;

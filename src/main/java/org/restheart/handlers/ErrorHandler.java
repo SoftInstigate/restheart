@@ -27,7 +27,7 @@ import org.restheart.representation.Resource;
 import org.restheart.handlers.bulk.BulkResultRepresentationFactory;
 import org.restheart.handlers.metadata.TransformersListHandler;
 import org.restheart.handlers.transformers.RepresentationTransformer;
-import org.restheart.metadata.RequestTransformer.PHASE;
+import org.restheart.metadata.TransformerMetadata.PHASE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;

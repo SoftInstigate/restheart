@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.hooks;
+package org.restheart.plugins;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
@@ -58,7 +58,7 @@ import org.restheart.handlers.RequestContext;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  */
-public interface Hook {
+public interface Hook extends Plugin {
     /**
      *
      * @param exchange the server exchange

@@ -21,7 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.restheart.handlers.RequestContext;
 import org.restheart.plugins.GlobalTransformer;
-import org.restheart.metadata.RequestTransformer;
+import org.restheart.metadata.TransformerMetadata;
 import org.restheart.plugins.transformers.WriteResultTransformer;
 import org.restheart.handlers.RequestContextPredicate;
 import org.restheart.handlers.metadata.TransformerHandler;
@@ -37,14 +37,15 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "addBodyToWriteResponsesInitializer", 
         priority = 100, 
-        description = "An initializer that plugs a transformer to add a body to write responses with updated and old version of the written document.")
+        description = "An initializer that plugs a transformer to add a body to "
+                + "write responses with updated and old version of the written "
+                + "document.")
 public class AddBodyToWriteResponsesInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(AddBodyToWriteResponsesInitializer.class);
 
     @Override
     public void init(Map<String, Object> confArgs) {
-        TransformerHandler.getGlobalTransformers().add(
-                new GlobalTransformer(new WriteResultTransformer(),
+        TransformerHandler.getGlobalTransformers().add(new GlobalTransformer(new WriteResultTransformer(),
                         new RequestContextPredicate() {
                     @Override
                     public boolean resolve(HttpServerExchange hse, RequestContext context) {
@@ -53,8 +54,8 @@ public class AddBodyToWriteResponsesInitializer implements Initializer {
                                 || (context.isPut() && context.isDocument());
                     }
                 },
-                        RequestTransformer.PHASE.RESPONSE,
-                        RequestTransformer.SCOPE.THIS,
+                        TransformerMetadata.PHASE.RESPONSE,
+                        TransformerMetadata.SCOPE.THIS,
                         null, null)
         );
 

@@ -15,7 +15,7 @@ import org.restheart.db.OperationResult;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.Relationship;
 import org.restheart.metadata.checkers.RequestChecker;
-import org.restheart.metadata.RequestTransformer;
+import org.restheart.metadata.TransformerMetadata;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -114,9 +114,9 @@ public abstract class PipedHttpHandler implements HttpHandler {
             }
         }
         // check RT metadata
-        if (content.containsKey(RequestTransformer.RTS_ELEMENT_NAME)) {
+        if (content.containsKey(TransformerMetadata.RTS_ELEMENT_NAME)) {
             try {
-                RequestTransformer.getFromJson(content);
+                TransformerMetadata.getFromJson(content);
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
