@@ -17,17 +17,21 @@
  */
 package org.restheart.plugins;
 
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 import java.util.Map;
+import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.ResponseSenderHandler;
 import org.restheart.plugins.Plugin;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class Service extends PipedHttpHandler implements Plugin {
-
     /**
      * The configuration properties passed to this handler.
      */
@@ -41,5 +45,23 @@ public abstract class Service extends PipedHttpHandler implements Plugin {
     public Service(Map<String, Object> confArgs) {
         super(new ResponseSenderHandler());
         this.confArgs = confArgs;
+    }
+
+    /**
+     * helper method to handle OPTIONS requests
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
+    protected void handleOptions(
+            HttpServerExchange exchange,
+            RequestContext context)
+            throws Exception {
+        exchange.getResponseHeaders()
+                .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
+                .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+        exchange.setStatusCode(HttpStatus.SC_OK);
+        exchange.endExchange();
     }
 }

@@ -101,8 +101,7 @@ public class ResponseSenderHandler extends PipedHttpHandler {
             }
         }
 
-        if (context.getRepresentationFormat()
-                == REPRESENTATION_FORMAT.HAL) {
+        if (context.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
                     Resource.HAL_JSON_MEDIA_TYPE);
         } else {

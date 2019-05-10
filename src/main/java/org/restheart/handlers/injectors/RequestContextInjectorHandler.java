@@ -97,7 +97,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         this.whatUri = whatUri;
         this.checkAggregationOperators = checkAggregationOperators;
     }
-
+    
     /**
      *
      * @param exchange

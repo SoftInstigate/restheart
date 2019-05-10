@@ -66,7 +66,9 @@ public class CacheInvalidator extends Service {
             return;
         }
 
-        if (context.getMethod() == METHOD.POST) {
+        if (context.isOptions()) {
+            handleOptions(exchange, context);
+        } else if (context.isPost()) {
             Deque<String> _db = exchange.getQueryParameters().get("db");
             Deque<String> _coll = exchange.getQueryParameters().get("coll");
 
@@ -76,7 +78,6 @@ public class CacheInvalidator extends Service {
                         context,
                         HttpStatus.SC_BAD_REQUEST,
                         "the db query paramter is mandatory");
-                next(exchange, context);
             } else {
                 String db = _db.getFirst();
 
@@ -89,12 +90,12 @@ public class CacheInvalidator extends Service {
                             .invalidateCollection(db, coll);
                 }
 
-                exchange.setStatusCode(HttpStatus.SC_OK);
-                exchange.endExchange();
+                context.setResponseStatusCode(HttpStatus.SC_OK);
             }
         } else {
-            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
-            exchange.endExchange();
+            context.setResponseStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
+        
+        next(exchange, context);
     }
 }
