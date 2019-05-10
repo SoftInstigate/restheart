@@ -207,7 +207,7 @@ aggregation-check-operators: true
 #                          DATABASE => at db level, COLLECTION => at collection level
 # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
-enable-log-file: true
+enable-log-file: false
 log-file-path: restheart.log
 enable-log-console: true
 log-level: DEBUG
