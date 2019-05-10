@@ -46,6 +46,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Transformer;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
+import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,7 @@ public class CsvLoader extends Service {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(CsvLoader.class);
 
-    private static final BsonString ERROR_QPARAM = new BsonString(
+    private static final String ERROR_QPARAM =
             "query parameters: "
             + "db=<db_name> *required, "
             + "coll=<collection_name> *required, "
@@ -89,20 +90,20 @@ public class CsvLoader extends Service {
             + "values=<values> optional (default: no values) values of additional props to add to each row, "
             + "transformer=<tname> optional (default: no transformer). name (as defined in conf file) of a tranformer to apply to imported data, "
             + "update=true optional (default: false). use data to update matching documents"
-            + "upsert=true optional (default: false). create new document if no documents match the row. ");
+            + "upsert=true optional (default: false). create new document if no documents match the row. ";
 
-    private static final BsonString ERROR_CONTENT_TYPE = new BsonString(
-            "Content-Type request header must be 'text/csv'");
+    private static final String ERROR_CONTENT_TYPE =
+            "Content-Type request header must be 'text/csv'";
 
-    private static final BsonString ERROR_WRONG_METHOD = new BsonString(
-            "Only POST method is supported");
+    private static final String ERROR_WRONG_METHOD = 
+            "Only POST method is supported";
 
-    private static final BsonString ERROR_PARSING_DATA = new BsonString(
-            "Error parsing CSV, see logs for more information");
+    private static final String ERROR_PARSING_DATA = 
+            "Error parsing CSV, see logs for more information";
 
     private final static FindOneAndUpdateOptions FAU_NO_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(false);
-            
+
     private final static FindOneAndUpdateOptions FAU_WITH_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(true);
 
@@ -120,21 +121,10 @@ public class CsvLoader extends Service {
             HttpServerExchange exchange, RequestContext context)
             throws Exception {
         if (context.isOptions()) {
-            exchange.getResponseHeaders()
-                    .put(HttpString
-                            .tryFromString("Access-Control-Allow-Methods"),
-                            "POST");
-            exchange.getResponseHeaders()
-                    .put(HttpString
-                            .tryFromString("Access-Control-Allow-Headers"),
-                            "Accept, Accept-Encoding, Authorization, "
-                            + "Content-Length, Content-Type, Host, Origin, "
-                            + "X-Requested-With, User-Agent, "
-                            + "No-Auth-Challenge");
-            exchange.setStatusCode(HttpStatus.SC_OK);
-            exchange.endExchange();
+            handleOptions(exchange, context);
         } else {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Resource.JSON_MEDIA_TYPE);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, 
+                    Resource.JSON_MEDIA_TYPE);
             if (doesApply(context)) {
                 if (checkContentType(exchange)) {
                     try {
@@ -154,7 +144,6 @@ public class CsvLoader extends Service {
                                         .getCollection(params.coll, BsonDocument.class);
 
                                 if (params.update) {
-                                    
                                     documents.stream().forEach(document -> {
                                         BsonDocument updateQuery = new BsonDocument("_id", document.remove("_id"));
 
@@ -165,73 +154,61 @@ public class CsvLoader extends Service {
                                         if (_filter != null && _filter.isDocument()) {
                                             updateQuery.putAll(_filter.asDocument());
                                         }
-                                        if( params.upsert){ 
-                                        mcoll.findOneAndUpdate(updateQuery,
-                                                new BsonDocument("$set", document),
-                                                FAU_WITH_UPSERT_OPS);
-                                        } else {
-                                            
+                                        if (params.upsert) {
                                             mcoll.findOneAndUpdate(updateQuery,
-                                                new BsonDocument("$set", document),
-                                                FAU_NO_UPSERT_OPS);
+                                                    new BsonDocument("$set", document),
+                                                    FAU_WITH_UPSERT_OPS);
+                                        } else {
+
+                                            mcoll.findOneAndUpdate(updateQuery,
+                                                    new BsonDocument("$set", document),
+                                                    FAU_NO_UPSERT_OPS);
                                         }
                                     });
                                 } else {
-
                                     mcoll.insertMany(documents);
                                 }
-                                exchange.setStatusCode(HttpStatus.SC_OK);
+                                context.setResponseStatusCode(HttpStatus.SC_OK);
                             } else {
-                                exchange.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
+                                context.setResponseStatusCode(HttpStatus.SC_NOT_MODIFIED);
                             }
                         } catch (IOException ex) {
-                            LOGGER.error("error parsing CSV data", ex);
-                            exchange.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-                            exchange.getResponseSender()
-                                    .send(getError(
-                                            HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                                            ERROR_PARSING_DATA));
+                            LOGGER.debug("error parsing CSV data", ex);
+                            ResponseHelper.endExchangeWithMessage(
+                                    exchange,
+                                    context,
+                                    HttpStatus.SC_BAD_REQUEST,
+                                    ERROR_PARSING_DATA);
+
                         }
                     } catch (IllegalArgumentException iae) {
-                        exchange.setStatusCode(HttpStatus.SC_BAD_REQUEST);
-                        exchange.getResponseSender()
-                                .send(getError(
-                                        HttpStatus.SC_BAD_REQUEST,
-                                        ERROR_QPARAM));
+                        ResponseHelper.endExchangeWithMessage(
+                                exchange,
+                                context,
+                                HttpStatus.SC_BAD_REQUEST,
+                                ERROR_QPARAM);
                     }
                 } else {
-                    exchange.setStatusCode(HttpStatus.SC_BAD_REQUEST);
-                    exchange.getResponseSender()
-                            .send(getError(
-                                    HttpStatus.SC_BAD_REQUEST,
-                                    ERROR_CONTENT_TYPE));
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            context,
+                            HttpStatus.SC_BAD_REQUEST,
+                            ERROR_CONTENT_TYPE);
                 }
 
             } else {
-                exchange.getResponseSender()
-                        .send(getError(
-                                HttpStatus.SC_NOT_IMPLEMENTED,
-                                ERROR_WRONG_METHOD));
+                ResponseHelper.endExchangeWithMessage(
+                                    exchange,
+                                    context,
+                                    HttpStatus.SC_NOT_IMPLEMENTED,
+                                    ERROR_WRONG_METHOD);
             }
-
-            exchange.endExchange();
         }
-    }
-
-    private String getError(int code, BsonString message) {
-        BsonDocument error = new BsonDocument();
-        error.put("http status code",
-                new BsonInt32(code));
-        error.put("http status description",
-                new BsonString(HttpStatus.getStatusText(code)));
-
-        if (message != null) {
-            error.put(
-                    "message",
-                    message);
-        }
-
-        return JsonUtils.toJson(error);
+        // this clean the error message about the wrong media type 
+        // added by BodyInjectorHandler 
+        context.setResponseContent(null);
+        
+        next(exchange, context);
     }
 
     private List<BsonDocument> parseCsv(HttpServerExchange exchange,

@@ -26,7 +26,6 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class OptionsHandler extends PipedHttpHandler {
-
     /**
      * Creates a new instance of OptionsHandler
      *

@@ -20,6 +20,8 @@ package org.restheart.plugins.services;
 import org.restheart.plugins.Service;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.plugins.RegisterPlugin;
@@ -55,16 +57,16 @@ public class PingService extends Service {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.getMethod() == METHOD.GET) {
-            exchange.setStatusCode(HttpStatus.SC_OK);
-            exchange.getResponseSender().send(msg);
-            exchange.endExchange();
+        if (context.isOptions()) {
+            handleOptions(exchange, context);
+        } else if (context.isGet()) {
+            context.setResponseContent(new BsonDocument("msg",
+                    new BsonString(msg)));
+            context.setResponseStatusCode(HttpStatus.SC_OK);
         } else {
-            exchange.setStatusCode(HttpStatus.SC_OK);
-            if (context.getContent() != null) {
-                exchange.getResponseSender().send(context.getContent().toString());
-            }
-            exchange.endExchange();
+            context.setResponseStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
         }
+        
+        next(exchange, context);
     }
 }
