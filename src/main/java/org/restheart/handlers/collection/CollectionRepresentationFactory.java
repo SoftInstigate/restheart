@@ -37,8 +37,8 @@ import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.handlers.metadata.InvalidMetadataException;
-import org.restheart.metadata.checkers.JsonSchemaChecker;
-import org.restheart.metadata.checkers.RequestChecker;
+import org.restheart.plugins.checkers.JsonSchemaChecker;
+import org.restheart.metadata.CheckerMetadata;
 import org.restheart.representation.RepUtils;
 import org.restheart.utils.URLUtils;
 
@@ -97,14 +97,14 @@ public class CollectionRepresentationFactory
             Resource rep,
             RequestContext context) {
         try {
-            List<RequestChecker> checkers
-                    = RequestChecker.getFromJson(context.getCollectionProps());
+            List<CheckerMetadata> checkers
+                    = CheckerMetadata.getFromJson(context.getCollectionProps());
 
             if (checkers != null) {
                 checkers
-                        .stream().filter((RequestChecker c) -> {
+                        .stream().filter((CheckerMetadata c) -> {
                             return JSON_SCHEMA_NAME.equals(c.getName());
-                        }).forEach((RequestChecker c) -> {
+                        }).forEach((CheckerMetadata c) -> {
                     BsonValue schemaId = c.getArgs().asDocument()
                             .get(JsonSchemaChecker.SCHEMA_ID_PROPERTY);
 

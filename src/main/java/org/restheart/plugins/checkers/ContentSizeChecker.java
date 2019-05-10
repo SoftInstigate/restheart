@@ -15,13 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.checkers;
+package org.restheart.plugins.checkers;
 
+import org.restheart.plugins.Checker;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
-import org.restheart.metadata.checkers.Checker.PHASE;
+import org.restheart.plugins.Checker.PHASE;
+import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +39,9 @@ import org.slf4j.LoggerFactory;
  * sizes are in bytes
  *
  */
+@RegisterPlugin(
+        name = "checkContentSize", 
+        description = "Checks the request content length.")
 public class ContentSizeChecker implements Checker {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ContentSizeChecker.class);

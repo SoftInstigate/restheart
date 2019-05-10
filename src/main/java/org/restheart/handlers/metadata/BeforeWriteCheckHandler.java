@@ -19,19 +19,19 @@ package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.handlers.metadata.RequestTransformerHandler.LOGGER;
-import org.restheart.metadata.NamedSingletonsFactory;
-import org.restheart.metadata.checkers.Checker;
-import org.restheart.metadata.checkers.Checker.PHASE;
-import org.restheart.metadata.checkers.CheckersUtils;
-import org.restheart.metadata.checkers.GlobalChecker;
-import org.restheart.metadata.checkers.RequestChecker;
+import org.restheart.plugins.Checker;
+import org.restheart.plugins.Checker.PHASE;
+import org.restheart.plugins.checkers.CheckersUtils;
+import org.restheart.plugins.GlobalChecker;
+import org.restheart.metadata.CheckerMetadata;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
@@ -90,37 +90,32 @@ public class BeforeWriteCheckHandler extends CheckHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws InvalidMetadataException {
-        List<RequestChecker> requestCheckers = RequestChecker.getFromJson(
+        List<CheckerMetadata> requestCheckers = CheckerMetadata.getFromJson(
                 context.getCollectionProps());
 
         return requestCheckers != null
-                && requestCheckers.stream().allMatch(requestChecker -> {
+                && requestCheckers.stream().allMatch(checkerMetadata -> {
                     try {
-                        NamedSingletonsFactory nsf = NamedSingletonsFactory
-                                .getInstance();
+                        var checkerRecord = PluginsRegistry.getInstance().
+                                getChecker(checkerMetadata.getName());
+                        var checker = checkerRecord.getInstance();
 
-                        Checker checker = (Checker) nsf
-                                .get(ROOT_KEY, requestChecker.getName());
-
-                        BsonDocument confArgs = nsf.getArgs(ROOT_KEY,
-                                requestChecker.getName());
+                        BsonDocument confArgs = checkerRecord
+                                .getConfArgsAsBsonDocument();
 
                         return applyChecker(exchange,
                                 context,
-                                requestChecker.skipNotSupported(),
+                                checkerMetadata.skipNotSupported(),
                                 checker,
-                                requestChecker.getArgs(),
+                                checkerMetadata.getArgs(),
                                 confArgs);
-                    } catch (IllegalArgumentException ex) {
-                        String err = "Cannot find '"
-                                + requestChecker.getName()
-                                + "' in singleton group 'checkers'";
-                        LOGGER.warn(err);
-                        context.addWarning(err);
+                    } catch (NoSuchElementException ex) {
+                        LOGGER.warn(ex.getMessage());
+                        context.addWarning(ex.getMessage());
                         return false;
                     } catch (Throwable t) {
                         String err = "Error executing checker '"
-                                + requestChecker.getName()
+                                + checkerMetadata.getName()
                                 + "': "
                                 + t.getMessage();
                         LOGGER.warn(err);

@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.metadata.checkers;
+package org.restheart.plugins.checkers;
 
+import org.restheart.plugins.Checker;
 import io.undertow.server.HttpServerExchange;
 import java.util.Objects;
 import org.bson.BsonDocument;
@@ -30,6 +31,7 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.handlers.schema.JsonSchemaNotFoundException;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
@@ -42,12 +44,15 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@RegisterPlugin(
+        name = "jsonSchema",
+        description = "Checks the request according to the specified json-schema.")
 public class JsonSchemaChecker implements Checker {
     public static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";
     public static final String SCHEMA_ID_PROPERTY = "schemaId";
 
-    static final Logger LOGGER =
-            LoggerFactory.getLogger(JsonSchemaChecker.class);
+    static final Logger LOGGER
+            = LoggerFactory.getLogger(JsonSchemaChecker.class);
 
     @Override
     public boolean check(
@@ -56,7 +61,7 @@ public class JsonSchemaChecker implements Checker {
             BsonDocument contentToCheck,
             BsonValue args) {
         Objects.requireNonNull(args, "missing metadata property 'args'");
-        
+
         // cannot PUT an array
         if (args == null || !args.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
@@ -66,7 +71,7 @@ public class JsonSchemaChecker implements Checker {
                     "args must be a json object");
             return false;
         }
-        
+
         BsonDocument _args = args.asDocument();
 
         BsonValue _schemaStoreDb = _args.get(SCHEMA_STORE_DB_PROPERTY);
@@ -74,8 +79,8 @@ public class JsonSchemaChecker implements Checker {
 
         BsonValue schemaId = _args.get(SCHEMA_ID_PROPERTY);
 
-        Objects.requireNonNull(schemaId, "missing property '" 
-                + SCHEMA_ID_PROPERTY 
+        Objects.requireNonNull(schemaId, "missing property '"
+                + SCHEMA_ID_PROPERTY
                 + "' in metadata property 'args'");
 
         if (_schemaStoreDb == null) {
@@ -84,8 +89,8 @@ public class JsonSchemaChecker implements Checker {
         } else if (_schemaStoreDb.isString()) {
             schemaStoreDb = _schemaStoreDb.asString().getValue();
         } else {
-            throw new IllegalArgumentException("property " 
-                    + SCHEMA_STORE_DB_PROPERTY 
+            throw new IllegalArgumentException("property "
+                    + SCHEMA_STORE_DB_PROPERTY
                     + " in metadata 'args' must be a string");
         }
 

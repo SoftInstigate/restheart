@@ -130,25 +130,6 @@ plugins-args:
   csvLoader:
     uri: /csv
 
-### Metadata Named Singletons
-
-# Metadata implementation can rely on singletons, this section configures the
-# singleton factory #org.restheart.metadata.NamedSingletonsFactory
-
-metadata-named-singletons:
-    # checkers group used by handler:
-    # org.restheart.handlers.metadata.CheckMetadataHandler
-    # More information in checkers javadoc
-    - group: checkers
-      interface: org.restheart.metadata.checkers.Checker
-      singletons:
-        - name: jsonSchema
-          class: org.restheart.metadata.checkers.JsonSchemaChecker
-        - name: checkContent
-          class: org.restheart.metadata.checkers.JsonPathConditionsChecker
-        - name: checkContentSize
-          class: org.restheart.metadata.checkers.ContentSizeChecker
-
 ### Security
 
 # Check if aggregation variables use operators. allowing operators in aggregation variables 

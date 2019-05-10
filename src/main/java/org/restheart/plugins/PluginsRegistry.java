@@ -54,6 +54,9 @@ public class PluginsRegistry {
     private final Map<String, PluginRecord<Hook>> hooks
             = new LinkedHashMap<>();
     
+    private final Map<String, PluginRecord<Checker>> checkers
+            = new LinkedHashMap<>();
+    
     private final Map<String, Map<String, Object>> confs = consumeConfiguration();
 
     private PluginsRegistry() {
@@ -61,6 +64,7 @@ public class PluginsRegistry {
         findServices();
         findTransformers();
         findHooks();
+        findCheckers();
     }
 
     public static PluginsRegistry getInstance() {
@@ -98,6 +102,21 @@ public class PluginsRegistry {
                     + " is not registered");
         } else {
             return transformers.get(name);
+        }
+    }
+    
+    /**
+     * @param name
+     * @return the transformer called name
+     */
+    public PluginRecord<Checker> getChecker(String name)
+            throws NoSuchElementException {
+        if (!checkers.containsKey(name)) {
+            throw new NoSuchElementException("Checker "
+                    + name
+                    + " is not registered");
+        } else {
+            return checkers.get(name);
         }
     }
     
@@ -179,6 +198,10 @@ public class PluginsRegistry {
                             ci.getName(),
                             (Initializer) i,
                             confs.get(name)));
+                    
+                    LOGGER.info("Registered initializer {}: {}",
+                            name,
+                            description);
                 } catch (InstantiationException
                         | IllegalAccessException
                         | InvocationTargetException
@@ -226,6 +249,10 @@ public class PluginsRegistry {
                             registeredService.getName(),
                             (Service) srv,
                             confs.get(name)));
+                    
+                    LOGGER.info("Registered service {}: {}",
+                            name,
+                            description);
                 } catch (NoSuchMethodException nsme) {
                     LOGGER.error("Plugin class {} annotated with "
                             + "@RegisterPlugin must have a constructor "
@@ -278,6 +305,10 @@ public class PluginsRegistry {
                                     registeredTransformer.getName(),
                                     (Transformer) transformer,
                                     confs.get(name)));
+                    
+                    LOGGER.info("Registered transformer {}: {}",
+                            name,
+                            description);
                 } catch (InstantiationException
                         | IllegalAccessException
                         | InvocationTargetException
@@ -326,12 +357,68 @@ public class PluginsRegistry {
                                     registeredHook.getName(),
                                     (Hook) hook,
                                     confs.get(name)));
+                    
+                    LOGGER.info("Registered hook {}: {}",
+                            name,
+                            description);
                 } catch (InstantiationException
                         | IllegalAccessException
                         | InvocationTargetException
                         | NoSuchMethodException t) {
                     LOGGER.error("Error registering hook {}",
                             registeredHook.getName(),
+                            t);
+                }
+            });
+        }
+    }
+    
+    /**
+     * finds the checkers
+     */
+    @SuppressWarnings("unchecked")
+    private void findCheckers() {
+        try (var scanResult = new ClassGraph()
+                .enableAnnotationInfo()
+                .scan()) {
+            var registeredPlugins = scanResult
+                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+
+            var listOfType = scanResult.getClassesImplementing(Checker.class.getName());
+
+            var registeredCheckers = registeredPlugins.intersect(listOfType);
+
+            registeredCheckers.stream().forEach(registeredChecker -> {
+                Object chcker;
+
+                try {
+                    String name = annotationParam(registeredChecker,
+                            "name");
+
+                    String description = annotationParam(registeredChecker,
+                            "description");
+
+                    chcker = registeredChecker.loadClass(false)
+                            .getConstructor()
+                            .newInstance();
+
+                    this.checkers.put(
+                            name, new PluginRecord(
+                                    name,
+                                    description,
+                                    registeredChecker.getName(),
+                                    (Checker) chcker,
+                                    confs.get(name)));
+                    
+                    LOGGER.info("Registered checker {}: {}",
+                            name,
+                            description);
+                } catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException
+                        | NoSuchMethodException t) {
+                    LOGGER.error("Error registering checker {}",
+                            registeredChecker.getName(),
                             t);
                 }
             });
