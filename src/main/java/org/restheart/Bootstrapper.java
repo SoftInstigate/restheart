@@ -123,7 +123,7 @@ public class Bootstrapper {
 
     private static GracefulShutdownHandler shutdownHandler = null;
     private static PathHandler rootPathHandler = path();
-    
+
     private static Configuration configuration;
     private static Undertow undertowServer;
 
@@ -142,10 +142,10 @@ public class Bootstrapper {
         configuration = loadConfiguration();
         run();
     }
-    
+
     private Bootstrapper() {
     }
-    
+
     /**
      *
      * @return the global configuration
@@ -156,8 +156,9 @@ public class Bootstrapper {
 
     /**
      * Allows to programmatically add handlers to the root path handler
+     *
      * @see Path.addPrefixPath()
-     * 
+     *
      * @return the restheart root path handler
      */
     public static PathHandler getRootPathHandler() {
@@ -512,7 +513,6 @@ public class Bootstrapper {
                 getInstance()
                 .getInitializers()
                 .stream()
-                .filter(record -> !record.isDisabled())
                 .forEachOrdered(record -> {
                     try {
                         record.getInstance().init(record.getConfArgs());
@@ -551,7 +551,7 @@ public class Bootstrapper {
         if (!silent) {
             LOGGER.info("Stopping RESTHeart...");
         }
-        
+
         if (shutdownHandler != null) {
             if (!silent) {
                 LOGGER.info("Waiting for pending request to complete (up to 1 minute)...");
@@ -999,31 +999,38 @@ public class Bootstrapper {
         PluginsRegistry.getInstance().getServices().stream().forEach(srv -> {
             var srvConfArgs = srv.getConfArgs();
 
+            String uri;
+
             if (srvConfArgs == null
                     || !srvConfArgs.containsKey("uri")
                     || srvConfArgs.get("uri") == null) {
-                LOGGER.error("Cannot start service {}:"
-                        + " the configuration property 'uri' is not defined",
-                        srv.getName());
-                return;
-            }
-            
-            if (!(srvConfArgs.get("uri") instanceof String)) {
-                LOGGER.error("Cannot start service {}:"
-                        + " the configuration property 'uri' must be a string", 
-                        srv.getName());
-                
-                return;
+                uri = srv.getInstance().defaultUri();
+            } else {
+                if (!(srvConfArgs.get("uri") instanceof String)) {
+                    LOGGER.error("Cannot start service {}:"
+                            + " the configuration property 'uri' must be a string",
+                            srv.getName());
+
+                    return;
+                } else {
+                    uri = (String) srvConfArgs.get("uri");
+                }
             }
 
-            var uri = (String) srvConfArgs.get("uri");
+            if (uri == null) {
+                LOGGER.error("Cannot start service {}:"
+                        + " the configuration property 'uri' is not defined"
+                        + " and the service does not have a default value",
+                        srv.getName());
+                return;
+            }
 
             if (!uri.startsWith("/")) {
                 LOGGER.error("Cannot start service {}:"
-                        + " the configuration property 'uri' must start with /", 
+                        + " the configuration property 'uri' must start with /",
                         srv.getName(),
                         uri);
-                
+
                 return;
             }
 
@@ -1039,8 +1046,8 @@ public class Bootstrapper {
                             new RequestLoggerHandler(
                                     new CORSHandler(handler))));
 
-            LOGGER.info("URI {} bound to service {}.",
-                    uri, srv.getName());
+            LOGGER.info("Service {} bound to {}",
+                    srv.getName(), uri);
         });
     }
 

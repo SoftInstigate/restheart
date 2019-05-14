@@ -78,9 +78,9 @@ public interface ConfigurationKeys {
     public static final String PLUGINS_ARGS_KEY = "plugins-args";
     
     /**
-     * the key for the plugin disabled property.
+     * the key for the plugin enabled property.
      */
-    public static final String PLUGIN_DISABLED_KEY = "disabled";
+    public static final String PLUGIN_ENABLED_KEY = "enabled";
     
     /**
      * default db etag check policy

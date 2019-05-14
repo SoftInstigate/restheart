@@ -23,7 +23,6 @@ import java.util.Map;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
@@ -44,9 +43,14 @@ public class PingService extends Service {
     public PingService(Map<String, Object> confArgs) {
         super(confArgs);
 
-        this.msg =  confArgs.containsKey("msg") 
+        this.msg =  confArgs != null  && confArgs.containsKey("msg") 
                 ? (String) confArgs.get("msg") 
                 : "ping";
+    }
+    
+    @Override
+    public String defaultUri() {
+        return "/ping";
     }
 
     /**

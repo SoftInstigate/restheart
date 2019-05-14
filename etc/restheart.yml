@@ -112,15 +112,15 @@ static-resources-mounts:
 
 # All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object 
 # with the same name of the plugin (as defined in its @Register annotation).
-# The special property 'disabled' allows disabling the plugin (any value will work)
+# The property 'enabled' allows enabling plugins that are not enabled by default.
 
 plugins-args:
   logMessageInitializer:
-    disabled: !
+    enabled: false
     message: Hello World!
     log-level: INFO
   addBodyToWriteResponsesInitializer:
-    disabled: !
+    enabled: false
   pingService:
     uri: /ping
     msg: Hello World!

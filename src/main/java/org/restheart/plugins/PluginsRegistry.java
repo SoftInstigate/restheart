@@ -50,13 +50,13 @@ public class PluginsRegistry {
 
     private final Map<String, PluginRecord<Transformer>> transformers
             = new LinkedHashMap<>();
-    
+
     private final Map<String, PluginRecord<Hook>> hooks
             = new LinkedHashMap<>();
-    
+
     private final Map<String, PluginRecord<Checker>> checkers
             = new LinkedHashMap<>();
-    
+
     private final Map<String, Map<String, Object>> confs = consumeConfiguration();
 
     private PluginsRegistry() {
@@ -104,7 +104,7 @@ public class PluginsRegistry {
             return transformers.get(name);
         }
     }
-    
+
     /**
      * @param name
      * @return the transformer called name
@@ -119,7 +119,7 @@ public class PluginsRegistry {
             return checkers.get(name);
         }
     }
-    
+
     /**
      * @param name
      * @return the hook called name
@@ -181,33 +181,43 @@ public class PluginsRegistry {
                 }
             });
 
-            registeredInitializers.stream().forEachOrdered(ci -> {
+            registeredInitializers.stream().forEachOrdered(registeredInitializer -> {
                 Object i;
 
                 try {
-                    i = ci.loadClass(false)
+                    i = registeredInitializer.loadClass(false)
                             .getConstructor()
                             .newInstance();
 
-                    String name = annotationParam(ci, "name");
-                    String description = annotationParam(ci, "description");
+                    String name = annotationParam(registeredInitializer,
+                            "name");
+                    String description = annotationParam(registeredInitializer,
+                            "description");
+                    Boolean enabledByDefault = annotationParam(registeredInitializer,
+                            "enabledByDefault");
 
-                    this.initializers.add(new PluginRecord(
+                    var pr = new PluginRecord(
                             name,
                             description,
-                            ci.getName(),
+                            enabledByDefault,
+                            registeredInitializer.getName(),
                             (Initializer) i,
-                            confs.get(name)));
-                    
-                    LOGGER.info("Registered initializer {}: {}",
-                            name,
-                            description);
+                            confs.get(name));
+
+                    if (pr.isEnabled()) {
+                        this.initializers.add(pr);
+                        LOGGER.info("Registered initializer {}: {}",
+                                name,
+                                description);
+                    } else {
+                        LOGGER.debug("Initializer {} is disabled", name);
+                    }
                 } catch (InstantiationException
                         | IllegalAccessException
                         | InvocationTargetException
                         | NoSuchMethodException t) {
                     LOGGER.error("Error registering initializer {}",
-                            ci.getName(),
+                            registeredInitializer.getName(),
                             t);
                 }
             });
@@ -235,24 +245,32 @@ public class PluginsRegistry {
                 try {
                     String name = annotationParam(registeredService,
                             "name");
-
                     String description = annotationParam(registeredService,
                             "description");
+                    Boolean enabledByDefault = annotationParam(registeredService,
+                            "enabledByDefault");
 
                     srv = registeredService.loadClass(false)
                             .getConstructor(Map.class)
                             .newInstance(confs.get(name));
 
-                    this.services.add(new PluginRecord(
+                    var pr = new PluginRecord(
                             name,
                             description,
+                            enabledByDefault,
                             registeredService.getName(),
                             (Service) srv,
-                            confs.get(name)));
-                    
-                    LOGGER.info("Registered service {}: {}",
-                            name,
-                            description);
+                            confs.get(name));
+
+                    if (pr.isEnabled()) {
+                        this.services.add(pr);
+                        LOGGER.info("Registered service {}: {}",
+                                name,
+                                description);
+                    } else {
+                        LOGGER.debug("Service {} is disabled", name);
+                    }
+
                 } catch (NoSuchMethodException nsme) {
                     LOGGER.error("Plugin class {} annotated with "
                             + "@RegisterPlugin must have a constructor "
@@ -294,21 +312,29 @@ public class PluginsRegistry {
                     String description = annotationParam(registeredTransformer,
                             "description");
 
+                    Boolean enabledByDefault = annotationParam(registeredTransformer,
+                            "enabledByDefault");
+
                     transformer = registeredTransformer.loadClass(false)
                             .getConstructor()
                             .newInstance();
 
-                    this.transformers.put(
-                            name, new PluginRecord(
-                                    name,
-                                    description,
-                                    registeredTransformer.getName(),
-                                    (Transformer) transformer,
-                                    confs.get(name)));
-                    
-                    LOGGER.info("Registered transformer {}: {}",
+                    var pr = new PluginRecord(
                             name,
-                            description);
+                            description,
+                            enabledByDefault,
+                            registeredTransformer.getName(),
+                            (Transformer) transformer,
+                            confs.get(name));
+
+                    if (pr.isEnabled()) {
+                        this.transformers.put(name, pr);
+                        LOGGER.info("Registered transformer {}: {}",
+                                name,
+                                description);
+                    } else {
+                        LOGGER.debug("Transformer {} is disabled", name);
+                    }
                 } catch (InstantiationException
                         | IllegalAccessException
                         | InvocationTargetException
@@ -320,7 +346,7 @@ public class PluginsRegistry {
             });
         }
     }
-    
+
     /**
      * finds the hooks
      */
@@ -342,25 +368,31 @@ public class PluginsRegistry {
                 try {
                     String name = annotationParam(registeredHook,
                             "name");
-
                     String description = annotationParam(registeredHook,
                             "description");
+                    Boolean enabledByDefault = annotationParam(registeredHook,
+                            "enabledByDefault");
 
                     hook = registeredHook.loadClass(false)
                             .getConstructor()
                             .newInstance();
 
-                    this.hooks.put(
-                            name, new PluginRecord(
-                                    name,
-                                    description,
-                                    registeredHook.getName(),
-                                    (Hook) hook,
-                                    confs.get(name)));
-                    
-                    LOGGER.info("Registered hook {}: {}",
+                    var pr = new PluginRecord(
                             name,
-                            description);
+                            description,
+                            enabledByDefault,
+                            registeredHook.getName(),
+                            (Hook) hook,
+                            confs.get(name));
+
+                    if (enabledByDefault) {
+                        this.hooks.put(name, pr);
+                        LOGGER.info("Registered hook {}: {}",
+                                name,
+                                description);
+                    } else {
+                        LOGGER.debug("Hook {} is disabled", name);
+                    }
                 } catch (InstantiationException
                         | IllegalAccessException
                         | InvocationTargetException
@@ -372,7 +404,7 @@ public class PluginsRegistry {
             });
         }
     }
-    
+
     /**
      * finds the checkers
      */
@@ -389,30 +421,36 @@ public class PluginsRegistry {
             var registeredCheckers = registeredPlugins.intersect(listOfType);
 
             registeredCheckers.stream().forEach(registeredChecker -> {
-                Object chcker;
+                Object checker;
 
                 try {
                     String name = annotationParam(registeredChecker,
                             "name");
-
                     String description = annotationParam(registeredChecker,
                             "description");
+                    Boolean enabledByDefault = annotationParam(registeredChecker,
+                            "enabledByDefault");
 
-                    chcker = registeredChecker.loadClass(false)
+                    checker = registeredChecker.loadClass(false)
                             .getConstructor()
                             .newInstance();
 
-                    this.checkers.put(
-                            name, new PluginRecord(
-                                    name,
-                                    description,
-                                    registeredChecker.getName(),
-                                    (Checker) chcker,
-                                    confs.get(name)));
-                    
-                    LOGGER.info("Registered checker {}: {}",
+                    var pr = new PluginRecord(
                             name,
-                            description);
+                            description,
+                            enabledByDefault,
+                            registeredChecker.getName(),
+                            (Checker) checker,
+                            confs.get(name));
+
+                    if (enabledByDefault) {
+                        this.checkers.put(name, pr);
+                        LOGGER.info("Registered checker {}: {}",
+                                name,
+                                description);
+                    } else {
+                        LOGGER.debug("Checker {} is disabled", name);
+                    }
                 } catch (InstantiationException
                         | IllegalAccessException
                         | InvocationTargetException

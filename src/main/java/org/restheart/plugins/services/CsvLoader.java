@@ -23,7 +23,6 @@ import com.mongodb.client.model.FindOneAndUpdateOptions;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
-import io.undertow.util.HttpString;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import org.bson.BsonDocument;
-import org.bson.BsonInt32;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -70,7 +68,7 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("unchecked")
 @RegisterPlugin(name = "csvLoader",
-        description = "Uploads a csv file in a collection.")
+        description = "Uploads a csv file in a collection")
 public class CsvLoader extends Service {
 
     public static final String CVS_CONTENT_TYPE = "text/csv";
@@ -114,6 +112,11 @@ public class CsvLoader extends Service {
      */
     public CsvLoader(Map<String, Object> confArgs) {
         super(confArgs);
+    }
+    
+    @Override
+    public String defaultUri() {
+        return "/csv";
     }
 
     @Override

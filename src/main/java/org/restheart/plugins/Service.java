@@ -20,11 +20,9 @@ package org.restheart.plugins;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Map;
-import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.ResponseSenderHandler;
-import org.restheart.plugins.Plugin;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -45,6 +43,15 @@ public abstract class Service extends PipedHttpHandler implements Plugin {
     public Service(Map<String, Object> confArgs) {
         super(new ResponseSenderHandler());
         this.confArgs = confArgs;
+    }
+
+    /**
+     *
+     * @return the default uri of the service, used if not specified in plugin
+     * configuration
+     */
+    public String defaultUri() {
+        return null;
     }
 
     /**

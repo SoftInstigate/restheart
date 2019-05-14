@@ -22,7 +22,7 @@ import java.lang.annotation.RetentionPolicy;
 
 /**
  * Annotation to register a Plugin
- * 
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @Retention(RetentionPolicy.RUNTIME)
@@ -32,14 +32,21 @@ public @interface RegisterPlugin {
      * file to pass confArgs
      */
     String name();
-    
+
     /**
      * Describes the plugin
      */
     String description();
-    
+
     /**
      * Set the order of execution (less is higher priority)
      */
     int priority() default 10;
+
+    /**
+     * Set to true to enable the plugin by default. Otherwise it can be enabled
+     * setting the configuration argument 'enabled'
+     *
+     */
+    boolean enabledByDefault() default true;
 }
