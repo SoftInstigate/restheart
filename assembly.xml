@@ -32,22 +32,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <outputDirectory>.</outputDirectory>
             <includes>
                 <include>README*</include>
-                <include>LICENSE*</include>
-                <include>NOTICE*</include>
+                <include>*LICENSE.txt</include>
                 <include>etc/restheart.yml</include>
                 <include>etc/security.yml</include>
-                <include>etc/restheartd.conf</include>
             </includes>
         </fileSet>
         <fileSet>
             <directory>${project.build.directory}</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
-                <include>*.jar</include>
+                <include>restheart.jar</include>
             </includes>
-            <excludes>
-                <exclude>*-nodeps.jar</exclude>
-            </excludes>
         </fileSet>
         <fileSet>
             <directory>${project.build.directory}/site</directory>
