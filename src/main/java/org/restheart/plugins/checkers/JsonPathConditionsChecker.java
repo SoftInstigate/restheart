@@ -89,7 +89,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "checkContent",
         description = "Checks the request content by using conditions "
-        + " based on json path expressions.")
+        + " based on json path expressions")
 public class JsonPathConditionsChecker implements Checker {
     static final Logger LOGGER = LoggerFactory.getLogger(JsonPathConditionsChecker.class);
 

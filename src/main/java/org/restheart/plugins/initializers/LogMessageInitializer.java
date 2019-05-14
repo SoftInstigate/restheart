@@ -32,7 +32,8 @@ import org.restheart.utils.LogUtils.Level;
 @RegisterPlugin(
         name = "logMessageInitializer", 
         priority = 100, 
-        description = "Logs the message specified in the configuration file.")
+        description = "Logs the message specified in the configuration file",
+        enabledByDefault = false)
 public class LogMessageInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(LogMessageInitializer.class);

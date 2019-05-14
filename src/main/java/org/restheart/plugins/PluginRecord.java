@@ -29,17 +29,20 @@ import org.restheart.utils.JsonUtils;
 public class PluginRecord<T extends Plugin> {
     private final String name;
     private final String description;
+    private final boolean enabledByDefault;
     private final String className;
     private final T instance;
     private final Map<String, Object> confArgs;
 
     public PluginRecord(String name,
             String description,
+            boolean enabledByDefault,
             String className,
             T instance,
             Map<String, Object> confArgs) {
         this.name = name;
         this.description = description;
+        this.enabledByDefault = enabledByDefault;
         this.instance = instance;
         this.className = className;
         this.confArgs = confArgs;
@@ -69,10 +72,13 @@ public class PluginRecord<T extends Plugin> {
     /**
      * @return the disabled
      */
-    public boolean isDisabled() {
-        return getConfArgs() == null 
-                ? false 
-                : getConfArgs().containsKey(ConfigurationKeys.PLUGIN_DISABLED_KEY);
+    public boolean isEnabled() {
+        return getConfArgs() == null
+                ? enabledByDefault
+                : getConfArgs().containsKey(ConfigurationKeys.PLUGIN_ENABLED_KEY)
+                && getConfArgs().get(ConfigurationKeys.PLUGIN_ENABLED_KEY) instanceof Boolean
+                ? (Boolean) getConfArgs().get(ConfigurationKeys.PLUGIN_ENABLED_KEY)
+                : enabledByDefault;
     }
 
     /**
@@ -81,14 +87,14 @@ public class PluginRecord<T extends Plugin> {
     public Map<String, Object> getConfArgs() {
         return confArgs;
     }
-    
+
     /**
      * @return the confArgs
      */
     public BsonDocument getConfArgsAsBsonDocument() {
-        return confArgs == null 
-           ?     null
-        : JsonUtils.toBsonDocument(confArgs);
+        return confArgs == null
+                ? null
+                : JsonUtils.toBsonDocument(confArgs);
     }
 
     /**

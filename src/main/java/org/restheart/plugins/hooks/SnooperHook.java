@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(
         name = "snooper", 
-        description = "An example hook that logs request and response info.")
+        description = "An example hook that logs request and response info")
 public class SnooperHook implements Hook {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(SnooperHook.class);

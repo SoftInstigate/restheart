@@ -23,7 +23,6 @@ import java.util.Deque;
 import java.util.Map;
 import org.restheart.Bootstrapper;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
@@ -34,7 +33,7 @@ import org.restheart.utils.ResponseHelper;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "cacheInvalidator",
-        description = "Invalidates the db and collection metadata cache.")
+        description = "Invalidates the db and collection metadata cache")
 public class CacheInvalidator extends Service {
 
     /**
@@ -97,5 +96,10 @@ public class CacheInvalidator extends Service {
         }
         
         next(exchange, context);
+    }
+
+    @Override
+    public String defaultUri() {
+        return "/ic";
     }
 }

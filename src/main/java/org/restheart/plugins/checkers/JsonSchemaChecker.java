@@ -40,13 +40,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * checks documents according to the specified json-schema
+ * Checks documents according to the specified JSON schema
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
         name = "jsonSchema",
-        description = "Checks the request according to the specified json-schema.")
+        description = "Checks the request according to the specified JSON schema")
 public class JsonSchemaChecker implements Checker {
     public static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";
     public static final String SCHEMA_ID_PROPERTY = "schemaId";

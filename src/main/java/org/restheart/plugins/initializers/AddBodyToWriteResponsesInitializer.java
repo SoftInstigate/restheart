@@ -37,7 +37,8 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "addBodyToWriteResponsesInitializer", 
         priority = 100, 
-        description = "Add writeResult to global transformers set.")
+        description = "Add writeResult to global transformers",
+        enabledByDefault = false)
 public class AddBodyToWriteResponsesInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(AddBodyToWriteResponsesInitializer.class);
 
