@@ -122,6 +122,8 @@ public class Bootstrapper {
     private static Path CONF_FILE_PATH;
 
     private static GracefulShutdownHandler shutdownHandler = null;
+    private static PathHandler rootPathHandler = path();
+    
     private static Configuration configuration;
     private static Undertow undertowServer;
 
@@ -139,6 +141,27 @@ public class Bootstrapper {
         parseCommandLineParameters(args);
         configuration = loadConfiguration();
         run();
+    }
+    
+    private Bootstrapper() {
+    }
+    
+    /**
+     *
+     * @return the global configuration
+     */
+    public static Configuration getConfiguration() {
+        return configuration;
+    }
+
+    /**
+     * Allows to programmatically add handlers to the root path handler
+     * @see Path.addPrefixPath()
+     * 
+     * @return the restheart root path handler
+     */
+    public static PathHandler getRootPathHandler() {
+        return rootPathHandler;
     }
 
     private static void parseCommandLineParameters(final String[] args) {
@@ -528,7 +551,7 @@ public class Bootstrapper {
         if (!silent) {
             LOGGER.info("Stopping RESTHeart...");
         }
-
+        
         if (shutdownHandler != null) {
             if (!silent) {
                 LOGGER.info("Waiting for pending request to complete (up to 1 minute)...");
@@ -767,7 +790,6 @@ public class Bootstrapper {
                 = new AccountInjectorHandler(
                         ClientSessionInjectorHandler.getInstance());
 
-        PathHandler paths = path();
         PathTemplateHandler pathsTemplates = pathTemplate(false);
 
         // check that all mounts are either all paths or all path templates
@@ -807,37 +829,37 @@ public class Bootstrapper {
                 if (allPathTemplates) {
                     pathsTemplates.add(url, pipe);
                 } else {
-                    paths.addPrefixPath(url, pipe);
+                    getRootPathHandler().addPrefixPath(url, pipe);
                 }
 
                 LOGGER.info("URL {} bound to MongoDB resource {}", url, db);
             });
 
             if (allPathTemplates) {
-                paths.addPrefixPath("/", pathsTemplates);
+                getRootPathHandler().addPrefixPath("/", pathsTemplates);
             }
         }
 
-        pipeStaticResourcesHandlers(configuration, paths);
-        pipeServices(configuration, paths);
+        pipeStaticResourcesHandlers(configuration, getRootPathHandler());
+        pipeServices(configuration, getRootPathHandler());
 
-        return buildGracefulShutdownHandler(paths);
+        return buildGracefulShutdownHandler(getRootPathHandler());
     }
 
     /**
      * buildGracefulShutdownHandler
      *
-     * @param paths
+     * @param pathHandler
      * @return
      */
-    private static GracefulShutdownHandler buildGracefulShutdownHandler(PathHandler paths) {
+    private static GracefulShutdownHandler buildGracefulShutdownHandler(PathHandler pathHandler) {
         return new GracefulShutdownHandler(
                 new RequestLimitingHandler(new RequestLimit(configuration.getRequestLimit()),
                         new AllowedMethodsHandler(
                                 new BlockingHandler(
                                         new GzipEncodingHandler(
                                                 new ErrorHandler(
-                                                        new HttpContinueAcceptingHandler(paths)
+                                                        new HttpContinueAcceptingHandler(pathHandler)
                                                 ), configuration.isForceGzipEncoding()
                                         )
                                 ), // allowed methods
@@ -858,14 +880,14 @@ public class Bootstrapper {
      * pipe the static resources specified in the configuration file
      *
      * @param conf
-     * @param paths
+     * @param pathHandler
      * @param authenticationMechanism
      * @param identityManager
      * @param accessManager
      */
     private static void pipeStaticResourcesHandlers(
             final Configuration conf,
-            final PathHandler paths) {
+            final PathHandler pathHandler) {
         if (!conf.getStaticResourcesMounts().isEmpty()) {
             conf.getStaticResourcesMounts().stream().forEach(sr -> {
                 try {
@@ -948,7 +970,7 @@ public class Bootstrapper {
 
                         PipedHttpHandler ph = new RequestLoggerHandler(handler);
 
-                        paths.addPrefixPath(where, ph);
+                        pathHandler.addPrefixPath(where, ph);
 
                         LOGGER.info("URL {} bound to static resources {}.",
                                 where, file.getAbsolutePath());
@@ -969,11 +991,11 @@ public class Bootstrapper {
      * pipe services
      *
      * @param conf
-     * @param paths
+     * @param pathHandler
      */
     private static void pipeServices(
             final Configuration conf,
-            final PathHandler paths) {
+            final PathHandler pathHandler) {
         PluginsRegistry.getInstance().getServices().stream().forEach(srv -> {
             var srvConfArgs = srv.getConfArgs();
 
@@ -1012,7 +1034,7 @@ public class Bootstrapper {
                             conf.getAggregationCheckOperators(),
                             new BodyInjectorHandler(srv.getInstance()));
 
-            paths.addPrefixPath(uri,
+            pathHandler.addPrefixPath(uri,
                     new TracingInstrumentationHandler(
                             new RequestLoggerHandler(
                                     new CORSHandler(handler))));
@@ -1020,18 +1042,6 @@ public class Bootstrapper {
             LOGGER.info("URI {} bound to service {}.",
                     uri, srv.getName());
         });
-    }
-
-    /**
-     * getConfiguration
-     *
-     * @return the global configuration
-     */
-    public static Configuration getConfiguration() {
-        return configuration;
-    }
-
-    private Bootstrapper() {
     }
 
     @Parameters
