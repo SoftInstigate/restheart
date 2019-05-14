@@ -41,8 +41,8 @@ deploy:
     secure: EEGZ5uRn23QqhPqiENRZxBkuDw+qyl23ELUr0HHltI/DK+UIsFQrQydZbtl6VIPTzE8O3EOy/PhzTk2zXlh5cfi+THkIAzpNzW93CAUNFMknUV/cDsrgRSKwEXlF1LJ1WqerM8g4pKvyfyJTOIkFwir/1bIZ/ww+8zIqw6+SBlo=
   file_glob: true
   file:
-    - "target/*.tar.gz"
-    - "target/*.zip"
+    - "target/restheart-*.tar.gz"
+    - "target/restheart-*.zip"
     - "target/restheart.jar"
   skip_cleanup: true
   on:
