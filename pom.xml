@@ -13,6 +13,7 @@
     <inceptionYear>2014</inceptionYear>
 
     <properties>
+        <finalName>${project.artifactId}-${project.version}</finalName>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
@@ -256,6 +257,7 @@
     </dependencies>
 
     <build>
+        <finalName>${finalName}</finalName>
         <testResources>
             <testResource>
                 <directory>src/test/java</directory>
@@ -267,7 +269,6 @@
                 <directory>src/test/resources</directory>
             </testResource>
         </testResources>
-        <finalName>${project.artifactId}-${project.version}-nodeps</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -369,7 +370,7 @@
                         <configuration>
                             <id>bin</id>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <finalName>${project.artifactId}-${project.version}</finalName>
+                            <finalName>${finalName}</finalName>
                             <descriptors>
                                 <descriptor>assembly.xml</descriptor>
                             </descriptors>
