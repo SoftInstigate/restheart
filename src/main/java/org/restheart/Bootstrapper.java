@@ -663,25 +663,31 @@ public class Bootstrapper {
 
         if (configuration.isHttpsListener()) {
             builder.addHttpsListener(configuration.getHttpsPort(), configuration.getHttpHost(), sslContext);
-            LOGGER.info("HTTPS listener bound at {}:{}",
-                    configuration.getHttpsHost(), configuration.getHttpsPort());
+            
 
             if (configuration.getHttpsHost().equals("127.0.0.1")
-                    || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
-                LOGGER.warn("HTTPS listener is bound to localhost. "
-                        + "Remote systems will be unable to connect to this server.");
+                    || configuration.getHttpsHost().equalsIgnoreCase("localhost")) {
+                LOGGER.warn("HTTPS listener bound to localhost:{}. "
+                        + "Remote systems will be unable to connect to this server.",
+                        configuration.getHttpsPort());
+            } else {
+                LOGGER.info("HTTPS listener bound at {}:{}",
+                    configuration.getHttpsHost(), configuration.getHttpsPort());
             }
         }
 
         if (configuration.isHttpListener()) {
             builder.addHttpListener(configuration.getHttpPort(), configuration.getHttpsHost());
-            LOGGER.info("HTTP listener bound at {}:{}",
-                    configuration.getHttpHost(), configuration.getHttpPort());
+            
 
-            if (configuration.getHttpsHost().equals("127.0.0.1")
+            if (configuration.getHttpHost().equals("127.0.0.1")
                     || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
-                LOGGER.warn("HTTP listener is bound to localhost. "
-                        + "Remote systems will be unable to connect to this server.");
+                LOGGER.warn("HTTP listener bound to localhost:{}. "
+                        + "Remote systems will be unable to connect to this server.",
+                        configuration.getHttpPort());
+            } else {
+                LOGGER.info("HTTP listener bound at {}:{}",
+                    configuration.getHttpHost(), configuration.getHttpPort());
             }
         }
 
