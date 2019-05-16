@@ -94,7 +94,7 @@ public class LogUtils {
 
         msg.a(footer());
 
-        LogUtils.log(LOGGER, level, msg.toString(), null);
+        LogUtils.log(LOGGER, level, msg.toString(), (Object[])null);
     }
 
     private static Ansi sr() {
