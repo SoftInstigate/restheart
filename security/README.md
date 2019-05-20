@@ -1,10 +1,10 @@
 # restheart-security
 
-[![Build Status](https://travis-ci.org/SoftInstigate/uiam.svg?branch=master)](https://travis-ci.org/SoftInstigate/uiam)
-[![Docker Stars](https://img.shields.io/docker/stars/softinstigate/uiam.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/uiam/)
-[![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/uiam.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/uiam/)
+[![Build Status](https://travis-ci.org/SoftInstigate/restheart-security.svg?branch=master)](https://travis-ci.org/SoftInstigate/uiam)
+[![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart-security.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/uiam/)
+[![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart-security.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/restheart-security/)
 
-**restheart-security** is the security service of   [RESTHeart](https://restheart.org), the Web API for MongoDB. It acts as a reverse proxy for HTTP resources, providing __Authentication__ and __Authorization__ services. 
+**restheart-security** is the security service of [RESTHeart](https://restheart.org), the Web API for MongoDB. It acts as a reverse proxy for HTTP resources, providing __Authentication__ and __Authorization__ services. 
 
 **restheart-security** enables developers to configure security policies in standardized micro-gateway instances that are external to API and microservices implementations, avoiding coding security functions and a centralized gateway where scalability is a key concern.
 
@@ -35,19 +35,19 @@
 
 The following diagram shows a single instance of **restheart-security** placed on the network layer, in front of the resources to be protected. It acts as a centralized __security policy enforcer__.
 
-![restheart-security on the network layer](readme-assets/uiam-on-network-layer.png?raw=true "restheart-security on the network layer")
+![restheart-security on the network layer](readme-assets/restheart-security-on-network-layer.png?raw=true "restheart-security on the network layer")
 
 ## **restheart-security** within containers
 
 The following diagram shows **restheart-security** used as a sidecar proxy within each container pod. Each microservice is protected by an instance of **restheart-security** with its own dedicated security policy.
 
-![restheart-security within containers](readme-assets/uiam-within-containers.png?raw=true "restheart-security within containers")
+![restheart-security within containers](readme-assets/restheart-security-within-containers.png?raw=true "restheart-security within containers")
 
 ## **restheart-security** embedded
 
 The following diagram shows **restheart-security** used to implement a simple microservice using service extensions.
 
-![restheart-security embedded](readme-assets/uiam-embedded.png?raw=true "restheart-security embedded")
+![restheart-security embedded](readme-assets/restheart-security-embedded.png?raw=true "restheart-security embedded")
 
 # How it works
 
@@ -343,7 +343,7 @@ We can note that **restheart-security**:
 
 In **restheart-security** everything is a plugin including Authentication Mechanisms, Authenticators, Authorizers, Token Managers and Services.
 
-![restheart-security explained](readme-assets/uiam-explained.png?raw=true "restheart-security explained")
+![restheart-security explained](readme-assets/restheart-security-explained.png?raw=true "restheart-security explained")
 
 Different **Authentication Mechanism** manage different authentication schemes. 
 An example is *BasicAuthMechanism* that handles the Basic Authentication scheme. It extracts the credentials from a request header and passes them to the an Authenticator for verification.
