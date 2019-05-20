@@ -2,9 +2,9 @@ FROM gcr.io/distroless/java:11
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
-WORKDIR /opt/uiam
-COPY Docker/etc/* /opt/uiam/etc/
-COPY target/uiam.jar /opt/uiam/
+WORKDIR /opt/restheart
+COPY Docker/etc/* /opt/restheart/etc/
+COPY target/restheart-security.jar /opt/restheart/
 
-ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "uiam.jar", "etc/uiam.yml"]
-EXPOSE 8080 4443
+ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart-security.jar", "/opt/restheart/etc/restheart-security.yml"]
+EXPOSE 8080

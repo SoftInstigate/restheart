@@ -7,7 +7,7 @@ cd "$(dirname ${BASH_SOURCE[0]})"/..
 
 mvn clean package
 export VERSION=$(./bin/project-version.sh)
-echo "###### Building Docker image for uIAM Version "$VERSION
-docker build -t softinstigate/uiam .
-docker tag softinstigate/uiam softinstigate/uiam:$VERSION
+echo "###### Building Docker image for RESTHeart Security Version "$VERSION
+docker build -t softinstigate/restheart-security .
+docker tag softinstigate/restheart-security softinstigate/restheart-security:$VERSION
 echo "###### end build.sh #####"

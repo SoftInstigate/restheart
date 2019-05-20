@@ -2,15 +2,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" 
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.uiam</groupId>
-    <artifactId>uiam</artifactId>
-    <version>0.1.3-SNAPSHOT</version>
+    <groupId>org.restheart</groupId>
+    <artifactId>restheart-security</artifactId>
+    <version>0.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>uIAM</name>
+    <name>RESTHeart Security</name>
     <description>
-        micro Identity and Access Manager
+        RESTHeart security micro service
     </description>
-    <url>https://uiam.io</url>
+    <url>https://restheart.org</url>
     <inceptionYear>2018</inceptionYear>
 
     <properties>
@@ -73,18 +73,18 @@
     </developers>
 
     <issueManagement>
-        <url>https://github.com/SoftInstigate/uiam/issues</url>
+        <url>https://github.com/SoftInstigate/restheart-security/issues</url>
         <system>GitHub Issues</system>
     </issueManagement>
 
     <distributionManagement>
         <snapshotRepository>
-            <id>uiam-snapshot</id>
+            <id>restheart-security-snapshot</id>
             <name>S3 Snapshot Repository</name>
             <url>s3://maven.softinstigate.com/snapshot</url>
         </snapshotRepository>
         <repository>
-            <id>uiam-release</id>
+            <id>restheart-security-release</id>
             <name>S3 Release Repository</name>
             <url>s3://maven.softinstigate.com/release</url>
         </repository>
@@ -98,9 +98,9 @@
     </repositories>
 
     <scm>
-        <url>https://github.com/SoftInstigate/uiam</url>
-        <connection>scm:git:git@github.com:SoftInstigate/uiam.git</connection>
-        <developerConnection>scm:git:git@github.com:SoftInstigate/uiam.git</developerConnection>
+        <url>https://github.com/SoftInstigate/restheart-security</url>
+        <connection>scm:git:git@github.com:SoftInstigate/restheart-security.git</connection>
+        <developerConnection>scm:git:git@github.com:SoftInstigate/restheart-security</developerConnection>
     </scm>
 
     <dependencies>
@@ -287,7 +287,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.uiam.Bootstrapper</mainClass>
+                                    <mainClass>org.restheart.security.Bootstrapper</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -328,7 +328,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>io.uiam.Bootstrapper</mainClass>
+                            <mainClass>org.restheart.security.Bootstrapper</mainClass>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
@@ -375,7 +375,7 @@
                                 <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
                                 <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
-                                    <arg value="${basedir}/etc/uiam-test.yml"/>
+                                    <arg value="${basedir}/etc/restheart-security-test.yml"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -390,7 +390,7 @@
                             <skip>${skipITs}</skip>
                             <target>
                                 <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
-                                    <arg value="${basedir}/etc/uiam-test.yml"/>
+                                    <arg value="${basedir}/etc/restheart-security-test.yml"/>
                                 </exec>
                             </target>
                         </configuration>

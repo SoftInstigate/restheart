@@ -8,9 +8,9 @@
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "stopOnEntry": false,
-            "mainClass": "io.uiam.Bootstrapper",
+            "mainClass": "org.restheart.security.Bootstrapper",
             "vmArgs": "-Dfile.encoding=UTF-8 -server",
-            "args":  "etc/uiam.yml"
+            "args":  "etc/restheart-security.yml"
         }
     ]
 }

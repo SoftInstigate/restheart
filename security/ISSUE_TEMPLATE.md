@@ -11,8 +11,8 @@
 <!--- Providing context helps us come up with a solution that is most useful in the real world -->
 
 ## Environment
-<!--- Tell us the Operating System, uIAM version -->
-<!-- Attach relevant files like logs, uiam.yml, uiam.yml  -->
+<!--- Tell us the Operating System, RESTHeart Security version -->
+<!-- Attach relevant files like logs, restheart-security.yml, users.yml, acl.yml, etc.  -->
 
 ## Steps to Reproduce
 <!--- Provide a link to a live example, or an unambiguous set of steps to -->

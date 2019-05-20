@@ -6,7 +6,7 @@ cleanup() {
     echo "### Cleaning up $IMAGE:$MONGO_VERSION container..."
     docker stop "$CONTAINER_ID"
 
-    echo "### Done testing uIAM with $IMAGE:$MONGO_VERSION"
+    echo "### Done testing RESTHeart Security with $IMAGE:$MONGO_VERSION"
 }
 trap cleanup ERR INT TERM
 
@@ -26,7 +26,7 @@ cd "$(dirname ${BASH_SOURCE[0]})"/.. || exit 1
 echo "### Running volatile $IMAGE:$MONGO_VERSION Docker container..."
 CONTAINER_ID=$( docker run --rm -d -p 27017:27017 "$IMAGE:$MONGO_VERSION" )
 
-echo "### Build uIAM and run integration tests..."
+echo "### Build RESTHeart Security and run integration tests..."
 mvn clean verify -DskipITs=false
 
 cleanup

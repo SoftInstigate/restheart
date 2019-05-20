@@ -15,4 +15,4 @@ do
    shift
 done
 
-java -Dfile.encoding=UTF-8 -server $SPROPS -jar /opt/uiam/uiam.jar $ARGS
+java -Dfile.encoding=UTF-8 -server $SPROPS -jar /opt/restheart/restheart-security.jar $ARGS

@@ -150,4 +150,4 @@ dependency-reduced-pom.xml
 .classpath
 .project
 
-Docker/uiam.jar
+Docker/restheart-security.jar

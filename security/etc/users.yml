@@ -1,0 +1,22 @@
+## configuration file for simpleFileAuthenticator
+---
+users:
+    - userid: a
+      password: a
+      roles: [admin]
+      
+    - userid: user1
+      password: secret
+      roles: [user]
+
+    - userid: user2
+      password: secret
+      roles: [user]
+
+    - userid: admin
+      password: secret
+      roles: [user, admin]
+
+    - userid: noroles
+      password: secret
+      roles: []

@@ -1,5 +1,5 @@
 /*
- * uIAM - the IAM for microservices
+ * RESTHeart Security
  * 
  * Copyright (C) SoftInstigate Srl
  * 

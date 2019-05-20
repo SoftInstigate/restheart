@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
- * uIAM - the IAM for microservices
+ * RESTHeart Security
  * 
  * Copyright (C) SoftInstigate Srl
  * 
@@ -30,5 +30,5 @@
         <appender-ref ref="STDOUT" />
     </root>
     
-    <logger name="org.uiam" level="INFO"/>
+    <logger name="org.restheart.security" level="INFO"/>
 </configuration>

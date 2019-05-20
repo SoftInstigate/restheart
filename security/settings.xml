@@ -3,12 +3,12 @@
                           http://maven.apache.org/xsd/settings-1.0.0.xsd">
     <servers>
         <server>
-            <id>uiam-release</id>
+            <id>restheart-security-release</id>
             <username>${MAVEN_USER}</username>
             <password>${MAVEN_PASSWORD}</password>
         </server>
         <server>
-            <id>uiam-snapshot</id>
+            <id>restheart-security-snapshot</id>
             <username>${MAVEN_USER}</username>
             <password>${MAVEN_PASSWORD}</password>
         </server>

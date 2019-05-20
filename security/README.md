@@ -1,18 +1,18 @@
-# &#181;IAM
+# restheart-security
 
 [![Build Status](https://travis-ci.org/SoftInstigate/uiam.svg?branch=master)](https://travis-ci.org/SoftInstigate/uiam)
 [![Docker Stars](https://img.shields.io/docker/stars/softinstigate/uiam.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/uiam/)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/uiam.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/uiam/)
 
-&#181;IAM (micro-IAM) is a micro-gateway for **Identity and Access Management** designed for microservices architectures.
+**restheart-security** is the security service of   [RESTHeart](https://restheart.org), the Web API for MongoDB. It acts as a reverse proxy for HTTP resources, providing __Authentication__ and __Authorization__ services. 
 
-It acts as a reverse proxy for resources to be protected, providing __Authentication__ and __Authorization__ services.
+**restheart-security** enables developers to configure security policies in standardized micro-gateway instances that are external to API and microservices implementations, avoiding coding security functions and a centralized gateway where scalability is a key concern.
 
- &#181;IAM enables developers to configure security policies in standardized micro-gateway instances that are external to API and microservices implementations, avoiding coding security functions and a centralized gateway where scalability is a key concern.
+**restheart-security** can also be used as a micro-gateway for **Identity and Access Management**  in any HTTP-based microservices architecture. 
 
 > Think about &#181;IAM as the "brick" that you put in front of your API and microservices to protect them. 
 
-&#181;IAM is built around a __pluggable architecture__. It comes with a strong security implementation but you can easily extend it by implementing plugins. 
+**restheart-security** is built around a __pluggable architecture__. It comes with a strong security implementation but you can easily extend it by implementing plugins. 
 
 > Building a plugin is as easy as implementing a simple interface and edit a configuration file. Plugins also allow to quickly implement and deploy secure Web Services.
 
@@ -20,7 +20,7 @@ It acts as a reverse proxy for resources to be protected, providing __Authentica
 
 - Identity and Access Management at __HTTP protocol level__.
 - Placement within __Docker containers__, on the network layer and embeddable in Java applications.
-- Extensible via easy-to-implement plugins.
+- Can be extended via easy-to-implement plugins.
 - Allows to quickly implement secured Web Services.
 - __Basic__, __Digest__ and __Token Authentication__. Other authentication methods can be added with plugins.
 - __Roles__ based Authorization with a powerful permission definition language. Other authorization methods can be added with plugins.
@@ -31,29 +31,29 @@ It acts as a reverse proxy for resources to be protected, providing __Authentica
 
 # Use cases
 
-## &#181;IAM on the network layer
+## **restheart-security** on the network layer
 
-The following diagram shows a single instance of &#181;IAM placed on the network layer, in front of the resources to be protected. It acts as a centralized __security policy enforcer__.
+The following diagram shows a single instance of **restheart-security** placed on the network layer, in front of the resources to be protected. It acts as a centralized __security policy enforcer__.
 
-![uIAM on the network layer](readme-assets/uiam-on-network-layer.png?raw=true "uIAM on the network layer")
+![restheart-security on the network layer](readme-assets/uiam-on-network-layer.png?raw=true "restheart-security on the network layer")
 
-## &#181;IAM within containers
+## **restheart-security** within containers
 
-The following diagram shows &#181;IAM used as a sidecar proxy within each container pod. Each microservice is protected by an instance of &#181;IAM with its own dedicated security policy.
+The following diagram shows **restheart-security** used as a sidecar proxy within each container pod. Each microservice is protected by an instance of **restheart-security** with its own dedicated security policy.
 
-![uIAM within containers](readme-assets/uiam-within-containers.png?raw=true "uIAM within containers")
+![restheart-security within containers](readme-assets/uiam-within-containers.png?raw=true "restheart-security within containers")
 
-## &#181;IAM embedded
+## **restheart-security** embedded
 
-The following diagram shows &#181;IAM used to implement a simple microservice using service extensions.
+The following diagram shows **restheart-security** used to implement a simple microservice using service extensions.
 
-![uIAM embedded](readme-assets/uiam-embedded.png?raw=true "uIAM embedded")
+![restheart-security embedded](readme-assets/uiam-embedded.png?raw=true "restheart-security embedded")
 
 # How it works
 
-The `uiam.yml` configuration file allows defining listeners and proxied resources.
+The `restheart-security.yml` configuration file allows defining listeners and proxied resources in the first place.
 
-As an example, we securely expose the web resources of two hosts running on a private network.
+As an example, we are going to securely expose the resources of a RESTHeart server and Web Server running on a private network.
 
 The following options set a HTTPS listener bound to the public ip of `domain.io`.
 
@@ -64,38 +64,44 @@ https-port: 443
 ```
 
 The two hosts in private network `10.0.1.0/24` are:
-- an API server running on host `10.0.1.1` bound to URI `/api`
-- a web server running on host `10.0.1.2` bound to URI `/web`
+- the RESTHeart server running on host `10.0.1.1` that exposes the collection `/db/coll`
+- the web server running on host `10.0.1.2` bound to URI `/web`
 
 We proxy them as follows:
 
 ```yml
 proxies:
     - location: /api
-      proxy-pass: https://10.0.0.1/api
+      proxy-pass: https://10.0.0.1/db/coll
     - location: /
       proxy-pass: https://10.0.0.2/web
 ```
 
-As a result, the URLs `https://domain.io` and `https://domain.io/api` are proxied to the  resources specified by the `proxy-pass` URL. All requests from the external network pass through &#181;IAM that enforces authentication and authorization.
+As a result, the URLs `https://domain.io` and `https://domain.io/api` are proxied to the resources specified by the `proxy-pass` URLs. All requests from the external network pass through **restheart-security** that enforces authentication and authorization.
 
 ```http
 GET https://domain.io/index.html
 HTTP/1.1 401 Unauthorized
 
-GET https://domain.io/api/entities/1233
+GET https://domain.io/api
 HTTP/1.1 401 Unauthorized
 
 ```
 
-With the default configuration &#181;IAM uses the Basic Authentication with credentials and permission defined in `security.yml` configuration file:
+With the default configuration **restheart-secuirty** uses the Basic Authentication with credentials and permission defined in `users.yml` and `acl.yml` configuration files respectively:
+
+### users.yml
 
 ```yml
 users:
     - userid: user
       password: secret
       roles: [web,api]
+```
 
+### acl.yml
+
+```
 permissions:
     # Users with role 'web' can GET web resources 
     - role: web
@@ -111,21 +117,19 @@ GET https://domain.io/index.html Authorization:"Basic dXNlcjpzZWNyZXQ="
 HTTP/1.1 200 OK
 ...
 
-GET https://domain.io/api/entities/1233 Authorization:"Basic dXNlcjpzZWNyZXQ="
+GET https://domain.io/api Authorization:"Basic dXNlcjpzZWNyZXQ="
 HTTP/1.1 200 OK
 ...
 ```
 
 # Setup
 
-## From releases
-
-You need __Java 11__ and must download the latest release from [releases page](https://github.com/SoftInstigate/uiam/releases).
+You need __Java 11__ and must download the latest release from [releases page](https://github.com/SoftInstigate/restheart-security/releases).
 
 ```
-$ tar -xzf uiam-XX.tar.gz
-$ cd uiam
-$ java -jar uiam.jar etc/uiam.yml
+$ tar -xzf restheart-security-XX.tar.gz
+$ cd restheart-security
+$ java -jar restheart-security.jar etc/restheart-security.yml
 ```
 
 ## Building from source
@@ -133,10 +137,10 @@ $ java -jar uiam.jar etc/uiam.yml
 You need Git, Java 11 and Maven.
 
 ```
-$ git clone git@github.com:SoftInstigate/uiam.git
-$ cd uiam
+$ git clone git@github.com:SoftInstigate/restheart-security.git
+$ cd restheart-security
 $ mvn package
-$ java -jar target/uiam.jar etc/uiam.yml
+$ java -jar target/uirestheart-securityam.jar etc/restheart-security.yml
 ```
 
 ## With Docker
@@ -147,10 +151,10 @@ $ java -jar target/uiam.jar etc/uiam.yml
 
 To follow this tutorial you need [httpie](https://httpie.org), a modern command line HTTP client made in Python which is easy to use and produces a colorized and indented output.
 
-Run &#181;IAM with the [default configuration file](etc/uiam.yml). It is bound to port `8080` and proxies two example resources:
+Run **restheart-security** with the [default configuration file](etc/restheart-security.yml). It is bound to port `8080` and proxies two example resources:
 
 - https://restheart.org web site at URI `/restheart`
-- the service `/echo` implemented by &#181;IAM itself at URI `/secho`. It just echoes back the request (URL, query parameters, body and headers).
+- the service `/echo` implemented by **restheart-security** itself and bound to URI `/secho`. It just echoes back the request (URL, query parameters, body and headers).
 
 Below the mentioned configuration's fragment:
 
@@ -165,11 +169,11 @@ proxies:
       proxy-pass: https://restheart.org
 ```
 
-Let's fist invoke the `/echo` service directly. This is defined in the [configuration file](etc/uiam.yml) as follows:
+Let's fist invoke the `/echo` service directly. This is defined in the [configuration file](etc/restheart-security.yml) as follows:
 
 ```yaml
 services:
-    - implementation-class: io.uiam.plugins.service.impl.EchoService
+    - implementation-class: org.restheart.plugins.service.EchoService
       uri: /echo
       secured: false
 ```
@@ -188,7 +192,7 @@ Content-Encoding: gzip
 Content-Length: 341
 Content-Type: application/json
 Date: Mon, 18 Feb 2019 17:25:19 GMT
-X-Powered-By: uIAM.io
+X-Powered-By: restheart.org
 
 {
     "URL": "http://127.0.0.1:8080/echo",
@@ -241,11 +245,11 @@ HTTP/1.1 401 Unauthorized
 Connection: keep-alive
 Content-Length: 0
 Date: Mon, 18 Feb 2019 17:26:04 GMT
-WWW-Authenticate: Basic realm="uIAM Realm"
-WWW-Authenticate: Digest realm="uIAM Realm",domain="localhost",nonce="Z+fsw9eFwPgNMTU1MDUxMDc2NDA2NmFWzLOw/aaHdtjyi0jm5uE=",opaque="00000000000000000000000000000000",algorithm=MD5,qop="auth"
+WWW-Authenticate: Basic realm="RESTHeart Realm"
+WWW-Authenticate: Digest realm="RESTHeart Realm",domain="localhost",nonce="Z+fsw9eFwPgNMTU1MDUxMDc2NDA2NmFWzLOw/aaHdtjyi0jm5uE=",opaque="00000000000000000000000000000000",algorithm=MD5,qop="auth"
 ```
 
-Let's try now to pass credentials via basic authentication. The user `admin` is defined in the `security.yml` file.
+Let's try now to pass credentials via basic authentication. The user `admin` is defined in the `users.yml` file.
 
 ```bash
 $ http -a admin:changeit -f 127.0.0.1:8080/secho?qparam=value header:value a=1 b=2
@@ -262,7 +266,7 @@ Content-Encoding: gzip
 Content-Length: 427
 Content-Type: application/json
 Date: Mon, 18 Feb 2019 17:26:25 GMT
-X-Powered-By: uIAM.io
+X-Powered-By: restheart.org
 
 {
     "URL": "http://localhost:8080/echo",
@@ -328,48 +332,48 @@ X-Powered-By: uIAM.io
 }
   ```
 
-We can note that &#181;IAM:
+We can note that **restheart-security**:
 
-- has checked the credential passed via Basic Authentication and proxied the request
+- has checked the credential specified in `users.yml` passed via Basic Authentication and proxied the request
 - has determined the account roles. The proxied request includes the headers `X-Forwarded-Account-Id` and `X-Forwarded-Account-Roles`.
-- has checked the permission specified in `security.yml` for the account roles and determined that the request could be executed.
+- has checked the permission specified in `acl.yml` for the account roles and determined that the request could be executed.
 - the response headers include the header `Auth-Token`. Its value can be used in place of the actual password in the Basic Authentication until its expiration. This is useful in Web Applications, for storing in the browser the less sensitive auth token instead of full username and password.
 
-# Understanding &#181;IAM
+# Understanding **restheart-security**
 
-In &#181;IAM everything is a plugin including Authentication Mechanisms, Identity Managers, Access Managers, Token Managers and Services.
+In **restheart-security** everything is a plugin including Authentication Mechanisms, Authenticators, Authorizers, Token Managers and Services.
 
-![uIAM explained](readme-assets/uiam-explained.png?raw=true "uIAM explained")
+![restheart-security explained](readme-assets/uiam-explained.png?raw=true "restheart-security explained")
 
 Different **Authentication Mechanism** manage different authentication schemes. 
-An example is *BasicAuthenticationMechanism* that handles the Basic Authentication scheme. It extracts the credentials from a request header and passes them to the an Identity Manager for verification.
+An example is *BasicAuthMechanism* that handles the Basic Authentication scheme. It extracts the credentials from a request header and passes them to the an Authenticator for verification.
 
-A different example is the *IdentityAuthenticationMechanism* the binds the request to a configured identity. This Authentication Mechanism does not require an Identity Manage to build the account.
+A different example is the *IdentityAuthMechanism* that binds the request to a single identity specified by configuration. This Authentication Mechanism does not require an Authenticator to build the account.
 
- &#181;IAM allows defining several mechanism. As an in-bound request is received the `authenticate()` method is called on each mechanism in turn until one of the following occurs: 
+ **restheart-security** allows defining several mechanism. As an in-bound request is received, the `authenticate()` method is called on each mechanism in turn until one of the following occurs: 
  - A mechanism successfully authenticates the incoming request &#8594; the request proceeds to Authorization phase;
  - The list of mechanisms is exhausted &#8594; the request fails with code `401 Unauthorized`.
 
-The **Identity Manager** verifies the credentials extracted from the request by Authentication Mechanism. For instance, the *BasicAuthenticationMechanism* extracts the credentials from the request in the form of id and password. The IDM can check these credentials against a database or a LDAP server. Note that some Authentication Mechanisms don't actually rely on the IDM to build the Account.
+The **Authenticator** verifies the credentials extracted from the request by Authentication Mechanism. For instance, the *BasicAuthMechanism* extracts the credentials from the request in the form of id and password. The Authenticator can check these credentials against a database or a LDAP server. Note that some Authentication Mechanisms don't actually rely on a Authenticator to build the Account.
 
-The **Access Manager** is responsible of checking if the user can actually perform the request against an Access Control List. For instance the *RequestPredicatesAccessManager* checks if the request is allowed by looking at the role based permissions defined using the undertow predicate definition language.
+The **Authorizer** is responsible of checking if the user can actually perform the request against an Access Control List. For instance the *RequestPredicatesAuthorizer* checks if the request is allowed by looking at the role based permissions defined using the undertow predicate definition language.
 
-The **Token Manager** is responsible of generating and validating an auth-token. When a client successfully authenticates, the Token Manager generates an auth-token that is returned in the `Auth-Token` response header. It can be used to authenticate further requests. This requires an Authentication Manager able to handle it using the Token Manager for token validation.
+The **Token Manager** is responsible of generating and validating an auth-token. When a client successfully authenticates, the Token Manager generates an auth-token that is returned in the `Auth-Token` response header. It can be used to authenticate further requests. This requires an Authentication Manager to handle it using the Token Manager for token validation.
 
 A **Service** is a quick way of implementing Web Services to expose additional custom logic.
 
-## Available Plugin Implementations
+## Available Plugins
 
 ### Authentication Mechanisms
 
-- **BasicAuthenticationMechanism** manages the Basic Authentication method, where the client credentials are sent via the `Authorization` request header using the format `Authorization: Basic base64(id:pwd)`. The configuration allows specifying the Identity Manager that will be used to verify the credentials.
+- **BasicAuthMechanism** manages the Basic Authentication method, where the client credentials are sent via the `Authorization` request header using the format `Authorization: Basic base64(id:pwd)`. The configuration allows specifying the Authenticator that will be used to verify the credentials.
 
 ```yml
-    - name: basicAuthenticationMechanism
-      class: io.uiam.plugins.authentication.impl.BasicAuthenticationMechanism
+    - name: basicAuthMechanism
+      class: org.restheart.security.plugins.mechanisms.BasicAuthMechanism
       args:
-        realm: uIAM Realm
-        idm: simpleFileIdentityManager
+        realm: RESTHeart Realm
+        authenticator: simpleFileAuthenticator
 ```
 
 #### How to avoid the browser to open the login popup window
@@ -377,40 +381,40 @@ A **Service** is a quick way of implementing Web Services to expose additional c
 The Basic and Digest Authentication protocols requires responding with a challenge when the request cannot be authenticated as follows:
 
 ```
-WWW-Authenticate: Basic realm="uIAM Realm"
-WWW-Authenticate: Digest realm="uIAM Realm",domain="localhost",nonce="Toez71bBUPoNMTU0NDAwNDMzNjEwMXBY+Jp7YX/GVMcxAd61FpY=",opaque="00000000000000000000000000000000",algorithm=MD5,qop="auth"
+WWW-Authenticate: Basic realm="RESTHeart Realm"
+WWW-Authenticate: Digest realm="RESTHeart Realm",domain="localhost",nonce="Toez71bBUPoNMTU0NDAwNDMzNjEwMXBY+Jp7YX/GVMcxAd61FpY=",opaque="00000000000000000000000000000000",algorithm=MD5,qop="auth"
 ```
 
-In browsers this leads to the login popup windows. In our web applications we might want to redirect to a fancy login page when 401 Unauthorized response code. 
+In browsers this leads to the login popup windows. In our web applications we might want to redirect to a fancy login page when the 401 Unauthorized response code. 
 
 To avoid the popup window just add to the request the `noauthchallenge` query parameter or the header `No-Auth-Challenge`. This will skip the challenge response.
 
 
-- **DigestAuthenticationMechanism** manages the Digest Authentication method. The configuration allows specifying the Identity Manager that will be used to verify the credentials.
+- **DigestAuthMechanism** manages the Digest Authentication method. The configuration allows specifying the Authenticator that will be used to verify the credentials.
 
 ```yml
-    - name: digestAuthenticationMechanism
-      class: io.uiam.plugins.authentication.impl.DigestAuthenticationMechanism
+    - name: digestAuthMechanism
+      class: org.restheart.security.plugins.mechanisms.DigestAuthMechanism
       args: 
-        realm: uIAM Realm
+        realm: RESTHeart Realm
         domain: localhost
-        idm: simpleFileIdentityManager
+        authenticator: simpleFileAuthenticator
 ```
 
-- **AuthTokenBasicAuthenticationMechanism** manages the Basic Authentication method with the actual password replaced by the auth token generated by &#181;IAM, i.e. the client credentials are sent via the `Authorization` request header using the format `Authorization: Basic base64(id:auth-token)`. It requires a Token Manager to be configured (eg. RndTokenManager).
+- **TokenBasicAuthMechanism** manages the Basic Authentication method with the actual password replaced by the auth token generated by **restheart-security**, i.e. the client credentials are sent via the `Authorization` request header using the format `Authorization: Basic base64(id:auth-token)`. It requires a Token Manager to be configured (eg. RndTokenManager).
 
 ```yml
-    - name: authTokenBasicAuthenticationMechanism
-      class: io.uiam.plugins.authentication.impl.AuthTokenBasicAuthenticationMechanism
+    - name: tokenBasicAuthMechanism
+      class: org.restheart.security.plugins.mechanisms.TokenBasicAuthMechanism
       args: 
-        realm: uIAM Realm
+        realm: RESTHeart Realm
 ```
 
-- **IdentityAuthenticationMechanism** just authenticates any request building an [BaseAccount](https://github.com/SoftInstigate/uiam/blob/master/src/main/java/io/uiam/plugins/authentication/impl/BaseAccount.java) with the *username* and *roles* specified in the configuration. Useful for testing purposes. Note that enabling this causes the *DigestAuthenticationMechanism* to fail, you cannot use both.
+- **IdentityAuthMechanism** just authenticates any request building an [BaseAccount](https://github.com/SoftInstigate/restheart-security/blob/master/src/main/java/io/restheart-security/plugins/authentication/impl/BaseAccount.java) with the *username* and *roles* specified in the configuration. Useful for testing purposes. Note that enabling this causes the *DigestAuthMechanism* to fail, you cannot use both.
 
 ```yml
-    - name: identityAuthenticationMechanism
-      class: io.uiam.plugins.authentication.impl.IdentityAuthenticationMechanism
+    - name: identityAuthMechanism
+      class: org.restheart.security.plugins.mechanisms.IdentityAuthMechanism
       args:
         username: admin
         roles:
@@ -418,13 +422,13 @@ To avoid the popup window just add to the request the `noauthchallenge` query pa
             - user
 ```
 
-### Identity Managers
+### Authenticators
 
-- **SimpleFileIdentityManager** allows defining users credentials and roles in a simple yml configuration file. See the example [security.yml](https://github.com/SoftInstigate/uiam/blob/master/etc/security.yml).
+- **simpleFileAuthenticator** allows defining users credentials and roles in a simple yml configuration file. See the example [users.yml](https://github.com/SoftInstigate/restheart-security/blob/master/etc/users.yml).
 
-### Access Managers
+### Authorizers
 
-- **RequestPredicatesAccessManager** allows defining roles permissions in a yml configuration file using the [Undertows predicate language](http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#textual-representation). See [security.yml](https://github.com/SoftInstigate/uiam/blob/master/etc/security.yml) for some examples.
+- **RequestPredicatesAuthorizer** allows defining roles permissions in a yml configuration file using the [Undertows predicate language](http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#textual-representation). See [acl.yml](https://github.com/SoftInstigate/restheart-security/blob/master/etc/acl.yml) for some examples.
 
 ### Token Managers
 
@@ -433,7 +437,7 @@ To avoid the popup window just add to the request the `noauthchallenge` query pa
 ```yml
 token-manager:
     name: rndTokenManager
-    class: io.uiam.plugins.authentication.impl.RndTokenManager
+    class: org.restheart.security.plugins.tokens.RndTokenManager
     args:
       ttl: 15
 ```
@@ -447,16 +451,16 @@ token-manager:
 
 # Configuration
 
-&#181;IAM is configured via the yml configuration file. See the [default configuration file](https://github.com/SoftInstigate/uiam/blob/master/etc/uiam.yml) for inline help.
+**restheart-security** is configured via the yml configuration file. See the [default configuration file](https://github.com/SoftInstigate/restheart-security/blob/master/etc/restheart-security.yml) for inline help.
 
 # Plugin development
 
 ## Develop an Authentication Mechanism
 
-The Authentication Mechanism class must implement the `io.uiam.plugins.authentication.PluggableAuthenticationMechanism` interface. 
+The Authentication Mechanism class must implement the `org.restheart.security.plugins.AuthMechanism` interface. 
 
 ```java
-public interface PluggableAuthenticationMechanism implements AuthenticationMechanism {
+public interface AuthMechanism implements AuthenticationMechanism {
   @Override
   public AuthenticationMechanismOutcome authenticate(
           final HttpServerExchange exchange,
@@ -476,7 +480,7 @@ Of course the implementation class must be in the java classpath.
 
 ```yml
 auth-mechanisms:
-    - name: <name-of-mechansim>
+    - name: <name>
       class: <full-class-name>
       args:
         number: 10
@@ -490,7 +494,7 @@ The Authentication Mechanism implementation class must have the following constr
 If the property `args` is specified in configuration:
 
 ```java
-public MyAuthenticationMechanism(final String mechanismName, final Map<String, Object> args) throws PluginConfigurationException {
+public MyAuthMechanism(final String name, final Map<String, Object> args) throws ConfigurationException {
 
   // use argValue() helper method to get the arguments specified in the configuration file
   Integer _number = argValue(args, "number");
@@ -501,7 +505,7 @@ public MyAuthenticationMechanism(final String mechanismName, final Map<String, O
 If the property `args` is not specified in configuration:
 
 ```java
-public MyAuthenticationMechanism(final String mechanismName) throws PluginConfigurationException {
+public MyAuthMechanism(final String name) throws ConfigurationException {
 }
 ```
 
@@ -509,7 +513,7 @@ public MyAuthenticationMechanism(final String mechanismName) throws PluginConfig
 
 The method `authenticate()` must return:
 
-- NOT_ATTEMPTED: the request cannot be authenticated because it doesn't fulfill the authentication mechanism requirements. An example is *BasicAuthenticationMechanism* when the request does not include the header `Authotization` or its value does not start by `Basic `
+- NOT_ATTEMPTED: the request cannot be authenticated because it doesn't fulfill the authentication mechanism requirements. An example is *BasicAutMechanism* when the request does not include the header `Authotization` or its value does not start by `Basic `
 - NOT_AUTHENTICATED: the Authentication Mechanism handled the request but could not authenticate the client, for instance because of wrong credentials.
 - AUTHENTICATED: the Authentication Mechanism successfully authenticated the request. In this case the fo
 
@@ -535,40 +539,40 @@ return AuthenticationMechanismOutcome.AUTHENTICATED;
 
 `sendChallenge()` is executed when the authentication fails.
 
-An example is *BasicAuthenticationMechanism* that sends the `401 Not Authenticated` response with the following challenge header:
+An example is *BasicAuthMechanism* that sends the `401 Not Authenticated` response with the following challenge header:
 
 ```
-WWW-Authenticate: Basic realm="uIAM Realm"
+WWW-Authenticate: Basic realm="RESTHeart Realm"
 ```
 
 ### Build the Account
 
-To build the account, the Authentication Mechanism can use a configurable Identity Manager. This allows to extends the Authentication Mechanism with different IDM implementations. For instance the *BasicAuthenticationMechanism* can use different IDM implementations that hold accounts information in a DB or in a LDAP server. 
+To build the account, the Authentication Mechanism can use a configurable Authenticator. This allows to extends the Authentication Mechanism with different Authenticator implementations. For instance the *BasicAuthMechanism* can use different Authenticator implementations that hold accounts information in a DB or in a LDAP server. 
 
-Tip: Pass the idm name as an argument and use the `IDMCacheSingleton` class to instantiate the IDM.
+Tip: Use the `PluginsRegistry` to get the instance of the Authenticator from its name.
 
 ```java
-// get the name of the idm form the arguments
-String idmName = argValue(args,"idm");
+// get the name of the authenticator from the arguments
+String authenticatorName = argValue(args, "authenticator");
 
-PluggableIdentityManager idm = IDMCacheSingleton
+Authenticator authenticator = PluginsRegistry
                                 .getInstance()
-                                .getIdentityManager(idmName);
+                                .getAuthenticator(authenticatorName);
 
 // get the client id and credential from the request
 String id;
 Credential credential;
 
 
-Account account = idm.verify(id, credential);
+Account account = authenticator.verify(id, credential);
 ```
 
-## Develop an Identity Manager
+## Develop an Authenticator
 
-The Identity Manager class must implement the `io.uiam.plugins.authentication.PluggableIdentityManager` interface. 
+The Authenticator class must implement the `org.restheart.security.plugins.Authenticator` interface. 
 
 ```java
-public interface PluggableIdentityManager extends IdentityManager {
+public interface Authenticator extends IdentityManager {
   @Override
   public Account verify(Account account);
   
@@ -582,12 +586,12 @@ public interface PluggableIdentityManager extends IdentityManager {
 
 ### Configuration
 
-The Identity Manager must be declared in the yml configuration file. 
+The Authenticator must be declared in the yml configuration file. 
 Of course the implementation class must be in the java classpath.
 
 ```yml
-idms:
-    - name: <name-of-idm>
+authenticators:
+    - name: <name>
       class: <full-class-name>
       args:
         number: 10
@@ -596,12 +600,12 @@ idms:
 
 ### Constructor
 
-The Identity Manager implementation class must have the following constructor:
+The Authenticator implementation class must have the following constructor:
 
 If the property `args` is specified in configuration:
 
 ```java
-public MyIdm(final String idmName, final Map<String, Object> args) throws PluginConfigurationException {
+public MyAuthenticator(final String name, final Map<String, Object> args) throws ConfigurationException {
 
   // use argValue() helper method to get the arguments specified in the configuration file
   Integer _number = argValue(args, "number");
@@ -612,16 +616,16 @@ public MyIdm(final String idmName, final Map<String, Object> args) throws Plugin
 If the property `args` is not specified in configuration:
 
 ```java
-public MyIdm(final String idmName) throws PluginConfigurationException {
+public MyAuthenticator(final String name) throws ConfigurationException {
 }
 ```
 
-## Develop an Access Manager
+## Develop an Authorizer
 
-The Access Manager implementation class must implement the `io.uiam.plugins.authorization.PluggableAccessManager` interface. 
+The Authorizer implementation class must implement the `org.restheart.security.Authorizer` interface. 
 
 ```java
-public interface PluggableAccessManager {
+public interface Authorizer {
     /**
      *
      * @param exchange
@@ -641,12 +645,12 @@ public interface PluggableAccessManager {
 
 ### Configuration
 
-The Access Manager must be declared in the yml configuration file. 
+The Authorizer must be declared in the yml configuration file. 
 Of course the implementation class must be in the java classpath.
 
 ```yml
-access-manager:
-      name: <name-of-idm>
+authorizers:
+      name: <name>
       class: <full-class-name>
       args:
         number: 10
@@ -655,12 +659,12 @@ access-manager:
 
 ### Constructor
 
-The Access Manager implementation class must have the following constructor:
+The Authorizer implementation class must have the following constructor:
 
 If the property `args` is specified in configuration:
 
 ```java
-public MyAM(final String amName, final Map<String, Object> args) throws PluginConfigurationException {
+public MyAuthorizer(final String name, final Map<String, Object> args) throws ConfigurationException {
 
   // use argValue() helper method to get the arguments specified in the configuration file
   Integer _number = argValue(args, "number");
@@ -671,18 +675,18 @@ public MyAM(final String amName, final Map<String, Object> args) throws PluginCo
 If the property `args` is not specified in configuration:
 
 ```java
-public MyAM(final String amName) throws PluginConfigurationException {
+public MyAuthorizer(final String name) throws ConfigurationException {
 }
 ```
 
 ## Develop a Token Manager
 
-The Token Manager implementation class must implement the `io.uiam.plugins.authentication.PluggableTokenManager` interface. 
+The Token Manager implementation class must implement the `org.restheart.security.plugins.TokenManager` interface. 
 
-Note that PluggableTokenManager extends PluggableIdentityManager for token verification methods.
+Note that TokenManager extends Authenticator for token verification methods.
 
 ```java
-public interface PluggableTokenManager extends PluggableIdentityManager {
+public interface PluggablTokenManager extends Authenticator {
   static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
   static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
   static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
@@ -724,7 +728,7 @@ Of course the implementation class must be in the java classpath.
 
 ```yml
 token-manager:
-    name: <name-of-idm>
+    name: <name>
     class: <full-class-name>
     args:
       number: 10
@@ -733,12 +737,12 @@ token-manager:
 
 ### Constructor
 
-The Access Manager implementation class must have the following constructor:
+The Token Manager implementation class must have the following constructor:
 
 If the property `args` is specified in configuration:
 
 ```java
-public MyTM(final String tmName, final Map<String, Object> args) throws PluginConfigurationException {
+public MyTM(final String name, final Map<String, Object> args) throws ConfigurationException {
 
   // use argValue() helper method to get the arguments specified in the configuration file
   Integer _number = argValue(args, "number");
@@ -749,17 +753,17 @@ public MyTM(final String tmName, final Map<String, Object> args) throws PluginCo
 If the property `args` is not specified in configuration:
 
 ```java
-public MyTM(final String tmName) throws PluginConfigurationException {
+public MyTM(final String name) throws ConfigurationException {
 }
 ```
 
 ## Develop a Service
 
-The Service implementation class must extend the `io.uiam.plugins.service.PluggableService` abstract class, implementing the following method
+The Service implementation class must extend the `org.restheart.security.plugins.Service` abstract class, implementing the following method
 
 
 ```java
-public abstract class PluggableService extends PipedHttpHandler implements ConfigurablePlugin {
+public abstract class Service extends PipedHttpHandler implements ConfigurablePlugin {
   /**
    *
    * @param exchange
@@ -783,10 +787,12 @@ public void handleRequest(HttpServerExchange exchange) throws Exception {
   } else {
       msg.append(_name.getFirst());
   }
-  
-  exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
-  exchange.getResponseSender().send(msg.toString());
-  exchange.endExchange();
+
+  var response = ByteArrayResponse.wrap(exchange);
+
+  response.setStatusCode(HttpStatus.SC_OK);
+  response.setContentType("text/plain");
+  response.writeContent(msg.getBytes());
 }
 ```
 
@@ -797,7 +803,7 @@ Of course the implementation class must be in the java classpath.
 
 ```yml
 services:
-    - name: <name-of-idm>
+    - name: <name>
       class: <full-class-name>
       uri: <the-service-uri>
       secured: <boolean>
@@ -809,14 +815,14 @@ services:
 The *uri* property allows to bind the service under the specified path. E.g., with `uri: /mysrv` the service responds at URL `https://domain.io/mysrv`
 
 
-With `secured: true` the service request goes thought the uIAM authentication and authorization phases. With `secured: false` the service is fully open. 
+With `secured: true` the service request goes thought the  authentication and authorization phases. With `secured: false` the service is fully open. 
 
 ### Constructor
 
 The Service abstract class implements the following constructor:
 
 ```java
-public PluggableService(PipedHttpHandler next,
+public MyService(PipedHttpHandler next,
           String name,
           String uri,
           Boolean secured,
@@ -831,23 +837,23 @@ An *Initializer* allows executing custom logic at startup time.
 
 Notably it allows to define *Interceptors* and *Global Permission Predicates*.
 
-The Initializer implementation class must extend the `io.uiam.plugins.init.PluggableInitializer` interface, implementing the following method:
+The Initializer implementation class must extend the `org.restheart.security.plugins.Initializer` interface, implementing the following method:
 
 ```java
-public interface PluggableInitializer {
+public interface Initializer {
   public void init();
 }
 ```
 
-An example Initializer is `io.uiam.plugins.init.impl.ExampleInitializer`.
+An example Initializer is `org.restheart.security.plugins.initializers.ExampleInitializer`.
 
 ### Configuration
 
-The Initializer  must be declared in the yml configuration file. 
+The Initializer must be declared in the yml configuration file. 
 Of course the implementation class must be in the java classpath.
 
 ```yml
-initializer-class: io.uiam.plugins.init.impl.ExampleInitializer
+initializer-class: org.restheart.security.plugins.initializers.ExampleInitializer
 ```
 
 ### Defining Interceptors
@@ -855,8 +861,8 @@ initializer-class: io.uiam.plugins.init.impl.ExampleInitializer
 The `PluginsRegistry` class allows to define Interceptors.
 
 ```java
-PluggableRequestInterceptor requestInterceptor = ...;
-PluggableResponseInterceptor responseIterceptor = ...;
+RequestInterceptor requestInterceptor = ...;
+ResponseInterceptor responseIterceptor = ...;
 
 PluginsRegistry.getRequestInterceptors().add(requestInterceptor);
 
@@ -865,7 +871,7 @@ PluginsRegistry.getResponseInterceptors().add(responseIterceptor);
 
 ### Defining Global Permission Predicates
 
-The `AccessManagerHandler` class allows to define Global Predicates. Requests must resolve all of the predicates to be allowed.
+The `GlobalSecuirtyPredicatesAuthorizer` class allows to define Global Predicates. Requests must resolve all of the predicates to be allowed.
 
 > You can think about a Global Predicate a way to black list request matching a given condition.
 
@@ -873,7 +879,7 @@ The following example predicate denies `GET /foo/bar` requests:
 
 ```java
 // add a global security predicate
-AccessManagerHandler.getGlobalSecurityPredicates().add(new Predicate() {
+GlobalSecuirtyPredicatesAuthorizer.getGlobalSecurityPredicates().add(new Predicate() {
     @Override
     public boolean resolve(HttpServerExchange exchange) {
         var request = Request.wrap(exchange);
@@ -892,15 +898,15 @@ AccessManagerHandler.getGlobalSecurityPredicates().add(new Predicate() {
 
 Interceptors allows to snoop and modify request and responses.
 
-A Request Interceptor applies before the request is proxied or handled by a *Service* thus allowing to modify the request. Its implementation class must implement the interface `io.uiam.plugins.interceptors.PluggableRequestInterceptor` .
+A Request Interceptor applies before the request is proxied or handled by a *Service* thus allowing to modify the request. Its implementation class must implement the interface `org.restheart.security.plugins.RequestInterceptor` .
 
-A Response Interceptor applies after the request has been proxied or handled by a *Service* thus allowing to modify the response. Its implementation class must implement the interface `io.uiam.plugins.interceptors.PluggableResponseInterceptor`.
+A Response Interceptor applies after the request has been proxied or handled by a *Service* thus allowing to modify the response. Its implementation class must implement the interface `org.restheart.security.plugins.ResponseInterceptor`.
 
-Those interfaces both extend the base interface `io.uiam.plugins.interceptors.PluggableInterceptor`
+Those interfaces both extend the base interface `org.restheart.security.plugins.Interceptor`
 
 
 ```java
-public interface PluggableInterceptor {
+public interface Interceptor {
   /**
    * implements the interceptor logic
    * 
@@ -920,21 +926,21 @@ public interface PluggableInterceptor {
 
 The `handleRequest()` method is invoked only if the `resolve()` method returns true.
 
-Example interceptor implementations can be found in the package`io.uiam.plugins.interceptors.impl`.
+Example interceptor implementations can be found in the package``org.restheart.security.plugins.interceptors`.
 
 ### Accessing the Content in Request Interceptors
 
-In some cases, you need to access the request content. For example you need the request content in *Services*, to modify it with a `PluggableRequestInterceptor` or to implement an `AccessManager` that checks the content to authorize the request.
+In some cases, you need to access the request content. For example you want to modify request content with a `RequestInterceptor` or to implement an `Authorizer` that checks the content to authorize the request.
 
  Accessing the content from the *HttpServerExchange* object using the exchange *InputStream* in proxied requests leads to an error because Undertow allows reading the content just once. 
 
  In order to simplify accessing the content, the `ByteArrayRequest.wrap(exchange).readContent()` and `JsonRequest.wrap(exchange).readContent()` helper methods are available. They are very efficient since they use the non blocking `RequestBufferingHandler` under to hood.
- However, since accessing the request content might lead to significant performance overhead, a *PluggableRequestInterceptor* that resolves the request and overrides the `requiresContent()` to return true must be implemented to make data available.
+ However, since accessing the request content might lead to significant performance overhead, a *RequestInterceptor* that resolves the request and overrides the `requiresContent()` to return true must be implemented to make data available.
 
- `PluggableRequestInterceptor` defines the following method with a default implementation that returns false:
+ `RequestInterceptor` defines the following method with a default implementation that returns false:
 
 ```java
-public interface PluggableRequestInterceptor extends PluggableInterceptor {
+public interfaceRequestInterceptor extends Interceptor {
   /**
    *
    * @return true if the Interceptor requires to access the request content
@@ -949,14 +955,14 @@ Please note that, in order to mitigate DoS attacks, the size of the Request cont
 
 ### Accessing the Content in Response Interceptors
 
-In some cases, you need to access the response content. For example you might need the modify the response from a proxied resource before sending it to the client.
+In some cases, you need to access the response content. For example you want the modify the response from a proxied resource before sending it to the client.
 
- In order to simplify accessing the content, the `ByteArrayRequest.wrap(exchange).readContent()` and `JsonResponse.wrap(exchange).readContent()` helper methods are available. Since accessing the response content might lead to significant performance overhead because the full response must be read by uIAM, a *PluggableResponseInterceptor* that resolves the request and overrides the `requiresResponseContent()` to return true must be implemented to make data available.
+ In order to simplify accessing the content, the `ByteArrayRequest.wrap(exchange).readContent()` and `JsonResponse.wrap(exchange).readContent()` helper methods are available. Since accessing the response content might lead to significant performance overhead because the full response must be read by **restheart-security**, a *ResponseInterceptor* that resolves the request and overrides the `requiresResponseContent()` to return true must be implemented to make data available.
 
- `PluggableResponseInterceptor` defines the following method with a default implementation that returns false:
+ `ResponseInterceptor` defines the following method with a default implementation that returns false:
 
 ```java
-public interface PluggableResponseInterceptor extends PluggableInterceptor {
+public interface ResponseInterceptor extends Interceptor {
   /**
    *
    * @return true if the Interceptor requires to access the response content
@@ -971,7 +977,7 @@ Please note that, in order to mitigate DoS attacks, the size of the response con
 
 ### Configuration
 
-Interceptors are configured with *Initializers*. See `Develop an Initializer` section for more information.
+Interceptors are configured programmatically with *Initializers*. See `Develop an Initializer` section for more information.
 
 <hr>
 

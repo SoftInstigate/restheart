@@ -1,0 +1,291 @@
+## RESTHeart Security Configuration File.
+---
+#### Listeners
+
+ # Listeners allow to specify the protocol, ip, port and to use.
+ # The supported protocols are: http, https and ajp. 
+ # You can setup a listener per protocol (up to 3).
+
+ # WARNING: Using the http listener is not secure with basic authentication:
+ # credentials can be sniffed by a man-in-the-middle attack.
+
+https-listener: false
+https-host: 0.0.0.0
+https-port: 4443
+
+http-listener: true
+http-host: 0.0.0.0
+http-port: 8080
+
+ajp-listener: false
+ajp-host: 0.0.0.0
+ajp-port: 8009
+
+#### Instance name
+
+ # The name of this RESTHeart Security instance. 
+ # Displayed in log, also allows to implement instance specific custom code
+
+instance-name: restheart-security-docker
+
+### Proxied resources
+
+ # location (required) The location URI to bound to the HTTP proxied server.
+ # proxy-pass (required) The URL of the HTTP proxied server. It can be an array of URLs for load balancing.
+ # rewrite-host-header (optional, default true) should the HOST header be rewritten to use the target host of the call.
+ # connections-per-thread (optional, default 10) Controls the number of connections to create per thread.
+ # soft-max-connections-per-thread (optional, default 5) Controls the number of connections to create per thread.
+ # max-queue-size (optional, default 0) Controls the number of connections to create per thread.
+ # connections-ttl (optional, default -1) Connections Time to Live in seconds.
+ # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
+proxies:
+    - location: /secho
+      proxy-pass: 
+        - http://127.0.0.1:8080/echo
+      rewrite-host-header: true
+      connections-per-thread: 20
+
+#### SSL Configuration
+
+ # Configure the keystore to enable the https listener.
+
+ # RESTHeart Security comes with a self-signed certificate that makes 
+ # straightforward enabling https.
+ # Specify use-embedded-keystore: true to use it (this is the default setting).
+ # Using the self-signed certificate leads to issues with some clients;
+ # for instance, with curl you need to specify the "--insecure" option or you'll get an error message.
+
+use-embedded-keystore: true
+
+ # To use your own certificate you need to import it (and eventually the CA certificates chain) into a java keystore
+ # and specify use-embedded-keystore: false and the keystore-file,keystore-password and certpassword configuration properties.
+ # Refer to the java keystore documentation for that.
+
+#keystore-file: /path/to/keystore/file
+#keystore-password: password
+#certpassword: password
+
+### Initializer
+
+ # A custom initializer implmenting the org.restheart.security.plugins.Initializer interface
+ # Can be used to inizialize data, to add global predicated and interceptors
+
+#initializer-class: org.restheart.security.plugins.initializers.ExampleInitializer
+
+### Security
+
+ # RESTHeart Security security is pluggable, you can provide you own 
+ # implementations of Authenticator Mechanisms, Authenticator, Authorizer
+ # and Token Manager
+
+## Authentication Mechanisms
+
+ # As an in-bound request is received the authenticate method is called on each
+ # mechanism in turn until one of the following occurs: A mechanism
+ # successfully authenticates the incoming request or the list of mechanisms is
+ # exhausted.
+
+ # See README.md for the list of available Authentication Mechanisms
+
+auth-mechanisms:
+    - name: tokenBasicAuthMechanism
+      class: org.restheart.security.plugins.mechanisms.TokenBasicAuthMechanism
+      args: 
+        realm: RESTHeart Realm
+    - name: basicAuthMechanism
+      class:  org.restheart.security.plugins.mechanisms.BasicAuthMechanism
+      args:
+        realm: RESTHeart Realm
+        authenticator: simpleFileAuthenticator
+    - name: digestAuthMechanism
+      class:  org.restheart.security.plugins.mechanisms.DigestAuthMechanism
+      args: 
+        realm: RESTHeart Realm
+        domain: localhost
+        authenticator: simpleFileAuthenticator
+#    - name: identityAuthenticationMechanism
+#      class: org.restheart.security.plugins.mechanisms.IdentityAuthMechanism
+#      args:
+#        username: admin
+#        roles:
+#            - admin
+#            - user
+
+## Authenticators
+
+ # An Authenticator verify user credential and are used by one or more 
+ # AuthMachanisms
+
+ # See README.md for the list of available Authenticators
+
+authenticators:
+    - name: simpleFileAuthenticator
+      class: org.restheart.security.plugins.authenticators.SimpleFileAuthenticator
+      args:
+        conf-file: /opt/restheart/etc/users.yml
+
+## Authorizers
+
+ # An Authorizer is responsible of authorizing the authenticated request
+ 
+ # See README.md for the list of available Authorizers
+
+authorizers:
+    name: requestPredicatesAuthorizer
+    class: org.restheart.security.plugins.authorizers.RequestPredicatesAuthorizer
+    args:
+        conf-file: /opt/restheart/etc/acl.yml
+
+## Token Manager
+
+ # If a token-manager is configured, RESTHeart Security will use it to generate 
+ # and verify auth tokens.
+ # The token is returned to the caller via auth-token header when the user
+ # autheticates succesfully. The token can be used by Authentication Mechanisms.
+
+ # See README.md for the list of available Token Managers.
+
+token-manager:
+    name: rndTokenManager
+    class: org.restheart.security.plugins.tokens.RndTokenManager
+    args:
+      ttl: 15
+      srv-uri: /tokens
+
+## Services
+
+ # RESTHeart Security allows exposing custom services
+ # The service class must extend the prg.restheart.security.plugins.Service
+ # and can be bound to an URI via the service option
+
+ # See README.md for the list of available Services
+
+services:
+    - name: rndTokenService
+      class: org.restheart.security.plugins.services.RndTokenService
+      uri: /tokens
+      secured: false
+    - name: ping
+      class: org.restheart.security.plugins.services.PingService
+      uri: /ping
+      secured: false
+      args:
+          msg: "Hello World!"
+    - name: getRoles
+      class: org.restheart.security.plugins.services.GetRoleService
+      uri: /roles
+      secured: true
+      args:
+          url: /roles
+    - name: requestEchoer
+      class: org.restheart.security.plugins.services.EchoService
+      uri: /echo
+      secured: false
+      
+#### Logging
+
+ # enable-log-console: true => log messages to the console (default value: true)
+ # enable-log-file: true => log messages to a file (default value: true)
+ # log-file-path: to specify the log file path (default value: restheart-security.log in system temporary directory)
+ # log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
+ # requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
+ # ansi-console: use Ansi console for logging. 
+ # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
+
+enable-log-file: true
+log-file-path: /var/log/restheart-security.log
+enable-log-console: true
+log-level: DEBUG
+requests-log-level: 1
+ansi-console: true
+
+#### Performance Options
+
+ # In order to save bandwitdth RESTHeart Security can force requests to support the giz encoding (if not, requests will be rejected)
+force-gzip-encoding: false
+
+ # Limit for the maximum number of concurrent requests being served
+requests-limit: 1000
+
+ # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
+io-threads: 4
+
+ # Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
+worker-threads: 16
+
+ # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
+buffer-size: 16384
+buffers-per-region: 20
+ # Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
+direct-buffers: true
+
+#### Connetction Options
+
+ # Allow unescaped characters in URL
+
+allow-unescaped-characters-in-url: true
+
+ # see http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
+
+connection-options:
+    # The maximum size of a HTTP header block, in bytes. 
+    # If a client sends more data that this as part of the request header then the connection will be closed. 
+    # Defaults to 1Mbyte.
+    MAX_HEADER_SIZE: 1048576
+
+    # The default maximum size of a request entity. 
+    # Defaults to unlimited.
+    MAX_ENTITY_SIZE: -1
+    
+     #The default maximum size of the HTTP entity body when using the mutiltipart parser.
+     # Generall this will be larger than MAX_ENTITY_SIZE
+     # If this is not specified it will be the same as MAX_ENTITY_SIZE
+    MULTIPART_MAX_ENTITY_SIZE: -1
+    
+    # The idle timeout in milliseconds after which the channel will be closed.
+    # If the underlying channel already has a read or write timeout set 
+    # the smaller of the two values will be used for read/write timeouts.
+    # Defaults to unlimited (-1).
+    IDLE_TIMEOUT: -1
+    
+    # The maximum allowed time of reading HTTP request in milliseconds.
+    # -1 or missing value disables this functionality.
+    REQUEST_PARSE_TIMEOUT: -1
+    
+    # The amount of time the connection can be idle with no current requests 
+    # before it is closed;
+    # Defaults to unlimited (-1).
+    NO_REQUEST_TIMEOUT: -1
+
+    # The maximum number of query parameters that are permitted in a request. 
+    # If a client sends more than this number the connection will be closed. 
+    # This limit is necessary to protect against hash based denial of service attacks. 
+    # Defaults to 1000.
+    MAX_PARAMETERS: 1000
+
+    # The maximum number of headers that are permitted in a request. 
+    # If a client sends more than this number the connection will be closed. 
+    # This limit is necessary to protect against hash based denial of service attacks. 
+    # Defaults to 200.
+    MAX_HEADERS: 200
+
+    # The maximum number of cookies that are permitted in a request. 
+    # If a client sends more than this number the connection will be closed. 
+    # This limit is necessary to protect against hash based denial of service attacks. 
+    # Defaults to 200.
+    MAX_COOKIES: 200
+
+    # The charset to use to decode the URL and query parameters. 
+    # Defaults to UTF-8.
+    URL_CHARSET: UTF-8
+    
+    # If this is true then a Connection: keep-alive header will be added to responses, 
+    # even when it is not strictly required by the specification.
+    # Defaults to true
+    ALWAYS_SET_KEEP_ALIVE: true
+    
+    # If this is true then a Date header will be added to all responses. 
+    # The HTTP spec says this header should be added to all responses, 
+    # unless the server does not have an accurate clock.
+    # Defaults to true
+    ALWAYS_SET_DATE: true

@@ -1,0 +1,53 @@
+version: '2'
+
+### Creates a named network with the default bridge driver
+# The network is shared between restheart and mongodb only
+# See: https://docs.docker.com/engine/userguide/networking/dockernetworks/
+# See: https://docs.docker.com/engine/reference/commandline/network_create/
+networks:
+   backend:
+       
+### Create a permanent, named data volume
+# This makes much easier to identify where the mongodb data is stored on host
+# See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
+volumes:
+   restheart-security-testdb:
+
+services:
+   restheart-security:
+      image: softinstigate/restheart-security
+      container_name: restheart-security
+      depends_on:
+         - restheart
+      networks:
+         - backend
+      ports:
+         - "18080:8080"
+      volumes:
+         - ./etc/restheart-security.yml:/opt/restheart/etc/restheart-security.yml:ro
+         - ./etc/users.yml:/opt/restheart/etc/users.yml:ro
+         - ./etc/acl.yml:/opt/restheart/etc/acl.yml:ro
+
+   restheart:
+      image: softinstigate/restheart
+      container_name: restheart
+      depends_on:
+         - mongodb
+      networks:
+         - backend
+      ports:
+         - "8080:8080"
+      volumes:
+         - ./etc/restheart.yml:/opt/restheart/etc/restheart.yml:ro
+
+   mongodb:
+      image: mongo:3.6
+      container_name: restheart-mongo
+      command: --bind_ip_all
+      volumes:
+         - restheart-security-testdb:/data/db
+      networks:
+         - backend
+      ### mongodb port must be mapped for the test to run
+      ports:
+         - "27017:27017"

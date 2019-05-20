@@ -1,0 +1,8 @@
+## configuration file for requestPredicatesAuthorizer
+permissions:
+    # OPTIONS is always allowed
+    - role: $unauthenticated
+      predicate: path-prefix[path="/"] and method[value="OPTIONS"]
+
+    - role: admin
+      predicate: path-prefix[path="/"]

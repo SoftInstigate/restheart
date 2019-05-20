@@ -1,4 +1,4 @@
-# &#181;IAM Docker HOWTO
+# **restheart-security** Docker HOWTO
 
 ## build the docker image
 
@@ -9,7 +9,7 @@ $ ./Docker/build.sh
 ## run container 
 
 ```shell
-$ docker run -i -t --rm --name uiam -p 8080:8080 -p 4443:4443 softinstigate/uiam
+$ docker run -i -t --rm --name restheart-security -p 8080:8080 -p 4443:4443 softinstigate/restheart-security
 ```
 
 CTRL+D to stop and remove the container
