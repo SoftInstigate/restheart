@@ -1,16 +1,16 @@
-# restheart-security
+# RESTHeart Security
 
 [![Build Status](https://travis-ci.org/SoftInstigate/restheart-security.svg?branch=master)](https://travis-ci.org/SoftInstigate/uiam)
 [![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart-security.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/uiam/)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart-security.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/restheart-security/)
 
-**restheart-security** is the security service of [RESTHeart](https://restheart.org), the Web API for MongoDB. It acts as a reverse proxy for HTTP resources, providing __Authentication__ and __Authorization__ services. 
+**restheart-security** is the new security service for the forthcoming major release of [RESTHeart](https://restheart.org), the Web API for MongoDB. It acts as a reverse proxy for HTTP resources, providing __Authentication__ and __Authorization__ services. 
 
 **restheart-security** enables developers to configure security policies in standardized micro-gateway instances that are external to API and microservices implementations, avoiding coding security functions and a centralized gateway where scalability is a key concern.
 
 **restheart-security** can also be used as a micro-gateway for **Identity and Access Management**  in any HTTP-based microservices architecture. 
 
-> Think about &#181;IAM as the "brick" that you put in front of your API and microservices to protect them. 
+> Think about restheart-security as the "brick" that you put in front of your API and microservices to protect them. 
 
 **restheart-security** is built around a __pluggable architecture__. It comes with a strong security implementation but you can easily extend it by implementing plugins. 
 
