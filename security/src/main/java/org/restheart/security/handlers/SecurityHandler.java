@@ -17,7 +17,7 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.security.handlers.injectors.TokenInjecter;
+import org.restheart.security.handlers.injectors.TokenInjector;
 import java.util.List;
 
 import io.undertow.security.api.AuthenticationMode;
@@ -67,7 +67,7 @@ public class SecurityHandler extends PipedHttpHandler {
                         + "that gives full access power ");
             }
 
-            handler = new TokenInjecter(
+            handler = new TokenInjector(
                     new GlobalSecuirtyPredicatesAuthorizer(accessManager, next),
                     tokenManager);
 

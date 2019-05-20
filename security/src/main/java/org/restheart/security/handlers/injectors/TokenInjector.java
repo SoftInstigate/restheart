@@ -27,7 +27,7 @@ import org.restheart.security.plugins.TokenManager;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class TokenInjecter extends PipedHttpHandler {
+public class TokenInjector extends PipedHttpHandler {
     private final TokenManager tokenManager;
 
     /**
@@ -36,7 +36,7 @@ public class TokenInjecter extends PipedHttpHandler {
      * @param next
      * @param tokenManager
      */
-    public TokenInjecter(PipedHttpHandler next, TokenManager tokenManager) {
+    public TokenInjector(PipedHttpHandler next, TokenManager tokenManager) {
         super(next);
         this.tokenManager = tokenManager;
     }
