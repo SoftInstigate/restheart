@@ -173,7 +173,7 @@ Let's fist invoke the `/echo` service directly. This is defined in the [configur
 
 ```yaml
 services:
-    - implementation-class: org.restheart.plugins.service.EchoService
+    - implementation-class: org.restheart.security.plugins.services.EchoService
       uri: /echo
       secured: false
 ```
