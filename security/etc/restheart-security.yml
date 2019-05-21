@@ -40,9 +40,7 @@ instance-name: develop
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
 proxies:
     - location: /
-      proxy-pass: 
-        - http://127.0.0.1:8080/
-        - http://localhost:8080/
+      proxy-pass: http://127.0.0.1:8080/
       rewrite-host-header: true
       connections-per-thread: 20
 
