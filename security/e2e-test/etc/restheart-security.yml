@@ -23,7 +23,7 @@ ajp-port: 8009
 
 #### Instance name
 
- # The name of this RESTHeart Security instance. 
+ # The name of this instance. 
  # Displayed in log, also allows to implement instance specific custom code
 
 instance-name: e2e-test
