@@ -6,9 +6,9 @@
     <artifactId>restheart-security</artifactId>
     <version>0.2.1-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>RESTHeart Security</name>
+    <name>restheart-security</name>
     <description>
-        RESTHeart security micro service
+        RESTHeart Security - IAM microservice for RESTHeart.
     </description>
     <url>https://restheart.org</url>
     <inceptionYear>2018</inceptionYear>
