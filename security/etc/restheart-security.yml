@@ -9,13 +9,13 @@
  # WARNING: Using the http listener is not secure with basic authentication:
  # credentials can be sniffed by a man-in-the-middle attack.
 
-https-listener: true
+https-listener: false
 https-host: 0.0.0.0
-https-port: 4443
+https-port: 443
 
 http-listener: true
 http-host: 0.0.0.0
-http-port: 8080
+http-port: 8081
 
 ajp-listener: false
 ajp-host: 0.0.0.0
@@ -39,10 +39,10 @@ instance-name: develop
  # connections-ttl (optional, default -1) Connections Time to Live in seconds.
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
 proxies:
-    - location: /secho
+    - location: /
       proxy-pass: 
-        - http://127.0.0.1:8080/echo
-        - http://localhost:8080/echo
+        - http://127.0.0.1:8080/
+        - http://localhost:8080/
       rewrite-host-header: true
       connections-per-thread: 20
 
