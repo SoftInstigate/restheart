@@ -1,7 +1,7 @@
 # RESTHeart Security
 
-[![Build Status](https://travis-ci.org/SoftInstigate/restheart-security.svg?branch=master)](https://travis-ci.org/SoftInstigate/uiam)
-[![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart-security.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/uiam/)
+[![Build Status](https://travis-ci.org/SoftInstigate/restheart-security.svg?branch=master)](https://travis-ci.org/SoftInstigate/restheart-security)
+[![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart-security.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/restheart-security/)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart-security.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/restheart-security/)
 
 **restheart-security** is the new security service for the forthcoming major release of [RESTHeart](https://restheart.org), the Web API for MongoDB. It acts as a reverse proxy for HTTP resources, providing __Authentication__ and __Authorization__ services. 
