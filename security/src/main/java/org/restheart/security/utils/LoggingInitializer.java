@@ -45,15 +45,23 @@ public class LoggingInitializer {
      */
     public static void setLogLevel(Level level) {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        Logger logger = loggerContext.getLogger("org.restheart.security");
+        Logger orgLogger = loggerContext.getLogger("org.restheart.security");
+        Logger comLogger = loggerContext.getLogger("com.restheart.security");
 
         String logbackConfigurationFile = System.getProperty("logback.configurationFile");
         if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
-            logger.info("Loglevel was set via logback configuration file with level {}", logger.getLevel());
-            level = logger.getLevel();
+            orgLogger.info("Loglevel was set via logback configuration file with level {}", orgLogger.getLevel());
+            level = comLogger.getLevel();
+        }
+        
+        orgLogger.setLevel(level);
+        
+        if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
+            comLogger.info("Loglevel was set via logback configuration file with level {}", comLogger.getLevel());
+            level = comLogger.getLevel();
         }
 
-        logger.setLevel(level);
+        comLogger.setLevel(level);
     }
 
     /**
