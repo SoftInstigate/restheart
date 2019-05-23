@@ -98,10 +98,11 @@ mongo-mounts:
 
 #### Static Web Resources
 
-# Static web resources to bind to the specified URL.
+# Static web resources to bind to the URL specified by the 'where' property.
 # The 'what' property is the path of the directory containing the resources.
-# The path is either absolute (starting with /) or relative to the restheart.jar directory
-# If embedded is true, the resources are either included in the restheart.jar or in the classpath
+# The path is either absolute (starts with /) or relative to the restheart.jar file
+# If embedded is true, the resources are either included in the restheart.jar or 
+# in the classpath
 
 static-resources-mounts:
     - what: browser
@@ -112,23 +113,22 @@ static-resources-mounts:
 ### Plugins configuration
 
 # All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object 
-# with the same name of the plugin (as defined in its @Register annotation).
-# The special property 'disabled' allows disabling the plugin (any value will work)
+# with the same name of the plugin (as defined in its @RegisterPlugin annotation).
+# The property 'enabled' allows enabling plugins that are not enabled by default,
+# i.e. that have registered with @RegisterPlugin( .., enabledByDefault=false) 
+# The property 'uri' allows setting the uri of Service plugins or overwriting its
+# default value if specified with the Service.defaultUri() method
 
 plugins-args:
   logMessageInitializer:
-    disabled: !
+    enabled: false
     message: Hello World!
     log-level: INFO
   addBodyToWriteResponsesInitializer:
-    disabled: !
+    enabled: false
   pingService:
-    uri: /ping
+    #uri: "/hello"
     msg: Hello World!
-  cacheInvalidator:
-    uri: /ic
-  csvLoader:
-    uri: /csv
 
 ### Security
 
