@@ -107,8 +107,7 @@ public class RndTokenService extends Service {
         if (!((getUri() + "/" + exchange.getSecurityContext()
                 .getAuthenticatedAccount().getPrincipal().getName())
                 .equals(exchange.getRequestURI()))
-                && 
-                !(ESCAPER.escape(getUri() + "/" + exchange.getSecurityContext()
+                && !(ESCAPER.escape(getUri() + "/" + exchange.getSecurityContext()
                         .getAuthenticatedAccount().getPrincipal().getName()))
                         .equals(exchange.getRequestURI())) {
             exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
@@ -125,7 +124,7 @@ public class RndTokenService extends Service {
             resp.add("auth_token_valid_until",
                     new JsonPrimitive(exchange.getResponseHeaders()
                             .get(AUTH_TOKEN_VALID_HEADER).getFirst()));
-            
+
             exchange.setStatusCode(HttpStatus.SC_OK);
             // TODO use static var for content type
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");

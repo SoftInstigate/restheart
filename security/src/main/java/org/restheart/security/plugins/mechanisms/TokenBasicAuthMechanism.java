@@ -85,7 +85,7 @@ public class TokenBasicAuthMechanism
                 PluginsRegistry.getInstance().getTokenManager());
 
         this.mechanismName = mechanismName;
-        
+
         this.identityManager = PluginsRegistry.getInstance().getTokenManager();
     }
 

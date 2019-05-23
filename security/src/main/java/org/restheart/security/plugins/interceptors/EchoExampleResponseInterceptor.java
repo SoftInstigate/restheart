@@ -33,7 +33,7 @@ public class EchoExampleResponseInterceptor implements ResponseInterceptor {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var response = JsonResponse.wrap(exchange);
-        
+
         exchange.getResponseHeaders().add(HttpString.tryFromString("header"),
                 "added by EchoExampleResponseInterceptor " + exchange.getRequestPath());
 
@@ -56,8 +56,8 @@ public class EchoExampleResponseInterceptor implements ResponseInterceptor {
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        return exchange.getRequestPath().equals("/iecho") || 
-                exchange.getRequestPath().equals("/siecho");
+        return exchange.getRequestPath().equals("/iecho")
+                || exchange.getRequestPath().equals("/siecho");
     }
 
     @Override

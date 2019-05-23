@@ -358,19 +358,15 @@ public class Configuration {
         try {
             fis = new FileInputStream(confFilePath.toFile());
             conf = (Map<String, Object>) yaml.load(fis);
-        }
-        catch (FileNotFoundException fne) {
+        } catch (FileNotFoundException fne) {
             throw new ConfigurationException("configuration file not found", fne);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             throw new ConfigurationException("error parsing the configuration file", t);
-        }
-        finally {
+        } finally {
             if (fis != null) {
                 try {
                     fis.close();
-                }
-                catch (IOException ioe) {
+                } catch (IOException ioe) {
                     LOGGER.warn("Can't close the FileInputStream", ioe);
                 }
             }
@@ -584,8 +580,7 @@ public class Configuration {
 
         try {
             level = Level.valueOf(_logLevel);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             if (!silent) {
                 LOGGER.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel,
                         "INFO");
@@ -729,8 +724,7 @@ public class Configuration {
                 LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
             }
             return (V) conf.get(key);
-        }
-        catch (ClassCastException cce) {
+        } catch (ClassCastException cce) {
             if (!silent) {
                 LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
                         defaultValue);

@@ -58,7 +58,7 @@ public class ErrorHandler implements HttpHandler {
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
 
-            ByteArrayResponse.wrap(exchange).endExchangeWithMessage( 
+            ByteArrayResponse.wrap(exchange).endExchangeWithMessage(
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Error handling the request, see log for more information", t);
 

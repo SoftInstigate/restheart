@@ -48,10 +48,10 @@ public class GetRoleService extends Service {
      * @param args
      * @throws Exception
      */
-    public GetRoleService(PipedHttpHandler next, 
-            String name, 
-            String uri, 
-            Boolean secured, 
+    public GetRoleService(PipedHttpHandler next,
+            String name,
+            String uri,
+            Boolean secured,
             Map<String, Object> args)
             throws Exception {
         super(next, name, uri, secured, args);

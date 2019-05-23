@@ -68,10 +68,9 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
                         LOGGER.debug("Executing request interceptor {} for {}",
                                 ri.getClass().getSimpleName(),
                                 exchange.getRequestPath());
-                        
+
                         ri.handleRequest(exchange);
-                    }
-                    catch (Exception ex) {
+                    } catch (Exception ex) {
                         LOGGER.error("Error executing request interceptor {} for {}",
                                 ri.getClass().getSimpleName(),
                                 exchange.getRequestPath(),

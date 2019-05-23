@@ -36,11 +36,11 @@ public abstract class Response<T> extends AbstractExchange<T> {
             = AttachmentKey.create(Integer.class);
     public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA
             = AttachmentKey.create(PooledByteBuffer[].class);
-    
+
     protected Response(HttpServerExchange exchange) {
         super(exchange);
     }
-    
+
     public static String getContentType(HttpServerExchange exchange) {
         return exchange.getResponseHeaders()
                 .getFirst(Headers.CONTENT_TYPE);
@@ -148,8 +148,7 @@ public abstract class Response<T> extends AbstractExchange<T> {
                     message,
                     t,
                     false));
-        }
-        catch (IOException ioe) {
+        } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
     }

@@ -38,7 +38,7 @@ public class AuthenticationConstraintHandler extends PipedHttpHandler {
         super(next);
         this.am = am;
     }
-    
+
     protected boolean isAuthenticationRequired(final HttpServerExchange exchange) {
         return am.isAuthenticationRequired(exchange);
     }

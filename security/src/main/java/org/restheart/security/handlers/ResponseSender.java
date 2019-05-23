@@ -58,7 +58,6 @@ public class ResponseSender extends PipedHttpHandler {
             exchange.setStatusCode(response.getStatusCode());
         }
 
-
         if (response.isContentAvailable()) {
             exchange.getResponseSender().send(
                     ByteBuffer.wrap(response.readContent()));

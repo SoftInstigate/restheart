@@ -24,13 +24,14 @@ package org.restheart.security.utils;
 public class LambdaUtils {
     /**
      * allows to throw Checked exception from a Consumer
+     *
      * @see https://www.baeldung.com/java-sneaky-throws
-     * @param ex 
+     * @param ex
      */
     public static void throwsSneakyExcpetion(Throwable ex) {
         sneakyThrow(ex);
     }
-    
+
     private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
         throw (E) e;
     }

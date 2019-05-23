@@ -26,14 +26,14 @@ import io.undertow.server.HttpServerExchange;
 public interface Interceptor {
     /**
      * implements the interceptor logic
-     * 
+     *
      * @param exchange
-     * @throws Exception 
+     * @throws Exception
      */
     public void handleRequest(final HttpServerExchange exchange) throws Exception;
-    
+
     /**
-     * 
+     *
      * @param exchange
      * @return true if the interceptor must handle the request
      */

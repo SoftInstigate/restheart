@@ -71,8 +71,7 @@ public class JsonResponse extends Response<JsonElement> {
                         StandardCharsets.UTF_8);
 
                 return PARSER.parse(rawContentAsString);
-            }
-            catch (JsonParseException ex) {
+            } catch (JsonParseException ex) {
                 throw new IOException("Error parsing json", ex);
             }
         }

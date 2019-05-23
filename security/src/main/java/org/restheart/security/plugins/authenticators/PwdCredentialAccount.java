@@ -23,7 +23,7 @@ import io.undertow.security.idm.PasswordCredential;
 
 /**
  * Account implementation that holds PasswordCredential
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PwdCredentialAccount extends BaseAccount {

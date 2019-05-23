@@ -73,8 +73,7 @@ public class EchoService extends Service {
 
             try {
                 resp.add("content", request.readContent());
-            }
-            catch (JsonSyntaxException jse) {
+            } catch (JsonSyntaxException jse) {
                 resp.addProperty("content", getTruncatedContent(
                         ByteArrayRequest.wrap(exchange)));
                 resp.addProperty("note",

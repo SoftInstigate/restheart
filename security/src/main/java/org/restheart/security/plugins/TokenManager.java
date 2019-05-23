@@ -34,6 +34,7 @@ public interface TokenManager extends Authenticator {
 
     /**
      * retrieves of generate a token valid for the account
+     *
      * @param account
      * @return the token for the account
      */
@@ -41,21 +42,23 @@ public interface TokenManager extends Authenticator {
 
     /**
      * invalidates the token bound to the account
+     *
      * @param account
      */
     public void invalidate(Account account);
 
     /**
      * updates the account bound to a token
+     *
      * @param account
      */
     public void update(Account account);
-    
+
     /**
      * injects the token headers in the response
-     * 
+     *
      * @param exchange
-     * @param token 
+     * @param token
      */
     public void injectTokenHeaders(HttpServerExchange exchange, PasswordCredential token);
 }

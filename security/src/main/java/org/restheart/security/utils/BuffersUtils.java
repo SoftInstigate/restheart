@@ -88,7 +88,7 @@ public class BuffersUtils {
             throws IOException {
         return new String(toByteArray(srcs), cs);
     }
-    
+
     public static String toString(final byte[] src, Charset cs)
             throws IOException {
         return new String(src, cs);
@@ -128,13 +128,13 @@ public class BuffersUtils {
 
             pidx++;
         }
-        
+
         // clean up remaining destination buffers
         while (pidx < dest.length) {
-             dest[pidx] = null;
-             pidx++;
+            dest[pidx] = null;
+            pidx++;
         }
-        
+
         return copied;
     }
 
@@ -148,8 +148,7 @@ public class BuffersUtils {
                 try {
                     Buffers.dump(src, sb, 2, 2);
                     LOGGER.debug("{} buffer #{}:\n{}", msg, nbuf, sb);
-                }
-                catch (IOException ie) {
+                } catch (IOException ie) {
                     LOGGER.debug("failed to dump buffered content", ie);
                 }
             }
@@ -191,11 +190,11 @@ public class BuffersUtils {
 
             pidx++;
         }
-        
+
         // clean up remaining destination buffers
         while (pidx < dest.length) {
-             dest[pidx] = null;
-             pidx++;
+            dest[pidx] = null;
+            pidx++;
         }
 
         return copied;
@@ -226,11 +225,11 @@ public class BuffersUtils {
 
             idx++;
         }
-        
+
         // clean up remaining destination buffers
         while (idx < dest.length) {
-             dest[idx] = null;
-             idx++;
+            dest[idx] = null;
+            idx++;
         }
 
         return copied;

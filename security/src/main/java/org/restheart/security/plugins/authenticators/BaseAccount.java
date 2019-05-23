@@ -27,7 +27,7 @@ import io.undertow.security.idm.Account;
 
 /**
  * Base concrete Account implementation
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BaseAccount implements Account {
@@ -67,12 +67,12 @@ public class BaseAccount implements Account {
     public Set<String> getRoles() {
         return roles;
     }
-    
+
     @Override
     public String toString() {
         return "username="
                 .concat(principal != null ? principal.getName() : "null")
                 .concat(" roles=")
-                .concat(roles != null ? roles.toString(): "null");
+                .concat(roles != null ? roles.toString() : "null");
     }
 }

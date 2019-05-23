@@ -121,7 +121,7 @@ public class RndTokenManager implements TokenManager {
     public void invalidate(Account account) {
         this.CACHE.invalidate(account.getPrincipal().getName());
     }
-    
+
     @Override
     public void update(Account account) {
         String id = account.getPrincipal().getName();

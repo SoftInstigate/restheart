@@ -137,8 +137,7 @@ public class ModifiableContentSinkConduit
 
                         try {
                             ri.handleRequest(exchange);
-                        }
-                        catch (Exception ex) {
+                        } catch (Exception ex) {
                             LOGGER.error("Error executing response interceptor {} for {}",
                                     ri.getClass().getSimpleName(),
                                     exchange.getRequestPath(),
@@ -196,16 +195,14 @@ public class ModifiableContentSinkConduit
                         long.class,
                         HttpServerExchange.class);
                 m.setAccessible(true);
-            }
-            catch (NoSuchMethodException | SecurityException ex) {
+            } catch (NoSuchMethodException | SecurityException ex) {
                 LOGGER.error("could not find ServerFixedLengthStreamSinkConduit.reset method", ex);
                 throw new RuntimeException("could not find ServerFixedLengthStreamSinkConduit.reset method", ex);
             }
 
             try {
                 m.invoke(next, length, exchange);
-            }
-            catch (Throwable ex) {
+            } catch (Throwable ex) {
                 LOGGER.error("could not access BUFFERED_REQUEST_DATA field", ex);
                 throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
             }

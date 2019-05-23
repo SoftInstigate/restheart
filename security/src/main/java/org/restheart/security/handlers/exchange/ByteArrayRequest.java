@@ -36,11 +36,11 @@ public class ByteArrayRequest extends Request<byte[]> {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(ByteArrayRequest.class);
     }
-    
+
     public static ByteArrayRequest wrap(HttpServerExchange exchange) {
         return new ByteArrayRequest(exchange);
     }
-    
+
     /**
      * @return the content as Json
      * @throws java.io.IOException
@@ -50,7 +50,7 @@ public class ByteArrayRequest extends Request<byte[]> {
             throws IOException {
         return BuffersUtils.toByteArray(getRawContent());
     }
-    
+
     @Override
     public void writeContent(byte[] content) throws IOException {
         if (content == null) {
@@ -63,12 +63,12 @@ public class ByteArrayRequest extends Request<byte[]> {
                 dest = new PooledByteBuffer[MAX_BUFFERS];
                 setRawContent(dest);
             }
-            
+
             int copied = BuffersUtils.transfer(
                     ByteBuffer.wrap(content.toString().getBytes()),
                     dest,
                     wrapped);
-            
+
             // updated request content length
             // this is not needed in Response.writeContent() since done
             // by ModificableContentSinkConduit.updateContentLenght();

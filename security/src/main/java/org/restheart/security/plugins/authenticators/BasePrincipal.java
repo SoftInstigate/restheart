@@ -21,7 +21,7 @@ import java.security.Principal;
 
 /**
  * Base concrete Principal implmentation
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BasePrincipal implements Principal {

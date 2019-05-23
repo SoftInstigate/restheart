@@ -49,8 +49,8 @@ import org.restheart.security.plugins.Authenticator;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SimpleFileAuthenticator 
-        extends FileConfigurablePlugin 
+public class SimpleFileAuthenticator
+        extends FileConfigurablePlugin
         implements Authenticator {
 
     private final Map<String, PwdCredentialAccount> accounts = new HashMap<>();
@@ -70,22 +70,22 @@ public class SimpleFileAuthenticator
     public Consumer<? super Map<String, Object>> consumeConfiguration() {
         return u -> {
             try {
-            String userid = argValue(u, "userid");
-            String _password = argValue(u, "password");
-            char[] password = ((String) _password).toCharArray();
-            
-            List _roles = argValue(u, "roles");
-            
-            if (((Collection<?>) _roles).stream().anyMatch(i -> !(i instanceof String))) {
-                throw new IllegalArgumentException(
-                        "wrong configuration file format. a roles entry is wrong. they all must be strings");
-            }
+                String userid = argValue(u, "userid");
+                String _password = argValue(u, "password");
+                char[] password = ((String) _password).toCharArray();
 
-            Set<String> roles = Sets.newLinkedHashSet((Collection<String>) _roles);
+                List _roles = argValue(u, "roles");
 
-            PwdCredentialAccount a = new PwdCredentialAccount(userid, password, roles);
+                if (((Collection<?>) _roles).stream().anyMatch(i -> !(i instanceof String))) {
+                    throw new IllegalArgumentException(
+                            "wrong configuration file format. a roles entry is wrong. they all must be strings");
+                }
 
-            this.accounts.put(userid, a);
+                Set<String> roles = Sets.newLinkedHashSet((Collection<String>) _roles);
+
+                PwdCredentialAccount a = new PwdCredentialAccount(userid, password, roles);
+
+                this.accounts.put(userid, a);
             } catch (ConfigurationException pce) {
                 LambdaUtils.throwsSneakyExcpetion(pce);
             }

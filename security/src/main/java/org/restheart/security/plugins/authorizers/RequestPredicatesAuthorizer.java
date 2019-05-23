@@ -53,7 +53,7 @@ public class RequestPredicatesAuthorizer
      * @throws java.io.FileNotFoundException
      * @throws ConfigurationException
      */
-    public RequestPredicatesAuthorizer(String name, 
+    public RequestPredicatesAuthorizer(String name,
             Map<String, Object> configuration)
             throws FileNotFoundException, ConfigurationException {
         init(configuration, "permissions");
@@ -117,7 +117,7 @@ public class RequestPredicatesAuthorizer
         if (ByteArrayRequest.wrap(exchange).isOptions()) {
             return false;
         }
-        
+
         if (getAcl() == null) {
             return true;
         }

@@ -149,8 +149,7 @@ public class Bootstrapper {
             LOGGER.debug("ANSI colored console: "
                     + ansi().fg(RED).bold().a(configuration.isAnsiConsole())
                             .reset().toString());
-        }
-        catch (ConfigurationException ex) {
+        } catch (ConfigurationException ex) {
             LOGGER.info(STARTING + ansi().fg(RED).bold().a(RESTHeartSecurity).reset().toString()
                     + INSTANCE
                     + ansi().fg(RED).bold().a(UNDEFINED).reset().toString());
@@ -222,8 +221,7 @@ public class Bootstrapper {
                     d.init();
                     LOGGER.info("Forked process: {}", LIBC.getpid());
                     initLogging(args, d);
-                }
-                catch (Exception t) {
+                } catch (Exception t) {
                     logErrorAndExit("Error staring forked process", t,
                             false,
                             false,
@@ -250,8 +248,7 @@ public class Bootstrapper {
                     logLoggingConfiguration(true);
 
                     d.daemonize();
-                }
-                catch (Throwable t) {
+                } catch (Throwable t) {
                     logErrorAndExit("Error forking", t, false, false, -1);
                 }
             }
@@ -314,8 +311,7 @@ public class Bootstrapper {
     public static void startup(final Path confFilePath) {
         try {
             configuration = FileUtils.getConfiguration(confFilePath, false);
-        }
-        catch (ConfigurationException ex) {
+        } catch (ConfigurationException ex) {
             if (VERSION != null) {
                 LOGGER.info(ansi().fg(RED).bold().a(RESTHeartSecurity).reset().toString()
                         + " version {}",
@@ -433,11 +429,10 @@ public class Bootstrapper {
         }
 
         logLoggingConfiguration(fork);
-
+        
         try {
             startCoreSystem();
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             logErrorAndExit("Error starting RESTHeart Security. Exiting...",
                     t,
                     false,
@@ -472,14 +467,12 @@ public class Bootstrapper {
                         ((Initializer) o).init();
                         LOGGER.info("initializer {} executed",
                                 configuration.getInitializerClass());
-                    }
-                    catch (Throwable t) {
+                    } catch (Throwable t) {
                         LOGGER.error("Error executing intializer {}",
                                 configuration.getInitializerClass(), t);
                     }
                 }
-            }
-            catch (ClassNotFoundException
+            } catch (ClassNotFoundException
                     | NoSuchMethodException
                     | InvocationTargetException
                     | InstantiationException
@@ -493,7 +486,7 @@ public class Bootstrapper {
 
         LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart Security started").reset().toString());
     }
-
+    
     private static String getInstanceName() {
         return configuration == null ? UNDEFINED
                 : configuration.getInstanceName() == null
@@ -529,8 +522,7 @@ public class Bootstrapper {
             try {
                 HANDLERS.shutdown();
                 HANDLERS.awaitShutdown(60 * 1000); // up to 1 minute
-            }
-            catch (InterruptedException ie) {
+            } catch (InterruptedException ie) {
                 LOGGER.error("Error while waiting for pending request "
                         + "to complete", ie);
                 Thread.currentThread().interrupt();
@@ -547,8 +539,7 @@ public class Bootstrapper {
             }
             try {
                 Files.deleteIfExists(pidFilePath);
-            }
-            catch (IOException ex) {
+            } catch (IOException ex) {
                 LOGGER.error("Can't delete pid file {}",
                         pidFilePath.toString(), ex);
             }
@@ -560,8 +551,7 @@ public class Bootstrapper {
         TMP_EXTRACTED_FILES.keySet().forEach(k -> {
             try {
                 ResourcesExtractor.deleteTempDir(k, TMP_EXTRACTED_FILES.get(k));
-            }
-            catch (URISyntaxException | IOException ex) {
+            } catch (URISyntaxException | IOException ex) {
                 LOGGER.error("Error cleaning up temporary directory {}",
                         TMP_EXTRACTED_FILES.get(k).toString(), ex);
             }
@@ -638,8 +628,7 @@ public class Bootstrapper {
             tmf.init(ks);
 
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        }
-        catch (KeyManagementException
+        } catch (KeyManagementException
                 | NoSuchAlgorithmException
                 | KeyStoreException
                 | CertificateException
@@ -649,15 +638,13 @@ public class Bootstrapper {
                     + "Check the keystore-file, "
                     + "keystore-password and certpassword options. Exiting..",
                     ex, false, -1);
-        }
-        catch (FileNotFoundException ex) {
+        } catch (FileNotFoundException ex) {
             logErrorAndExit(
                     "Couldn't start RESTHeart Security, keystore file not found. "
                     + "Check the keystore-file, "
                     + "keystore-password and certpassword options. Exiting..",
                     ex, false, -1);
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             logErrorAndExit(
                     "Couldn't start RESTHeart Security, error reading the keystore file. "
                     + "Check the keystore-file, "
@@ -739,8 +726,7 @@ public class Bootstrapper {
 
                             LOGGER.info("Authentication Mechanism {} enabled",
                                     name);
-                        }
-                        catch (ConfigurationException pcex) {
+                        } catch (ConfigurationException pcex) {
                             logErrorAndExit(pcex.getMessage(), pcex, false, -3);
                         }
                     });
@@ -769,8 +755,7 @@ public class Bootstrapper {
         } else {
             try {
                 return PluginsRegistry.getInstance().getAuthorizer();
-            }
-            catch (ConfigurationException ex) {
+            } catch (ConfigurationException ex) {
                 logErrorAndExit("Error configuring Authorizer implementation "
                         + configuration.getAuthorizers(),
                         ex, false, -3);
@@ -929,8 +914,7 @@ public class Bootstrapper {
                                     _srv.getName(),
                                     _srv.getSecured());
 
-                        }
-                        catch (ConfigurationException pce) {
+                        } catch (ConfigurationException pce) {
                             LOGGER.error("Error plugging in the service", pce);
                         }
                     });
@@ -951,8 +935,7 @@ public class Bootstrapper {
 
         try {
             return PluginsRegistry.getInstance().getTokenManager();
-        }
-        catch (ConfigurationException pce) {
+        } catch (ConfigurationException pce) {
             LOGGER.error("Error configuring token manager", pce);
             return null;
         }
@@ -1029,8 +1012,7 @@ public class Bootstrapper {
 
             try {
                 sslProvider = xnio.getSslProvider(optionMap);
-            }
-            catch (GeneralSecurityException ex) {
+            } catch (GeneralSecurityException ex) {
                 logErrorAndExit("error configuring ssl", ex, false, -13);
             }
 
@@ -1084,8 +1066,7 @@ public class Bootstrapper {
                                         tokenManager)));
 
                 LOGGER.info("URI {} bound to resource {}", location, _proxyPass);
-            }
-            catch (URISyntaxException ex) {
+            } catch (URISyntaxException ex) {
                 LOGGER.warn("Invalid location URI {}, resource {} not bound ",
                         location,
                         _proxyPass);

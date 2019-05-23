@@ -47,7 +47,7 @@ public class ConduitInjector extends PipedHttpHandler {
 
     public static final AttachmentKey<ModifiableContentSinkConduit> MCSC_KEY
             = AttachmentKey.create(ModifiableContentSinkConduit.class);
-    
+
     public static final AttachmentKey<HeaderMap> ORIGINAL_ACCEPT_ENCODINGS_KEY
             = AttachmentKey.create(HeaderMap.class);
 
@@ -89,7 +89,7 @@ public class ConduitInjector extends PipedHttpHandler {
                 }
             }
         });
-        
+
         forceIdentityEncodingForInterceptors(exchange);
 
         next(exchange);
@@ -116,7 +116,7 @@ public class ConduitInjector extends PipedHttpHandler {
             for (var value : _before) {
                 before.add(Headers.ACCEPT_ENCODING, value);
             }
-            
+
             exchange.putAttachment(ORIGINAL_ACCEPT_ENCODINGS_KEY, before);
 
             LOGGER.debug("{} "

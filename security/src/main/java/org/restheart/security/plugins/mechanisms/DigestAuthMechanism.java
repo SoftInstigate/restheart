@@ -63,7 +63,7 @@ import org.restheart.security.plugins.AuthMechanism;
  * {@link io.undertow.server.HttpHandler} to handle HTTP Digest authentication,
  * both according to RFC-2617 and draft update to allow additional algorithms to
  * be used.
- * 
+ *
  * @author <a href="mailto:darran.lofthouse@jboss.com">Darran Lofthouse</a>
  */
 public class DigestAuthMechanism implements AuthMechanism {
@@ -81,7 +81,7 @@ public class DigestAuthMechanism implements AuthMechanism {
                 PluginsRegistry
                         .getInstance()
                         .getAuthenticator(
-                                argValue(args,"authenticator")));
+                                argValue(args, "authenticator")));
     }
 
     @Override

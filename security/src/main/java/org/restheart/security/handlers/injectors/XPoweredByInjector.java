@@ -27,7 +27,7 @@ import io.undertow.util.HttpString;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- *         It injects the X-Powered-By response header
+ * It injects the X-Powered-By response header
  */
 public class XPoweredByInjector extends PipedHttpHandler {
     /**

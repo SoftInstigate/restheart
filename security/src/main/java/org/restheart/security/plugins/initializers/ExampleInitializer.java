@@ -51,30 +51,30 @@ public class ExampleInitializer implements Initializer {
             public boolean resolve(HttpServerExchange exchange) {
                 var request = JsonRequest.wrap(exchange);
 
-                return !(request.isGet() 
+                return !(request.isGet()
                         && "/secho/foo".equals(URLUtils.removeTrailingSlashes(
-                                        exchange.getRequestPath())));
+                                exchange.getRequestPath())));
             }
         });
-        
+
         // add an example response interceptor
         PluginsRegistry
                 .getInstance()
                 .getResponseInterceptors()
                 .add(new EchoExampleResponseInterceptor());
-        
+
         // add an example request interceptor
         PluginsRegistry
                 .getInstance()
                 .getRequestInterceptors()
                 .add(new EchoExampleRequestInterceptor());
-        
+
         // add an exampe request interceptor
         PluginsRegistry
                 .getInstance()
                 .getRequestInterceptors()
                 .add(new ExampleProxiedRequestInterceptor());
-        
+
         // add an exampe response interceptor
         PluginsRegistry
                 .getInstance()

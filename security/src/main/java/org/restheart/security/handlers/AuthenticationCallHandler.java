@@ -52,7 +52,7 @@ public class AuthenticationCallHandler extends PipedHttpHandler {
             return;
         }
         SecurityContext rcontext = exchange.getSecurityContext();
-        
+
         // 1 call authenticate that performs authentication on the request. 
         // 2 make sure that, only if authentication is required, than the request is authenticated
         if (rcontext.authenticate()

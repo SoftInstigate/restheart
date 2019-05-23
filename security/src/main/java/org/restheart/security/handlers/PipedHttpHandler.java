@@ -61,7 +61,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
     }
 
     protected void next(HttpServerExchange exchange) throws Exception {
-        if (!AbstractExchange.isInError(exchange) 
+        if (!AbstractExchange.isInError(exchange)
                 && getNext() != null) {
             getNext().handleRequest(exchange);
         }

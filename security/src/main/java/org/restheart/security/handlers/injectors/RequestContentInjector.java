@@ -47,7 +47,6 @@ public class RequestContentInjector extends RequestBufferingHandler {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RequestContentInjector.class);
 
-
     private HttpHandler next;
 
     /**

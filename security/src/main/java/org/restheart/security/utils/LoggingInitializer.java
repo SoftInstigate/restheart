@@ -53,9 +53,9 @@ public class LoggingInitializer {
             orgLogger.info("Loglevel was set via logback configuration file with level {}", orgLogger.getLevel());
             level = comLogger.getLevel();
         }
-        
+
         orgLogger.setLevel(level);
-        
+
         if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
             comLogger.info("Loglevel was set via logback configuration file with level {}", comLogger.getLevel());
             level = comLogger.getLevel();

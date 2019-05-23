@@ -58,7 +58,7 @@ public class FileUtils {
 
         return Objects.hash(path.toString());
     }
-    
+
     public static Configuration getConfiguration(String[] args) throws ConfigurationException {
         return getConfiguration(getConfigurationFilePath(args), false);
     }
@@ -95,7 +95,7 @@ public class FileUtils {
         if (OSChecker.isWindows()) {
             return null;
         }
-        
+
         if (Files.isWritable(DEFAULT_PID_DIR)) {
             return DEFAULT_PID_DIR.resolve("restheart-security-" + configurationFileHash + ".pid");
         } else {
@@ -111,7 +111,7 @@ public class FileUtils {
 
         try {
             try (FileWriter fw = new FileWriter(pidFile.toFile())) {
-                
+
                 fw.write(String.valueOf(LIBC.getpid()));
                 fw.close();
             }
@@ -127,15 +127,13 @@ public class FileUtils {
 
                 return Integer.parseInt(line);
             }
-        } catch(FileNotFoundException fne) {
+        } catch (FileNotFoundException fne) {
             LOGGER.debug("pid file not found", fne);
             return -1;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             LOGGER.debug("error reading the pid file", e);
             return -2;
-        }
-        catch (NumberFormatException e) {
+        } catch (NumberFormatException e) {
             LOGGER.debug("unexpected content in pid file", e);
             return -3;
         }

@@ -46,7 +46,7 @@ public class PluginsRegistry {
 
                         var authenticatorConf = authenticators.stream().filter(
                                 authenticator -> name
-                        .equals(authenticator.get("name")))
+                                        .equals(authenticator.get("name")))
                                 .findFirst();
 
                         if (authenticatorConf.isPresent()) {
@@ -66,7 +66,7 @@ public class PluginsRegistry {
                                     new ConfigurationException(errorMsg));
                         }
                     });
-    
+
     private static final LoadingCache<String, AuthMechanism> AUTH_MECHANISMS_CACHE
             = CacheFactory.createLocalLoadingCache(
                     Integer.MAX_VALUE,
@@ -94,7 +94,7 @@ public class PluginsRegistry {
                                     new ConfigurationException(errorMsg));
                         }
                     });
-    
+
     private static final LoadingCache<String, Authorizer> AUTHORIZERS_CACHE
             = CacheFactory.createLocalLoadingCache(
                     1,
@@ -118,7 +118,7 @@ public class PluginsRegistry {
                                     new ConfigurationException(errorMsg));
                         }
                     });
-    
+
     private static final LoadingCache<String, Service> SERVICES_CACHE
             = CacheFactory.createLocalLoadingCache(
                     Integer.MAX_VALUE,
@@ -147,7 +147,6 @@ public class PluginsRegistry {
                                     new ConfigurationException(errorMsg));
                         }
                     });
-
 
     private static final List<RequestInterceptor> REQUEST_INTERCEPTORS
             = Collections.synchronizedList(new ArrayList<>());
@@ -185,7 +184,7 @@ public class PluginsRegistry {
                     "No Authenticator configured with name: " + name);
         }
     }
-    
+
     public AuthMechanism getAuthenticationMechanism(String name)
             throws ConfigurationException {
         Optional<AuthMechanism> op = AUTH_MECHANISMS_CACHE
@@ -203,7 +202,7 @@ public class PluginsRegistry {
                     "No Authentication Mechanism configured with name: " + name);
         }
     }
-    
+
     public Service getService(String name)
             throws ConfigurationException {
         Optional<Service> op = SERVICES_CACHE
@@ -221,7 +220,7 @@ public class PluginsRegistry {
                     "No Service configured with name: " + name);
         }
     }
-    
+
     public Authorizer getAuthorizer()
             throws ConfigurationException {
         Optional<Authorizer> op = AUTHORIZERS_CACHE
@@ -239,7 +238,7 @@ public class PluginsRegistry {
                     "No Authorizer configured");
         }
     }
-    
+
     public TokenManager getTokenManager()
             throws ConfigurationException {
         Optional<Authenticator> op = AUTHENTICATORS_CACHE

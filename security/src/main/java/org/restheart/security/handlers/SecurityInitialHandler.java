@@ -85,7 +85,7 @@ public class SecurityInitialHandler extends PipedHttpHandler {
 
     public SecurityInitialHandler(final AuthenticationMode authenticationMode,
             final IdentityManager identityManager,
-            final String programaticMechName, 
+            final String programaticMechName,
             final PipedHttpHandler next) {
         this(authenticationMode,
                 programaticMechName,

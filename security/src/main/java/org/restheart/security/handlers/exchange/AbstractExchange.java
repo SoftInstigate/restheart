@@ -70,9 +70,9 @@ public abstract class AbstractExchange<T> {
         return exchange.getAttachment(IN_ERROR) != null
                 && exchange.getAttachment(IN_ERROR);
     }
-    
+
     public static boolean isAuthenticated(HttpServerExchange exchange) {
-        return exchange.getSecurityContext() != null 
+        return exchange.getSecurityContext() != null
                 && exchange.getSecurityContext().getAuthenticatedAccount() != null;
     }
 

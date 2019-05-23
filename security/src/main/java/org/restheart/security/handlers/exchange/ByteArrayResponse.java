@@ -40,7 +40,7 @@ public class ByteArrayResponse extends Response<byte[]> {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(JsonRequest.class);
     }
-    
+
     public static ByteArrayResponse wrap(HttpServerExchange exchange) {
         return new ByteArrayResponse(exchange);
     }
@@ -54,7 +54,7 @@ public class ByteArrayResponse extends Response<byte[]> {
             throws IOException {
         return BuffersUtils.toByteArray(getRawContent());
     }
-    
+
     @Override
     public void writeContent(byte[] content) throws IOException {
         if (content == null) {
@@ -67,7 +67,7 @@ public class ByteArrayResponse extends Response<byte[]> {
                 dest = new PooledByteBuffer[MAX_BUFFERS];
                 setRawContent(dest);
             }
-            
+
             BuffersUtils.transfer(
                     ByteBuffer.wrap(content),
                     dest,

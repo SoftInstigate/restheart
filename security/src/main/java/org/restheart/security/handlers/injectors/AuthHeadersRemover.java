@@ -38,7 +38,7 @@ public class AuthHeadersRemover extends PipedHttpHandler {
 
     /**
      * before proxyng the request the authentication headers are removed
-     * 
+     *
      * @param exchange
      * @throws Exception
      */

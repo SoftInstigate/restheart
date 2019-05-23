@@ -65,8 +65,7 @@ public class JsonRequest extends Request<JsonElement> {
             try {
                 return PARSER.parse(BuffersUtils.toString(getRawContent(),
                         StandardCharsets.UTF_8));
-            }
-            catch (JsonParseException ex) {
+            } catch (JsonParseException ex) {
                 // dump bufferd content
                 BuffersUtils.dump("Error parsing content", getRawContent());
 
@@ -94,7 +93,7 @@ public class JsonRequest extends Request<JsonElement> {
                     ByteBuffer.wrap(content.toString().getBytes()),
                     dest,
                     wrapped);
-            
+
             // updated request content length
             // this is not needed in Response.writeContent() since done
             // by ModificableContentSinkConduit.updateContentLenght();

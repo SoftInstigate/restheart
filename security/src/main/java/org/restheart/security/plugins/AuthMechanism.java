@@ -36,7 +36,7 @@ public interface AuthMechanism extends
             final SecurityContext securityContext);
 
     @Override
-    public ChallengeResult sendChallenge(final HttpServerExchange exchange, 
+    public ChallengeResult sendChallenge(final HttpServerExchange exchange,
             final SecurityContext securityContext);
 
     public String getMechanismName();

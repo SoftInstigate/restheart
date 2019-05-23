@@ -30,7 +30,8 @@ import io.undertow.server.HttpServerExchange;
 public class URLUtils {
 
     /**
-     * given string /ciao/this/has/trailings///// returns /ciao/this/has/trailings
+     * given string /ciao/this/has/trailings///// returns
+     * /ciao/this/has/trailings
      *
      * @param s
      * @return the string s without the trailing slashes

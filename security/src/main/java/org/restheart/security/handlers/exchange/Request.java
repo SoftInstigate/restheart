@@ -93,7 +93,7 @@ public abstract class Request<T> extends AbstractExchange<T> {
     public String getContentType() {
         return getContentType(getWrapped());
     }
-    
+
     /**
      * @param responseContentType the responseContentType to set
      */
@@ -116,15 +116,13 @@ public abstract class Request<T> extends AbstractExchange<T> {
         try {
             f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
             f.setAccessible(true);
-        }
-        catch (NoSuchFieldException | SecurityException ex) {
+        } catch (NoSuchFieldException | SecurityException ex) {
             throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
         }
 
         try {
             return (AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped());
-        }
-        catch (IllegalArgumentException | IllegalAccessException ex) {
+        } catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
     }
@@ -181,7 +179,7 @@ public abstract class Request<T> extends AbstractExchange<T> {
     public Map<String, List<String>> getXForwardedHeaders() {
         return getWrapped().getAttachment(XFORWARDED_HEADERS);
     }
-    
+
     /**
      * helper method to check if the request content is Json
      *
@@ -190,7 +188,7 @@ public abstract class Request<T> extends AbstractExchange<T> {
     public static boolean isContentTypeJson(HttpServerExchange exchange) {
         return "application/json".equals(getContentType(exchange));
     }
-    
+
     public static boolean isContentTypeFormOrMultipart(HttpServerExchange exchange) {
         return getContentType(exchange) != null
                 && (getContentType(exchange).startsWith(FORM_URLENCODED)

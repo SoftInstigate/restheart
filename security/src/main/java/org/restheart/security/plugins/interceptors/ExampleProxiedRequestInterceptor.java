@@ -47,7 +47,7 @@ public class ExampleProxiedRequestInterceptor
             if (content.isJsonObject()) {
                 content.getAsJsonObject()
                         .addProperty("modified", true);
-                
+
                 request.writeContent(content);
             }
         }
