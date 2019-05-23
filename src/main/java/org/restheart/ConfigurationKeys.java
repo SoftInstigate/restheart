@@ -70,7 +70,7 @@ public interface ConfigurationKeys {
      * default represetation format
      */
     public static final Resource.REPRESENTATION_FORMAT DEFAULT_REPRESENTATION_FORMAT
-            = Resource.REPRESENTATION_FORMAT.SHAL;
+            = Resource.REPRESENTATION_FORMAT.STANDARD;
 
     /**
      * the key for the pluging-args property.

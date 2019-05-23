@@ -233,7 +233,7 @@ public class Configuration {
         String _representationFormat = getAsStringOrDefault(conf,
                 REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name());
 
-        REPRESENTATION_FORMAT rf = REPRESENTATION_FORMAT.SHAL;
+        REPRESENTATION_FORMAT rf = REPRESENTATION_FORMAT.STANDARD;
 
         try {
             rf = REPRESENTATION_FORMAT.valueOf(_representationFormat);
@@ -242,7 +242,7 @@ public class Configuration {
                     + "setting it to {}",
                     REPRESENTATION_FORMAT_KEY,
                     REPRESENTATION_FORMAT.values(),
-                    REPRESENTATION_FORMAT.SHAL);
+                    REPRESENTATION_FORMAT.STANDARD);
         } finally {
             defaultRepresentationFormat = rf;
         }
