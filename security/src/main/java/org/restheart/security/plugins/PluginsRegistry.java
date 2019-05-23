@@ -17,6 +17,9 @@
  */
 package org.restheart.security.plugins;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 
 import org.restheart.security.Bootstrapper;
@@ -25,17 +28,28 @@ import org.restheart.security.cache.CacheFactory;
 import org.restheart.security.cache.LoadingCache;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import org.restheart.security.ConfigurationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PluginsRegistry {
+    
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(PluginsRegistry.class);
 
     private static final String AUTH_TOKEN_MANAGER_NAME = "@@authTokenManager";
     private static final String ACCESS_MANAGER_NAME = "@@accessManager";
+    
+    private static final String REGISTER_PLUGIN_CLASS_NAME = RegisterPlugin.class
+            .getName();
 
     private static final LoadingCache<String, Authenticator> AUTHENTICATORS_CACHE
             = CacheFactory.createLocalLoadingCache(
@@ -148,6 +162,12 @@ public class PluginsRegistry {
                         }
                     });
 
+    private final Set<PluginRecord<Initializer>> initializers
+            = new LinkedHashSet<>();
+    
+    private final Set<PluginRecord<PreStartupInitializer>> preStartupInitializers
+            = new LinkedHashSet<>();
+
     private static final List<RequestInterceptor> REQUEST_INTERCEPTORS
             = Collections.synchronizedList(new ArrayList<>());
 
@@ -165,8 +185,92 @@ public class PluginsRegistry {
     }
 
     private PluginsRegistry() {
+        this.initializers.addAll(findIPlugins(Initializer.class.getName()));
+        this.preStartupInitializers.addAll(findIPlugins(PreStartupInitializer.class.getName()));
     }
 
+    public Set<PluginRecord<Initializer>> getInitializers() {
+        return this.initializers;
+    }
+    
+    public Set<PluginRecord<PreStartupInitializer>> getPreStartupInitializers() {
+        return this.preStartupInitializers;
+    }
+
+    /**
+     * finds the initializers
+     */
+    @SuppressWarnings("unchecked")
+    private <T extends Plugin> Set<PluginRecord<T>> findIPlugins(String interfaceName) {
+        Set<PluginRecord<T>> ret = new LinkedHashSet<>();
+                
+        try (var scanResult = new ClassGraph()
+                .enableAnnotationInfo()
+                .scan()) {
+            var registeredPlugins = scanResult
+                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+
+            var listOfType = scanResult.getClassesImplementing(interfaceName);
+
+            var registeredInitializers = registeredPlugins.intersect(listOfType);
+
+            // sort @Initializers by priority
+            registeredInitializers.sort(new Comparator<ClassInfo>() {
+                @Override
+                public int compare(ClassInfo ci1, ClassInfo ci2) {
+                    int p1 = annotationParam(ci1, "priority");
+
+                    int p2 = annotationParam(ci2, "priority");
+
+                    return Integer.compare(p1, p2);
+                }
+            });
+
+            registeredInitializers.stream().forEachOrdered(registeredInitializer -> {
+                Object i;
+
+                try {
+                    i = registeredInitializer.loadClass(false)
+                            .getConstructor()
+                            .newInstance();
+
+                    String name = annotationParam(registeredInitializer,
+                            "name");
+                    String description = annotationParam(registeredInitializer,
+                            "description");
+                    Boolean enabledByDefault = annotationParam(registeredInitializer,
+                            "enabledByDefault");
+
+                    var pr = new PluginRecord(
+                            name,
+                            description,
+                            enabledByDefault,
+                            registeredInitializer.getName(),
+                            (T) i,
+                            null);
+
+                    if (pr.isEnabled()) {
+                        ret.add(pr);
+                        LOGGER.info("Registered initializer {}: {}",
+                                name,
+                                description);
+                    } else {
+                        LOGGER.debug("Initializer {} is disabled", name);
+                    }
+                } catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException
+                        | NoSuchMethodException t) {
+                    LOGGER.error("Error registering initializer {}",
+                            registeredInitializer.getName(),
+                            t);
+                }
+            });
+        }
+        
+        return ret;
+    }
+    
     public Authenticator getAuthenticator(String name)
             throws ConfigurationException {
         Optional<Authenticator> op = AUTHENTICATORS_CACHE
@@ -267,5 +371,14 @@ public class PluginsRegistry {
 
     public List<ResponseInterceptor> getResponseInterceptors() {
         return RESPONSE_INTECEPTORS;
+    }
+    
+    private static <T extends Object> T annotationParam(ClassInfo ci,
+            String param) {
+        var annotationInfo = ci.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME);
+        var annotationParamVals = annotationInfo.getParameterValues();
+
+        // The Route annotation has a parameter named "path"
+        return (T) annotationParamVals.getValue(param);
     }
 }

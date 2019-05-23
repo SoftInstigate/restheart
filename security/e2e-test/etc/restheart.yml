@@ -118,14 +118,6 @@ static-resources-mounts:
       secured: false
       embedded: true
 
-### Initializer
-
-# A custom initializer implmenting the org.restheart.init.Initializer interface
-# Can be used to inizialize data or add global transformers, checkers or security predicates
-# See org.restheart.init.TestInitializer for a simple example
-
-#initializer-class: org.restheart.init.TestInitializer
-
 #### Application Logic
 
 # RESTHeart has a pipeline architecture where specialized undertow handlers are chained to serve the requests.

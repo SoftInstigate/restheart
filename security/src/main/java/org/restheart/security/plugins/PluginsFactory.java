@@ -25,7 +25,7 @@ import org.restheart.security.ConfigurationException;
 import org.restheart.security.handlers.PipedHttpHandler;
 
 /**
- *
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class PluginsFactory {
@@ -395,6 +395,34 @@ public class PluginsFactory {
                 | InvocationTargetException ex) {
             throw new ConfigurationException("Error configuring Service "
                     + (_name != null ? _name : ""), ex);
+        }
+    }
+
+    /**
+     * TODO move to PluginFactory
+     *
+     * @param configuration
+     */
+    static Initializer createInitializer(String initializerClass)
+            throws ConfigurationException {
+        try {
+            Object o = Class.forName(initializerClass)
+                    .getDeclaredConstructor().newInstance();
+
+            if (o instanceof Initializer) {
+                return ((Initializer) o);
+            } else throw new ConfigurationException(
+                    "Error configuring Initializer "
+                    + initializerClass 
+                    + " it does not implement Initializer interface");
+        } catch (ClassNotFoundException
+                | NoSuchMethodException
+                | InvocationTargetException
+                | InstantiationException
+                | IllegalAccessException ex) {
+            throw new ConfigurationException(
+                    "Error configuring Initializer "
+                    + initializerClass, ex);
         }
     }
 }

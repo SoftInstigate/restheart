@@ -65,13 +65,6 @@ use-embedded-keystore: true
 #keystore-password: password
 #certpassword: password
 
-### Initializer
-
- # A custom initializer implmenting the org.restheart.security.plugins.Initializer interface
- # Can be used to inizialize data, to add global predicated and interceptors
-
-#initializer-class: org.restheart.security.plugins.initializers.ExampleInitializer
-
 ### Security
 
  # RESTHeart Security security is pluggable, you can provide you own 

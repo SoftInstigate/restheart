@@ -330,15 +330,15 @@ public class Configuration {
     public static final String ANSI_CONSOLE_KEY = "ansi-console";
 
     /**
-     * The key for specifying an initializer class
-     */
-    public static final String INITIALIZER_CLASS_KEY = "initializer-class";
-
-    /**
      * The key to allow unescaped chars in URL
      */
     public static final String ALLOW_UNESCAPED_CHARACTERS_IN_URL = "allow-unescaped-characters-in-url";
 
+    /**
+     * The key to enable plugins
+     */
+    public static final String PLUGIN_ENABLED_KEY = "enabled";
+    
     /**
      * undertow connetction options
      *
@@ -430,7 +430,6 @@ public class Configuration {
     private final Map<String, Object> connectionOptions;
     private final Integer logExchangeDump;
     private final boolean ansiConsole;
-    private final String initializerClass;
     private final boolean allowUnescapedCharactersInUrl;
 
     /**
@@ -496,7 +495,6 @@ public class Configuration {
         logExchangeDump = 0;
 
         connectionOptions = Maps.newHashMap();
-        initializerClass = null;
 
         allowUnescapedCharactersInUrl = true;
     }
@@ -603,8 +601,6 @@ public class Configuration {
 
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
 
-        initializerClass = getOrDefault(conf, INITIALIZER_CLASS_KEY, null);
-
         allowUnescapedCharactersInUrl = getOrDefault(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
     }
 
@@ -622,7 +618,7 @@ public class Configuration {
                 + ", bufferSize=" + bufferSize + ", directBuffers=" + directBuffers + ", forceGzipEncoding="
                 + forceGzipEncoding + ", authToken=" + tokenManager
                 + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", ansiConsole="
-                + ansiConsole + ", initializerClass=" + initializerClass + ", cursorBatchSize="
+                + ansiConsole + ", cursorBatchSize="
                 + allowUnescapedCharactersInUrl + ", configurationFileMap=" + configurationFileMap + '}';
     }
 
@@ -975,13 +971,6 @@ public class Configuration {
      */
     public Map<String, Object> getConfigurationFileMap() {
         return Collections.unmodifiableMap(configurationFileMap);
-    }
-
-    /**
-     * @return the initializerClass
-     */
-    public String getInitializerClass() {
-        return initializerClass;
     }
 
     public boolean isAllowUnescapedCharactersInUrl() {

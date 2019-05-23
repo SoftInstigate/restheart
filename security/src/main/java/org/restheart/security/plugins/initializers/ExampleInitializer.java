@@ -31,11 +31,17 @@ import org.restheart.security.utils.URLUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.security.plugins.Initializer;
+import org.restheart.security.plugins.RegisterPlugin;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
+@RegisterPlugin(
+        name = "testInitializer", 
+        priority = 100, 
+        description = "Just an example initializer",
+        enabledByDefault = true)
 public class ExampleInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExampleInitializer.class);
 
