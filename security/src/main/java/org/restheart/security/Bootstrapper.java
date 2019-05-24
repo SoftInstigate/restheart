@@ -736,7 +736,7 @@ public class Bootstrapper {
         if (configuration.getAuthMechanisms() != null
                 && !configuration.getAuthMechanisms().isEmpty()) {
             configuration.getAuthMechanisms().stream()
-                    .map(am -> am.get(Configuration.NAME_KEY))
+                    .map(am -> am.get(ConfigurationKeys.NAME_KEY))
                     .filter(name -> name instanceof String)
                     .map(name -> (String) name)
                     .forEachOrdered(name -> {
@@ -896,7 +896,7 @@ public class Bootstrapper {
             final TokenManager tokenManager) {
         if (!conf.getServices().isEmpty()) {
             conf.getServices().stream()
-                    .map(am -> am.get(Configuration.NAME_KEY))
+                    .map(am -> am.get(ConfigurationKeys.NAME_KEY))
                     .filter(name -> name instanceof String)
                     .map(name -> (String) name)
                     .forEachOrdered(name -> {
@@ -975,16 +975,16 @@ public class Bootstrapper {
             final Authorizer accessManager,
             final TokenManager tokenManager) {
         if (conf.getProxies() == null || conf.getProxies().isEmpty()) {
-            LOGGER.info("No {} specified", Configuration.PROXY_KEY);
+            LOGGER.info("No {} specified", ConfigurationKeys.PROXY_KEY);
             return;
         }
         
         conf.getProxies().stream().forEachOrdered(m -> {
             String location = Configuration.getOrDefault(m,
-                    Configuration.PROXY_LOCATION_KEY, null, true);
+                    ConfigurationKeys.PROXY_LOCATION_KEY, null, true);
             
             Object _proxyPass = Configuration.getOrDefault(m,
-                    Configuration.PROXY_PASS_KEY, null, true);
+                    ConfigurationKeys.PROXY_PASS_KEY, null, true);
             
             if (location == null && _proxyPass != null) {
                 LOGGER.warn("Location URI not specified for resource {} ",
@@ -999,24 +999,24 @@ public class Bootstrapper {
 
             // The number of connections to create per thread
             Integer connectionsPerThread = Configuration.getOrDefault(m,
-                    Configuration.PROXY_CONNECTIONS_PER_THREAD, 10,
+                    ConfigurationKeys.PROXY_CONNECTIONS_PER_THREAD, 10,
                     true);
             
             Integer maxQueueSize = Configuration.getOrDefault(m,
-                    Configuration.PROXY_MAX_QUEUE_SIZE, 0, true);
+                    ConfigurationKeys.PROXY_MAX_QUEUE_SIZE, 0, true);
             
             Integer softMaxConnectionsPerThread = Configuration.getOrDefault(m,
-                    Configuration.PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true);
+                    ConfigurationKeys.PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true);
             
             Integer ttl = Configuration.getOrDefault(m,
-                    Configuration.PROXY_TTL, -1, true);
+                    ConfigurationKeys.PROXY_TTL, -1, true);
             
             boolean rewriteHostHeader = Configuration.getOrDefault(m,
-                    Configuration.PROXY_REWRITE_HOST_HEADER, true, true);
+                    ConfigurationKeys.PROXY_REWRITE_HOST_HEADER, true, true);
 
             // Time in seconds between retries for problem server
             Integer problemServerRetry = Configuration.getOrDefault(m,
-                    Configuration.PROXY_PROBLEM_SERVER_RETRY, 10,
+                    ConfigurationKeys.PROXY_PROBLEM_SERVER_RETRY, 10,
                     true);
             
             final Xnio xnio = Xnio.getInstance();
