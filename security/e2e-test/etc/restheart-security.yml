@@ -89,12 +89,12 @@ auth-mechanisms:
       args:
         realm: RESTHeart Realm
         authenticator: simpleFileAuthenticator
-    - name: digestAuthMechanism
-      class:  org.restheart.security.plugins.mechanisms.DigestAuthMechanism
-      args: 
-        realm: RESTHeart Realm
-        domain: localhost
-        authenticator: simpleFileAuthenticator
+#    - name: digestAuthMechanism
+#      class:  org.restheart.security.plugins.mechanisms.DigestAuthMechanism
+#      args: 
+#        realm: RESTHeart Realm
+#        domain: localhost
+#        authenticator: simpleFileAuthenticator
 #    - name: identityAuthMechanism
 #      class: org.restheart.security.plugins.mechanisms.IdentityAuthMechanism
 #      args:
