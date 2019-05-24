@@ -256,11 +256,6 @@ public interface ConfigurationKeys {
     public static final String MONGO_USER_KEY = "user";
 
     /**
-     * the key for the  metadata-named-singleton property.
-     */
-    public static final String METADATA_NAMED_SINGLETONS_KEY = "metadata-named-singletons";
-
-    /**
      * the key for the static-resources-mounts property.
      */
     public static final String STATIC_RESOURCES_MOUNTS_KEY = "static-resources-mounts";
