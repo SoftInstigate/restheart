@@ -37,6 +37,49 @@ import org.yaml.snakeyaml.Yaml;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
+import java.util.LinkedHashMap;
+import static org.restheart.security.ConfigurationKeys.AJP_HOST_KEY;
+import static org.restheart.security.ConfigurationKeys.AJP_LISTENER_KEY;
+import static org.restheart.security.ConfigurationKeys.AJP_PORT_KEY;
+import static org.restheart.security.ConfigurationKeys.ALLOW_UNESCAPED_CHARACTERS_IN_URL;
+import static org.restheart.security.ConfigurationKeys.ANSI_CONSOLE_KEY;
+import static org.restheart.security.ConfigurationKeys.AUTHENTICATORS_KEY;
+import static org.restheart.security.ConfigurationKeys.AUTHORIZERS_KEY;
+import static org.restheart.security.ConfigurationKeys.AUTH_MECHANISMS_KEY;
+import static org.restheart.security.ConfigurationKeys.AUTH_TOKEN;
+import static org.restheart.security.ConfigurationKeys.BUFFER_SIZE_KEY;
+import static org.restheart.security.ConfigurationKeys.CERT_PASSWORD_KEY;
+import static org.restheart.security.ConfigurationKeys.CONNECTION_OPTIONS_KEY;
+import static org.restheart.security.ConfigurationKeys.DEFAULT_AJP_HOST;
+import static org.restheart.security.ConfigurationKeys.DEFAULT_AJP_PORT;
+import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTPS_HOST;
+import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTPS_PORT;
+import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTP_HOST;
+import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTP_PORT;
+import static org.restheart.security.ConfigurationKeys.DEFAULT_INSTANCE_NAME;
+import static org.restheart.security.ConfigurationKeys.DIRECT_BUFFERS_KEY;
+import static org.restheart.security.ConfigurationKeys.ENABLE_LOG_CONSOLE_KEY;
+import static org.restheart.security.ConfigurationKeys.ENABLE_LOG_FILE_KEY;
+import static org.restheart.security.ConfigurationKeys.FORCE_GZIP_ENCODING_KEY;
+import static org.restheart.security.ConfigurationKeys.HTTPS_HOST_KEY;
+import static org.restheart.security.ConfigurationKeys.HTTPS_LISTENER;
+import static org.restheart.security.ConfigurationKeys.HTTPS_PORT_KEY;
+import static org.restheart.security.ConfigurationKeys.HTTP_HOST_KEY;
+import static org.restheart.security.ConfigurationKeys.HTTP_LISTENER_KEY;
+import static org.restheart.security.ConfigurationKeys.HTTP_PORT_KEY;
+import static org.restheart.security.ConfigurationKeys.INSTANCE_NAME_KEY;
+import static org.restheart.security.ConfigurationKeys.IO_THREADS_KEY;
+import static org.restheart.security.ConfigurationKeys.KEYSTORE_FILE_KEY;
+import static org.restheart.security.ConfigurationKeys.KEYSTORE_PASSWORD_KEY;
+import static org.restheart.security.ConfigurationKeys.LOG_FILE_PATH_KEY;
+import static org.restheart.security.ConfigurationKeys.LOG_LEVEL_KEY;
+import static org.restheart.security.ConfigurationKeys.LOG_REQUESTS_LEVEL_KEY;
+import static org.restheart.security.ConfigurationKeys.PLUGINS_ARGS_KEY;
+import static org.restheart.security.ConfigurationKeys.PROXY_KEY;
+import static org.restheart.security.ConfigurationKeys.REQUESTS_LIMIT_KEY;
+import static org.restheart.security.ConfigurationKeys.SERVICES_KEY;
+import static org.restheart.security.ConfigurationKeys.USE_EMBEDDED_KEYSTORE_KEY;
+import static org.restheart.security.ConfigurationKeys.WORKER_THREADS_KEY;
 import org.restheart.security.utils.URLUtils;
 
 /**
@@ -59,294 +102,210 @@ public class Configuration {
 
     public static final String DEFAULT_ROUTE = "0.0.0.0";
 
-    /**
-     * default ajp host 0.0.0.0.
-     */
-    public static final String DEFAULT_AJP_HOST = DEFAULT_ROUTE;
+    private boolean silent = false;
+    private final boolean httpsListener;
+    private final int httpsPort;
+    private final String httpsHost;
+    private final boolean httpListener;
+    private final int httpPort;
+    private final String httpHost;
+    private final boolean ajpListener;
+    private final int ajpPort;
+    private final String ajpHost;
+    private final String instanceName;
+    private final boolean useEmbeddedKeystore;
+    private final String keystoreFile;
+    private final String keystorePassword;
+    private final String certPassword;
+    private final List<Map<String, Object>> proxies;
+    private final Map<String, Map<String, Object>> pluginsArgs;
+    private final List<Map<String, Object>> services;
+    private final List<Map<String, Object>> authMechanisms;
+    private final List<Map<String, Object>> authenticators;
+    private final Map<String, Object> authorizers;
+    private final Map<String, Object> tokenManager;
+    private final String logFilePath;
+    private final Level logLevel;
+    private final boolean logToConsole;
+    private final boolean logToFile;
+    private final int requestsLimit;
+    private final int ioThreads;
+    private final int workerThreads;
+    private final int bufferSize;
+    private final boolean directBuffers;
+    private final boolean forceGzipEncoding;
+    private final Map<String, Object> connectionOptions;
+    private final Integer logExchangeDump;
+    private final boolean ansiConsole;
+    private final boolean allowUnescapedCharactersInUrl;
 
     /**
-     * default ajp port 8009.
+     * Creates a new instance of Configuration with defaults values.
      */
-    public static final int DEFAULT_AJP_PORT = 8009;
+    public Configuration() {
+        ansiConsole = true;
 
-    /**
-     * default http host 0.0.0.0.
-     */
-    public static final String DEFAULT_HTTP_HOST = DEFAULT_ROUTE;
+        httpsListener = true;
+        httpsPort = DEFAULT_HTTPS_PORT;
+        httpsHost = DEFAULT_HTTPS_HOST;
 
-    /**
-     * default http port 8080.
-     */
-    public static final int DEFAULT_HTTP_PORT = 8080;
+        httpListener = true;
+        httpPort = DEFAULT_HTTP_PORT;
+        httpHost = DEFAULT_HTTP_HOST;
 
-    /**
-     * default https host 0.0.0.0.
-     */
-    public static final String DEFAULT_HTTPS_HOST = DEFAULT_ROUTE;
+        ajpListener = false;
+        ajpPort = DEFAULT_AJP_PORT;
+        ajpHost = DEFAULT_AJP_HOST;
 
-    /**
-     * default https port 4443.
-     */
-    public static final int DEFAULT_HTTPS_PORT = 4443;
+        instanceName = DEFAULT_INSTANCE_NAME;
 
-    /**
-     * default instance name
-     */
-    public static final String DEFAULT_INSTANCE_NAME = "default";
+        useEmbeddedKeystore = true;
+        keystoreFile = null;
+        keystorePassword = null;
+        certPassword = null;
 
-    /**
-     * the key for the services property.
-     */
-    public static final String SERVICES_KEY = "services";
+        proxies = new ArrayList<>();
+        
+        pluginsArgs = new LinkedHashMap<>();
 
-    /**
-     * the key for the args property.
-     */
-    public static final String ARGS_KEY = "args";
+        services = new ArrayList<>();
 
-    /**
-     * the key for the name property.
-     */
-    public static final String NAME_KEY = "name";
+        authMechanisms = new ArrayList<>();
 
-    /**
-     * the key for the uri property.
-     */
-    public static final String SERVICE_URI_KEY = "uri";
+        authenticators = new ArrayList<>();
 
-    /**
-     * the key for the secured property.
-     */
-    public static final String SERVICE_SECURED_KEY = "secured";
+        authorizers = null;
 
-    /**
-     * the key for the local-cache-enabled property.
-     */
-    public static final String LOCAL_CACHE_ENABLED_KEY = "local-cache-enabled";
+        tokenManager = new HashMap<>();
 
-    /**
-     * the key for the force-gzip-encoding property.
-     */
-    public static final String FORCE_GZIP_ENCODING_KEY = "force-gzip-encoding";
+        logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
+                .concat(File.separator + "restheart-security.log");
 
-    /**
-     * the key for the direct-buffers property.
-     */
-    public static final String DIRECT_BUFFERS_KEY = "direct-buffers";
+        logToConsole = true;
+        logToFile = true;
+        logLevel = Level.INFO;
 
-    /**
-     * the key for the buffer-size property.
-     */
-    public static final String BUFFER_SIZE_KEY = "buffer-size";
+        requestsLimit = 100;
 
-    /**
-     * the key for the worker-threads property.
-     */
-    public static final String WORKER_THREADS_KEY = "worker-threads";
+        ioThreads = 2;
+        workerThreads = 32;
+        bufferSize = 16384;
+        directBuffers = true;
 
-    /**
-     * the key for the io-threads property.
-     */
-    public static final String IO_THREADS_KEY = "io-threads";
+        forceGzipEncoding = false;
 
-    /**
-     * the key for the requests-limit property.
-     */
-    public static final String REQUESTS_LIMIT_KEY = "requests-limit";
+        logExchangeDump = 0;
 
-    /**
-     * the key for the enable-log-file property.
-     */
-    public static final String ENABLE_LOG_FILE_KEY = "enable-log-file";
+        connectionOptions = Maps.newHashMap();
 
-    /**
-     * the key for the enable-log-console property.
-     */
-    public static final String ENABLE_LOG_CONSOLE_KEY = "enable-log-console";
-
-    /**
-     * the key for the log-level property.
-     */
-    public static final String LOG_LEVEL_KEY = "log-level";
-
-    /**
-     * the key for the log-file-path property.
-     */
-    public static final String LOG_FILE_PATH_KEY = "log-file-path";
-
-    /**
-     * the key for the class property.
-     */
-    public static final String CLASS_KEY = "class";
-
-    /**
-     * the key for the authorizers property.
-     */
-    public static final String AUTHORIZERS_KEY = "authorizers";
-
-    /**
-     * the key for the authenticators property.
-     */
-    public static final String AUTHENTICATORS_KEY = "authenticators";
-
-    /**
-     * the key for the auth Mechanism.
-     */
-    public static final String AUTH_MECHANISMS_KEY = "auth-mechanisms";
-
-    /**
-     * the key for the proxies property.
-     */
-    public static final String PROXY_KEY = "proxies";
-
-    /**
-     * the key for the location property.
-     */
-    public static final String PROXY_LOCATION_KEY = "location";
-
-    /**
-     * the key for the proxy-pass property.
-     */
-    public static final String PROXY_PASS_KEY = "proxy-pass";
-
-    /**
-     * the key for the rewrite-host-header.
-     */
-    public static final String PROXY_REWRITE_HOST_HEADER = "rewrite-host-header";
-
-    /**
-     * the key for the connections-per-thread property.
-     */
-    public static final String PROXY_CONNECTIONS_PER_THREAD = "connections-per-thread";
-
-    /**
-     * the key for the max-queue-size property.
-     */
-    public static final String PROXY_MAX_QUEUE_SIZE = "max-queue-size";
-
-    /**
-     * the key for the soft-max-connections-per-thread property.
-     */
-    public static final String PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD = "soft-max-connections-per-thread";
-
-    /**
-     * the key for the connections-ttl property.
-     */
-    public static final String PROXY_TTL = "connections-ttl";
-
-    /**
-     * the key for the problem-server-retry property.
-     */
-    public static final String PROXY_PROBLEM_SERVER_RETRY = "problem-server-retry";
-
-    /**
-     * the key for the auth-db property.
-     */
-    public static final String MONGO_AUTH_DB_KEY = "auth-db";
-
-    /**
-     * the key for the certpassword property.
-     */
-    public static final String CERT_PASSWORD_KEY = "certpassword";
-
-    /**
-     * the key for the keystore-password property.
-     */
-    public static final String KEYSTORE_PASSWORD_KEY = "keystore-password";
-
-    /**
-     * the key for the keystore-file property.
-     */
-    public static final String KEYSTORE_FILE_KEY = "keystore-file";
-
-    /**
-     * the key for the use-embedded-keystore property.
-     */
-    public static final String USE_EMBEDDED_KEYSTORE_KEY = "use-embedded-keystore";
-
-    /**
-     * the key for the ajp-host property.
-     */
-    public static final String AJP_HOST_KEY = "ajp-host";
-
-    /**
-     * the key for the ajp-port property.
-     */
-    public static final String AJP_PORT_KEY = "ajp-port";
-
-    /**
-     * the key for the ajp-listener property.
-     */
-    public static final String AJP_LISTENER_KEY = "ajp-listener";
-
-    /**
-     * the key for the http-host property.
-     */
-    public static final String HTTP_HOST_KEY = "http-host";
-
-    /**
-     * the key for the http-port property.
-     */
-    public static final String HTTP_PORT_KEY = "http-port";
-
-    /**
-     * the key for http-listener the property.
-     */
-    public static final String HTTP_LISTENER_KEY = "http-listener";
-
-    /**
-     * the key for the https-host property.
-     */
-    private static final String HTTPS_HOST_KEY = "https-host";
-
-    /**
-     * the key for the https-port property.
-     */
-    private static final String HTTPS_PORT_KEY = "https-port";
-
-    /**
-     * the key for the https-listener property.
-     */
-    public static final String HTTPS_LISTENER = "https-listener";
-
-    /**
-     * the key for the instance-name property.
-     */
-    public static final String INSTANCE_NAME_KEY = "instance-name";
-
-    /**
-     * the key for the tokenManager property.
-     */
-    public static final String AUTH_TOKEN = "token-manager";
-
-    /**
-     * Force http requests logging even if DEBUG is not set
-     */
-    public static final String LOG_REQUESTS_LEVEL_KEY = "requests-log-level";
-
-    /**
-     * The key for enabling the Ansi console (for logging with colors)
-     */
-    public static final String ANSI_CONSOLE_KEY = "ansi-console";
-
-    /**
-     * The key to allow unescaped chars in URL
-     */
-    public static final String ALLOW_UNESCAPED_CHARACTERS_IN_URL = "allow-unescaped-characters-in-url";
-
-    /**
-     * The key to enable plugins
-     */
-    public static final String PLUGIN_ENABLED_KEY = "enabled";
+        allowUnescapedCharactersInUrl = true;
+    }
     
     /**
-     * undertow connetction options
+     * Creates a new instance of Configuration from the configuration file For
+     * any missing property the default value is used.
      *
-     * @see
-     * http://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#common-listener-optionshttp://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#common-listener-options
+     * @param confFilePath the path of the configuration file
+     * @throws org.restheart.security.ConfigurationException
      */
-    public static final String CONNECTION_OPTIONS_KEY = "connection-options";
+    public Configuration(final Path confFilePath) throws ConfigurationException {
+        this(confFilePath, false);
+    }
 
+    /**
+     * Creates a new instance of Configuration from the configuration file For
+     * any missing property the default value is used.
+     *
+     * @param confFilePath the path of the configuration file
+     * @param silent
+     * @throws org.restheart.security.ConfigurationException
+     */
+    public Configuration(final Path confFilePath, boolean silent) throws ConfigurationException {
+        this(getConfigurationFromFile(confFilePath), silent);
+    }
+
+    /**
+     * Creates a new instance of Configuration from the configuration file For
+     * any missing property the default value is used.
+     *
+     * @param conf the key-value configuration map
+     * @param silent
+     * @throws org.restheart.security.ConfigurationException
+     */
+    public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
+        this.silent = silent;
+
+        ansiConsole = getOrDefault(conf, ANSI_CONSOLE_KEY, true);
+
+        httpsListener = getOrDefault(conf, HTTPS_LISTENER, true);
+        httpsPort = getOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
+        httpsHost = getOrDefault(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
+
+        httpListener = getOrDefault(conf, HTTP_LISTENER_KEY, false);
+        httpPort = getOrDefault(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
+        httpHost = getOrDefault(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
+
+        ajpListener = getOrDefault(conf, AJP_LISTENER_KEY, false);
+        ajpPort = getOrDefault(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
+        ajpHost = getOrDefault(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
+
+        instanceName = getOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
+
+        useEmbeddedKeystore = getOrDefault(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
+        keystoreFile = getOrDefault(conf, KEYSTORE_FILE_KEY, null);
+        keystorePassword = getOrDefault(conf, KEYSTORE_PASSWORD_KEY, null);
+        certPassword = getOrDefault(conf, CERT_PASSWORD_KEY, null);
+
+        proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
+        
+        pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
+
+        services = getAsListOfMaps(conf, SERVICES_KEY, new ArrayList<>());
+
+        authMechanisms = getAsListOfMaps(conf, AUTH_MECHANISMS_KEY, new ArrayList<>());
+
+        authenticators = getAsListOfMaps(conf, AUTHENTICATORS_KEY, new ArrayList<>());
+
+        authorizers = getAsMap(conf, AUTHORIZERS_KEY);
+
+        tokenManager = getAsMap(conf, AUTH_TOKEN);
+
+        logFilePath = getOrDefault(conf, LOG_FILE_PATH_KEY, URLUtils
+                .removeTrailingSlashes(System.getProperty("java.io.tmpdir")).concat(File.separator + "restheart-security.log"));
+        String _logLevel = getOrDefault(conf, LOG_LEVEL_KEY, "INFO");
+        logToConsole = getOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
+        logToFile = getOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
+
+        Level level;
+
+        try {
+            level = Level.valueOf(_logLevel);
+        } catch (Exception e) {
+            if (!silent) {
+                LOGGER.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel,
+                        "INFO");
+            }
+            level = Level.INFO;
+        }
+
+        logLevel = level;
+
+        requestsLimit = getOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
+
+        ioThreads = getOrDefault(conf, IO_THREADS_KEY, 2);
+        workerThreads = getOrDefault(conf, WORKER_THREADS_KEY, 32);
+        bufferSize = getOrDefault(conf, BUFFER_SIZE_KEY, 16384);
+        directBuffers = getOrDefault(conf, DIRECT_BUFFERS_KEY, true);
+
+        forceGzipEncoding = getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
+
+        logExchangeDump = getOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
+
+        connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
+
+        allowUnescapedCharactersInUrl = getOrDefault(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
+    }
+    
     @SuppressWarnings("unchecked")
     private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
         Yaml yaml = new Yaml();
@@ -396,214 +355,6 @@ public class Configuration {
         return ret;
     }
 
-    private boolean silent = false;
-    private final boolean httpsListener;
-    private final int httpsPort;
-    private final String httpsHost;
-    private final boolean httpListener;
-    private final int httpPort;
-    private final String httpHost;
-    private final boolean ajpListener;
-    private final int ajpPort;
-    private final String ajpHost;
-    private final String instanceName;
-    private final boolean useEmbeddedKeystore;
-    private final String keystoreFile;
-    private final String keystorePassword;
-    private final String certPassword;
-    private final List<Map<String, Object>> proxies;
-    private final List<Map<String, Object>> services;
-    private final List<Map<String, Object>> authMechanisms;
-    private final List<Map<String, Object>> authenticators;
-    private final Map<String, Object> authorizers;
-    private final Map<String, Object> tokenManager;
-    private final String logFilePath;
-    private final Level logLevel;
-    private final boolean logToConsole;
-    private final boolean logToFile;
-    private final int requestsLimit;
-    private final int ioThreads;
-    private final int workerThreads;
-    private final int bufferSize;
-    private final boolean directBuffers;
-    private final boolean forceGzipEncoding;
-    private final Map<String, Object> connectionOptions;
-    private final Integer logExchangeDump;
-    private final boolean ansiConsole;
-    private final boolean allowUnescapedCharactersInUrl;
-
-    /**
-     * the configuration map
-     */
-    private final Map<String, Object> configurationFileMap;
-
-    /**
-     * Creates a new instance of Configuration with defaults values.
-     */
-    public Configuration() {
-        this.configurationFileMap = null;
-
-        ansiConsole = true;
-
-        httpsListener = true;
-        httpsPort = DEFAULT_HTTPS_PORT;
-        httpsHost = DEFAULT_HTTPS_HOST;
-
-        httpListener = true;
-        httpPort = DEFAULT_HTTP_PORT;
-        httpHost = DEFAULT_HTTP_HOST;
-
-        ajpListener = false;
-        ajpPort = DEFAULT_AJP_PORT;
-        ajpHost = DEFAULT_AJP_HOST;
-
-        instanceName = DEFAULT_INSTANCE_NAME;
-
-        useEmbeddedKeystore = true;
-        keystoreFile = null;
-        keystorePassword = null;
-        certPassword = null;
-
-        proxies = new ArrayList<>();
-
-        services = new ArrayList<>();
-
-        authMechanisms = new ArrayList<>();
-
-        authenticators = new ArrayList<>();
-
-        authorizers = null;
-
-        tokenManager = new HashMap<>();
-
-        logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
-                .concat(File.separator + "restheart-security.log");
-
-        logToConsole = true;
-        logToFile = true;
-        logLevel = Level.INFO;
-
-        requestsLimit = 100;
-
-        ioThreads = 2;
-        workerThreads = 32;
-        bufferSize = 16384;
-        directBuffers = true;
-
-        forceGzipEncoding = false;
-
-        logExchangeDump = 0;
-
-        connectionOptions = Maps.newHashMap();
-
-        allowUnescapedCharactersInUrl = true;
-    }
-
-    /**
-     * Creates a new instance of Configuration from the configuration file For
-     * any missing property the default value is used.
-     *
-     * @param confFilePath the path of the configuration file
-     * @throws org.restheart.security.ConfigurationException
-     */
-    public Configuration(final Path confFilePath) throws ConfigurationException {
-        this(confFilePath, false);
-    }
-
-    /**
-     * Creates a new instance of Configuration from the configuration file For
-     * any missing property the default value is used.
-     *
-     * @param confFilePath the path of the configuration file
-     * @param silent
-     * @throws org.restheart.security.ConfigurationException
-     */
-    public Configuration(final Path confFilePath, boolean silent) throws ConfigurationException {
-        this(getConfigurationFromFile(confFilePath), silent);
-    }
-
-    /**
-     * Creates a new instance of Configuration from the configuration file For
-     * any missing property the default value is used.
-     *
-     * @param conf the key-value configuration map
-     * @param silent
-     * @throws org.restheart.security.ConfigurationException
-     */
-    public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
-        this.configurationFileMap = conf;
-
-        this.silent = silent;
-
-        ansiConsole = getOrDefault(conf, ANSI_CONSOLE_KEY, true);
-
-        httpsListener = getOrDefault(conf, HTTPS_LISTENER, true);
-        httpsPort = getOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
-        httpsHost = getOrDefault(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
-
-        httpListener = getOrDefault(conf, HTTP_LISTENER_KEY, false);
-        httpPort = getOrDefault(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
-        httpHost = getOrDefault(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
-
-        ajpListener = getOrDefault(conf, AJP_LISTENER_KEY, false);
-        ajpPort = getOrDefault(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
-        ajpHost = getOrDefault(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
-
-        instanceName = getOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-
-        useEmbeddedKeystore = getOrDefault(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
-        keystoreFile = getOrDefault(conf, KEYSTORE_FILE_KEY, null);
-        keystorePassword = getOrDefault(conf, KEYSTORE_PASSWORD_KEY, null);
-        certPassword = getOrDefault(conf, CERT_PASSWORD_KEY, null);
-
-        proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
-
-        services = getAsListOfMaps(conf, SERVICES_KEY, new ArrayList<>());
-
-        authMechanisms = getAsListOfMaps(conf, AUTH_MECHANISMS_KEY, new ArrayList<>());
-
-        authenticators = getAsListOfMaps(conf, AUTHENTICATORS_KEY, new ArrayList<>());
-
-        authorizers = getAsMap(conf, AUTHORIZERS_KEY);
-
-        tokenManager = getAsMap(conf, AUTH_TOKEN);
-
-        logFilePath = getOrDefault(conf, LOG_FILE_PATH_KEY, URLUtils
-                .removeTrailingSlashes(System.getProperty("java.io.tmpdir")).concat(File.separator + "restheart-security.log"));
-        String _logLevel = getOrDefault(conf, LOG_LEVEL_KEY, "INFO");
-        logToConsole = getOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
-        logToFile = getOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
-
-        Level level;
-
-        try {
-            level = Level.valueOf(_logLevel);
-        } catch (Exception e) {
-            if (!silent) {
-                LOGGER.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel,
-                        "INFO");
-            }
-            level = Level.INFO;
-        }
-
-        logLevel = level;
-
-        requestsLimit = getOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
-
-        ioThreads = getOrDefault(conf, IO_THREADS_KEY, 2);
-        workerThreads = getOrDefault(conf, WORKER_THREADS_KEY, 32);
-        bufferSize = getOrDefault(conf, BUFFER_SIZE_KEY, 16384);
-        directBuffers = getOrDefault(conf, DIRECT_BUFFERS_KEY, true);
-
-        forceGzipEncoding = getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
-
-        logExchangeDump = getOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
-
-        connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
-
-        allowUnescapedCharactersInUrl = getOrDefault(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
-    }
-
     @Override
     public String toString() {
         return "Configuration{" + "silent=" + silent + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort
@@ -619,9 +370,9 @@ public class Configuration {
                 + forceGzipEncoding + ", authToken=" + tokenManager
                 + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", ansiConsole="
                 + ansiConsole + ", cursorBatchSize="
-                + allowUnescapedCharactersInUrl + ", configurationFileMap=" + configurationFileMap + '}';
+                + allowUnescapedCharactersInUrl + ", pluginsArgs=" + pluginsArgs + '}';
     }
-
+    
     /**
      * @return the proxies
      */
@@ -666,6 +417,41 @@ public class Configuration {
                         key, defaultValue);
             }
             return defaultValue;
+        }
+    }
+    
+    /**
+     *
+     * @param conf
+     * @param key
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, Object>> getAsMapOfMaps(
+            final Map<String, Object> conf,
+            final String key,
+            final Map<String, Map<String, Object>> defaultVal) {
+        if (conf == null) {
+            if (!silent) {
+                LOGGER.debug("parameters {} not specified in the configuration file.", key);
+            }
+            return defaultVal;
+        }
+
+        Object o = conf.get(key);
+
+        if (o instanceof Map) {
+            try {
+                return (Map<String, Map<String, Object>>) o;
+            } catch (Throwable t) {
+                LOGGER.warn("Invalid configuration parameter {}", key);
+                return defaultVal;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.debug("parameters {} not specified in the configuration file.", key);
+            }
+            return defaultVal;
         }
     }
 
@@ -901,6 +687,13 @@ public class Configuration {
     public boolean isForceGzipEncoding() {
         return forceGzipEncoding;
     }
+    
+    /**
+     * @return the pluginsArgs
+     */
+    public Map<String, Map<String, Object>> getPluginsArgs() {
+        return Collections.unmodifiableMap(pluginsArgs);
+    }
 
     /**
      * @return the authMechanisms
@@ -964,13 +757,6 @@ public class Configuration {
      */
     public String getInstanceName() {
         return instanceName;
-    }
-
-    /**
-     * @return the configurationFileMap
-     */
-    public Map<String, Object> getConfigurationFileMap() {
-        return Collections.unmodifiableMap(configurationFileMap);
     }
 
     public boolean isAllowUnescapedCharactersInUrl() {
