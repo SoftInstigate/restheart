@@ -17,9 +17,6 @@
  */
 package org.restheart.security;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import static org.restheart.security.Configuration.DEFAULT_ROUTE;
 
 /**
@@ -45,7 +42,7 @@ public interface ConfigurationKeys {
     /**
      * default http port 8080.
      */
-    public static final int DEFAULT_HTTP_PORT = 8080;
+    public static final int DEFAULT_HTTP_PORT = 8081;
 
     /**
      * default https host 0.0.0.0.
