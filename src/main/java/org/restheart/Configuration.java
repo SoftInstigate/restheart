@@ -79,7 +79,6 @@ public class Configuration {
     private final MongoClientURI mongoUri;
     private final List<Map<String, Object>> mongoMounts;
     private final List<Map<String, Object>> staticResourcesMounts;
-    private final List<Map<String, Object>> metadataNamedSingletons;
     private final Map<String, Map<String, Object>> pluginsArgs;
     private final String logFilePath;
     private final Level logLevel;
@@ -277,7 +276,6 @@ public class Configuration {
         defaultStaticResourcesMounts.add(browserStaticResourcesMountArgs);
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
-        metadataNamedSingletons = getAsListOfMaps(conf, METADATA_NAMED_SINGLETONS_KEY, new ArrayList<>());
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
 
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
@@ -437,7 +435,6 @@ public class Configuration {
                 + ", mongoUri=" + mongoUri
                 + ", mongoMounts=" + mongoMounts
                 + ", staticResourcesMounts=" + staticResourcesMounts
-                + ", metadataNamedSingletons=" + metadataNamedSingletons
                 + ", plugins-args=" + pluginsArgs
                 + ", logFilePath=" + logFilePath
                 + ", logLevel=" + logLevel
@@ -1059,13 +1056,6 @@ public class Configuration {
      */
     public List<Map<String, Object>> getStaticResourcesMounts() {
         return Collections.unmodifiableList(staticResourcesMounts);
-    }
-
-    /**
-     * @return the metadataNamedSingletons
-     */
-    public List<Map<String, Object>> getMetadataNamedSingletons() {
-        return Collections.unmodifiableList(metadataNamedSingletons);
     }
 
     /**
