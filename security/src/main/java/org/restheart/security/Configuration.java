@@ -809,13 +809,13 @@ public class Configuration {
 
             if (listOfProxyPass.isEmpty()
                     || !(listOfProxyPass.get(0) instanceof String)) {
-                throw new ConfigurationException("Wrong proxy pass ULR "
+                throw new ConfigurationException("Wrong proxy pass for proxy 'restheart' "
                         + _proxyPass);
             } else {
                 proxyPass = (String) listOfProxyPass.get(0);
             }
         } else {
-            throw new ConfigurationException("Wrong proxy pass ULR "
+            throw new ConfigurationException("Wrong proxy pass for proxy 'restheart' "
                     + _proxyPass);
         }
 
