@@ -168,6 +168,7 @@ public class Configuration {
         certPassword = null;
 
         proxies = new ArrayList<>();
+        initDefaultProxy();
 
         pluginsArgs = new LinkedHashMap<>();
 
@@ -260,6 +261,10 @@ public class Configuration {
         certPassword = getOrDefault(conf, CERT_PASSWORD_KEY, null);
 
         proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
+        
+        if (proxies.isEmpty()) {
+            initDefaultProxy();
+        }
 
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
 
@@ -340,6 +345,19 @@ public class Configuration {
         }
 
         return conf;
+    }
+    
+    private void initDefaultProxy() {
+        var entry = new HashMap();
+        
+        LOGGER.warn("No proxies defined via configuration, "
+                + "assuming default proxy: / -> http://localhost:8080");
+        
+        entry.put(ConfigurationKeys.PROXY_LOCATION_KEY, "/");
+        entry.put(ConfigurationKeys.PROXY_PASS_KEY, "http://localhost:8080");
+        entry.put(ConfigurationKeys.PROXY_NAME, "restheart");
+        
+        this.proxies.add(entry);
     }
 
     /**
