@@ -24,7 +24,6 @@ import java.net.URI;
 import java.security.Principal;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.auth.BasicUserPrincipal;
@@ -36,7 +35,6 @@ import static org.junit.Assert.*;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.restheart.representation.Resource;
-import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
 import org.restheart.utils.HttpStatus;
 
 /**
