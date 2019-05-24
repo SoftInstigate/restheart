@@ -20,8 +20,8 @@ package org.restheart.security.plugins;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
-import org.restheart.security.Configuration;
 import org.restheart.security.ConfigurationException;
+import org.restheart.security.ConfigurationKeys;
 import org.restheart.security.handlers.PipedHttpHandler;
 
 /**
@@ -44,27 +44,27 @@ public class PluginsFactory {
                     + " missing configuration");
         }
 
-        Object _name = conf.get(Configuration.NAME_KEY);
+        Object _name = conf.get(ConfigurationKeys.NAME_KEY);
 
         if (_name == null || !(_name instanceof String)) {
             throw new ConfigurationException(
                     "Error configuring Authentication Mechanism, missing "
-                    + Configuration.NAME_KEY
+                    + ConfigurationKeys.NAME_KEY
                     + " property");
         }
 
-        Object _clazz = conf.get(Configuration.CLASS_KEY);
+        Object _clazz = conf.get(ConfigurationKeys.CLASS_KEY);
 
         if (_clazz == null || !(_clazz instanceof String)) {
             throw new ConfigurationException(
                     "Error configuring Authentication Mechanism "
                     + (String) _name
                     + ", missing "
-                    + Configuration.CLASS_KEY
+                    + ConfigurationKeys.CLASS_KEY
                     + " property");
         }
 
-        Object _args = conf.get(Configuration.ARGS_KEY);
+        Object _args = conf.get(ConfigurationKeys.ARGS_KEY);
 
         try {
             if (_args == null) {
@@ -78,7 +78,7 @@ public class PluginsFactory {
                             "Error configuring Authentication Mechanism "
                             + (String) _name
                             + ", "
-                            + Configuration.ARGS_KEY
+                            + ConfigurationKeys.ARGS_KEY
                             + " property is not a map");
                 } else {
                     return (AuthMechanism) Class
@@ -114,27 +114,27 @@ public class PluginsFactory {
                     "Error configuring Authenticator, missing configuration");
         }
 
-        Object _name = conf.get(Configuration.NAME_KEY);
+        Object _name = conf.get(ConfigurationKeys.NAME_KEY);
 
         if (_name == null || !(_name instanceof String)) {
             throw new ConfigurationException(
                     "Error configuring Authenticator, missing "
-                    + Configuration.NAME_KEY
+                    + ConfigurationKeys.NAME_KEY
                     + " property");
         }
 
-        Object _clazz = conf.get(Configuration.CLASS_KEY);
+        Object _clazz = conf.get(ConfigurationKeys.CLASS_KEY);
 
         if (_clazz == null || !(_clazz instanceof String)) {
             throw new ConfigurationException(
                     "Error configuring Authenticator "
                     + (String) _name
                     + ", missing "
-                    + Configuration.CLASS_KEY
+                    + ConfigurationKeys.CLASS_KEY
                     + " property");
         }
 
-        Object _args = conf.get(Configuration.ARGS_KEY);
+        Object _args = conf.get(ConfigurationKeys.ARGS_KEY);
 
         try {
             if (_args == null) {
@@ -147,7 +147,7 @@ public class PluginsFactory {
                             "Error configuring Authenticator "
                             + (String) _name
                             + ", "
-                            + Configuration.ARGS_KEY
+                            + ConfigurationKeys.ARGS_KEY
                             + " property is not a map");
                 } else {
                     return (Authenticator) Class.forName(
@@ -183,27 +183,27 @@ public class PluginsFactory {
                     "Error configuring Authorizer, missing configuration");
         }
 
-        Object _name = conf.get(Configuration.NAME_KEY);
+        Object _name = conf.get(ConfigurationKeys.NAME_KEY);
 
         if (_name == null || !(_name instanceof String)) {
             throw new ConfigurationException(
                     "Error configuring Authorizer, missing "
-                    + Configuration.NAME_KEY
+                    + ConfigurationKeys.NAME_KEY
                     + " property");
         }
 
-        Object _clazz = conf.get(Configuration.CLASS_KEY);
+        Object _clazz = conf.get(ConfigurationKeys.CLASS_KEY);
 
         if (_clazz == null || !(_clazz instanceof String)) {
             throw new ConfigurationException(
                     "Error configuring Authorizer "
                     + (String) _name
                     + ", missing "
-                    + Configuration.CLASS_KEY
+                    + ConfigurationKeys.CLASS_KEY
                     + " property");
         }
 
-        Object _args = conf.get(Configuration.ARGS_KEY);
+        Object _args = conf.get(ConfigurationKeys.ARGS_KEY);
 
         try {
             if (_args == null) {
@@ -216,7 +216,7 @@ public class PluginsFactory {
                             "Error configuring Authorizer "
                             + (String) _name
                             + ", property "
-                            + Configuration.ARGS_KEY + " is not a map");
+                            + ConfigurationKeys.ARGS_KEY + " is not a map");
                 } else {
                     return (Authorizer) Class.forName((String) _clazz)
                             .getDeclaredConstructor(String.class, Map.class)
@@ -249,27 +249,27 @@ public class PluginsFactory {
                     "Error configuring Token Manager, missing configuration");
         }
 
-        Object _name = conf.get(Configuration.NAME_KEY);
+        Object _name = conf.get(ConfigurationKeys.NAME_KEY);
 
         if (_name == null || !(_name instanceof String)) {
             throw new ConfigurationException(
                     "Error configuring Token Manager, missing "
-                    + Configuration.NAME_KEY
+                    + ConfigurationKeys.NAME_KEY
                     + " property");
         }
 
-        Object _clazz = conf.get(Configuration.CLASS_KEY);
+        Object _clazz = conf.get(ConfigurationKeys.CLASS_KEY);
 
         if (_clazz == null || !(_clazz instanceof String)) {
             throw new ConfigurationException(
                     "Error configuring Token Manager "
                     + (String) _name
                     + ", missing "
-                    + Configuration.CLASS_KEY
+                    + ConfigurationKeys.CLASS_KEY
                     + " property");
         }
 
-        Object _args = conf.get(Configuration.ARGS_KEY);
+        Object _args = conf.get(ConfigurationKeys.ARGS_KEY);
 
         try {
             if (_args == null) {
@@ -282,7 +282,7 @@ public class PluginsFactory {
                             "Error configuring Token Manager "
                             + (String) _name
                             + ", property "
-                            + Configuration.ARGS_KEY + " is not a map");
+                            + ConfigurationKeys.ARGS_KEY + " is not a map");
                 } else {
                     return (TokenManager) Class.forName((String) _clazz)
                             .getDeclaredConstructor(String.class, Map.class)
@@ -309,27 +309,27 @@ public class PluginsFactory {
      */
     static Service createService(Map<String, Object> conf)
             throws ConfigurationException {
-        Object _name = conf.get(Configuration.NAME_KEY);
+        Object _name = conf.get(ConfigurationKeys.NAME_KEY);
 
         if (_name == null || !(_name instanceof String)) {
             throw new ConfigurationException(
                     "Error configuring Service, missing "
-                    + Configuration.NAME_KEY
+                    + ConfigurationKeys.NAME_KEY
                     + " property");
         }
 
-        Object _secured = conf.get(Configuration.SERVICE_SECURED_KEY);
+        Object _secured = conf.get(ConfigurationKeys.SERVICE_SECURED_KEY);
 
         if (_secured == null || !(_secured instanceof Boolean)) {
             throw new ConfigurationException(
                     "Error configuring Service "
                     + (String) _name
                     + ", missing "
-                    + Configuration.SERVICE_SECURED_KEY
+                    + ConfigurationKeys.SERVICE_SECURED_KEY
                     + " property");
         }
 
-        Object _uri = conf.get(Configuration.SERVICE_URI_KEY);
+        Object _uri = conf.get(ConfigurationKeys.SERVICE_URI_KEY);
 
         if (_uri == null || !(_uri instanceof String)
                 || !((String) _uri).startsWith("/")) {
@@ -337,22 +337,22 @@ public class PluginsFactory {
                     "Error configuring Service "
                     + (String) _name
                     + ", missing "
-                    + Configuration.SERVICE_URI_KEY
+                    + ConfigurationKeys.SERVICE_URI_KEY
                     + " property");
         }
 
-        Object _clazz = conf.get(Configuration.CLASS_KEY);
+        Object _clazz = conf.get(ConfigurationKeys.CLASS_KEY);
 
         if (!(_clazz instanceof String)) {
             throw new ConfigurationException(
                     "Error configuring Service "
                     + (String) _name
                     + ", "
-                    + Configuration.CLASS_KEY
+                    + ConfigurationKeys.CLASS_KEY
                     + " property is not a String");
         }
 
-        Object _args = conf.get(Configuration.ARGS_KEY);
+        Object _args = conf.get(ConfigurationKeys.ARGS_KEY);
 
         try {
             if (_args == null) {
@@ -371,7 +371,7 @@ public class PluginsFactory {
                             "Error configuring Service "
                             + (String) _name
                             + ", property "
-                            + Configuration.ARGS_KEY + " is not a map");
+                            + ConfigurationKeys.ARGS_KEY + " is not a map");
                 } else {
                     return (Service) Class.forName((String) _clazz)
                             .getDeclaredConstructor(PipedHttpHandler.class,

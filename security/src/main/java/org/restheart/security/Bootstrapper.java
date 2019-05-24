@@ -996,7 +996,7 @@ public class Bootstrapper {
                 LOGGER.warn("Invalid proxies entry detected");
                 return;
             }
-
+            
             // The number of connections to create per thread
             Integer connectionsPerThread = Configuration.getOrDefault(m,
                     ConfigurationKeys.PROXY_CONNECTIONS_PER_THREAD, 10,

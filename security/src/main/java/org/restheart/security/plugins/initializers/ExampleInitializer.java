@@ -34,15 +34,23 @@ import org.restheart.security.plugins.Initializer;
 import org.restheart.security.plugins.RegisterPlugin;
 
 /**
+ * Just an example initializer. It is not enabledByDefault; to enable it add to
+ * configuration file:<br>
+ * <pre>
+ * plugins-args:
+ *     testInitializer:
+ *         enabled: true
+ * </pre>
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(
-        name = "testInitializer", 
-        priority = 100, 
+        name = "testInitializer",
+        priority = 100,
         description = "Just an example initializer",
-        enabledByDefault = true)
+        enabledByDefault = false)
 public class ExampleInitializer implements Initializer {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ExampleInitializer.class);
 
     @Override

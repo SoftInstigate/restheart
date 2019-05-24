@@ -37,6 +37,9 @@ import org.yaml.snakeyaml.Yaml;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 import java.util.LinkedHashMap;
 import static org.restheart.security.ConfigurationKeys.AJP_HOST_KEY;
 import static org.restheart.security.ConfigurationKeys.AJP_LISTENER_KEY;
@@ -165,7 +168,7 @@ public class Configuration {
         certPassword = null;
 
         proxies = new ArrayList<>();
-        
+
         pluginsArgs = new LinkedHashMap<>();
 
         services = new ArrayList<>();
@@ -200,7 +203,7 @@ public class Configuration {
 
         allowUnescapedCharactersInUrl = true;
     }
-    
+
     /**
      * Creates a new instance of Configuration from the configuration file For
      * any missing property the default value is used.
@@ -257,7 +260,7 @@ public class Configuration {
         certPassword = getOrDefault(conf, CERT_PASSWORD_KEY, null);
 
         proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
-        
+
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
 
         services = getAsListOfMaps(conf, SERVICES_KEY, new ArrayList<>());
@@ -280,7 +283,8 @@ public class Configuration {
 
         try {
             level = Level.valueOf(_logLevel);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (!silent) {
                 LOGGER.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel,
                         "INFO");
@@ -305,7 +309,7 @@ public class Configuration {
 
         allowUnescapedCharactersInUrl = getOrDefault(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
     }
-    
+
     @SuppressWarnings("unchecked")
     private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
         Yaml yaml = new Yaml();
@@ -317,15 +321,19 @@ public class Configuration {
         try {
             fis = new FileInputStream(confFilePath.toFile());
             conf = (Map<String, Object>) yaml.load(fis);
-        } catch (FileNotFoundException fne) {
+        }
+        catch (FileNotFoundException fne) {
             throw new ConfigurationException("configuration file not found", fne);
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             throw new ConfigurationException("error parsing the configuration file", t);
-        } finally {
+        }
+        finally {
             if (fis != null) {
                 try {
                     fis.close();
-                } catch (IOException ioe) {
+                }
+                catch (IOException ioe) {
                     LOGGER.warn("Can't close the FileInputStream", ioe);
                 }
             }
@@ -372,7 +380,7 @@ public class Configuration {
                 + ansiConsole + ", cursorBatchSize="
                 + allowUnescapedCharactersInUrl + ", pluginsArgs=" + pluginsArgs + '}';
     }
-    
+
     /**
      * @return the proxies
      */
@@ -419,7 +427,7 @@ public class Configuration {
             return defaultValue;
         }
     }
-    
+
     /**
      *
      * @param conf
@@ -443,7 +451,8 @@ public class Configuration {
         if (o instanceof Map) {
             try {
                 return (Map<String, Map<String, Object>>) o;
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 LOGGER.warn("Invalid configuration parameter {}", key);
                 return defaultVal;
             }
@@ -506,7 +515,8 @@ public class Configuration {
                 LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
             }
             return (V) conf.get(key);
-        } catch (ClassCastException cce) {
+        }
+        catch (ClassCastException cce) {
             if (!silent) {
                 LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
                         defaultValue);
@@ -687,7 +697,7 @@ public class Configuration {
     public boolean isForceGzipEncoding() {
         return forceGzipEncoding;
     }
-    
+
     /**
      * @return the pluginsArgs
      */
@@ -770,4 +780,56 @@ public class Configuration {
         return authorizers;
     }
 
+    /**
+     *
+     * @return the base URL of restheart proxy identified by proxy configuration
+     * property name="restheart"
+     * @throws ConfigurationException
+     */
+    public URL getRestheartBaseUrl() throws ConfigurationException {
+        var __proxyPass = Bootstrapper.getConfiguration().getProxies().stream()
+                .filter(e -> e.containsKey(ConfigurationKeys.PROXY_NAME))
+                .filter(e -> "restheart".equals(e.get(ConfigurationKeys.PROXY_NAME)))
+                .map(e -> e.get(ConfigurationKeys.PROXY_PASS_KEY))
+                .findFirst();
+
+        if (__proxyPass.isEmpty()) {
+            throw new ConfigurationException("No proxy pass defined "
+                    + "for proxy 'restheart'");
+        }
+
+        var _proxyPass = __proxyPass.get();
+
+        String proxyPass;
+
+        if (_proxyPass instanceof String) {
+            proxyPass = (String) _proxyPass;
+        } else if (_proxyPass instanceof List) {
+            var listOfProxyPass = (List) _proxyPass;
+
+            if (listOfProxyPass.isEmpty()
+                    || !(listOfProxyPass.get(0) instanceof String)) {
+                throw new ConfigurationException("Wrong proxy pass ULR "
+                        + _proxyPass);
+            } else {
+                proxyPass = (String) listOfProxyPass.get(0);
+            }
+        } else {
+            throw new ConfigurationException("Wrong proxy pass ULR "
+                    + _proxyPass);
+        }
+
+        try {
+            var proxyPassUri = URI.create(proxyPass).toURL();
+
+            return URI.create(proxyPassUri.getProtocol()
+                    .concat("://")
+                    .concat(proxyPassUri.getAuthority()))
+                    .toURL();
+        }
+        catch (MalformedURLException | IllegalArgumentException ex) {
+            throw new ConfigurationException("Wrong proxy pass ULR "
+                    + proxyPass, ex);
+        }
+    }
 }

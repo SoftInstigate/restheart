@@ -165,11 +165,6 @@ public interface ConfigurationKeys {
     public static final String PROXY_KEY = "proxies";
     
     /**
-     * the key for the pluging-args property.
-     */
-    public static final String PLUGINS_ARGS_KEY = "plugins-args";
-
-    /**
      * the key for the location property.
      */
     public static final String PROXY_LOCATION_KEY = "location";
@@ -178,6 +173,11 @@ public interface ConfigurationKeys {
      * the key for the proxy-pass property.
      */
     public static final String PROXY_PASS_KEY = "proxy-pass";
+    
+    /**
+     * the key for the proxy name property.
+     */
+    public static final String PROXY_NAME = "name";
 
     /**
      * the key for the rewrite-host-header.
@@ -209,6 +209,11 @@ public interface ConfigurationKeys {
      */
     public static final String PROXY_PROBLEM_SERVER_RETRY = "problem-server-retry";
 
+    /**
+     * the key for the pluging-args property.
+     */
+    public static final String PLUGINS_ARGS_KEY = "plugins-args";
+    
     /**
      * the key for the auth-db property.
      */

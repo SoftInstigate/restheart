@@ -18,7 +18,7 @@
 package org.restheart.security.plugins;
 
 import java.util.Map;
-import org.restheart.security.Configuration;
+import org.restheart.security.ConfigurationKeys;
 
 /**
  *
@@ -73,9 +73,9 @@ public class PluginRecord<T extends Plugin> {
     public boolean isEnabled() {
         return getConfArgs() == null
                 ? enabledByDefault
-                : getConfArgs().containsKey(Configuration.PLUGIN_ENABLED_KEY)
-                && getConfArgs().get(Configuration.PLUGIN_ENABLED_KEY) instanceof Boolean
-                ? (Boolean) getConfArgs().get(Configuration.PLUGIN_ENABLED_KEY)
+                : getConfArgs().containsKey(ConfigurationKeys.PLUGIN_ENABLED_KEY)
+                && getConfArgs().get(ConfigurationKeys.PLUGIN_ENABLED_KEY) instanceof Boolean
+                ? (Boolean) getConfArgs().get(ConfigurationKeys.PLUGIN_ENABLED_KEY)
                 : enabledByDefault;
     }
 

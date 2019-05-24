@@ -18,7 +18,6 @@
 package org.restheart.security.handlers.injectors;
 
 import org.restheart.security.Bootstrapper;
-import org.restheart.security.Configuration;
 import org.restheart.security.plugins.PluginsRegistry;
 import static org.restheart.security.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 
@@ -28,6 +27,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.RequestBufferingHandler;
 import java.util.Map;
+import org.restheart.security.ConfigurationKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.restheart.security.plugins.RequestInterceptor;
@@ -94,7 +94,7 @@ public class RequestContentInjector extends RequestBufferingHandler {
     }
 
     private String getServiceURI(Map<String, Object> conf) {
-        Object _uri = conf.get(Configuration.SERVICE_URI_KEY);
+        Object _uri = conf.get(ConfigurationKeys.SERVICE_URI_KEY);
 
         if (_uri != null && (_uri instanceof String)) {
             return (String) _uri;

@@ -29,8 +29,10 @@ import org.restheart.security.cache.LoadingCache;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.restheart.security.ConfigurationException;
 import org.slf4j.Logger;
@@ -50,6 +52,8 @@ public class PluginsRegistry {
     
     private static final String REGISTER_PLUGIN_CLASS_NAME = RegisterPlugin.class
             .getName();
+    
+    private final Map<String, Map<String, Object>> confs = consumeConfiguration();
 
     private static final LoadingCache<String, Authenticator> AUTHENTICATORS_CACHE
             = CacheFactory.createLocalLoadingCache(
@@ -188,6 +192,24 @@ public class PluginsRegistry {
         this.initializers.addAll(findIPlugins(Initializer.class.getName()));
         this.preStartupInitializers.addAll(findIPlugins(PreStartupInitializer.class.getName()));
     }
+    
+    private Map<String, Map<String, Object>> consumeConfiguration() {
+        Map<String, Map<String, Object>> pluginsArgs = Bootstrapper
+                .getConfiguration()
+                .getPluginsArgs();
+
+        Map<String, Map<String, Object>> confs = new HashMap<>();
+
+        pluginsArgs.forEach((name, params) -> {
+            if (params instanceof Map) {
+                confs.put(name, (Map) params);
+            } else {
+                confs.put(name, new HashMap<>());
+            }
+        });
+
+        return confs;
+    }
 
     public Set<PluginRecord<Initializer>> getInitializers() {
         return this.initializers;
@@ -247,7 +269,7 @@ public class PluginsRegistry {
                             enabledByDefault,
                             registeredInitializer.getName(),
                             (T) i,
-                            null);
+                            confs.get(name));
 
                     if (pr.isEnabled()) {
                         ret.add(pr);

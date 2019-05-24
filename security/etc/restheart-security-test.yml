@@ -32,6 +32,7 @@ instance-name: test
 
  # location (required) The location URI to bound to the HTTP proxied server.
  # proxy-pass (required) The URL of the HTTP proxied server. It can be an array of URLs for load balancing.
+ # name (optional) The name of the proxy. It is required to identify 'restheart'.
  # rewrite-host-header (optional, default true) should the HOST header be rewritten to use the target host of the call.
  # connections-per-thread (optional, default 10) Controls the number of connections to create per thread.
  # soft-max-connections-per-thread (optional, default 5) Controls the number of connections to create per thread.
@@ -50,6 +51,8 @@ proxies:
       connections-per-thread: 20
     - location: /pr
       proxy-pass: http://127.0.0.1:8081
+      name: restheart
+      
 
 #### SSL Configuration
 
