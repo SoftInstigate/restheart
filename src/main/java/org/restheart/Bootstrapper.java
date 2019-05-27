@@ -692,14 +692,19 @@ public class Bootstrapper {
         }
 
         if (configuration.isAjpListener()) {
-            builder.addAjpListener(configuration.getAjpPort(), configuration.getAjpHost());
+            builder.addAjpListener(configuration.getAjpPort(), 
+                    configuration.getAjpHost());
             LOGGER.info("Ajp listener bound at {}:{}",
                     configuration.getAjpHost(), configuration.getAjpPort());
 
             if (configuration.getAjpHost().equals("127.0.0.1")
-                    || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
-                LOGGER.warn("HTTPS listener is bound to localhost. "
-                        + "Remote systems will be unable to connect to this server.");
+                    || configuration.getAjpHost().equalsIgnoreCase("localhost")) {
+                LOGGER.warn("AJP listener bound to localhost:{}. "
+                        + "Remote systems will be unable to connect to this server.",
+                        configuration.getAjpPort());
+            } else {
+                LOGGER.info("AJP listener bound at {}:{}",
+                    configuration.getAjpHost(), configuration.getAjpPort());
             }
         }
 
