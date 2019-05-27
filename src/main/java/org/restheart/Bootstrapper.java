@@ -662,9 +662,9 @@ public class Bootstrapper {
         Builder builder = Undertow.builder();
 
         if (configuration.isHttpsListener()) {
-            builder.addHttpsListener(configuration.getHttpsPort(), configuration.getHttpHost(), sslContext);
+            builder.addHttpsListener(configuration.getHttpsPort(), 
+                    configuration.getHttpsHost(), sslContext);
             
-
             if (configuration.getHttpsHost().equals("127.0.0.1")
                     || configuration.getHttpsHost().equalsIgnoreCase("localhost")) {
                 LOGGER.warn("HTTPS listener bound to localhost:{}. "
@@ -677,9 +677,9 @@ public class Bootstrapper {
         }
 
         if (configuration.isHttpListener()) {
-            builder.addHttpListener(configuration.getHttpPort(), configuration.getHttpsHost());
+            builder.addHttpListener(configuration.getHttpPort(), 
+                    configuration.getHttpHost());
             
-
             if (configuration.getHttpHost().equals("127.0.0.1")
                     || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
                 LOGGER.warn("HTTP listener bound to localhost:{}. "
