@@ -23,7 +23,7 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Authorizer {
+public interface Authorizer extends ConfigurablePlugin {
 
     /**
      *

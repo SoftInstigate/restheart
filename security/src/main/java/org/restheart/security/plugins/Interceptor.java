@@ -23,7 +23,7 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface Interceptor {
+public interface Interceptor extends ConfigurablePlugin {
     /**
      * implements the interceptor logic
      *

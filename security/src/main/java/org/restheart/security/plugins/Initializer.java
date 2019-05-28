@@ -21,6 +21,6 @@ package org.restheart.security.plugins;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface Initializer extends Plugin {
+public interface Initializer extends ConfigurablePlugin {
     public void init();
 }

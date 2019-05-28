@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PluginsRegistry {
-    
     private static final Logger LOGGER = LoggerFactory
             .getLogger(PluginsRegistry.class);
 
@@ -210,7 +209,7 @@ public class PluginsRegistry {
 
         return confs;
     }
-
+    
     public Set<PluginRecord<Initializer>> getInitializers() {
         return this.initializers;
     }

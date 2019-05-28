@@ -24,7 +24,7 @@ import org.restheart.security.ConfigurationException;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface ConfigurablePlugin {
+public interface ConfigurablePlugin extends Plugin {
     /**
      *
      * @param args

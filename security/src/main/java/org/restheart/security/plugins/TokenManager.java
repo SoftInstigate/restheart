@@ -27,7 +27,7 @@ import io.undertow.util.HttpString;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface TokenManager extends Authenticator {
+public interface TokenManager extends Authenticator, ConfigurablePlugin {
     static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
     static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
     static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
