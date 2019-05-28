@@ -25,6 +25,11 @@ import static org.restheart.security.Configuration.DEFAULT_ROUTE;
  */
 public interface ConfigurationKeys {
     /**
+     * default ajp listener.
+     */
+    public static final boolean DEFAULT_AJP_LISTENER = false;
+    
+    /**
      * default ajp host 0.0.0.0.
      */
     public static final String DEFAULT_AJP_HOST = DEFAULT_ROUTE;
@@ -34,6 +39,12 @@ public interface ConfigurationKeys {
      */
     public static final int DEFAULT_AJP_PORT = 8009;
 
+    
+    /**
+     * default http listener.
+     */
+    public static final boolean DEFAULT_HTTP_LISTENER = true;
+    
     /**
      * default http host 0.0.0.0.
      */
@@ -42,8 +53,13 @@ public interface ConfigurationKeys {
     /**
      * default http port 8080.
      */
-    public static final int DEFAULT_HTTP_PORT = 8081;
+    public static final int DEFAULT_HTTP_PORT = 8080;
 
+    /**
+     * default https listener.
+     */
+    public static final boolean DEFAULT_HTTPS_LISTENER = true;
+    
     /**
      * default https host 0.0.0.0.
      */

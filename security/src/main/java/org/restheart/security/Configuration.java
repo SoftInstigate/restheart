@@ -54,10 +54,13 @@ import static org.restheart.security.ConfigurationKeys.BUFFER_SIZE_KEY;
 import static org.restheart.security.ConfigurationKeys.CERT_PASSWORD_KEY;
 import static org.restheart.security.ConfigurationKeys.CONNECTION_OPTIONS_KEY;
 import static org.restheart.security.ConfigurationKeys.DEFAULT_AJP_HOST;
+import static org.restheart.security.ConfigurationKeys.DEFAULT_AJP_LISTENER;
 import static org.restheart.security.ConfigurationKeys.DEFAULT_AJP_PORT;
 import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTPS_HOST;
+import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTPS_LISTENER;
 import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTPS_PORT;
 import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTP_HOST;
+import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTP_LISTENER;
 import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTP_PORT;
 import static org.restheart.security.ConfigurationKeys.DEFAULT_INSTANCE_NAME;
 import static org.restheart.security.ConfigurationKeys.DIRECT_BUFFERS_KEY;
@@ -148,15 +151,15 @@ public class Configuration {
     public Configuration() {
         ansiConsole = true;
 
-        httpsListener = true;
+        httpsListener = DEFAULT_HTTPS_LISTENER;
         httpsPort = DEFAULT_HTTPS_PORT;
         httpsHost = DEFAULT_HTTPS_HOST;
 
-        httpListener = true;
+        httpListener = DEFAULT_HTTP_LISTENER;
         httpPort = DEFAULT_HTTP_PORT;
         httpHost = DEFAULT_HTTP_HOST;
 
-        ajpListener = false;
+        ajpListener = DEFAULT_AJP_LISTENER;
         ajpPort = DEFAULT_AJP_PORT;
         ajpHost = DEFAULT_AJP_HOST;
 
@@ -351,10 +354,10 @@ public class Configuration {
         var entry = new HashMap();
         
         LOGGER.warn("No proxies defined via configuration, "
-                + "assuming default proxy: / -> http://localhost:8080");
+                + "assuming default proxy: / -> ajp://localhost:8009");
         
         entry.put(ConfigurationKeys.PROXY_LOCATION_KEY, "/");
-        entry.put(ConfigurationKeys.PROXY_PASS_KEY, "http://localhost:8080");
+        entry.put(ConfigurationKeys.PROXY_PASS_KEY, "ajp://localhost:8009");
         entry.put(ConfigurationKeys.PROXY_NAME, "restheart");
         
         this.proxies.add(entry);
