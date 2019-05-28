@@ -694,9 +694,7 @@ public class Bootstrapper {
         if (configuration.isAjpListener()) {
             builder.addAjpListener(configuration.getAjpPort(), 
                     configuration.getAjpHost());
-            LOGGER.info("Ajp listener bound at {}:{}",
-                    configuration.getAjpHost(), configuration.getAjpPort());
-
+            
             if (configuration.getAjpHost().equals("127.0.0.1")
                     || configuration.getAjpHost().equalsIgnoreCase("localhost")) {
                 LOGGER.warn("AJP listener bound to localhost:{}. "
