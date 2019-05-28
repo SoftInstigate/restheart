@@ -175,7 +175,19 @@ services:
       class: org.restheart.security.plugins.services.EchoService
       uri: /echo
       secured: false
-      
+
+#### Plugins configuration
+
+# All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object 
+# with the same name of the plugin (as defined in its @RegisterPlugin annotation).
+# The property 'enabled' allows enabling plugins that are not enabled by default,
+# i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false) 
+# NOTE: currently only Initializers are registered with @RegisterPlugin annotation
+
+plugins-args:
+  testInitializer:
+    enabled: false
+
 #### Logging
 
  # enable-log-console: true => log messages to the console (default value: true)

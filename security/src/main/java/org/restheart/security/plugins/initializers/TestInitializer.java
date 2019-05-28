@@ -47,11 +47,11 @@ import org.restheart.security.plugins.RegisterPlugin;
 @RegisterPlugin(
         name = "testInitializer",
         priority = 100,
-        description = "Just an example initializer",
+        description = "The initializer used to test interceptors and global predicates",
         enabledByDefault = false)
-public class ExampleInitializer implements Initializer {
+public class TestInitializer implements Initializer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExampleInitializer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestInitializer.class);
 
     @Override
     public void init() {
