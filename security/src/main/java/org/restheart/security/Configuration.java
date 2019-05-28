@@ -264,7 +264,7 @@ public class Configuration {
         certPassword = getOrDefault(conf, CERT_PASSWORD_KEY, null);
 
         proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
-        
+
         if (proxies.isEmpty()) {
             initDefaultProxy();
         }
@@ -291,8 +291,7 @@ public class Configuration {
 
         try {
             level = Level.valueOf(_logLevel);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             if (!silent) {
                 LOGGER.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel,
                         "INFO");
@@ -329,19 +328,15 @@ public class Configuration {
         try {
             fis = new FileInputStream(confFilePath.toFile());
             conf = (Map<String, Object>) yaml.load(fis);
-        }
-        catch (FileNotFoundException fne) {
+        } catch (FileNotFoundException fne) {
             throw new ConfigurationException("configuration file not found", fne);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             throw new ConfigurationException("error parsing the configuration file", t);
-        }
-        finally {
+        } finally {
             if (fis != null) {
                 try {
                     fis.close();
-                }
-                catch (IOException ioe) {
+                } catch (IOException ioe) {
                     LOGGER.warn("Can't close the FileInputStream", ioe);
                 }
             }
@@ -349,17 +344,17 @@ public class Configuration {
 
         return conf;
     }
-    
+
     private void initDefaultProxy() {
         var entry = new HashMap();
-        
+
         LOGGER.warn("No proxies defined via configuration, "
                 + "assuming default proxy: / -> ajp://localhost:8009");
-        
+
         entry.put(ConfigurationKeys.PROXY_LOCATION_KEY, "/");
         entry.put(ConfigurationKeys.PROXY_PASS_KEY, "ajp://localhost:8009");
         entry.put(ConfigurationKeys.PROXY_NAME, "restheart");
-        
+
         this.proxies.add(entry);
     }
 
@@ -472,8 +467,7 @@ public class Configuration {
         if (o instanceof Map) {
             try {
                 return (Map<String, Map<String, Object>>) o;
-            }
-            catch (Throwable t) {
+            } catch (Throwable t) {
                 LOGGER.warn("Invalid configuration parameter {}", key);
                 return defaultVal;
             }
@@ -536,8 +530,7 @@ public class Configuration {
                 LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
             }
             return (V) conf.get(key);
-        }
-        catch (ClassCastException cce) {
+        } catch (ClassCastException cce) {
             if (!silent) {
                 LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
                         defaultValue);
@@ -847,8 +840,7 @@ public class Configuration {
                     .concat("://")
                     .concat(proxyPassUri.getAuthority()))
                     .toURL();
-        }
-        catch (MalformedURLException | IllegalArgumentException ex) {
+        } catch (MalformedURLException | IllegalArgumentException ex) {
             throw new ConfigurationException("Wrong proxy pass ULR "
                     + proxyPass, ex);
         }
