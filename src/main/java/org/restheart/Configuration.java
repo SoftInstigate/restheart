@@ -213,15 +213,15 @@ public class Configuration {
 
         ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE_KEY, true);
 
-        httpsListener = getAsBooleanOrDefault(conf, HTTPS_LISTENER, true);
+        httpsListener = getAsBooleanOrDefault(conf, HTTPS_LISTENER, DEFAULT_HTTPS_LISTENER);
         httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
         httpsHost = getAsStringOrDefault(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
 
-        httpListener = getAsBooleanOrDefault(conf, HTTP_LISTENER_KEY, true);
+        httpListener = getAsBooleanOrDefault(conf, HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER);
         httpPort = getAsIntegerOrDefault(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
         httpHost = getAsStringOrDefault(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
 
-        ajpListener = getAsBooleanOrDefault(conf, AJP_LISTENER_KEY, false);
+        ajpListener = getAsBooleanOrDefault(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
         ajpPort = getAsIntegerOrDefault(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
         ajpHost = getAsStringOrDefault(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
 
@@ -259,8 +259,8 @@ public class Configuration {
 
         List<Map<String, Object>> mongoMountsDefault = new ArrayList<>();
         Map<String, Object> defaultMongoMounts = new HashMap<>();
-        defaultMongoMounts.put(MONGO_MOUNT_WHAT_KEY, "*");
-        defaultMongoMounts.put(MONGO_MOUNT_WHERE_KEY, "/");
+        defaultMongoMounts.put(MONGO_MOUNT_WHAT_KEY, DEFAULT_MONGO_MOUNT_WHAT);
+        defaultMongoMounts.put(MONGO_MOUNT_WHERE_KEY, DEFAULT_MONGO_MOUNT_WHERE);
         mongoMountsDefault.add(defaultMongoMounts);
 
         mongoMounts = getAsListOfMaps(conf, MONGO_MOUNTS_KEY, mongoMountsDefault);

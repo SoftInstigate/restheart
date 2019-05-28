@@ -32,6 +32,11 @@ public interface ConfigurationKeys {
     public static final String DEFAULT_ROUTE = "127.0.0.1";
 
     /**
+     * default http listener.
+     */
+    public static final boolean DEFAULT_AJP_LISTENER = true;
+    
+    /**
      * default ajp host 127.0.0.1.
      */
     public static final String DEFAULT_AJP_HOST = DEFAULT_ROUTE;
@@ -42,6 +47,11 @@ public interface ConfigurationKeys {
     public static final int DEFAULT_AJP_PORT = 8009;
 
     /**
+     * default http listener.
+     */
+    public static final boolean DEFAULT_HTTP_LISTENER = false;
+    
+    /**
      * default http host 127.0.0.1.
      */
     public static final String DEFAULT_HTTP_HOST = DEFAULT_ROUTE;
@@ -51,6 +61,11 @@ public interface ConfigurationKeys {
      */
     public static final int DEFAULT_HTTP_PORT = 8080;
 
+    /**
+     * default https listener.
+     */
+    public static final boolean DEFAULT_HTTPS_LISTENER = false;
+    
     /**
      * default https host 127.0.0.1.
      */
@@ -239,6 +254,16 @@ public interface ConfigurationKeys {
      * the key for the where property.
      */
     public static final String MONGO_MOUNT_WHERE_KEY = "where";
+    
+    /**
+     * the default value for the where mongo-mount property.
+     */
+    public static final String  DEFAULT_MONGO_MOUNT_WHERE = "/";
+    
+    /**
+     * the default value for the waht mongo-mount property.
+     */
+    public static final String  DEFAULT_MONGO_MOUNT_WHAT = "/restheart";
 
     /**
      * the key for the auth-db property.

@@ -846,7 +846,7 @@ public class Bootstrapper {
                     getRootPathHandler().addPrefixPath(url, pipe);
                 }
 
-                LOGGER.info("URL {} bound to MongoDB resource {}", url, db);
+                LOGGER.info("URI {} bound to MongoDB resource {}", url, db);
             });
 
             if (allPathTemplates) {
@@ -986,7 +986,7 @@ public class Bootstrapper {
 
                         pathHandler.addPrefixPath(where, ph);
 
-                        LOGGER.info("URL {} bound to static resources {}.",
+                        LOGGER.info("URI {} bound to static resources {}.",
                                 where, file.getAbsolutePath());
                     } else {
                         LOGGER.error("Failed to bind URL {} to static resources {}."
