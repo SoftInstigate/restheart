@@ -454,8 +454,13 @@ public class Bootstrapper {
         logLoggingConfiguration(fork);
         logManifestInfo();
 
-        LOGGER.debug("Initializing MongoDB connection pool to {} with options {}",
-                configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Initializing MongoDB connection pool to {} with options {}",
+                    configuration.getMongoUri().getHosts(), configuration.getMongoUri().getOptions());
+        } else {
+            LOGGER.info("Initializing MongoDB connection pool to {}",
+                    configuration.getMongoUri().getHosts());
+        }
 
         try {
             MongoDBClientSingleton.init(configuration.getMongoUri());
@@ -662,9 +667,9 @@ public class Bootstrapper {
         Builder builder = Undertow.builder();
 
         if (configuration.isHttpsListener()) {
-            builder.addHttpsListener(configuration.getHttpsPort(), 
+            builder.addHttpsListener(configuration.getHttpsPort(),
                     configuration.getHttpsHost(), sslContext);
-            
+
             if (configuration.getHttpsHost().equals("127.0.0.1")
                     || configuration.getHttpsHost().equalsIgnoreCase("localhost")) {
                 LOGGER.warn("HTTPS listener bound to localhost:{}. "
@@ -672,14 +677,14 @@ public class Bootstrapper {
                         configuration.getHttpsPort());
             } else {
                 LOGGER.info("HTTPS listener bound at {}:{}",
-                    configuration.getHttpsHost(), configuration.getHttpsPort());
+                        configuration.getHttpsHost(), configuration.getHttpsPort());
             }
         }
 
         if (configuration.isHttpListener()) {
-            builder.addHttpListener(configuration.getHttpPort(), 
+            builder.addHttpListener(configuration.getHttpPort(),
                     configuration.getHttpHost());
-            
+
             if (configuration.getHttpHost().equals("127.0.0.1")
                     || configuration.getHttpHost().equalsIgnoreCase("localhost")) {
                 LOGGER.warn("HTTP listener bound to localhost:{}. "
@@ -687,14 +692,14 @@ public class Bootstrapper {
                         configuration.getHttpPort());
             } else {
                 LOGGER.info("HTTP listener bound at {}:{}",
-                    configuration.getHttpHost(), configuration.getHttpPort());
+                        configuration.getHttpHost(), configuration.getHttpPort());
             }
         }
 
         if (configuration.isAjpListener()) {
-            builder.addAjpListener(configuration.getAjpPort(), 
+            builder.addAjpListener(configuration.getAjpPort(),
                     configuration.getAjpHost());
-            
+
             if (configuration.getAjpHost().equals("127.0.0.1")
                     || configuration.getAjpHost().equalsIgnoreCase("localhost")) {
                 LOGGER.warn("AJP listener bound to localhost:{}. "
@@ -702,7 +707,7 @@ public class Bootstrapper {
                         configuration.getAjpPort());
             } else {
                 LOGGER.info("AJP listener bound at {}:{}",
-                    configuration.getAjpHost(), configuration.getAjpPort());
+                        configuration.getAjpHost(), configuration.getAjpPort());
             }
         }
 
