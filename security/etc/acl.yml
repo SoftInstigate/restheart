@@ -3,18 +3,18 @@ permissions:
     # OPTIONS is always allowed
     - role: $unauthenticated
       predicate: path-prefix[path="/"] and method[value="OPTIONS"]
-
-    - role: user
-      predicate: path-prefix[path="/"] and method[value="OPTIONS"]
-
+      
+    - role: $unauthenticated
+      predicate: path-prefix[path="/echo"] and method[value="GET"]
+    
     - role: admin
       predicate: path-prefix[path="/"] and method[value="OPTIONS"]
       
     - role: admin
       predicate: path-prefix[path="/"]
-
-    - role: $unauthenticated
-      predicate: path-prefix[path="/echo"] and method[value="GET"]
+    
+    - role: user
+      predicate: path-prefix[path="/"] and method[value="OPTIONS"]
 
     - role: user
       predicate: path-prefix[path="/secho"] and method[value="GET"]

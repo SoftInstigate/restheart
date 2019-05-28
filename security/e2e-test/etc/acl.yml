@@ -1,18 +1,5 @@
 ## configuration file for RESTHeart integration  test suite
 ---
-users:
-    - userid: user1
-      password: changeit
-      roles: [poweruser]
-
-    - userid: user2
-      password: changeit
-      roles: [user]
-
-    - userid: admin
-      password: changeit
-      roles: [user, admin]
-
 permissions:
   - role: admin
     predicate: path-prefix[path="/"]
