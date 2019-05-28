@@ -9,15 +9,15 @@
 # Using the http listener is not secure: users credentials can be sniffed by a man-in-the-middle attack.
 # Use the http listener only on trusted environments.
 
-https-listener: true
+https-listener: false
 https-host: 0.0.0.0
 https-port: 4443
 
-http-listener: true
+http-listener: false
 http-host: 0.0.0.0
 http-port: 8080
 
-ajp-listener: false
+ajp-listener: true
 ajp-host: 0.0.0.0
 ajp-port: 8009
 

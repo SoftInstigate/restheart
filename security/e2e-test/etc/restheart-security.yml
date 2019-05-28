@@ -9,7 +9,7 @@
  # WARNING: Using the http listener is not secure with basic authentication:
  # credentials can be sniffed by a man-in-the-middle attack.
 
-https-listener: true
+https-listener: false
 https-host: 0.0.0.0
 https-port: 4443
 
@@ -41,7 +41,7 @@ instance-name: e2e-test
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
 proxies:
     - location: /
-      proxy-pass: http://restheart:8080/
+      proxy-pass: ajp://restheart:8009/
       name: restheart
 
 #### SSL Configuration
