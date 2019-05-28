@@ -599,8 +599,7 @@ public class Bootstrapper {
         }
         
         if (!configuration.isHttpsListener()
-                && !configuration.isHttpListener()
-                && !configuration.isAjpListener()) {
+                && !configuration.isHttpListener()) {
             logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
         
@@ -703,21 +702,6 @@ public class Bootstrapper {
             } else {
                 LOGGER.info("HTTP listener bound at {}:{}",
                     configuration.getHttpHost(), configuration.getHttpPort());
-            }
-        }
-        
-        if (configuration.isAjpListener()) {
-            builder.addAjpListener(configuration.getAjpPort(),
-                    configuration.getAjpHost());
-            
-            if (configuration.getAjpHost().equals("127.0.0.1")
-                    || configuration.getAjpHost().equalsIgnoreCase("localhost")) {
-                LOGGER.warn("AJP listener bound to localhost:{}. "
-                        + "Remote systems will be unable to connect to this server.",
-                        configuration.getAjpPort());
-            } else {
-                LOGGER.info("AJP listener bound at {}:{}",
-                    configuration.getAjpHost(), configuration.getAjpPort());
             }
         }
         

@@ -24,21 +24,6 @@ import static org.restheart.security.Configuration.DEFAULT_ROUTE;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface ConfigurationKeys {
-    /**
-     * default ajp listener.
-     */
-    public static final boolean DEFAULT_AJP_LISTENER = false;
-    
-    /**
-     * default ajp host 0.0.0.0.
-     */
-    public static final String DEFAULT_AJP_HOST = DEFAULT_ROUTE;
-
-    /**
-     * default ajp port 8009.
-     */
-    public static final int DEFAULT_AJP_PORT = 8009;
-
     
     /**
      * default http listener.
@@ -254,21 +239,6 @@ public interface ConfigurationKeys {
      * the key for the use-embedded-keystore property.
      */
     public static final String USE_EMBEDDED_KEYSTORE_KEY = "use-embedded-keystore";
-
-    /**
-     * the key for the ajp-host property.
-     */
-    public static final String AJP_HOST_KEY = "ajp-host";
-
-    /**
-     * the key for the ajp-port property.
-     */
-    public static final String AJP_PORT_KEY = "ajp-port";
-
-    /**
-     * the key for the ajp-listener property.
-     */
-    public static final String AJP_LISTENER_KEY = "ajp-listener";
 
     /**
      * the key for the http-host property.

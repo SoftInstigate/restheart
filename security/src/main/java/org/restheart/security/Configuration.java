@@ -37,13 +37,8 @@ import org.yaml.snakeyaml.Yaml;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.LinkedHashMap;
-import static org.restheart.security.ConfigurationKeys.AJP_HOST_KEY;
-import static org.restheart.security.ConfigurationKeys.AJP_LISTENER_KEY;
-import static org.restheart.security.ConfigurationKeys.AJP_PORT_KEY;
 import static org.restheart.security.ConfigurationKeys.ALLOW_UNESCAPED_CHARACTERS_IN_URL;
 import static org.restheart.security.ConfigurationKeys.ANSI_CONSOLE_KEY;
 import static org.restheart.security.ConfigurationKeys.AUTHENTICATORS_KEY;
@@ -53,9 +48,6 @@ import static org.restheart.security.ConfigurationKeys.AUTH_TOKEN;
 import static org.restheart.security.ConfigurationKeys.BUFFER_SIZE_KEY;
 import static org.restheart.security.ConfigurationKeys.CERT_PASSWORD_KEY;
 import static org.restheart.security.ConfigurationKeys.CONNECTION_OPTIONS_KEY;
-import static org.restheart.security.ConfigurationKeys.DEFAULT_AJP_HOST;
-import static org.restheart.security.ConfigurationKeys.DEFAULT_AJP_LISTENER;
-import static org.restheart.security.ConfigurationKeys.DEFAULT_AJP_PORT;
 import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTPS_HOST;
 import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTPS_LISTENER;
 import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTPS_PORT;
@@ -115,9 +107,6 @@ public class Configuration {
     private final boolean httpListener;
     private final int httpPort;
     private final String httpHost;
-    private final boolean ajpListener;
-    private final int ajpPort;
-    private final String ajpHost;
     private final String instanceName;
     private final boolean useEmbeddedKeystore;
     private final String keystoreFile;
@@ -158,10 +147,6 @@ public class Configuration {
         httpListener = DEFAULT_HTTP_LISTENER;
         httpPort = DEFAULT_HTTP_PORT;
         httpHost = DEFAULT_HTTP_HOST;
-
-        ajpListener = DEFAULT_AJP_LISTENER;
-        ajpPort = DEFAULT_AJP_PORT;
-        ajpHost = DEFAULT_AJP_HOST;
 
         instanceName = DEFAULT_INSTANCE_NAME;
 
@@ -251,10 +236,6 @@ public class Configuration {
         httpListener = getOrDefault(conf, HTTP_LISTENER_KEY, false);
         httpPort = getOrDefault(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
         httpHost = getOrDefault(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
-
-        ajpListener = getOrDefault(conf, AJP_LISTENER_KEY, false);
-        ajpPort = getOrDefault(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
-        ajpHost = getOrDefault(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
 
         instanceName = getOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
 
@@ -383,8 +364,7 @@ public class Configuration {
     public String toString() {
         return "Configuration{" + "silent=" + silent + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort
                 + ", httpsHost=" + httpsHost + ", httpListener=" + httpListener + ", httpPort=" + httpPort
-                + ", httpHost=" + httpHost + ", ajpListener=" + ajpListener + ", ajpPort=" + ajpPort + ", ajpHost="
-                + ajpHost + ", instanceName=" + instanceName + ", useEmbeddedKeystore=" + useEmbeddedKeystore
+                + ", httpHost=" + httpHost + ", instanceName=" + instanceName + ", useEmbeddedKeystore=" + useEmbeddedKeystore
                 + ", keystoreFile=" + keystoreFile + ", keystorePassword=" + keystorePassword + ", certPassword="
                 + certPassword + ", proxies=" + proxies + ", services=" + services + ", authMechanisms="
                 + authMechanisms + ", authenticators=" + authenticators + ", authorizers=" + getAuthorizers() + ", logFilePath="
@@ -593,27 +573,6 @@ public class Configuration {
     }
 
     /**
-     * @return the ajpListener
-     */
-    public boolean isAjpListener() {
-        return ajpListener;
-    }
-
-    /**
-     * @return the ajpPort
-     */
-    public int getAjpPort() {
-        return ajpPort;
-    }
-
-    /**
-     * @return the ajpHost
-     */
-    public String getAjpHost() {
-        return ajpHost;
-    }
-
-    /**
      * @return the useEmbeddedKeystore
      */
     public boolean isUseEmbeddedKeystore() {
@@ -800,7 +759,7 @@ public class Configuration {
      * property name="restheart"
      * @throws ConfigurationException
      */
-    public URL getRestheartBaseUrl() throws ConfigurationException {
+    public URI getRestheartBaseUrl() throws ConfigurationException {
         var __proxyPass = Bootstrapper.getConfiguration().getProxies().stream()
                 .filter(e -> e.containsKey(ConfigurationKeys.PROXY_NAME))
                 .filter(e -> "restheart".equals(e.get(ConfigurationKeys.PROXY_NAME)))
@@ -834,15 +793,47 @@ public class Configuration {
         }
 
         try {
-            var proxyPassUri = URI.create(proxyPass).toURL();
-
-            return URI.create(proxyPassUri.getProtocol()
-                    .concat("://")
-                    .concat(proxyPassUri.getAuthority()))
-                    .toURL();
-        } catch (MalformedURLException | IllegalArgumentException ex) {
+            return URI.create(proxyPass);
+        } catch (IllegalArgumentException ex) {
             throw new ConfigurationException("Wrong proxy pass ULR "
                     + proxyPass, ex);
+        }
+    }
+
+    /**
+     *
+     * @return the location of restheart proxy identified by proxy configuration
+     * property name="restheart"
+     * @throws ConfigurationException
+     */
+    public URI getRestheartLocation() throws ConfigurationException {
+        var __proxyLocation = Bootstrapper.getConfiguration().getProxies().stream()
+                .filter(e -> e.containsKey(ConfigurationKeys.PROXY_NAME))
+                .filter(e -> "restheart".equals(e.get(ConfigurationKeys.PROXY_NAME)))
+                .map(e -> e.get(ConfigurationKeys.PROXY_LOCATION_KEY))
+                .findFirst();
+
+        if (__proxyLocation.isEmpty()) {
+            throw new ConfigurationException("No proxy pass defined "
+                    + "for proxy 'restheart'");
+        }
+
+        var _proxyLocation = __proxyLocation.get();
+
+        String proxyLocation;
+
+        if (_proxyLocation instanceof String) {
+            proxyLocation = (String) _proxyLocation;
+        } else {
+            throw new ConfigurationException("Wrong proxy location for proxy 'restheart' "
+                    + _proxyLocation);
+        }
+
+        try {
+            return URI.create(proxyLocation);
+        } catch (IllegalArgumentException ex) {
+            throw new ConfigurationException("Wrong proxy location URI "
+                    + proxyLocation, ex);
         }
     }
 }

@@ -3,23 +3,19 @@
 #### Listeners
 
  # Listeners allow to specify the protocol, ip, port and to use.
- # The supported protocols are: http, https and ajp. 
- # You can setup a listener per protocol (up to 3).
+ # The supported protocols are: http and https . 
+ # You can setup a listener per protocol (up to 2).
 
  # WARNING: Using the http listener is not secure with basic authentication:
  # credentials can be sniffed by a man-in-the-middle attack.
 
-https-listener: true
+https-listener: false
 https-host: 0.0.0.0
 https-port: 4443
 
 http-listener: true
 http-host: 0.0.0.0
 http-port: 8080
-
-ajp-listener: false
-ajp-host: 0.0.0.0
-ajp-port: 8009
 
 #### Instance name
 
