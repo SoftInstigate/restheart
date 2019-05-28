@@ -845,7 +845,28 @@ public interface Initializer {
 }
 ```
 
-An example Initializer is `org.restheart.security.plugins.initializers.ExampleInitializer`.
+It must also use the `@RegisterPlugin` annotation, example:
+
+```java
+@RegisterPlugin(
+        name = "testInitializer",
+        priority = 100,
+        description = "The initializer used to test interceptors and global predicates",
+        enabledByDefault = false)
+public class TestInitializer implements Initializer {
+
+}
+```
+
+If the initializer is not enabled by default (i.e.e`enabledByDefault=false`), it can be enabled via configuration file as follows:
+
+```
+plugins-args:
+  testInitializer:
+    enabled: true
+```
+
+An example Initializer is `org.restheart.security.plugins.initializers.TestInitializer`.
 
 ### Configuration
 
