@@ -29,7 +29,7 @@ import org.restheart.security.plugins.Authorizer;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GlobalSecuirtyPredicatesAuthorizer extends PipedHttpHandler {
+public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
 
     private final Authorizer accessManager;
     private static Set<Predicate> globalSecurityPredicates = new HashSet<>();
@@ -40,7 +40,7 @@ public class GlobalSecuirtyPredicatesAuthorizer extends PipedHttpHandler {
      * @param accessManager
      * @param next
      */
-    public GlobalSecuirtyPredicatesAuthorizer(Authorizer accessManager, PipedHttpHandler next) {
+    public GlobalSecurityPredicatesAuthorizer(Authorizer accessManager, PipedHttpHandler next) {
         super(next);
         this.accessManager = accessManager;
     }

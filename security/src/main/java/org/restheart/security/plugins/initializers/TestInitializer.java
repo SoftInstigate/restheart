@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.restheart.security.handlers.exchange.JsonRequest;
-import org.restheart.security.handlers.GlobalSecuirtyPredicatesAuthorizer;
+import org.restheart.security.handlers.GlobalSecurityPredicatesAuthorizer;
 import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.interceptors.EchoExampleRequestInterceptor;
 import org.restheart.security.plugins.interceptors.EchoExampleResponseInterceptor;
@@ -60,7 +60,7 @@ public class TestInitializer implements Initializer {
         LOGGER.info("\tadds a request and a response interceptors for /iecho and /siecho");
 
         // add a global security predicate
-        GlobalSecuirtyPredicatesAuthorizer.getGlobalSecurityPredicates().add(new Predicate() {
+        GlobalSecurityPredicatesAuthorizer.getGlobalSecurityPredicates().add(new Predicate() {
             @Override
             public boolean resolve(HttpServerExchange exchange) {
                 var request = JsonRequest.wrap(exchange);

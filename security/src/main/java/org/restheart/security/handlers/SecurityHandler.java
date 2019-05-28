@@ -68,7 +68,7 @@ public class SecurityHandler extends PipedHttpHandler {
             }
 
             handler = new TokenInjector(
-                    new GlobalSecuirtyPredicatesAuthorizer(accessManager, next),
+                    new GlobalSecurityPredicatesAuthorizer(accessManager, next),
                     tokenManager);
 
             handler = new SecurityInitialHandler(
