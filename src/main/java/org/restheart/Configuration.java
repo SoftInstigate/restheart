@@ -386,7 +386,7 @@ public class Configuration {
             docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
         }
 
-        logExchangeDump = getAsIntegerOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
+        logExchangeDump = getAsIntegerOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 1);
         {
             METRICS_GATHERING_LEVEL mglevel;
             try {
