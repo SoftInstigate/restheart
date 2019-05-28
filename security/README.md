@@ -845,7 +845,7 @@ public interface Initializer {
 }
 ```
 
-It must also use the `@RegisterPlugin` annotation, example:
+It must also registered via the `@RegisterPlugin` annotation, example:
 
 ```java
 @RegisterPlugin(
