@@ -120,9 +120,8 @@ public class ConduitInjector extends PipedHttpHandler {
             exchange.putAttachment(ORIGINAL_ACCEPT_ENCODINGS_KEY, before);
 
             LOGGER.debug("{} "
-                    + "setting it to identity because request involves "
-                    + "response interceptors. "
-                    + "Todo: compress response after interceptors execute", before);
+                    + "setting encoding to identity because request involves "
+                    + "response interceptors.", before);
 
             exchange.getRequestHeaders().put(
                     Headers.ACCEPT_ENCODING,
