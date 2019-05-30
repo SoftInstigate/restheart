@@ -21,15 +21,14 @@ import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.http.HttpHost;
 import org.apache.http.client.fluent.Executor;
-import org.restheart.Configuration;
 import org.restheart.ConfigurationException;
 import static org.restheart.ConfigurationKeys.MONGO_URI_KEY;
 import org.restheart.db.MongoDBClientSingleton;
+import static org.restheart.test.integration.AbstactIT.MONGO_URI;
 
 /**
  *
@@ -66,10 +65,7 @@ public abstract class AbstractPT {
         }
 
         try {
-            MongoDBClientSingleton.init(new Configuration(
-                    Paths
-                            .get("etc/test/restheart-integrationtest.yml"))
-                    .getMongoUri());
+            MongoDBClientSingleton.init(MONGO_URI);
         } catch (ConfigurationException ex) {
             System.exit(-1);
         }

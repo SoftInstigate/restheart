@@ -4,7 +4,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import java.nio.file.Paths;
 import org.bson.BsonDocument;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -12,11 +11,11 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.restheart.Configuration;
 import static org.restheart.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.db.MongoDBClientSingleton;
+import static org.restheart.test.integration.AbstactIT.MONGO_URI;
 import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 
 /**
@@ -36,7 +35,7 @@ public class SkipTimeTest {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        MongoDBClientSingleton.init(new Configuration(Paths.get("etc/test/restheart-integrationtest.yml")).getMongoUri());
+        MongoDBClientSingleton.init(MONGO_URI);
     }
 
     @AfterClass

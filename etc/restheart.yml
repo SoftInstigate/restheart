@@ -82,7 +82,7 @@ mongo-uri: {{{mongo-uri}}}
 #     where: /api
 
 mongo-mounts:
-  - what: /restheart
+  - what: {{{root-mongo-resource}}}
     where: /
 
 #### Default representation format https://restheart.org/learn/representation-format/

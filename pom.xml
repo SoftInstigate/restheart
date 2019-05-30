@@ -445,7 +445,7 @@
                             <target>
                                 <echo>Running integration tests against a forked RESTHeart's instance...</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
-                                    <arg value="${basedir}/etc/test/restheart-integrationtest.yml"/>
+                                    <arg value="${basedir}/etc/test/restheart.yml"/>
                                     <arg value="--fork"/>
                                 </exec>
                             </target>
@@ -462,7 +462,7 @@
                             <target>
                                 <echo>Stopping forked RESTHeart's instance...</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
-                                    <arg value="${basedir}/etc/test/restheart-integrationtest.yml"/>
+                                    <arg value="${basedir}/etc/test/restheart.yml"/>
                                 </exec>
                             </target>
                         </configuration>
