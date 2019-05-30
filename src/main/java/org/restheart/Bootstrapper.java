@@ -846,7 +846,7 @@ public class Bootstrapper {
                     getRootPathHandler().addPrefixPath(url, pipe);
                 }
 
-                LOGGER.info("URI {} bound to MongoDB resource {}", url, db);
+                LOGGER.info(ansi().fg(GREEN).a("URI {} bound to MongoDB resource {}").reset().toString(), url, db);
             });
 
             if (allPathTemplates) {
