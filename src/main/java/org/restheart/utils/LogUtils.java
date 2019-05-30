@@ -20,6 +20,7 @@ package org.restheart.utils;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.Ansi.Color;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.MAGENTA;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.slf4j.Logger;
@@ -64,7 +65,7 @@ public class LogUtils {
     public static void boxedWarn(
             Logger LOGGER,
             String... rows) {
-        boxedMessage(LOGGER, Level.WARN, RED, GREEN, rows);
+        boxedMessage(LOGGER, Level.WARN, MAGENTA, GREEN, rows);
     }
     
     public static void boxedInfo(
@@ -80,40 +81,40 @@ public class LogUtils {
             Color rowsColor,
             String... rows) {
 
-        var msg = header();
+        var msg = header(firstRowColor);
         var first = true;
         for (var row : rows) {
-            msg.a(sr())
+            msg.a(sr(firstRowColor))
                     .fg(first ? firstRowColor: rowsColor)
                     .a(pad(row, 66))
-                    .a(er())
+                    .a(er(firstRowColor))
                     .reset();
             
             first = false;
         }
 
-        msg.a(footer());
+        msg.a(footer(firstRowColor));
 
         LogUtils.log(LOGGER, level, msg.toString(), (Object[])null);
     }
 
-    private static Ansi sr() {
-        return ansi().fg(GREEN).a("| ").reset();
+    private static Ansi sr(Color color) {
+        return ansi().fg(color).a("| ").reset();
     }
 
-    private static Ansi er() {
-        return ansi().fg(GREEN).a("|\n").reset();
+    private static Ansi er(Color color) {
+        return ansi().fg(color).a("|\n").reset();
     }
 
-    private static Ansi header() {
-        return ansi().a("\n").fg(GREEN).a(
+    private static Ansi header(Color color) {
+        return ansi().a("\n").fg(color).a(
                 "*-------------------------------------------------------------------*\n"
                 + "|                                                                   |\n")
                 .reset();
     }
 
-    private static Ansi footer() {
-        return ansi().fg(GREEN).a(
+    private static Ansi footer(Color color) {
+        return ansi().fg(color).a(
                 "|                                                                   |\n"
                 + "*-------------------------------------------------------------------*\n")
                 .reset();
