@@ -302,6 +302,14 @@ public class ResponseHelper {
             case 121:
                 // Document failed validation
                 return HttpStatus.SC_BAD_REQUEST;
+            case 112:
+                //WriteConflict
+                return HttpStatus.SC_CONFLICT;
+            case 251:
+                // transaction number X does not match any in-progress transactions
+            case 256:
+                // Transaction X has been committed.
+                return HttpStatus.SC_NOT_ACCEPTABLE;
             default:
                 // Other
                 return HttpStatus.SC_INTERNAL_SERVER_ERROR;
@@ -317,21 +325,29 @@ public class ResponseHelper {
         switch (code) {
             case 13:
                 return "The MongoDB user does not have enough "
-                        + "permissions to execute this operation.";
+                        + "permissions to execute this operation";
             case 18:
                 return "Wrong MongoDB user credentials "
                         + "(wrong password or need to specify the "
                         + "authentication dababase "
-                        + "with 'authSource=<db>' option in mongo-uri).";
+                        + "with 'authSource=<db>' option in mongo-uri)";
             case 61:
                 return "Write request for sharded "
                         + "collection must specify the shardkey. "
-                        + "Use the 'shardkey' query parameter.";
+                        + "Use the 'shardkey' query parameter";
             case 66:
-                return "Update tried to change the immutable shardkey.";
+                return "Update tried to change the immutable shardkey";
             case 121:
                 //Document failed validation
-                return "Document failed collection validation.";
+                return "Document failed collection validation";
+            case 112:
+                //WriteConflict
+                return "Write conflict inside transaction";
+            case 251:
+                // transaction number X does not match any in-progress transactions
+            case 256:
+                // Transaction X has been committed.
+                return "The given transaction is not in-progress";
             default:
                 return "Error handling the request, "
                         + "see log for more information";
