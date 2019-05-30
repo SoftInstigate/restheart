@@ -485,6 +485,11 @@ public class RequestContext {
      * @return
      */
     private String unmapUri(String mappedUri) {
+        // don't unmpa URIs statring with /_sessions
+        if (mappedUri.startsWith("/".concat(_SESSIONS))) {
+            return mappedUri;
+        }
+
         if (this.pathTemplateMatch == null) {
             return unmapPathUri(mappedUri);
         } else {
