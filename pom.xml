@@ -140,7 +140,7 @@
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
             <!-- WARNING: v 3.5.0 doesn't compile -->
-            <version>3.4.1</version>
+            <version>3.8.1</version>
         </dependency>
 
         <dependency>
