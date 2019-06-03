@@ -27,7 +27,7 @@ RESTHeart - Web API Server for MongoDB.
 
 <p align="center">
    <a href="https://restheart.org/learn">
-       <img src="https://restheart.org/images/what.png" width="80%" height="auto" class="image-center img-responsive" />
+       <img src="https://restheart.org/images/restheart-what-is-it.svg" width="80%" height="auto" class="image-center img-responsive" />
    </a>
 </p>
 
