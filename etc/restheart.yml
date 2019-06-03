@@ -31,7 +31,7 @@ ajp-port: {{{ajp-port}}}
 
 #### MongoDB
 
-##  MongoDb Cpnnection
+##  MongoDb Connection
 
 # Set the MongoDb connection using a Mongo Client URI.
 #
