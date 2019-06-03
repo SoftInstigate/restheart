@@ -33,7 +33,7 @@ RESTHeart - Web API Server for MongoDB.
 
 ## Summary
 
-**RESTHeart** connects to **MongoDB** and opens data to the Web. Clients such as mobile and javascript apps can use the database via a simple **RESTful API**.
+**REST**Heart connects to MongoDB and securely exposes a clean REST API to read and write data via HTTP requests. You don't need to write a single line of backend code for **Mobile Apps** and  **Angular**, **React**, **Vue** or other Single Page Application frameworks.
 
 > For more information, visit RESTHeart's [website](http://restheart.org) and [documentation](http://restheart.org/learn/).
 
