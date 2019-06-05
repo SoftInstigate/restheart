@@ -64,10 +64,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             + " or " + Resource.MULTIPART_FORM_DATA_TYPE;
 
     private static boolean isHalOrJson(final HeaderValues contentTypes) {
-        return contentTypes != null
-                && !contentTypes.isEmpty()
-                && contentTypes.stream().anyMatch(ct -> ct.startsWith(Resource.HAL_JSON_MEDIA_TYPE)
-                || ct.startsWith(Resource.JSON_MEDIA_TYPE));
+        return (contentTypes == null
+                || contentTypes.isEmpty())
+                || (contentTypes.stream().anyMatch(ct -> ct.startsWith(Resource.HAL_JSON_MEDIA_TYPE)
+                || ct.startsWith(Resource.JSON_MEDIA_TYPE)));
     }
 
     private static boolean isFormOrMultipart(final HeaderValues contentTypes) {
@@ -489,7 +489,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             if (JsonUtils.containsUpdateOperators(content, true)) {
                 // not acceptable
                 String errMsg = "update operators (but $currentDate) cannot be used on POST and PUT requests";
-                
+
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         context,
