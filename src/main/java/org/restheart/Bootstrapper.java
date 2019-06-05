@@ -201,7 +201,7 @@ public class Bootstrapper {
         } else if (ENVIRONMENT_FILE == null) {
             try {
                 if (Configuration.isParametric(CONF_FILE_PATH)) {
-                    logErrorAndExit("Configuration is parametric but no properties file has been specified. You can use -e option to specify the properties file. For more information check https://restheart.org/learn/configuration-file/", null, false, -1);
+                    logErrorAndExit("Configuration is parametric but no properties file has been specified. You can use -e option to specify the properties file. For more information check https://restheart.org/learn/configuration", null, false, -1);
                 }
             } catch (IOException ioe) {
                 logErrorAndExit("Configuration file not found " + CONF_FILE_PATH, null, false, -1);
