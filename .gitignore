@@ -1,0 +1,12 @@
+### VisualStudioCode ###
+.vscode/
+.project
+.settings/
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+
+restheart-platform-*
+mongodb_*
+
