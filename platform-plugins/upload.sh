@@ -4,7 +4,7 @@ set -e
 VERSION=$1
 
 if [[ -z $VERSION ]]; then
-    printf "ERROR: missing mandatory version number.\n"
+    printf "ERROR: missing mandatory version.\n"
     exit 1
 fi
 
@@ -21,22 +21,21 @@ echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
 
 DIST=restheart-platform-$VERSION
 
-echo "Cleaning up..."
+echo "###### Cleaning up..."
 rm -rf "$DIST" "$DIST.zip"
 mkdir -p "$DIST"
+echo "...Done."
 
-echo "Copying files to $DIST..."
-cp -v bin/run.sh bin/start-mongod.sh "$DIST" 
+echo "###### Copying files to $DIST..."
+cp -v bin/run.sh bin/mongod.sh "$DIST"
 cp -v restheart-platform-core/target/restheart-platform-core.jar "$DIST"
-cp -v restheart-platform-core/etc/restheart-platform-core.yml "$DIST"
-cp -v restheart-platform-core/etc/r "$DIST"
 cp -v restheart-platform-security/target/restheart-platform-security.jar "$DIST"
-cp -v restheart-platform-security/etc/restheart-platform-security.yml "$DIST"
+mkdir -p "$DIST/etc/"
+cp -v trial/* "$DIST/etc/"
 mkdir -p "$DIST/lickey/"
 cp -Rv restheart-platform-core/lickey/COMM-LICENSE.txt "$DIST/lickey/"
-echo "...Done."
+echo "...Done"
 
-echo "Compressing to zip archive..."
+echo "###### Compressing to zip archive..."
 zip -r "$DIST.zip" "$DIST"
 echo "...Done."
-
