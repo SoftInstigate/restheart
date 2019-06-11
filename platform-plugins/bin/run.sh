@@ -9,8 +9,8 @@ check-mongod() {
 
 check-mongod
 
-java -Dfile.encoding=UTF-8 -server -jar "restheart-platform-core.jar"
+MONGO_URI="mongodb://127.0.0.1:37017" java -Dfile.encoding=UTF-8 -server -jar "restheart-platform-core.jar" --fork
 
 sleep 5
 
-java -Dfile.encoding=UTF-8 -server -jar "restheart-platform-security.jar"
+java -Dfile.encoding=UTF-8 -server -jar "restheart-platform-security.jar" --fork

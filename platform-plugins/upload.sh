@@ -22,16 +22,21 @@ echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
 DIST=restheart-platform-$VERSION
 
 echo "Cleaning up..."
-rm -rf "$DIST" && mkdir -p "$DIST"
+rm -rf "$DIST" "$DIST.zip"
+mkdir -p "$DIST"
 
 echo "Copying files to $DIST..."
-cp -v run.sh start-mongod.sh "$DIST" 
+cp -v bin/run.sh bin/start-mongod.sh "$DIST" 
 cp -v restheart-platform-core/target/restheart-platform-core.jar "$DIST"
+cp -v restheart-platform-core/etc/restheart-platform-core.yml "$DIST"
+cp -v restheart-platform-core/etc/r "$DIST"
 cp -v restheart-platform-security/target/restheart-platform-security.jar "$DIST"
-cp -vr restheart-platform-core/lickey "$DIST/lickey"
+cp -v restheart-platform-security/etc/restheart-platform-security.yml "$DIST"
+mkdir -p "$DIST/lickey/"
+cp -Rv restheart-platform-core/lickey/COMM-LICENSE.txt "$DIST/lickey/"
 echo "...Done."
 
 echo "Compressing to zip archive..."
-zip -r "restheart-platform-$VERSION.zip" "$DIST"
+zip -r "$DIST.zip" "$DIST"
 echo "...Done."
 
