@@ -40,7 +40,7 @@ start() {
         eval "${MONGOD_PATH} --bind_ip 127.0.0.1 --port ${PORT} --dbpath ${MONGOD_DATA} --logpath ${MONGOD_LOG} --fork --logappend"
         RETVAL=$?
         echo "Done."
-        echo "Check the logs at ${MONGOD_LOG}"
+        echo "PID is $PID. Check the logs at ${MONGOD_LOG}"
     fi
 }
 
@@ -53,6 +53,7 @@ case "$1" in
     ;;
     restart)
         stop
+        sleep 5
         start
     ;;
     *)
