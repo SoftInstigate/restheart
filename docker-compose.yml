@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 
 ### Creates a named network with the default bridge driver
 # The network is shared between restheart and mongodb only
@@ -15,7 +15,8 @@ volumes:
 
 services:
    restheart:
-      image: softinstigate/restheart
+      image: softinstigate/restheart:next
+      build: .
       container_name: restheart
       depends_on:
          - mongodb
@@ -29,7 +30,7 @@ services:
          #- ./Docker/etc:/opt/restheart/etc:ro
 
    mongodb:
-      image: mongo:3.6
+      image: mongo:4.0
       container_name: restheart-mongo
       environment:
             # Be sure this credentials match with those in etc/restheart.yml
