@@ -81,6 +81,7 @@ public class RequestContext {
     public static final String SYSTEM = "system.";
     public static final String LOCAL = "local";
     public static final String ADMIN = "admin";
+    public static final String CONFIG = "config";
     public static final String _METRICS = "_metrics";
     public static final String _SIZE = "_size";
 
@@ -222,6 +223,7 @@ public class RequestContext {
         return !dbName.equalsIgnoreCase(_METRICS)
                 && !dbName.equalsIgnoreCase(_SIZE)
                 && (dbName.equals(ADMIN)
+                || dbName.equals(CONFIG)
                 || dbName.equals(LOCAL)
                 || dbName.startsWith(SYSTEM)
                 || dbName.startsWith(UNDERSCORE)
