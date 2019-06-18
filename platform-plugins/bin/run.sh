@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+
 
 cd "$(dirname ${BASH_SOURCE[0]})" || exit
 pwd
@@ -33,9 +33,9 @@ open-browser() {
 check-mongod
 
 echo "###### Starting restheart-platform ..."
-java -Dfile.encoding=UTF-8 -server -jar restheart-platform-core.jar "etc/restheart-platform-core.yml" --envfile "etc/trial.properties" &
+java -Dfile.encoding=UTF-8 -server -jar core/restheart-platform-core.jar "etc/restheart-platform-core.yml" --envfile "etc/trial.properties" &
 
-java -Dfile.encoding=UTF-8 -server -jar "restheart-platform-security.jar" "etc/restheart-platform-security.yml" &
+java -Dfile.encoding=UTF-8 -server -jar security/restheart-platform-security.jar "etc/restheart-platform-security.yml" &
 
 sleep 9
 
