@@ -305,6 +305,8 @@ public class ResponseHelper {
             case 112:
                 //WriteConflict
                 return HttpStatus.SC_CONFLICT;
+            case 225:
+                // Cannot start transaction X on session Y because a newer transaction Z has already started
             case 251:
                 // transaction number X does not match any in-progress transactions
             case 256:
@@ -343,6 +345,8 @@ public class ResponseHelper {
             case 112:
                 //WriteConflict
                 return "Write conflict inside transaction";
+            case 225:
+                // Cannot start transaction X on session Y because a newer transaction Z has already started// Cannot start transaction X on session Y because a newer transaction Z has already started
             case 251:
                 // transaction number X does not match any in-progress transactions
             case 256:
