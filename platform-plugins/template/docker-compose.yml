@@ -17,7 +17,7 @@ services:
    restheart-platform-security:
       image: softinstigate/restheart-platform-security
       container_name: restheart-platform-security
-      build: restheart-platform-security/
+      build: ./restheart-platform-security/
       depends_on:
          - restheart-platform-core
       networks:
@@ -28,24 +28,18 @@ services:
    restheart-platform-core:
       image: softinstigate/restheart-platform-core
       container_name: restheart-platform-core
-      build: restheart-platform-core/
+      build: ./restheart-platform-core/
       depends_on:
          - mongodb
       networks:
          - backend
       volumes:
           - ./lickey:/opt/restheart-platform/lickey:rw
-      ### Uncoment below if you want to mount a local configuration folder
-      ### to overwrite default restheart.yml
-      #   - ./etc:/opt/restheart/etc:ro
 
    mongodb:
       image: mongo:4.0
       container_name: restheart-platform-mongo
       environment:
-            # Be sure this credentials match with those in etc/restheart.yml
-            # $ mongo --username restheart --password R3ste4rt! --authenticationDatabase admin
-            # These aren't needed if connecting to an existing database instance
             MONGO_INITDB_ROOT_USERNAME: restheart
             MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
       command: --bind_ip_all --auth
