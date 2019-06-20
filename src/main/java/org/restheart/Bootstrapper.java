@@ -946,15 +946,7 @@ public class Bootstrapper {
                             return;
                         } catch (IllegalStateException ex) {
                             LOGGER.error("Error extracting embedded static resource {}", path, ex);
-
-                            if ("browser".equals(path)) {
-                                LOGGER.error("**** Have you downloaded the "
-                                        + "HAL Browser submodule before building?");
-                                LOGGER.error("**** To fix this, run: "
-                                        + "$ git submodule update --init --recursive");
-                            }
                             return;
-
                         }
                     } else if (!path.startsWith("/")) {
                         // this is to allow specifying the configuration file path relative
