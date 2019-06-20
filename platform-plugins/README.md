@@ -43,6 +43,7 @@ The structure of the distributable zip file will be like this:
 │   ├── bwcv3.properties
 │   ├── default.properties
 │   ├── restheart-platform-core.yml
+│   ├── restheart-platform-security.yml
 │   └── standalone.properties
 ├── lickey/
 │   └── COMM-LICENSE.txt
