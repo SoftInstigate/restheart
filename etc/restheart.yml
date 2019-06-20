@@ -105,10 +105,10 @@ default-representation-format: {{{default-representation-format}}}
 # If embedded is true, the resources are either included in the restheart.jar or 
 
 static-resources-mounts:
-  - what: browser
-    where: /browser
-    welcome-file: browser.html
-    embedded: true
+#  - what: /path/to/resources
+#    where: /static
+#    welcome-file: index.html
+#    embedded: false
 
 #### Plugins configuration
 
