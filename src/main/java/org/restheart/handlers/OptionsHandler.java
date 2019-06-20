@@ -70,9 +70,19 @@ public class OptionsHandler extends PipedHttpHandler {
                             .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, PATCH, DELETE, OPTIONS")
                             .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
                     break;
+                case DB_SIZE:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
                 case COLLECTION:
                     exchange.getResponseHeaders()
                             .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                case COLLECTION_SIZE:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
                             .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
                     break;
                 case AGGREGATION:
