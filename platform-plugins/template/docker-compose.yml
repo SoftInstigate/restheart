@@ -11,13 +11,15 @@ networks:
 # This makes much easier to identify where the mongodb data is stored on host
 # See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
 volumes:
-   restheart-platform-datadb:
+   datadb:
 
 services:
    restheart-platform-security:
       image: softinstigate/restheart-platform-security
       container_name: restheart-platform-security
-      build: ./restheart-platform-security/
+      build: 
+         context: ./
+         dockerfile: ./Dockerfile-security
       depends_on:
          - restheart-platform-core
       networks:
@@ -28,12 +30,15 @@ services:
    restheart-platform-core:
       image: softinstigate/restheart-platform-core
       container_name: restheart-platform-core
-      build: ./restheart-platform-core/
+      build: 
+         context: ./
+         dockerfile: ./Dockerfile-core
       depends_on:
          - mongodb
       networks:
          - backend
       volumes:
+         # If you have a valid license key, copy it into lickey/ folder
           - ./lickey:/opt/restheart-platform/lickey:rw
 
    mongodb:
@@ -44,9 +49,9 @@ services:
             MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
       command: --bind_ip_all --auth
       volumes:
-         - restheart-platform-datadb:/data/db
+         - datadb:/data/db
       networks:
          - backend
-      ### Uncoment below if you want to map mongodb port
+      ### Uncomment below if you want to map mongodb port externally
       #ports:
       #   - "27017:27017"

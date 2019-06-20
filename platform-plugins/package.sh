@@ -17,8 +17,8 @@ echo "...Done."
 
 echo "###### Copying files to $DIST..."
 cp -Rv template/ "$DIST"
-cp -v restheart-platform-core/target/restheart-platform-core.jar "$DIST/restheart-platform-core"
-cp -v restheart-platform-security/target/restheart-platform-security.jar "$DIST/restheart-platform-security"
+cp -v restheart-platform-core/target/restheart-platform-core.jar "$DIST"
+cp -v restheart-platform-security/target/restheart-platform-security.jar "$DIST"
 echo "...Done"
 
 echo "###### Compressing to zip archive..."
