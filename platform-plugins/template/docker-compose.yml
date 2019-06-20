@@ -22,6 +22,7 @@ services:
          dockerfile: ./Dockerfile-security
       depends_on:
          - restheart-platform-core
+         - restheart-platform-mongodb
       networks:
          - backend
       ports:
@@ -34,14 +35,14 @@ services:
          context: ./
          dockerfile: ./Dockerfile-core
       depends_on:
-         - mongodb
+         - restheart-platform-mongodb
       networks:
          - backend
       volumes:
          # If you have a valid license key, copy it into lickey/ folder
           - ./lickey:/opt/restheart-platform/lickey:rw
 
-   mongodb:
+   restheart-platform-mongodb:
       image: mongo:4.0
       container_name: restheart-platform-mongo
       environment:
