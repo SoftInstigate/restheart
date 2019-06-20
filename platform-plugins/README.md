@@ -13,6 +13,7 @@ git clone git@bitbucket.org:softinstigate/si-lka.git
 To build and package a new release of the RESTHeart Platform:
 
 ```
+$ ./build.sh
 $ ./package.sh <version>
 ```
 
