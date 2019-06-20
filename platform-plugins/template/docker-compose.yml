@@ -45,13 +45,24 @@ services:
           - ./lickey:/opt/restheart-platform/lickey:rw
           - ./core.log:/var/log/restheart-platform-core.log:rw
 
+   restheart-platform-mongodb-initiate:
+      image: mongo:4.0
+      container_name: restheart-platform-mongodb-initiate
+      networks:
+         - backend
+      depends_on:
+         - restheart-platform-security
+         - restheart-platform-core
+         - restheart-platform-mongodb
+      entrypoint: bash -c "sleep 10 && mongo --host restheart-platform-mongo --username restheart --password 'R3ste4rt!' --eval 'rs.initiate()'"
+
    restheart-platform-mongodb:
       image: mongo:4.0
       container_name: restheart-platform-mongo
       environment:
             MONGO_INITDB_ROOT_USERNAME: restheart
             MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
-      command: --bind_ip_all --auth
+      command: ["--bind_ip_all", "--auth", "--replSet", "rs0"]
       volumes:
          - datadb:/data/db
       networks:
