@@ -7,7 +7,7 @@ if [[ -z $VERSION ]]; then
     exit 1
 fi
 
-#./build.sh
+./build.sh
 
 DIST="restheart-platform-$VERSION"
 
