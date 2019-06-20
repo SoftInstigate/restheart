@@ -265,15 +265,7 @@ public class Configuration {
 
         mongoMounts = getAsListOfMaps(conf, MONGO_MOUNTS_KEY, mongoMountsDefault);
 
-        HashMap<String, Object> browserStaticResourcesMountArgs = new HashMap<>();
-
-        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHAT_KEY, "browser");
-        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WHERE_KEY, "/browser");
-        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY, "browser.html");
-        browserStaticResourcesMountArgs.put(STATIC_RESOURCES_MOUNT_EMBEDDED_KEY, true);
-
         ArrayList<Map<String, Object>> defaultStaticResourcesMounts = new ArrayList<>();
-        defaultStaticResourcesMounts.add(browserStaticResourcesMountArgs);
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
