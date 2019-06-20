@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 ### Creates a named network with the default bridge driver
 # The network is shared between restheart and mongodb only
@@ -6,7 +6,7 @@ version: '3'
 # See: https://docs.docker.com/engine/reference/commandline/network_create/
 networks:
    backend:
-       
+
 ### Create a permanent, named data volume
 # This makes much easier to identify where the mongodb data is stored on host
 # See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
@@ -17,7 +17,7 @@ services:
    restheart-platform-security:
       image: softinstigate/restheart-platform-security
       container_name: restheart-platform-security
-      build: 
+      build:
          context: ./
          dockerfile: ./Docker/Dockerfile-security
       depends_on:
@@ -26,14 +26,14 @@ services:
       networks:
          - backend
       volumes:
-          - ./security.log:/var/log/restheart-platform-security.log:rw
+         - ./security.log:/var/log/restheart-platform-security.log:rw
       ports:
          - "8080:8080"
-         
+
    restheart-platform-core:
       image: softinstigate/restheart-platform-core
       container_name: restheart-platform-core
-      build: 
+      build:
          context: ./
          dockerfile: ./Docker/Dockerfile-core
       depends_on:
@@ -42,8 +42,23 @@ services:
          - backend
       volumes:
          # If you have a valid license key, copy it into lickey/ folder
-          - ./lickey:/opt/restheart-platform/lickey:rw
-          - ./core.log:/var/log/restheart-platform-core.log:rw
+         - ./lickey:/opt/restheart-platform/lickey:rw
+         - ./core.log:/var/log/restheart-platform-core.log:rw
+
+   restheart-platform-mongodb:
+      image: mongo:4.0
+      container_name: restheart-platform-mongo
+      environment:
+         MONGO_INITDB_ROOT_USERNAME: restheart
+         MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
+      command: ["--bind_ip_all", "--auth", "--replSet", "rs0"]
+      volumes:
+         - datadb:/data/db
+      networks:
+         - backend
+      ### Uncomment below if you want to map mongodb port externally
+      #ports:
+      #   - "27017:27017"
 
    restheart-platform-mongodb-initiate:
       image: mongo:4.0
@@ -55,18 +70,3 @@ services:
          - restheart-platform-core
          - restheart-platform-mongodb
       entrypoint: bash -c "sleep 10 && mongo --host restheart-platform-mongo --username restheart --password 'R3ste4rt!' --eval 'rs.initiate()'"
-
-   restheart-platform-mongodb:
-      image: mongo:4.0
-      container_name: restheart-platform-mongo
-      environment:
-            MONGO_INITDB_ROOT_USERNAME: restheart
-            MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
-      command: ["--bind_ip_all", "--auth", "--replSet", "rs0"]
-      volumes:
-         - datadb:/data/db
-      networks:
-         - backend
-      ### Uncomment below if you want to map mongodb port externally
-      #ports:
-      #   - "27017:27017"
