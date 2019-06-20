@@ -22,7 +22,6 @@ services:
          dockerfile: ./Docker/Dockerfile-security
       depends_on:
          - restheart-platform-core
-         - restheart-platform-mongodb
       networks:
          - backend
       volumes:
@@ -38,6 +37,7 @@ services:
          dockerfile: ./Docker/Dockerfile-core
       depends_on:
          - restheart-platform-mongodb
+         - restheart-platform-mongodb-initiate
       networks:
          - backend
       volumes:
@@ -66,7 +66,5 @@ services:
       networks:
          - backend
       depends_on:
-         - restheart-platform-security
-         - restheart-platform-core
          - restheart-platform-mongodb
-      entrypoint: bash -c "sleep 10 && mongo --host restheart-platform-mongo --username restheart --password 'R3ste4rt!' --eval 'rs.initiate()'"
+      entrypoint: bash -c "sleep 3 && mongo --host restheart-platform-mongo --username restheart --password 'R3ste4rt!' --eval 'rs.initiate()'"
