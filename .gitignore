@@ -7,6 +7,6 @@
 # Ignore all local history of files
 .history
 
-restheart-platform-*
+/restheart-platform-*
 mongodb_*
 
