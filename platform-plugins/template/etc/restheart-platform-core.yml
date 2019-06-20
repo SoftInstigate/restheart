@@ -192,7 +192,7 @@ etag-check-policy:
 # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
 enable-log-file: false
-log-file-path: /var/log/restheart.log
+log-file-path: ./core.log
 enable-log-console: true
 log-level: {{{log-level}}}
 ansi-console: true

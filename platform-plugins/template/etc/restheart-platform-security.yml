@@ -224,7 +224,7 @@ services:
  # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
 enable-log-file: true
-log-file-path: /var/log/restheart-platform-security.log
+log-file-path: ./security.log
 enable-log-console: true
 log-level: DEBUG
 requests-log-level: 1
