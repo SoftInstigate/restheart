@@ -7,8 +7,6 @@ if [[ -z $VERSION ]]; then
     exit 1
 fi
 
-./build.sh
-
 DIST="restheart-platform-$VERSION"
 
 echo "###### Cleaning up..."
