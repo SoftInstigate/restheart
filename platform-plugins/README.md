@@ -33,7 +33,7 @@ The structure of the distributable zip file will be like this:
 ├── docker-compose.yml
 ├── etc/
 │   ├── acl.yml
-│   ├── config.properties
+│   ├── docker-core.properties
 │   ├── restheart-platform-core.yml
 │   ├── restheart-platform-security.yml
 │   └── users.yml

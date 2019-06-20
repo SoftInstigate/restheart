@@ -11,7 +11,7 @@
 
 https-listener: false
 https-host: 0.0.0.0
-https-port: 443
+https-port: 4443
 
 http-listener: true
 http-host: 0.0.0.0

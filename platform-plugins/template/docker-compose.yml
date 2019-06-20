@@ -19,12 +19,14 @@ services:
       container_name: restheart-platform-security
       build: 
          context: ./
-         dockerfile: ./Dockerfile-security
+         dockerfile: ./Docker/Dockerfile-security
       depends_on:
          - restheart-platform-core
          - restheart-platform-mongodb
       networks:
          - backend
+      volumes:
+          - ./security.log:/var/log/restheart-platform-security.log:rw
       ports:
          - "8080:8080"
          
@@ -33,7 +35,7 @@ services:
       container_name: restheart-platform-core
       build: 
          context: ./
-         dockerfile: ./Dockerfile-core
+         dockerfile: ./Docker/Dockerfile-core
       depends_on:
          - restheart-platform-mongodb
       networks:
@@ -41,6 +43,7 @@ services:
       volumes:
          # If you have a valid license key, copy it into lickey/ folder
           - ./lickey:/opt/restheart-platform/lickey:rw
+          - ./core.log:/var/log/restheart-platform-core.log:rw
 
    restheart-platform-mongodb:
       image: mongo:4.0
