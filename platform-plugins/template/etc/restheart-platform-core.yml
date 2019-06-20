@@ -104,11 +104,11 @@ default-representation-format: {{{default-representation-format}}}
 # The path is either absolute (starts with /) or relative to the restheart.jar file
 # If embedded is true, the resources are either included in the restheart.jar or 
 
-static-resources-mounts:
-  - what: browser
-    where: /browser
-    welcome-file: browser.html
-    embedded: true
+#static-resources-mounts:
+#  - what: /path/to/resources
+#    where: /static
+#    welcome-file: index.html
+#    embedded: false
 
 #### Plugins configuration
 
