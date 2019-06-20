@@ -28,19 +28,27 @@ The structure of the distributable zip file will be like this:
 
 ```
 .
-├── Dockerfile-core
-├── Dockerfile-security
+├── Docker/
+│   ├── Dockerfile-core
+│   ├── Dockerfile-security
+│   └── etc/
+│       ├── acl.yml
+│       ├── core.properties
+│       ├── restheart-platform-core.yml
+│       ├── restheart-platform-security.yml
+│       └── users.yml
+├── core.log
 ├── docker-compose.yml
 ├── etc/
-│   ├── acl.yml
-│   ├── docker-core.properties
+│   ├── bwcv3.properties
+│   ├── default.properties
 │   ├── restheart-platform-core.yml
-│   ├── restheart-platform-security.yml
-│   └── users.yml
+│   └── standalone.properties
 ├── lickey/
 │   └── COMM-LICENSE.txt
 ├── restheart-platform-core.jar
-└── restheart-platform-security.jar
+├── restheart-platform-security.jar
+└── security.log
 
 ```
 
