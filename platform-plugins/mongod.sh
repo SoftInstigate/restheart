@@ -37,7 +37,7 @@ start() {
         echo "Starting local MongoDB instance bound to 127.0.0.1 on port ${PORT}"
         mkdir mongodb_data
         mkdir mongodb_log
-        eval "${MONGOD_PATH} --bind_ip 127.0.0.1 --port ${PORT} --dbpath ${MONGOD_DATA} --logpath ${MONGOD_LOG} --fork --logappend"
+        eval "${MONGOD_PATH} --bind_ip 0.0.0.0 --port ${PORT} --dbpath ${MONGOD_DATA} --logpath ${MONGOD_LOG} --fork --logappend --replSet rs0"
         RETVAL=$?
         echo "Done."
         echo "PID is $PID. Check the logs at ${MONGOD_LOG}"
