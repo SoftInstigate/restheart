@@ -8,7 +8,7 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
         mvn deploy --settings settings.xml -Dmaven.test.skip=true;
         echo "###### Branch is '$TRAVIS_BRANCH', Tag is '$TRAVIS_TAG', Version is '$VERSION'";
         # Build and push docker images only for releases
-        if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_TAG" && "$VERSION" != *-SNAPSHOT ]]; then
+        if [[ "$TRAVIS_TAG" && "$VERSION" != *-SNAPSHOT ]]; then
             echo "###### Building Docker image for restheart-security $VERSION";
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
             docker build -t "softinstigate/restheart-security:$VERSION" . ;
