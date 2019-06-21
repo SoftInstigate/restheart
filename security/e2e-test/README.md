@@ -21,7 +21,7 @@ $ ./Docker/build.sh
 Then run the tests:
 
 ```bash
-$ ./rh-test/go.sh
+$ ./e2e-test/go.sh
 ```
 
 ## Prerequisites
