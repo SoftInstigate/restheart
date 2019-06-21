@@ -26,8 +26,8 @@ RESTHeart - Web API Server for MongoDB.
 - [Continuous Integration](#continuous-integration)
 
 <p align="center">
-   <a href="https://restheart.org/learn">
-       <img src="https://restheart.org/images/what.png" width="80%" height="auto" class="image-center img-responsive" />
+   <a href="https://restheart.org">
+       <img src="https://restheart.org/images/restheart-what-is-it.png" width="80%" height="auto" class="image-center img-responsive" />
    </a>
 </p>
 
@@ -35,20 +35,29 @@ RESTHeart - Web API Server for MongoDB.
 
 **RESTHeart** connects to **MongoDB** and opens data to the Web. Clients such as mobile and javascript apps can use the database via a simple **RESTful API**.
 
-> For more information, visit RESTHeart's [website](http://restheart.org) and [documentation](http://restheart.org/learn/).
+> For more information, visit RESTHeart's [website](http://restheart.org) and [documentation](http://restheart.org/docs/).
 
 ## Setup
 
-Refer to [restheart.org/learn/setup](http://restheart.org/learn/setup) for detailed information on how to setup RESTHeart.
+Download the latest release. 
+
+Assuming MongoDB running on localhost:27017, start RESTHeart as follows:
+
+```
+$ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
+```
+
+## Configuration
+
+Refer to the [configuration file](https://github.com/SoftInstigate/restheart/blob/master/etc/restheart.yml) for inline documentation.
+
+## Security
+
+Starting from RESTHeart v4, security is handled by [restheart-security](https://github.com/SoftInstigate/restheart-security).
 
 ## How to Build
 
-
-> Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html).
-
-Clone the repository and update the git submodules. RESTHeart includes the __HAL browser__ as a submodule:
-
-    $ git submodule update --init --recursive
+> Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and Java v11 or later.
 
 Build the project with Maven:
 
@@ -81,7 +90,7 @@ If you want to embed RESTHeart in your project, add the dependency to your POM f
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart</artifactId>
-        <version>3.3.0</version>
+        <version>4.0.0</version>
     </dependency>
 </dependencies>
 ```
