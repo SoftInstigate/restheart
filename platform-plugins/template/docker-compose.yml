@@ -47,7 +47,7 @@ services:
 
    restheart-platform-mongodb:
       image: mongo:4.0
-      container_name: restheart-platform-mongo
+      container_name: restheart-platform-mongodb
       environment:
          MONGO_INITDB_ROOT_USERNAME: restheart
          MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
@@ -67,4 +67,4 @@ services:
          - backend
       depends_on:
          - restheart-platform-mongodb
-      entrypoint: bash -c "sleep 5 && mongo --host restheart-platform-mongo --username restheart --password 'R3ste4rt!' --eval 'rs.initiate()'"
+      entrypoint: bash -c "sleep 5 && mongo --host restheart-platform-mongodb --username restheart --password 'R3ste4rt!' --eval 'rs.initiate()'"
