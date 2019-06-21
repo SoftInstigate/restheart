@@ -125,7 +125,7 @@ authenticators:
     - name: simpleFileAuthenticator
       class: org.restheart.security.plugins.authenticators.SimpleFileAuthenticator
       args:
-        conf-file: ../etc/users.yml
+        conf-file: etc/users.yml
     - name: rhAuthenticator
       class: com.restheart.security.plugins.authenticators.RHAuthenticator
       args:
@@ -155,7 +155,7 @@ authorizers:
     name: requestPredicatesAuthorizer
     class: org.restheart.security.plugins.authorizers.RequestPredicatesAuthorizer
     args:
-        conf-file: ../etc/acl.yml
+        conf-file: etc/acl.yml
 
 ## Token Manager
 
