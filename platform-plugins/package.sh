@@ -20,5 +20,5 @@ cp -v restheart-platform-security/target/restheart-platform-security.jar "$DIST"
 echo "...Done"
 
 echo "###### Compressing to zip archive..."
-zip -r "$DIST.zip" "$DIST"
+zip -r "$DIST.zip" "$DIST" -x "*.DS_Store"
 echo "...Done."
