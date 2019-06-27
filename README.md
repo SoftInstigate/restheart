@@ -44,7 +44,7 @@ RESTHeart - Web API Server for MongoDB.
 
 Download the latest release. 
 
-Assuming MongoDB running on localhost:27017, start RESTHeart as follows:
+Assuming that MongoDB is running on `localhost` on port `27017`, start RESTHeart as follows:
 
 ```
 $ java -jar restheart.jar etc/restheart.yml -e etc/dev.properties
@@ -60,7 +60,7 @@ Starting from RESTHeart v4, security is handled by [restheart-security](https://
 
 ## How to Build
 
-> Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and Java v11 or later.
+> Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and Java 11 or later.
 
 Build the project with Maven:
 
@@ -68,7 +68,7 @@ Build the project with Maven:
 
 ## Integration Tests
 
-To run the integration test suite, first make sure that __mongod is running__ on localhost, on default port 27017 and without authentication enabled — i.e. no `--auth` option is specified.
+To run the integration test suite, first make sure that __mongod is running__ on `localhost`, on default port `27017` and without authentication enabled — i.e. no `--auth` option is specified.
 
     $ mvn verify -DskipITs=false
 
