@@ -47,7 +47,7 @@ Download the latest release.
 Assuming MongoDB running on localhost:27017, start RESTHeart as follows:
 
 ```
-$ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
+$ java -jar restheart.jar etc/restheart.yml -e etc/dev.properties
 ```
 
 ## Configuration
@@ -122,7 +122,7 @@ Then include the SNAPSHOT dependency in your POM:
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart</artifactId>
-        <version>4.0.0-SNAPSHOT</version>
+        <version>4.0.1-SNAPSHOT</version>
     </dependency>
 </dependencies>
 ```
