@@ -16,18 +16,21 @@ RESTHeart - Web API Server for MongoDB.
 
 ## Table of Contents
 
-- [Summary](#summary)
-- [Setup](#setup)
-- [How to Build](#how-to-build)
-- [Integration Tests](#integration-tests)
-- [Maven Dependencies](#maven-dependencies)
-    - [Snapshot Builds](#snapshot-builds)
-    - [Maven Site](#maven-site)
-- [Continuous Integration](#continuous-integration)
+- [Table of Contents](#Table-of-Contents)
+- [Summary](#Summary)
+- [Setup](#Setup)
+- [Configuration](#Configuration)
+- [Security](#Security)
+- [How to Build](#How-to-Build)
+- [Integration Tests](#Integration-Tests)
+- [Maven Dependencies](#Maven-Dependencies)
+  - [Snapshot Builds](#Snapshot-Builds)
+  - [Maven Site](#Maven-Site)
+- [Continuous Integration](#Continuous-Integration)
 
 <p align="center">
    <a href="https://restheart.org">
-       <img src="https://restheart.org/images/restheart-what-is-it.png" width="80%" height="auto" class="image-center img-responsive" />
+       <img src="https://restheart.org/images/restheart-what-is-it.svg" width="80%" height="auto" class="image-center img-responsive" />
    </a>
 </p>
 
