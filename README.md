@@ -46,7 +46,7 @@ Download the latest release, then [install](https://docs.mongodb.com/manual/inst
 
 Assuming that MongoDB is running on `localhost` on port `27017`, then run RESTHeart as follows:
 
-```
+```bash
 $ git clone git@github.com:SoftInstigate/restheart.git
 $ cd restheart
 $ java -jar restheart.jar etc/restheart.yml -e etc/dev.properties
@@ -64,7 +64,7 @@ Beware that you must stop and run RESTHeart again to reload a new configuration.
 
 Alternatively, you can run RESTHeart with docker compose, which also starts a MongoDB container:
 
-```
+```bash
 $ git clone git@github.com:SoftInstigate/restheart.git
 $ cd restheart
 $ docker-compose up -d
