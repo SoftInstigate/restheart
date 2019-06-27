@@ -62,7 +62,7 @@ http-listener=0.0.0.0
 
 Beware that you must stop and run RESTHeart again to reload a new configuration.
 
-Alternatively, you can run RESTHeart from with docker compose, which also starts a MongoDB container:
+Alternatively, you can run RESTHeart with docker compose, which also starts a MongoDB container:
 
 ```
 $ git clone git@github.com:SoftInstigate/restheart.git
