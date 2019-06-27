@@ -42,13 +42,37 @@ RESTHeart - Web API Server for MongoDB.
 
 ## Setup
 
-Download the latest release. 
+Download the latest release, then [install](https://docs.mongodb.com/manual/installation/#mongodb-community-edition-installation-tutorials) and [run](https://docs.mongodb.com/manual/tutorial/manage-mongodb-processes/) MongoDB
 
-Assuming that MongoDB is running on `localhost` on port `27017`, start RESTHeart as follows:
+Assuming that MongoDB is running on `localhost` on port `27017`, then run RESTHeart as follows:
 
 ```
+$ git clone git@github.com:SoftInstigate/restheart.git
+$ cd restheart
 $ java -jar restheart.jar etc/restheart.yml -e etc/dev.properties
 ```
+
+RESTHeart will be up and running in few seconds, on HTTP port `8080`. Then go to the [tutorial](https://restheart.org/docs/tutorial/), which uses REST Ninja as a client.
+
+> __NOTE__: for security reasons RESTHeart by default binds only on `localhost`, so it won't be reacheable from external systems unless you edit the configuration. To accept connections from everywhere, you must set at least the http listener in the `etc/dev.properties` file to bind to `0.0.0.0` like this:
+
+```
+http-listener=0.0.0.0
+```
+
+Beware that you must stop and run RESTHeart again to reload a new configuration.
+
+Alternatively, you can run RESTHeart from with docker compose, which also starts a MongoDB container:
+
+```
+$ git clone git@github.com:SoftInstigate/restheart.git
+$ cd restheart
+$ docker-compose up -d
+```
+
+> __WARNING__: by default the `docker-compose.yml` binds RESTHeart to port `8080` on address `0.0.0.0`, thus your instance can be potentually reachable by external clients.
+
+Again, point your browser to the [tutorial](https://restheart.org/docs/tutorial/) for more.
 
 ## Configuration
 
