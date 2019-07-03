@@ -62,7 +62,6 @@ services:
 
    restheart-platform-mongodb-initiate:
       image: mongo:4.0
-      container_name: restheart-platform-mongodb-initiate
       networks:
          - backend
       depends_on:
