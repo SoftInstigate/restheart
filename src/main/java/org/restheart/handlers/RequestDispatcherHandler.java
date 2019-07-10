@@ -24,7 +24,6 @@ import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AggregationTransformer;
 import org.restheart.handlers.aggregation.GetAggregationHandler;
-import org.restheart.handlers.metrics.MetricsHandler;
 import org.restheart.handlers.bulk.BulkDeleteDocumentsHandler;
 import org.restheart.handlers.bulk.BulkPatchDocumentsHandler;
 import org.restheart.handlers.bulk.BulkPostCollectionHandler;
@@ -59,13 +58,14 @@ import org.restheart.handlers.metadata.HookHandler;
 import org.restheart.handlers.metadata.RequestTransformerHandler;
 import org.restheart.handlers.metadata.ResponseTransformerHandler;
 import org.restheart.handlers.metadata.TransformersListHandler;
+import org.restheart.handlers.metrics.MetricsHandler;
 import org.restheart.handlers.root.GetRootHandler;
 import org.restheart.handlers.schema.JsonMetaSchemaChecker;
 import org.restheart.handlers.schema.JsonSchemaTransformer;
-import org.restheart.handlers.transformers.MetaRequestTransformer;
-import org.restheart.handlers.transformers.SizeRequestTransformer;
-import org.restheart.handlers.transformers.RepresentationTransformer;
 import org.restheart.handlers.sessions.PostSessionHandler;
+import org.restheart.handlers.transformers.MetaRequestTransformer;
+import org.restheart.handlers.transformers.RepresentationTransformer;
+import org.restheart.handlers.transformers.SizeRequestTransformer;
 import org.restheart.metadata.TransformerMetadata.PHASE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -79,11 +79,6 @@ import org.slf4j.LoggerFactory;
 public class RequestDispatcherHandler extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispatcherHandler.class);
-
-    private final Map<TYPE, Map<METHOD, PipedHttpHandler>> handlersMultimap;
-
-    private final ResponseSenderHandler responseSenderHandler
-            = new ResponseSenderHandler(null);
 
     /**
      * the default response tranformer handlers chain
@@ -100,10 +95,9 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
         return RequestDispatcherHandlerHolder.INSTANCE;
     }
 
-    private static class RequestDispatcherHandlerHolder {
-        private static final RequestDispatcherHandler INSTANCE
-                = new RequestDispatcherHandler();
-    }
+    private final Map<TYPE, Map<METHOD, PipedHttpHandler>> handlersMultimap;
+    private final ResponseSenderHandler responseSenderHandler
+            = new ResponseSenderHandler(null);
 
     /**
      * Creates a new instance of RequestDispacherHandler
@@ -228,7 +222,7 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
      * Put into handlersMultimap all the default combinations of types, methods
      * and PipedHttpHandler objects
      */
-    void defaultInit() {
+    private void defaultInit() {
         LOGGER.trace("Initialize default HTTP handlers:");
 
         // *** ROOT handlers
@@ -648,5 +642,14 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
      * @param context the RequestContext
      */
     void after(HttpServerExchange exchange, RequestContext context) {
+    }
+
+    private static class RequestDispatcherHandlerHolder {
+
+        private static final RequestDispatcherHandler INSTANCE
+                = new RequestDispatcherHandler();
+
+        private RequestDispatcherHandlerHolder() {
+        }
     }
 }
