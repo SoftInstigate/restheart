@@ -1,12 +1,8 @@
 package org.restheart.handlers;
 
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.AuthenticationMode;
-import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.Database;
@@ -31,7 +27,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
     protected static final String CONTENT_TYPE = "contentType";
     protected static final String FILENAME = "filename";
 
-        private final Database dbsDAO;
+    private final Database dbsDAO;
     private final PipedHttpHandler next;
 
     /**

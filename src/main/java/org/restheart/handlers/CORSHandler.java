@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,8 +25,6 @@ import static io.undertow.util.Headers.LOCATION_STRING;
 import static io.undertow.util.Headers.ORIGIN;
 import io.undertow.util.HttpString;
 import static java.lang.Boolean.TRUE;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
 import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
 import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
@@ -37,7 +35,7 @@ import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPO
  *
  * The Access-Control-Expose-Headers header indicates which headers are safe to
  * expose to the API of a CORS API specification.
- * 
+ *
  * IT also injects the X-Powered-By response header
  */
 public class CORSHandler extends PipedHttpHandler {
@@ -74,9 +72,9 @@ public class CORSHandler extends PipedHttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         HeadersManager hm = new HeadersManager(exchange);
-        
+
         injectXPBHeader(hm);
-        
+
         injectAccessControlAllowHeaders(hm);
 
         if (noPipedNext != null) {
@@ -85,7 +83,7 @@ public class CORSHandler extends PipedHttpHandler {
             next(exchange, context);
         }
     }
-    
+
     private void injectXPBHeader(HeadersManager headers) {
         headers.addResponseHeader(HttpString.tryFromString(HttpHeaders.X_POWERED_BY), "restheart.org");
     }
@@ -108,6 +106,7 @@ public class CORSHandler extends PipedHttpHandler {
     }
 
     interface CORSHeaders {
+
         HttpString ACCESS_CONTROL_EXPOSE_HEADERS = HttpString.tryFromString("Access-Control-Expose-Headers");
         HttpString ACCESS_CONTROL_ALLOW_CREDENTIAL = HttpString.tryFromString("Access-Control-Allow-Credentials");
         HttpString ACCESS_CONTROL_ALLOW_ORIGIN = HttpString.tryFromString("Access-Control-Allow-Origin");

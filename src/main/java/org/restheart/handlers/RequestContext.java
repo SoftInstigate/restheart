@@ -1,17 +1,17 @@
 /*
  * RESTHeart - the Web API for MongoDB
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -1876,6 +1876,20 @@ public class RequestContext {
         return this.method == METHOD.PUT;
     }
 
+    /**
+     * @return the clientSession
+     */
+    public ClientSessionImpl getClientSession() {
+        return clientSession;
+    }
+
+    /**
+     * @param clientSession the clientSession to set
+     */
+    public void setClientSession(ClientSessionImpl clientSession) {
+        this.clientSession = clientSession;
+    }
+
     public enum TYPE {
         INVALID,
         ROOT,
@@ -1941,20 +1955,6 @@ public class RequestContext {
         REQUIRED, // always requires the etag, return PRECONDITION FAILED if missing
         REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
         OPTIONAL                // checks the etag only if provided by client via If-Match header
-    }
-
-    /**
-     * @return the clientSession
-     */
-    public ClientSessionImpl getClientSession() {
-        return clientSession;
-    }
-
-    /**
-     * @param clientSession the clientSession to set
-     */
-    public void setClientSession(ClientSessionImpl clientSession) {
-        this.clientSession = clientSession;
     }
 
 }
