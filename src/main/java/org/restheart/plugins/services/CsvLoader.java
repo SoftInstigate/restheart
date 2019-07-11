@@ -67,20 +67,16 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @SuppressWarnings("unchecked")
-@RegisterPlugin(name = "csvLoader",
-        description = "Uploads a csv file in a collection")
+@RegisterPlugin(name = "csvLoader", description = "Uploads a csv file in a collection")
 public class CsvLoader extends Service {
 
     public static final String CVS_CONTENT_TYPE = "text/csv";
 
     public static final String FILTER_PROPERTY = "_filter";
 
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(CsvLoader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CsvLoader.class);
 
-    private static final String ERROR_QPARAM =
-            "query parameters: "
-            + "db=<db_name> *required, "
+    private static final String ERROR_QPARAM = "query parameters: " + "db=<db_name> *required, "
             + "coll=<collection_name> *required, "
             + "id=<id_column_index> optional (default: no _id column, each row will get an new ObjectId), "
             + "sep=<column_separator> optional (default: ,), "
@@ -88,22 +84,17 @@ public class CsvLoader extends Service {
             + "values=<values> optional (default: no values) values of additional props to add to each row, "
             + "transformer=<tname> optional (default: no transformer). name (as defined in conf file) of a tranformer to apply to imported data, "
             + "update=true optional (default: false). use data to update matching documents"
-            + "upsert=true optional (default: false). create new document if no documents match the row. ";
+            + "upsert=true optional (default: true). create new document if no documents match the row. ";
 
-    private static final String ERROR_CONTENT_TYPE =
-            "Content-Type request header must be 'text/csv'";
+    private static final String ERROR_CONTENT_TYPE = "Content-Type request header must be 'text/csv'";
 
-    private static final String ERROR_WRONG_METHOD = 
-            "Only POST method is supported";
+    private static final String ERROR_WRONG_METHOD = "Only POST method is supported";
 
-    private static final String ERROR_PARSING_DATA = 
-            "Error parsing CSV, see logs for more information";
+    private static final String ERROR_PARSING_DATA = "Error parsing CSV, see logs for more information";
 
-    private final static FindOneAndUpdateOptions FAU_NO_UPSERT_OPS = new FindOneAndUpdateOptions()
-            .upsert(false);
+    private final static FindOneAndUpdateOptions FAU_NO_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(false);
 
-    private final static FindOneAndUpdateOptions FAU_WITH_UPSERT_OPS = new FindOneAndUpdateOptions()
-            .upsert(true);
+    private final static FindOneAndUpdateOptions FAU_WITH_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(true);
 
     /**
      * Creates a new instance of CsvLoaderHandler
@@ -113,38 +104,29 @@ public class CsvLoader extends Service {
     public CsvLoader(Map<String, Object> confArgs) {
         super(confArgs);
     }
-    
+
     @Override
     public String defaultUri() {
         return "/csv";
     }
 
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange, RequestContext context)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.isOptions()) {
             handleOptions(exchange, context);
         } else {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, 
-                    Resource.JSON_MEDIA_TYPE);
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Resource.JSON_MEDIA_TYPE);
             if (doesApply(context)) {
                 if (checkContentType(exchange)) {
                     try {
                         CsvRequestParams params = new CsvRequestParams(exchange);
 
                         try {
-                            List<BsonDocument> documents = parseCsv(exchange,
-                                    params,
-                                    context,
-                                    context.getRawContent());
+                            List<BsonDocument> documents = parseCsv(exchange, params, context, context.getRawContent());
 
                             if (documents != null && documents.size() > 0) {
-                                MongoCollection<BsonDocument> mcoll = MongoDBClientSingleton
-                                        .getInstance()
-                                        .getClient()
-                                        .getDatabase(params.db)
-                                        .getCollection(params.coll, BsonDocument.class);
+                                MongoCollection<BsonDocument> mcoll = MongoDBClientSingleton.getInstance().getClient()
+                                        .getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
 
                                 if (params.update) {
                                     documents.stream().forEach(document -> {
@@ -158,15 +140,20 @@ public class CsvLoader extends Service {
                                             updateQuery.putAll(_filter.asDocument());
                                         }
                                         if (params.upsert) {
-                                            mcoll.findOneAndUpdate(updateQuery,
-                                                    new BsonDocument("$set", document),
+                                            mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", document),
                                                     FAU_WITH_UPSERT_OPS);
                                         } else {
 
-                                            mcoll.findOneAndUpdate(updateQuery,
-                                                    new BsonDocument("$set", document),
+                                            mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", document),
                                                     FAU_NO_UPSERT_OPS);
                                         }
+                                    });
+                                } else if (params.upsert) {
+                                    documents.stream().forEach(document -> {
+                                        BsonDocument updateQuery = new BsonDocument("_id", document.remove("_id"));
+
+                                        mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", document),
+                                                FAU_WITH_UPSERT_OPS);
                                     });
                                 } else {
                                     mcoll.insertMany(documents);
@@ -177,47 +164,33 @@ public class CsvLoader extends Service {
                             }
                         } catch (IOException ex) {
                             LOGGER.debug("error parsing CSV data", ex);
-                            ResponseHelper.endExchangeWithMessage(
-                                    exchange,
-                                    context,
-                                    HttpStatus.SC_BAD_REQUEST,
+                            ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
                                     ERROR_PARSING_DATA);
 
                         }
                     } catch (IllegalArgumentException iae) {
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange,
-                                context,
-                                HttpStatus.SC_BAD_REQUEST,
+                        ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
                                 ERROR_QPARAM);
                     }
                 } else {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
-                            context,
-                            HttpStatus.SC_BAD_REQUEST,
+                    ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
                             ERROR_CONTENT_TYPE);
                 }
 
             } else {
-                ResponseHelper.endExchangeWithMessage(
-                                    exchange,
-                                    context,
-                                    HttpStatus.SC_NOT_IMPLEMENTED,
-                                    ERROR_WRONG_METHOD);
+                ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_IMPLEMENTED,
+                        ERROR_WRONG_METHOD);
             }
         }
-        // this clean the error message about the wrong media type 
-        // added by BodyInjectorHandler 
+        // this clean the error message about the wrong media type
+        // added by BodyInjectorHandler
         context.setResponseContent(null);
-        
+
         next(exchange, context);
     }
 
-    private List<BsonDocument> parseCsv(HttpServerExchange exchange,
-            CsvRequestParams params,
-            RequestContext context, String rawContent)
-            throws IOException {
+    private List<BsonDocument> parseCsv(HttpServerExchange exchange, CsvRequestParams params, RequestContext context,
+            String rawContent) throws IOException {
         List<BsonDocument> listOfBsonDocuments = new ArrayList<>();
 
         boolean isHeader = true;
@@ -228,10 +201,9 @@ public class CsvLoader extends Service {
             while (scanner.hasNext()) {
                 String line = scanner.nextLine();
 
-                // split on the separator only if that comma has zero, 
+                // split on the separator only if that comma has zero,
                 // or an even number of quotes ahead of it.
-                List<String> vals = Arrays.asList(line.
-                        split(params.sep + "(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1));
+                List<String> vals = Arrays.asList(line.split(params.sep + "(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1));
 
                 if (isHeader) {
                     cols = vals;
@@ -299,9 +271,7 @@ public class CsvLoader extends Service {
     }
 
     private boolean checkContentType(HttpServerExchange exchange) {
-        HeaderValues contentType = exchange
-                .getRequestHeaders()
-                .get(Headers.CONTENT_TYPE);
+        HeaderValues contentType = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
         return contentType != null && contentType.contains(CVS_CONTENT_TYPE);
     }
@@ -353,7 +323,7 @@ class CsvRequestParams {
             throw new IllegalArgumentException("db qparam is mandatory");
         }
 
-        sep = _sep != null ? _sep.size() > 0 ? _sep.getFirst() : "," : ",";
+        sep = _sep != null ? _sep.size() > 0 ? _sep.getFirst() : "" : ",";
         String _idIdx = _id != null ? _id.size() > 0 ? _id.getFirst() : "-1" : "-1";
 
         try {
@@ -365,18 +335,24 @@ class CsvRequestParams {
         String transformerName = _tranformer != null ? _tranformer.size() > 0 ? _tranformer.getFirst() : null : null;
 
         if (transformerName != null) {
-            transformer = PluginsRegistry.getInstance()
-                    .getTransformer(transformerName).getInstance();
+            transformer = PluginsRegistry.getInstance().getTransformer(transformerName).getInstance();
         } else {
             transformer = null;
         }
 
-        update = _update != null
-                && (_update.isEmpty()
-                || "true".equalsIgnoreCase(_update.getFirst()));
+        update = _update != null && (_update.isEmpty() || "true".equalsIgnoreCase(_update.getFirst()));
 
-        upsert = _upsert != null
-                && (_upsert.isEmpty()
-                || "true".equalsIgnoreCase(_upsert.getFirst()));
+        if (_upsert == null)
+            upsert = true;
+        else {
+            if (_upsert.isEmpty())
+                upsert = true;
+            else if ("false".equalsIgnoreCase(_upsert.getFirst())) {
+                upsert = false;
+            } else {
+                upsert = true;
+            }
+        }
+
     }
 }
