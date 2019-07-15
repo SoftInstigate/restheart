@@ -12,9 +12,17 @@
 
 > Think about restheart-security as the "brick" that you put in front of your API and microservices to protect them. 
 
+# Plugins
+
 **restheart-security** is built around a __pluggable architecture__. It comes with a strong security implementation but you can easily extend it by implementing plugins. 
 
 > Building a plugin is as easy as implementing a simple interface and edit a configuration file. Plugins also allow to quickly implement and deploy secure Web Services.
+
+## Maven artifacts
+
+You can find pre-built Maven artifacts on Jitpack.io. That allows to add RESTHeart Security as a dependency on you own POM and build new plugins.
+
+https://jitpack.io/#SoftInstigate/restheart-security
 
 # Documentation
 
