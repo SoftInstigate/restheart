@@ -15,7 +15,7 @@ volumes:
 
 services:
    restheart:
-      image: softinstigate/restheart:next
+      image: softinstigate/restheart:latest
       build: .
       container_name: restheart
       depends_on:
