@@ -226,7 +226,7 @@ services:
 enable-log-file: true
 log-file-path: ./security.log
 enable-log-console: true
-log-level: DEBUG
+log-level: INFO
 requests-log-level: 1
 ansi-console: true
 
