@@ -10,7 +10,7 @@ git clone git@bitbucket.org:softinstigate/restheart-platform-security.git
 git clone git@bitbucket.org:softinstigate/si-lka.git
 ```
 
-To build and package a new release of the RESTHeart Platform:
+To [build](build.sh) and [package](package.sh) a new release of the RESTHeart Platform:
 
 ```
 $ ./build.sh
@@ -54,4 +54,10 @@ The structure of the distributable zip file will be like this:
 
 ```
 
-Finally, upload the zip file somewhere to make it available.
+Finally, upload the zip file to publish it:
+
+```bash
+$ ./upload.sh
+```
+
+The [upload.sh](upload.sh) script copies any file with name pattern `restheart-platform-*.zip` to the s3 bucket named `download.restheart.com`.
