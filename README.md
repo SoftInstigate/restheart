@@ -104,6 +104,8 @@ Refer to the [configuration file](https://github.com/SoftInstigate/restheart/blo
 
 Starting from RESTHeart v4, security is handled by [restheart-security](https://github.com/SoftInstigate/restheart-security).
 
+Alternatively, you can put any HTTP reverse proxy in front of RESTHeart and delegate security to it. For an example of using NGINX as a reverse proxy on top of RESTHeart, have a look at [this repository](https://github.com/SoftInstigate/nginx-restheart). Then it is possibile to configure NGINX to [Restricting Access with HTTP Basic Authentication](https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-http-basic-authentication/). 
+
 ## How to Build
 
 > Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and Java 11 or later.
