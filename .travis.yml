@@ -26,8 +26,8 @@ deploy:
   api_key:
     secure: MOhMMkM3rmUealV2OPnr+4zE4SD7tAjvebUK+J3wfnRCJOIh8Yfib3ug+gu/u4XhrBocRBRPSc7cOPvAVimEbVfptyK+s8JzeFr2XtV9k1aTfCgACQu804M4l3XTSDylSke4Fj6RRM7lwwToJEyJI1gxp12hYnWxmfmRN8sG3fvs9AsqBj8OCFT5sYGwOdpTDGcyf1STQv1X5ToNvSxpRURzyk7BoK1mVVIOlzJvzeHKS8PUCuOzHurI4ovTxonUSjTCKoRMh1vvh2KnUoDwS6vBe+SypmfdQzoK048WJVCha3WJluyZ9s4Z5lWD0ibM7wn4P41Xke0mlKuqswdnrx0TMW86JicK78tW/lU/GwOluN6y0uGnPrgdR8KWsXAbB79Z0nMGrxKFrrYRryjzpnsQWfVeK569VBM3urX/P+KjYM9iLTFluR1By19jRIsIUuDUXKieVSARyb/aZ7qrHXTs8Dzr0CghS0nx2RBq4vH+vZADVslfkN9cSaWa4vas42sP6AbKOpeMEkW51bBxmZFqe6FHPt5QBtVpIfA6I2stED2C+QaDJzmF3i3vDZKMwRXEor6rrmEyJsCWTg5zAFg/KOIj+OAZCQwdIGTA0yQQ47Ns/h0zpqRod0rJouxgn4co2zyOmM8LPOW3UD0tAPxXXyv0LObepjmT3lJVHDw=
   file:
-    - "target/restheart-security*.tar.gz"
-    - "target/restheart-security*.zip"
+    - "target/*.tar.gz"
+    - "target/*.zip"
     - "target/restheart-security.jar"
   skip_cleanup: true
   on:
