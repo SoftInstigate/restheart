@@ -194,7 +194,7 @@ RESTHeart's public Docker images are also automatically built and pushed to [Doc
 
 ## Full documentation
 
-For more information, read RESTHeart's [[documentation](http://restheart.org/docs/).
+For more information, read the [documentation](http://restheart.org/docs/).
 
 <hr></hr>
 
