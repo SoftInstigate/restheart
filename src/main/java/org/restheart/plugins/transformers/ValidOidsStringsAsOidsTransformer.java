@@ -42,7 +42,7 @@ import org.restheart.plugins.RegisterPlugin;
  * "553f59d2e4b041ceaac64e33" }, a: 1 }
  *
  */
-@RegisterPlugin(name = "oidsToStrings",
+@RegisterPlugin(name = "stringsToOids",
         description = "Replaces strings that are valid ObjectIds"
         + " with ObjectIds.")
 public class ValidOidsStringsAsOidsTransformer implements Transformer {
