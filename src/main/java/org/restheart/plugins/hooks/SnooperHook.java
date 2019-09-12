@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-        name = "snooper", 
+        name = "snooper",
         description = "An example hook that logs request and response info")
 public class SnooperHook implements Hook {
     private static final Logger LOGGER
@@ -47,18 +47,18 @@ public class SnooperHook implements Hook {
         LOGGER.info("Request {} {} {}",
                 context.getMethod(),
                 exchange.getRequestURI(), exchange.getStatusCode());
-        
+
         LOGGER.info("Metadata args {}",
                 JsonUtils.toJson(args));
 
         LOGGER.info("Configuration args {}",
                 JsonUtils.toJson(confArgs));
-        
+
         if (context.getDbOperationResult() != null) {
             BsonValue newId = context
                     .getDbOperationResult()
                     .getNewId();
-            
+
             BsonDocument newData = context
                     .getDbOperationResult()
                     .getNewData();
@@ -69,7 +69,7 @@ public class SnooperHook implements Hook {
 
             LOGGER.info("**** New id ****\n{}",
                     newId == null ? null : newId);
-            
+
             LOGGER.info("**** New data ****\n{}",
                     newData == null ? null : newData.toJson());
 

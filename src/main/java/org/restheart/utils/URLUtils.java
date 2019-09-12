@@ -457,8 +457,7 @@ public class URLUtils {
         } else if (id.isString()) {
             return "'" + id.asString().getValue() + "'";
         } else {
-            return JsonUtils.minify(JsonUtils.toJson(id)
-                    .replace("\"", "'"));
+            return JsonUtils.toJson(id).replace("\"", "'");
         }
     }
 

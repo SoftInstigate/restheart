@@ -39,6 +39,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
@@ -77,6 +78,7 @@ public class RequestContext {
     public static final String REPRESENTATION_FORMAT_KEY = "rep";
     public static final String CLIENT_SESSION_KEY = "sid";
     public static final String TXNID_KEY = "txn";
+    public static final String JSON_MODE_QPARAM_KEY = "jsonMode";
 
     // matadata
     public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
@@ -405,6 +407,8 @@ public class RequestContext {
     // path template match
     private final PathTemplateMatch pathTemplateMatch;
 
+    private final JsonMode jsonMode;
+
     /**
      *
      * @param exchange the url rewriting feature is implemented by the whatUri
@@ -473,6 +477,24 @@ public class RequestContext {
                 .get(ETAG_CHECK_QPARAM_KEY) != null;
 
         this.noProps = exchange.getQueryParameters().get(NO_PROPS_KEY) != null;
+
+        var _jsonMode = exchange.getQueryParameters().containsKey(JSON_MODE_QPARAM_KEY)
+                ? exchange.getQueryParameters().get(JSON_MODE_QPARAM_KEY).getFirst().toUpperCase()
+                : null;
+
+        if (_jsonMode != null) {
+            JsonMode jsonMode = null;
+
+            try {
+                jsonMode = JsonMode.valueOf(_jsonMode.toUpperCase());
+            } catch (IllegalArgumentException iae) {
+                jsonMode = null;
+            }
+
+            this.jsonMode = jsonMode;
+        }  else {
+            this.jsonMode = null;
+        }
     }
 
     /**
@@ -1889,6 +1911,13 @@ public class RequestContext {
     public void setClientSession(ClientSessionImpl clientSession) {
         this.clientSession = clientSession;
     }
+    
+    /**
+     * @return the jsonMode as specified by jsonMode query paramter
+     */
+    public JsonMode getJsonMode() {
+        return jsonMode;
+    }
 
     public enum TYPE {
         INVALID,
@@ -1956,5 +1985,4 @@ public class RequestContext {
         REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
         OPTIONAL                // checks the etag only if provided by client via If-Match header
     }
-
 }

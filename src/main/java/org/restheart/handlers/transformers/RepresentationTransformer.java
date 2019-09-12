@@ -49,7 +49,7 @@ public class RepresentationTransformer implements Transformer {
                 || context.isTxns()) {
             return;
         }
-
+        
         // can be null if an error occurs before RequestContextInjectorHandler.handle()
         REPRESENTATION_FORMAT rf = context.getRepresentationFormat() != null ?
                 context.getRepresentationFormat()

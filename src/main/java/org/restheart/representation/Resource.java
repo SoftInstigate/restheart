@@ -50,6 +50,7 @@ public class Resource {
     public static final String APP_FORM_URLENCODED_TYPE = "application/x-www-form-urlencoded";
     public static final String APPLICATION_PDF_TYPE = "application/pdf";
     public static final String MULTIPART_FORM_DATA_TYPE = "multipart/form-data";
+    public static final String JAVACRIPT_MEDIA_TYPE = "application/javascript";
     private static final String TYPE = "_type";
     private static final String EMBEDDED = "_embedded";
     private static final String LINKS = "_links";
