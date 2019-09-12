@@ -19,6 +19,7 @@ package org.restheart.utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import org.bson.BsonDocument;
@@ -773,5 +774,60 @@ public class JsonUtilsTest {
                 .asDocument().containsKey("grandchild1"));
         Assert.assertTrue(unflatten.asDocument().get("child2")
                 .asDocument().containsKey("grandchild2"));
+    }
+    
+    @Test
+    public void testParseLong() {
+        var json = "[{'n':2084824280},{'n':5887391606}]";
+        
+        var parsed = JsonUtils.parse(json);
+        
+        System.out.println(JsonUtils.toJson(parsed));
+        
+        long l = 1111111115887391606l;
+        
+        var json2 = "[{'n':2084824280},{'n':"+l+"}]";
+        
+        var parsed2 = JsonUtils.parse(json2);
+        
+        System.out.println(JsonUtils.toJson(parsed2));
+        System.out.println(parsed2);
+        
+        var json3 = "[{'n':2084824280},{'d':{'$date':"+ System.currentTimeMillis()+"}}]";
+        
+        var parsed3 = JsonUtils.parse(json3);
+        
+        System.out.println(JsonUtils.toJson(parsed3));
+        System.out.println(parsed3);
+    }
+    
+    @Test
+    public void testParseLong2() {
+        System.out.println(JsonUtils.toJson(
+                JsonUtils.parse(
+                        "{'n':"+4294967296l+"}")));
+        
+        var ls = JsonUtils.toJson(
+                JsonUtils.parse(
+                        "{'n':"+(5999999999l)+"}"));
+        
+        System.out.println(ls);
+        
+        System.out.println(JsonUtils.toJson(
+                JsonUtils.parse(ls)));
+    }
+    
+    @Test
+    public void testParseInt() {
+        System.out.println(JsonUtils.toJson(
+                JsonUtils.parse(
+                        "{'n':"+10+"}")));
+    }
+    
+    @Test
+    public void testParseDouble() {
+        System.out.println(JsonUtils.toJson(
+                JsonUtils.parse(
+                        "{'n':{'$numberDouble':'11111111158873916063432424232349289023842309842039587209357329578573489573958734985753498573495743957349839'}}")));
     }
 }

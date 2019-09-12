@@ -23,6 +23,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.bson.json.JsonMode;
 import org.restheart.representation.Resource;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.JsonUtils;
@@ -101,7 +102,10 @@ public class ResponseSenderHandler extends PipedHttpHandler {
             }
         }
 
-        if (context.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL) {
+        if (context.getJsonMode() == JsonMode.SHELL) {
+            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
+                    Resource.JAVACRIPT_MEDIA_TYPE);
+        } else if (context.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
                     Resource.HAL_JSON_MEDIA_TYPE);
         } else {
@@ -115,7 +119,7 @@ public class ResponseSenderHandler extends PipedHttpHandler {
 
         if (responseContent != null) {
             exchange.getResponseSender().send(
-                    JsonUtils.toJson(responseContent));
+                    JsonUtils.toJson(responseContent, context.getJsonMode()));
         }
 
         exchange.endExchange();

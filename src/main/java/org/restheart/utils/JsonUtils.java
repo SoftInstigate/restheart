@@ -39,8 +39,12 @@ import org.bson.codecs.BsonArrayCodec;
 import org.bson.codecs.BsonValueCodecProvider;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.json.Converter;
+import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
 import org.bson.json.JsonReader;
+import org.bson.json.JsonWriterSettings;
+import org.bson.json.StrictJsonWriter;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -665,37 +669,54 @@ public class JsonUtils {
      * BsonArray
      */
     public static String toJson(BsonValue bson) {
+        return toJson(bson, null);
+    }
+
+    /**
+     * @param bson either a BsonDocument or a BsonArray
+     * @return the minified string representation of the bson value
+     * @throws IllegalArgumentException if bson is not a BsonDocument or a
+     * BsonArray
+     */
+    public static String toJson(BsonValue bson, JsonMode mode) {
         if (bson == null) {
             return null;
         }
 
-        /**
-         * Gets a JSON representation of this document using the given
-         * {@code JsonWriterSettings}.
-         *
-         * @param settings the JSON writer settings
-         * @return a JSON representation of this document
-         */
+        var settings = mode != null
+                ? JsonWriterSettings.builder()
+                        .outputMode(mode)
+                        .indent(false)
+                        .build()
+                : JsonWriterSettings.builder()
+                        .indent(false)
+                        .dateTimeConverter(new Converter<Long>() {
+                            @Override
+                            public void convert(Long t, StrictJsonWriter writer) {
+                                writer.writeRaw("{\"$date\": " + t + " }");
+                            }
+                        })
+                        .build();
+
         if (bson.isDocument()) {
-            return minify(bson.asDocument().toJson());
+            return minify(bson.asDocument().toJson(settings));
         } else if (bson.isArray()) {
             BsonArray _array = bson.asArray();
 
             BsonDocument wrappedArray = new BsonDocument("wrapped", _array);
 
-            String json = wrappedArray.toJson();
+            String json = wrappedArray.toJson(settings);
 
-            json = minify(json);
             json = json.substring(0, json.length() - 1); // removes closing }
             json = json.replaceFirst("\\{", "");
             json = json.replaceFirst("\"wrapped\"", "");
             json = json.replaceFirst(":", "");
 
-            return json;
+            return minify(json);
         } else {
             BsonDocument doc = new BsonDocument("x", bson);
 
-            String ret = doc.toJson();
+            String ret = doc.toJson(settings);
 
             ret = ret.replaceFirst("\\{", "");
             ret = ret.replaceFirst("\"x\"", "");
@@ -703,7 +724,7 @@ public class JsonUtils {
             int index = ret.lastIndexOf('}');
             ret = ret.substring(0, index);
 
-            return ret;
+            return minify(ret);
         }
     }
 
@@ -723,7 +744,7 @@ public class JsonUtils {
         } else if (id.isObjectId()) {
             return id.asObjectId().getValue().toString();
         } else {
-            return JsonUtils.minify(JsonUtils.toJson(id)
+            return minify(JsonUtils.toJson(id)
                     .replace("\"", "'"));
         }
     }
@@ -806,6 +827,7 @@ public class JsonUtils {
     }
 
     /**
+     * @param json
      * @return the unflatten json replacing dot notatation fkeys with nested
      * objects: from {"a.b":2} to {"a":{"b":2}}
      */
