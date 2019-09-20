@@ -10,4 +10,4 @@
 /restheart-platform-*
 si-lka/
 mongodb_*
-
+/target/
