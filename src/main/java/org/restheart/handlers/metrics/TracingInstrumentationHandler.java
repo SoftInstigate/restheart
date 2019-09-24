@@ -33,5 +33,9 @@ public class TracingInstrumentationHandler extends PipedHttpHandler {
         if (!exchange.isResponseComplete() && getNext() != null) {
             next(exchange, context);
         }
+
+        for (String traceIdHeader : Bootstrapper.getConfiguration().getTraceHeaders()) {
+            MDC.remove(traceIdHeader);
+        }
     }
 }
