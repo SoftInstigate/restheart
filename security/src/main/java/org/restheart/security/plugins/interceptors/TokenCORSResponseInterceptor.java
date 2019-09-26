@@ -17,51 +17,68 @@
  */
 package org.restheart.security.plugins.interceptors;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import org.restheart.security.handlers.exchange.JsonResponse;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
+import java.util.Arrays;
 import org.restheart.security.plugins.ResponseInterceptor;
+import static org.restheart.security.plugins.TokenManager.ACCESS_CONTROL_EXPOSE_HEADERS;
 
 /**
+ * helper interceptor to add token headers to Access-Control-Expose-Headers to
+ * handle CORS request
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class EchoExampleResponseInterceptor implements ResponseInterceptor {
+public class TokenCORSResponseInterceptor implements ResponseInterceptor {
+
+    private String[] headers;
+
+    public TokenCORSResponseInterceptor(String... headers) {
+        this.headers = headers;
+    }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var response = JsonResponse.wrap(exchange);
-
-        exchange.getResponseHeaders().add(HttpString.tryFromString("header"),
-                "added by EchoExampleResponseInterceptor " + exchange.getRequestPath());
-
-        if (response.isContentAvailable()) {
-            JsonElement _content = response
-                    .readContent();
-
-            // can be null
-            if (_content.isJsonObject()) {
-                JsonObject content = _content
-                        .getAsJsonObject();
-
-                content.addProperty("prop2",
-                        "property added by EchoExampleResponseInterceptor");
-
-                response.writeContent(content);
+        var hs = exchange
+                .getResponseHeaders()
+                .get(ACCESS_CONTROL_EXPOSE_HEADERS);
+        
+        if (hs == null || hs.isEmpty()) {
+            exchange
+                .getResponseHeaders()
+                .put(ACCESS_CONTROL_EXPOSE_HEADERS, headers());
+        } else {
+            var v0 = hs.getFirst();
+            
+            for (var h : this.headers) {
+                if (!v0.contains(h)) {
+                    v0 = v0.concat(", "  + h);
+                }
             }
+            
+            exchange
+                .getResponseHeaders()
+                .put(ACCESS_CONTROL_EXPOSE_HEADERS, v0);
         }
     }
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        return exchange.getRequestPath().equals("/iecho")
-                || exchange.getRequestPath().equals("/siecho");
-    }
-
-    @Override
-    public boolean requiresResponseContent() {
         return true;
+    }
+    
+    private String headers() {
+        var ret = "";
+        var first = true;
+        
+        for (var h : this.headers) {
+            if (first) {
+                ret.concat(h);
+                first = false;
+            } else {
+                ret.concat(", ").concat(h);
+            }
+        }
+        
+        return ret;
     }
 }

@@ -37,8 +37,10 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import org.restheart.security.ConfigurationException;
+import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.authenticators.PwdCredentialAccount;
+import org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor;
 
 public class RndTokenManager implements TokenManager {
 
@@ -58,6 +60,13 @@ public class RndTokenManager implements TokenManager {
         this.CACHE = CacheFactory.createLocalCache(Long.MAX_VALUE,
                 Cache.EXPIRE_POLICY.AFTER_READ,
                 ttl * 60 * 1_000);
+        
+        String[] headers = { AUTH_TOKEN_HEADER.toString(), 
+            AUTH_TOKEN_VALID_HEADER.toString(), 
+            AUTH_TOKEN_LOCATION_HEADER.toString() };
+        
+        PluginsRegistry.getInstance().getResponseInterceptors()
+                .add(new TokenCORSResponseInterceptor(headers));
     }
 
     @Override
@@ -160,7 +169,7 @@ public class RndTokenManager implements TokenManager {
                     .getAuthenticatedAccount()
                     .getPrincipal()
                     .getName();
-
+            
             exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
                     URLUtils.removeTrailingSlashes(srvURI)
                             .concat("/")

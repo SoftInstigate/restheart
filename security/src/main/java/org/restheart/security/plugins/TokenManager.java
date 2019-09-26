@@ -28,10 +28,10 @@ import io.undertow.util.HttpString;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface TokenManager extends Authenticator, ConfigurablePlugin {
-    static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
-    static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
-    static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
-
+    public static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
+    public static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
+    public static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
+    public static final HttpString ACCESS_CONTROL_EXPOSE_HEADERS = HttpString.tryFromString("Access-Control-Expose-Headers");
     /**
      * retrieves of generate a token valid for the account
      *
