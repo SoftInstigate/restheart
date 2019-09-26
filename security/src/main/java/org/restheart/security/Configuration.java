@@ -117,7 +117,7 @@ public class Configuration {
     private final List<Map<String, Object>> services;
     private final List<Map<String, Object>> authMechanisms;
     private final List<Map<String, Object>> authenticators;
-    private final Map<String, Object> authorizers;
+    private final List<Map<String, Object>> authorizers;
     private final Map<String, Object> tokenManager;
     private final String logFilePath;
     private final Level logLevel;
@@ -258,7 +258,7 @@ public class Configuration {
 
         authenticators = getAsListOfMaps(conf, AUTHENTICATORS_KEY, new ArrayList<>());
 
-        authorizers = getAsMap(conf, AUTHORIZERS_KEY);
+        authorizers = getAsListOfMaps(conf, AUTHORIZERS_KEY, new ArrayList<>());
 
         tokenManager = getAsMap(conf, AUTH_TOKEN);
 
@@ -272,7 +272,8 @@ public class Configuration {
 
         try {
             level = Level.valueOf(_logLevel);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (!silent) {
                 LOGGER.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel,
                         "INFO");
@@ -309,15 +310,19 @@ public class Configuration {
         try {
             fis = new FileInputStream(confFilePath.toFile());
             conf = (Map<String, Object>) yaml.load(fis);
-        } catch (FileNotFoundException fne) {
+        }
+        catch (FileNotFoundException fne) {
             throw new ConfigurationException("configuration file not found", fne);
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             throw new ConfigurationException("error parsing the configuration file", t);
-        } finally {
+        }
+        finally {
             if (fis != null) {
                 try {
                     fis.close();
-                } catch (IOException ioe) {
+                }
+                catch (IOException ioe) {
                     LOGGER.warn("Can't close the FileInputStream", ioe);
                 }
             }
@@ -404,7 +409,8 @@ public class Configuration {
             final List<Map<String, Object>> defaultValue) {
         if (conf == null) {
             if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file. using its default value {}",
+                LOGGER.trace("parameter {} not specified in the "
+                        + "configuration file. using its default value {}",
                         key, defaultValue);
             }
 
@@ -413,11 +419,24 @@ public class Configuration {
 
         Object o = conf.get(key);
 
-        if (o instanceof List) {
-            return (List<Map<String, Object>>) o;
+        if (o == null) {
+            if (!silent) {
+                LOGGER.trace("configuration parameter {} not specified in the "
+                        + "configuration file, using its default value {}",
+                        key, defaultValue);
+            }
+            return defaultValue;
+        } else if (o instanceof List) {
+            try {
+                return (List<Map<String, Object>>) o;
+            }
+            catch (Throwable t) {
+                LOGGER.warn("wrong configuration parameter {}", key);
+                return defaultValue;
+            }
         } else {
             if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file, using its default value {}",
+                LOGGER.warn("wrong configuration parameter {}, expecting an array of objects",
                         key, defaultValue);
             }
             return defaultValue;
@@ -434,28 +453,40 @@ public class Configuration {
     private Map<String, Map<String, Object>> getAsMapOfMaps(
             final Map<String, Object> conf,
             final String key,
-            final Map<String, Map<String, Object>> defaultVal) {
+            final Map<String, Map<String, Object>> defaultValue) {
         if (conf == null) {
             if (!silent) {
-                LOGGER.debug("parameters {} not specified in the configuration file.", key);
+                LOGGER.trace("parameter {} not specified in the "
+                        + "configuration file. using its default value {}",
+                        key, defaultValue);
             }
-            return defaultVal;
+
+            return defaultValue;
         }
 
         Object o = conf.get(key);
 
-        if (o instanceof Map) {
+        if (o == null) {
+            if (!silent) {
+                LOGGER.trace("configuration parameter {} not specified in the "
+                        + "configuration file, using its default value {}",
+                        key, defaultValue);
+            }
+            return defaultValue;
+        } else if (o instanceof Map) {
             try {
                 return (Map<String, Map<String, Object>>) o;
-            } catch (Throwable t) {
-                LOGGER.warn("Invalid configuration parameter {}", key);
-                return defaultVal;
+            }
+            catch (Throwable t) {
+                LOGGER.warn("wrong configuration parameter {}", key);
+                return defaultValue;
             }
         } else {
             if (!silent) {
-                LOGGER.debug("parameters {} not specified in the configuration file.", key);
+                LOGGER.warn("wrong configuration parameter {}, expecting an object",
+                        key, defaultValue);
             }
-            return defaultVal;
+            return defaultValue;
         }
     }
 
@@ -469,18 +500,27 @@ public class Configuration {
     private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
         if (conf == null) {
             if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file.", key);
+                LOGGER.trace("parameter {} not specified in the "
+                        + "configuration file. using its default value {}",
+                        key, null);
             }
+
             return null;
         }
 
         Object o = conf.get(key);
 
         if (o instanceof Map) {
-            return (Map<String, Object>) o;
+            try {
+                return (Map<String, Object>) o;
+            }
+            catch (Throwable t) {
+                LOGGER.warn("wrong configuration parameter {}", key);
+                return null;
+            }
         } else {
             if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file.", key);
+                LOGGER.trace("configuration parameter {} not specified in the configuration file.", key);
             }
             return null;
         }
@@ -507,12 +547,13 @@ public class Configuration {
 
         try {
             if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
+                LOGGER.trace("configuration paramenter {} set to {}", key, conf.get(key));
             }
             return (V) conf.get(key);
-        } catch (ClassCastException cce) {
+        }
+        catch (Throwable t) {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}. using its default value {}", key, conf.get(key),
+                LOGGER.warn("wrong configuration parameter {}: {}. using its default value {}", key, conf.get(key),
                         defaultValue);
             }
             return defaultValue;
@@ -693,10 +734,10 @@ public class Configuration {
     }
 
     /**
-     * @return the amClass
+     * @return the authorizers
      */
-    public Map<String, Object> getAm() {
-        return getAuthorizers();
+    public List<Map<String, Object>> getAuthorizers() {
+        return authorizers;
     }
 
     /**
@@ -747,13 +788,6 @@ public class Configuration {
     }
 
     /**
-     * @return the authorizers
-     */
-    public Map<String, Object> getAuthorizers() {
-        return authorizers;
-    }
-
-    /**
      *
      * @return the base URL of restheart proxy identified by proxy configuration
      * property name="restheart"
@@ -794,7 +828,8 @@ public class Configuration {
 
         try {
             return URI.create(proxyPass);
-        } catch (IllegalArgumentException ex) {
+        }
+        catch (IllegalArgumentException ex) {
             throw new ConfigurationException("Wrong proxy pass ULR "
                     + proxyPass, ex);
         }
@@ -831,7 +866,8 @@ public class Configuration {
 
         try {
             return URI.create(proxyLocation);
-        } catch (IllegalArgumentException ex) {
+        }
+        catch (IllegalArgumentException ex) {
             throw new ConfigurationException("Wrong proxy location URI "
                     + proxyLocation, ex);
         }

@@ -147,14 +147,19 @@ authenticators:
 
 ## Authorizers
 
- # An Authorizer is responsible of authorizing the authenticated request
- 
+ # Authorizers verify if a request is allowed.
+     
+ # As an in-bound request is received and authenticated the isAllowed() method is 
+ # called on each authenticator in turn until one of the following occurs: 
+ # an authenticator allows the incoming request or the list of authenticators is 
+ # exhausted. In the latter case, the request ends and 403 Forbidden is returned.
+
  # See README.md for the list of available Authorizers
 
 authorizers:
-    name: requestPredicatesAuthorizer
-    class: org.restheart.security.plugins.authorizers.RequestPredicatesAuthorizer
-    args:
+    - name: requestPredicatesAuthorizer
+      class: org.restheart.security.plugins.authorizers.RequestPredicatesAuthorizer
+      args:
         conf-file: ../etc/acl.yml
 
 ## Token Manager

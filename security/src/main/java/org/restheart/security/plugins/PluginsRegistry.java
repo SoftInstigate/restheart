@@ -47,7 +47,7 @@ public class PluginsRegistry {
             .getLogger(PluginsRegistry.class);
 
     private static final String AUTH_TOKEN_MANAGER_NAME = "@@authTokenManager";
-    private static final String ACCESS_MANAGER_NAME = "@@accessManager";
+    private static final String AUTHORIZER_NAME = "@@authrizer";
     
     private static final String REGISTER_PLUGIN_CLASS_NAME = RegisterPlugin.class
             .getName();
@@ -114,15 +114,19 @@ public class PluginsRegistry {
 
     private static final LoadingCache<String, Authorizer> AUTHORIZERS_CACHE
             = CacheFactory.createLocalLoadingCache(
-                    1,
+                    Integer.MAX_VALUE,
                     Cache.EXPIRE_POLICY.NEVER, -1, name -> {
-                        var authorizerConf = Bootstrapper.getConfiguration()
+                        var authorizersConf = Bootstrapper.getConfiguration()
                                 .getAuthorizers();
+                        
+                        var authorizerConf = authorizersConf.stream().filter(am -> name
+                        .equals(am.get("name")))
+                                .findFirst();
 
                         if (authorizerConf != null) {
                             try {
                                 return PluginsFactory
-                                        .createAuthorizer(authorizerConf);
+                                        .createAuthorizer(authorizerConf.get());
                             } catch (ConfigurationException pcex) {
                                 throw new IllegalStateException(
                                         pcex.getMessage(), pcex);
@@ -327,6 +331,24 @@ public class PluginsRegistry {
                     "No Authentication Mechanism configured with name: " + name);
         }
     }
+    
+    public Authorizer getAuthorizer(String name)
+            throws ConfigurationException {
+        Optional<Authorizer> op = AUTHORIZERS_CACHE
+                .getLoading(name);
+
+        if (op == null) {
+            throw new ConfigurationException(
+                    "No Authorizer configured");
+        }
+
+        if (op.isPresent()) {
+            return op.get();
+        } else {
+            throw new ConfigurationException(
+                    "No Authorizer configured");
+        }
+    }
 
     public Service getService(String name)
             throws ConfigurationException {
@@ -343,24 +365,6 @@ public class PluginsRegistry {
         } else {
             throw new ConfigurationException(
                     "No Service configured with name: " + name);
-        }
-    }
-
-    public Authorizer getAuthorizer()
-            throws ConfigurationException {
-        Optional<Authorizer> op = AUTHORIZERS_CACHE
-                .getLoading(ACCESS_MANAGER_NAME);
-
-        if (op == null) {
-            throw new ConfigurationException(
-                    "No Authorizer configured");
-        }
-
-        if (op.isPresent()) {
-            return op.get();
-        } else {
-            throw new ConfigurationException(
-                    "No Authorizer configured");
         }
     }
 

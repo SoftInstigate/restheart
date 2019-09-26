@@ -22,6 +22,7 @@ import java.util.List;
 
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.server.HttpServerExchange;
+import java.util.LinkedHashSet;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.Authorizer;
 import org.restheart.security.plugins.AuthMechanism;
@@ -36,15 +37,15 @@ public class SecurityHandler extends PipedHttpHandler {
      *
      * @param next
      * @param authenticationMechanisms
-     * @param accessManager
+     * @param accessManagers
      */
     public SecurityHandler(final PipedHttpHandler next,
             final List<AuthMechanism> authenticationMechanisms,
-            final Authorizer accessManager,
+            final LinkedHashSet<Authorizer> accessManagers,
             final TokenManager tokenManager) {
 
         super(buildSecurityHandlersChain(next,
-                authenticationMechanisms, accessManager, tokenManager));
+                authenticationMechanisms, accessManagers, tokenManager));
     }
 
     @Override
@@ -55,20 +56,20 @@ public class SecurityHandler extends PipedHttpHandler {
     private static PipedHttpHandler buildSecurityHandlersChain(
             PipedHttpHandler next,
             final List<AuthMechanism> mechanisms,
-            final Authorizer accessManager,
+            final LinkedHashSet<Authorizer> accessManagers,
             final TokenManager tokenManager) {
         if (mechanisms != null && mechanisms.size() > 0) {
             PipedHttpHandler handler;
 
-            if (accessManager == null) {
-                throw new IllegalArgumentException("Error, accessManager cannot "
+            if (accessManagers == null) {
+                throw new IllegalArgumentException("Error, accessManager cannots "
                         + "be null. "
                         + "Eventually use FullAccessManager "
                         + "that gives full access power ");
             }
 
             handler = new TokenInjector(
-                    new GlobalSecurityPredicatesAuthorizer(accessManager, next),
+                    new GlobalSecurityPredicatesAuthorizer(accessManagers, next),
                     tokenManager);
 
             handler = new SecurityInitialHandler(
@@ -76,7 +77,7 @@ public class SecurityHandler extends PipedHttpHandler {
                     new AuthenticatorMechanismsHandler(
                             new AuthenticationConstraintHandler(
                                     new AuthenticationCallHandler(handler),
-                                    accessManager),
+                                    accessManagers),
                             mechanisms));
 
             return handler;

@@ -171,8 +171,7 @@ public class PluginsFactory {
     }
 
     /**
-     * getAccessManager
-     *
+     * 
      * @return the Authorizer
      */
     static Authorizer createAuthorizer(

@@ -23,6 +23,7 @@ import java.util.Set;
 import org.restheart.security.utils.HttpStatus;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
+import java.util.LinkedHashSet;
 import org.restheart.security.plugins.Authorizer;
 
 /**
@@ -31,18 +32,20 @@ import org.restheart.security.plugins.Authorizer;
  */
 public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
 
-    private final Authorizer accessManager;
+    private final LinkedHashSet<Authorizer> authorizers;
     private static Set<Predicate> globalSecurityPredicates = new HashSet<>();
 
     /**
      * Creates a new instance of AccessManagerHandler
      *
-     * @param accessManager
+     * @param authorizers
      * @param next
      */
-    public GlobalSecurityPredicatesAuthorizer(Authorizer accessManager, PipedHttpHandler next) {
+    public GlobalSecurityPredicatesAuthorizer(
+            LinkedHashSet<Authorizer> authorizers, 
+            PipedHttpHandler next) {
         super(next);
-        this.accessManager = accessManager;
+        this.authorizers = authorizers;
     }
 
     /**
@@ -52,7 +55,7 @@ public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (accessManager.isAllowed(exchange)
+        if (isAllowed(exchange)
                 && checkGlobalPredicates(exchange)) {
             next(exchange);
         } else {
@@ -64,13 +67,39 @@ public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
         }
     }
 
-    private boolean checkGlobalPredicates(HttpServerExchange hse) {
-        return this.getGlobalSecurityPredicates()
-                .stream()
-                .allMatch(predicate -> predicate.resolve(hse));
+    /**
+     *
+     * @param exchange
+     * @return true if no global security predicate denies the request and any
+     * accessManager allows the request
+     */
+    private boolean isAllowed(HttpServerExchange exchange) {
+        if (getGlobalSecurityPredicates() != null
+                && !checkGlobalPredicates(exchange)) {
+            return false;
+        }
+
+        if (authorizers == null) {
+            return true;
+        } else {
+            return authorizers.stream().anyMatch(am -> am.isAllowed(exchange));
+        }
     }
 
     /**
+     * 
+     * @param exchange
+     * @return true if all global security predicates resolve the request
+     */
+    private boolean checkGlobalPredicates(HttpServerExchange exchange) {
+        return getGlobalSecurityPredicates()
+                .stream()
+                .allMatch(predicate -> predicate.resolve(exchange));
+    }
+
+    /**
+     * global security predicates must all resolve to true to allow the request
+     * 
      * @return the globalSecurityPredicates allow to get and set the global
      * security predicates to apply to all requests
      */
