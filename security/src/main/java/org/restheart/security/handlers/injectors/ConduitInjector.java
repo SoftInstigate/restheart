@@ -26,6 +26,8 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
+import java.io.IOException;
+import org.restheart.security.handlers.ResponseInterceptorsStreamSinkConduit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.conduits.StreamSinkConduit;
@@ -85,7 +87,8 @@ public class ConduitInjector extends PipedHttpHandler {
 
                     return mcsc;
                 } else {
-                    return factory.create();
+                    return new ResponseInterceptorsStreamSinkConduit(
+                            factory.create(), exchange);
                 }
             }
         });

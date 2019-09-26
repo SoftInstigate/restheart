@@ -130,6 +130,7 @@ public class ModifiableContentSinkConduit
                     .getResponseInterceptors()
                     .stream()
                     .filter(ri -> ri.resolve(exchange))
+                    .filter(ri -> ri.requiresResponseContent())
                     .forEachOrdered(ri -> {
                         LOGGER.debug("Executing response interceptor {} for {}",
                                 ri.getClass().getSimpleName(),
