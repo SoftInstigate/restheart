@@ -103,6 +103,7 @@ import io.undertow.util.HttpString;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import org.restheart.security.handlers.QueryStringRebuiler;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.Authorizer;
 import org.restheart.security.plugins.AuthMechanism;
@@ -949,10 +950,11 @@ public class Bootstrapper {
                                         new CORSHandler(
                                                 new XPoweredByInjector(
                                                         new RequestInterceptorsExecutor(
-                                                                new SecurityHandler(srv,
-                                                                        authMechanisms,
-                                                                        authorizers,
-                                                                        tokenManager))))));
+                                                                new QueryStringRebuiler(
+                                                                        new SecurityHandler(srv,
+                                                                                authMechanisms,
+                                                                                authorizers,
+                                                                                tokenManager)))))));
                             } else {
                                 var _fauthorizers = new LinkedHashSet<Authorizer>();
                                 _fauthorizers.add(new FullAuthorizer(false));
@@ -961,10 +963,11 @@ public class Bootstrapper {
                                         new CORSHandler(
                                                 new XPoweredByInjector(
                                                         new RequestInterceptorsExecutor(
-                                                                new SecurityHandler(srv,
-                                                                        authMechanisms,
-                                                                        _fauthorizers,
-                                                                        tokenManager))))));
+                                                                new QueryStringRebuiler(
+                                                                        new SecurityHandler(srv,
+                                                                                authMechanisms,
+                                                                                _fauthorizers,
+                                                                                tokenManager)))))));
                             }
 
                             LOGGER.info("URI {} bound to service {}, secured: {}",
@@ -1113,9 +1116,10 @@ public class Bootstrapper {
                         = new XForwardedHeadersInjector(
                                 new XPoweredByInjector(
                                         new RequestInterceptorsExecutor(
+                                                new QueryStringRebuiler(
                                                 new PipedWrappingHandler(
                                                         null,
-                                                        proxyHandler))));
+                                                        proxyHandler)))));
 
                 paths.addPrefixPath(location,
                         new RequestLogger(

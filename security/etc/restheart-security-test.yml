@@ -48,6 +48,8 @@ proxies:
     - location: /rh
       proxy-pass: ajp://127.0.0.1:8009
       name: restheart
+    - location: /anything
+      proxy-pass: https://httpbin.org/anything
       
 
 #### SSL Configuration
