@@ -40,6 +40,9 @@ import io.undertow.server.handlers.Cookie;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.LocaleUtils;
+import io.undertow.util.QueryParameterUtils;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 
 /**
  *
@@ -113,7 +116,11 @@ public class RequestLogger extends PipedHttpHandler {
             sb.append(exchange.getRequestMethod()).append(" ").append(exchange.getRequestURL());
 
             if (exchange.getQueryString() != null && !exchange.getQueryString().isEmpty()) {
-                sb.append("?").append(exchange.getQueryString());
+                try {
+                    sb.append("?").append(URLDecoder.decode(exchange.getQueryString(), QueryParameterUtils.getQueryParamEncoding(exchange)));
+                } catch (UnsupportedEncodingException uee) {
+                    sb.append("?").append(exchange.getQueryString());
+                }
             }
 
             sb.append(" from ").append(exchange.getSourceAddress());
