@@ -129,7 +129,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
                 .body("{'modified':true}")
                 .asString();
 
-        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, resp.getStatus());
+        Assert.assertEquals(HttpStatus.SC_EXPECTATION_FAILED, resp.getStatus());
     }
 
     @Test

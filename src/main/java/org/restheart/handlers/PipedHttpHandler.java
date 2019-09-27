@@ -198,9 +198,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
                     exchange,
                     context,
                     HttpStatus.SC_EXPECTATION_FAILED,
-                    "A duplicate key error occurred. "
-                    + "The patched document does not fulfill "
-                    + "an unique index constraint");
+                    ResponseHelper.getMessageFromErrorCode(11000));
             next(exchange, context);
             return true;
         }

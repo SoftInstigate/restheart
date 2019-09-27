@@ -157,17 +157,14 @@ public class PostCollectionHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         }
-
+        
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,
                     HttpStatus.SC_EXPECTATION_FAILED,
-                    "A duplicate key error occurred. "
-                    + "The posted data does not fulfill "
-                    + "an unique index constraint");
-
+                    ResponseHelper.getMessageFromErrorCode(11000));
             next(exchange, context);
             return;
         }

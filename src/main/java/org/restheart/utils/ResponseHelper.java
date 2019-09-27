@@ -312,6 +312,11 @@ public class ResponseHelper {
             case 256:
                 // Transaction X has been committed.
                 return HttpStatus.SC_NOT_ACCEPTABLE;
+            case 11000:
+                // error 11000 is duplicate key error
+                // happens when the _id and a filter are specified,
+                // the document exists but does not match the filter
+                return HttpStatus.SC_EXPECTATION_FAILED;
             default:
                 // Other
                 return HttpStatus.SC_INTERNAL_SERVER_ERROR;
@@ -352,6 +357,13 @@ public class ResponseHelper {
             case 256:
                 // Transaction X has been committed.
                 return "The given transaction is not in-progress";
+            case 11000:
+                // error 11000 is duplicate key error
+                // happens when the _id and a filter are specified,
+                // the document exists but does not match the filter
+                return "The document does not fulfill filter "
+                        + "or index constraints";
+                
             default:
                 return "Error handling the request, "
                         + "see log for more information";

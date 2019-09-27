@@ -34,7 +34,6 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.representation.RepUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
-import org.restheart.utils.URLUtils;
 
 /**
  *

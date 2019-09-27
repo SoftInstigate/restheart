@@ -49,6 +49,7 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
+import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,10 +209,6 @@ public class DAOUtils {
             query = and(query, shardKeys);
         }
 
-        if (filter != null && !filter.isEmpty()) {
-            query = and(query, filter);
-        }
-
         BsonDocument oldDocument;
 
         if (idPresent) {
@@ -224,6 +221,10 @@ public class DAOUtils {
             }
         } else {
             oldDocument = null;
+        }
+        
+        if (filter != null && !filter.isEmpty()) {
+            query = and(query, filter);
         }
 
         if (replace) {
@@ -254,7 +255,8 @@ public class DAOUtils {
                         // error 11000 is duplicate key error
                         // happens when the _id and a filter are specified,
                         // the document exists but does not match the filter
-                        return new OperationResult(HttpStatus.SC_NOT_FOUND,
+                        return new OperationResult(ResponseHelper 
+                                .getHttpStatusFromErrorCode(mce.getErrorCode()),
                                 oldDocument,
                                 null);
                     } else {
@@ -284,12 +286,13 @@ public class DAOUtils {
                     if (allowUpsert
                             && filter != null
                             && !filter.isEmpty()
-                            && mce.getErrorMessage().contains("$_id_ dup key")) {
+                            && mce.getErrorMessage().contains("_id_ dup key")) {
                         // DuplicateKey error
                         // this happens if the filter parameter didn't match
                         // the existing document and so the upserted doc
                         // has an existing _id
-                        return new OperationResult(HttpStatus.SC_NOT_FOUND,
+                        return new OperationResult(ResponseHelper 
+                                .getHttpStatusFromErrorCode(mce.getErrorCode()),
                                 oldDocument,
                                 null);
                     } else {
