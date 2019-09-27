@@ -130,7 +130,7 @@ public class DocumentDAO implements DocumentRepository {
                 shardKeys,
                 content,
                 !patching);
-
+        
         BsonDocument oldDocument = updateResult.getOldData();
 
         if (patching) {
