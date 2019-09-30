@@ -316,7 +316,7 @@ public class ResponseHelper {
                 // error 11000 is duplicate key error
                 // happens when the _id and a filter are specified,
                 // the document exists but does not match the filter
-                return HttpStatus.SC_EXPECTATION_FAILED;
+                return HttpStatus.SC_CONFLICT;
             default:
                 // Other
                 return HttpStatus.SC_INTERNAL_SERVER_ERROR;
