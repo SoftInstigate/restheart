@@ -18,7 +18,6 @@
 package org.restheart.security.plugins.interceptors;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.Arrays;
 import org.restheart.security.plugins.ResponseInterceptor;
 import static org.restheart.security.plugins.TokenManager.ACCESS_CONTROL_EXPOSE_HEADERS;
 
