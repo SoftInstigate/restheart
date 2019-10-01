@@ -110,14 +110,19 @@ public class RequestLogger extends PipedHttpHandler {
         var request = JsonRequest.wrap(exchange);
 
         final StringBuilder sb = new StringBuilder();
-        final long start = request.getStartTime() != null ? request.getStartTime() : System.currentTimeMillis();
+        final long start = request.getStartTime() != null 
+                ? request.getStartTime() 
+                : System.currentTimeMillis();
 
         if (logLevel == 1) {
             sb.append(exchange.getRequestMethod()).append(" ").append(exchange.getRequestURL());
 
-            if (exchange.getQueryString() != null && !exchange.getQueryString().isEmpty()) {
+            if (exchange.getQueryString() != null
+                    && !exchange.getQueryString().isEmpty()) {
                 try {
-                    sb.append("?").append(URLDecoder.decode(exchange.getQueryString(), QueryParameterUtils.getQueryParamEncoding(exchange)));
+                    sb.append("?").append(URLDecoder.decode(exchange.getQueryString(),
+                            QueryParameterUtils
+                                    .getQueryParamEncoding(exchange)));
                 } catch (UnsupportedEncodingException uee) {
                     sb.append("?").append(exchange.getQueryString());
                 }
