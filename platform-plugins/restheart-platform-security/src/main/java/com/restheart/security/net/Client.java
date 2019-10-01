@@ -36,8 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.ChannelListeners;
 import org.xnio.OptionMap;
-import org.xnio.Options;
 import org.xnio.Xnio;
+import org.xnio.XnioWorker;
 import org.xnio.channels.StreamSinkChannel;
 
 /**
@@ -47,18 +47,6 @@ import org.xnio.channels.StreamSinkChannel;
 public class Client {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(Client.class);
-
-    private static final OptionMap DEFAULT_OPTIONS;
-
-    static {
-        final OptionMap.Builder builder = OptionMap.builder()
-                .set(Options.WORKER_IO_THREADS, 8)
-                .set(Options.TCP_NODELAY, true)
-                .set(Options.KEEP_ALIVE, true)
-                .set(Options.WORKER_NAME, "Client");
-
-        DEFAULT_OPTIONS = builder.getMap();
-    }
 
     public static final AttachmentKey<String> RESPONSE_BODY_KEY = AttachmentKey.create(String.class);
 
@@ -77,29 +65,35 @@ public class Client {
         return ClientHolder.INSTANCE;
     }
 
+    public Response execute(Request request) throws IOException {
+        try {
+            return execute(XnioWorker.getContextManager().get(), 
+                    request);
+        } catch (Throwable t) {
+            LOGGER.error("Error executing request " + request.toString(), t);
+            throw new IOException("Error executing request " + request.toString(), t);
+        }
+    }
+
     /**
      *
-     * @param uri
+     * @param worker
      * @param request
      * @return
      * @throws IOException, ConnectException on connection refused
      */
-    public Response execute(Request request) throws IOException {
+    public Response execute(XnioWorker worker, Request request) throws IOException {
         final var client = UndertowClient.getInstance();
-
-        // Create xnio worker
-        final var xnio = Xnio.getInstance();
-        final var xnioWorker = xnio.createWorker(null, DEFAULT_OPTIONS);
 
         try {
             try ( var connection = request.getProtocol().equalsIgnoreCase("https")
                     ? client.connect(request.getConnectionUri(),
-                            xnioWorker,
-                            xnio.getSslProvider(OptionMap.EMPTY),
+                            worker,
+                            Xnio.getInstance().getSslProvider(OptionMap.EMPTY),
                             POOL,
                             OptionMap.EMPTY).get()
                     : client.connect(request.getConnectionUri(),
-                            xnioWorker,
+                            worker,
                             POOL,
                             OptionMap.EMPTY).get()) {
 
