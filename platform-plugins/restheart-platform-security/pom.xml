@@ -1,345 +1,125 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-      <modelVersion>4.0.0</modelVersion>
-  <groupId>com.restheart</groupId>
-  <artifactId>restheart-platform-security</artifactId>
-  <version>1.1.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
-  <name>restheart-platform-security</name>
-  <description>
-    RESTHeart Platform Security - IAM microservice.
-  </description>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.restheart</groupId>
+    <artifactId>restheart-platform-security</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <name>restheart-platform-security</name>
+    <description>RESTHeart Platform Security - IAM microservice.</description>
+    <url>http://www.restheart.org</url>
+    <inceptionYear>2019</inceptionYear>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
-    <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
-    <dependency.locations.enabled>false</dependency.locations.enabled>
-    <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
-    <skipITs>true</skipITs>
-  </properties>
+    <parent>
+        <groupId>com.softinstigate.restheart</groupId>
+        <artifactId>restheart-platform</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
 
-  <!-- Project Information -->
-  <organization>
-    <name>SoftInstigate</name>
-    <url>https://softinstigate.com</url>
-  </organization>
+    <properties>
+        <mainclass>org.restheart.security.Bootstrapper</mainclass>
+    </properties>
 
-  <developers>
-    <developer>
-      <id>ujibang</id>
-      <name>Andrea</name>
-      <email>andrea@softinstigate.com</email>
-      <url>https://www.linkedin.com/in/adicesare</url>
-      <organization>SoftInstigate</organization>
-      <organizationUrl>http://www.softinstigate.com</organizationUrl>
-      <roles>
-        <role>architect</role>
-        <role>developer</role>
-      </roles>
-      <timezone>+1</timezone>
-      <properties>
-        <picUrl>https://pbs.twimg.com/profile_images/491316822101479424/dfngbj7q.jpeg</picUrl>
-      </properties>
-    </developer>
-    <developer>
-      <id>mkj6</id>
-      <name>Maurizio</name>
-      <email>maurizio@softinstigate.com</email>
-      <url>http://www.maurizioturatti.com</url>
-      <organization>SoftInstigate</organization>
-      <organizationUrl>http://www.softinstigate.com</organizationUrl>
-      <roles>
-        <role>developer</role>
-      </roles>
-      <timezone>+1</timezone>
-      <properties>
-        <picUrl>https://pbs.twimg.com/profile_images/510140480999272448/Ht9Rn6gz.jpeg</picUrl>
-      </properties>
-    </developer>
-  </developers>
+    <dependencies>
+        <dependency>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mashape.unirest</groupId>
+            <artifactId>unirest-java</artifactId>
+        </dependency>
+        <!-- BEGIN Test dependencies -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-apache</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-junit4</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
-  <issueManagement>
-    <url>https://github.com/SoftInstigate/uiam/issues</url>
-    <system>GitHub Issues</system>
-  </issueManagement>
-  <repositories>
-      <repository>
-          <id>restheart-platform-security-release</id>
-          <name>S3 Release Repository</name>
-          <url>s3://maven.softinstigate.com/release</url>
-      </repository>
-      <repository>
-          <id>restheart-platform-security-snapshot</id>
-          <name>S3 Snapshot Repository</name>
-          <url>s3://maven.softinstigate.com/snapshot</url>
-      </repository>
-      <repository>
-          <id>oss-sonatype</id>
-          <name>oss.sonatype.org</name>
-          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-          <layout>default</layout>
-          <snapshots>
-              <enabled>true</enabled>
-          </snapshots>
-      </repository>
-  </repositories>
-  <distributionManagement>
-    <snapshotRepository>
-      <id>restheart-platform-security-snapshot</id>
-      <name>S3 Snapshot Repository</name>
-      <url>s3://maven.softinstigate.com/snapshot</url>
-    </snapshotRepository>
-    <repository>
-      <id>restheart-platform-security-release</id>
-      <name>S3 Release Repository</name>
-      <url>s3://maven.softinstigate.com/release</url>
-    </repository>
-  </distributionManagement>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.restheart</groupId>
-      <artifactId>restheart-security</artifactId>
-      <version>1.0.2-SNAPSHOT</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.auth0</groupId>
-      <artifactId>java-jwt</artifactId>
-      <!-- WARNING: v 3.5.0 doesn't compile -->
-      <version>3.4.1</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.mashape.unirest</groupId>
-      <artifactId>unirest-java</artifactId>
-      <version>1.4.9</version>
-    </dependency>
-
-    <!-- BEGIN Test dependencies -->
-    <dependency>
-      <groupId>com.intuit.karate</groupId>
-      <artifactId>karate-apache</artifactId>
-      <version>0.9.1</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.intuit.karate</groupId>
-      <artifactId>karate-junit4</artifactId>
-      <version>0.9.1</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-
-  <build>
-    <extensions>
-      <extension>
-        <groupId>org.springframework.build</groupId>
-        <artifactId>aws-maven</artifactId>
-        <version>5.0.0.RELEASE</version>
-      </extension>
-    </extensions>
-    <testResources>
-      <testResource>
-        <directory>src/test/java</directory>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
-      </testResource>
-    </testResources>
-    <finalName>${project.artifactId}-${project.version}-nodeps</finalName>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.0.0-M2</version>
-        <executions>
-          <execution>
-            <id>enforce-versions</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <requireMavenVersion>
-                  <version>3.3</version>
-                </requireMavenVersion>
-                <requireReleaseDeps>
-                  <message>No Snapshots Allowed!</message>
-                  <excludes>
-                    <exclude>org.restheart:restheart-security</exclude>
-                  </excludes>
-                </requireReleaseDeps>
-                <requireJavaVersion>
-                  <version>11</version>
-                </requireJavaVersion>
-              </rules>
-              <fail>true</fail>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.1</version>
-        <configuration>
-          <finalName>${project.artifactId}</finalName>
-          <createDependencyReducedPom>true</createDependencyReducedPom>
-          <filters>
-            <filter>
-              <artifact>*:*</artifact>
-              <excludes>
-                <exclude>META-INF/*.SF</exclude>
-                <exclude>META-INF/*.DSA</exclude>
-                <exclude>META-INF/*.RSA</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <!-- removing overlapping classes, defined also in guava -->
-              <artifact>com.google.guava:failureaccess</artifact>
-              <excludes>
-                <exclude>com/google/common/util/concurrent/internal/InternalFutureFailureAccess.class</exclude>
-                <exclude>com/google/common/util/concurrent/internal/InternalFutures.class</exclude>
-              </excludes>
-            </filter>
-          </filters>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>org.restheart.security.Bootstrapper</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>3.1.1</version>
-        <executions>
-          <execution>
-            <id>bin</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <id>bin</id>
-              <appendAssemblyId>false</appendAssemblyId>
-              <finalName>${project.artifactId}-${project.version}</finalName>
-              <descriptors>
-                <descriptor>assembly.xml</descriptor>
-              </descriptors>
-              <attach>false</attach>
-              <tarLongFileMode>posix</tarLongFileMode>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.1.1</version>
-        <configuration>
-          <archive>
-            <manifest>
-              <addClasspath>true</addClasspath>
-              <mainClass>org.restheart.security.Bootstrapper</mainClass>
-              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.0</version>
-        <configuration>
-          <debug>true</debug>
-          <!--<compilerArgument>-Xlint</compilerArgument>-->
-          <showDeprecation>true</showDeprecation>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.22.1</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.8</version>
-        <executions>
-          <execution>
-            <id>start-server</id>
-            <phase>pre-integration-test</phase>
-            <configuration>
-              <skip>${skipITs}</skip>
-              <target>
-                <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
-                <echo>1 - Linux or OSX (server is started with --fork option via bash script)</echo>
-                <echo>2 - restheart-platform-core cloned next to restheart-platform-security</echo>
-                <exec dir="${basedir}" executable="${basedir}/../restheart-platform-core/bin/start.sh">
-                  <arg value="--fork"/>  
-                  <arg value="-Dlk-dir=${basedir}/../restheart-platform-core/lickey"/>
-                </exec>
-                <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
-                  <arg value="${basedir}/etc/restheart-platform-security-test.yml"/>
-                </exec>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>stop-server</id>
-            <phase>post-integration-test</phase>
-            <configuration>
-              <skip>${skipITs}</skip>
-              <target>
-                <exec dir="${basedir}" executable="${basedir}/../restheart-platform-core/bin/stop.sh">
-                </exec>
-                <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
-                  <arg value="${basedir}/etc/restheart-platform-security-test.yml"/>
-                </exec>
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>start-server</id>
+                        <phase>pre-integration-test</phase>
+                        <configuration>
+                            <skip>${skipITs}</skip>
+                            <target>
+                                <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
+                                <echo>1 - Linux or OSX (server is started with --fork option via bash script)</echo>
+                                <echo>2 - restheart-platform-core cloned next to restheart-platform-security</echo>
+                                <exec dir="${basedir}" executable="${basedir}/../restheart-platform-core/bin/start.sh">
+                                    <arg value="--fork"/>
+                                    <arg value="-Dlk-dir=${basedir}/../restheart-platform-core/lickey"/>
+                                </exec>
+                                <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
+                                    <arg value="${basedir}/etc/restheart-platform-security-test.yml"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop-server</id>
+                        <phase>post-integration-test</phase>
+                        <configuration>
+                            <skip>${skipITs}</skip>
+                            <target>
+                                <exec dir="${basedir}" executable="${basedir}/../restheart-platform-core/bin/stop.sh">
+                                </exec>
+                                <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
+                                    <arg value="${basedir}/etc/restheart-platform-security-test.yml"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
