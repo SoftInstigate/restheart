@@ -5,6 +5,19 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>distribution-snapshot</id>
+            <name>S3 Snapshot Repository</name>
+            <url>s3://maven.softinstigate.com/snapshot</url>
+        </snapshotRepository>
+        <repository>
+            <id>distribution-release</id>
+            <name>S3 Release Repository</name>
+            <url>s3://maven.softinstigate.com/release</url>
+        </repository>
+    </distributionManagement>
+
     <modules>
         <module>si-lka</module>
         <module>restheart-platform-core</module>
