@@ -13,7 +13,7 @@ pipelines:
           - restheart-platform-core/target/restheart-platform-core-*.zip
           - restheart-platform-core/target/restheart-platform-core.jar
     - step:
-      name: Package
-      image: atlassian/default-image:2
-      script:
-        - if [[ $BITBUCKET_TAG ]]; then ./package.sh $BITBUCKET_TAG; else echo "Commit is not tagged, skipping."; fi
+        name: Package
+        image: atlassian/default-image:2
+        script:
+          - if [[ $BITBUCKET_TAG ]]; then ./package.sh $BITBUCKET_TAG; else echo "Commit is not tagged, skipping."; fi
