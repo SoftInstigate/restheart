@@ -67,11 +67,12 @@ import org.restheart.security.plugins.AuthMechanism;
  * @author <a href="mailto:darran.lofthouse@jboss.com">Darran Lofthouse</a>
  */
 public class DigestAuthMechanism implements AuthMechanism {
+    
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(DigestAuthMechanism.class);
 
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DigestAuthMechanism.class);
 
     public DigestAuthMechanism(final String mechanismName,
             Map<String, Object> args) throws ConfigurationException {

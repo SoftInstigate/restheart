@@ -107,6 +107,7 @@ import org.restheart.security.handlers.QueryStringRebuiler;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.Authorizer;
 import org.restheart.security.plugins.AuthMechanism;
+import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
 
 /**
  *
@@ -176,8 +177,7 @@ public class Bootstrapper {
             LOGGER.debug("ANSI colored console: "
                     + ansi().fg(RED).bold().a(configuration.isAnsiConsole())
                             .reset().toString());
-        }
-        catch (ConfigurationException ex) {
+        } catch (ConfigurationException ex) {
             LOGGER.info(STARTING + ansi().fg(RED).bold().a(RESTHeartSecurity).reset().toString()
                     + INSTANCE
                     + ansi().fg(RED).bold().a(UNDEFINED).reset().toString());
@@ -249,8 +249,7 @@ public class Bootstrapper {
                     d.init();
                     LOGGER.info("Forked process: {}", LIBC.getpid());
                     initLogging(args, d);
-                }
-                catch (Exception t) {
+                } catch (Exception t) {
                     logErrorAndExit("Error staring forked process", t,
                             false,
                             false,
@@ -277,8 +276,7 @@ public class Bootstrapper {
                     logLoggingConfiguration(true);
 
                     d.daemonize();
-                }
-                catch (Throwable t) {
+                } catch (Throwable t) {
                     logErrorAndExit("Error forking", t, false, false, -1);
                 }
             }
@@ -341,8 +339,7 @@ public class Bootstrapper {
     public static void startup(final Path confFilePath) {
         try {
             configuration = FileUtils.getConfiguration(confFilePath, false);
-        }
-        catch (ConfigurationException ex) {
+        } catch (ConfigurationException ex) {
             if (VERSION != null) {
                 LOGGER.info(ansi().fg(RED).bold().a(RESTHeartSecurity).reset().toString()
                         + " version {}",
@@ -464,8 +461,7 @@ public class Bootstrapper {
         // re-read configuration file, to log errors new that logger is initialized 
         try {
             FileUtils.getConfiguration(CONF_FILE_PATH, false);
-        }
-        catch (ConfigurationException ex) {
+        } catch (ConfigurationException ex) {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
@@ -476,16 +472,14 @@ public class Bootstrapper {
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
-                    }
-                    catch (Throwable t) {
+                    } catch (Throwable t) {
                         LOGGER.error("Error executing initializer {}", i.getName());
                     }
                 });
 
         try {
             startCoreSystem();
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             logErrorAndExit("Error starting RESTHeart Security. Exiting...",
                     t,
                     false,
@@ -516,8 +510,7 @@ public class Bootstrapper {
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
-                    }
-                    catch (Throwable t) {
+                    } catch (Throwable t) {
                         LOGGER.error("Error executing initializer {}", i.getName());
                     }
                 });
@@ -560,8 +553,7 @@ public class Bootstrapper {
             try {
                 HANDLERS.shutdown();
                 HANDLERS.awaitShutdown(60 * 1000); // up to 1 minute
-            }
-            catch (InterruptedException ie) {
+            } catch (InterruptedException ie) {
                 LOGGER.error("Error while waiting for pending request "
                         + "to complete", ie);
                 Thread.currentThread().interrupt();
@@ -578,8 +570,7 @@ public class Bootstrapper {
             }
             try {
                 Files.deleteIfExists(pidFilePath);
-            }
-            catch (IOException ex) {
+            } catch (IOException ex) {
                 LOGGER.error("Can't delete pid file {}",
                         pidFilePath.toString(), ex);
             }
@@ -591,8 +582,7 @@ public class Bootstrapper {
         TMP_EXTRACTED_FILES.keySet().forEach(k -> {
             try {
                 ResourcesExtractor.deleteTempDir(k, TMP_EXTRACTED_FILES.get(k));
-            }
-            catch (URISyntaxException | IOException ex) {
+            } catch (URISyntaxException | IOException ex) {
                 LOGGER.error("Error cleaning up temporary directory {}",
                         TMP_EXTRACTED_FILES.get(k).toString(), ex);
             }
@@ -668,8 +658,7 @@ public class Bootstrapper {
             tmf.init(ks);
 
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        }
-        catch (KeyManagementException
+        } catch (KeyManagementException
                 | NoSuchAlgorithmException
                 | KeyStoreException
                 | CertificateException
@@ -679,15 +668,13 @@ public class Bootstrapper {
                     + "Check the keystore-file, "
                     + "keystore-password and certpassword options. Exiting..",
                     ex, false, -1);
-        }
-        catch (FileNotFoundException ex) {
+        } catch (FileNotFoundException ex) {
             logErrorAndExit(
                     "Couldn't start RESTHeart Security, keystore file not found. "
                     + "Check the keystore-file, "
                     + "keystore-password and certpassword options. Exiting..",
                     ex, false, -1);
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             logErrorAndExit(
                     "Couldn't start RESTHeart Security, error reading the keystore file. "
                     + "Check the keystore-file, "
@@ -761,6 +748,8 @@ public class Bootstrapper {
     private static List<AuthMechanism> authMechanisms() {
         var authMechanisms = new ArrayList<AuthMechanism>();
 
+        var amsConf = getConfiguration().getAuthMechanisms();
+
         if (configuration.getAuthMechanisms() != null
                 && !configuration.getAuthMechanisms().isEmpty()) {
             configuration.getAuthMechanisms().stream()
@@ -773,10 +762,29 @@ public class Bootstrapper {
                             authMechanisms.add(PluginsRegistry.getInstance()
                                     .getAuthenticationMechanism(name));
 
-                            LOGGER.info("Authentication Mechanism {} enabled",
-                                    name);
-                        }
-                        catch (ConfigurationException pcex) {
+                            if (LOGGER.isInfoEnabled()) {
+                                var amConf = amsConf.stream().filter(am -> name
+                                        .equals(am.get("name")))
+                                        .findFirst();
+
+                                if (amConf != null
+                                        && amConf.isPresent()
+                                        && amConf.get().get("args") != null
+                                        && amConf.get().get("args") instanceof Map
+                                        && ((Map) amConf.get().get("args"))
+                                                .containsKey("authenticator")) {
+                                    LOGGER.info("Authentication Mechanism {} "
+                                            + "enabled with Authenticator {}",
+                                            name,
+                                            ((Map) amConf.get().get("args"))
+                                                .get("authenticator"));
+                                } else {
+                                    LOGGER.info("Authentication Mechanism {} "
+                                            + "enabled",
+                                            name);
+                                }
+                            }
+                        } catch (ConfigurationException pcex) {
                             logErrorAndExit(pcex.getMessage(), pcex, false, -3);
                         }
                     });
@@ -809,8 +817,7 @@ public class Bootstrapper {
 
                             LOGGER.info("Authorizer {} enabled",
                                     name);
-                        }
-                        catch (ConfigurationException pcex) {
+                        } catch (ConfigurationException pcex) {
                             logErrorAndExit(pcex.getMessage(), pcex, false, -3);
                         }
                     });
@@ -975,8 +982,7 @@ public class Bootstrapper {
                                     _srv.getName(),
                                     _srv.getSecured());
 
-                        }
-                        catch (ConfigurationException pce) {
+                        } catch (ConfigurationException pce) {
                             LOGGER.error("Error plugging in the service", pce);
                         }
                     });
@@ -997,8 +1003,7 @@ public class Bootstrapper {
 
         try {
             return PluginsRegistry.getInstance().getTokenManager();
-        }
-        catch (ConfigurationException pce) {
+        } catch (ConfigurationException pce) {
             LOGGER.error("Error configuring token manager", pce);
             return null;
         }
@@ -1075,8 +1080,7 @@ public class Bootstrapper {
 
             try {
                 sslProvider = xnio.getSslProvider(optionMap);
-            }
-            catch (GeneralSecurityException ex) {
+            } catch (GeneralSecurityException ex) {
                 logErrorAndExit("error configuring ssl", ex, false, -13);
             }
 
@@ -1117,9 +1121,9 @@ public class Bootstrapper {
                                 new XPoweredByInjector(
                                         new RequestInterceptorsExecutor(
                                                 new QueryStringRebuiler(
-                                                new PipedWrappingHandler(
-                                                        null,
-                                                        proxyHandler)))));
+                                                        new PipedWrappingHandler(
+                                                                null,
+                                                                proxyHandler)))));
 
                 paths.addPrefixPath(location,
                         new RequestLogger(
@@ -1131,8 +1135,7 @@ public class Bootstrapper {
                                         tokenManager)));
 
                 LOGGER.info("URI {} bound to resource {}", location, _proxyPass);
-            }
-            catch (URISyntaxException ex) {
+            } catch (URISyntaxException ex) {
                 LOGGER.warn("Invalid location URI {}, resource {} not bound ",
                         location,
                         _proxyPass);
