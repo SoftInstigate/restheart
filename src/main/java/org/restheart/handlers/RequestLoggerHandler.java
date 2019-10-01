@@ -107,17 +107,24 @@ public class RequestLoggerHandler extends PipedHttpHandler {
         }
 
         final StringBuilder sb = new StringBuilder();
-        final long start = context != null ? context.getRequestStartTime() : System.currentTimeMillis();
+        final long start = context != null 
+                ? context.getRequestStartTime() 
+                : System.currentTimeMillis();
 
         if (logLevel == 1) {
             sb.append(exchange.getRequestMethod()).append(" ")
                     .append(exchange.getRequestURL());
 
-            try {
-                    sb.append("?").append(URLDecoder.decode(exchange.getQueryString(), QueryParameterUtils.getQueryParamEncoding(exchange)));
+            if (exchange.getQueryString() != null
+                    && !exchange.getQueryString().isEmpty()) {
+                try {
+                    sb.append("?").append(URLDecoder.decode(exchange.getQueryString(),
+                            QueryParameterUtils
+                                    .getQueryParamEncoding(exchange)));
                 } catch (UnsupportedEncodingException uee) {
                     sb.append("?").append(exchange.getQueryString());
                 }
+            }
 
             sb.append(" from ").append(exchange.getSourceAddress());
         } else {
