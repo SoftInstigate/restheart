@@ -1,0 +1,130 @@
+/*
+ * RESTHeart - the Web API for MongoDB
+ * Copyright (C) SoftInstigate Srl
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package com.restheart.security.utils;
+
+import org.fusesource.jansi.Ansi;
+import org.fusesource.jansi.Ansi.Color;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
+import org.slf4j.Logger;
+
+/**
+ *
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
+ */
+public class LogUtils {
+    public static enum Level {
+        TRACE, DEBUG, INFO, WARN, ERROR
+    }
+
+    public static void log(Logger logger, Level level, String format, Object... argArray) {
+        if (logger != null && level != null) {
+            switch (level) {
+                case TRACE:
+                    logger.trace(format, argArray);
+                    break;
+                case DEBUG:
+                    logger.debug(format, argArray);
+                    break;
+                case INFO:
+                    logger.info(format, argArray);
+                    break;
+                case WARN:
+                    logger.warn(format, argArray);
+                    break;
+                case ERROR:
+                    logger.error(format, argArray);
+                    break;
+            }
+        }
+    }
+    
+    public static void boxedError(
+            Logger LOGGER,
+            String... rows) {
+        boxedMessage(LOGGER, Level.ERROR, RED, GREEN, rows);
+    }
+    
+    public static void boxedWarn(
+            Logger LOGGER,
+            String... rows) {
+        boxedMessage(LOGGER, Level.WARN, RED, GREEN, rows);
+    }
+    
+    public static void boxedInfo(
+            Logger LOGGER,
+            String... rows) {
+        boxedMessage(LOGGER, Level.INFO, GREEN, GREEN, rows);
+    }
+    
+    public static void boxedMessage(
+            Logger LOGGER,
+            Level level,
+            Color firstRowColor,
+            Color rowsColor,
+            String... rows) {
+
+        var msg = header();
+        var first = true;
+        for (var row : rows) {
+            msg.a(sr())
+                    .fg(first ? firstRowColor: rowsColor)
+                    .a(pad(row, 66))
+                    .a(er())
+                    .reset();
+            
+            first = false;
+        }
+
+        msg.a(footer());
+
+        LogUtils.log(LOGGER, level, msg.toString(), (Object[])null);
+    }
+
+    private static Ansi sr() {
+        return ansi().fg(GREEN).a("| ").reset();
+    }
+
+    private static Ansi er() {
+        return ansi().fg(GREEN).a("|\n").reset();
+    }
+
+    private static Ansi header() {
+        return ansi().a("\n").fg(GREEN).a(
+                "*-------------------------------------------------------------------*\n"
+                + "|                                                                   |\n")
+                .reset();
+    }
+
+    private static Ansi footer() {
+        return ansi().fg(GREEN).a(
+                "|                                                                   |\n"
+                + "*-------------------------------------------------------------------*\n")
+                .reset();
+
+    }
+
+    private static String pad(String s, int length) {
+        var ret = new String(s);
+        while (ret.length() < length) {
+            ret = ret.concat(" ");
+        }
+        return ret;
+    }
+}

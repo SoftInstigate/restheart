@@ -1,0 +1,17 @@
+# Service file for restheart-platform-security daemon
+#
+# Date: Oct 16, 2018
+# Author: Andrea Di Cesare <andrea@softinstigate.com>
+
+[Unit]
+Description=uIAM Daemon
+After=syslog.target network.target
+
+[Service]
+ExecStart=/usr/bin/java -server -jar /usr/share/uiam/restheart-platform-security.jar /etc/restheart-platform-security.yml
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

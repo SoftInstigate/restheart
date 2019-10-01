@@ -1,0 +1,57 @@
+version: '3'
+
+### Creates a named network with the default bridge driver
+# The network is shared between restheart and mongodb only
+# See: https://docs.docker.com/engine/userguide/networking/dockernetworks/
+# See: https://docs.docker.com/engine/reference/commandline/network_create/
+networks:
+   backend:
+       
+### Create a permanent, named data volume
+# This makes much easier to identify where the mongodb data is stored on host
+# See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
+volumes:
+   restheart-platform-datadb:
+
+services:
+   restheart-platform-security:
+      image: softinstigate/restheart-platform-security
+      container_name: restheart-platform-security
+      depends_on:
+         - restheart-platform-core
+      networks:
+         - backend
+      ports:
+         - "8080:8080"
+         
+   restheart-platform-core:
+      image: softinstigate/restheart-platform-core
+      build: .
+      container_name: restheart-platform-core
+      depends_on:
+         - mongodb
+      networks:
+         - backend
+      volumes:
+          - ./lickey:/opt/restheart-platform/lickey:rw
+      ### Uncoment below if you want to mount a local configuration folder
+      ### to overwrite default restheart.yml
+      #   - ./etc:/opt/restheart/etc:ro
+
+   mongodb:
+      image: mongo:4.0
+      container_name: restheart-platform-mongo
+      environment:
+            # Be sure this credentials match with those in etc/restheart.yml
+            # $ mongo --username restheart --password R3ste4rt! --authenticationDatabase admin
+            # These aren't needed if connecting to an existing database instance
+            MONGO_INITDB_ROOT_USERNAME: restheart
+            MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
+      command: --bind_ip_all --auth
+      volumes:
+         - restheart-platform-datadb:/data/db
+      networks:
+         - backend
+      ### Uncoment below if you want to map mongodb port
+      #ports:
+      #   - "27017:27017"

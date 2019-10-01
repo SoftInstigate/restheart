@@ -1,0 +1,23 @@
+[
+    {
+        "_id": "full",
+        "password": "secret",
+        "roles": [
+            "full"
+        ]
+    },
+    {
+        "_id": "filtered",
+        "password": "secret",
+        "roles": [
+            "filtered"
+        ]
+    },
+    {
+        "_id": "both",
+        "password": "secret",
+        "roles": [
+            "filtered", "full"
+        ]
+    }
+]
