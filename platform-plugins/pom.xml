@@ -30,12 +30,12 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>distribution-snapshot</id>
+            <id>aws-snapshot</id>
             <name>S3 Snapshot Repository</name>
             <url>s3://maven.softinstigate.com/snapshot</url>
         </snapshotRepository>
         <repository>
-            <id>distribution-release</id>
+            <id>aws-release</id>
             <name>S3 Release Repository</name>
             <url>s3://maven.softinstigate.com/release</url>
         </repository>
