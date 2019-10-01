@@ -28,6 +28,49 @@
         <url>https://softinstigate.com</url>
     </organization>
 
+    <licenses>
+        <license>
+            <name>RESTHeart COMMERCIAL LICENSE</name>
+            <url>https://github.com/SoftInstigate/restheart/blob/master/COMM-LICENSE.txt</url>
+            <distribution>manual</distribution>
+            <comments>Commercial license</comments>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>ujibang</id>
+            <name>Andrea</name>
+            <email>andrea@softinstigate.com</email>
+            <url>https://www.linkedin.com/in/adicesare</url>
+            <organization>SoftInstigate</organization>
+            <organizationUrl>http://www.softinstigate.com</organizationUrl>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>+1</timezone>
+            <properties>
+                <picUrl>https://pbs.twimg.com/profile_images/491316822101479424/dfngbj7q.jpeg</picUrl>
+            </properties>
+        </developer>
+        <developer>
+            <id>mkj6</id>
+            <name>Maurizio</name>
+            <email>maurizio@softinstigate.com</email>
+            <url>http://www.maurizioturatti.com</url>
+            <organization>SoftInstigate</organization>
+            <organizationUrl>http://www.softinstigate.com</organizationUrl>
+            <roles>
+                <role>developer</role>
+            </roles>
+            <timezone>+1</timezone>
+            <properties>
+                <picUrl>https://pbs.twimg.com/profile_images/510140480999272448/Ht9Rn6gz.jpeg</picUrl>
+            </properties>
+        </developer>
+    </developers>
+
     <distributionManagement>
         <snapshotRepository>
             <id>aws-snapshot</id>
