@@ -8,6 +8,12 @@
     <description>RESTHeart Platform</description>
     <url>http://www.restheart.org</url>
     <inceptionYear>2019</inceptionYear>
+    
+    <modules>
+        <module>si-lka</module>
+        <module>restheart-platform-core</module>
+        <module>restheart-platform-security</module>
+    </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -324,9 +330,4 @@
         </pluginManagement>
     </build>
 
-    <modules>
-        <module>si-lka</module>
-        <module>restheart-platform-core</module>
-        <module>restheart-platform-security</module>
-    </modules>
 </project>
