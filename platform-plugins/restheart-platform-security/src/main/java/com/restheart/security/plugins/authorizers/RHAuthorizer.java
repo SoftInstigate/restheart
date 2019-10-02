@@ -141,6 +141,11 @@ public class RHAuthorizer implements Authorizer {
      */
     @Override
     public boolean isAllowed(HttpServerExchange exchange) {
+        // always allow OPTIONS requests
+        if (ByteArrayRequest.wrap(exchange).isOptions()) {
+            return true;
+        }
+        
         if (this.rootRole != null
                 && exchange
                         .getSecurityContext() != null
