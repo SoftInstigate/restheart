@@ -70,7 +70,7 @@ public class Client {
             return execute(XnioWorker.getContextManager().get(), 
                     request);
         } catch (Throwable t) {
-            LOGGER.error("Error executing request " + request.toString(), t);
+            LOGGER.trace("Error executing request " + request.toString(), t);
             throw new IOException("Error executing request " + request.toString(), t);
         }
     }
