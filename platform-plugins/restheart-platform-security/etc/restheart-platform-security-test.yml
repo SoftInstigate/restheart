@@ -76,8 +76,6 @@ use-embedded-keystore: true
  # successfully authenticates the incoming request or the list of mechanisms is
  # exhausted.
 
- # See README.md for the list of available Authentication Mechanisms
-
 auth-mechanisms:
     - name: tokenBasicAuthMechanism
       class: org.restheart.security.plugins.mechanisms.TokenBasicAuthMechanism
@@ -118,8 +116,6 @@ auth-mechanisms:
 
  # An Authenticator verify user credential and are used by one or more 
  # AuthMachanisms
-
- # See README.md for the list of available Authenticators
 
 authenticators:
 #    - name: simpleFileAuthenticator
@@ -176,8 +172,6 @@ authenticators:
  # an authenticator allows the incoming request or the list of authenticators is 
  # exhausted. In the latter case, the request ends and 403 Forbidden is returned.
 
- # See README.md for the list of available Authorizers
-
 authorizers:
 #    - name: requestPredicatesAuthorizer
 #      class: org.restheart.security.plugins.authorizers.RequestPredicatesAuthorizer
@@ -200,8 +194,6 @@ authorizers:
  # The token is returned to the caller via auth-token header when the user
  # autheticates succesfully. The token can be used by Authentication Mechanisms.
 
- # See README.md for the list of available Token Managers.
-
 token-manager:
     name: rndTokenManager
     class: org.restheart.security.plugins.tokens.RndTokenManager
@@ -214,8 +206,6 @@ token-manager:
  # RESTHeart Security allows exposing custom services
  # The service class must extend the prg.restheart.security.plugins.Service
  # and can be bound to an URI via the service option
-
- # See README.md for the list of available Services
 
 services:
     - name: rndTokenService
