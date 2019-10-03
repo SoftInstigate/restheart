@@ -83,8 +83,10 @@ public class CsvLoader extends Service {
             + "props=<props> optional (default: no props) additional props to add to each row, "
             + "values=<values> optional (default: no values) values of additional props to add to each row, "
             + "transformer=<tname> optional (default: no transformer). name (as defined in conf file) of a tranformer to apply to imported data, "
-            + "update=true optional (default: false). use data to update matching documents"
-            + "upsert=true optional (default: true). create new document if no documents match the row. ";
+            + "update=<value> optional (default: false). if true, update matching documents (requires id to be set), "
+            + "upsert=<value> optional (default: true). when update=true, create new documents when not matching existing ones.";
+
+    private static final String ERROR_NO_ID = "id must be set when update=true";
 
     private static final String ERROR_CONTENT_TYPE = "Content-Type request header must be 'text/csv'";
 
@@ -112,6 +114,8 @@ public class CsvLoader extends Service {
 
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+        boolean respBodySet = false;
+        
         if (context.isOptions()) {
             handleOptions(exchange, context);
         } else {
@@ -121,70 +125,83 @@ public class CsvLoader extends Service {
                     try {
                         CsvRequestParams params = new CsvRequestParams(exchange);
 
-                        try {
-                            List<BsonDocument> documents = parseCsv(exchange, params, context, context.getRawContent());
+                        if (params.update && params.idIdx < 0) {
+                            ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
+                                    ERROR_NO_ID);
+                            respBodySet = true;
+                        } else {
+                            try {
+                                List<BsonDocument> documents = parseCsv(exchange, params, context, context.getRawContent());
 
-                            if (documents != null && documents.size() > 0) {
-                                MongoCollection<BsonDocument> mcoll = MongoDBClientSingleton.getInstance().getClient()
-                                        .getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
+                                if (documents != null && documents.size() > 0) {
+                                    MongoCollection<BsonDocument> mcoll = MongoDBClientSingleton.getInstance().getClient()
+                                            .getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
 
-                                if (params.update) {
-                                    documents.stream().forEach(document -> {
-                                        BsonDocument updateQuery = new BsonDocument("_id", document.remove("_id"));
+                                    if (params.update && !params.upsert) {
+                                        documents.stream().forEach(document -> {
+                                            BsonDocument updateQuery = new BsonDocument("_id", document.remove("_id"));
 
-                                        // for upate import, take _filter property into account
-                                        // for instance, a filter allows to use $ positional array operator
-                                        BsonValue _filter = document.remove(FILTER_PROPERTY);
+                                            // for upate import, take _filter property into account
+                                            // for instance, a filter allows to use $ positional array operator
+                                            BsonValue _filter = document.remove(FILTER_PROPERTY);
 
-                                        if (_filter != null && _filter.isDocument()) {
-                                            updateQuery.putAll(_filter.asDocument());
-                                        }
-                                        if (params.upsert) {
+                                            if (_filter != null && _filter.isDocument()) {
+                                                updateQuery.putAll(_filter.asDocument());
+                                            }
+                                            if (params.upsert) {
+                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", document),
+                                                        FAU_WITH_UPSERT_OPS);
+                                            } else {
+
+                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", document),
+                                                        FAU_NO_UPSERT_OPS);
+                                            }
+                                        });
+                                    } else if (params.update && params.upsert) {
+                                        documents.stream().forEach(document -> {
+                                            BsonDocument updateQuery = new BsonDocument("_id", document.remove("_id"));
+
                                             mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", document),
                                                     FAU_WITH_UPSERT_OPS);
-                                        } else {
-
-                                            mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", document),
-                                                    FAU_NO_UPSERT_OPS);
-                                        }
-                                    });
-                                } else if (params.upsert) {
-                                    documents.stream().forEach(document -> {
-                                        BsonDocument updateQuery = new BsonDocument("_id", document.remove("_id"));
-
-                                        mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", document),
-                                                FAU_WITH_UPSERT_OPS);
-                                    });
+                                        });
+                                    } else {
+                                        mcoll.insertMany(documents);
+                                    }
+                                    context.setResponseStatusCode(HttpStatus.SC_OK);
                                 } else {
-                                    mcoll.insertMany(documents);
+                                    context.setResponseStatusCode(HttpStatus.SC_NOT_MODIFIED);
                                 }
-                                context.setResponseStatusCode(HttpStatus.SC_OK);
-                            } else {
-                                context.setResponseStatusCode(HttpStatus.SC_NOT_MODIFIED);
-                            }
-                        } catch (IOException ex) {
-                            LOGGER.debug("error parsing CSV data", ex);
-                            ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
-                                    ERROR_PARSING_DATA);
+                            } catch (IOException ex) {
+                                LOGGER.debug("error parsing CSV data", ex);
+                                ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
+                                        ERROR_PARSING_DATA);
+                                respBodySet = true;
 
+                            }
                         }
                     } catch (IllegalArgumentException iae) {
                         ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
                                 ERROR_QPARAM);
+                        respBodySet = true;
                     }
                 } else {
                     ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
                             ERROR_CONTENT_TYPE);
+                    respBodySet = true;
                 }
 
             } else {
                 ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_IMPLEMENTED,
                         ERROR_WRONG_METHOD);
+                respBodySet = true;
             }
         }
+
         // this clean the error message about the wrong media type
         // added by BodyInjectorHandler
-        context.setResponseContent(null);
+        if (!respBodySet) {
+            context.setResponseContent(null);
+        }
 
         next(exchange, context);
     }
@@ -197,7 +214,7 @@ public class CsvLoader extends Service {
 
         List<String> cols = null;
 
-        try (Scanner scanner = new Scanner(rawContent)) {
+        try ( Scanner scanner = new Scanner(rawContent)) {
             while (scanner.hasNext()) {
                 String line = scanner.nextLine();
 
@@ -342,17 +359,6 @@ class CsvRequestParams {
 
         update = _update != null && (_update.isEmpty() || "true".equalsIgnoreCase(_update.getFirst()));
 
-        if (_upsert == null)
-            upsert = true;
-        else {
-            if (_upsert.isEmpty())
-                upsert = true;
-            else if ("false".equalsIgnoreCase(_upsert.getFirst())) {
-                upsert = false;
-            } else {
-                upsert = true;
-            }
-        }
-
+        upsert = _upsert == null || _update.isEmpty() || "true".equalsIgnoreCase(_upsert.getFirst());
     }
 }
