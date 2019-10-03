@@ -276,6 +276,7 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                                         new TransformersListHandler(
                                                 new ResponseSenderHandler(null),
                                                 PHASE.RESPONSE,
+                                                new AggregationTransformer(),
                                                 new MetaRequestTransformer())),
                                 PHASE.REQUEST,
                                 new MetaRequestTransformer()))
@@ -330,6 +331,7 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                                         new TransformersListHandler(
                                                 new ResponseSenderHandler(null),
                                                 PHASE.RESPONSE,
+                                                new AggregationTransformer(),
                                                 new MetaRequestTransformer())),
                                 PHASE.REQUEST,
                                 new MetaRequestTransformer()))

@@ -57,7 +57,7 @@ public class AggregationTransformer implements Transformer {
 
         BsonDocument _contentToTransform = contentToTransform.asDocument();
 
-        if (context.getType() == RequestContext.TYPE.COLLECTION) {
+        if (context.isCollection() || context.isCollectionMeta()) {
             BsonArray aggrs = getAggregationMetadata(_contentToTransform);
 
             if (aggrs == null) {
@@ -73,7 +73,7 @@ public class AggregationTransformer implements Transformer {
                 _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
                         JsonUtils.unescapeKeys(aggrs));
             }
-        } else if ((context.getType() == RequestContext.TYPE.DB)
+        } else if ((context.isDb())
                 && context.getMethod() == RequestContext.METHOD.GET) {
             // apply transformation on embedded schemas
 
