@@ -492,7 +492,7 @@ public class RequestContext {
             }
 
             this.jsonMode = jsonMode;
-        }  else {
+        } else {
             this.jsonMode = null;
         }
     }
@@ -596,9 +596,11 @@ public class RequestContext {
             ret = URLUtils.removeTrailingSlashes(
                     ret.replaceFirst("^" + this.whatUri, this.whereUri));
         }
-
+        
         if (ret.isEmpty()) {
             ret = SLASH;
+        } else {
+            ret = ret.replaceAll("//", "/");
         }
 
         return ret;
@@ -1911,7 +1913,7 @@ public class RequestContext {
     public void setClientSession(ClientSessionImpl clientSession) {
         this.clientSession = clientSession;
     }
-    
+
     /**
      * @return the jsonMode as specified by jsonMode query paramter
      */
