@@ -186,7 +186,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
                     exchange,
                     context,
                     HttpStatus.SC_CONFLICT,
-                    "The document's ETag must be provided using the '"
+                    "The ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header");
             next(exchange, context);
