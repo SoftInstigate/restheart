@@ -41,10 +41,10 @@ case $MONGO_VERSION in
         KARATE_OPS=""
     ;;
     *"3.6"*)
-        KARATE_OPS="--tags ~@requires-mongodb-4"
+        KARATE_OPS="--tags ~@requires-mongodb-4 ~@requires-replica-set"
     ;;
     *)
-        export KARATE_OPS="--tags ~@requires-mongodb-4 ~@requires-mongodb-3.6"
+        KARATE_OPS="--tags ~@requires-mongodb-4 ~@requires-mongodb-3.6 ~@requires-replica-set"
     ;;
 esac
 
