@@ -1,92 +1,17 @@
-/*
- * RESTHeart Security
- * 
- * Copyright (C) SoftInstigate Srl
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- * http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.restheart.security;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheNotFoundException;
 import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import static com.sun.akuma.CLibrary.LIBC;
-import org.restheart.security.handlers.ConfigurableEncodingHandler;
-import static org.restheart.security.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
-import org.restheart.security.handlers.exchange.AbstractExchange.METHOD;
-import org.restheart.security.handlers.RequestNotManagedHandler;
 import static io.undertow.Handlers.path;
-import static org.fusesource.jansi.Ansi.ansi;
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.MAGENTA;
-import static org.fusesource.jansi.Ansi.Color.RED;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.GeneralSecurityException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
-
-import org.fusesource.jansi.AnsiConsole;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xnio.OptionMap;
-import org.xnio.Options;
-import org.xnio.SslClientAuthMode;
-import org.xnio.Xnio;
-import org.xnio.ssl.XnioSsl;
-
-import org.restheart.security.handlers.ErrorHandler;
-import org.restheart.security.handlers.PipedHttpHandler;
-import org.restheart.security.handlers.PipedWrappingHandler;
-import org.restheart.security.handlers.injectors.RequestContentInjector;
-import org.restheart.security.handlers.RequestLogger;
-import org.restheart.security.handlers.RequestInterceptorsExecutor;
-import org.restheart.security.handlers.ResponseSender;
-import org.restheart.security.handlers.injectors.XForwardedHeadersInjector;
-import org.restheart.security.handlers.injectors.AuthHeadersRemover;
-import org.restheart.security.handlers.injectors.ConduitInjector;
-import org.restheart.security.handlers.injectors.XPoweredByInjector;
-import org.restheart.security.handlers.CORSHandler;
-import org.restheart.security.handlers.SecurityHandler;
-import org.restheart.security.plugins.PluginsRegistry;
-import org.restheart.security.plugins.authorizers.FullAuthorizer;
-import org.restheart.security.plugins.Service;
-import org.restheart.security.utils.FileUtils;
-import org.restheart.security.utils.LoggingInitializer;
-import org.restheart.security.utils.OSChecker;
-import org.restheart.security.utils.ResourcesExtractor;
-import org.restheart.security.utils.RESTHeartSecurityDaemon;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
@@ -100,14 +25,77 @@ import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.util.HttpString;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.MAGENTA;
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
+import org.restheart.security.handlers.CORSHandler;
+import org.restheart.security.handlers.ConfigurableEncodingHandler;
+import org.restheart.security.handlers.ErrorHandler;
+import org.restheart.security.handlers.PipedHttpHandler;
+import org.restheart.security.handlers.PipedWrappingHandler;
 import org.restheart.security.handlers.QueryStringRebuiler;
-import org.restheart.security.plugins.TokenManager;
-import org.restheart.security.plugins.Authorizer;
+import org.restheart.security.handlers.RequestInterceptorsExecutor;
+import org.restheart.security.handlers.RequestLogger;
+import org.restheart.security.handlers.RequestNotManagedHandler;
+import org.restheart.security.handlers.ResponseSender;
+import org.restheart.security.handlers.SecurityHandler;
+import static org.restheart.security.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
+import org.restheart.security.handlers.exchange.AbstractExchange.METHOD;
+import org.restheart.security.handlers.injectors.AuthHeadersRemover;
+import org.restheart.security.handlers.injectors.ConduitInjector;
+import org.restheart.security.handlers.injectors.RequestContentInjector;
+import org.restheart.security.handlers.injectors.XForwardedHeadersInjector;
+import org.restheart.security.handlers.injectors.XPoweredByInjector;
 import org.restheart.security.plugins.AuthMechanism;
-import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
+import org.restheart.security.plugins.Authorizer;
+import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.security.plugins.Service;
+import org.restheart.security.plugins.TokenManager;
+import org.restheart.security.plugins.authorizers.FullAuthorizer;
+import org.restheart.security.utils.FileUtils;
+import org.restheart.security.utils.LoggingInitializer;
+import org.restheart.security.utils.OSChecker;
+import org.restheart.security.utils.RESTHeartSecurityDaemon;
+import org.restheart.security.utils.ResourcesExtractor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xnio.OptionMap;
+import org.xnio.Options;
+import org.xnio.SslClientAuthMode;
+import org.xnio.Xnio;
+import org.xnio.ssl.XnioSsl;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  *
@@ -118,12 +106,12 @@ public class Bootstrapper {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(Bootstrapper.class);
 
+    private static boolean IS_FORKED;
+    private static String ENVIRONMENT_FILE;
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
 
     private static Path CONF_FILE_PATH;
-
-    private static PathHandler rootPathHandler = path();
-
+    private static final PathHandler ROOT_PATH_HANDLER = path();
     private static GracefulShutdownHandler HANDLERS = null;
     private static Configuration configuration;
     private static Undertow undertowServer;
@@ -132,11 +120,8 @@ public class Bootstrapper {
     private static final String INSTANCE = " instance ";
     private static final String STARTING = "Starting ";
     private static final String UNDEFINED = "undefined";
-    private static final String RESTHeartSecurity = "RESTHeart Security";
+    private static final String RESTHEART_SECURITY = "RESTHeart Security";
     private static final String VERSION = "Version {}";
-
-    private Bootstrapper() {
-    }
 
     /**
      * getConfiguration
@@ -155,44 +140,49 @@ public class Bootstrapper {
      * @return the restheart root path handler
      */
     public static PathHandler getRootPathHandler() {
-        return rootPathHandler;
+        return ROOT_PATH_HANDLER;
+    }
+
+    private static void parseCommandLineParameters(final String[] args) {
+        Args parameters = new Args();
+        JCommander cmd = JCommander.newBuilder().addObject(parameters).build();
+        cmd.setProgramName("java -Dfile.encoding=UTF-8 -jar -server restheart-security.jar");
+        try {
+            cmd.parse(args);
+            if (parameters.help) {
+                cmd.usage();
+                System.exit(0);
+            }
+
+            String confFilePath = (parameters.configPath == null)
+                    ? System.getenv("RESTHEART_SECURITY_CONFFILE")
+                    : parameters.configPath;
+            CONF_FILE_PATH = FileUtils.getFileAbsolutePath(confFilePath);
+
+            FileUtils.getFileAbsolutePath(parameters.configPath);
+
+            IS_FORKED = parameters.isForked;
+            ENVIRONMENT_FILE = (parameters.envFile == null)
+                    ? System.getenv("RESTHEART_SECURITY_ENVFILE")
+                    : parameters.envFile;
+        } catch (com.beust.jcommander.ParameterException ex) {
+            LOGGER.error(ex.getMessage());
+            cmd.usage();
+            System.exit(1);
+        }
+    }
+
+    public static void main(final String[] args) throws ConfigurationException, IOException {
+        parseCommandLineParameters(args);
+        setJsonpathDefaults();
+        configuration = loadConfiguration();
+        run();
     }
 
     /**
-     * main method
-     *
-     * @param args command line arguments
+     * Configuration from JsonPath
      */
-    public static void main(final String[] args) {
-        CONF_FILE_PATH = FileUtils.getConfigurationFilePath(args);
-
-        try {
-            // read configuration silently, to avoid logging before initializing the logger
-            configuration = FileUtils.getConfiguration(args, true);
-            LOGGER.debug(configuration.toString());
-
-            if (!configuration.isAnsiConsole()) {
-                AnsiConsole.systemInstall();
-            }
-            LOGGER.debug("ANSI colored console: "
-                    + ansi().fg(RED).bold().a(configuration.isAnsiConsole())
-                            .reset().toString());
-        } catch (ConfigurationException ex) {
-            LOGGER.info(STARTING + ansi().fg(RED).bold().a(RESTHeartSecurity).reset().toString()
-                    + INSTANCE
-                    + ansi().fg(RED).bold().a(UNDEFINED).reset().toString());
-
-            if (VERSION != null) {
-                LOGGER.info(VERSION,
-                        ansi().fg(MAGENTA).bold()
-                                .a(Configuration.VERSION)
-                                .reset().toString());
-            }
-
-            logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
-        }
-
-        // configuration from JsonPath
+    private static void setJsonpathDefaults() {
         com.jayway.jsonpath.Configuration.setDefaults(
                 new com.jayway.jsonpath.Configuration.Defaults() {
             private final JsonProvider jsonProvider = new GsonJsonProvider();
@@ -213,9 +203,11 @@ public class Bootstrapper {
                 return EnumSet.noneOf(com.jayway.jsonpath.Option.class);
             }
         });
+    }
 
-        if (!hasForkOption(args)) {
-            initLogging(args, null);
+    private static void run() {
+        if (!hasForkOption()) {
+            initLogging(null);
             startServer(false);
         } else {
             if (OSChecker.isWindows()) {
@@ -248,7 +240,7 @@ public class Bootstrapper {
                 try {
                     d.init();
                     LOGGER.info("Forked process: {}", LIBC.getpid());
-                    initLogging(args, d);
+                    initLogging(d);
                 } catch (Exception t) {
                     logErrorAndExit("Error staring forked process", t,
                             false,
@@ -258,13 +250,12 @@ public class Bootstrapper {
 
                 startServer(true);
             } else {
-                initLogging(args, d);
-
+                initLogging(d);
                 try {
                     String instanceName = getInstanceName();
 
                     LOGGER.info(STARTING
-                            + ansi().fg(RED).bold().a(RESTHeartSecurity).reset().toString()
+                            + ansi().fg(RED).bold().a(RESTHEART_SECURITY).reset().toString()
                             + INSTANCE
                             + ansi().fg(RED).bold().a(instanceName).reset()
                                     .toString());
@@ -283,10 +274,48 @@ public class Bootstrapper {
         }
     }
 
+    private static Configuration loadConfiguration() throws ConfigurationException, UnsupportedEncodingException, IOException {
+        if (CONF_FILE_PATH == null) {
+            LOGGER.warn("No configuration file provided, starting with default values!");
+            return new Configuration();
+        } else if (ENVIRONMENT_FILE == null) {
+            try {
+                if (Configuration.isParametric(CONF_FILE_PATH)) {
+                    logErrorAndExit("Configuration is parametric but no properties file has been specified."
+                            + " You can use -e option to specify the properties file. "
+                            + "For more information check https://restheart.org/learn/configuration",
+                            null, false, -1);
+                }
+            } catch (IOException ioe) {
+                logErrorAndExit("Configuration file not found " + CONF_FILE_PATH, null, false, -1);
+            }
+
+            return new Configuration(CONF_FILE_PATH, false);
+        } else {
+            final Properties p = new Properties();
+            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(ENVIRONMENT_FILE), "UTF-8")) {
+                p.load(reader);
+            } catch (FileNotFoundException fnfe) {
+                logErrorAndExit("Properties file not found " + ENVIRONMENT_FILE, null, false, -1);
+            }
+
+            final StringWriter writer = new StringWriter();
+            try {
+                Mustache m = new DefaultMustacheFactory().compile(CONF_FILE_PATH.toString());
+                m.execute(writer, p);
+                writer.flush();
+            } catch (MustacheNotFoundException ex) {
+                logErrorAndExit("Configuration file not found " + CONF_FILE_PATH, null, false, -1);
+            }
+
+            Map<String, Object> obj = new Yaml().load(writer.toString());
+            return new Configuration(obj, false);
+        }
+    }
+
     private static void logWindowsStart() {
         String instanceName = getInstanceName();
-
-        LOGGER.info(STARTING + ansi().fg(RED).bold().a(RESTHeartSecurity).reset().toString()
+        LOGGER.info(STARTING + ansi().fg(RED).bold().a(RESTHEART_SECURITY).reset().toString()
                 + INSTANCE
                 + ansi().fg(RED).bold().a(instanceName).reset().toString());
 
@@ -309,7 +338,7 @@ public class Bootstrapper {
         // pid file name include the hash of the configuration file so that
         // for each configuration we can have just one instance running
         Path pidFilePath = FileUtils.getPidFilePath(FileUtils
-                .getFileAbsoultePathHash(confFilePath));
+                .getFileAbsolutePathHash(confFilePath));
 
         if (Files.exists(pidFilePath)) {
             LOGGER.warn(
@@ -328,7 +357,7 @@ public class Bootstrapper {
      * @param confFilePath the path of the configuration file
      */
     public static void startup(final String confFilePath) {
-        startup(FileUtils.getFileAbsoultePath(confFilePath));
+        startup(FileUtils.getFileAbsolutePath(confFilePath));
     }
 
     /**
@@ -341,7 +370,7 @@ public class Bootstrapper {
             configuration = FileUtils.getConfiguration(confFilePath, false);
         } catch (ConfigurationException ex) {
             if (VERSION != null) {
-                LOGGER.info(ansi().fg(RED).bold().a(RESTHeartSecurity).reset().toString()
+                LOGGER.info(ansi().fg(RED).bold().a(RESTHEART_SECURITY).reset().toString()
                         + " version {}",
                         ansi().fg(MAGENTA).bold().a(Configuration.VERSION)
                                 .reset().toString());
@@ -368,7 +397,7 @@ public class Bootstrapper {
      * @param args
      * @param d
      */
-    private static void initLogging(final String[] args, final RESTHeartSecurityDaemon d) {
+    private static void initLogging(final RESTHeartSecurityDaemon d) {
         LoggingInitializer.setLogLevel(configuration
                 .getLogLevel());
 
@@ -376,7 +405,7 @@ public class Bootstrapper {
             LoggingInitializer.stopConsoleLogging();
             LoggingInitializer.startFileLogging(configuration
                     .getLogFilePath());
-        } else if (!hasForkOption(args)) {
+        } else if (!hasForkOption()) {
             if (!configuration.isLogToConsole()) {
                 LoggingInitializer.stopConsoleLogging();
             }
@@ -425,18 +454,8 @@ public class Bootstrapper {
      * @param args
      * @return true if has fork option
      */
-    private static boolean hasForkOption(final String[] args) {
-        if (args == null || args.length < 1) {
-            return false;
-        }
-
-        for (String arg : args) {
-            if (arg.equals("--fork")) {
-                return true;
-            }
-        }
-
-        return false;
+    private static boolean hasForkOption() {
+        return IS_FORKED;
     }
 
     /**
@@ -448,8 +467,7 @@ public class Bootstrapper {
         logWindowsStart();
 
         Path pidFilePath = FileUtils.getPidFilePath(FileUtils
-                .getFileAbsoultePathHash(CONF_FILE_PATH));
-
+                .getFileAbsolutePathHash(CONF_FILE_PATH));
         boolean pidFileAlreadyExists = false;
 
         if (!OSChecker.isWindows() && pidFilePath != null) {
@@ -458,7 +476,7 @@ public class Bootstrapper {
 
         logLoggingConfiguration(fork);
 
-        // re-read configuration file, to log errors new that logger is initialized 
+        // re-read configuration file, to log errors new that logger is initialized
         try {
             FileUtils.getConfiguration(CONF_FILE_PATH, false);
         } catch (ConfigurationException ex) {
@@ -561,7 +579,7 @@ public class Bootstrapper {
         }
 
         Path pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsoultePathHash(CONF_FILE_PATH));
+                FileUtils.getFileAbsolutePathHash(CONF_FILE_PATH));
 
         if (removePid && pidFilePath != null) {
             if (!silent) {
@@ -643,7 +661,7 @@ public class Bootstrapper {
             } else if (configuration.getKeystoreFile() != null
                     && configuration.getKeystorePassword() != null
                     && configuration.getCertPassword() != null) {
-                try ( FileInputStream fis = new FileInputStream(
+                try (FileInputStream fis = new FileInputStream(
                         new File(configuration.getKeystoreFile()))) {
                     ks.load(fis, configuration.getKeystorePassword().toCharArray());
                     kmf.init(ks, configuration.getCertPassword().toCharArray());
@@ -777,7 +795,7 @@ public class Bootstrapper {
                                             + "enabled with Authenticator {}",
                                             name,
                                             ((Map) amConf.get().get("args"))
-                                                .get("authenticator"));
+                                                    .get("authenticator"));
                                 } else {
                                     LOGGER.info("Authentication Mechanism {} "
                                             + "enabled",
@@ -1097,7 +1115,7 @@ public class Bootstrapper {
                     proxyClient = proxyClient.addHost(
                             new URI((String) _proxyPass), sslProvider);
                 } else if (_proxyPass instanceof List) {
-                    for (Object proxyPassURL : ((List<?>) _proxyPass)) {
+                    for (Object proxyPassURL : ((Iterable<? extends Object>) _proxyPass)) {
                         if (proxyPassURL instanceof String) {
                             proxyClient = proxyClient.addHost(
                                     new URI((String) proxyPassURL), sslProvider);
@@ -1141,5 +1159,24 @@ public class Bootstrapper {
                         _proxyPass);
             }
         });
+    }
+
+    private Bootstrapper() {
+    }
+
+    @Parameters
+    private static class Args {
+
+        @Parameter(description = "<Configuration file>")
+        private String configPath = null;
+
+        @Parameter(names = "--fork", description = "Fork the process")
+        private boolean isForked = false;
+
+        @Parameter(names = {"--envFile", "--envfile", "-e"}, description = "Environment file name")
+        private String envFile = null;
+
+        @Parameter(names = {"--help", "-?"}, help = true, description = "This help message")
+        private boolean help;
     }
 }

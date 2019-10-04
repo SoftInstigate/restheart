@@ -1,14 +1,14 @@
 /*
  * RESTHeart Security
- * 
+ *
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,12 +38,13 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class FileUtils {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(FileUtils.class);
 
     private static final Path DEFAULT_PID_DIR = new File("/var/run").toPath();
     private static final Path TMP_DIR = new File(System.getProperty("java.io.tmpdir")).toPath();
 
-    public static Path getFileAbsoultePath(String path) {
+    public static Path getFileAbsolutePath(String path) {
         if (path == null) {
             return null;
         }
@@ -51,7 +52,7 @@ public class FileUtils {
         return FileSystems.getDefault().getPath(path).toAbsolutePath();
     }
 
-    public static int getFileAbsoultePathHash(Path path) {
+    public static int getFileAbsolutePathHash(Path path) {
         if (path == null) {
             return 0;
         }
@@ -79,7 +80,7 @@ public class FileUtils {
         if (args != null) {
             for (String arg : args) {
                 if (!arg.equals("--fork")) {
-                    return getFileAbsoultePath(arg);
+                    return getFileAbsolutePath(arg);
                 }
             }
         }
@@ -105,16 +106,11 @@ public class FileUtils {
 
     public static void createPidFile(Path pidFile) {
         if (OSChecker.isWindows()) {
-            LOGGER.warn("this method is not supported on windows.");
-            throw new IllegalStateException("createPidFile() is not supported on windows.");
+            LOGGER.warn("this method is not supported on Windows.");
+            throw new IllegalStateException("createPidFile() is not supported on Windows.");
         }
-
-        try {
-            try (FileWriter fw = new FileWriter(pidFile.toFile())) {
-
-                fw.write(String.valueOf(LIBC.getpid()));
-                fw.close();
-            }
+        try (FileWriter fw = new FileWriter(pidFile.toFile())) {
+            fw.write(String.valueOf(LIBC.getpid()));
         } catch (IOException e) {
             LOGGER.warn("error writing pid file", e);
         }
