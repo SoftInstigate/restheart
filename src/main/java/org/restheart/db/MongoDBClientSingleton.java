@@ -19,6 +19,7 @@ package org.restheart.db;
 
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.MongoCommandException;
 import java.net.UnknownHostException;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
@@ -125,6 +126,14 @@ public class MongoDBClientSingleton {
                     .runCommand(new BsonDocument("replSetGetStatus",
                             new BsonInt32(1)));
             replicaSet = true;
+        } catch (MongoCommandException mce) {
+            if (mce.getCode() == 13) { // Unauthorized 
+                LOGGER.warn("Unable to check if MongoDb is configured as replica set. "
+                        + "The MongoDB user cannot execute replSetGetStatus() command. "
+                        + "Tip: add to the MongoDB user the built-in role 'clusterMonitor' that provides this action.");
+            }
+
+            replicaSet = false;
         } catch (Throwable t) {
             replicaSet = false;
         }
