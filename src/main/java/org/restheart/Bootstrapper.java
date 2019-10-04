@@ -22,7 +22,6 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
 import com.github.mustachejava.MustacheNotFoundException;
 import com.mongodb.MongoClient;
 import static com.sun.akuma.CLibrary.LIBC;
@@ -80,16 +79,14 @@ import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WELCOME_FIL
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.plugins.PluginsRegistry;
+import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.GzipEncodingHandler;
-import org.restheart.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestDispatcherHandler;
 import org.restheart.handlers.RequestLoggerHandler;
-import org.restheart.handlers.metrics.TracingInstrumentationHandler;
 import org.restheart.handlers.injectors.AccountInjectorHandler;
 import org.restheart.handlers.injectors.BodyInjectorHandler;
 import org.restheart.handlers.injectors.ClientSessionInjectorHandler;
@@ -97,7 +94,9 @@ import org.restheart.handlers.injectors.CollectionPropsInjectorHandler;
 import org.restheart.handlers.injectors.DbPropsInjectorHandler;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.injectors.RequestContextInjectorHandler;
-import org.restheart.handlers.CORSHandler;
+import org.restheart.handlers.metrics.MetricsInstrumentationHandler;
+import org.restheart.handlers.metrics.TracingInstrumentationHandler;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
@@ -122,7 +121,7 @@ public class Bootstrapper {
     private static Path CONF_FILE_PATH;
 
     private static GracefulShutdownHandler shutdownHandler = null;
-    private static PathHandler rootPathHandler = path();
+    private static final PathHandler rootPathHandler = path();
 
     private static Configuration configuration;
     private static Undertow undertowServer;
@@ -141,9 +140,6 @@ public class Bootstrapper {
         parseCommandLineParameters(args);
         configuration = loadConfiguration();
         run();
-    }
-
-    private Bootstrapper() {
     }
 
     /**
@@ -209,29 +205,23 @@ public class Bootstrapper {
 
             return new Configuration(CONF_FILE_PATH, false);
         } else {
-            Properties p = new Properties();
+            final Properties p = new Properties();
             try (InputStreamReader reader = new InputStreamReader(new FileInputStream(ENVIRONMENT_FILE), "UTF-8")) {
                 p.load(reader);
             } catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Properties file not found " + ENVIRONMENT_FILE, null, false, -1);
             }
 
-            MustacheFactory mf = new DefaultMustacheFactory();
-
-            Mustache m;
-
+            final StringWriter writer = new StringWriter();
             try {
-                m = mf.compile(CONF_FILE_PATH.toString());
+                Mustache m = new DefaultMustacheFactory().compile(CONF_FILE_PATH.toString());
+                m.execute(writer, p);
+                writer.flush();
             } catch (MustacheNotFoundException ex) {
                 logErrorAndExit("Configuration file not found " + CONF_FILE_PATH, null, false, -1);
-                m = null;
             }
 
-            StringWriter writer = new StringWriter();
-            m.execute(writer, p);
-            writer.flush();
-            Yaml yaml = new Yaml();
-            Map<String, Object> obj = yaml.load(writer.toString());
+            Map<String, Object> obj = new Yaml().load(writer.toString());
             return new Configuration(obj, false);
         }
     }
@@ -1055,6 +1045,9 @@ public class Bootstrapper {
             LOGGER.info("Service {} bound to {}",
                     srv.getName(), uri);
         });
+    }
+
+    private Bootstrapper() {
     }
 
     @Parameters
