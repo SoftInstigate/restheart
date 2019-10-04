@@ -1,14 +1,14 @@
 /*
  * RESTHeart Security
- * 
+ *
  * Copyright (C) SoftInstigate Srl
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,6 +39,8 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import java.net.URI;
 import java.util.LinkedHashMap;
+import java.util.Scanner;
+import java.util.regex.Pattern;
 import static org.restheart.security.ConfigurationKeys.ALLOW_UNESCAPED_CHARACTERS_IN_URL;
 import static org.restheart.security.ConfigurationKeys.ANSI_CONSOLE_KEY;
 import static org.restheart.security.ConfigurationKeys.AUTHENTICATORS_KEY;
@@ -331,6 +333,14 @@ public class Configuration {
         return conf;
     }
 
+    static boolean isParametric(final Path confFilePath) throws IOException {
+        Scanner sc = new Scanner(confFilePath, "UTF-8");
+
+        return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}"))
+                .limit(1)
+                .count() > 0;
+    }
+
     private void initDefaultProxy() {
         var entry = new HashMap();
 
@@ -528,6 +538,7 @@ public class Configuration {
 
     /**
      *
+     * @param <V>
      * @param conf
      * @param key
      * @param defaultValue
