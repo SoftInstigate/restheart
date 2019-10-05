@@ -191,7 +191,7 @@
             <artifactId>compiler</artifactId>
             <version>0.9.6</version>
         </dependency>
-        
+
         <!-- BEGIN Test dependencies -->
         <dependency>
             <groupId>com.intuit.karate</groupId>
@@ -336,6 +336,9 @@
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
+                        <manifestEntries>
+                            <Build-Time>${maven.build.timestamp}</Build-Time>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
