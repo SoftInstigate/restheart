@@ -240,7 +240,6 @@ public class Configuration {
         httpHost = getOrDefault(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
 
         instanceName = getOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-
         useEmbeddedKeystore = getOrDefault(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
         keystoreFile = getOrDefault(conf, KEYSTORE_FILE_KEY, null);
         keystorePassword = getOrDefault(conf, KEYSTORE_PASSWORD_KEY, null);
@@ -253,76 +252,53 @@ public class Configuration {
         }
 
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
-
         services = getAsListOfMaps(conf, SERVICES_KEY, new ArrayList<>());
-
         authMechanisms = getAsListOfMaps(conf, AUTH_MECHANISMS_KEY, new ArrayList<>());
-
         authenticators = getAsListOfMaps(conf, AUTHENTICATORS_KEY, new ArrayList<>());
-
         authorizers = getAsListOfMaps(conf, AUTHORIZERS_KEY, new ArrayList<>());
-
         tokenManager = getAsMap(conf, AUTH_TOKEN);
 
         logFilePath = getOrDefault(conf, LOG_FILE_PATH_KEY, URLUtils
-                .removeTrailingSlashes(System.getProperty("java.io.tmpdir")).concat(File.separator + "restheart-security.log"));
+                .removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
+                .concat(File.separator + "restheart-security.log"));
         String _logLevel = getOrDefault(conf, LOG_LEVEL_KEY, "INFO");
         logToConsole = getOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
         logToFile = getOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
 
         Level level;
-
         try {
             level = Level.valueOf(_logLevel);
         } catch (Exception e) {
             if (!silent) {
-                LOGGER.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel,
-                        "INFO");
+                LOGGER.info("wrong value for parameter {}: {}. using its default value {}",
+                        "log-level", _logLevel, "INFO");
             }
             level = Level.INFO;
         }
 
         logLevel = level;
-
         requestsLimit = getOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
-
         ioThreads = getOrDefault(conf, IO_THREADS_KEY, 2);
         workerThreads = getOrDefault(conf, WORKER_THREADS_KEY, 32);
         bufferSize = getOrDefault(conf, BUFFER_SIZE_KEY, 16384);
         directBuffers = getOrDefault(conf, DIRECT_BUFFERS_KEY, true);
-
         forceGzipEncoding = getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
-
         logExchangeDump = getOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
-
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
-
         allowUnescapedCharactersInUrl = getOrDefault(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
     }
 
     @SuppressWarnings("unchecked")
     private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
         Yaml yaml = new Yaml();
-
         Map<String, Object> conf = null;
 
-        FileInputStream fis = null;
-
-        try {
-            fis = new FileInputStream(confFilePath.toFile());
+        try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
             conf = (Map<String, Object>) yaml.load(fis);
         } catch (FileNotFoundException fne) {
-            throw new ConfigurationException("configuration file not found", fne);
+            throw new ConfigurationException("Configuration file not found", fne);
         } catch (Throwable t) {
-            throw new ConfigurationException("error parsing the configuration file", t);
-        } finally {
-            if (fis != null) {
-                try {
-                    fis.close();
-                } catch (IOException ioe) {
-                    LOGGER.warn("Can't close the FileInputStream", ioe);
-                }
-            }
+            throw new ConfigurationException("Error parsing the configuration file", t);
         }
 
         return conf;
@@ -372,19 +348,7 @@ public class Configuration {
 
     @Override
     public String toString() {
-        return "Configuration{" + "silent=" + silent + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort
-                + ", httpsHost=" + httpsHost + ", httpListener=" + httpListener + ", httpPort=" + httpPort
-                + ", httpHost=" + httpHost + ", instanceName=" + instanceName + ", useEmbeddedKeystore=" + useEmbeddedKeystore
-                + ", keystoreFile=" + keystoreFile + ", keystorePassword=" + keystorePassword + ", certPassword="
-                + certPassword + ", proxies=" + proxies + ", services=" + services + ", authMechanisms="
-                + authMechanisms + ", authenticators=" + authenticators + ", authorizers=" + getAuthorizers() + ", logFilePath="
-                + logFilePath + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile
-                + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads + ", workerThreads=" + workerThreads
-                + ", bufferSize=" + bufferSize + ", directBuffers=" + directBuffers + ", forceGzipEncoding="
-                + forceGzipEncoding + ", authToken=" + tokenManager
-                + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", ansiConsole="
-                + ansiConsole + ", cursorBatchSize="
-                + allowUnescapedCharactersInUrl + ", pluginsArgs=" + pluginsArgs + '}';
+        return "Configuration{" + "silent=" + silent + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener=" + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost + ", instanceName=" + instanceName + ", useEmbeddedKeystore=" + useEmbeddedKeystore + ", keystoreFile=" + keystoreFile + ", keystorePassword=" + keystorePassword + ", certPassword=" + certPassword + ", proxies=" + proxies + ", pluginsArgs=" + pluginsArgs + ", services=" + services + ", authMechanisms=" + authMechanisms + ", authenticators=" + authenticators + ", authorizers=" + authorizers + ", tokenManager=" + tokenManager + ", logFilePath=" + logFilePath + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads + ", workerThreads=" + workerThreads + ", bufferSize=" + bufferSize + ", directBuffers=" + directBuffers + ", forceGzipEncoding=" + forceGzipEncoding + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", ansiConsole=" + ansiConsole + ", allowUnescapedCharactersInUrl=" + allowUnescapedCharactersInUrl + '}';
     }
 
     /**
@@ -542,24 +506,47 @@ public class Configuration {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file. using its default value {}", key,
-                        defaultValue);
+                LOGGER.warn("Parameter \"{}\" not specified in the configuration file. "
+                        + "using its default value \"{}\"", key, defaultValue);
             }
             return defaultValue;
         }
 
         try {
             if (!silent) {
-                LOGGER.trace("configuration paramenter {} set to {}", key, conf.get(key));
+                LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", key, conf.get(key));
             }
             return (V) conf.get(key);
         } catch (Throwable t) {
             if (!silent) {
-                LOGGER.warn("wrong configuration parameter {}: {}. using its default value {}", key, conf.get(key),
-                        defaultValue);
+                LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\". using its default value \"{}\"",
+                        key, conf.get(key), defaultValue);
             }
             return defaultValue;
         }
+    }
+
+    /**
+     *
+     * @param key
+     * @return the environment or java property variable, if found
+     */
+    private String overriddenValueFromEnv(final String key) {
+        String shellKey = key.toUpperCase().replaceAll("-", "_");
+        String envValue = System.getProperty(key);
+
+        if (envValue == null) {
+            envValue = System.getProperty(shellKey);
+        }
+
+        if (envValue == null) {
+            envValue = System.getenv(shellKey);
+        }
+        if (null != envValue) {
+            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
+                    shellKey, key, envValue);
+        }
+        return envValue;
     }
 
     /**
