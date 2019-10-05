@@ -333,30 +333,6 @@ public class Bootstrapper {
     }
 
     /**
-     * Startup the RESTHeart server
-     *
-     * @param confFilePath the path of the configuration file
-     */
-    public static void startup(final String confFilePath) {
-        startup(FileUtils.getFileAbsolutePath(confFilePath));
-    }
-
-    /**
-     * Startup the RESTHeart server
-     *
-     * @param confFilePath the path of the configuration file
-     */
-    public static void startup(final Path confFilePath) {
-        try {
-            configuration = FileUtils.getConfiguration(confFilePath, false);
-        } catch (ConfigurationException ex) {
-            logWindowsStart();
-            logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
-        }
-        startServer(false);
-    }
-
-    /**
      * Shutdown the RESTHeart server
      *
      * @param args command line arguments
@@ -931,10 +907,7 @@ public class Bootstrapper {
                                 TMP_EXTRACTED_FILES.put(path, file);
                                 LOGGER.info("Embedded static resources {} extracted in {}", path, file.toString());
                             }
-                        } catch (URISyntaxException | IOException ex) {
-                            LOGGER.error("Error extracting embedded static resource {}", path, ex);
-                            return;
-                        } catch (IllegalStateException ex) {
+                        } catch (URISyntaxException | IOException | IllegalStateException ex) {
                             LOGGER.error("Error extracting embedded static resource {}", path, ex);
                             return;
                         }
