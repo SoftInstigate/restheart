@@ -567,6 +567,14 @@ public class Configuration {
         return getOrDefault(conf, key, defaultValue);
     }
 
+    private Long getAsLong(final Map<String, Object> conf, final String key, final Long defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Long.valueOf(envValue);
+        }
+        return getOrDefault(conf, key, defaultValue);
+    }
+
     /**
      *
      * @param conf
