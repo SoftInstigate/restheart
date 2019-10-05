@@ -161,37 +161,26 @@ public class Configuration {
         initDefaultProxy();
 
         pluginsArgs = new LinkedHashMap<>();
-
         services = new ArrayList<>();
-
         authMechanisms = new ArrayList<>();
-
         authenticators = new ArrayList<>();
-
         authorizers = null;
-
         tokenManager = new HashMap<>();
 
         logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "restheart-security.log");
-
         logToConsole = true;
         logToFile = true;
         logLevel = Level.INFO;
 
         requestsLimit = 100;
-
         ioThreads = 2;
         workerThreads = 32;
         bufferSize = 16384;
         directBuffers = true;
-
         forceGzipEncoding = false;
-
         logExchangeDump = 0;
-
         connectionOptions = Maps.newHashMap();
-
         allowUnescapedCharactersInUrl = true;
     }
 
@@ -229,21 +218,21 @@ public class Configuration {
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.silent = silent;
 
-        ansiConsole = getOrDefault(conf, ANSI_CONSOLE_KEY, true);
+        ansiConsole = getAsBoolean(conf, ANSI_CONSOLE_KEY, true);
 
-        httpsListener = getOrDefault(conf, HTTPS_LISTENER, true);
-        httpsPort = getOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
-        httpsHost = getOrDefault(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
+        httpsListener = getAsBoolean(conf, HTTPS_LISTENER, true);
+        httpsPort = getAsInteger(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
+        httpsHost = getAsString(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
 
-        httpListener = getOrDefault(conf, HTTP_LISTENER_KEY, false);
-        httpPort = getOrDefault(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
-        httpHost = getOrDefault(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
+        httpListener = getAsBoolean(conf, HTTP_LISTENER_KEY, false);
+        httpPort = getAsInteger(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
+        httpHost = getAsString(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
 
-        instanceName = getOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-        useEmbeddedKeystore = getOrDefault(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
-        keystoreFile = getOrDefault(conf, KEYSTORE_FILE_KEY, null);
-        keystorePassword = getOrDefault(conf, KEYSTORE_PASSWORD_KEY, null);
-        certPassword = getOrDefault(conf, CERT_PASSWORD_KEY, null);
+        instanceName = getAsString(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
+        useEmbeddedKeystore = getAsBoolean(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
+        keystoreFile = getAsString(conf, KEYSTORE_FILE_KEY, null);
+        keystorePassword = getAsString(conf, KEYSTORE_PASSWORD_KEY, null);
+        certPassword = getAsString(conf, CERT_PASSWORD_KEY, null);
 
         proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
 
@@ -258,12 +247,12 @@ public class Configuration {
         authorizers = getAsListOfMaps(conf, AUTHORIZERS_KEY, new ArrayList<>());
         tokenManager = getAsMap(conf, AUTH_TOKEN);
 
-        logFilePath = getOrDefault(conf, LOG_FILE_PATH_KEY, URLUtils
+        logFilePath = getAsString(conf, LOG_FILE_PATH_KEY, URLUtils
                 .removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "restheart-security.log"));
-        String _logLevel = getOrDefault(conf, LOG_LEVEL_KEY, "INFO");
-        logToConsole = getOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
-        logToFile = getOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
+        String _logLevel = getAsString(conf, LOG_LEVEL_KEY, "INFO");
+        logToConsole = getAsBoolean(conf, ENABLE_LOG_CONSOLE_KEY, true);
+        logToFile = getAsBoolean(conf, ENABLE_LOG_FILE_KEY, true);
 
         Level level;
         try {
@@ -277,15 +266,15 @@ public class Configuration {
         }
 
         logLevel = level;
-        requestsLimit = getOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
-        ioThreads = getOrDefault(conf, IO_THREADS_KEY, 2);
-        workerThreads = getOrDefault(conf, WORKER_THREADS_KEY, 32);
-        bufferSize = getOrDefault(conf, BUFFER_SIZE_KEY, 16384);
-        directBuffers = getOrDefault(conf, DIRECT_BUFFERS_KEY, true);
-        forceGzipEncoding = getOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
-        logExchangeDump = getOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 0);
+        requestsLimit = getAsInteger(conf, REQUESTS_LIMIT_KEY, 100);
+        ioThreads = getAsInteger(conf, IO_THREADS_KEY, 2);
+        workerThreads = getAsInteger(conf, WORKER_THREADS_KEY, 32);
+        bufferSize = getAsInteger(conf, BUFFER_SIZE_KEY, 16384);
+        directBuffers = getAsBoolean(conf, DIRECT_BUFFERS_KEY, true);
+        forceGzipEncoding = getAsBoolean(conf, FORCE_GZIP_ENCODING_KEY, false);
+        logExchangeDump = getAsInteger(conf, LOG_REQUESTS_LEVEL_KEY, 0);
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
-        allowUnescapedCharactersInUrl = getOrDefault(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
+        allowUnescapedCharactersInUrl = getAsBoolean(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
     }
 
     @SuppressWarnings("unchecked")
@@ -502,7 +491,12 @@ public class Configuration {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key, final V defaultValue, boolean silent) {
+    public static <V extends Object> V getOrDefault(
+            final Map<String, Object> conf,
+            final String key,
+            final V defaultValue,
+            boolean silent) {
+
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
@@ -531,8 +525,8 @@ public class Configuration {
      * @param key
      * @return the environment or java property variable, if found
      */
-    private String overriddenValueFromEnv(final String key) {
-        String shellKey = key.toUpperCase().replaceAll("-", "_");
+    private static String overriddenValueFromEnv(final String key) {
+        String shellKey = "RESTHEART_SECURITY_" + key.toUpperCase().replaceAll("-", "_");
         String envValue = System.getProperty(key);
 
         if (envValue == null) {
@@ -547,6 +541,30 @@ public class Configuration {
                     shellKey, key, envValue);
         }
         return envValue;
+    }
+
+    private Boolean getAsBoolean(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Boolean.valueOf(envValue);
+        }
+        return getOrDefault(conf, key, defaultValue);
+    }
+
+    private String getAsString(final Map<String, Object> conf, final String key, final String defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return envValue;
+        }
+        return getOrDefault(conf, key, defaultValue);
+    }
+
+    private Integer getAsInteger(final Map<String, Object> conf, final String key, final Integer defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Integer.valueOf(envValue);
+        }
+        return getOrDefault(conf, key, defaultValue);
     }
 
     /**
