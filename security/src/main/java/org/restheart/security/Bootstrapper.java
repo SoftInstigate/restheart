@@ -56,7 +56,6 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.MAGENTA;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.security.handlers.CORSHandler;
@@ -211,13 +210,9 @@ public class Bootstrapper {
             startServer(false);
         } else {
             if (OSChecker.isWindows()) {
-                logWindowsStart();
-
                 LOGGER.error("Fork is not supported on Windows");
-
                 LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart Security stopped")
                         .reset().toString());
-
                 System.exit(-1);
             }
 
@@ -229,25 +224,18 @@ public class Bootstrapper {
             if (!isPosix) {
                 logErrorAndExit("Unable to fork process, "
                         + "this is only supported on POSIX compliant OSes",
-                        null,
-                        false,
-                        -1);
+                        null, false, -1);
             }
 
             RESTHeartSecurityDaemon d = new RESTHeartSecurityDaemon();
-
             if (d.isDaemonized()) {
                 try {
                     d.init();
                     LOGGER.info("Forked process: {}", LIBC.getpid());
                     initLogging(d);
                 } catch (Exception t) {
-                    logErrorAndExit("Error staring forked process", t,
-                            false,
-                            false,
-                            -1);
+                    logErrorAndExit("Error staring forked process", t, false, false, -1);
                 }
-
                 startServer(true);
             } else {
                 initLogging(d);
@@ -313,14 +301,23 @@ public class Bootstrapper {
         }
     }
 
-    private static void logWindowsStart() {
+    private static void logStartMessages() {
         String instanceName = getInstanceName();
         LOGGER.info(STARTING + ansi().fg(RED).bold().a(RESTHEART_SECURITY).reset().toString()
                 + INSTANCE
                 + ansi().fg(RED).bold().a(instanceName).reset().toString());
+        LOGGER.info(VERSION, Configuration.VERSION);
+        LOGGER.info("Configuration = " + configuration.toString());
+    }
 
-        if (Configuration.VERSION != null) {
-            LOGGER.info(VERSION, Configuration.VERSION);
+    private static void logManifestInfo() {
+        if (LOGGER.isDebugEnabled()) {
+            final Set<Map.Entry<Object, Object>> MANIFEST_ENTRIES = FileUtils.findManifestInfo();
+            if (MANIFEST_ENTRIES != null) {
+                LOGGER.debug("Build Information: {}", MANIFEST_ENTRIES.toString());
+            } else {
+                LOGGER.debug("Build Information: {}", "Unknown, not packaged");
+            }
         }
     }
 
@@ -352,37 +349,6 @@ public class Bootstrapper {
     }
 
     /**
-     * Startup the server
-     *
-     * @param confFilePath the path of the configuration file
-     */
-    public static void startup(final String confFilePath) {
-        startup(FileUtils.getFileAbsolutePath(confFilePath));
-    }
-
-    /**
-     * Startup the server
-     *
-     * @param confFilePath the path of the configuration file
-     */
-    public static void startup(final Path confFilePath) {
-        try {
-            configuration = FileUtils.getConfiguration(confFilePath, false);
-        } catch (ConfigurationException ex) {
-            if (VERSION != null) {
-                LOGGER.info(ansi().fg(RED).bold().a(RESTHEART_SECURITY).reset().toString()
-                        + " version {}",
-                        ansi().fg(MAGENTA).bold().a(Configuration.VERSION)
-                                .reset().toString());
-            }
-
-            logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
-        }
-
-        startServer(false);
-    }
-
-    /**
      * Shutdown the server
      *
      * @param args command line arguments
@@ -398,9 +364,7 @@ public class Bootstrapper {
      * @param d
      */
     private static void initLogging(final RESTHeartSecurityDaemon d) {
-        LoggingInitializer.setLogLevel(configuration
-                .getLogLevel());
-
+        LoggingInitializer.setLogLevel(configuration.getLogLevel());
         if (d != null && d.isDaemonized()) {
             LoggingInitializer.stopConsoleLogging();
             LoggingInitializer.startFileLogging(configuration
@@ -464,7 +428,7 @@ public class Bootstrapper {
      * @param fork
      */
     private static void startServer(boolean fork) {
-        logWindowsStart();
+        logStartMessages();
 
         Path pidFilePath = FileUtils.getPidFilePath(FileUtils
                 .getFileAbsolutePathHash(CONF_FILE_PATH));
@@ -475,11 +439,12 @@ public class Bootstrapper {
         }
 
         logLoggingConfiguration(fork);
+        logManifestInfo();
 
         // re-read configuration file, to log errors new that logger is initialized
         try {
-            FileUtils.getConfiguration(CONF_FILE_PATH, false);
-        } catch (ConfigurationException ex) {
+            loadConfiguration();
+        } catch (ConfigurationException | IOException ex) {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
