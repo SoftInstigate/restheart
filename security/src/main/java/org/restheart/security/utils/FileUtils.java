@@ -24,10 +24,16 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Enumeration;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import org.restheart.security.Configuration;
 import org.restheart.security.ConfigurationException;
 import org.slf4j.Logger;
@@ -133,6 +139,27 @@ public class FileUtils {
             LOGGER.debug("unexpected content in pid file", e);
             return -3;
         }
+    }
+
+    public static Set<Entry<Object, Object>> findManifestInfo() {
+        Set<Entry<Object, Object>> result = null;
+        try {
+            Enumeration<URL> resources = Thread.currentThread().getContextClassLoader()
+                    .getResources("META-INF/MANIFEST.MF");
+            while (resources.hasMoreElements()) {
+                URL manifestUrl = resources.nextElement();
+                Manifest manifest = new Manifest(manifestUrl.openStream());
+                Attributes mainAttributes = manifest.getMainAttributes();
+                String implementationTitle = mainAttributes.getValue("Implementation-Title");
+                if (implementationTitle != null && implementationTitle.toLowerCase().startsWith("restheart")) {
+                    result = mainAttributes.entrySet();
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.warn(e.getMessage());
+        }
+        return result;
     }
 
     private FileUtils() {
