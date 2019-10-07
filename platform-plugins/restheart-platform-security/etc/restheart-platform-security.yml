@@ -37,7 +37,7 @@ instance-name: {{{instance-name}}}
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
 proxies:
     - location: /
-      proxy-pass: ajp://localhost:8009
+      proxy-pass: {{{root-proxy-pass}}}
       connections-per-thread: 20
       name: restheart
 
