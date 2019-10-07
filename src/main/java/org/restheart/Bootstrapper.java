@@ -113,12 +113,12 @@ import org.yaml.snakeyaml.Yaml;
 public class Bootstrapper {
 
     private static boolean IS_FORKED;
-    private static String ENVIRONMENT_FILE;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrapper.class);
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
 
-    private static Path CONF_FILE_PATH;
+    private static Path CONFIGURATION_FILE;
+    private static String PROPERTIES_FILE;
 
     private static GracefulShutdownHandler shutdownHandler = null;
     private static final PathHandler rootPathHandler = path();
@@ -126,7 +126,6 @@ public class Bootstrapper {
     private static Configuration configuration;
     private static Undertow undertowServer;
 
-    private static final String EXITING = ", exiting...";
     private static final String RESTHEART = "RESTHeart";
 
     /**
@@ -175,12 +174,12 @@ public class Bootstrapper {
             String confFilePath = (parameters.configPath == null)
                     ? System.getenv("RESTHEART_CONFFILE")
                     : parameters.configPath;
-            CONF_FILE_PATH = FileUtils.getFileAbsolutePath(confFilePath);
+            CONFIGURATION_FILE = FileUtils.getFileAbsolutePath(confFilePath);
 
             FileUtils.getFileAbsolutePath(parameters.configPath);
 
             IS_FORKED = parameters.isForked;
-            ENVIRONMENT_FILE = (parameters.envFile == null)
+            PROPERTIES_FILE = (parameters.envFile == null)
                     ? System.getenv("RESTHEART_ENVFILE")
                     : parameters.envFile;
         } catch (com.beust.jcommander.ParameterException ex) {
@@ -191,34 +190,34 @@ public class Bootstrapper {
     }
 
     private static Configuration loadConfiguration() throws FileNotFoundException, UnsupportedEncodingException, IOException {
-        if (CONF_FILE_PATH == null) {
+        if (CONFIGURATION_FILE == null) {
             LOGGER.warn("No configuration file provided, starting with default values!");
             return new Configuration();
-        } else if (ENVIRONMENT_FILE == null) {
+        } else if (PROPERTIES_FILE == null) {
             try {
-                if (Configuration.isParametric(CONF_FILE_PATH)) {
+                if (Configuration.isParametric(CONFIGURATION_FILE)) {
                     logErrorAndExit("Configuration is parametric but no properties file has been specified. You can use -e option to specify the properties file. For more information check https://restheart.org/learn/configuration", null, false, -1);
                 }
             } catch (IOException ioe) {
-                logErrorAndExit("Configuration file not found " + CONF_FILE_PATH, null, false, -1);
+                logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
             }
 
-            return new Configuration(CONF_FILE_PATH, false);
+            return new Configuration(CONFIGURATION_FILE, false);
         } else {
             final Properties p = new Properties();
-            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(ENVIRONMENT_FILE), "UTF-8")) {
+            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(PROPERTIES_FILE), "UTF-8")) {
                 p.load(reader);
             } catch (FileNotFoundException fnfe) {
-                logErrorAndExit("Properties file not found " + ENVIRONMENT_FILE, null, false, -1);
+                logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
             }
 
             final StringWriter writer = new StringWriter();
             try {
-                Mustache m = new DefaultMustacheFactory().compile(CONF_FILE_PATH.toString());
+                Mustache m = new DefaultMustacheFactory().compile(CONFIGURATION_FILE.toString());
                 m.execute(writer, p);
                 writer.flush();
             } catch (MustacheNotFoundException ex) {
-                logErrorAndExit("Configuration file not found " + CONF_FILE_PATH, null, false, -1);
+                logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
             }
 
             Map<String, Object> obj = new Yaml().load(writer.toString());
@@ -291,8 +290,8 @@ public class Bootstrapper {
                 + "  }",
                 ansi().fg(MAGENTA).a(version).reset().toString(),
                 ansi().fg(MAGENTA).a(getInstanceName()).reset().toString(),
-                ansi().fg(MAGENTA).a(CONF_FILE_PATH).reset().toString(),
-                ansi().fg(MAGENTA).a(ENVIRONMENT_FILE).reset().toString(),
+                ansi().fg(MAGENTA).a(CONFIGURATION_FILE).reset().toString(),
+                ansi().fg(MAGENTA).a(PROPERTIES_FILE).reset().toString(),
                 ansi().fg(MAGENTA).a(Version.getInstance().getBuildTime()).reset().toString());
 
         LOGGER.info("Starting {}\n{}", ansi().fg(RED).a(RESTHEART).reset().toString(), info);
@@ -408,13 +407,12 @@ public class Bootstrapper {
     private static void startServer(boolean fork) {
         logWindowsStart();
 
-        Path pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsolutePathHash(CONF_FILE_PATH));
+        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(CONFIGURATION_FILE));
 
         boolean pidFileAlreadyExists = false;
 
         if (!OSChecker.isWindows() && pidFilePath != null) {
-            pidFileAlreadyExists = checkPidFile(CONF_FILE_PATH);
+            pidFileAlreadyExists = checkPidFile(CONFIGURATION_FILE);
         }
 
         logLoggingConfiguration(fork);
@@ -550,8 +548,7 @@ public class Bootstrapper {
             }
         }
 
-        Path pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsolutePathHash(CONF_FILE_PATH));
+        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(CONFIGURATION_FILE));
 
         if (removePid && pidFilePath != null) {
             if (!silent) {
