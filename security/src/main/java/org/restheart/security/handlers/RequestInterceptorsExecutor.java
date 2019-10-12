@@ -84,11 +84,12 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
                     }
                 });
 
-        var response = ByteArrayResponse.wrap(exchange);
+        
 
         // if an interceptor sets the response as errored
         // stop processing the request and send the response
-        if (response.isInError()) {
+        if (AbstractExchange.isInError(exchange)) {
+            var response = ByteArrayResponse.wrap(exchange);
             // if in error but no status code
             // set it to 400 Bad Request
             if (response.getStatusCode() < 0) {
