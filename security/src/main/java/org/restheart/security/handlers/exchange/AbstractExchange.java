@@ -32,7 +32,7 @@ public abstract class AbstractExchange<T> {
 
     protected static Logger LOGGER;
 
-    private static final AttachmentKey<Boolean> IN_ERROR
+    protected static final AttachmentKey<Boolean> IN_ERROR_KEY
             = AttachmentKey.create(Boolean.class);
 
     private static final AttachmentKey<Boolean> RESPONSE_INTERCEPTOR_EXECUTED
@@ -67,8 +67,8 @@ public abstract class AbstractExchange<T> {
     }
 
     public static boolean isInError(HttpServerExchange exchange) {
-        return exchange.getAttachment(IN_ERROR) != null
-                && exchange.getAttachment(IN_ERROR);
+        return exchange.getAttachment(IN_ERROR_KEY) != null
+                && exchange.getAttachment(IN_ERROR_KEY);
     }
 
     public static boolean isAuthenticated(HttpServerExchange exchange) {
@@ -78,7 +78,7 @@ public abstract class AbstractExchange<T> {
 
     public static void setInError(HttpServerExchange exchange) {
         exchange
-                .putAttachment(IN_ERROR, true);
+                .putAttachment(IN_ERROR_KEY, true);
     }
 
     public static boolean responseInterceptorsExecuted(HttpServerExchange exchange) {

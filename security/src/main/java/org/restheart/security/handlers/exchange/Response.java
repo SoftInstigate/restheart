@@ -30,8 +30,6 @@ import java.io.IOException;
  */
 public abstract class Response<T> extends AbstractExchange<T> {
 
-    private static final AttachmentKey<Boolean> IN_ERROR_KEY
-            = AttachmentKey.create(Boolean.class);
     private static final AttachmentKey<Integer> STATUS_CODE
             = AttachmentKey.create(Integer.class);
     public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA
