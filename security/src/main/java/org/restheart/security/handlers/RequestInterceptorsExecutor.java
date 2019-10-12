@@ -22,10 +22,12 @@ import org.restheart.security.plugins.PluginsRegistry;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import org.restheart.security.handlers.exchange.ByteArrayResponse;
+import org.restheart.security.plugins.RequestInterceptor;
+import org.restheart.security.utils.HttpStatus;
 import org.restheart.security.utils.LambdaUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.security.plugins.RequestInterceptor;
 
 /**
  *
@@ -35,6 +37,8 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RequestInterceptorsExecutor.class);
+
+    private final ResponseSender sender = new ResponseSender();
 
     /**
      *
@@ -80,6 +84,20 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
                     }
                 });
 
-        next(exchange);
+        var response = ByteArrayResponse.wrap(exchange);
+
+        // if an interceptor sets the response as errored
+        // stop processing the request and send the response
+        if (response.isInError()) {
+            // if in error but no status code
+            // set it to 400 Bad Request
+            if (response.getStatusCode() < 0) {
+                response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+            }
+
+            sender.handleRequest(exchange);
+        } else {
+            next(exchange);
+        }
     }
 }
