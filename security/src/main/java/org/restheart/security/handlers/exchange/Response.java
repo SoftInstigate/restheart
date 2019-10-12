@@ -83,8 +83,9 @@ public abstract class Response<T> extends AbstractExchange<T> {
      * @return the responseStatusCode of -1 if not set
      */
     public int getStatusCode() {
-        var code = getWrapped().getAttachment(STATUS_CODE);
-        return code == null ? -1 : code;
+        return getWrapped().getAttachment(STATUS_CODE) == null 
+                ? -1 
+                : getWrapped().getAttachment(STATUS_CODE);
     }
 
     /**
@@ -103,9 +104,9 @@ public abstract class Response<T> extends AbstractExchange<T> {
      * @return the inError
      */
     public boolean isInError() {
-        var isInError = getWrapped().getAttachment(IN_ERROR_KEY);
+        return getWrapped().getAttachment(IN_ERROR_KEY) != null
+                && getWrapped().getAttachment(IN_ERROR_KEY);
         
-        return isInError == null ? false : isInError;
     }
 
     /**

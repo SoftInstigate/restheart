@@ -54,7 +54,7 @@ public class ResponseSender extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var response = ByteArrayResponse.wrap(exchange);
 
-        if (!exchange.isResponseStarted()) {
+        if (!exchange.isResponseStarted() && response.getStatusCode() > 0) {
             exchange.setStatusCode(response.getStatusCode());
         }
 
