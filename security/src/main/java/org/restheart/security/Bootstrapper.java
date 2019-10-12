@@ -888,15 +888,14 @@ public class Bootstrapper {
         return new GracefulShutdownHandler(new RequestLimitingHandler(
                 new RequestLimit(configuration.getRequestsLimit()),
                 new AllowedMethodsHandler(
-                        new RequestContentInjector(
-                                new BlockingHandler(
-                                        new ConduitInjector(
-                                                new PipedWrappingHandler(null,
-                                                        new ConfigurableEncodingHandler(
-                                                                new ErrorHandler(
-                                                                        new HttpContinueAcceptingHandler(paths)),
-                                                                configuration.isForceGzipEncoding())
-                                                )))),
+                        new BlockingHandler(
+                                new ConduitInjector(
+                                        new PipedWrappingHandler(null,
+                                                new ConfigurableEncodingHandler(
+                                                        new ErrorHandler(
+                                                                new HttpContinueAcceptingHandler(paths)),
+                                                        configuration.isForceGzipEncoding())
+                                        ))),
                         // allowed methods
                         HttpString.tryFromString(METHOD.GET.name()),
                         HttpString.tryFromString(METHOD.POST.name()),
@@ -930,10 +929,13 @@ public class Bootstrapper {
                             Service _srv = PluginsRegistry.getInstance()
                                     .getService(name);
 
-                            var srv = new RequestInterceptorsExecutor(
-                                    new QueryStringRebuiler(new PipedWrappingHandler(
-                                            new ResponseSender(),
-                                            _srv)));
+                            var srv = new PipedWrappingHandler(null,
+                                    new RequestContentInjector(
+                                            new RequestInterceptorsExecutor(
+                                                    new QueryStringRebuiler(
+                                                            new PipedWrappingHandler(
+                                                                    new ResponseSender(),
+                                                                    _srv)))));
 
                             if (_srv.getSecured()) {
                                 paths.addPrefixPath(_srv.getUri(), new RequestLogger(
@@ -1097,21 +1099,23 @@ public class Bootstrapper {
 
                 PipedHttpHandler wrappedProxyHandler
                         = new XForwardedHeadersInjector(
-                                new XPoweredByInjector(
-                                        new RequestInterceptorsExecutor(
-                                                new QueryStringRebuiler(
-                                                        new PipedWrappingHandler(
-                                                                null,
-                                                                proxyHandler)))));
+                                new PipedWrappingHandler(null,
+                                        new RequestContentInjector(
+                                                new RequestInterceptorsExecutor(
+                                                        new QueryStringRebuiler(
+                                                                new PipedWrappingHandler(
+                                                                        null,
+                                                                        proxyHandler))))));
 
                 paths.addPrefixPath(location,
                         new RequestLogger(
-                                new SecurityHandler(
-                                        new AuthHeadersRemover(
-                                                wrappedProxyHandler),
-                                        authMechanisms,
-                                        authorizers,
-                                        tokenManager)));
+                                new XPoweredByInjector(
+                                        new SecurityHandler(
+                                                new AuthHeadersRemover(
+                                                        wrappedProxyHandler),
+                                                authMechanisms,
+                                                authorizers,
+                                                tokenManager))));
 
                 LOGGER.info("URI {} bound to resource {}", location, _proxyPass);
             } catch (URISyntaxException ex) {
