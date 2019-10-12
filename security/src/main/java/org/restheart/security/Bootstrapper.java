@@ -281,7 +281,7 @@ public class Bootstrapper {
             return new Configuration(CONFIGURATION_FILE, false);
         } else {
             final Properties p = new Properties();
-            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(PROPERTIES_FILE), "UTF-8")) {
+            try ( InputStreamReader reader = new InputStreamReader(new FileInputStream(PROPERTIES_FILE), "UTF-8")) {
                 p.load(reader);
             } catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
@@ -625,7 +625,7 @@ public class Bootstrapper {
             } else if (configuration.getKeystoreFile() != null
                     && configuration.getKeystorePassword() != null
                     && configuration.getCertPassword() != null) {
-                try (FileInputStream fis = new FileInputStream(
+                try ( FileInputStream fis = new FileInputStream(
                         new File(configuration.getKeystoreFile()))) {
                     ks.load(fis, configuration.getKeystorePassword().toCharArray());
                     kmf.init(ks, configuration.getCertPassword().toCharArray());
@@ -930,20 +930,19 @@ public class Bootstrapper {
                             Service _srv = PluginsRegistry.getInstance()
                                     .getService(name);
 
-                            var srv = new PipedWrappingHandler(
-                                    new ResponseSender(),
-                                    _srv);
+                            var srv = new RequestInterceptorsExecutor(
+                                    new QueryStringRebuiler(new PipedWrappingHandler(
+                                            new ResponseSender(),
+                                            _srv)));
 
                             if (_srv.getSecured()) {
                                 paths.addPrefixPath(_srv.getUri(), new RequestLogger(
                                         new CORSHandler(
                                                 new XPoweredByInjector(
-                                                        new RequestInterceptorsExecutor(
-                                                                new QueryStringRebuiler(
-                                                                        new SecurityHandler(srv,
-                                                                                authMechanisms,
-                                                                                authorizers,
-                                                                                tokenManager)))))));
+                                                        new SecurityHandler(srv,
+                                                                authMechanisms,
+                                                                authorizers,
+                                                                tokenManager)))));
                             } else {
                                 var _fauthorizers = new LinkedHashSet<Authorizer>();
                                 _fauthorizers.add(new FullAuthorizer(false));
@@ -951,12 +950,10 @@ public class Bootstrapper {
                                 paths.addPrefixPath(_srv.getUri(), new RequestLogger(
                                         new CORSHandler(
                                                 new XPoweredByInjector(
-                                                        new RequestInterceptorsExecutor(
-                                                                new QueryStringRebuiler(
-                                                                        new SecurityHandler(srv,
-                                                                                authMechanisms,
-                                                                                _fauthorizers,
-                                                                                tokenManager)))))));
+                                                        new SecurityHandler(srv,
+                                                                authMechanisms,
+                                                                _fauthorizers,
+                                                                tokenManager)))));
                             }
 
                             LOGGER.info("URI {} bound to service {}, secured: {}",
