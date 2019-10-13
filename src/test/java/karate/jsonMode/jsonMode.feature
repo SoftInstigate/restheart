@@ -5,26 +5,31 @@ Background:
 * def db = '/test-jsonMode'
 * def coll = '/test-jsonMode/coll'
 * def doc = '/test-jsonMode/coll/doc'
+* def authHeader = 'Basic YWRtaW46Y2hhbmdlaXQ='
 
 # CREATE TEST DATA
 
 Scenario: Create test data
+    * header Authorization = authHeader
     Given path db
     And request { }
     When method PUT
     Then assert responseStatus == 201
 
+    * header Authorization = authHeader
     Given path coll
     And request { }
     When method PUT
     Then assert responseStatus == 201
 
+    * header Authorization = authHeader
     Given path doc
     And request { "int": 1, "double": 1.0, "long": 1000000000, "timestamp": { "$date": 1568295769260 } }
     When method PUT
     Then assert responseStatus == 201
 
 Scenario: Get document without jsonMode qparam
+    * header Authorization = authHeader
     Given path doc
     When method GET
     Then assert responseStatus == 200
@@ -34,6 +39,7 @@ Scenario: Get document without jsonMode qparam
     And match response.timestamp.$date == 1568295769260
 
 Scenario: Get document with jsonMode=strict
+    * header Authorization = authHeader
     Given path doc
     And param jsonMode = "strict"
     When method GET
@@ -44,6 +50,7 @@ Scenario: Get document with jsonMode=strict
     And match response.timestamp.$date == 1568295769260
 
 Scenario: Get document with jsonMode=extended
+    * header Authorization = authHeader
     Given path doc
     And param jsonMode = "extended"
     When method GET
@@ -54,6 +61,7 @@ Scenario: Get document with jsonMode=extended
     And match response.timestamp.$date.$numberLong == "1568295769260"
 
 Scenario: Get document with jsonMode=relaxed
+    * header Authorization = authHeader
     Given path doc
     And param jsonMode = "relaxed"
     When method GET
