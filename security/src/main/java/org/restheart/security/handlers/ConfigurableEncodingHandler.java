@@ -43,7 +43,7 @@ public class ConfigurableEncodingHandler extends EncodingHandler {
     private boolean forceCompression = false;
 
     /**
-     * Creates a new instance of GzipEncodingHandler
+     * Creates a new instance of ConfigurableEncodingHandler
      *
      * @param next
      * @param forceCompression if true requests without gzip or deflate encoding

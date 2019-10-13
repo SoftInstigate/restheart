@@ -25,8 +25,6 @@ import org.restheart.security.handlers.GlobalSecurityPredicatesAuthorizer;
 import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.interceptors.EchoExampleRequestInterceptor;
 import org.restheart.security.plugins.interceptors.EchoExampleResponseInterceptor;
-import org.restheart.security.plugins.interceptors.ExampleProxiedRequestInterceptor;
-import org.restheart.security.plugins.interceptors.ExampleProxiedResponseInterceptor;
 import org.restheart.security.utils.URLUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
@@ -82,17 +80,5 @@ public class TestInitializer implements Initializer {
                 .getInstance()
                 .getRequestInterceptors()
                 .add(new EchoExampleRequestInterceptor());
-
-        // add an exampe request interceptor
-        PluginsRegistry
-                .getInstance()
-                .getRequestInterceptors()
-                .add(new ExampleProxiedRequestInterceptor());
-
-        // add an exampe response interceptor
-        PluginsRegistry
-                .getInstance()
-                .getResponseInterceptors()
-                .add(new ExampleProxiedResponseInterceptor());
     }
 }

@@ -887,15 +887,10 @@ public class Bootstrapper {
             PathHandler paths) {
         return new GracefulShutdownHandler(new RequestLimitingHandler(
                 new RequestLimit(configuration.getRequestsLimit()),
-                new AllowedMethodsHandler(
-                        new BlockingHandler(
-                                new ConduitInjector(
-                                        new PipedWrappingHandler(null,
-                                                new ConfigurableEncodingHandler(
-                                                        new ErrorHandler(
-                                                                new HttpContinueAcceptingHandler(paths)),
-                                                        configuration.isForceGzipEncoding())
-                                        ))),
+                new AllowedMethodsHandler(new BlockingHandler(
+                        new PipedWrappingHandler(null,
+                                new ErrorHandler(
+                                        new HttpContinueAcceptingHandler(paths)))),
                         // allowed methods
                         HttpString.tryFromString(METHOD.GET.name()),
                         HttpString.tryFromString(METHOD.POST.name()),
@@ -933,9 +928,13 @@ public class Bootstrapper {
                                     new RequestContentInjector(
                                             new RequestInterceptorsExecutor(
                                                     new QueryStringRebuiler(
-                                                            new PipedWrappingHandler(
-                                                                    new ResponseSender(),
-                                                                    _srv)))));
+                                                            new ConduitInjector(
+                                                                    new PipedWrappingHandler(
+                                                                            new ResponseSender(),
+                                                                            new ConfigurableEncodingHandler( // Must be after ConduitInjector 
+                                                                                    _srv,
+                                                                                    configuration.isForceGzipEncoding()))))),
+                                            true));
 
                             if (_srv.getSecured()) {
                                 paths.addPrefixPath(_srv.getUri(), new RequestLogger(
@@ -1103,9 +1102,13 @@ public class Bootstrapper {
                                         new RequestContentInjector(
                                                 new RequestInterceptorsExecutor(
                                                         new QueryStringRebuiler(
-                                                                new PipedWrappingHandler(
-                                                                        null,
-                                                                        proxyHandler))))));
+                                                                new ConduitInjector(
+                                                                        new PipedWrappingHandler(
+                                                                                null,
+                                                                                new ConfigurableEncodingHandler( // Must be after ConduitInjector 
+                                                                                        proxyHandler,
+                                                                                        configuration.isForceGzipEncoding()))))),
+                                                false)));
 
                 paths.addPrefixPath(location,
                         new RequestLogger(

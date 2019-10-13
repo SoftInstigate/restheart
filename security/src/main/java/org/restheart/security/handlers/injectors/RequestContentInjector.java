@@ -48,13 +48,18 @@ public class RequestContentInjector extends RequestBufferingHandler {
             .getLogger(RequestContentInjector.class);
 
     private HttpHandler next;
+    private final boolean nextType;
 
     /**
      * @param next
+     * @param nextType true next=service (content always injected), false
+     * next=proxy (content injected when a interceptor resolves with
+     * requiresContent()=true)
      */
-    public RequestContentInjector(HttpHandler next) {
+    public RequestContentInjector(HttpHandler next, boolean nextType) {
         super(next, MAX_BUFFERS);
         this.next = new BlockingHandler(next);
+        this.nextType = nextType;
     }
 
     /**
@@ -65,7 +70,7 @@ public class RequestContentInjector extends RequestBufferingHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (isContentRequiredByAnyRequestInterceptor(exchange)
-                || isServiceRequested(exchange)) {
+                || isServiceRequested()) {
 
             LOGGER.trace("Request content available for Request.getContent()");
             super.handleRequest(exchange);
@@ -85,21 +90,7 @@ public class RequestContentInjector extends RequestBufferingHandler {
                 .anyMatch(t -> t.requiresContent());
     }
 
-    private boolean isServiceRequested(HttpServerExchange exchange) {
-        return Bootstrapper.getConfiguration().getServices().stream()
-                .filter(c -> getServiceURI(c) != null)
-                .map(c -> getServiceURI(c))
-                .anyMatch(uri
-                        -> exchange.getRequestPath().startsWith(uri));
-    }
-
-    private String getServiceURI(Map<String, Object> conf) {
-        Object _uri = conf.get(ConfigurationKeys.SERVICE_URI_KEY);
-
-        if (_uri != null && (_uri instanceof String)) {
-            return (String) _uri;
-        } else {
-            return null;
-        }
+    private boolean isServiceRequested() {
+        return nextType;
     }
 }
