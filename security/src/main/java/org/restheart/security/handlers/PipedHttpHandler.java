@@ -17,12 +17,9 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.security.handlers.exchange.AbstractExchange;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import java.util.ArrayList;
 import java.util.Objects;
-import static org.restheart.security.handlers.PipedWrappingHandler.wrap;
 
 /**
  *
