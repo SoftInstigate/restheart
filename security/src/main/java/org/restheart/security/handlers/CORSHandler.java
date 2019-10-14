@@ -28,7 +28,6 @@ import com.google.common.net.HttpHeaders;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_VALID_HEADER;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;

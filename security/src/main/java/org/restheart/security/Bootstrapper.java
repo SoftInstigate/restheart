@@ -61,7 +61,6 @@ import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.security.handlers.CORSHandler;
 import org.restheart.security.handlers.ConfigurableEncodingHandler;
 import org.restheart.security.handlers.ErrorHandler;
-import org.restheart.security.handlers.PipedHttpHandler;
 import static org.restheart.security.handlers.PipedHttpHandler.pipe;
 import org.restheart.security.handlers.PipedWrappingHandler;
 import org.restheart.security.handlers.QueryStringRebuiler;

@@ -22,8 +22,6 @@ import static org.restheart.security.handlers.exchange.AbstractExchange.MAX_BUFF
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.RequestBufferingHandler;
 import org.restheart.security.handlers.PipedHttpHandler;
 import org.slf4j.Logger;
