@@ -39,7 +39,7 @@ public interface RequestInterceptor extends Interceptor {
     
     /**
      *
-     * @return 
+     * @return the intecept point
      */
     default IPOINT interceptPoint() {
         return BEFORE_AUTH;
