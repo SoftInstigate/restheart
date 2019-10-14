@@ -30,6 +30,14 @@ public class AuthHeadersRemover extends PipedHttpHandler {
     /**
      * Creates a new instance of AuthHeadersRemover
      *
+     */
+    public AuthHeadersRemover() {
+        super();
+    }
+
+    /**
+     * Creates a new instance of AuthHeadersRemover
+     *
      * @param next
      */
     public AuthHeadersRemover(PipedHttpHandler next) {

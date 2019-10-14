@@ -60,6 +60,13 @@ public class ConduitInjector extends PipedHttpHandler {
     }
 
     /**
+     * 
+     */
+    public ConduitInjector() {
+        super();
+    }
+
+    /**
      *
      * @param exchange
      * @throws Exception

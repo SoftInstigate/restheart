@@ -34,7 +34,6 @@ import org.restheart.security.Configuration;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_HEADER;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.ExchangeCompletionListener;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.util.HeaderValues;
@@ -54,8 +53,15 @@ public class RequestLogger extends PipedHttpHandler {
 
     private final Configuration configuration = Bootstrapper.getConfiguration();
 
-    private final HttpHandler handler;
-
+    
+    /**
+     * Creates a new instance of RequestLoggerHandler
+     *
+     */
+    public RequestLogger() {
+        super();
+    }
+    
     /**
      * Creates a new instance of RequestLoggerHandler
      *
@@ -63,17 +69,6 @@ public class RequestLogger extends PipedHttpHandler {
      */
     public RequestLogger(PipedHttpHandler next) {
         super(next);
-        handler = null;
-    }
-
-    /**
-     * Creates a new instance of RequestLoggerHandler
-     *
-     * @param handler
-     */
-    public RequestLogger(HttpHandler handler) {
-        super(null);
-        this.handler = handler;
     }
 
     /**
@@ -88,10 +83,6 @@ public class RequestLogger extends PipedHttpHandler {
         }
 
         next(exchange);
-
-        if (handler != null) {
-            handler.handleRequest(exchange);
-        }
     }
 
     /**

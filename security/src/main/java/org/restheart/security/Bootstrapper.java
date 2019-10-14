@@ -62,6 +62,7 @@ import org.restheart.security.handlers.CORSHandler;
 import org.restheart.security.handlers.ConfigurableEncodingHandler;
 import org.restheart.security.handlers.ErrorHandler;
 import org.restheart.security.handlers.PipedHttpHandler;
+import static org.restheart.security.handlers.PipedHttpHandler.pipe;
 import org.restheart.security.handlers.PipedWrappingHandler;
 import org.restheart.security.handlers.QueryStringRebuiler;
 import org.restheart.security.handlers.RequestInterceptorsExecutor;
@@ -885,19 +886,20 @@ public class Bootstrapper {
      */
     private static GracefulShutdownHandler buildGracefulShutdownHandler(
             PathHandler paths) {
-        return new GracefulShutdownHandler(new RequestLimitingHandler(
-                new RequestLimit(configuration.getRequestsLimit()),
-                new AllowedMethodsHandler(new BlockingHandler(
-                        new PipedWrappingHandler(null,
-                                new ErrorHandler(
-                                        new HttpContinueAcceptingHandler(paths)))),
-                        // allowed methods
-                        HttpString.tryFromString(METHOD.GET.name()),
-                        HttpString.tryFromString(METHOD.POST.name()),
-                        HttpString.tryFromString(METHOD.PUT.name()),
-                        HttpString.tryFromString(METHOD.DELETE.name()),
-                        HttpString.tryFromString(METHOD.PATCH.name()),
-                        HttpString.tryFromString(METHOD.OPTIONS.name()))));
+        return new GracefulShutdownHandler(
+                new RequestLimitingHandler(
+                        new RequestLimit(configuration.getRequestsLimit()),
+                        new AllowedMethodsHandler(
+                                new BlockingHandler(
+                                        new ErrorHandler(
+                                                new HttpContinueAcceptingHandler(paths))),
+                                // allowed methods
+                                HttpString.tryFromString(METHOD.GET.name()),
+                                HttpString.tryFromString(METHOD.POST.name()),
+                                HttpString.tryFromString(METHOD.PUT.name()),
+                                HttpString.tryFromString(METHOD.DELETE.name()),
+                                HttpString.tryFromString(METHOD.PATCH.name()),
+                                HttpString.tryFromString(METHOD.OPTIONS.name()))));
     }
 
     /**
@@ -924,38 +926,42 @@ public class Bootstrapper {
                             Service _srv = PluginsRegistry.getInstance()
                                     .getService(name);
 
-                            var srv = new PipedWrappingHandler(null,
-                                    new RequestContentInjector(
-                                            new RequestInterceptorsExecutor(
-                                                    new QueryStringRebuiler(
-                                                            new ConduitInjector(
-                                                                    new PipedWrappingHandler(
-                                                                            new ResponseSender(),
-                                                                            new ConfigurableEncodingHandler( // Must be after ConduitInjector 
-                                                                                    _srv,
-                                                                                    configuration.isForceGzipEncoding()))))),
-                                            true));
+                            var srvCore = pipe(
+                                    new RequestContentInjector(true),
+                                    new RequestInterceptorsExecutor(),
+                                    new QueryStringRebuiler(),
+                                    new ConduitInjector(),
+                                    PipedWrappingHandler.wrap(
+                                            new ConfigurableEncodingHandler(_srv,
+                                                    configuration.isForceGzipEncoding())),
+                                    new ResponseSender()
+                            );
+
+                            SecurityHandler securityHandler;
 
                             if (_srv.getSecured()) {
-                                paths.addPrefixPath(_srv.getUri(), new RequestLogger(
-                                        new CORSHandler(
-                                                new XPoweredByInjector(
-                                                        new SecurityHandler(srv,
-                                                                authMechanisms,
-                                                                authorizers,
-                                                                tokenManager)))));
+                                securityHandler = new SecurityHandler(srvCore,
+                                        authMechanisms,
+                                        authorizers,
+                                        tokenManager);
                             } else {
                                 var _fauthorizers = new LinkedHashSet<Authorizer>();
                                 _fauthorizers.add(new FullAuthorizer(false));
 
-                                paths.addPrefixPath(_srv.getUri(), new RequestLogger(
-                                        new CORSHandler(
-                                                new XPoweredByInjector(
-                                                        new SecurityHandler(srv,
-                                                                authMechanisms,
-                                                                _fauthorizers,
-                                                                tokenManager)))));
+                                securityHandler = new SecurityHandler(srvCore,
+                                        authMechanisms,
+                                        _fauthorizers,
+                                        tokenManager);
                             }
+
+                            var srv = pipe(
+                                    new RequestLogger(),
+                                    new CORSHandler(),
+                                    new XPoweredByInjector(),
+                                    securityHandler
+                            );
+
+                            paths.addPrefixPath(_srv.getUri(), srv);
 
                             LOGGER.info("URI {} bound to service {}, secured: {}",
                                     _srv.getUri(),
@@ -1096,29 +1102,31 @@ public class Bootstrapper {
                         .setProxyClient(proxyClient)
                         .build();
 
-                PipedHttpHandler wrappedProxyHandler
-                        = new XForwardedHeadersInjector(
-                                new PipedWrappingHandler(null,
-                                        new RequestContentInjector(
-                                                new RequestInterceptorsExecutor(
-                                                        new QueryStringRebuiler(
-                                                                new ConduitInjector(
-                                                                        new PipedWrappingHandler(
-                                                                                null,
-                                                                                new ConfigurableEncodingHandler( // Must be after ConduitInjector 
-                                                                                        proxyHandler,
-                                                                                        configuration.isForceGzipEncoding()))))),
-                                                false)));
+                var proxyCore = pipe(
+                        new AuthHeadersRemover(),
+                        new XForwardedHeadersInjector(),
+                        new RequestContentInjector(false),
+                        new RequestInterceptorsExecutor(),
+                        new QueryStringRebuiler(),
+                        new ConduitInjector(),
+                        PipedWrappingHandler.wrap(
+                                new ConfigurableEncodingHandler( // Must be after ConduitInjector 
+                                        proxyHandler,
+                                        configuration.isForceGzipEncoding()))
+                );
 
-                paths.addPrefixPath(location,
-                        new RequestLogger(
-                                new XPoweredByInjector(
-                                        new SecurityHandler(
-                                                new AuthHeadersRemover(
-                                                        wrappedProxyHandler),
-                                                authMechanisms,
-                                                authorizers,
-                                                tokenManager))));
+                var securityHandler = new SecurityHandler(
+                        proxyCore,
+                        authMechanisms,
+                        authorizers,
+                        tokenManager);
+
+                var proxy = pipe(
+                        new RequestLogger(),
+                        new XPoweredByInjector(),
+                        securityHandler);
+
+                paths.addPrefixPath(location, proxy);
 
                 LOGGER.info("URI {} bound to resource {}", location, _proxyPass);
             } catch (URISyntaxException ex) {

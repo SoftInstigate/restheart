@@ -55,7 +55,7 @@ public class QueryStringRebuiler extends PipedHttpHandler {
      *
      * @param next
      */
-    public QueryStringRebuiler(HttpHandler next) {
+    public QueryStringRebuiler() {
         super(null);
     }
 

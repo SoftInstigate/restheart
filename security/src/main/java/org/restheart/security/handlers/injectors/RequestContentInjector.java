@@ -17,7 +17,6 @@
  */
 package org.restheart.security.handlers.injectors;
 
-import org.restheart.security.Bootstrapper;
 import org.restheart.security.plugins.PluginsRegistry;
 import static org.restheart.security.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 
@@ -26,8 +25,7 @@ import java.util.List;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.RequestBufferingHandler;
-import java.util.Map;
-import org.restheart.security.ConfigurationKeys;
+import org.restheart.security.handlers.PipedHttpHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.restheart.security.plugins.RequestInterceptor;
@@ -42,13 +40,15 @@ import org.restheart.security.plugins.RequestInterceptor;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestContentInjector extends RequestBufferingHandler {
+public class RequestContentInjector extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RequestContentInjector.class);
 
-    private HttpHandler next;
+    //private HttpHandler next;
     private final boolean nextType;
+    
+    private RequestBufferingHandler bufferingHandler;
 
     /**
      * @param next
@@ -56,10 +56,28 @@ public class RequestContentInjector extends RequestBufferingHandler {
      * next=proxy (content injected when a interceptor resolves with
      * requiresContent()=true)
      */
-    public RequestContentInjector(HttpHandler next, boolean nextType) {
-        super(next, MAX_BUFFERS);
-        this.next = new BlockingHandler(next);
+    public RequestContentInjector(PipedHttpHandler next, boolean nextType) {
+        super(next);
+        this.bufferingHandler = new RequestBufferingHandler(next, MAX_BUFFERS);
         this.nextType = nextType;
+    }
+    
+    /**
+     * @param next
+     * @param nextType true next=service (content always injected), false
+     * next=proxy (content injected when a interceptor resolves with
+     * requiresContent()=true)
+     */
+    public RequestContentInjector(boolean nextType) {
+        super();
+        this.bufferingHandler = null;
+        this.nextType = nextType;
+    }
+
+    @Override
+    protected void setNext(PipedHttpHandler next) {
+        super.setNext(next);
+        this.bufferingHandler = new RequestBufferingHandler(next, MAX_BUFFERS);
     }
 
     /**
@@ -73,10 +91,12 @@ public class RequestContentInjector extends RequestBufferingHandler {
                 || isServiceRequested()) {
 
             LOGGER.trace("Request content available for Request.getContent()");
-            super.handleRequest(exchange);
+            
+            bufferingHandler.handleRequest(exchange);
         } else {
             LOGGER.trace("Request content is not available for Request.getContent()");
-            next.handleRequest(exchange);
+            next(exchange);
+            getNext().handleRequest(exchange);
         }
     }
 

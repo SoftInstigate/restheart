@@ -20,6 +20,9 @@ package org.restheart.security.handlers;
 import org.restheart.security.handlers.exchange.AbstractExchange;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import java.util.ArrayList;
+import java.util.Objects;
+import static org.restheart.security.handlers.PipedWrappingHandler.wrap;
 
 /**
  *
@@ -29,7 +32,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
 
     protected static final String CONTENT_TYPE = "contentType";
 
-    private final PipedHttpHandler next;
+    private  PipedHttpHandler next;
 
     /**
      * Creates a default instance of PipedHttpHandler with next = null
@@ -45,7 +48,19 @@ public abstract class PipedHttpHandler implements HttpHandler {
     public PipedHttpHandler(PipedHttpHandler next) {
         this.next = next;
     }
-
+    
+    public static PipedHttpHandler pipe(PipedHttpHandler... handlers) {
+        if (Objects.isNull(handlers)) {
+            return null;
+        }
+        
+        for (var idx = 0; idx < handlers.length-1; idx++) {
+            handlers[idx].setNext(handlers[idx+1]);
+        }
+        
+        return handlers[0];
+    }
+    
     /**
      *
      * @param exchange
@@ -59,10 +74,16 @@ public abstract class PipedHttpHandler implements HttpHandler {
     protected PipedHttpHandler getNext() {
         return next;
     }
+    
+    /**
+     * set the next PipedHttpHandler
+     */
+    protected void setNext(PipedHttpHandler next) {
+        this.next = next;
+    }
 
     protected void next(HttpServerExchange exchange) throws Exception {
-        if (!AbstractExchange.isInError(exchange)
-                && getNext() != null) {
+        if (getNext() != null) {
             getNext().handleRequest(exchange);
         }
     }

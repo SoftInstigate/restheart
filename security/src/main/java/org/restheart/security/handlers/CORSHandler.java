@@ -45,8 +45,15 @@ import io.undertow.util.HttpString;
 public class CORSHandler extends PipedHttpHandler {
 
     public static final String ALL_ORIGINS = "*";
-    private final HttpHandler noPipedNext;
 
+    /**
+     * Creates a new instance of CORSHandler
+     *
+     */
+    public CORSHandler() {
+        super();
+    }
+    
     /**
      * Creates a new instance of CORSHandler
      *
@@ -54,17 +61,6 @@ public class CORSHandler extends PipedHttpHandler {
      */
     public CORSHandler(PipedHttpHandler next) {
         super(next);
-        this.noPipedNext = null;
-    }
-
-    /**
-     * Creates a new instance of CORSHandler
-     *
-     * @param next
-     */
-    public CORSHandler(HttpHandler next) {
-        super(null);
-        this.noPipedNext = next;
     }
 
     /**
@@ -76,11 +72,7 @@ public class CORSHandler extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         injectAccessControlAllowHeaders(exchange);
 
-        if (noPipedNext != null) {
-            noPipedNext.handleRequest(exchange);
-        } else {
-            next(exchange);
-        }
+        next(exchange);
     }
 
     public static void injectAccessControlAllowHeaders(HttpServerExchange exchange) {

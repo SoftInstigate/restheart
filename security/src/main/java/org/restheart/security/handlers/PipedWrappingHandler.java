@@ -34,7 +34,7 @@ public class PipedWrappingHandler extends PipedHttpHandler {
      * @param next
      * @param handler
      */
-    public PipedWrappingHandler(PipedHttpHandler next, HttpHandler handler) {
+    private PipedWrappingHandler(PipedHttpHandler next, HttpHandler handler) {
         super(next);
         wrapped = handler;
     }
@@ -44,9 +44,29 @@ public class PipedWrappingHandler extends PipedHttpHandler {
      *
      * @param handler
      */
-    public PipedWrappingHandler(HttpHandler handler) {
+    private PipedWrappingHandler(HttpHandler handler) {
         super(null);
         wrapped = handler;
+    }
+    
+    /**
+     * 
+     * @param next
+     * @param handler
+     * @return the wrapping handler
+     */
+    public static PipedWrappingHandler wrap(HttpHandler handler) {
+        return wrap(null, handler);
+    }
+    
+    /**
+     * 
+     * @param next
+     * @param handler
+     * @return the wrapping handler 
+     */
+    public static PipedWrappingHandler wrap(PipedHttpHandler next, HttpHandler handler) {
+        return new PipedWrappingHandler(next, handler);
     }
 
     /**
