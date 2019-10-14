@@ -74,11 +74,16 @@ import org.restheart.security.handlers.exchange.AbstractExchange.METHOD;
 import org.restheart.security.handlers.injectors.AuthHeadersRemover;
 import org.restheart.security.handlers.injectors.ConduitInjector;
 import org.restheart.security.handlers.injectors.RequestContentInjector;
+import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
+import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
+import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.security.handlers.injectors.XForwardedHeadersInjector;
 import org.restheart.security.handlers.injectors.XPoweredByInjector;
 import org.restheart.security.plugins.AuthMechanism;
 import org.restheart.security.plugins.Authorizer;
 import org.restheart.security.plugins.PluginsRegistry;
+import static org.restheart.security.plugins.RequestInterceptor.IPOINT.AFTER_AUTH;
+import static org.restheart.security.plugins.RequestInterceptor.IPOINT.BEFORE_AUTH;
 import org.restheart.security.plugins.Service;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.authorizers.FullAuthorizer;
@@ -925,21 +930,12 @@ public class Bootstrapper {
                             Service _srv = PluginsRegistry.getInstance()
                                     .getService(name);
 
-                            var srvCore = pipe(
-                                    new RequestContentInjector(true),
-                                    new RequestInterceptorsExecutor(),
-                                    new QueryStringRebuiler(),
-                                    new ConduitInjector(),
-                                    PipedWrappingHandler.wrap(
-                                            new ConfigurableEncodingHandler(_srv,
-                                                    configuration.isForceGzipEncoding())),
-                                    new ResponseSender()
-                            );
-
+                            LOGGER.debug("{} secured {}", name, _srv.getSecured());
+                            
                             SecurityHandler securityHandler;
 
                             if (_srv.getSecured()) {
-                                securityHandler = new SecurityHandler(srvCore,
+                                securityHandler = new SecurityHandler(
                                         authMechanisms,
                                         authorizers,
                                         tokenManager);
@@ -947,7 +943,7 @@ public class Bootstrapper {
                                 var _fauthorizers = new LinkedHashSet<Authorizer>();
                                 _fauthorizers.add(new FullAuthorizer(false));
 
-                                securityHandler = new SecurityHandler(srvCore,
+                                securityHandler = new SecurityHandler(
                                         authMechanisms,
                                         _fauthorizers,
                                         tokenManager);
@@ -957,7 +953,18 @@ public class Bootstrapper {
                                     new RequestLogger(),
                                     new CORSHandler(),
                                     new XPoweredByInjector(),
-                                    securityHandler
+                                    new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
+                                    new RequestInterceptorsExecutor(BEFORE_AUTH),
+                                    new QueryStringRebuiler(),
+                                    securityHandler,
+                                    new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
+                                    new RequestInterceptorsExecutor(AFTER_AUTH),
+                                    new QueryStringRebuiler(),
+                                    new ConduitInjector(),
+                                    PipedWrappingHandler.wrap(
+                                            new ConfigurableEncodingHandler(_srv,
+                                                    configuration.isForceGzipEncoding())),
+                                    new ResponseSender()
                             );
 
                             paths.addPrefixPath(_srv.getUri(), srv);
@@ -1101,29 +1108,25 @@ public class Bootstrapper {
                         .setProxyClient(proxyClient)
                         .build();
 
-                var proxyCore = pipe(
+                var proxy = pipe(
+                        new RequestLogger(),
+                        new XPoweredByInjector(),
+                        new RequestContentInjector(ALWAYS),
+                        new RequestInterceptorsExecutor(BEFORE_AUTH),
+                        new QueryStringRebuiler(),
+                        new SecurityHandler(
+                                authMechanisms,
+                                authorizers,
+                                tokenManager),
                         new AuthHeadersRemover(),
                         new XForwardedHeadersInjector(),
-                        new RequestContentInjector(false),
-                        new RequestInterceptorsExecutor(),
+                        new RequestInterceptorsExecutor(AFTER_AUTH),
                         new QueryStringRebuiler(),
                         new ConduitInjector(),
                         PipedWrappingHandler.wrap(
                                 new ConfigurableEncodingHandler( // Must be after ConduitInjector 
                                         proxyHandler,
-                                        configuration.isForceGzipEncoding()))
-                );
-
-                var securityHandler = new SecurityHandler(
-                        proxyCore,
-                        authMechanisms,
-                        authorizers,
-                        tokenManager);
-
-                var proxy = pipe(
-                        new RequestLogger(),
-                        new XPoweredByInjector(),
-                        securityHandler);
+                                        configuration.isForceGzipEncoding())));
 
                 paths.addPrefixPath(location, proxy);
 

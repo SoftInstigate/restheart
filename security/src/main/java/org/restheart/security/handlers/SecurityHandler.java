@@ -32,25 +32,36 @@ import org.restheart.security.plugins.AuthMechanism;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SecurityHandler extends PipedHttpHandler {
+    private final List<AuthMechanism> authenticationMechanisms;
+    private final LinkedHashSet<Authorizer> accessManagers;
+    private final TokenManager tokenManager;
 
     /**
      *
-     * @param next
      * @param authenticationMechanisms
      * @param accessManagers
      */
-    public SecurityHandler(final PipedHttpHandler next,
-            final List<AuthMechanism> authenticationMechanisms,
+    public SecurityHandler(final List<AuthMechanism> authenticationMechanisms,
             final LinkedHashSet<Authorizer> accessManagers,
             final TokenManager tokenManager) {
+        super();
 
-        super(buildSecurityHandlersChain(next,
-                authenticationMechanisms, accessManagers, tokenManager));
+        this.authenticationMechanisms = authenticationMechanisms;
+        this.accessManagers = accessManagers;        
+        this.tokenManager = tokenManager;
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         next(exchange);
+    }
+
+    @Override
+    protected void setNext(PipedHttpHandler next) {
+        super.setNext(buildSecurityHandlersChain(next,
+                authenticationMechanisms, 
+                accessManagers, 
+                tokenManager));
     }
 
     private static PipedHttpHandler buildSecurityHandlersChain(
@@ -61,11 +72,11 @@ public class SecurityHandler extends PipedHttpHandler {
         if (mechanisms != null && mechanisms.size() > 0) {
             PipedHttpHandler handler;
 
-            if (accessManagers == null) {
-                throw new IllegalArgumentException("Error, accessManager cannots "
-                        + "be null. "
+            if (accessManagers == null || accessManagers.isEmpty()) {
+                throw new IllegalArgumentException("Error, accessManagers cannot "
+                        + "be null or empty. "
                         + "Eventually use FullAccessManager "
-                        + "that gives full access power ");
+                        + "that gives full access power");
             }
 
             handler = new TokenInjector(
@@ -85,5 +96,4 @@ public class SecurityHandler extends PipedHttpHandler {
             return next;
         }
     }
-
 }

@@ -17,16 +17,22 @@
  */
 package org.restheart.security.handlers.injectors;
 
+import io.undertow.server.HttpHandler;
 import org.restheart.security.plugins.PluginsRegistry;
 import static org.restheart.security.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.List;
 import io.undertow.server.handlers.RequestBufferingHandler;
+import io.undertow.util.AttachmentKey;
 import org.restheart.security.handlers.PipedHttpHandler;
+import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
+import org.restheart.security.plugins.RequestInterceptor;
+import static org.restheart.security.plugins.RequestInterceptor.IPOINT.AFTER_AUTH;
+import static org.restheart.security.plugins.RequestInterceptor.IPOINT.BEFORE_AUTH;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.security.plugins.RequestInterceptor;
+import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
+import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 
 /**
  * injects in the exchange the request content if the request involves a Service
@@ -39,37 +45,37 @@ import org.restheart.security.plugins.RequestInterceptor;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestContentInjector extends PipedHttpHandler {
+    public enum Policy {
+        ALWAYS,
+        ON_REQUIRES_CONTENT_BEFORE_AUTH,
+        ON_REQUIRES_CONTENT_AFTER_AUTH
+    }
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RequestContentInjector.class);
 
-    //private HttpHandler next;
-    private final boolean nextType;
-    
-    private RequestBufferingHandler bufferingHandler;
+    private final Policy policy;
+
+    private HttpHandler bufferingHandler;
 
     /**
      * @param next
-     * @param nextType true next=service (content always injected), false
-     * next=proxy (content injected when a interceptor resolves with
-     * requiresContent()=true)
+     * @param policy set the injection policy
      */
-    public RequestContentInjector(PipedHttpHandler next, boolean nextType) {
+    public RequestContentInjector(PipedHttpHandler next, Policy policy) {
         super(next);
         this.bufferingHandler = new RequestBufferingHandler(next, MAX_BUFFERS);
-        this.nextType = nextType;
+        this.policy = policy;
     }
-    
+
     /**
-     * @param next
-     * @param nextType true next=service (content always injected), false
-     * next=proxy (content injected when a interceptor resolves with
-     * requiresContent()=true)
+     * @param policy set the injection policy
+     * ù
      */
-    public RequestContentInjector(boolean nextType) {
+    public RequestContentInjector(Policy policy) {
         super();
         this.bufferingHandler = null;
-        this.nextType = nextType;
+        this.policy = policy;
     }
 
     @Override
@@ -85,30 +91,46 @@ public class RequestContentInjector extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (isContentRequiredByAnyRequestInterceptor(exchange)
-                || isServiceRequested()) {
+        if (shallInject(exchange, this.policy)) {
 
             LOGGER.trace("Request content available for Request.getContent()");
-            
+
+            markInjected(exchange);
             bufferingHandler.handleRequest(exchange);
         } else {
             LOGGER.trace("Request content is not available for Request.getContent()");
             next(exchange);
-            getNext().handleRequest(exchange);
         }
     }
 
-    private boolean isContentRequiredByAnyRequestInterceptor(HttpServerExchange exchange) {
-        List<RequestInterceptor> interceptors = PluginsRegistry
-                .getInstance()
-                .getRequestInterceptors();
+    private boolean shallInject(HttpServerExchange exchange, Policy policy) {
+        return !isAlreadyInjected(exchange) && (policy == ALWAYS
+                || (policy == ON_REQUIRES_CONTENT_AFTER_AUTH
+                && isContentRequired(exchange, AFTER_AUTH))
+                || (policy == ON_REQUIRES_CONTENT_BEFORE_AUTH
+                && isContentRequired(exchange, BEFORE_AUTH)));
+    }
 
-        return interceptors.stream()
+    private boolean isContentRequired(HttpServerExchange exchange, RequestInterceptor.IPOINT interceptPoint) {
+        return PluginsRegistry
+                .getInstance()
+                .getRequestInterceptors().stream()
                 .filter(t -> t.resolve(exchange))
+                .filter(t -> interceptPoint.equals(t.interceptPoint()))
                 .anyMatch(t -> t.requiresContent());
     }
-
-    private boolean isServiceRequested() {
-        return nextType;
+    
+    private static final AttachmentKey<Boolean> INJECTED_KEY
+            = AttachmentKey.create(Boolean.class);
+    
+    private void markInjected(HttpServerExchange exchange) {
+        exchange
+                .putAttachment(INJECTED_KEY, true);
     }
+    
+    private boolean isAlreadyInjected(HttpServerExchange exchange) {
+        return exchange.getAttachment(INJECTED_KEY) != null
+                && exchange.getAttachment(INJECTED_KEY);
+    }
+  
 }

@@ -21,9 +21,8 @@ import org.restheart.security.handlers.exchange.AbstractExchange;
 import org.restheart.security.plugins.PluginsRegistry;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.List;
 import org.restheart.security.handlers.exchange.ByteArrayResponse;
-import org.restheart.security.plugins.RequestInterceptor;
+import org.restheart.security.plugins.RequestInterceptor.IPOINT;
 import org.restheart.security.utils.HttpStatus;
 import org.restheart.security.utils.LambdaUtils;
 import org.slf4j.Logger;
@@ -40,18 +39,22 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
 
     private final ResponseSender sender = new ResponseSender();
 
+    private final IPOINT interceptPoint;
+
     /**
      *
      */
-    public RequestInterceptorsExecutor() {
+    public RequestInterceptorsExecutor(IPOINT interceptPoint) {
         super(null);
+        this.interceptPoint = interceptPoint;
     }
 
     /**
      * @param next
      */
-    public RequestInterceptorsExecutor(PipedHttpHandler next) {
+    public RequestInterceptorsExecutor(PipedHttpHandler next, IPOINT interceptPoint) {
         super(next);
+        this.interceptPoint = interceptPoint;
     }
 
     /**
@@ -61,37 +64,36 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        List<RequestInterceptor> interceptors = PluginsRegistry
+        PluginsRegistry
                 .getInstance()
-                .getRequestInterceptors();
-
-        interceptors.stream()
+                .getRequestInterceptors()
+                .stream()
                 .filter(ri -> ri.resolve(exchange))
+                .filter(ri -> interceptPoint.equals(ri.interceptPoint()))
                 .forEachOrdered(ri -> {
                     try {
-                        LOGGER.debug("Executing request interceptor {} for {}",
+                        LOGGER.debug("Executing request interceptor {} for {} on intercept point {}",
                                 ri.getClass().getSimpleName(),
-                                exchange.getRequestPath());
+                                exchange.getRequestPath(),
+                                interceptPoint);
 
                         ri.handleRequest(exchange);
                     } catch (Exception ex) {
-                        LOGGER.error("Error executing request interceptor {} for {}",
+                        LOGGER.error("Error executing request interceptor {} for {} on intercept point {}",
                                 ri.getClass().getSimpleName(),
                                 exchange.getRequestPath(),
+                                interceptPoint,
                                 ex);
                         AbstractExchange.setInError(exchange);
                         LambdaUtils.throwsSneakyExcpetion(ex);
                     }
                 });
 
-        
-
         // if an interceptor sets the response as errored
         // stop processing the request and send the response
         if (AbstractExchange.isInError(exchange)) {
             var response = ByteArrayResponse.wrap(exchange);
-            // if in error but no status code
-            // set it to 400 Bad Request
+            // if in error but no status code use 400 Bad Request
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
             }

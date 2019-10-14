@@ -57,7 +57,7 @@ public class EchoExampleResponseInterceptor implements ResponseInterceptor {
     @Override
     public boolean resolve(HttpServerExchange exchange) {
         return exchange.getRequestPath().equals("/iecho")
-                || exchange.getRequestPath().equals("/siecho")
+                || exchange.getRequestPath().equals("/piecho")
                 || exchange.getRequestPath().equals("/anything");
     }
 

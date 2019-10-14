@@ -36,15 +36,10 @@ instance-name: test
  # connections-ttl (optional, default -1) Connections Time to Live in seconds.
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
 proxies:
-    - location: /secho
-      proxy-pass: 
-        - http://127.0.0.1:8080/echo
-        - http://localhost:8080/echo
-    - location: /siecho
-      proxy-pass: 
-        - http://127.0.0.1:8080/iecho
-        - http://localhost:8080/iecho
-      connections-per-thread: 20
+    - location: /pecho
+      proxy-pass: http://127.0.0.1:8080/echo
+    - location: /piecho
+      proxy-pass: http://127.0.0.1:8080/iecho
     - location: /rh
       proxy-pass: ajp://127.0.0.1:8009
       name: restheart
@@ -186,6 +181,10 @@ services:
       class: org.restheart.security.plugins.services.EchoService
       uri: /echo
       secured: false
+    - name: securedRequestEchoer
+      class: org.restheart.security.plugins.services.EchoService
+      uri: /secho
+      secured: true
     - name: interceptedRequestEchoer
       class: org.restheart.security.plugins.services.EchoService
       uri: /iecho

@@ -156,4 +156,33 @@ public abstract class AbstractExchange<T> {
         return getContentType() != null
                 && getContentType().startsWith("text/");
     }
+
+    /**
+     * helper method to check if request is authenticated
+     *
+     * @return true if request is authenticated
+     */
+    public boolean isAuthenticated() {
+        return getWrapped().getSecurityContext() != null
+                && getWrapped().getSecurityContext().getAuthenticatedAccount() != null;
+    }
+
+    /**
+     * helper method to check if authenticated account is in the specified role
+     *
+     * @return
+     */
+    public boolean isAccountInRole(String role) {
+        if (!isAuthenticated()) {
+            return false;
+        } else if (getWrapped().getSecurityContext()
+                .getAuthenticatedAccount()
+                .getRoles() == null) {
+            return false;
+        } else {
+            return getWrapped().getSecurityContext()
+                    .getAuthenticatedAccount()
+                    .getRoles().contains(role);
+        }
+    }
 }

@@ -33,7 +33,7 @@ Scenario: request with wrong Authorization header
 
 Scenario: request with valid Authorization header
     * header Authorization = authHeader
-    Given path '/secho'    
+    Given path '/pecho'    
     When method GET
     Then status 200
     And match response.headers['X-Forwarded-Account-Roles'][0] == 'user'
@@ -44,7 +44,7 @@ Scenario: X-Forwarded headers must be filtered out from proxied request
     * header X-Forwarded-Account-Id = 'anId'
     * header X-Forwarded-Account-Roles = 'aRole'
     * header X-Forwarded-Not-Sensitive-Header = 'aValue'
-    Given path '/secho'    
+    Given path '/pecho'    
     When method GET
     Then status 200
     And match response.headers['X-Forwarded-Account-Id'] contains 'admin'

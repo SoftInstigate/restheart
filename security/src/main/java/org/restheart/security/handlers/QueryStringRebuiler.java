@@ -17,7 +17,6 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.QueryParameterUtils;
 import java.net.URLEncoder;

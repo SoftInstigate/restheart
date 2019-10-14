@@ -198,7 +198,7 @@ public abstract class Request<T> extends AbstractExchange<T> {
     public boolean isContentTypeFormOrMultipart() {
         return isContentTypeFormOrMultipart(wrapped);
     }
-
+    
     /**
      * helper method to check request method
      *

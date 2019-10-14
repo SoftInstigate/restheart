@@ -25,8 +25,8 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     And match response.qparams == { key1:["key1"], key2:["key2"], param:["param added by EchoExampleRequestInterceptor"]} }
     And match responseHeaders['header'][0] == 'added by EchoExampleResponseInterceptor /iecho'
 
-    Scenario: POST /siecho { n: 1, s: "test" } with request and response interceptors
-    Given path '/siecho'
+    Scenario: POST /piecho { n: 1, s: "test" } with request and response interceptors
+    Given path '/piecho'
     And header Authorization = authHeader
     And header Accept-Encoding = identityEncoding
     And request { n: 1, s: "test" }
@@ -42,7 +42,7 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     And match response.qparams.param == [ "param added by EchoExampleRequestInterceptor"]
     And match response.qparams == { key1:["key1"], key2:["key2"], param:["param added by EchoExampleRequestInterceptor"]} }
     And match responseHeaders['header'][0] == 'added by EchoExampleResponseInterceptor /iecho'
-    And match responseHeaders['header'][1] == 'added by EchoExampleResponseInterceptor /siecho'
+    And match responseHeaders['header'][1] == 'added by EchoExampleResponseInterceptor /piecho'
 
     Scenario: POST /iecho n=1&s=test with request and response interceptors
     Given path '/iecho'
@@ -62,8 +62,8 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     And match response.qparams == { key1:["key1"], key2:["key2"], param:["param added by EchoExampleRequestInterceptor"]} }
     And match responseHeaders['header'][0] == 'added by EchoExampleResponseInterceptor /iecho'
 
-    Scenario: POST /siecho n=1&s=test with request and response interceptors
-    Given path '/siecho'
+    Scenario: POST /piecho n=1&s=test with request and response interceptors
+    Given path '/piecho'
     And header Authorization = authHeader
     And header Accept-Encoding = identityEncoding
     And form field n = '1'
@@ -78,7 +78,7 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     And match response.qparams.param == [ "param added by EchoExampleRequestInterceptor"]
     And match response.qparams == { key1:["key1"], key2:["key2"], param:["param added by EchoExampleRequestInterceptor"]} }
     And match responseHeaders['header'][0] == 'added by EchoExampleResponseInterceptor /iecho'
-    And match responseHeaders['header'][1] == 'added by EchoExampleResponseInterceptor /siecho'
+    And match responseHeaders['header'][1] == 'added by EchoExampleResponseInterceptor /piecho'
 
     Scenario: multipart POST /iecho json=(big.json) file=RESTHeart.pdf with request and response interceptors
     Given path '/iecho'
@@ -97,8 +97,8 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     And match responseHeaders['header'][0] == 'added by EchoExampleResponseInterceptor /iecho'
     And match response.note == 'showing up to 20 bytes of the request content'
 
-    Scenario: multipart POST /siecho json=(big.json) file=RESTHeart.pdf with request and response interceptors
-    Given path '/siecho'
+    Scenario: multipart POST /piecho json=(big.json) file=RESTHeart.pdf with request and response interceptors
+    Given path '/piecho'
     And header Authorization = authHeader
     And header Accept-Encoding = identityEncoding
     And multipart field json = someJson
@@ -112,7 +112,7 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     And match response.qparams.param == [ "param added by EchoExampleRequestInterceptor"]
     And match response.qparams == { key1:["key1"], key2:["key2"], param:["param added by EchoExampleRequestInterceptor"]} }
     And match responseHeaders['header'][0] == 'added by EchoExampleResponseInterceptor /iecho'
-    And match responseHeaders['header'][1] == 'added by EchoExampleResponseInterceptor /siecho'
+    And match responseHeaders['header'][1] == 'added by EchoExampleResponseInterceptor /piecho'
     And match response.note == 'showing up to 20 bytes of the request content'
 
     Scenario: POST /echo with Accept-Encoding=identity
@@ -195,8 +195,8 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     Then status 200
     And match responseHeaders['Content-Encoding'][0] == 'identity'
 
-    Scenario: POST /siecho with Accept-Encoding=identity
-    Given path '/siecho'
+    Scenario: POST /piecho with Accept-Encoding=identity
+    Given path '/piecho'
     And header Authorization = authHeader
     And header Accept-Encoding = 'identity'
     And request { n: 1 }
@@ -204,8 +204,8 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     Then status 200
     And match responseHeaders['Content-Encoding'][0] == 'identity'
 
-    Scenario: POST /siecho with Accept-Encoding=gzip, get identity anyway since response interceptors are involved
-    Given path '/siecho'
+    Scenario: POST /piecho with Accept-Encoding=gzip, get identity anyway since response interceptors are involved
+    Given path '/piecho'
     And header Authorization = authHeader
     And header Accept-Encoding = 'gzip'
     And request { n: 1 }
@@ -213,8 +213,8 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     Then status 200
     And match responseHeaders['Content-Encoding'][0] == 'identity'
 
-    Scenario: POST /siecho with Accept-Encoding=deflate, get identity anyway since response interceptors are involved
-    Given path '/siecho'
+    Scenario: POST /piecho with Accept-Encoding=deflate, get identity anyway since response interceptors are involved
+    Given path '/piecho'
     And header Authorization = authHeader
     And header Accept-Encoding = 'deflate'
     And request { n: 1 }
