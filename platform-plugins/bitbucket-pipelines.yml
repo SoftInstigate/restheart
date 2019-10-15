@@ -38,6 +38,6 @@ pipelines:
                 AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
                 AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
                 S3_BUCKET: 'download.restheart.com'
-                LOCAL_PATH: 'restheart-platform-*.zip'
+                LOCAL_PATH: 'dist'
                 DELETE_FLAG: 'true'
                 CONTENT_ENCODING: 'UTF-8'
