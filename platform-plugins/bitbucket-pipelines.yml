@@ -27,7 +27,7 @@ pipelines:
           script:
             - if [[ $BITBUCKET_TAG ]]; then ./package.sh $BITBUCKET_TAG; else echo "Commit is not tagged, skipping."; fi
           artifacts:
-            - restheart-platform-*.zip
+            - dist/restheart-platform-*.zip
       - step:
           name: Upload zip file
           # trigger: manual  # Uncomment to make this a manual deployment.
