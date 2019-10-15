@@ -1,15 +1,43 @@
 pipelines:
   default:
     - step:
-        name: Build
+        name: Build and deploy
         image: maven:3.6-jdk-11
         caches:
           - maven
         script:
           - mvn clean install deploy -s settings.xml
-        artifacts:
-          - restheart-platform-security/target/restheart-platform-security-*.zip
-          - restheart-platform-security/target/restheart-platform-security.jar
-          - restheart-platform-core/target/restheart-platform-core-*.zip
-          - restheart-platform-core/target/restheart-platform-core.jar
-
+  tags:
+    '*':
+      - step:
+          name: Build and deploy tag
+          image: maven:3.6-jdk-11
+          caches:
+            - maven
+          script:
+            - mvn clean install deploy -s settings.xml
+          artifacts:
+            - restheart-platform-security/target/restheart-platform-security-*.zip
+            - restheart-platform-security/target/restheart-platform-security.jar
+            - restheart-platform-core/target/restheart-platform-core-*.zip
+            - restheart-platform-core/target/restheart-platform-core.jar
+      - step:
+          name: Package zip file
+          image: atlassian/default-image:2
+          script:
+            - if [[ $BITBUCKET_TAG ]]; then ./package.sh $BITBUCKET_TAG; else echo "Commit is not tagged, skipping."; fi
+          artifacts:
+            - restheart-platform-*.zip
+      - step:
+          name: Upload zip file
+          # trigger: manual  # Uncomment to make this a manual deployment.
+          script:
+            - pipe: atlassian/aws-s3-deploy:0.3.2
+              variables:
+                AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+                AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+                AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
+                S3_BUCKET: 'download.restheart.com'
+                LOCAL_PATH: 'restheart-platform-*.zip'
+                DELETE_FLAG: 'true'
+                CONTENT_ENCODING: 'UTF-8'
