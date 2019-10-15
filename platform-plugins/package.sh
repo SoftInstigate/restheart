@@ -23,5 +23,6 @@ echo "###### ...Done"
 echo "###### Compressing to archive '$TARGET.zip'"
 cd dist || exit
 zip -r "$TARGET.zip" "$TARGET" -x "*.DS_Store"
+rm -rf "$TARGET"
 cd ..
 echo "###### ...Done."
