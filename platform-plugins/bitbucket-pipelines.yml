@@ -1,12 +1,12 @@
 pipelines:
   default:
     - step:
-        name: Build and deploy
+        name: Build
         image: maven:3.6-jdk-11
         caches:
           - maven
         script:
-          - mvn clean install deploy -s settings.xml
+          - mvn clean install -s settings.xml
   tags:
     '*':
       - step:
