@@ -11,4 +11,4 @@ echo "AWS_PROFILE=$AWS_PROFILE"
 echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
 echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
 
-aws s3 cp restheart-platform-*.zip s3://download.restheart.com
+aws s3 cp dist/restheart-platform-*.zip s3://download.restheart.com
