@@ -39,5 +39,5 @@ pipelines:
                 AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION
                 S3_BUCKET: 'download.restheart.com'
                 LOCAL_PATH: 'dist'
-                DELETE_FLAG: 'true'
+                DELETE_FLAG: 'false'
                 CONTENT_ENCODING: 'UTF-8'
