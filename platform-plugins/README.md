@@ -2,13 +2,13 @@
 
 This projects packages the RESTHeart Platform files into a single zip file to make it available to the public.
 
-Clone this repository, then cd into it and clone (or copy) the `restheart-platform-core`,  `restheart-platform-security` and `si-lka` projects.
+## Automatic build and deployment
 
-```
-git clone git@bitbucket.org:softinstigate/restheart-platform-core.git
-git clone git@bitbucket.org:softinstigate/restheart-platform-security.git
-git clone git@bitbucket.org:softinstigate/si-lka.git
-```
+Tag the release with a version number and the Bitbucket pipeline will build, package and upload to the S3 bucket at `download.restheart.com`.
+
+## Manual build and deployment
+
+Clone this repository, then cd into it and clone (or copy) the `restheart-platform-core`,  `restheart-platform-security` and `si-lka` projects.
 
 To [build](build.sh) and [package](package.sh) a new release of the RESTHeart Platform:
 
@@ -20,10 +20,11 @@ $ ./package.sh <version>
 The "version" parameter is mandatory. This performs the following steps:
 
 1. Cleans-up previous folders and zip files
-2. builds both core and security projects with Maven;
-3. creates a folder named `restheart-platform-<version>/`;
-4. moves the `template/` folder's content into `restheart-platform-<version>/`;
-5. compress the `restheart-platform-<version>/` folder into a zip file named `restheart-platform-<version>.zip`. 
+1. Creates the `dist/` folder
+1. builds both core and security projects with Maven;
+1. creates a folder named `restheart-platform-<version>/` into `dist/`;
+1. moves the `template/` folder's content into `dist/restheart-platform-<version>/`;
+1. compress the `dist/restheart-platform-<version>/` folder into a zip file named `dist/restheart-platform-<version>.zip`. 
 
 The structure of the distributable zip file will be like this:
 
@@ -60,4 +61,4 @@ Finally, upload the zip file to publish it:
 $ ./upload.sh
 ```
 
-The [upload.sh](upload.sh) script copies any file with name pattern `restheart-platform-*.zip` to the s3 bucket named `download.restheart.com`.
+The [upload.sh](upload.sh) script copies any file with name pattern `dist/restheart-platform-*.zip` to the s3 bucket named `download.restheart.com`.
