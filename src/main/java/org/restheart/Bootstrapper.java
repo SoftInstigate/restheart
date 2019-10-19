@@ -42,9 +42,11 @@ import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.util.HttpString;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
@@ -213,11 +215,12 @@ public class Bootstrapper {
 
             final StringWriter writer = new StringWriter();
             try {
-                Mustache m = new DefaultMustacheFactory().compile(CONFIGURATION_FILE.toString());
+                final BufferedReader reader = new BufferedReader(new FileReader(CONFIGURATION_FILE.toFile()));
+                Mustache m = new DefaultMustacheFactory().compile(reader, "configuration-file");
                 m.execute(writer, p);
                 writer.flush();
             } catch (MustacheNotFoundException ex) {
-                logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
+                logErrorAndExit("Configuration file not found: " + CONFIGURATION_FILE, ex, false, -1);
             }
 
             Map<String, Object> obj = new Yaml().load(writer.toString());
