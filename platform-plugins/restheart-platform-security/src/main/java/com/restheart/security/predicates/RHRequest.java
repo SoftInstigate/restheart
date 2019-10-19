@@ -28,7 +28,7 @@ public class RHRequest extends JsonRequest {
     private RHRequest(HttpServerExchange exchange) {
         super(exchange);
     }
-    
+
     static public RHRequest wrap(HttpServerExchange exchange) {
         return new RHRequest(exchange);
     }
@@ -36,6 +36,7 @@ public class RHRequest extends JsonRequest {
     /**
      *
      * @return the $and composed filter qparam values
+     * @throws com.restheart.security.predicates.BadRequestException
      */
     public JsonObject getFiltersAsJson() throws BadRequestException {
         Deque<String> filter = getFilter();
