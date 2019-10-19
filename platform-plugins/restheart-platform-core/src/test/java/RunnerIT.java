@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright SoftInstigate srl. All Rights Reserved.
  *
