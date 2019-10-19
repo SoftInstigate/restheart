@@ -33,8 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <includes>
                 <include>README*</include>
                 <include>*LICENSE.txt</include>
-                <include>etc/restheart.yml</include>
-                <include>etc/security.yml</include>
+                <include>etc/*.yml</include>
             </includes>
         </fileSet>
         <fileSet>
