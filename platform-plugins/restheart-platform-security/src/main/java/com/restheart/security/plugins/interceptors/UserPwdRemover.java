@@ -15,7 +15,6 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.security.ConfigurationException;
-import org.restheart.security.handlers.exchange.ByteArrayResponse;
 import org.restheart.security.handlers.exchange.JsonRequest;
 import org.restheart.security.handlers.exchange.JsonResponse;
 import org.restheart.security.plugins.ResponseInterceptor;
