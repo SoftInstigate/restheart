@@ -214,8 +214,7 @@ public class Bootstrapper {
             }
 
             final StringWriter writer = new StringWriter();
-            try {
-                final BufferedReader reader = new BufferedReader(new FileReader(CONFIGURATION_FILE.toFile()));
+            try (BufferedReader reader = new BufferedReader(new FileReader(CONFIGURATION_FILE.toFile()))) {
                 Mustache m = new DefaultMustacheFactory().compile(reader, "configuration-file");
                 m.execute(writer, p);
                 writer.flush();
