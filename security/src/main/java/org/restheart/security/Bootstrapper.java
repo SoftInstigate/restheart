@@ -25,9 +25,11 @@ import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.util.HttpString;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
@@ -286,19 +288,19 @@ public class Bootstrapper {
             return new Configuration(CONFIGURATION_FILE, false);
         } else {
             final Properties p = new Properties();
-            try ( InputStreamReader reader = new InputStreamReader(new FileInputStream(PROPERTIES_FILE), "UTF-8")) {
+            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(PROPERTIES_FILE), "UTF-8")) {
                 p.load(reader);
             } catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
             }
 
             final StringWriter writer = new StringWriter();
-            try {
-                Mustache m = new DefaultMustacheFactory().compile(CONFIGURATION_FILE.toString());
+            try (BufferedReader reader = new BufferedReader(new FileReader(CONFIGURATION_FILE.toFile()))) {
+                Mustache m = new DefaultMustacheFactory().compile(reader, "configuration-file");
                 m.execute(writer, p);
                 writer.flush();
             } catch (MustacheNotFoundException ex) {
-                logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
+                logErrorAndExit("Configuration file not found: " + CONFIGURATION_FILE, ex, false, -1);
             }
 
             Map<String, Object> obj = new Yaml().load(writer.toString());
@@ -630,7 +632,7 @@ public class Bootstrapper {
             } else if (configuration.getKeystoreFile() != null
                     && configuration.getKeystorePassword() != null
                     && configuration.getCertPassword() != null) {
-                try ( FileInputStream fis = new FileInputStream(
+                try (FileInputStream fis = new FileInputStream(
                         new File(configuration.getKeystoreFile()))) {
                     ks.load(fis, configuration.getKeystorePassword().toCharArray());
                     kmf.init(ks, configuration.getCertPassword().toCharArray());
@@ -931,7 +933,7 @@ public class Bootstrapper {
                                     .getService(name);
 
                             LOGGER.debug("{} secured {}", name, _srv.getSecured());
-                            
+
                             SecurityHandler securityHandler;
 
                             if (_srv.getSecured()) {
@@ -1124,7 +1126,7 @@ public class Bootstrapper {
                         new QueryStringRebuiler(),
                         new ConduitInjector(),
                         PipedWrappingHandler.wrap(
-                                new ConfigurableEncodingHandler( // Must be after ConduitInjector 
+                                new ConfigurableEncodingHandler( // Must be after ConduitInjector
                                         proxyHandler,
                                         configuration.isForceGzipEncoding())));
 
