@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <include>README*</include>
                 <include>*LICENSE.txt</include>
                 <include>etc/*.yml</include>
+                <include>etc/*.properties</include>
             </includes>
         </fileSet>
         <fileSet>
