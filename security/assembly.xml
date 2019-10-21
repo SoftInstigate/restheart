@@ -34,9 +34,8 @@
                 <include>README*</include>
                 <include>LICENSE*</include>
                 <include>NOTICE*</include>
-                <include>etc/restheart-security.yml</include>
-                <include>etc/users.yml</include>
-                <include>etc/acl.yml</include>
+                <include>etc/*.yml</include>
+                <include>etc/*.properties</include>
             </includes>
         </fileSet>
         <fileSet>

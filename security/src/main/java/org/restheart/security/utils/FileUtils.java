@@ -17,21 +17,30 @@
  */
 package org.restheart.security.utils;
 
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheNotFoundException;
 import static com.sun.akuma.CLibrary.LIBC;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -39,6 +48,7 @@ import org.restheart.security.Configuration;
 import org.restheart.security.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  *
@@ -68,16 +78,49 @@ public class FileUtils {
     }
 
     public static Configuration getConfiguration(String[] args) throws ConfigurationException {
-        return getConfiguration(getConfigurationFilePath(args), false);
+        return getConfiguration(getConfigurationFilePath(args),
+                getPropertiesFilePath(args),
+                false);
     }
 
     public static Configuration getConfiguration(String[] args, boolean silent) throws ConfigurationException {
-        return getConfiguration(getConfigurationFilePath(args), silent);
+        return getConfiguration(
+                getConfigurationFilePath(args),
+                getPropertiesFilePath(args),
+                silent);
     }
 
-    public static Configuration getConfiguration(Path configurationFilePath, boolean silent) throws ConfigurationException {
+    public static Configuration getConfiguration(Path configurationFilePath, Path propsFilePath, boolean silent) throws ConfigurationException {
         if (configurationFilePath != null) {
-            return new Configuration(configurationFilePath, silent);
+            if (propsFilePath != null) {
+                final Properties p = new Properties();
+                try (InputStreamReader reader = new InputStreamReader(
+                        new FileInputStream(propsFilePath.toFile()), "UTF-8")) {
+                    p.load(reader);
+                } catch (FileNotFoundException fnfe) {
+                    throw new ConfigurationException("Properties file not found: " + propsFilePath);
+                } catch (UnsupportedEncodingException uec) {
+                    throw new ConfigurationException("Unsupported encoding", uec);
+                } catch (IOException iex) {
+                    throw new ConfigurationException("Error reading properties file: " + propsFilePath, iex);
+                }
+
+                final StringWriter writer = new StringWriter();
+                try (BufferedReader reader = new BufferedReader(new FileReader(configurationFilePath.toFile()))) {
+                    Mustache m = new DefaultMustacheFactory().compile(reader, "configuration-file");
+                    m.execute(writer, p);
+                    writer.flush();
+                } catch (MustacheNotFoundException ex) {
+                    throw new ConfigurationException("Configuration file not found: " + configurationFilePath);
+                } catch (IOException iex) {
+                    throw new ConfigurationException("Error reading configuration file: " + configurationFilePath, iex);
+                }
+
+                Map<String, Object> obj = new Yaml().load(writer.toString());
+                return new Configuration(obj, silent);
+            } else {
+                return new Configuration(configurationFilePath, silent);
+            }
         } else {
             return new Configuration();
         }
