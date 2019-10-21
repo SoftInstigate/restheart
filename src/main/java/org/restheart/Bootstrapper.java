@@ -193,7 +193,7 @@ public class Bootstrapper {
         }
     }
 
-    private static Configuration loadConfiguration() throws FileNotFoundException, UnsupportedEncodingException, IOException {
+    private static Configuration loadConfiguration() throws UnsupportedEncodingException {
         if (CONFIGURATION_FILE == null) {
             LOGGER.warn("No configuration file provided, starting with default values!");
             return new Configuration();
@@ -214,6 +214,8 @@ public class Bootstrapper {
                 p.load(reader);
             } catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
+            } catch(IOException ieo) {
+                logErrorAndExit("Error reading properties file " + PROPERTIES_FILE, null, false, -1);
             }
 
             final StringWriter writer = new StringWriter();
@@ -223,6 +225,8 @@ public class Bootstrapper {
                 writer.flush();
             } catch (MustacheNotFoundException ex) {
                 logErrorAndExit("Configuration file not found: " + CONFIGURATION_FILE, ex, false, -1);
+            } catch(IOException ieo) {
+                logErrorAndExit("Error reading configuration file " + CONFIGURATION_FILE, null, false, -1);
             }
 
             Map<String, Object> obj = new Yaml().load(writer.toString());
