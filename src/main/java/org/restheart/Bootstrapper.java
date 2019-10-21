@@ -120,7 +120,7 @@ public class Bootstrapper {
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
 
     private static Path CONFIGURATION_FILE;
-    private static String PROPERTIES_FILE;
+    private static Path PROPERTIES_FILE;
 
     private static GracefulShutdownHandler shutdownHandler = null;
     private static final PathHandler rootPathHandler = path();
@@ -181,9 +181,11 @@ public class Bootstrapper {
             FileUtils.getFileAbsolutePath(parameters.configPath);
 
             IS_FORKED = parameters.isForked;
-            PROPERTIES_FILE = (parameters.envFile == null)
+            String propFilePath = (parameters.envFile == null)
                     ? System.getenv("RESTHEART_ENVFILE")
                     : parameters.envFile;
+            
+            PROPERTIES_FILE = FileUtils.getFileAbsolutePath(propFilePath);
         } catch (com.beust.jcommander.ParameterException ex) {
             LOGGER.error(ex.getMessage());
             cmd.usage();
@@ -207,7 +209,8 @@ public class Bootstrapper {
             return new Configuration(CONFIGURATION_FILE, false);
         } else {
             final Properties p = new Properties();
-            try (InputStreamReader reader = new InputStreamReader(new FileInputStream(PROPERTIES_FILE), "UTF-8")) {
+            try (InputStreamReader reader = new InputStreamReader(
+                    new FileInputStream(PROPERTIES_FILE.toFile()), "UTF-8")) {
                 p.load(reader);
             } catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
@@ -317,14 +320,15 @@ public class Bootstrapper {
      * @param confFilePath
      * @return true if pid file exists
      */
-    private static boolean checkPidFile(Path confFilePath) {
+    private static boolean checkPidFile(Path confFilePath, Path propFilePath) {
         if (OSChecker.isWindows()) {
             return false;
         }
+        
         // pid file name include the hash of the configuration file so that
         // for each configuration we can have just one instance running
         Path pidFilePath = FileUtils
-                .getPidFilePath(FileUtils.getFileAbsolutePathHash(confFilePath));
+                .getPidFilePath(FileUtils.getFileAbsolutePathHash(confFilePath, propFilePath));
         if (Files.exists(pidFilePath)) {
             LOGGER.warn("Found pid file! If this instance is already "
                     + "running, startup will fail with a BindException");
@@ -409,12 +413,13 @@ public class Bootstrapper {
     private static void startServer(boolean fork) {
         logWindowsStart();
 
-        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(CONFIGURATION_FILE));
+        Path pidFilePath = FileUtils.getPidFilePath(
+                FileUtils.getFileAbsolutePathHash(CONFIGURATION_FILE, PROPERTIES_FILE));
 
         boolean pidFileAlreadyExists = false;
 
         if (!OSChecker.isWindows() && pidFilePath != null) {
-            pidFileAlreadyExists = checkPidFile(CONFIGURATION_FILE);
+            pidFileAlreadyExists = checkPidFile(CONFIGURATION_FILE, PROPERTIES_FILE);
         }
 
         logLoggingConfiguration(fork);
@@ -550,7 +555,8 @@ public class Bootstrapper {
             }
         }
 
-        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(CONFIGURATION_FILE));
+        Path pidFilePath = FileUtils.getPidFilePath(FileUtils
+                .getFileAbsolutePathHash(CONFIGURATION_FILE, PROPERTIES_FILE));
 
         if (removePid && pidFilePath != null) {
             if (!silent) {
