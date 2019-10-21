@@ -318,6 +318,7 @@ public class Bootstrapper {
      * logs warning message if pid file exists
      *
      * @param confFilePath
+     * @param propFilePath
      * @return true if pid file exists
      */
     private static boolean checkPidFile(Path confFilePath, Path propFilePath) {
