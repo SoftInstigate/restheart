@@ -117,17 +117,17 @@
             <dependency>
                 <groupId>org.restheart</groupId>
                 <artifactId>restheart</artifactId>
-                <version>4.1.2</version>
+                <version>${restheart.core.oss.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.restheart</groupId>
                 <artifactId>restheart-security</artifactId>
-                <version>1.2.2</version>
+                <version>${restheart.security.oss.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.softinstigate.lickeys</groupId>
                 <artifactId>si-lka</artifactId>
-                <version>2.1.0</version>
+                <version>${restheart.si-lka.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.auth0</groupId>
