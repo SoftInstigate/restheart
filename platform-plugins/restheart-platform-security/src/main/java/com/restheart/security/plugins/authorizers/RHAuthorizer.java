@@ -205,15 +205,14 @@ public class RHAuthorizer implements Authorizer {
             });
         }
 
-        // the applicable predicate is the one that:
-        // 1. resolves the exchange
-        // 2. is not a bulk write with a writeFilter 
+        // the applicable predicate is the ones that
+        // resolves the exchange
         roles(exchange)
                 .forEachOrdered(role
                         -> predicatesForRole(role)
                         .stream()
                         .anyMatch(r -> {
-                            if (r.resolve(exchange) // not a bulk write with a writeFilter
+                            if (r.resolve(exchange)
                                     ) {
                                 predicates.add(r);
                                 return true;

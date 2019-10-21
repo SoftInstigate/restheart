@@ -50,8 +50,6 @@ public class FilterPredicateInjector implements RequestInterceptor {
 
         FilterPredicate predicate = FilterPredicate.from(exchange);
 
-        request.addXForwardedHeader("pippo", "pluto");
-
         if (request.isGet()
                 && predicate != null
                 && predicate.getReadFilter() != null) {
@@ -73,5 +71,10 @@ public class FilterPredicateInjector implements RequestInterceptor {
     @Override
     public boolean resolve(HttpServerExchange exchange) {
         return exchange.getAttachment(FILTER_ADDED) == null;
+    }
+
+    @Override
+    public IPOINT interceptPoint() {
+        return RequestInterceptor.IPOINT.AFTER_AUTH;
     }
 }

@@ -35,7 +35,6 @@ public class FilterPredicate {
     private final JsonElement _id;
     private final Set<String> roles;
     private final Predicate predicate;
-    //TODO readFilter and writeFilter as JsonObject
     private final JsonObject readFilter;
     private final JsonObject writeFilter;
     private final int priority;
@@ -214,7 +213,7 @@ public class FilterPredicate {
             return null;
         }
 
-        String ret = new String(filter.toString());
+        String ret = filter.toString();
 
         String username = ExchangeAttributes
                 .remoteUser()
