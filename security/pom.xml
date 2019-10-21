@@ -383,6 +383,7 @@
                                 <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
                                     <arg value="${basedir}/etc/restheart-security-test.yml"/>
+                                    <arg value="--fork"/>
                                 </exec>
                             </target>
                         </configuration>

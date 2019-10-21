@@ -12,6 +12,9 @@ permissions:
       
     - role: admin
       predicate: path-prefix[path="/"]
+      
+    - role: user
+      predicate: path-prefix[path="/coll"]
     
     - role: user
       predicate: path-prefix[path="/"] and method[value="OPTIONS"]

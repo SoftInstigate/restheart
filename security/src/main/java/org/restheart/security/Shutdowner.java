@@ -37,11 +37,7 @@ public class Shutdowner {
 
     public static void main(final String[] args) {
         if (askingForHelp(args)) {
-            LOGGER.info("usage: java -cp uaim.jar org.restheart.security.Shutdowner [configuration file].");
-            LOGGER.info("shutdown --help\t\tprints this help message and exits.");
-            LOGGER.info("shutdown\t\t\tshutdown the RESTHeart Security instance run without specifying the configuration file.");
-            LOGGER.info("shutdown restheart-security.yml\tshutdown the RESTHeart Security instance run with the restheart-security.yml configuration file.");
-            LOGGER.info("NOTE: shutdown is not supported on windows.");
+            printHelp();
             System.exit(0);
         }
 
@@ -50,33 +46,41 @@ public class Shutdowner {
             System.exit(-5);
         }
 
-        shutdown(args);
+        try {
+            shutdown(args);
+        } catch (IllegalStateException ise) {
+            LOGGER.error("RESTHeart Security instance pid file not found.");
+            printHelp();
+        }
     }
 
     protected static void shutdown(final String[] args) {
         if (FileUtils.getConfigurationFilePath(args) == null) {
-            LOGGER.info("Shutting down the RESTHeart Security instance run without configuration file");
+            LOGGER.info("Shutting down RESTHeart Security instance run without configuration file");
+        } else if (FileUtils.getPropertiesFilePath(args) == null) {
+            LOGGER.info("Shutting down RESTHeart Security instance run with configuration file {}", 
+                    FileUtils.getConfigurationFilePath(args));
         } else {
-            LOGGER.info("Shutting down the RESTHeart Security instance run with configuration file {}",
-                    FileUtils.getConfigurationFilePath(args).toString());
+            LOGGER.info("Shutting down RESTHeart Security instance run with configuration file {} and property file {}", 
+                    FileUtils.getConfigurationFilePath(args),
+                    FileUtils.getPropertiesFilePath(args));
         }
 
-        Path pidFilePath = FileUtils
-                .getPidFilePath(FileUtils.getFileAbsolutePathHash(FileUtils.getConfigurationFilePath(args)));
-
+        Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(
+                FileUtils.getConfigurationFilePath(args),
+                FileUtils.getPropertiesFilePath(args)));
+        
         int pid = FileUtils.getPidFromFile(pidFilePath);
 
         if (pid < 0) {
-            LOGGER.warn("RESTHeart Security instance pid file not found. Is it actually running?");
-            LOGGER.info("Eventually you need to stop it using your OS tools.");
-            throw new IllegalStateException("RESTHeart Security instance pid file not found.");
+            throw new IllegalStateException("RESTHeart instance pid file not found: " + pidFilePath.toString());
         } else {
             LOGGER.info("Pid file {}", pidFilePath);
         }
 
         CLibrary.LIBC.kill(pid, 15); // 15 is SIGTERM
 
-        LOGGER.info("SIGTERM signal sent to RESTHeart Security instance with pid {} ", pid);
+        LOGGER.info("SIGTERM signal sent to RESTHeart instance with pid {} ", pid);
 
         Configuration conf;
 
@@ -96,6 +100,14 @@ public class Shutdowner {
         }
 
         return false;
+    }
+
+    static void printHelp() {
+        LOGGER.info("usage: java -cp restheart-security.jar org.restheart.security.Shutdowner [configuration file] [-e properties file].");
+        LOGGER.info("java -cp restheart-security.jar org.restheart.security.Shutdowner --help \u2192 prints this help message and exits.");
+        LOGGER.info("java -cp restheart-security.jar org.restheart.security.Shutdowner \u2192 shutdown RESTHeart Security instance run without specifying the configuration file.");
+        LOGGER.info(" java -cp restheart-security.jar org.restheart.security.Shutdowner restheart-security.yml -e default.properties \u2192 shutdown RESTHeart Security instance run with configuration and properties files.");
+        LOGGER.info("NOTE: shutdown is not supported on windows.");
     }
 
     private Shutdowner() {

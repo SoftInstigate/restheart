@@ -28,6 +28,7 @@ import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -58,12 +59,12 @@ public class FileUtils {
         return FileSystems.getDefault().getPath(path).toAbsolutePath();
     }
 
-    public static int getFileAbsolutePathHash(Path path) {
-        if (path == null) {
+    public static int getFileAbsolutePathHash(Path confFilePath, Path propFilePath) {
+        if (confFilePath == null) {
             return 0;
         }
 
-        return Objects.hash(path.toString());
+        return Objects.hash(confFilePath, propFilePath);
     }
 
     public static Configuration getConfiguration(String[] args) throws ConfigurationException {
@@ -85,10 +86,26 @@ public class FileUtils {
     public static Path getConfigurationFilePath(String[] args) {
         if (args != null) {
             for (String arg : args) {
-                if (!arg.equals("--fork")) {
+                if (!arg.startsWith("-")) {
                     return getFileAbsolutePath(arg);
                 }
             }
+        }
+
+        return null;
+    }
+    
+    public static Path getPropertiesFilePath(String[] args) {
+        if (args != null) {
+            var _args = Arrays.asList(args);
+            
+            var opt = _args.indexOf("-e");
+            
+            return opt < 0
+                    ? null
+                    : _args.size() <= opt+1 
+                    ? null
+                    : getFileAbsolutePath(_args.get(opt+1));
         }
 
         return null;
