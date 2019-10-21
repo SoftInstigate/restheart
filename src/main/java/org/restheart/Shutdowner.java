@@ -53,9 +53,14 @@ public class Shutdowner {
 
     protected static void shutdown(final String[] args) {
         if (FileUtils.getConfigurationFilePath(args) == null) {
-            LOGGER.info("Shutting down the RESTHeart instance run without configuration file");
+            LOGGER.info("Shutting down RESTHeart instance run without configuration file");
+        } else if (FileUtils.getPropertiesFilePath(args) == null) {
+            LOGGER.info("Shutting down RESTHeart instance run with configuration file {}", 
+                    FileUtils.getConfigurationFilePath(args));
         } else {
-            LOGGER.info("Shutting down the RESTHeart instance run with configuration file {}", FileUtils.getConfigurationFilePath(args).toString());
+            LOGGER.info("Shutting down RESTHeart instance run with configuration file {} and property file {}", 
+                    FileUtils.getConfigurationFilePath(args),
+                    FileUtils.getPropertiesFilePath(args));
         }
 
         Path pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(
