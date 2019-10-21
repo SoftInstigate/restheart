@@ -15,6 +15,6 @@ do
    shift
 done
 
-java -Dfile.encoding=UTF-8 -server $SPROPS -jar "$DIR/../target/restheart-platform-core.jar" "$@" $ARGS
+java -Dfile.encoding=UTF-8 -server $SPROPS -jar "$DIR/../target/restheart-platform-core.jar" $@ $ARGS
 echo 'Sleeping few seconds...'
 sleep 2
