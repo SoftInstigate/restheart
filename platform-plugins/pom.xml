@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.softinstigate.restheart</groupId>
     <artifactId>restheart-platform</artifactId>
-    <version>4.1.1</version>
+    <version>4.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>restheart-platform</name>
     <description>RESTHeart Platform</description>
@@ -23,9 +23,6 @@
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
         <skipITs>true</skipITs>
-        <restheart.core.oss.version>4.1.0</restheart.core.oss.version>
-        <restheart.security.oss.version>1.2.0</restheart.security.oss.version>
-        <restheart.si-lka.version>2.1.0</restheart.si-lka.version>
     </properties>
 
     <!-- Project Information -->
@@ -117,17 +114,17 @@
             <dependency>
                 <groupId>org.restheart</groupId>
                 <artifactId>restheart</artifactId>
-                <version>${restheart.core.oss.version}</version>
+                <version>4.1.2</version>
             </dependency>
             <dependency>
                 <groupId>org.restheart</groupId>
                 <artifactId>restheart-security</artifactId>
-                <version>${restheart.security.oss.version}</version>
+                <version>1.2.2</version>
             </dependency>
             <dependency>
                 <groupId>com.softinstigate.lickeys</groupId>
                 <artifactId>si-lka</artifactId>
-                <version>${restheart.si-lka.version}</version>
+                <version>2.1.0</version>
             </dependency>
             <dependency>
                 <groupId>com.auth0</groupId>
