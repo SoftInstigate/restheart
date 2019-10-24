@@ -5,7 +5,7 @@
 [![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart-security.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/restheart-security/)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart-security.svg?maxAge=2592000&logo=docker)](https://hub.docker.com/r/softinstigate/restheart-security/)
 
-**restheart-security** is the new security service for [RESTHeart v4](https://restheart.org), the Web API for MongoDB. It acts as a reverse proxy for HTTP resources, providing __Authentication__ and __Authorization__ services. 
+**restheart-security** is a security microservice for [RESTHeart v4](https://restheart.org), the Web API for MongoDB. It acts as a __reverse proxy__ for HTTP resources, providing __Authentication__ and __Authorization__ capabilities. 
 
 **restheart-security** enables developers to configure security policies in standardized micro-gateway instances that are external to API and microservices implementations, avoiding coding security functions and a centralized gateway where scalability is a key concern.
 
