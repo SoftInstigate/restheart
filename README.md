@@ -112,7 +112,7 @@ Refer to the [configuration file](https://github.com/SoftInstigate/restheart/blo
 
 ## Security
 
-Starting from RESTHeart v4, security is handled by [restheart-security](https://github.com/SoftInstigate/restheart-security).
+Starting from RESTHeart v4, security has been extracted as a separate layer handled by [restheart-security](https://github.com/SoftInstigate/restheart-security), which is a __reverse proxy microservice__ for HTTP resources, providing __Authentication__ and __Authorization__ services.
 
 Alternatively, you can put any HTTP reverse proxy in front of RESTHeart and delegate security to it. For an example of using NGINX as a reverse proxy on top of RESTHeart, have a look at [this repository](https://github.com/SoftInstigate/nginx-restheart). Then it is possibile to configure NGINX to restrict access with [HTTP Basic Authentication](https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-http-basic-authentication/). 
 
