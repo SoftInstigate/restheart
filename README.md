@@ -37,9 +37,17 @@ RESTHeart - Web API Server for MongoDB.
 
 ## Summary
 
-RESTHeart is a REST API and Content microservice for MongoDB.
+RESTHeart is a REST microservice for MongoDB.
 
-RESTHeart connects to **MongoDB** and opens its data to the Web. Clients such as mobile and javascript apps can use the database via a simple REST API and JSON.
+RESTHeart connects to __MongoDB__ and opens its data to the Web. Clients, such as mobile and JavaScript apps, can access the database via a simple __REST API__ based on __JSON__ messages.
+
+With RESTHeart teams can focus on building Angular, React, Vue, iOS or Android applications, because most of the server-side logic usually necessary for CRUD (Create, Read, Update, Delete) operations is automatically handled, without the need to write any code except for the client logic.
+
+For example, to insert data in MongoDB developers model client-side JSON documents and then execute POST operations via HTTP to RESTHeart: no more need to deal with complicated server-side code and database drivers in Java, JavaScript, PHP, Ruby, Python, etc.
+
+For these reasons, RESTHeart is widely used by freelancers, Web agencies ans System Integrators with deadlines, because it allows them to focus on the most creative parts of their work.
+
+For more ideas have a look at the collection of common [use cases](https://restheart.org/use-cases/).
 
 ## Setup
 
