@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.restheart</groupId>
     <artifactId>restheart-platform-security</artifactId>
-    <version>1.2.1-SNAPSHOT</version>
+    <version>1.2.3</version>
     <packaging>jar</packaging>
     <name>restheart-platform-security</name>
     <description>RESTHeart Platform Security - IAM microservice.</description>
