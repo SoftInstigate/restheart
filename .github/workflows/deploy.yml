@@ -14,4 +14,4 @@ jobs:
       with:
         java-version: 11
     - name: deploy
-      run: mvn deploy -Dregistry=https://maven.pkg.github.com/SoftInstigate -Dtoken=GH_TOKEN
+      run: mvn deploy --settings=settings.xml -Dtoken=${{ secrets.GITHUB_TOKEN }}
