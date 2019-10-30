@@ -13,5 +13,8 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11
-    - name: deploy
-      run: mvn deploy --settings=settings.xml -Dtoken=${{ secrets.GITHUB_TOKEN }}
+    - name: Deploy to Github Package Registry
+      env:
+        GITHUB_USERNAME: x-access-token
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: mvn deploy --settings settings.xml
