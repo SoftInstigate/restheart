@@ -72,15 +72,10 @@
   </issueManagement>
     
   <distributionManagement>
-    <snapshotRepository>
-      <id>restheart-common-snapshot</id>
-      <name>S3 Snapshot Repository</name>
-      <url>s3://maven.softinstigate.com/snapshot</url>
-    </snapshotRepository>
     <repository>
-      <id>restheart-common-release</id>
-      <name>S3 Release Repository</name>
-      <url>s3://maven.softinstigate.com/release</url>
+      <id>github</id>
+      <name>GitHub SoftInstigate Apache Maven Packages</name>
+      <url>https://maven.pkg.github.com/softinstigate/restheart-common</url>
     </repository>
   </distributionManagement>
 
@@ -123,4 +118,12 @@
       <scope>compile</scope>
     </dependency>
   </dependencies>
+  
+  <servers>
+    <server>
+      <id>github</id>
+      <username>softinstigate</username>
+      <password>${token}</password>
+    </server>
+  </servers>
 </project>
