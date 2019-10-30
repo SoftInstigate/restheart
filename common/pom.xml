@@ -118,12 +118,4 @@
       <scope>compile</scope>
     </dependency>
   </dependencies>
-  
-  <servers>
-    <server>
-      <id>github</id>
-      <username>softinstigate</username>
-      <password>${token}</password>
-    </server>
-  </servers>
 </project>
