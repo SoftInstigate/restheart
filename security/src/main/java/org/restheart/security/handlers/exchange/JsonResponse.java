@@ -39,9 +39,6 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonResponse extends Response<JsonElement> {
-
-    protected static final JsonParser PARSER = new JsonParser();
-
     protected JsonResponse(HttpServerExchange exchange) {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(JsonRequest.class);
@@ -70,7 +67,7 @@ public class JsonResponse extends Response<JsonElement> {
                         getRawContent(),
                         StandardCharsets.UTF_8);
 
-                return PARSER.parse(rawContentAsString);
+                return JsonParser.parseString(rawContentAsString);
             } catch (JsonParseException ex) {
                 throw new IOException("Error parsing json", ex);
             }

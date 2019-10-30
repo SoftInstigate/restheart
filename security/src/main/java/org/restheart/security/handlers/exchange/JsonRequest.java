@@ -37,8 +37,6 @@ import org.slf4j.LoggerFactory;
  */
 public class JsonRequest extends Request<JsonElement> {
 
-    protected static final JsonParser PARSER = new JsonParser();
-
     protected JsonRequest(HttpServerExchange exchange) {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(JsonRequest.class);
@@ -63,7 +61,7 @@ public class JsonRequest extends Request<JsonElement> {
             return JsonNull.INSTANCE;
         } else {
             try {
-                return PARSER.parse(BuffersUtils.toString(getRawContent(),
+                return JsonParser.parseString(BuffersUtils.toString(getRawContent(),
                         StandardCharsets.UTF_8));
             } catch (JsonParseException ex) {
                 // dump bufferd content
