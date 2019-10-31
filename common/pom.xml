@@ -75,7 +75,7 @@
     <repository>
       <id>github</id>
       <name>GitHub SoftInstigate Apache Maven Packages</name>
-      <url>https://maven.pkg.github.com/softinstigate/restheart-common</url>
+      <url>https://maven.pkg.github.com/SoftInstigate</url>
     </repository>
   </distributionManagement>
 
