@@ -1,12 +1,12 @@
-<p align="center">
+<p>
     <a href="https://restheart.org">
-        <img src="https://restheart.org/images/restheart.png" width="60%" height="auto" class="image-center img-responsive" alt="RESTHeart - Web API Server for MongoDB"/>
+        <img src="https://restheart.org/images/rh.png" width="400px" height="auto" class="image-center img-responsive" alt="RESTHeart - REST API Microservice for MongoDB"/>
     </a>
 </p>
 
-<p align="center">
-RESTHeart - Web API Server for MongoDB.
-</p>
+
+# RESTHeart - REST API Microservice for MongoDB. #
+
 
 [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=master)](https://travis-ci.org/SoftInstigate/restheart)
 [![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.restheart%22%20AND%20a:%22restheart%22)
@@ -31,13 +31,13 @@ RESTHeart - Web API Server for MongoDB.
 
 <p align="center">
    <a href="https://restheart.org">
-       <img src="https://restheart.org/images/restheart-what-is-it.svg" width="80%" height="auto" class="image-center img-responsive" />
+       <img src="https://restheart.org/images/restheart-what-is-it.svg" width="800px" height="auto" class="image-center img-responsive" />
    </a>
 </p>
 
 ## Summary
 
-RESTHeart is a REST microservice for MongoDB.
+RESTHeart is a REST API Microservice for MongoDB.
 
 RESTHeart connects to __MongoDB__ and opens its data to the Web. Clients, such as mobile and JavaScript apps, can access the database via a simple __API__ based on __JSON__ messages.
 
