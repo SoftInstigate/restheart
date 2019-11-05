@@ -51,7 +51,8 @@ deploy:
 
 env:
   matrix:
-    - MONGO=4.0 REPLICASET=true KARATE_OPS="" MAVEN_DEPLOY=true
+    - MONGO=4.2 REPLICASET=true KARATE_OPS="" MAVEN_DEPLOY=true
+    - MONGO=4.0 REPLICASET=true KARATE_OPS=""
     - MONGO=3.6 REPLICASET=false KARATE_OPS="--tags ~@requires-mongodb-4 ~@requires-replica-set"
     - MONGO=3.4 REPLICASET=false KARATE_OPS="--tags ~@requires-mongodb-4 ~@requires-mongodb-3.6 ~@requires-replica-set"
   global:
