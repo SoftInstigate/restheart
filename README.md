@@ -100,12 +100,6 @@ $ docker-compose up -d
 
 Again, point your browser to the [tutorial](https://restheart.org/docs/tutorial/) for more.
 
-> __WARNING__: by default the `docker-compose.yml` binds RESTHeart to port `8080` on address `0.0.0.0`, thus your instance can be potentially reachable by external clients. Besides, the [config.properties](Docker/etc/config.properties) file exposes all databases externally (not only `restheart` as the non-dockerized configration).
-
-```properties
-root-mongo-resource = '*'
-```
-
 ## Configuration
 
 Refer to the [configuration file](https://github.com/SoftInstigate/restheart/blob/master/etc/restheart.yml) for inline documentation.
