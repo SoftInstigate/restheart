@@ -18,6 +18,7 @@
 package org.restheart.security.handlers;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 import io.undertow.util.QueryParameterUtils;
 import java.net.URLEncoder;
 import java.util.ArrayDeque;
@@ -35,26 +36,28 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  */
-public class QueryStringRebuiler extends PipedHttpHandler {
+public class QueryStringRebuilder extends PipedHttpHandler {
 
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(QueryStringRebuiler.class);
+            .getLogger(QueryStringRebuilder.class);
+
+    static final AttachmentKey<String> ORIGINAL_QUERY_STRING
+            = AttachmentKey.create(String.class);
 
     /**
      * Creates a new instance of QueryStringRebuiler
      *
      * @param next
      */
-    public QueryStringRebuiler(PipedHttpHandler next) {
+    public QueryStringRebuilder(PipedHttpHandler next) {
         super(next);
     }
 
     /**
      * Creates a new instance of QueryStringRebuiler
      *
-     * @param next
      */
-    public QueryStringRebuiler() {
+    public QueryStringRebuilder() {
         super(null);
     }
 
@@ -65,6 +68,9 @@ public class QueryStringRebuiler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
+        // save the original request URI
+        setOriginalQueryString(exchange);
+        
         Map<String, Deque<String>> qps = exchange.getQueryParameters();
 
         var decodedQueryParameters = new TreeMap<String, Deque<String>>();
@@ -88,5 +94,18 @@ public class QueryStringRebuiler extends PipedHttpHandler {
         exchange.setQueryString(newqs);
 
         next(exchange);
+    }
+
+    private void setOriginalQueryString(HttpServerExchange exchange) {
+        if (exchange.getAttachment(ORIGINAL_QUERY_STRING) == null) {
+            exchange.putAttachment(ORIGINAL_QUERY_STRING, 
+                    exchange.getQueryString());
+        }
+    }
+
+    public static String getOriginalQueryString(HttpServerExchange exchange) {
+        var oqs = exchange.getAttachment(ORIGINAL_QUERY_STRING);
+
+        return oqs == null ? exchange.getQueryString() : oqs;
     }
 }

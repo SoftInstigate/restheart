@@ -55,8 +55,8 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
 import io.undertow.util.HexConverter;
-import io.undertow.util.StatusCodes;
 import org.restheart.security.ConfigurationException;
+import org.restheart.security.handlers.QueryStringRebuilder;
 import org.restheart.security.plugins.AuthMechanism;
 
 /**
@@ -260,8 +260,14 @@ public class DigestAuthMechanism implements AuthMechanism {
         if (parsedHeader.containsKey(DigestAuthorizationToken.DIGEST_URI)) {
             String uri = parsedHeader.get(DigestAuthorizationToken.DIGEST_URI);
             String requestURI = exchange.getRequestURI();
-            if (!exchange.getQueryString().isEmpty()) {
-                requestURI = requestURI + "?" + exchange.getQueryString();
+            
+            // since the query string is rebuilt by QueryStringRebuilder
+            // we need to check against the original query string 
+            String originalQueryString = QueryStringRebuilder
+                    .getOriginalQueryString(exchange);
+            
+            if (!originalQueryString.isEmpty()) {
+                requestURI = requestURI + "?" + originalQueryString;
             }
             if (!uri.equals(requestURI)) {
                 //it is possible we were given an absolute URI
@@ -274,8 +280,7 @@ public class DigestAuthMechanism implements AuthMechanism {
                 }
                 if (!uri.equals(requestURI)) {
                     //just end the auth process
-                    exchange.setStatusCode(StatusCodes.BAD_REQUEST);
-                    exchange.endExchange();
+                    LOGGER.warn("The URI in digest token does not match the request URI");
                     return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
                 }
             }
@@ -666,6 +671,7 @@ public class DigestAuthMechanism implements AuthMechanism {
     /**
      * @return the mechanismName
      */
+    @Override
     public String getMechanismName() {
         return mechanismName;
     }

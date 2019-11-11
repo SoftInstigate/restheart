@@ -65,7 +65,7 @@ import org.restheart.security.handlers.ConfigurableEncodingHandler;
 import org.restheart.security.handlers.ErrorHandler;
 import static org.restheart.security.handlers.PipedHttpHandler.pipe;
 import org.restheart.security.handlers.PipedWrappingHandler;
-import org.restheart.security.handlers.QueryStringRebuiler;
+import org.restheart.security.handlers.QueryStringRebuilder;
 import org.restheart.security.handlers.RequestInterceptorsExecutor;
 import org.restheart.security.handlers.RequestLogger;
 import org.restheart.security.handlers.RequestNotManagedHandler;
@@ -959,17 +959,16 @@ public class Bootstrapper {
                                         tokenManager);
                             }
 
-                            var srv = pipe(
-                                    new RequestLogger(),
+                            var srv = pipe(new RequestLogger(),
                                     new CORSHandler(),
                                     new XPoweredByInjector(),
                                     new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
                                     new RequestInterceptorsExecutor(BEFORE_AUTH),
-                                    new QueryStringRebuiler(),
+                                    new QueryStringRebuilder(),
                                     securityHandler,
                                     new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
                                     new RequestInterceptorsExecutor(AFTER_AUTH),
-                                    new QueryStringRebuiler(),
+                                    new QueryStringRebuilder(),
                                     new ConduitInjector(),
                                     PipedWrappingHandler.wrap(
                                             new ConfigurableEncodingHandler(_srv,
@@ -1118,12 +1117,11 @@ public class Bootstrapper {
                         .setProxyClient(proxyClient)
                         .build();
 
-                var proxy = pipe(
-                        new RequestLogger(),
+                var proxy = pipe(new RequestLogger(),
                         new XPoweredByInjector(),
                         new RequestContentInjector(ALWAYS),
                         new RequestInterceptorsExecutor(BEFORE_AUTH),
-                        new QueryStringRebuiler(),
+                        new QueryStringRebuilder(),
                         new SecurityHandler(
                                 authMechanisms,
                                 authorizers,
@@ -1131,7 +1129,7 @@ public class Bootstrapper {
                         new AuthHeadersRemover(),
                         new XForwardedHeadersInjector(),
                         new RequestInterceptorsExecutor(AFTER_AUTH),
-                        new QueryStringRebuiler(),
+                        new QueryStringRebuilder(),
                         new ConduitInjector(),
                         PipedWrappingHandler.wrap(
                                 new ConfigurableEncodingHandler( // Must be after ConduitInjector
