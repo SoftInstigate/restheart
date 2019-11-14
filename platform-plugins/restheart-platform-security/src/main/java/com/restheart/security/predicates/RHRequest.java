@@ -13,6 +13,7 @@ package com.restheart.security.predicates;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import org.restheart.security.handlers.exchange.JsonRequest;
@@ -24,6 +25,8 @@ import org.restheart.security.handlers.exchange.JsonRequest;
 public class RHRequest extends JsonRequest {
 
     public static final String RH_FILTER_QPARAM_KEY = "filter";
+
+    private final JsonParser PARSER = new JsonParser();
 
     private RHRequest(HttpServerExchange exchange) {
         super(exchange);
@@ -71,7 +74,7 @@ public class RHRequest extends JsonRequest {
 
         // check filter parameter
         if (filters != null) {
-            StringBuffer error = new StringBuffer();
+            StringBuilder error = new StringBuilder();
 
             if (!filters.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
