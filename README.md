@@ -94,15 +94,17 @@ $ docker-compose up -d
 
 ### Default users and acl
 
-The following users exist:
+The default `users.yml` defines the following users:
 
 - id: 'admin', password: 'secret', role: 'admin'
 - id: 'user', password: 'secret', role: 'user'
 
-*admin* role can execute any request
-*user* role can execute any request on /{username} collection
+The default `acl.yml` defines the following permission:
 
-> __WARNING__ you must update the passwords. See [Configuration](#configuration) for more information on how to override the default `users.yml` configuration file.
+- *admin* role can execute any request
+- *user* role can execute any request on collection `/{username}`
+
+> __WARNING__ You must update the passwords! See [Configuration](#configuration) for more information on how to override the default `users.yml` configuration file.
 
 ### Check that everything works
 
