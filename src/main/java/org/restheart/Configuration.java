@@ -38,10 +38,10 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import static org.restheart.ConfigurationKeys.*;
-import static org.restheart.db.DAOUtils.LOGGER;
 import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
@@ -58,6 +58,8 @@ public class Configuration {
      * http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
      */
     public static final String CONNECTION_OPTIONS_KEY = "connection-options";
+    
+    public final static Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
     private boolean silent = false;
     private final boolean httpsListener;
@@ -587,7 +589,7 @@ public class Configuration {
             envValue = System.getenv(shellKey);
         }
         if (null != envValue) {
-            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
+            LOGGER.debug(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
                     shellKey, key, envValue);
         }
         return envValue;
