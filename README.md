@@ -17,10 +17,9 @@
 ## Table of Contents
 
 - [Summary](#summary)
-- [Setup](#setup)
-- [Use Docker](#use-docker)
-- [Configuration](#configuration)
-- [Security](#security)
+- [Run](#run)
+- [Run without Docker](#run-without-docker)
+- [Tutorial](#tutorial)
 - [How to Build](#how-to-Build)
 - [Integration Tests](#integration-tests)
 - [Maven Dependencies](#maven-dependencies)
@@ -45,70 +44,160 @@ With RESTHeart teams can focus on building Angular, React, Vue, iOS or Android a
 
 For example, to insert data in MongoDB developers model client-side JSON documents and then execute POST operations via HTTP to RESTHeart: no more need to deal with complicated server-side code and database drivers in Java, JavaScript, PHP, Ruby, Python, etc.
 
-For these reasons, RESTHeart is widely used by freelancers, Web agencies ans System Integrators with deadlines, because it allows them to focus on the most creative parts of their work.
+For these reasons, RESTHeart is widely used by freelancers, Web agencies and System Integrators with deadlines, because it allows them to focus on the most creative parts of their work.
 
 For more ideas have a look at the collection of common [use cases](https://restheart.org/use-cases/).
 
-## Setup
+Starting from RESTHeart v4, security is handled by [restheart-security](https://github.com/SoftInstigate/restheart-security), which is a __reverse proxy microservice__ for HTTP resources, providing __Authentication__ and __Authorization__ services.
 
-Download the latest release, then [install](https://docs.mongodb.com/manual/installation/#mongodb-community-edition-installation-tutorials) and [run](https://docs.mongodb.com/manual/tutorial/manage-mongodb-processes/) MongoDB
+For more information on the security layer refer to [Security Overview](https://restheart.org/docs/security/overview/).
 
-Assuming that MongoDB is running on `localhost` on port `27017`, then run RESTHeart as follows:
+Alternatively, you can put any HTTP reverse proxy in front of RESTHeart and delegate security to it. For an example of using NGINX as a reverse proxy on top of RESTHeart, have a look at [this repository](https://github.com/SoftInstigate/nginx-restheart). Then it is possible to configure NGINX to restrict access with [HTTP Basic Authentication](https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-http-basic-authentication/). 
+
+## Run
+
+### Prerequisites
+
+You need Docker v1.13 and later.
+
+Can't use Docker? Check [Run without Docker](#run-without-docker)
+
+### Get the latest images of restheart and restheart-security
+
+Pull images:
 
 ```bash
-$ git clone git@github.com:SoftInstigate/restheart.git
-
-$ cd restheart
-
-$ java -jar restheart.jar etc/restheart.yml -e etc/dev.properties
+$ docker pull softinstigate/restheart
+$ docker pull softinstigate/restheart-security
 ```
 
-RESTHeart will be up and running in few seconds, on HTTP port `8080`. Then go to the [tutorial](https://restheart.org/docs/tutorial/), which uses REST Ninja as a client.
+### Run the full stack
 
-__Security warning__: by default RESTHeart mounts only a `restheart` database, to avoid to accidentally exposing the whole set of MongoDB databases publicly. This is controlled by the `root-mongo-resource` in the [dev.properties](etc/dev.properties) file
+This runs a full stack comprising restheart-security, restheart and MongoDb using `docker-compose`
+
+```bash
+$ curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml
+
+$ docker-compose up -d
+```
+
+### Run only the restheart container
+
+Refer to [restheart docker documentation](https://hub.docker.com/r/softinstigate/restheart) on docker hub for more information on how to run the restheart container. 
+
+### Configuration
+
+The following configuration files can be overwritten, by uncommenting the volumes sections in `docker-compose.yml`:
+
+- [restheart.yml](https://raw.githubusercontent.com/SoftInstigate/restheart/master/etc/restheart.yml)
+- [config.properties](https://raw.githubusercontent.com/SoftInstigate/restheart/master/Docker/etc/config.properties)
+- [restheart-security.yml](https://raw.githubusercontent.com/SoftInstigate/restheart-security/master/etc/restheart-security.yml)
+- [config-security.properties](https://raw.githubusercontent.com/SoftInstigate/restheart-security/master/Docker/etc/default-security.properties)
+- [users.yml](https://raw.githubusercontent.com/SoftInstigate/restheart-security/master/etc/users.yml)
+- [acl.yml](https://raw.githubusercontent.com/SoftInstigate/restheart-security/master/etc/acl.yml)
+
+For instance, in order to overwrite the `users.yml` file, create the file `etc/users.yml` and uncomment the the volumes property of the restheart-security service:
 
 ```properties
-...
+    # uncomment to overwrite the configuration files   
+    volumes:
+    #    - ./etc/restheart-security.yml:/opt/restheart/etc/restheart-security.yml:ro
+    #    - ./etc/default-security.properties:/opt/restheart/etc/default-security.properties:ro
+    - ./etc/users.yml:/opt/restheart/etc/users.yml:ro
+    #    - ./etc/acl.yml:/opt/restheart/etc/acl.yml:ro
+```
+
+## Run without Docker
+
+### Prerequisites
+
+You need:
+- Java v11+;
+- MongoDB running on `localhost` on port `27017`.
+
+For more information on how to install and run MongoDB check [install tutorial](https://docs.mongodb.com/manual/installation/#mongodb-community-edition-installation-tutorials) and [manage mongodb](https://docs.mongodb.com/manual/tutorial/manage-mongodb-processes/) on MongoDB documentation.
+
+### Get the latest releases of restheart and restheart-security
+
+Download the latest releases of *restheart* and *restheart-security* from the following links:
+
+- [download restheart](https://github.com/SoftInstigate/restheart/releases/latest)
+- [download restheart-security](https://github.com/SoftInstigate/restheart-security/releases/latest)
+
+Depending on the packages you downloaded, unzip or untar them: 
+
+```bash
+$ unzip restheart-<version>.zip
+$ unzip restheart-security-<version>.zip
+```
+
+or:
+
+```bash
+$ tar -xzf restheart-<version>.tar.gz
+$ tar -xzf restheart-security-<version>.tar.gz
+```
+
+### Start restheart with security
+
+You need to run both *restheart* and *restheart-security* processes with *default* configuration.
+
+#### Run *restheart*
+
+```bash
+$ cd restheart-<version>
+
+$ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
+```
+
+By default RESTHeart only mounts the database `restheart`. This is controlled by the `root-mongo-resource` in the `restheart/etc/default.properties` file
+
+```properties
 # The MongoDb resource to bind to the root URI / 
 # The format is /db[/coll[/docid]] or '*' to expose all dbs
 root-mongo-resource = /restheart
-...
 ```
 
 > It means that the root resource `/` is bound to the `/restheart` database. This database doesn't actually exist until you explicitly create it by issuing a `PUT /` HTTP command.
 
+#### Run *restheart-security*
 
-__NOTE__: for security reasons RESTHeart by default binds only on `localhost`, so it won't be reachable from external systems unless you edit the configuration. To accept connections from everywhere, you must set at least the http listener in the [dev.properties](etc/dev.properties) file to bind to `0.0.0.0` like this:
+```bash
+$ cd restheart-security-<version>
+
+$ java -jar restheart-security.jar etc/restheart-security.yml -e etc/default.properties
+```
+ 
+__NOTE__: for security reasons RESTHeart Security by default only binds on `localhost`, so it won't be reachable from external systems unless you edit the configuration. To accept connections from everywhere, you must set the http listener in the `restheart-security/etc/default.properties` file to bind to `0.0.0.0` like this:
 
 ```properties
 http-listener = 0.0.0.0
 ```
 
-Beware that you must stop and run RESTHeart again to reload a new configuration.
-
-## Use Docker
-
-Alternatively, you can run RESTHeart with docker compose, which also starts a MongoDB container:
+### Start restheart without security (standalone mode)
 
 ```bash
-$ git clone git@github.com:SoftInstigate/restheart.git
-
 $ cd restheart
 
-$ docker-compose up -d
+$ java -jar restheart.jar etc/restheart.yml -e etc/standalone.properties
 ```
 
-Again, point your browser to the [tutorial](https://restheart.org/docs/tutorial/) for more.
+`restheart` will start bound on HTTP port `8080`. 
 
-## Configuration
+### Configuration
 
-Refer to the [configuration file](https://github.com/SoftInstigate/restheart/blob/master/etc/restheart.yml) for inline documentation.
+The configuration and properties files are in the `etc` directory  of `restheart` and `restheart-security`.
 
-## Security
+Refer to the configuration files for inline documentation:
 
-Starting from RESTHeart v4, security has been extracted as a separate layer handled by [restheart-security](https://github.com/SoftInstigate/restheart-security), which is a __reverse proxy microservice__ for HTTP resources, providing __Authentication__ and __Authorization__ services.
+- [restheart.yml](https://github.com/SoftInstigate/restheart/blob/master/etc/restheart.yml)
+- [restheart-security.yml](https://github.com/SoftInstigate/restheart-security/blob/master/etc/restheart-security.yml)
 
-Alternatively, you can put any HTTP reverse proxy in front of RESTHeart and delegate security to it. For an example of using NGINX as a reverse proxy on top of RESTHeart, have a look at [this repository](https://github.com/SoftInstigate/nginx-restheart). Then it is possibile to configure NGINX to restrict access with [HTTP Basic Authentication](https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-http-basic-authentication/). 
+Beware that you must restart `restheart` to reload the new configuration.
+
+## Tutorial
+
+For a quick introduction refer to the [tutorial](https://restheart.org/docs/tutorial/) on the RESTHeart Platform documentation.
 
 ## How to Build
 
@@ -151,7 +240,7 @@ If you want to embed RESTHeart in your project, add the dependency to your POM f
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart</artifactId>
-        <version>4.0.0</version>
+        <version>4.1.3</version>
     </dependency>
 </dependencies>
 ```
@@ -181,7 +270,7 @@ Then include the SNAPSHOT dependency in your POM:
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart</artifactId>
-        <version>4.0.1-SNAPSHOT</version>
+        <version>4.1.4-SNAPSHOT</version>
     </dependency>
 </dependencies>
 ```
