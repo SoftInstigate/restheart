@@ -11,12 +11,12 @@ networks:
 # This makes much easier to identify where the mongodb data is stored on host
 # See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
 volumes:
-   restheart-security-testdb:
+   restheart-e2e-test-db:
 
 services:
    restheart-security:
       image: softinstigate/restheart-security
-      container_name: restheart-security
+      container_name: restheart-security-e2e-test
       depends_on:
          - restheart
       networks:
@@ -30,7 +30,7 @@ services:
 
    restheart:
       image: softinstigate/restheart
-      container_name: restheart
+      container_name: restheart-e2e-test
       depends_on:
          - mongodb
       networks:
@@ -40,10 +40,10 @@ services:
 
    mongodb:
       image: mongo:3.6
-      container_name: restheart-mongo
+      container_name: restheart-mongo-e2e-test
       command: --bind_ip_all
       volumes:
-         - restheart-security-testdb:/data/db
+         - restheart-e2e-test-db:/data/db
       networks:
          - backend
       ### mongodb port must be mapped for the test to run
