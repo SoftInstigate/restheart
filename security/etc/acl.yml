@@ -3,35 +3,17 @@ permissions:
     # OPTIONS is always allowed
     - role: $unauthenticated
       predicate: path-prefix[path="/"] and method[value="OPTIONS"]
-      
-    - role: $unauthenticated
-      predicate: path-prefix[path="/echo"] and method[value="GET"]
-    
-    - role: admin
+
+    - role: user
       predicate: path-prefix[path="/"] and method[value="OPTIONS"]
-      
+
+    # admin role can do everything
     - role: admin
       predicate: path-prefix[path="/"]
       
+    # user role can do everything on /{username}
     - role: user
-      predicate: path-prefix[path="/coll"]
-    
-    - role: user
-      predicate: path-prefix[path="/"] and method[value="OPTIONS"]
+      predicate: path-template[value="/{username}"] and equals[%u, "${username}"]
 
     - role: user
-      predicate: path-prefix[path="/secho"] and method[value="GET"]
-
-    - role: user
-      predicate: path[path="/secho/foo"] and method[value="GET"]
-
-    - role: user
-      predicate: (path[path="/echo"] or path[path="/secho"]) and method[value="PUT"]
-
-    # This to check the path-template predicate
-    - role: user
-      predicate: path-template[value="/secho/{username}"] and equals[%u, "${username}"]
-
-    # This to check the regex predicate
-    - role: user
-      predicate: regex[pattern="/secho/(.*?)", value="%R", full-match=true] and equals[%u, "${1}"]
+      predicate: path-template[value="/{username}/{subpath}"] and equals[%u, "${username}"]

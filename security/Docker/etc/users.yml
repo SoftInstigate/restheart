@@ -1,6 +1,0 @@
-## configuration file for simpleFileAuthenticator
----
-users:
-    - userid: admin
-      password: secret
-      roles: [ admin ]

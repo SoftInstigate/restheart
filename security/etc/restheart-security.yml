@@ -11,10 +11,10 @@
 
 https-listener: false
 https-host: 0.0.0.0
-https-port: {{{https-port}}}
+https-port: 4443
 
 http-listener: true
-http-host: 0.0.0.0
+http-host: {{{http-host}}}
 http-port: {{{http-port}}}
 
 #### Instance name
