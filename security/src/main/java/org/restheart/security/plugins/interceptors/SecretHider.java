@@ -39,9 +39,10 @@ import org.slf4j.LoggerFactory;
         name = "secretHider",
         priority = 100,
         description = "adds an Interceptor that forbis write requests "
-        + "on 'GET /coll' "
-        + "containing  the property 'secret' "
-        + "to users does not have the role 'admin'")
+        + "on '/coll' "
+        + "containing the property 'secret' "
+        + "to users does not have the role 'admin'",
+        enabledByDefault = false)
 public class SecretHider implements Initializer {
     static final Logger LOGGER = LoggerFactory.getLogger(SecretHider.class);
 

@@ -60,6 +60,7 @@ import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
+import org.fusesource.jansi.AnsiConsole;
 import org.restheart.security.handlers.CORSHandler;
 import org.restheart.security.handlers.ConfigurableEncodingHandler;
 import org.restheart.security.handlers.ErrorHandler;
@@ -215,6 +216,10 @@ public class Bootstrapper {
     }
 
     private static void run() {
+        if (!configuration.isAnsiConsole()) {
+            AnsiConsole.systemInstall();
+        }
+        
         if (!hasForkOption()) {
             initLogging(null);
             startServer(false);
@@ -324,7 +329,7 @@ public class Bootstrapper {
                 + INSTANCE
                 + ansi().fg(RED).bold().a(instanceName).reset().toString());
         LOGGER.info(VERSION, Configuration.VERSION);
-        LOGGER.info("Configuration = " + configuration.toString());
+        LOGGER.debug("Configuration = " + configuration.toString());
     }
 
     private static void logManifestInfo() {
