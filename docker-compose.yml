@@ -23,8 +23,10 @@ services:
          - backend
       ports:
          - "8080:8080"
-      # uncomment to overwrite the users and acl configuration files   
+      # uncomment to overwrite the configuration files   
       # volumes:
+      #    - ./etc/restheart-security.yml:/opt/restheart/etc/restheart-security.yml:ro
+      #    - ./etc/default-security.properties:/opt/restheart/etc/default-security.properties:ro
       #    - ./etc/users.yml:/opt/restheart/etc/users.yml:ro
       #    - ./etc/acl.yml:/opt/restheart/etc/acl.yml:ro
 
@@ -38,9 +40,10 @@ services:
          - mongodb
       networks:
          - backend
-      # uncomment to overwrite the configuration file
+      # uncomment to overwrite the configuration files
       # volumes:
       #    - ./etc/restheart.yml:/opt/restheart/etc/restheart.yml:ro
+      #    - ./etc/default.properties:/opt/restheart/etc/default.properties:ro
 
    mongodb:
       # TODO update this!
