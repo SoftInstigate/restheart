@@ -4,9 +4,7 @@
     </a>
 </p>
 
-
 # RESTHeart - REST API Microservice for MongoDB. #
-
 
 [![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=master)](https://travis-ci.org/SoftInstigate/restheart)
 [![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.restheart%22%20AND%20a:%22restheart%22)
@@ -48,11 +46,7 @@ For these reasons, RESTHeart is widely used by freelancers, Web agencies and Sys
 
 For more ideas have a look at the collection of common [use cases](https://restheart.org/use-cases/).
 
-Starting from RESTHeart v4, security is handled by [restheart-security](https://github.com/SoftInstigate/restheart-security), which is a __reverse proxy microservice__ for HTTP resources, providing __Authentication__ and __Authorization__ services.
-
-For more information on the security layer refer to [Security Overview](https://restheart.org/docs/security/overview/).
-
-Alternatively, you can put any HTTP reverse proxy in front of RESTHeart and delegate security to it. For an example of using NGINX as a reverse proxy on top of RESTHeart, have a look at [this repository](https://github.com/SoftInstigate/nginx-restheart). Then it is possible to configure NGINX to restrict access with [HTTP Basic Authentication](https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-http-basic-authentication/). 
+Starting from RESTHeart v4, security is handled by [restheart-security](https://github.com/SoftInstigate/restheart-security), which is a __reverse proxy microservice__ for HTTP resources, providing __Authentication__ and __Authorization__ services. 
 
 ## Run
 
@@ -73,15 +67,6 @@ You need Docker v1.13 and later.
 
 Can't use Docker? Check [Run without Docker](#run-without-docker)
 
-### Get the latest images of restheart and restheart-security
-
-Pull images:
-
-```bash
-$ docker pull softinstigate/restheart
-$ docker pull softinstigate/restheart-security
-```
-
 ### Run the full stack
 
 This runs a full stack comprising restheart-security, restheart and MongoDb using `docker-compose`
@@ -92,7 +77,7 @@ $ curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-c
 $ docker-compose up -d
 ```
 
-### Default users and acl
+### Default users and ACL
 
 The default `users.yml` defines the following users:
 
