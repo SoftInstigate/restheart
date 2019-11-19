@@ -56,6 +56,17 @@ Alternatively, you can put any HTTP reverse proxy in front of RESTHeart and dele
 
 ## Run
 
+The commercial **RESTHeart Platform** provides a simpler and more powerful setup and configuration process. It also comes with support and enterprise level additional features, such as:
+- [Transactions](https://restheart.org/docs/transactions/)
+- [Change Streams](https://restheart.org/docs/change-streams) 
+- [JWT Authentication](https://restheart.org/docs/security/authentication/#jwt-authentication)
+- [RESTHeart Authenticator](https://restheart.org/docs/security/authentication/#restheart-authenticator) with users defined in the database
+- [RESTHeart Authorizer](https://restheart.org/docs/security/authorization/#restheart-authorizer) with ACL defined in the database and role-based data filter capabilities
+
+Download it with a 30 days free trial license from [https://restheart.org/get](https://restheart.org/get)
+
+Confused about editions? Check the [editions matrix](https://restheart.org/editions).
+
 ### Prerequisites
 
 You need Docker v1.13 and later.
@@ -79,6 +90,38 @@ This runs a full stack comprising restheart-security, restheart and MongoDb usin
 $ curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml
 
 $ docker-compose up -d
+```
+
+### Default users and acl
+
+The following users exist:
+
+- id: 'admin', password: 'secret', role: 'admin'
+- id: 'user', password: 'secret', role: 'user'
+
+*admin* role can execute any request
+*user* role can execute any request on /{username} collection
+
+> __WARNING__ you must update the passwords. See [Configuration](#configuration) for more information on how to override the default `users.yml` configuration file.
+
+### Check that everything works
+
+```bash
+# create database 'restheart'
+$ curl --user admin:secret -I -X PUT :8080/
+HTTP/1.1 201 OK
+
+# create collection 'restheart.collection'
+$ curl --user admin:secret -I -X PUT :8080/collection
+HTTP/1.1 201 OK
+
+# create a couple of documents
+$ curl --user admin:secret -X POST :8080/collection -d '{"a":1}' -H "Content-Type: application/json" 
+$ curl --user admin:secret -X POST :8080/collection -d '{"a":2}' -H "Content-Type: application/json" 
+
+# get documents
+$ curl --user admin:secret :8080/collection
+[{"_id":{"$oid":"5dd3cfb2fe3c18a7834121d3"},"a":1,"_etag":{"$oid":"5dd3cfb2439f805aea9d5130"}},{"_id":{"$oid":"5dd3cfb0fe3c18a7834121d1"},"a":2,"_etag":{"$oid":"5dd3cfb0439f805aea9d512f"}}]%
 ```
 
 ### Run only the restheart container
