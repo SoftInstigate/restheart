@@ -1,4 +1,4 @@
-version: '3'
+version: '2'
 
 ### Creates a named network with the default bridge driver
 # The network is shared between restheart and mongodb only
@@ -11,38 +11,47 @@ networks:
 # This makes much easier to identify where the mongodb data is stored on host
 # See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
 volumes:
-   restheart-datadb:
+   restheart-db:
 
 services:
-   restheart:
-      image: softinstigate/restheart:latest
-      build: .
-      container_name: restheart
+   restheart-security:
+      image: softinstigate/restheart-security
+      container_name: restheart-security
       depends_on:
-         - mongodb
+         - restheart
       networks:
          - backend
       ports:
          - "8080:8080"
-      ### Uncoment and edit below if you want to mount a local configuration folder
-      ### to overwrite default restheart.yml
-      #volumes:
-         #- ./Docker/etc:/opt/restheart/etc:ro
+      # uncomment to overwrite the users and acl configuration files   
+      # volumes:
+      #    - ./etc/users.yml:/opt/restheart/etc/users.yml:ro
+      #    - ./etc/acl.yml:/opt/restheart/etc/acl.yml:ro
 
-   mongodb:
-      image: mongo:4.0
-      container_name: restheart-mongo
+   restheart:
+      image: softinstigate/restheart
+      container_name: restheart
+      command: -e etc/default.properties
       environment:
-            # Be sure this credentials match with those in etc/restheart.yml
-            # $ mongo --username restheart --password R3ste4rt! --authenticationDatabase admin
-            # These aren't needed if connecting to an existing database instance
-            MONGO_INITDB_ROOT_USERNAME: restheart
-            MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
-      command: --bind_ip_all --auth
-      volumes:
-         - restheart-datadb:/data/db
+         MONGO_URI: mongodb://restheart:R3ste4rt!@mongodb
+      depends_on:
+         - mongodb
       networks:
          - backend
-      ### Uncoment below if you want to map mongodb port
-      #ports:
-      #   - "27017:27017"
+      # uncomment to overwrite the configuration file
+      # volumes:
+      #    - ./etc/restheart.yml:/opt/restheart/etc/restheart.yml:ro
+
+   mongodb:
+      # TODO update this!
+      image: mongo:4.0.9
+      container_name: restheart-mongo
+      environment:
+         # must match with MONGO_URI env variable of restheart service
+         MONGO_INITDB_ROOT_USERNAME: restheart
+         MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
+      command: --bind_ip_all --auth
+      volumes:
+         - restheart-db:/data/db
+      networks:
+         - backend
