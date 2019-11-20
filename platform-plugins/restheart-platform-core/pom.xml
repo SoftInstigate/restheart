@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.restheart</groupId>
     <artifactId>restheart-platform-core</artifactId>
-    <version>4.1.3</version>
+    <version>4.1.4</version>
     <packaging>jar</packaging>
     <name>restheart-platform-core</name>
     <description>RESTHeart Platform Core - API microservice for MongoDB.</description>
@@ -14,7 +14,7 @@
     <parent>
         <groupId>com.softinstigate.restheart</groupId>
         <artifactId>restheart-platform</artifactId>
-        <version>4.1.5</version>
+        <version>4.1.6</version>
     </parent>
 
     <properties>
