@@ -15,8 +15,8 @@
 ## Table of Contents
 
 - [Summary](#summary)
-- [Run](#run)
-- [Run without Docker](#run-without-docker)
+- [Run with Docker](#run-with-docker)
+- [Run manually](#run-manually)
 - [Tutorial](#tutorial)
 - [How to Build](#how-to-Build)
 - [Integration Tests](#integration-tests)
@@ -48,18 +48,19 @@ For more ideas have a look at the collection of common [use cases](https://resth
 
 Starting from RESTHeart v4, security is handled by [restheart-security](https://github.com/SoftInstigate/restheart-security), which is a __reverse proxy microservice__ for HTTP resources, providing __Authentication__ and __Authorization__ services. 
 
-## Run
+> The commercial **RESTHeart Platform** provides a simpler and more powerful setup and configuration process. It also comes with support plans and enterprise-level additional features, such as:
 
-The commercial **RESTHeart Platform** provides a simpler and more powerful setup and configuration process. It also comes with support and enterprise level additional features, such as:
-- [Transactions](https://restheart.org/docs/transactions/)
-- [Change Streams](https://restheart.org/docs/change-streams) 
-- [JWT Authentication](https://restheart.org/docs/security/authentication/#jwt-authentication)
-- [RESTHeart Authenticator](https://restheart.org/docs/security/authentication/#restheart-authenticator) with users defined in the database
-- [RESTHeart Authorizer](https://restheart.org/docs/security/authorization/#restheart-authorizer) with ACL defined in the database and role-based data filter capabilities
+> - [Transactions](https://restheart.org/docs/transactions/)
+> - [Change Streams](https://restheart.org/docs/change-streams) 
+> - [JWT Authentication](https://restheart.org/docs/security/authentication/#jwt-authentication)
+> - [RESTHeart Authenticator](https://restheart.org/docs/security/authentication/#restheart-authenticator) with users defined in the database
+> - [RESTHeart Authorizer](https://restheart.org/docs/security/authorization/#restheart-authorizer) with ACL defined in the database and role-based data filter capabilities
 
-Download it with a 30 days free trial license from [https://restheart.org/get](https://restheart.org/get)
+> Download it with a 30 days free trial license from [https://restheart.org/get](https://restheart.org/get)
 
-Confused about editions? Check the [editions matrix](https://restheart.org/editions).
+> Confused about editions? Check the [editions matrix](https://restheart.org/editions).
+
+## Run with Docker
 
 ### Prerequisites
 
@@ -137,7 +138,7 @@ For instance, in order to overwrite the `users.yml` file, create the file `etc/u
     #    - ./etc/acl.yml:/opt/restheart/etc/acl.yml:ro
 ```
 
-## Run without Docker
+## Run manually
 
 ### Prerequisites
 
@@ -170,7 +171,7 @@ $ tar -xzf restheart-security-<version>.tar.gz
 
 ### Start restheart with security
 
-You need to run both *restheart* and *restheart-security* processes with *default* configuration.
+You need to run both `restheart` and `restheart-security` processes with their *default* configurations.
 
 #### Run *restheart*
 
