@@ -49,16 +49,16 @@ For more ideas have a look at the collection of common [use cases](https://resth
 Starting from RESTHeart v4, security is handled by [restheart-security](https://github.com/SoftInstigate/restheart-security), which is a __reverse proxy microservice__ for HTTP resources, providing __Authentication__ and __Authorization__ services. 
 
 > The commercial **RESTHeart Platform** provides a simpler and more powerful setup and configuration process. It also comes with support plans and enterprise-level additional features, such as:
-
+>
 > - [Transactions](https://restheart.org/docs/transactions/)
 > - [Change Streams](https://restheart.org/docs/change-streams) 
 > - [JWT Authentication](https://restheart.org/docs/security/authentication/#jwt-authentication)
 > - [RESTHeart Authenticator](https://restheart.org/docs/security/authentication/#restheart-authenticator) with users defined in the database
 > - [RESTHeart Authorizer](https://restheart.org/docs/security/authorization/#restheart-authorizer) with ACL defined in the database and role-based data filter capabilities
-
+>
 > Download it with a 30 days free trial license from [https://restheart.org/get](https://restheart.org/get)
-
-> Confused about editions? Check the [editions matrix](https://restheart.org/editions).
+>
+> Check the [editions matrix](https://restheart.org/editions) for more information.
 
 ## Run with Docker
 
