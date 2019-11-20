@@ -66,7 +66,7 @@ Starting from RESTHeart v4, security is handled by [restheart-security](https://
 
 You need Docker v1.13 and later.
 
-Can't use Docker? Check [Run without Docker](#run-without-docker)
+Can't use Docker? Check [Run without Docker](#run-manually)
 
 ### Run the full stack
 
