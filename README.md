@@ -112,10 +112,6 @@ $ curl --user admin:secret :8080/collection
 [{"_id":{"$oid":"5dd3cfb2fe3c18a7834121d3"},"a":1,"_etag":{"$oid":"5dd3cfb2439f805aea9d5130"}},{"_id":{"$oid":"5dd3cfb0fe3c18a7834121d1"},"a":2,"_etag":{"$oid":"5dd3cfb0439f805aea9d512f"}}]%
 ```
 
-### Run only the restheart container
-
-Refer to [restheart docker documentation](https://hub.docker.com/r/softinstigate/restheart) on docker hub for more information on how to run the restheart container. 
-
 ### Configuration
 
 The following configuration files can be overwritten, by uncommenting the volumes sections in `docker-compose.yml`:
