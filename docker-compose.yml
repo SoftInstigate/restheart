@@ -1,4 +1,4 @@
-version: '2'
+version: "3"
 
 ### Creates a named network with the default bridge driver
 # The network is shared between restheart and mongodb only
@@ -6,7 +6,7 @@ version: '2'
 # See: https://docs.docker.com/engine/reference/commandline/network_create/
 networks:
    backend:
-       
+
 ### Create a permanent, named data volume
 # This makes much easier to identify where the mongodb data is stored on host
 # See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
@@ -23,7 +23,7 @@ services:
          - backend
       ports:
          - "8080:8080"
-      # uncomment to overwrite the configuration files   
+      # uncomment to overwrite the configuration files
       # volumes:
       #    - ./etc/restheart-security.yml:/opt/restheart/etc/restheart-security.yml:ro
       #    - ./etc/default-security.properties:/opt/restheart/etc/default-security.properties:ro
@@ -33,7 +33,7 @@ services:
    restheart:
       image: softinstigate/restheart
       container_name: restheart
-      command: -e etc/default.properties
+      command: ["--envFile", "etc/default.properties"]
       environment:
          MONGO_URI: mongodb://restheart:R3ste4rt!@mongodb
       depends_on:
@@ -47,7 +47,7 @@ services:
 
    mongodb:
       # TODO update this!
-      image: mongo:4.0.9
+      image: mongo:4.0
       container_name: restheart-mongo
       environment:
          # must match with MONGO_URI env variable of restheart service
