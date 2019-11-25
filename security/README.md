@@ -57,6 +57,10 @@ $ java -jar target/restheart-security.jar etc/restheart-security.yml
 $ docker pull softinstigate/restheart-security
 ```
 
+## Book a chat
+
+If you have any question about RESTHeart Security and want to talk directly with the core development team, you can [book a free video chat](https://calendly.com/restheart/restheart-free-chat) with us.
+
 <hr>
 
 _Made with :heart: by [SoftInstigate](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.
