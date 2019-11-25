@@ -25,6 +25,7 @@
   - [Maven Site](#maven-Site)
 - [Continuous Integration](#continuous-integration)
 - [Full documentation](#full-documentation)
+- [Book a chat](#book-a-chat)
 
 <p align="center">
    <a href="https://restheart.org">
@@ -315,6 +316,10 @@ RESTHeart's public Docker images are also automatically built and pushed to [Doc
 ## Full documentation
 
 For more information, read the [documentation](http://restheart.org/docs/).
+
+## Book a chat
+
+If you have any question about RESTHeart and want to talk directly with the core development team, you can [book a free video chat](https://calendly.com/restheart/restheart-free-chat) with us.
 
 <hr></hr>
 
