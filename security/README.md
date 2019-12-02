@@ -37,7 +37,7 @@ You need __Java 11__ and must download the latest release from [releases page](h
 ```
 $ tar -xzf restheart-security-XX.tar.gz
 $ cd restheart-security
-$ java -jar restheart-security.jar etc/restheart-security.yml
+$ java -jar restheart-security.jar etc/restheart-security.yml -e etc/default.properties
 ```
 
 ## Building from source
@@ -48,7 +48,7 @@ You need Git, Java 11 and Maven.
 $ git clone git@github.com:SoftInstigate/restheart-security.git
 $ cd restheart-security
 $ mvn package
-$ java -jar target/restheart-security.jar etc/restheart-security.yml
+$ java -jar target/restheart-security.jar etc/restheart-security.yml -e etc/default.properties
 ```
 
 ## With Docker
