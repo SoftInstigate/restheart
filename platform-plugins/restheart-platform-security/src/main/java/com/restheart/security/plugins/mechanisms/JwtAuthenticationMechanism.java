@@ -124,7 +124,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism {
             if (token != null) {
                 if (base64Encoded) {
                     token = StringUtils.newStringUtf8(
-                            Base64.getDecoder().decode(token));
+                            Base64.getUrlDecoder().decode(token));
                 }
 
                 DecodedJWT verifiedJwt = jwtVerifier.verify(token);
@@ -170,7 +170,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism {
                     this.extraJwtVerifier.accept(verifiedJwt);
                 }
 
-                var jwtPayload = new String(Base64.getDecoder()
+                var jwtPayload = new String(Base64.getUrlDecoder()
                         .decode(verifiedJwt.getPayload()),
                         Charset.forName("UTF-8"));
 
