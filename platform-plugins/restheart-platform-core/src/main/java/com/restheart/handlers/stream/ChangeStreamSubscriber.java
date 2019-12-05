@@ -11,6 +11,17 @@
 package com.restheart.handlers.stream;
 
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
+import org.bson.BsonDocument;
+import org.bson.Document;
+import org.bson.codecs.Codec;
+import org.bson.codecs.DecoderContext;
+import org.bson.codecs.DocumentCodec;
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.json.JsonMode;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import org.restheart.utils.JsonUtils;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -25,12 +36,26 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(ChangeStreamSubscriber.class);
 
+    private static final CodecRegistry registry = CodecRegistries
+            .fromCodecs(new DocumentCodec());
+
+    private static BsonDocument toBson(Document document) {
+        return document.toBsonDocument(BsonDocument.class, registry);
+    }
+
     private final String streamKey;
+    private JsonMode jsonMode = null;
     private Subscription sub;
 
     public ChangeStreamSubscriber(String streamKey) {
         super();
         this.streamKey = streamKey;
+    }
+
+    public ChangeStreamSubscriber(String streamKey, JsonMode jsonMode) {
+        super();
+        this.streamKey = streamKey;
+        this.jsonMode = jsonMode;
     }
 
     @Override
@@ -41,10 +66,16 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
 
     @Override
     public void onNext(ChangeStreamDocument notification) {
+
         if (GuavaHashMultimapSingleton.getSessions(streamKey).size() > 0) {
-            LOGGER.info("[clientsWatching]: " + GuavaHashMultimapSingleton.getSessions(streamKey).size());
+            LOGGER.info("[clientsWatching]: "
+                    + GuavaHashMultimapSingleton.getSessions(streamKey).size());
+
+            String test = JsonUtils.toJson(toBson((Document) notification.getFullDocument()), this.jsonMode);
             ChangeStreamWebsocketCallback.NOTIFICATION_PUBLISHER
-                    .submit(new ChangeStreamNotification(streamKey, notification.toString()));
+                    .submit(new ChangeStreamNotification(streamKey,
+                            JsonUtils.toJson(toBson((Document) notification.getFullDocument()), this.jsonMode))
+                    );
         } else {
             this.stop();
             LOGGER.info("Closing unwatched stream; [stream]: " + streamKey);

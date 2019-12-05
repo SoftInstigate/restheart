@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.bson.json.JsonMode;
 import org.bson.BsonDocument;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
@@ -48,6 +49,7 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
             = Handlers.websocket(new ChangeStreamWebsocketCallback());
 
     public static final AttachmentKey<List<BsonDocument>> AVARS_ATTACHMENT_KEY = AttachmentKey.create(List.class);
+    public static final AttachmentKey<JsonMode> JSON_MODE_ATTACHMENT_KEY = AttachmentKey.create(JsonMode.class);
 
     public GetChangeStreamHandler() {
         super();
@@ -77,6 +79,8 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
 
                 exchange.setQueryString(
                         encodeQueryString(exchange.getQueryString()));
+
+                exchange.putAttachment(JSON_MODE_ATTACHMENT_KEY, context.getJsonMode());
 
                 WEBSOCKET_HANDSHAKE_HANDLER.handleRequest(exchange);
 
@@ -138,17 +142,22 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
         return resolvedStages;
     }
 
-
     private boolean startStream(HttpServerExchange exchange, RequestContext context) throws QueryVariableNotBoundException, QueryNotFoundException, InvalidMetadataException {
 
         String streamKey;
-        
-        if(context.getAggreationVars() != null) {
+
+        if (context.getAggreationVars() != null) {
             streamKey = exchange.getRelativePath()
-                + "?avars="
-                + context.getAggreationVars().toJson();
+                    + "?avars="
+                    + context.getAggreationVars().toJson()
+                    + (context.getJsonMode() != null
+                    ? "&jsonMode=" + context.getJsonMode() : "");
+
         } else {
-            streamKey = exchange.getRelativePath();
+            streamKey = exchange.getRelativePath()
+                    + (context.getJsonMode() != null
+                    ? "?jsonMode=" + context.getJsonMode() : "");
+
         }
 
         if (OPENED_STREAMS.add(streamKey)) {

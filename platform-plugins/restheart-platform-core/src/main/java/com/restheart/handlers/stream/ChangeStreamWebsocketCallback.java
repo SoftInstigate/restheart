@@ -16,6 +16,7 @@ import io.undertow.websockets.spi.WebSocketHttpExchange;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import org.bson.BsonDocument;
+import org.bson.json.JsonMode;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.SubmissionPublisher;
@@ -43,7 +44,8 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
 
         String url;
         BsonDocument aVars = getQueryStringAvars(exchange.getQueryString());
-        
+        JsonMode jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
+
         if (!exchange.getQueryString().isEmpty()) {
             url = exchange.getRequestURI().replace(exchange.getQueryString(), "");
             url = url.substring(0, url.length() - 1);
@@ -54,14 +56,18 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
         String sessionKey;
 
         if (aVars == null) {
-            sessionKey = url;
+            sessionKey = url + (jsonMode != null
+                    ? "?jsonMode=" + jsonMode : "");
+
         } else {
-            sessionKey = url + "?avars=" + aVars.toJson();
+            sessionKey = url + "?avars=" + aVars.toJson() + (jsonMode != null
+                    ? "&jsonMode=" + jsonMode : "");;
+
         }
 
         ChangeStreamWebSocketSession newSession
                 = createSession(channel, sessionKey);
-        
+
         GuavaHashMultimapSingleton.addSession(sessionKey, newSession);
     }
 
