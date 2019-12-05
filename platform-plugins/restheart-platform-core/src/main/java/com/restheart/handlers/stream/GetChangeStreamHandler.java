@@ -160,6 +160,8 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
 
         }
 
+        List<BsonDocument> resolvedStages = getResolvedStagesAsList(context);
+
         if (OPENED_STREAMS.add(streamKey)) {
 
             MongoDBReactiveClientSingleton
@@ -167,7 +169,7 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
                     .getClient()
                     .getDatabase(context.getDBName())
                     .getCollection(context.getCollectionName())
-                    .watch(getResolvedStagesAsList(context))
+                    .watch(resolvedStages)
                     .subscribe(new ChangeStreamSubscriber(streamKey));
 
         } else {
