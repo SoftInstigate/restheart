@@ -61,7 +61,7 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
 
         } else {
             sessionKey = url + "?avars=" + aVars.toJson() + (jsonMode != null
-                    ? "&jsonMode=" + jsonMode : "");;
+                    ? "&jsonMode=" + jsonMode : "");
 
         }
 
