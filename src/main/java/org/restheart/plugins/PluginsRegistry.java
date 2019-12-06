@@ -135,22 +135,23 @@ public class PluginsRegistry {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Map<String, Map<String, Object>> consumeConfiguration() {
         Map<String, Map<String, Object>> pluginsArgs = Bootstrapper
                 .getConfiguration()
                 .getPluginsArgs();
 
-        Map<String, Map<String, Object>> confs = new HashMap<>();
+        var _confs = new HashMap<String, Map<String, Object>>();
 
         pluginsArgs.forEach((name, params) -> {
             if (params instanceof Map) {
-                confs.put(name, (Map) params);
+                _confs.put(name, (Map) params);
             } else {
-                confs.put(name, new HashMap<>());
+                _confs.put(name, new HashMap<>());
             }
         });
 
-        return confs;
+        return _confs;
     }
 
     /**
@@ -463,6 +464,7 @@ public class PluginsRegistry {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static <T extends Object> T annotationParam(ClassInfo ci,
             String param) {
         var annotationInfo = ci.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME);

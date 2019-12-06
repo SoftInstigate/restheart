@@ -222,7 +222,7 @@ public class DAOUtils {
         } else {
             oldDocument = null;
         }
-        
+
         if (filter != null && !filter.isEmpty()) {
             query = and(query, filter);
         }
@@ -255,7 +255,7 @@ public class DAOUtils {
                         // error 11000 is duplicate key error
                         // happens when the _id and a filter are specified,
                         // the document exists but does not match the filter
-                        return new OperationResult(ResponseHelper 
+                        return new OperationResult(ResponseHelper
                                 .getHttpStatusFromErrorCode(mce.getErrorCode()),
                                 oldDocument,
                                 null);
@@ -291,7 +291,7 @@ public class DAOUtils {
                         // this happens if the filter parameter didn't match
                         // the existing document and so the upserted doc
                         // has an existing _id
-                        return new OperationResult(ResponseHelper 
+                        return new OperationResult(ResponseHelper
                                 .getHttpStatusFromErrorCode(mce.getErrorCode()),
                                 oldDocument,
                                 null);
@@ -310,7 +310,7 @@ public class DAOUtils {
     }
 
     /**
-     * 
+     *
      * @param cs the client session
      * @param coll
      * @param documentId
@@ -318,7 +318,7 @@ public class DAOUtils {
      * @param data
      * @param etag
      * @param etagLocation
-     * @return 
+     * @return
      */
     public static boolean restoreDocument(
             final ClientSession cs,
@@ -350,21 +350,17 @@ public class DAOUtils {
                 ? coll.replaceOne(query, data, R_NOT_UPSERT_OPS)
                 : coll.replaceOne(cs, query, data, R_NOT_UPSERT_OPS);
 
-        if (result.isModifiedCountAvailable()) {
-            return result.getModifiedCount() == 1;
-        } else {
-            return true;
-        }
+        return result.getModifiedCount() == 1;
     }
 
     /**
-     * 
+     *
      * @param cs the client session
      * @param coll
      * @param documents
      * @param filter
      * @param shardKeys
-     * @return 
+     * @return
      */
     public static BulkOperationResult bulkUpsertDocuments(
             final ClientSession cs,
@@ -401,13 +397,13 @@ public class DAOUtils {
     }
 
     /**
-     * 
+     *
      * @param mcoll
      * @param documents
      * @param filter
      * @param shardKeys
      * @param etag
-     * @return 
+     * @return
      */
     static List<WriteModel<BsonDocument>> getBulkWriteModel(
             final MongoCollection<BsonDocument> mcoll,

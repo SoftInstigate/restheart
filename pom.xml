@@ -111,7 +111,7 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver</artifactId>
-            <version>3.10.2</version>
+            <version>3.11.2</version>
         </dependency>
 
         <!-- update undertow dependency to avoid warning log message:
@@ -140,7 +140,7 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <!-- WARNING: v 27.0.1-jre fails integration tests, don't upgrade! -->
-            <version>28.1-jre</version>
+            <version>27.0-jre</version>
         </dependency>
 
         <dependency>
@@ -406,7 +406,7 @@
                 <version>3.8.0</version>
                 <configuration>
                     <debug>true</debug>
-                    <!--<compilerArgument>-Xlint</compilerArgument>-->
+                    <compilerArgument>-Xlint:unchecked</compilerArgument>
                     <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
