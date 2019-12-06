@@ -11,7 +11,6 @@
 package com.restheart.security.plugins.interceptors;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.restheart.security.plugins.authorizers.FilterPredicate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
@@ -23,10 +22,6 @@ import org.slf4j.LoggerFactory;
 public class FilterPredicateInjector implements RequestInterceptor {
     public static final AttachmentKey<Boolean> FILTER_ADDED
             = AttachmentKey.create(Boolean.class);
-
-    protected static final JsonParser PARSER = new JsonParser();
-
-    private static final String IMPOSSIBLE_CONDITION = "{'_id':{'$exists':false}}";
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(FilterPredicateInjector.class);

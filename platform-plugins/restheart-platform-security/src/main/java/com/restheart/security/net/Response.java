@@ -23,8 +23,6 @@ import io.undertow.util.HttpString;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class Response {
-    private static final JsonParser PARSER = new JsonParser();
-    
     private final ClientResponse wrapped;
     
     public static Response wrap(ClientResponse wrapped) {
@@ -56,7 +54,7 @@ public class Response {
     }
     
     public JsonElement getBodyAsJson() throws JsonParseException {
-        return PARSER.parse(getBody());
+        return JsonParser.parseString(getBody());
     }
 
     @Override

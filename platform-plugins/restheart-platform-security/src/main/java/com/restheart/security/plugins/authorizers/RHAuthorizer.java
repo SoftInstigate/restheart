@@ -60,8 +60,6 @@ public class RHAuthorizer implements Authorizer {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(RHAuthorizer.class);
 
-    protected static final JsonParser PARSER = new JsonParser();
-
     public static final AttachmentKey<FilterPredicate> MATCHING_ACL_PREDICATE = AttachmentKey.create(FilterPredicate.class);
 
     public static final String ACL_COLLECTION_NAME = "acl";
@@ -373,7 +371,7 @@ public class RHAuthorizer implements Authorizer {
             return null;
         }
 
-        JsonElement acl = PARSER.parse(_acl);
+        var acl = JsonParser.parseString(_acl);
 
         if (!acl.isJsonArray()) {
             LOGGER.warn("Response body is not a array", role);

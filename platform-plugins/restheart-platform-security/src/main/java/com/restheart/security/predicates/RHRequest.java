@@ -26,8 +26,6 @@ public class RHRequest extends JsonRequest {
 
     public static final String RH_FILTER_QPARAM_KEY = "filter";
 
-    private final JsonParser PARSER = new JsonParser();
-
     private RHRequest(HttpServerExchange exchange) {
         super(exchange);
     }
@@ -51,12 +49,12 @@ public class RHRequest extends JsonRequest {
                 JsonArray _filters = new JsonArray();
 
                 filter.stream().forEach((String f) -> {
-                    _filters.add(PARSER.parse(f));
+                    _filters.add(JsonParser.parseString(f));
                 });
 
                 filterQuery.add("$and", _filters);
             } else if (filter.size() == 1) {
-                filterQuery = PARSER.parse(filter.getFirst()).getAsJsonObject();
+                filterQuery = JsonParser.parseString(filter.getFirst()).getAsJsonObject();
             } else {
                 filterQuery = new JsonObject();
             }
@@ -84,7 +82,7 @@ public class RHRequest extends JsonRequest {
                 }
 
                 try {
-                    JsonElement _filter = PARSER.parse(f);
+                    JsonElement _filter = JsonParser.parseString(f);
 
                     if (!_filter.isJsonObject()) {
                         error.append("illegal filter paramenter: ")

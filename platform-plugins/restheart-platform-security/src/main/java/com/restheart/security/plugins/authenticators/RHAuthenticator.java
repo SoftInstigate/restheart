@@ -66,8 +66,6 @@ public class RHAuthenticator implements Authenticator {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(RHAuthenticator.class);
 
-    private static final JsonParser PARSER = new JsonParser();
-
     public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
     public static final String X_FORWARDED_ROLE = "RESTHeart";
 
@@ -146,7 +144,7 @@ public class RHAuthenticator implements Authenticator {
 
         // check createUserDocument
         try {
-            PARSER.parse(this.createUserDocument);
+            JsonParser.parseString(this.createUserDocument);
         } catch (JsonParseException ex) {
             throw new ConfigurationException(
                     "wrong configuration file format. "
@@ -187,7 +185,7 @@ public class RHAuthenticator implements Authenticator {
             if (countAccounts() < 1) {
                 createDefaultAccount();
                 LOGGER.info("No user found. Created default user with _id {}",
-                        PARSER.parse(this.createUserDocument)
+                        JsonParser.parseString(this.createUserDocument)
                                 .getAsJsonObject().get(this.propId));
             } else {
                 LOGGER.trace("Not creating default user since users exist");
@@ -546,7 +544,7 @@ public class RHAuthenticator implements Authenticator {
                         .asString();
 
                 if (resp.getStatus() == HttpStatus.SC_OK) {
-                    body = PARSER.parse(resp.getBody());
+                    body = JsonParser.parseString(resp.getBody());
                 } else {
                     LOGGER.error("Error counting accounts; "
                             + "response status code {}", resp.getStatus());

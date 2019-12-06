@@ -42,8 +42,6 @@ public class FilterPredicate {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(FilterPredicate.class);
 
-    protected static final JsonParser PARSER = new JsonParser();
-
     FilterPredicate(JsonElement _id,
             Set<String> roles,
             Predicate predicate,
@@ -246,6 +244,6 @@ public class FilterPredicate {
         long now = Instant.now().getEpochSecond() * 1000;
         ret = ret.replace("%NOW", "{'$date':" + now + "}");
 
-        return PARSER.parse(ret).getAsJsonObject();
+        return JsonParser.parseString(ret).getAsJsonObject();
     }
 }
