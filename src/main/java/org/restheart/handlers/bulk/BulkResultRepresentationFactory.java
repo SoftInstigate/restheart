@@ -97,10 +97,8 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
             nrep.addProperty("deleted",
                     new BsonInt32(wr.getDeletedCount()));
 
-            if (wr.isModifiedCountAvailable()) {
-                nrep.addProperty("modified",
-                        new BsonInt32(wr.getModifiedCount()));
-            }
+            nrep.addProperty("modified",
+                    new BsonInt32(wr.getModifiedCount()));
 
             nrep.addProperty("matched",
                     new BsonInt32(wr.getMatchedCount()));
@@ -136,10 +134,8 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
             nrep.addProperty("deleted",
                     new BsonInt32(wr.getDeletedCount()));
 
-            if (wr.isModifiedCountAvailable()) {
-                nrep.addProperty("modified",
-                        new BsonInt32(wr.getModifiedCount()));
-            }
+            nrep.addProperty("modified",
+                    new BsonInt32(wr.getModifiedCount()));
 
             nrep.addProperty("matched",
                     new BsonInt32(wr.getMatchedCount()));
@@ -157,8 +153,8 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
             // error 11000 is duplicate key error
             // happens when the _id and a filter are specified,
             // the document exists but does not match the filter
-            if (error.getCode() == 11000 &&
-                    error.getMessage().contains("_id_ dup key")) {
+            if (error.getCode() == 11000
+                    && error.getMessage().contains("_id_ dup key")) {
                 nrep.addProperty("index",
                         new BsonInt32(error.getIndex()));
                 nrep.addProperty("httpStatus",

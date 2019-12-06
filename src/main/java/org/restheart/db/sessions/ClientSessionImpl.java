@@ -20,6 +20,7 @@ package org.restheart.db.sessions;
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.TransactionOptions;
 import com.mongodb.client.ClientSession;
+import com.mongodb.client.TransactionBody;
 import com.mongodb.client.internal.MongoClientDelegate;
 import com.mongodb.internal.session.BaseClientSessionImpl;
 import com.mongodb.internal.session.ServerSessionPool;
@@ -49,14 +50,15 @@ public class ClientSessionImpl
             final ClientSessionOptions options) {
         super(serverSessionPool, originator, options);
     }
-
-    public void setMessageSentInCurrentTransaction(
-            boolean messageSentInCurrentTransaction) {
-        this.messageSentInCurrentTransaction = messageSentInCurrentTransaction;
+    
+    @Override
+    public <T> T withTransaction(TransactionBody<T> tb) {
+        return tb.execute();
     }
 
-    public boolean isMessageSentInCurrentTransaction() {
-        return this.messageSentInCurrentTransaction;
+    @Override
+    public <T> T withTransaction(TransactionBody<T> tb, TransactionOptions to) {
+        return tb.execute();
     }
 
     @Override
@@ -67,10 +69,6 @@ public class ClientSessionImpl
     @Override
     public boolean isCausallyConsistent() {
         return causallyConsistent;
-    }
-
-    public void setCausallyConsistent(boolean causallyConsistent) {
-        this.causallyConsistent = causallyConsistent;
     }
 
     @Override
@@ -122,6 +120,19 @@ public class ClientSessionImpl
 
     public UUID getSid() {
         return getSid(this);
+    }
+    
+    public void setCausallyConsistent(boolean causallyConsistent) {
+        this.causallyConsistent = causallyConsistent;
+    }
+    
+    public void setMessageSentInCurrentTransaction(
+            boolean messageSentInCurrentTransaction) {
+        this.messageSentInCurrentTransaction = messageSentInCurrentTransaction;
+    }
+
+    public boolean isMessageSentInCurrentTransaction() {
+        return this.messageSentInCurrentTransaction;
     }
 
     public static UUID getSid(ClientSession cs) {
