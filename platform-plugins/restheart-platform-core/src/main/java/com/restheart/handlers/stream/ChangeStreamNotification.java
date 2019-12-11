@@ -16,20 +16,19 @@ package com.restheart.handlers.stream;
  */
 public class ChangeStreamNotification {
     
-    private final String streamKey;
+    private final SessionKey sessionKey;
     private final String notificationMessage;
     
-    public ChangeStreamNotification(String streamKey, String notificationMessage) {
-        this.streamKey = streamKey;
+    public ChangeStreamNotification(SessionKey sessionKey, String notificationMessage) {
+        this.sessionKey = sessionKey;
         this.notificationMessage = notificationMessage;
     }
     
-    public String getStreamKey() {
-        return this.streamKey;
+    public SessionKey getSessionKey() {
+        return this.sessionKey;
     }
     
     public String getNotificationMessage() {
         return this.notificationMessage;
     }
-    
 }

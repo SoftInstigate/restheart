@@ -23,33 +23,29 @@ import java.util.Set;
  */
 public class GuavaHashMultimapSingleton {
 
-    private final SetMultimap<String, ChangeStreamWebSocketSession> MULTIMAP = Multimaps
-            .synchronizedSetMultimap(Multimaps.synchronizedSetMultimap(HashMultimap.<String, ChangeStreamWebSocketSession>create()));
+    private final SetMultimap<SessionKey, ChangeStreamWebSocketSession> MULTIMAP = Multimaps
+            .synchronizedSetMultimap(Multimaps.synchronizedSetMultimap(HashMultimap.<SessionKey, ChangeStreamWebSocketSession>create()));
 
     public static GuavaHashMultimapSingleton getInstance() {
-        
         return CacheManagerSingletonHolder.INSTANCE;
-
     }
 
-    public static Set<ChangeStreamWebSocketSession> getSessions(String key) {
+    public static Set<ChangeStreamWebSocketSession> getSessions(SessionKey key) {
         return GuavaHashMultimapSingleton.getInstance().MULTIMAP.get(key);
     }
     
     
-    public static boolean addSession(String key, ChangeStreamWebSocketSession session) {
+    public static boolean addSession(SessionKey key, ChangeStreamWebSocketSession session) {
         return GuavaHashMultimapSingleton.getInstance().MULTIMAP
                 .put(key, session);
     }
     
-    public static boolean removeSession(String key, ChangeStreamWebSocketSession session) {
+    public static boolean removeSession(SessionKey key, ChangeStreamWebSocketSession session) {
         return GuavaHashMultimapSingleton.getInstance().MULTIMAP
                 .remove(key, session);
     }
 
     private static class CacheManagerSingletonHolder {
-
         private static final GuavaHashMultimapSingleton INSTANCE = new GuavaHashMultimapSingleton();
     }
-
 }

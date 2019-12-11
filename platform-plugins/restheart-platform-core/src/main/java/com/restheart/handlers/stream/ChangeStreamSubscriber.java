@@ -11,16 +11,15 @@
 package com.restheart.handlers.stream;
 
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonNull;
+import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.bson.Document;
-import org.bson.codecs.Codec;
-import org.bson.codecs.DecoderContext;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
-import org.bson.json.JsonMode;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.restheart.utils.JsonUtils;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -36,26 +35,21 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(ChangeStreamSubscriber.class);
 
-    private static final CodecRegistry registry = CodecRegistries
+    private static final CodecRegistry REGISTRY = CodecRegistries
             .fromCodecs(new DocumentCodec());
 
-    private static BsonDocument toBson(Document document) {
-        return document.toBsonDocument(BsonDocument.class, registry);
+    private static BsonValue toBson(Document document) {
+        return document == null
+                ? BsonNull.VALUE
+                : document.toBsonDocument(BsonDocument.class, REGISTRY);
     }
 
-    private final String streamKey;
-    private JsonMode jsonMode = null;
+    private final SessionKey sessionKey;
     private Subscription sub;
 
-    public ChangeStreamSubscriber(String streamKey) {
+    public ChangeStreamSubscriber(SessionKey sessionKey) {
         super();
-        this.streamKey = streamKey;
-    }
-
-    public ChangeStreamSubscriber(String streamKey, JsonMode jsonMode) {
-        super();
-        this.streamKey = streamKey;
-        this.jsonMode = jsonMode;
+        this.sessionKey = sessionKey;
     }
 
     @Override
@@ -66,36 +60,80 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
 
     @Override
     public void onNext(ChangeStreamDocument notification) {
+        if (GuavaHashMultimapSingleton.getSessions(sessionKey).size() > 0) {
+            LOGGER.trace("[clients watching]: "
+                    + GuavaHashMultimapSingleton.getSessions(sessionKey).size());
 
-        if (GuavaHashMultimapSingleton.getSessions(streamKey).size() > 0) {
-            LOGGER.info("[clientsWatching]: "
-                    + GuavaHashMultimapSingleton.getSessions(streamKey).size());
+            LOGGER.info("change stream notification for sessionKey={}: {}",
+                    sessionKey,
+                    notification);
 
-            String test = JsonUtils.toJson(toBson((Document) notification.getFullDocument()), this.jsonMode);
-            ChangeStreamWebsocketCallback.NOTIFICATION_PUBLISHER
-                    .submit(new ChangeStreamNotification(streamKey,
-                            JsonUtils.toJson(toBson((Document) notification.getFullDocument()), this.jsonMode))
-                    );
+            ChangeStreamWebsocketCallback.NOTIFICATION_PUBLISHER.submit(
+                    new ChangeStreamNotification(sessionKey,
+                            JsonUtils.toJson(getDocument(notification),
+                                    sessionKey.getJsonMode())));
         } else {
             this.stop();
-            LOGGER.info("Closing unwatched stream; [stream]: " + streamKey);
-            GetChangeStreamHandler.OPENED_STREAMS.remove(this.streamKey);
+            LOGGER.debug("Closing unwatched stream with sessionKey=" + sessionKey);
+            GetChangeStreamHandler.OPENED_STREAMS.remove(sessionKey);
+        }
+    }
+
+    private BsonDocument getDocument(ChangeStreamDocument notification) {
+        var doc = new BsonDocument();
+
+        if (notification == null) {
+            return doc;
         }
 
+        doc.put("fullDocument", toBson((Document) notification.getFullDocument()));
+
+        if (notification.getUpdateDescription() != null) {
+            var updateDescription = new BsonDocument();
+
+            var updatedFields = notification.getUpdateDescription()
+                    .getUpdatedFields();
+
+            if (updatedFields != null) {
+                updateDescription.put("updatedFields", updatedFields);
+            } else {
+                updateDescription.put("updatedFields", BsonNull.VALUE);
+            }
+
+            var removedFields = notification.getUpdateDescription()
+                    .getRemovedFields();
+
+            if (removedFields == null) {
+                updateDescription.put("updatedFields", new BsonArray());
+            } else {
+                var _removedFields = new BsonArray();
+                removedFields.forEach(rf -> _removedFields
+                        .add(new BsonString(rf)));
+
+                updateDescription.put("removedFields", _removedFields);
+            }
+
+            doc.put("updateDescription", updateDescription);
+        } else {
+            doc.put("updateDescription", BsonNull.VALUE);
+        }
+
+        doc.put("operationType", new BsonString(notification.getOperationType().getValue()));
+
+        return doc;
     }
 
     @Override
     public void onError(final Throwable t) {
-        LOGGER.warn("Stopping reactive client from listening to changes; [errorMsg]: " + t.getMessage());
+        LOGGER.warn("Stopping reactive client from listening to changes: " + t.getMessage());
     }
 
     @Override
     public void onComplete() {
-        LOGGER.warn("Stream completed;");
+        LOGGER.debug("Stream completed sessionKey=" + sessionKey);
     }
 
     public void stop() {
         this.sub.cancel();
     }
-
 }

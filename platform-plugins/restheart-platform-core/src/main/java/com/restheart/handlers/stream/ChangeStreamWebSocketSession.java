@@ -23,10 +23,10 @@ import java.io.IOException;
 public class ChangeStreamWebSocketSession {
     
     private final String sessionId;
-    private final String sessionKey;
+    private final SessionKey sessionKey;
     private final WebSocketChannel webSocketChannel;
 
-    public ChangeStreamWebSocketSession(WebSocketChannel channel, String sessionKey) {
+    public ChangeStreamWebSocketSession(WebSocketChannel channel, SessionKey sessionKey) {
         this.sessionId = new SecureRandomSessionIdGenerator().createSessionId();
         this.webSocketChannel = channel;
         this.sessionKey = sessionKey;
@@ -44,7 +44,7 @@ public class ChangeStreamWebSocketSession {
         return this.sessionId;
     }
     
-    public String getSessionKey() {
+    public SessionKey getSessionKey() {
         return this.sessionKey;
     }
     

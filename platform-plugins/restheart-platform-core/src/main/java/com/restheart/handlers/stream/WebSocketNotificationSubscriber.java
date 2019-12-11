@@ -45,7 +45,7 @@ public class WebSocketNotificationSubscriber implements Subscriber<ChangeStreamN
     @Override
     public void onNext(ChangeStreamNotification notification) {
         Set<ChangeStreamWebSocketSession> sessions
-                = GuavaHashMultimapSingleton.getSessions(notification.getStreamKey());
+                = GuavaHashMultimapSingleton.getSessions(notification.getSessionKey());
 
         Set<ChangeStreamWebSocketSession> sessionsInError = Collections
                 .newSetFromMap(new ConcurrentHashMap<>());
@@ -55,9 +55,8 @@ public class WebSocketNotificationSubscriber implements Subscriber<ChangeStreamN
         });
 
         sessionsInError.parallelStream().forEach(sessionInError -> {
-            GuavaHashMultimapSingleton.removeSession(notification.getStreamKey(), sessionInError);
+            GuavaHashMultimapSingleton.removeSession(notification.getSessionKey(), sessionInError);
         });
-
     }
 
     @Override
