@@ -30,17 +30,17 @@ public class GuavaHashMultimapSingleton {
         return CacheManagerSingletonHolder.INSTANCE;
     }
 
-    public static Set<ChangeStreamWebSocketSession> getSessions(SessionKey key) {
+    public static Set<ChangeStreamWebSocketSession> get(SessionKey key) {
         return GuavaHashMultimapSingleton.getInstance().MULTIMAP.get(key);
     }
     
     
-    public static boolean addSession(SessionKey key, ChangeStreamWebSocketSession session) {
+    public static boolean add(SessionKey key, ChangeStreamWebSocketSession session) {
         return GuavaHashMultimapSingleton.getInstance().MULTIMAP
                 .put(key, session);
     }
     
-    public static boolean removeSession(SessionKey key, ChangeStreamWebSocketSession session) {
+    public static boolean remove(SessionKey key, ChangeStreamWebSocketSession session) {
         return GuavaHashMultimapSingleton.getInstance().MULTIMAP
                 .remove(key, session);
     }

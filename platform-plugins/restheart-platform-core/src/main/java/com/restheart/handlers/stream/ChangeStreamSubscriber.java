@@ -60,9 +60,11 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
 
     @Override
     public void onNext(ChangeStreamDocument notification) {
-        if (GuavaHashMultimapSingleton.getSessions(sessionKey).size() > 0) {
+        LOGGER.warn("get sessionKey={}", sessionKey);
+        
+        if (!GuavaHashMultimapSingleton.get(sessionKey).isEmpty()) {
             LOGGER.trace("[clients watching]: "
-                    + GuavaHashMultimapSingleton.getSessions(sessionKey).size());
+                    + GuavaHashMultimapSingleton.get(sessionKey).size());
 
             LOGGER.info("change stream notification for sessionKey={}: {}",
                     sessionKey,

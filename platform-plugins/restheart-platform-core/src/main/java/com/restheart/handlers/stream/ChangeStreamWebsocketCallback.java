@@ -40,7 +40,9 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
         ChangeStreamWebSocketSession newSession
                 = createSession(channel, sessionKey);
 
-        GuavaHashMultimapSingleton.addSession(sessionKey, newSession);
+        LOGGER.warn("add sessionkey={}", sessionKey);
+        
+        GuavaHashMultimapSingleton.add(sessionKey, newSession);
     }
     
     private ChangeStreamWebSocketSession createSession(WebSocketChannel channel, SessionKey sessionKey) {

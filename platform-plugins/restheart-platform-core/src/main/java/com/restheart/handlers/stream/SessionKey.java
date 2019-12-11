@@ -10,7 +10,6 @@
  */
 package com.restheart.handlers.stream;
 
-import com.sun.net.httpserver.HttpExchange;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
 import java.net.URLDecoder;
@@ -19,12 +18,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class SessionKey {
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(SessionKey.class);
+    
     private final String url;
     private final BsonDocument avars;
     private final JsonMode jsonMode;
@@ -36,16 +40,14 @@ public class SessionKey {
     }
 
     public SessionKey(WebSocketHttpExchange exchange) {
-        
         if (!exchange.getQueryString().isEmpty()) {
-            var qstring = decode(exchange.getQueryString());
-            var uri = decode(exchange.getRequestURI());
-            var _url = uri.replace(qstring, "");
-            _url = _url.substring(0, _url.length() - 1);
+            var qstring = encode("?".concat(exchange.getQueryString()));
+            var uri = encode(exchange.getRequestURI());
+            uri = uri.replace(qstring, "");
             
-            this.url = _url;
+            this.url = uri;
         } else {
-            this.url = decode(exchange.getRequestURI());
+            this.url = encode(exchange.getRequestURI());
         }
         
         this.avars = exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
@@ -53,16 +55,7 @@ public class SessionKey {
     }
     
     public SessionKey(HttpServerExchange exchange) {
-        if (!exchange.getQueryString().isEmpty()) {
-            var qstring = decode(exchange.getQueryString());
-            var uri = decode(exchange.getRequestURI());
-            var _url = uri.replace(qstring, "");
-            _url = _url.substring(0, _url.length() - 1);
-            
-            this.url = _url;
-        } else {
-            this.url = decode(exchange.getRequestURI());
-        }
+        this.url = encode(exchange.getRequestPath());
         
         this.avars = exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
         this.jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
@@ -89,7 +82,7 @@ public class SessionKey {
     
     
     
-    private static String decode(String queryString) {
+    private static String encode(String queryString) {
         return URLEncoder.encode(
                 URLDecoder.decode(queryString,
                         StandardCharsets.UTF_8),

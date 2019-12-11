@@ -73,16 +73,17 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
 
         try {
             if (isWebSocketHandshakeRequest(exchange)) {
-                startStream(exchange, context);
-
                 exchange.putAttachment(JSON_MODE_ATTACHMENT_KEY, context.getJsonMode());
                 exchange.putAttachment(AVARS_ATTACHMENT_KEY, context.getAggreationVars());
+                
+                startStream(exchange, context);
 
                 WEBSOCKET_HANDSHAKE_HANDLER.handleRequest(exchange);
             } else {
                 ResponseHelper.endExchangeWithMessage(exchange, context,
                         HttpStatus.SC_BAD_REQUEST,
-                        "No Upgrade header has been found into request headers");
+                        "Requires WebSocket, no 'Upgrade' request header found");
+                
                 next(exchange, context);
             }
         } catch (QueryNotFoundException ex) {
@@ -169,11 +170,10 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
                     .getCollection(context.getCollectionName())
                     .watch(resolvedStages)
                     .subscribe(new ChangeStreamSubscriber(streamKey));
-
+            
+            return true;
         } else {
             return false;
         }
-
-        return true;
     }
 }

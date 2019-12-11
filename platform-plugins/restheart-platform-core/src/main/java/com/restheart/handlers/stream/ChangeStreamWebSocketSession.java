@@ -62,7 +62,7 @@ public class ChangeStreamWebSocketSession {
         @Override
         protected void onClose(WebSocketChannel webSocketChannel, StreamSourceFrameChannel channel) throws IOException {
             webSocketChannel.close();
-            GuavaHashMultimapSingleton.removeSession(this.session.getSessionKey(), session);
+            GuavaHashMultimapSingleton.remove(this.session.getSessionKey(), session);
         }
     }
 }
