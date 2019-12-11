@@ -88,22 +88,32 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
         } catch (QueryNotFoundException ex) {
             ResponseHelper.endExchangeWithMessage(exchange, context,
                     HttpStatus.SC_NOT_FOUND,
-                    "query does not exist");
+                    "stream does not exist");
+            next(exchange, context);
+        } catch (QueryVariableNotBoundException ex) {
+            ResponseHelper.endExchangeWithMessage(exchange, context,
+                    HttpStatus.SC_BAD_REQUEST,
+                    ex.getMessage());
             next(exchange, context);
         } catch (IllegalStateException ise) {
             if (ise.getMessage() != null
                     && ise.getMessage()
                             .contains("transport does not support HTTP upgrade")) {
-                
+
                 var error = "Cannot open WebSocket for change stream: "
                         + "the AJP listener does not support WebSocket";
 
                 LOGGER.warn(error);
-                
-                ResponseHelper.endExchangeWithMessage(exchange, 
+
+                ResponseHelper.endExchangeWithMessage(exchange,
                         context,
                         HttpStatus.SC_INTERNAL_SERVER_ERROR, error);
             }
+        } catch (Throwable t) {
+            ResponseHelper.endExchangeWithMessage(exchange,
+                    context,
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    t.getMessage());
         }
     }
 
