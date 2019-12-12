@@ -61,12 +61,12 @@ public class WebSocketNotificationSubscriber implements Subscriber<ChangeStreamN
 
     @Override
     public void onError(final Throwable t) {
-        LOGGER.warn("Stopping notification subscriber from sending notifications; [errorMsg]: " + t.getMessage());
+        LOGGER.warn("Error sending stream notification: " + t.getMessage());
     }
 
     @Override
     public void onComplete() {
-        LOGGER.warn("Notification subscription completed;");
+        LOGGER.trace("Notification subscription completed");
     }
 
     public void stop() {

@@ -15,12 +15,16 @@ import io.undertow.websockets.core.AbstractReceiveListener;
 import io.undertow.websockets.core.StreamSourceFrameChannel;
 import io.undertow.websockets.core.WebSocketChannel;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 /**
  *
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
 
 public class ChangeStreamWebSocketSession {
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(ChangeStreamWebSocketSession.class);
     
     private final String sessionId;
     private final SessionKey sessionKey;
@@ -61,8 +65,9 @@ public class ChangeStreamWebSocketSession {
         }
         @Override
         protected void onClose(WebSocketChannel webSocketChannel, StreamSourceFrameChannel channel) throws IOException {
-            webSocketChannel.close();
+            LOGGER.debug("Stream connection closed, sessionkey={}", sessionKey);
             GuavaHashMultimapSingleton.remove(this.session.getSessionKey(), session);
+            webSocketChannel.close();
         }
     }
 }

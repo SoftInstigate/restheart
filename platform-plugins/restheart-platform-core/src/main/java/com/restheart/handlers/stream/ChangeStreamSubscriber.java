@@ -35,15 +35,6 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(ChangeStreamSubscriber.class);
 
-    private static final CodecRegistry REGISTRY = CodecRegistries
-            .fromCodecs(new DocumentCodec());
-
-    private static BsonValue toBson(Document document) {
-        return document == null
-                ? BsonNull.VALUE
-                : document.toBsonDocument(BsonDocument.class, REGISTRY);
-    }
-
     private final SessionKey sessionKey;
     private Subscription sub;
 
@@ -60,39 +51,55 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
 
     @Override
     public void onNext(ChangeStreamDocument notification) {
-        LOGGER.warn("get sessionKey={}", sessionKey);
-        
         if (!GuavaHashMultimapSingleton.get(sessionKey).isEmpty()) {
             LOGGER.trace("[clients watching]: "
                     + GuavaHashMultimapSingleton.get(sessionKey).size());
 
-            LOGGER.info("change stream notification for sessionKey={}: {}",
+            LOGGER.debug("Change stream notification for sessionKey={}: {}",
                     sessionKey,
                     notification);
 
             ChangeStreamWebsocketCallback.NOTIFICATION_PUBLISHER.submit(
                     new ChangeStreamNotification(sessionKey,
-                            JsonUtils.toJson(getDocument(notification),
+                            JsonUtils.toJson(
+                                    getDocument(notification),
                                     sessionKey.getJsonMode())));
         } else {
             this.stop();
-            LOGGER.debug("Closing unwatched stream with sessionKey=" + sessionKey);
+            LOGGER.debug("Closing unwatched stream, sessionKey=" + sessionKey);
             GetChangeStreamHandler.OPENED_STREAMS.remove(sessionKey);
         }
     }
+    
 
+    @Override
+    public void onError(final Throwable t) {
+        LOGGER.warn("Error from stream: " + t.getMessage());
+    }
+
+    @Override
+    public void onComplete() {
+        LOGGER.debug("Stream completed, sessionKey=" + sessionKey);
+    }
+
+    public void stop() {
+        this.sub.cancel();
+    }
+    
     private BsonDocument getDocument(ChangeStreamDocument notification) {
         var doc = new BsonDocument();
 
         if (notification == null) {
             return doc;
         }
-
+        
         doc.put("fullDocument", toBson((Document) notification.getFullDocument()));
+        
+        doc.put("documentKey", notification.getDocumentKey());
 
         if (notification.getUpdateDescription() != null) {
             var updateDescription = new BsonDocument();
-
+            
             var updatedFields = notification.getUpdateDescription()
                     .getUpdatedFields();
 
@@ -124,18 +131,13 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
 
         return doc;
     }
+    
+    private static final CodecRegistry REGISTRY = CodecRegistries
+            .fromCodecs(new DocumentCodec());
 
-    @Override
-    public void onError(final Throwable t) {
-        LOGGER.warn("Stopping reactive client from listening to changes: " + t.getMessage());
-    }
-
-    @Override
-    public void onComplete() {
-        LOGGER.debug("Stream completed sessionKey=" + sessionKey);
-    }
-
-    public void stop() {
-        this.sub.cancel();
+    private static BsonValue toBson(Document document) {
+        return document == null
+                ? BsonNull.VALUE
+                : document.toBsonDocument(BsonDocument.class, REGISTRY);
     }
 }

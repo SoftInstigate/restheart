@@ -75,33 +75,43 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
             if (isWebSocketHandshakeRequest(exchange)) {
                 exchange.putAttachment(JSON_MODE_ATTACHMENT_KEY, context.getJsonMode());
                 exchange.putAttachment(AVARS_ATTACHMENT_KEY, context.getAggreationVars());
-                
+
                 startStream(exchange, context);
 
                 WEBSOCKET_HANDSHAKE_HANDLER.handleRequest(exchange);
             } else {
                 ResponseHelper.endExchangeWithMessage(exchange, context,
                         HttpStatus.SC_BAD_REQUEST,
-                        "Requires WebSocket, no 'Upgrade' request header found");
-                
+                        "The stream connection requires WebSocket, "
+                        + "no 'Upgrade' request header found");
+
                 next(exchange, context);
             }
         } catch (QueryNotFoundException ex) {
             ResponseHelper.endExchangeWithMessage(exchange, context,
                     HttpStatus.SC_NOT_FOUND,
-                    "stream does not exist");
+                    "Stream does not exist");
+            
+            LOGGER.debug("Requested stream {} does not exist", context.getUnmappedRequestUri());
+            
             next(exchange, context);
         } catch (QueryVariableNotBoundException ex) {
             ResponseHelper.endExchangeWithMessage(exchange, context,
                     HttpStatus.SC_BAD_REQUEST,
                     ex.getMessage());
+
+            LOGGER.warn("Cannot open stream connection, "
+                    + "the request does not specify the required variables "
+                    + "in the avars query paramter: {}",
+                    ex.getMessage());
+
             next(exchange, context);
         } catch (IllegalStateException ise) {
             if (ise.getMessage() != null
                     && ise.getMessage()
                             .contains("transport does not support HTTP upgrade")) {
 
-                var error = "Cannot open WebSocket for change stream: "
+                var error = "Cannot open stream connection: "
                         + "the AJP listener does not support WebSocket";
 
                 LOGGER.warn(error);
@@ -144,7 +154,9 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
                 .findFirst();
 
         if (!_query.isPresent()) {
-            throw new QueryNotFoundException("Query does not exist");
+            throw new QueryNotFoundException("Stream " 
+                    + context.getUnmappedRequestUri()
+                    + "  does not exist");
         }
 
         ChangeStreamOperation pipeline = _query.get();
@@ -170,7 +182,7 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
                     .getCollection(context.getCollectionName())
                     .watch(resolvedStages)
                     .subscribe(new ChangeStreamSubscriber(streamKey));
-            
+
             return true;
         } else {
             return false;

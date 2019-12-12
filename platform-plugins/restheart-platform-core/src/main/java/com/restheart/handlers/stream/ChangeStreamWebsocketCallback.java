@@ -40,7 +40,7 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
         ChangeStreamWebSocketSession newSession
                 = createSession(channel, sessionKey);
 
-        LOGGER.warn("add sessionkey={}", sessionKey);
+        LOGGER.debug("New stream connection, sessionkey={}", sessionKey);
         
         GuavaHashMultimapSingleton.add(sessionKey, newSession);
     }
@@ -48,8 +48,6 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
     private ChangeStreamWebSocketSession createSession(WebSocketChannel channel, SessionKey sessionKey) {
         ChangeStreamWebSocketSession newSession = new ChangeStreamWebSocketSession(
                 channel, sessionKey);
-
-        LOGGER.info("Connection established for sessionKey=" + sessionKey);
 
         return newSession;
     }
