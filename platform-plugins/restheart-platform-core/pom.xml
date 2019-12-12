@@ -14,7 +14,7 @@
     <parent>
         <groupId>com.softinstigate.restheart</groupId>
         <artifactId>restheart-platform</artifactId>
-        <version>4.1.8</version>
+        <version>4.1.9-SNAPSHOT</version>
     </parent>
 
     <properties>
