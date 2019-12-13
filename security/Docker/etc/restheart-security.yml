@@ -183,9 +183,9 @@ services:
  # ansi-console: use Ansi console for logging.
  # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
-enable-log-file: true
-log-file-path: /var/log/restheart-security.log
-enable-log-console: true
+enable-log-file: {{{enable-log-file}}}
+log-file-path: {{{log-file-path}}}
+enable-log-console: {{{enable-log-console}}}
 log-level: {{{log-level}}}
 requests-log-level: 1
 ansi-console: true
