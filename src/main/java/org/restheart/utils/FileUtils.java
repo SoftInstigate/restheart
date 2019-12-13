@@ -212,7 +212,7 @@ public class FileUtils {
                 Manifest manifest = new Manifest(manifestUrl.openStream());
                 Attributes mainAttributes = manifest.getMainAttributes();
                 String implementationTitle = mainAttributes.getValue("Implementation-Title");
-                if (implementationTitle != null && implementationTitle.equals("Restheart")) {
+                if (implementationTitle != null && implementationTitle.equalsIgnoreCase("Restheart")) {
                     result = mainAttributes.entrySet();
                     break;
                 }
