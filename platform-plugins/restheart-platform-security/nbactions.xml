@@ -27,7 +27,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.5.0:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath org.restheart.security.Bootstrapper etc/restheart-platform-security-test.yml -e etc/test.properties</exec.args>
+                <exec.args>-classpath %classpath org.restheart.security.Bootstrapper etc/restheart-platform-security.yml -e etc/dev.properties</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -41,7 +41,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.5.0:exec</goal>
             </goals>
             <properties>
-                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath org.restheart.security.Bootstrapper etc/restheart-platform-security-test.yml -e etc/test.properties</exec.args>
+                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath org.restheart.security.Bootstrapper etc/restheart-platform-security.yml -e etc/dev.properties</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -56,7 +56,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.5.0:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath org.restheart.security.Bootstrapper etc/restheart-platform-security-test.yml -e etc/test.properties</exec.args>
+                <exec.args>-classpath %classpath org.restheart.security.Bootstrapper etc/restheart-platform-security.yml -e etc/dev.properties</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
