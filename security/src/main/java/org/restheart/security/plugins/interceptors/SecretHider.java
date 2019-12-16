@@ -72,14 +72,14 @@ public class SecretHider implements Initializer {
                             var response = ByteArrayResponse.wrap(hse);
 
                             response.endExchangeWithMessage(HttpStatus.SC_FORBIDDEN, "cannot write secret");
-                        };
+                        }
                     }
 
                     @Override
                     public boolean resolve(HttpServerExchange hse) {
                         var req = ByteArrayRequest.wrap(hse);
 
-                        return req.isContentTypeJson(hse)
+                        return ByteArrayRequest.isContentTypeJson(hse)
                                 && !req.isAccountInRole("admin")
                                 && hse.getRequestPath().startsWith("/coll")
                                 && (req.isPost() || req.isPatch() || req.isPut());

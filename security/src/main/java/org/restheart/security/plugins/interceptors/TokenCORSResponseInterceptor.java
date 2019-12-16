@@ -29,7 +29,7 @@ import static org.restheart.security.plugins.TokenManager.ACCESS_CONTROL_EXPOSE_
  */
 public class TokenCORSResponseInterceptor implements ResponseInterceptor {
 
-    private String[] headers;
+    private final String[] headers;
 
     public TokenCORSResponseInterceptor(String... headers) {
         this.headers = headers;
@@ -50,7 +50,7 @@ public class TokenCORSResponseInterceptor implements ResponseInterceptor {
             
             for (var h : this.headers) {
                 if (!v0.contains(h)) {
-                    v0 = v0.concat(", "  + h);
+                    v0 = v0.concat(", ").concat(h);
                 }
             }
             
@@ -71,10 +71,10 @@ public class TokenCORSResponseInterceptor implements ResponseInterceptor {
         
         for (var h : this.headers) {
             if (first) {
-                ret.concat(h);
+                ret = ret.concat(h);
                 first = false;
             } else {
-                ret.concat(", ").concat(h);
+                ret = ret.concat(", ").concat(h);
             }
         }
         

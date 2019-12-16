@@ -44,7 +44,7 @@ public class ResponseInterceptorsStreamSinkConduit
 
     static final Logger LOGGER = LoggerFactory.getLogger(ResponseInterceptorsStreamSinkConduit.class);
 
-    private StreamSinkConduit next;
+    private final StreamSinkConduit _next;
 
     /**
      * Construct a new instance.
@@ -55,7 +55,7 @@ public class ResponseInterceptorsStreamSinkConduit
     public ResponseInterceptorsStreamSinkConduit(StreamSinkConduit next,
             HttpServerExchange exchange) {
         super(next);
-        this.next = next;
+        this._next = next;
 
         if (!AbstractExchange.isInError(exchange)
                 && !AbstractExchange.responseInterceptorsExecuted(exchange)) {
@@ -64,6 +64,7 @@ public class ResponseInterceptorsStreamSinkConduit
                     .getResponseInterceptors()
                     .stream()
                     .filter(ri -> ri.resolve(exchange))
+                    // this conduit does not provide access to response content
                     .filter(ri -> !ri.requiresResponseContent())
                     .forEachOrdered(ri -> {
                         LOGGER.debug("Executing response interceptor {} for {}",
@@ -95,36 +96,36 @@ public class ResponseInterceptorsStreamSinkConduit
 
     @Override
     public int write(ByteBuffer src) throws IOException {
-        return next.write(src);
+        return _next.write(src);
     }
 
     @Override
     public long write(ByteBuffer[] dsts, int offs, int len) throws IOException {
-        return next.write(dsts, offs, len);
+        return _next.write(dsts, offs, len);
     }
 
     @Override
     public long transferFrom(final FileChannel src, final long position, final long count) throws IOException {
-        return next.transferFrom(src, position, count);
+        return _next.transferFrom(src, position, count);
     }
 
     @Override
     public long transferFrom(final StreamSourceChannel src, final long count, final ByteBuffer throughBuffer) throws IOException {
-        return next.transferFrom(src, count, throughBuffer);
+        return _next.transferFrom(src, count, throughBuffer);
     }
 
     @Override
     public int writeFinal(ByteBuffer src) throws IOException {
-        return next.writeFinal(src);
+        return _next.writeFinal(src);
     }
 
     @Override
     public long writeFinal(ByteBuffer[] srcs, int offset, int length) throws IOException {
-        return next.writeFinal(srcs, offset, length);
+        return _next.writeFinal(srcs, offset, length);
     }
 
     @Override
     public void terminateWrites() throws IOException {
-        next.terminateWrites();
+        _next.terminateWrites();
     }
 }
