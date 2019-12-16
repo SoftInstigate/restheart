@@ -30,7 +30,6 @@ pipelines:
             - dist/restheart-platform-*.zip
       - step:
           name: Upload zip file
-          # trigger: manual  # Uncomment to make this a manual deployment.
           script:
             - pipe: atlassian/aws-s3-deploy:0.3.2
               variables:
@@ -44,6 +43,7 @@ pipelines:
       - step:
           name: Invalidate CloudFront
           image: python:3.7-alpine
+          trigger: manual
           caches:
             - pip
           script:
