@@ -6,6 +6,7 @@ WORKDIR /opt/restheart-platform
 COPY Docker/etc/* etc/
 COPY restheart-platform-core.jar restheart-platform-core.jar
 
-ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart-platform-core.jar", "etc/restheart-platform-core.yml", "--envFile", "etc/core.properties"]
+ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart-platform-core.jar", "etc/restheart-platform-core.yml"]
+CMD ["--envFile", "etc/core.properties"]
 
 EXPOSE 8080
