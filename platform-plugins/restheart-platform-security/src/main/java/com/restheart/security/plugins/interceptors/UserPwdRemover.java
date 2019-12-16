@@ -37,6 +37,7 @@ public class UserPwdRemover implements ResponseInterceptor {
      * @param usersUri the URI of the users collection resource
      * @param propPassword the property holding the password
      * in the user document
+     * @throws org.restheart.security.ConfigurationException
      */
     public UserPwdRemover(
             String usersUri,
