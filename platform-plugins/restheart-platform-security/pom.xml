@@ -93,7 +93,7 @@
                                 </exec>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
                                     <arg value="${basedir}/etc/restheart-platform-security-test.yml"/>
-                                    <arg value="-e ${basedir}/etc/test.properties"/>
+                                    <arg value="-e ${basedir}/etc/security-test.properties"/>
                                     <arg value="--fork"/>
                                 </exec>
                             </target>
@@ -112,7 +112,7 @@
                                 </exec>
                                 <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
                                     <arg value="${basedir}/etc/restheart-platform-security-test.yml"/>
-                                    <arg value="-e ${basedir}/etc/test.properties"/>
+                                    <arg value="-e ${basedir}/etc/security-test.properties"/>
                                 </exec>
                             </target>
                         </configuration>
