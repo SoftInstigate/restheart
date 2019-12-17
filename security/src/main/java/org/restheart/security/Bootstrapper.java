@@ -286,7 +286,7 @@ public class Bootstrapper {
                 if (Configuration.isParametric(CONFIGURATION_FILE)) {
                     logErrorAndExit("Configuration is parametric but no properties file has been specified."
                             + " You can use -e option to specify the properties file. "
-                            + "For more information check https://restheart.org/learn/configuration",
+                            + "For more information check https://restheart.org/docs/configuration",
                             null, false, -1);
                 }
             } catch (IOException ioe) {

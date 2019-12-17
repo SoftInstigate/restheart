@@ -97,7 +97,7 @@ mongo-mounts:
   - what: /testdb/refcoll2/doc2
     where: /remappeddoc2
 
-#### Default representation format https://restheart.org/learn/representation-format/
+#### Default representation format https://restheart.org/docs/representation-format/
 
 ## STANDARD  root and dbs as an array of children's ids
 ##           collection as arrays of document objects and documents as objects
@@ -158,7 +158,7 @@ use-embedded-keystore: true
 # To use your own certificate you need to import it (and eventually the CA 
 # certificates chain) into a java keystore and specify use-embedded-keystore: false 
 # and the keystore-file,keystore-password and certpassword configuration properties.
-# See https://restheart.org/learn/setup/#connect-restheart-to-mongodb-over-tlsssl
+# See https://restheart.org/docs/security/tls/
 
 #keystore-file: /path/to/keystore/file
 #keystore-password: password
@@ -225,7 +225,7 @@ requests-log-trace-headers:
 
 # default-pagesize is the number of documents returned when the pagesize query
 # parameter is not specified
-# see https://restheart.org/learn/query-documents/#paging
+# see https://restheart.org/docs/read-docs/#paging
 default-pagesize: 100
 
 # max-pagesize sets the maximum allowed value of the pagesize query parameter
