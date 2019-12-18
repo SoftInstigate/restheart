@@ -162,7 +162,7 @@ public class FilterPredicate {
      * @return the writeFilter
      */
     public JsonObject getWriteFilter() {
-        return readFilter == null || writeFilter.isJsonNull()
+        return writeFilter == null || writeFilter.isJsonNull()
                 ? writeFilter
                 : JsonUtils.unescapeKeys(writeFilter).getAsJsonObject();
     }
