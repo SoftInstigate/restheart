@@ -9,12 +9,12 @@
  # WARNING: Using the http listener is not secure with basic authentication:
  # credentials can be sniffed by a man-in-the-middle attack.
 
-https-listener: false
-https-host: 0.0.0.0
+https-listener: {{{https-listener}}}
+https-host: {{{https-host}}}
 https-port: {{{https-port}}}
 
-http-listener: true
-http-host: 0.0.0.0
+http-listener: {{{http-listener}}}
+http-host: {{{http-host}}}
 http-port: {{{http-port}}}
 
 #### Instance name
@@ -39,6 +39,7 @@ proxies:
     - location: /
       proxy-pass: {{{root-proxy-pass}}}
       connections-per-thread: 20
+      rewrite-host-header: false
       name: restheart
 
 #### SSL Configuration
@@ -204,10 +205,10 @@ services:
       secured: true
       args:
           url: /roles
-    - name: requestEchoer
-      class: org.restheart.security.plugins.services.EchoService
-      uri: /echo
-      secured: false
+#    - name: requestEchoer
+#      class: org.restheart.security.plugins.services.EchoService
+#      uri: /echo
+#      secured: false
 
 #### Plugins configuration
 

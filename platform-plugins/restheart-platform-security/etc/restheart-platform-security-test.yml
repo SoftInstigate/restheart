@@ -118,10 +118,6 @@ auth-mechanisms:
  # AuthMachanisms
 
 authenticators:
-#    - name: simpleFileAuthenticator
-#      class: org.restheart.security.plugins.authenticators.SimpleFileAuthenticator
-#      args:
-#        conf-file: ../etc/users.yml
     - name: rhAuthenticator
       class: com.restheart.security.plugins.authenticators.RHAuthenticator
       args:
@@ -149,6 +145,10 @@ authenticators:
 #            - admin
           issuer: myIssuer
           audience: myAudience
+#    - name: simpleFileAuthenticator
+#      class: org.restheart.security.plugins.authenticators.SimpleFileAuthenticator
+#      args:
+#        conf-file: ./etc/users.yml
 #    - name: identityAuthenticationMechanism
 #      class: org.restheart.security.plugins.mechanisms.IdentityAuthMechanism
 #      args:
@@ -173,10 +173,6 @@ authenticators:
  # exhausted. In the latter case, the request ends and 403 Forbidden is returned.
 
 authorizers:
-#    - name: requestPredicatesAuthorizer
-#      class: org.restheart.security.plugins.authorizers.RequestPredicatesAuthorizer
-#      args:
-#        conf-file: ../etc/acl.yml
     - name: rhAuthorizer
       class: com.restheart.security.plugins.authorizers.RHAuthorizer
       args:
@@ -186,6 +182,10 @@ authorizers:
         cache-size: 1000
         cache-ttl: 5000
         cache-expire-policy: AFTER_WRITE
+#    - name: requestPredicatesAuthorizer
+#      class: org.restheart.security.plugins.authorizers.RequestPredicatesAuthorizer
+#      args:
+#        conf-file: ./etc/acl.yml
 
 ## Token Manager
 

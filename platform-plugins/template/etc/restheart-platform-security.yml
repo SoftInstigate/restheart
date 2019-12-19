@@ -3,8 +3,8 @@
 #### Listeners
 
  # Listeners allow to specify the protocol, ip, port and to use.
- # The supported protocols are: http and https.
- # You can setup a listener per protocol (up to 2).
+ # The supported protocols are: http, https and ajp.
+ # You can setup a listener per protocol (up to 3).
 
  # WARNING: Using the http listener is not secure with basic authentication:
  # credentials can be sniffed by a man-in-the-middle attack.
@@ -40,7 +40,7 @@ proxies:
       proxy-pass: {{{root-proxy-pass}}}
       connections-per-thread: 20
       rewrite-host-header: false
-      name: 'restheart'
+      name: restheart
 
 #### SSL Configuration
 
@@ -121,10 +121,10 @@ auth-mechanisms:
  # AuthMachanisms
 
 authenticators:
-    - name: simpleFileAuthenticator
-      class: org.restheart.security.plugins.authenticators.SimpleFileAuthenticator
-      args:
-        conf-file: etc/users.yml
+#    - name: simpleFileAuthenticator
+#      class: org.restheart.security.plugins.authenticators.SimpleFileAuthenticator
+#      args:
+#        conf-file: ../etc/users.yml
     - name: rhAuthenticator
       class: com.restheart.security.plugins.authenticators.RHAuthenticator
       args:
@@ -161,7 +161,7 @@ authorizers:
         root-role: admin
         cache-enabled: true
         cache-size: 1000
-        cache-ttl: 60000
+        cache-ttl: 5000
         cache-expire-policy: AFTER_WRITE
 #    - name: requestPredicatesAuthorizer
 #      class: org.restheart.security.plugins.authorizers.RequestPredicatesAuthorizer
@@ -205,10 +205,10 @@ services:
       secured: true
       args:
           url: /roles
-    - name: requestEchoer
-      class: org.restheart.security.plugins.services.EchoService
-      uri: /echo
-      secured: false
+#    - name: requestEchoer
+#      class: org.restheart.security.plugins.services.EchoService
+#      uri: /echo
+#      secured: false
 
 #### Plugins configuration
 
