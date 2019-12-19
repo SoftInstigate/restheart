@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.softinstigate.restheart</groupId>
     <artifactId>restheart-platform</artifactId>
-    <version>4.1.10-SNAPSHOT</version>
+    <version>4.1.10</version>
     <packaging>pom</packaging>
     <name>restheart-platform</name>
     <description>RESTHeart Platform</description>
