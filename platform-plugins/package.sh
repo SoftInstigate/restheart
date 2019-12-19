@@ -14,15 +14,16 @@ echo "###### Packaging RESTHeart Platform $VERSION"
 
 echo "###### Copying files to template/etc"
 
-rm -rf template/etc/*
+rm -rf template/etc
+mkdir template/etc
 cp -v restheart-platform-core/etc/restheart-platform-core.yml template/etc
-cp -v restheart-platform-core/etc/core-default.properties template/etc
+cp -v restheart-platform-core/etc/core.properties template/etc
 cp -v restheart-platform-core/etc/core-docker.properties template/etc
 cp -v restheart-platform-core/etc/core-bwcv3.properties template/etc
 cp -v restheart-platform-core/etc/core-standalone.properties template/etc
 cp -v restheart-platform-security/etc/restheart-platform-security.yml template/etc
 cp -v restheart-platform-security/etc/security-docker.properties template/etc
-cp -v restheart-platform-security/etc/security-default.properties template/etc
+cp -v restheart-platform-security/etc/security.properties template/etc
 
 echo "###### Copying files to $DIST"
 rm -rf dist

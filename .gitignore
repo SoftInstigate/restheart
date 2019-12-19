@@ -10,4 +10,4 @@
 mongodb_*
 /target/
 /dist/
-/template/etc/
+/template/etc/*
