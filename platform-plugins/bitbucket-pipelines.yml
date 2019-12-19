@@ -43,7 +43,6 @@ pipelines:
       - step:
           name: Invalidate CloudFront
           image: python:3.7-alpine
-          trigger: manual
           caches:
             - pip
           script:
