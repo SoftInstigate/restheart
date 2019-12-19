@@ -14,6 +14,8 @@ echo "###### Packaging RESTHeart Platform $VERSION"
 
 echo "###### Copying files to template/etc"
 
+echo "****** DO NOT MODIFY files in template/etc, they are copied from submodules etc directory."
+
 rm -rf template/etc
 mkdir template/etc
 cp -v restheart-platform-core/etc/restheart-platform-core.yml template/etc
