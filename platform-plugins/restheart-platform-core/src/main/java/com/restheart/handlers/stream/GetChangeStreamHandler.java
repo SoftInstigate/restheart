@@ -10,6 +10,7 @@
  */
 package com.restheart.handlers.stream;
 
+import com.mongodb.client.model.changestream.FullDocument;
 import com.restheart.db.MongoDBReactiveClientSingleton;
 import io.undertow.Handlers;
 import io.undertow.server.HttpHandler;
@@ -181,6 +182,7 @@ public class GetChangeStreamHandler extends PipedHttpHandler {
                     .getDatabase(context.getDBName())
                     .getCollection(context.getCollectionName())
                     .watch(resolvedStages)
+                    .fullDocument(FullDocument.UPDATE_LOOKUP)
                     .subscribe(new ChangeStreamSubscriber(streamKey));
 
             return true;
