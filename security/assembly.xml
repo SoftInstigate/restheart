@@ -37,6 +37,11 @@
                 <include>etc/*.yml</include>
                 <include>etc/*.properties</include>
             </includes>
+            <excludes>
+                <exclude>etc/restheart-platform-security.yml</exclude>
+                <exclude>etc/restheart-security-test.yml</exclude>
+                <exclude>etc/dev.properties</exclude>
+            </excludes>
         </fileSet>
         <fileSet>
             <directory>${project.build.directory}</directory>
