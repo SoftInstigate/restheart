@@ -9,7 +9,7 @@ git submodule update --init --recursive
 mvn clean package
 RHVERSION=$(./bin/project-version.sh)
 export RHVERSION
-echo "###### Building Docker image for restheart-plaform-core $RHVERSION"
+echo "###### Building Docker image for restheart-platform-core $RHVERSION"
 docker build -t softinstigate/restheart-platform-core .
 docker tag softinstigate/restheart-platform-core "softinstigate/restheart-platform-core:$RHVERSION"
 echo "###### Docker image successfully built."
