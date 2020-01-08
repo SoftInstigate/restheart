@@ -387,7 +387,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                                 exchange,
                                 context,
                                 HttpStatus.SC_NOT_ACCEPTABLE,
-                                "Invalid JSON",
+                                "Invalid JSON. " + ex.getMessage(),
                                 ex);
                         next(exchange, context);
                         return;
