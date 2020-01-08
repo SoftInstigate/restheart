@@ -22,11 +22,11 @@ import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MapReduceIterable;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.restheart.Bootstrapper;
 import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;
@@ -92,7 +92,6 @@ public class GetAggregationHandler extends PipedHttpHandler {
         }
 
         ArrayList<BsonDocument> data = new ArrayList<>();
-        int size;
 
         AbstractAggregationOperation query = _query.get();
 
@@ -140,7 +139,6 @@ public class GetAggregationHandler extends PipedHttpHandler {
                     for (BsonDocument obj : mrOutput) {
                         data.add(obj);
                     }
-                    size = data.size();
                     break;
                 case AGGREGATION_PIPELINE:
                     AggregateIterable<BsonDocument> agrOutput;
@@ -182,7 +180,6 @@ public class GetAggregationHandler extends PipedHttpHandler {
                     for (BsonDocument obj : agrOutput) {
                         data.add(obj);
                     }
-                    size = data.size();
                     break;
                 default:
                     ResponseHelper.endExchangeWithMessage(
@@ -204,8 +201,8 @@ public class GetAggregationHandler extends PipedHttpHandler {
                     .getRepresentation(
                             exchange,
                             context,
-                            applyPagination(data, context),
-                            size)
+                            data,
+                            data.size())
                     .asBsonDocument());
 
             context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
@@ -219,23 +216,6 @@ public class GetAggregationHandler extends PipedHttpHandler {
                     context,
                     HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
             next(exchange, context);
-        }
-    }
-
-    private List<BsonDocument> applyPagination(
-            List<BsonDocument> data,
-            RequestContext context) {
-        if (data == null) {
-            return data;
-        }
-
-        int start = context.getPagesize() * (context.getPage() - 1);
-        int end = start + context.getPagesize();
-
-        if (data.size() < start) {
-            return Collections.emptyList();
-        } else {
-            return data.subList(start, end > data.size() ? data.size() : end);
         }
     }
 }

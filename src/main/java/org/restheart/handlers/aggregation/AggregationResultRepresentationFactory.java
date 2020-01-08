@@ -62,14 +62,11 @@ public class AggregationResultRepresentationFactory
             rep = createRepresentation(exchange, context, null);
         }
 
-        addSizeAndTotalPagesProperties(size, context, rep);
+        addSize(size, rep);
 
         addEmbeddedData(embeddedData, rep);
 
         if (context.isFullHalMode()) {
-
-            addPaginationLinks(exchange, context, size, rep);
-
             addLinkTemplates(rep, requestPath);
         }
 
@@ -94,8 +91,6 @@ public class AggregationResultRepresentationFactory
             final String requestPath) {
         rep.addLink(new Link("rh:collection",
                 URLUtils.getParentPath(URLUtils.getParentPath(requestPath))));
-        rep.addLink(new Link("rh:paging",
-                requestPath + "{?page}{&pagesize}", true));
     }
 
     private void embeddedDocuments(List<BsonDocument> embeddedData,
@@ -107,5 +102,13 @@ public class AggregationResultRepresentationFactory
         }).forEach((nrep) -> {
             rep.addChild("rh:result", nrep);
         });
+    }
+    
+    protected void addSize(
+            final long size,
+            final Resource rep) {
+        if (size == 0) {
+            rep.addProperty("_size", new BsonInt32(0));
+        }
     }
 }
