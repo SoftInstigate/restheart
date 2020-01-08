@@ -72,6 +72,10 @@ public class JsonSchemaTransformer implements Transformer {
             RequestContext context,
             final BsonValue contentToTransform,
             BsonValue args) {
+        if (context.isInError()) {
+            return;
+        }
+        
         BsonDocument _contentToTransform
                 = contentToTransform == null
                         ? null
