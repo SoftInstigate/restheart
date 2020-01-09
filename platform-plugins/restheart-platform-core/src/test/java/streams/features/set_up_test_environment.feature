@@ -18,6 +18,6 @@ Scenario: Setup test environment
 
 # Step 2: Create test collection
     Given path coll
-    And request {"streams": [{"stages": [], "uri": "changeStream" }, {"stages": [{"_$match": {"fullDocument.targettedProperty": {"_$var": "param"}}}], "uri": "changeStreamWithStageParam" }]}
+    And request {"streams": [{"stages": [], "uri": "changeStream" }, {"stages": [{"_$match": {"fullDocument.targettedProperty": {"_$var": "param"}}}], "uri": "changeStreamWithStageParam" }, {"stages":[{"_$match":{"fullDocument::name":"testname"}},{"_$match":{"_$or":[{"operationType":"insert"},{"operationType":"update"}]}}],"uri":"cs"},{"stages":[{"_$match":{"updateDescription::updatedFields::a":{"_$exists":true}}}],"uri":"ud"}]}
     When method PUT
     Then status 201
