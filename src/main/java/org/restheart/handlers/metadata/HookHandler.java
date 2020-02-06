@@ -18,11 +18,14 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.HookMetadata;
+import org.restheart.plugins.GlobalHook;
 import org.restheart.plugins.PluginsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +40,9 @@ public class HookHandler extends PipedHttpHandler {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(HookHandler.class);
+    
+    private static final List<GlobalHook> GLOBAL_HOOKS
+            = Collections.synchronizedList(new ArrayList<>());
 
     /**
      * Creates a new instance of HookMetadataHandler
@@ -59,6 +65,10 @@ public class HookHandler extends PipedHttpHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
+        
+        // execute global hooks
+        executeGlobalHooks(exchange, context);
+        
         if (context.getCollectionProps() != null
                 && context.getCollectionProps()
                         .containsKey(HookMetadata.ROOT_KEY)) {
@@ -103,5 +113,18 @@ public class HookHandler extends PipedHttpHandler {
         }
 
         next(exchange, context);
+    }
+    
+    private void executeGlobalHooks(HttpServerExchange exchange, RequestContext context) {
+        // execute global request tranformers
+        getGlobalHooks().stream()
+                .forEachOrdered(gh -> gh.hook(exchange, context));
+    }
+    
+    /**
+     * @return the GLOBAL_HOOKS
+     */
+    public static synchronized List<GlobalHook> getGlobalHooks() {
+        return GLOBAL_HOOKS;
     }
 }

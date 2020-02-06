@@ -18,7 +18,6 @@
 package org.restheart.plugins;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContextPredicate;
@@ -29,43 +28,37 @@ import org.restheart.handlers.RequestContextPredicate;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class GlobalChecker {
-    private final Checker checker;
+public class GlobalHook {
+    private final Hook hook;
     private final RequestContextPredicate predicate;
-    private final boolean skipNotSupported;
     private final BsonValue args;
     private final BsonValue confArgs;
 
     /**
      * 
-     * @param checker
-     * @param predicate checker is applied only to requests that resolve
+     * @param hook
+     * @param predicate hook is applied only to requests that resolve
      * the predicate
-     * @param skipNotSupported
      * @param args
      * @param confArgs 
      */
-    public GlobalChecker(Checker checker,
+    public GlobalHook(Hook hook,
             RequestContextPredicate predicate,
-            boolean skipNotSupported,
             BsonValue args,
             BsonValue confArgs) {
-        this.checker = checker;
+        this.hook = hook;
         this.predicate = predicate;
-        this.skipNotSupported = skipNotSupported;
         this.args = args;
         this.confArgs = confArgs;
     }
 
-    public boolean check(
+    public boolean hook(
             HttpServerExchange exchange,
-            RequestContext context,
-            BsonDocument contentToCheck) {
+            RequestContext context) {
 
         return resolve(exchange, context)
-                && this.getChecker().check(exchange,
+                && this.getHook().hook(exchange,
                         context,
-                        contentToCheck, 
                         this.getArgs(), 
                         this.getConfArgs());
     }
@@ -75,19 +68,11 @@ public class GlobalChecker {
         return this.predicate.resolve(exchange, context);
     }
 
-    public Checker.PHASE getPhase(RequestContext context) {
-        return this.getChecker().getPhase(context);
-    }
-
-    public boolean doesSupportRequests(RequestContext context) {
-        return this.getChecker().doesSupportRequests(context);
-    }
-
     /**
      * @return the checker
      */
-    public Checker getChecker() {
-        return checker;
+    public Hook getHook() {
+        return hook;
     }
 
     /**
@@ -102,13 +87,6 @@ public class GlobalChecker {
      */
     public BsonValue getConfArgs() {
         return confArgs;
-    }
-
-    /**
-     * @return the skipNotSupported
-     */
-    public boolean isSkipNotSupported() {
-        return skipNotSupported;
     }
 
     /**

@@ -18,7 +18,6 @@
 package org.restheart.plugins;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 
@@ -63,7 +62,7 @@ public interface Hook extends Plugin {
      *
      * @param exchange the server exchange
      * @param context the request context
-     * @param args the args sepcified in the collection metadata via args property
+     * @param args the args specified in the collection metadata via args property
      * @return true if completed successfully
      */
     default boolean hook(
@@ -78,7 +77,7 @@ public interface Hook extends Plugin {
      *
      * @param exchange the server exchange
      * @param context the request context
-     * @param args the args sepcified in the collection metadata via args property
+     * @param args the args specified in the collection metadata via args property
      * @param confArgs args specified in the configuration file via args property
      * @return true if completed successfully
      */
@@ -86,7 +85,7 @@ public interface Hook extends Plugin {
             HttpServerExchange exchange,
             RequestContext context,
             BsonValue args,
-            BsonDocument confArgs) {
+            BsonValue confArgs) {
         return hook(exchange, context, args);
     }
 

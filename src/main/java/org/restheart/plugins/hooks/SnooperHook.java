@@ -43,7 +43,7 @@ public class SnooperHook implements Hook {
             HttpServerExchange exchange,
             RequestContext context,
             BsonValue args,
-            BsonDocument confArgs) {
+            BsonValue confArgs) {
         LOGGER.info("Request {} {} {}",
                 context.getMethod(),
                 exchange.getRequestURI(), exchange.getStatusCode());
