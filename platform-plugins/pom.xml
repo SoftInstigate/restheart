@@ -23,7 +23,7 @@
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
         <skipITs>true</skipITs>
-        <restheart.core.oss.version>4.1.9</restheart.core.oss.version>
+        <restheart.core.oss.version>4.1.8</restheart.core.oss.version>
         <restheart.security.oss.version>1.3.2</restheart.security.oss.version>
         <restheart.si-lka.version>2.1.0</restheart.si-lka.version>
     </properties>
