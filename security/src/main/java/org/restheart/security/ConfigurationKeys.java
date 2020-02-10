@@ -89,6 +89,11 @@ public interface ConfigurationKeys {
      * the key for the local-cache-enabled property.
      */
     public static final String LOCAL_CACHE_ENABLED_KEY = "local-cache-enabled";
+    
+    /**
+     * the key for the requests-log-tracing-headers property.
+     */
+    public static final String REQUESTS_LOG_TRACE_HEADERS_KEY = "requests-log-trace-headers";
 
     /**
      * the key for the force-gzip-encoding property.

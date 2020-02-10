@@ -77,6 +77,7 @@ import org.restheart.security.handlers.exchange.AbstractExchange.METHOD;
 import org.restheart.security.handlers.injectors.AuthHeadersRemover;
 import org.restheart.security.handlers.injectors.ConduitInjector;
 import org.restheart.security.handlers.injectors.RequestContentInjector;
+import org.restheart.security.handlers.metrics.TracingInstrumentationHandler;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
@@ -114,7 +115,7 @@ public class Bootstrapper {
             .getLogger(Bootstrapper.class);
 
     private static boolean IS_FORKED;
-    
+
     private static final Map<String, File> TMP_EXTRACTED_FILES = new HashMap<>();
 
     private static Path CONFIGURATION_FILE;
@@ -173,7 +174,7 @@ public class Bootstrapper {
             String propFilePath = (parameters.envFile == null)
                     ? System.getenv("RESTHEART_SECURITY_ENVFILE")
                     : parameters.envFile;
-            
+
             PROPERTIES_FILE = FileUtils.getFileAbsolutePath(propFilePath);
         } catch (com.beust.jcommander.ParameterException ex) {
             LOGGER.error(ex.getMessage());
@@ -219,7 +220,7 @@ public class Bootstrapper {
         if (!configuration.isAnsiConsole()) {
             AnsiConsole.systemInstall();
         }
-        
+
         if (!hasForkOption()) {
             initLogging(null);
             startServer(false);
@@ -296,12 +297,12 @@ public class Bootstrapper {
             return new Configuration(CONFIGURATION_FILE, false);
         } else {
             final Properties p = new Properties();
-            try ( InputStreamReader reader = new InputStreamReader(
+            try (InputStreamReader reader = new InputStreamReader(
                     new FileInputStream(PROPERTIES_FILE.toFile()), "UTF-8")) {
                 p.load(reader);
             } catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
-            } catch(IOException ieo) {
+            } catch (IOException ieo) {
                 logErrorAndExit("Error reading properties file " + PROPERTIES_FILE, null, false, -1);
             }
 
@@ -314,7 +315,7 @@ public class Bootstrapper {
                 logErrorAndExit("Configuration file not found: " + CONFIGURATION_FILE, ex, false, -1);
             } catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
-            } catch(IOException ieo) {
+            } catch (IOException ieo) {
                 logErrorAndExit("Error reading configuration file " + CONFIGURATION_FILE, null, false, -1);
             }
 
@@ -354,7 +355,7 @@ public class Bootstrapper {
         if (OSChecker.isWindows()) {
             return false;
         }
-        
+
         // pid file name include the hash of the configuration file so that
         // for each configuration we can have just one instance running
         Path pidFilePath = FileUtils
@@ -964,7 +965,8 @@ public class Bootstrapper {
                                         tokenManager);
                             }
 
-                            var srv = pipe(new RequestLogger(),
+                            var srv = pipe(new TracingInstrumentationHandler(),
+                                    new RequestLogger(),
                                     new CORSHandler(),
                                     new XPoweredByInjector(),
                                     new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
@@ -1122,7 +1124,8 @@ public class Bootstrapper {
                         .setProxyClient(proxyClient)
                         .build();
 
-                var proxy = pipe(new RequestLogger(),
+                var proxy = pipe(new TracingInstrumentationHandler(),
+                        new RequestLogger(),
                         new XPoweredByInjector(),
                         new RequestContentInjector(ALWAYS),
                         new RequestInterceptorsExecutor(BEFORE_AUTH),

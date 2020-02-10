@@ -68,6 +68,7 @@ import static org.restheart.security.ConfigurationKeys.HTTP_HOST_KEY;
 import static org.restheart.security.ConfigurationKeys.HTTP_LISTENER_KEY;
 import static org.restheart.security.ConfigurationKeys.HTTP_PORT_KEY;
 import static org.restheart.security.ConfigurationKeys.INSTANCE_NAME_KEY;
+import static org.restheart.security.ConfigurationKeys.REQUESTS_LOG_TRACE_HEADERS_KEY;
 import static org.restheart.security.ConfigurationKeys.IO_THREADS_KEY;
 import static org.restheart.security.ConfigurationKeys.KEYSTORE_FILE_KEY;
 import static org.restheart.security.ConfigurationKeys.KEYSTORE_PASSWORD_KEY;
@@ -125,6 +126,7 @@ public class Configuration {
     private final Level logLevel;
     private final boolean logToConsole;
     private final boolean logToFile;
+    private final List<String> traceHeaders;
     private final int requestsLimit;
     private final int ioThreads;
     private final int workerThreads;
@@ -172,6 +174,8 @@ public class Configuration {
         logToConsole = true;
         logToFile = true;
         logLevel = Level.INFO;
+        
+        traceHeaders =  Collections.emptyList();
 
         requestsLimit = 100;
         ioThreads = 2;
@@ -266,6 +270,9 @@ public class Configuration {
         }
 
         logLevel = level;
+        
+        traceHeaders = getAsListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
+        
         requestsLimit = getAsInteger(conf, REQUESTS_LIMIT_KEY, 100);
         ioThreads = getAsInteger(conf, IO_THREADS_KEY, 2);
         workerThreads = getAsInteger(conf, WORKER_THREADS_KEY, 32);
@@ -337,7 +344,42 @@ public class Configuration {
 
     @Override
     public String toString() {
-        return "Configuration{" + "silent=" + silent + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener=" + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost + ", instanceName=" + instanceName + ", useEmbeddedKeystore=" + useEmbeddedKeystore + ", keystoreFile=" + keystoreFile + ", keystorePassword=" + keystorePassword + ", certPassword=" + certPassword + ", proxies=" + proxies + ", pluginsArgs=" + pluginsArgs + ", services=" + services + ", authMechanisms=" + authMechanisms + ", authenticators=" + authenticators + ", authorizers=" + authorizers + ", tokenManager=" + tokenManager + ", logFilePath=" + logFilePath + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads + ", workerThreads=" + workerThreads + ", bufferSize=" + bufferSize + ", directBuffers=" + directBuffers + ", forceGzipEncoding=" + forceGzipEncoding + ", connectionOptions=" + connectionOptions + ", logExchangeDump=" + logExchangeDump + ", ansiConsole=" + ansiConsole + ", allowUnescapedCharactersInUrl=" + allowUnescapedCharactersInUrl + '}';
+        return "Configuration{" + 
+                "silent=" + silent +
+                ", httpsListener=" + httpsListener +
+                ", httpsPort=" + httpsPort +
+                ", httpsHost=" + httpsHost +
+                ", httpListener=" + httpListener +
+                ", httpPort=" + httpPort +
+                ", httpHost=" + httpHost +
+                ", instanceName=" + instanceName +
+                ", useEmbeddedKeystore=" + useEmbeddedKeystore +
+                ", keystoreFile=" + keystoreFile +
+                ", keystorePassword=" + keystorePassword +
+                ", certPassword=" + certPassword +
+                ", proxies=" + proxies +
+                ", pluginsArgs=" + pluginsArgs +
+                ", services=" + services +
+                ", authMechanisms=" + authMechanisms +
+                ", authenticators=" + authenticators +
+                ", authorizers=" + authorizers +
+                ", tokenManager=" + tokenManager +
+                ", logFilePath=" + logFilePath +
+                ", logLevel=" + logLevel +
+                ", logToConsole=" + logToConsole +
+                ", logToFile=" + logToFile +
+                ", traceHeaders=" + traceHeaders +
+                ", requestsLimit=" + requestsLimit +
+                ", ioThreads=" + ioThreads +
+                ", workerThreads=" + workerThreads +
+                ", bufferSize=" + bufferSize +
+                ", directBuffers=" + directBuffers +
+                ", forceGzipEncoding=" + forceGzipEncoding +
+                ", connectionOptions=" + connectionOptions +
+                ", logExchangeDump=" + logExchangeDump +
+                ", ansiConsole=" + ansiConsole +
+                ", allowUnescapedCharactersInUrl=" +
+                allowUnescapedCharactersInUrl + '}';
     }
 
     /**
@@ -478,6 +520,40 @@ public class Configuration {
                 LOGGER.trace("configuration parameter {} not specified in the configuration file.", key);
             }
             return null;
+        }
+    }
+    
+    @SuppressWarnings("unchecked")
+    private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key, final List<String> defaultValue) {
+        if (conf == null || conf.get(key) == null) {
+            // if default value is null there is no default value actually
+            if (defaultValue != null && !silent) {
+                LOGGER.debug("parameter {} not specified in the configuration file."
+                        + " Using its default value {}", key, defaultValue);
+            }
+            return defaultValue;
+        } else if (conf.get(key) instanceof List) {
+            if (!silent) {
+                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
+            }
+
+            List<String> ret = ((List<String>) conf.get(key));
+
+            if (ret.isEmpty()) {
+                if (!silent) {
+                    LOGGER.warn("wrong value for parameter {}: {}."
+                            + " Using its default value {}", key, conf.get(key), defaultValue);
+                }
+                return defaultValue;
+            } else {
+                return ret;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.warn("wrong value for parameter {}: {}."
+                        + " Using its default value {}", key, conf.get(key), defaultValue);
+            }
+            return defaultValue;
         }
     }
 
@@ -690,6 +766,10 @@ public class Configuration {
      */
     public boolean isLogToFile() {
         return logToFile;
+    }
+    
+    public List<String> getTraceHeaders() {
+        return Collections.unmodifiableList(traceHeaders);
     }
 
     /**

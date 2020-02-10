@@ -51,6 +51,10 @@ abstract public class FileConfigurablePlugin implements ConfigurablePlugin {
     /**
      * get the configuration args parsing the file specified in the Plugin
      * argument 'conf-file'
+     * @param arguments
+     * @param type
+     * @throws java.io.FileNotFoundException
+     * @throws org.restheart.security.ConfigurationException
      */
     @SuppressWarnings("unchecked")
     public void init(Map<String, Object> arguments, String type)
