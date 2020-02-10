@@ -20,22 +20,29 @@ public class TracingInstrumentationHandler extends PipedHttpHandler {
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        for (String traceIdHeader : Bootstrapper.getConfiguration().getTraceHeaders()) {
-            Optional.ofNullable(exchange.getRequestHeaders().get(traceIdHeader))
-                    .flatMap(x -> Optional.ofNullable(x.peekFirst()))
-                    .ifPresent(value -> {
-                        MDC.put(traceIdHeader, value);
-                        exchange.getResponseHeaders().put(HttpString.tryFromString(traceIdHeader), value);
-                    });
-        }
+    public void handleRequest(HttpServerExchange exchange,
+            RequestContext context) throws Exception {
+        Bootstrapper.getConfiguration().getTraceHeaders()
+                .forEach((traceIdHeader) -> {
+                    Optional.ofNullable(exchange.getRequestHeaders()
+                            .get(traceIdHeader))
+                            .flatMap(x -> Optional.ofNullable(x.peekFirst()))
+                            .ifPresent(value -> {
+                                MDC.put(traceIdHeader, value);
+                                exchange.getResponseHeaders()
+                                        .put(HttpString
+                                                .tryFromString(traceIdHeader),
+                                                value);
+                            });
+                });
 
         if (!exchange.isResponseComplete() && getNext() != null) {
             next(exchange, context);
         }
 
-        for (String traceIdHeader : Bootstrapper.getConfiguration().getTraceHeaders()) {
-            MDC.remove(traceIdHeader);
-        }
+        Bootstrapper.getConfiguration()
+                .getTraceHeaders().forEach((traceIdHeader) -> {
+                    MDC.remove(traceIdHeader);
+                });
     }
 }
