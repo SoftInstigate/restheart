@@ -73,6 +73,7 @@ public class Configuration {
     private final String ajpHost;
     private final String instanceName;
     private final String instanceBaseURL;
+    private final String pluginsDirectory;
     private final REPRESENTATION_FORMAT defaultRepresentationFormat;
     private final boolean useEmbeddedKeystore;
     private final String keystoreFile;
@@ -270,6 +271,9 @@ public class Configuration {
         ArrayList<Map<String, Object>> defaultStaticResourcesMounts = new ArrayList<>();
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
+        
+        pluginsDirectory =  getAsStringOrDefault(conf, PLUGINS_DIRECTORY_PATH_KEY, "plugins");
+        
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
 
         logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
@@ -421,6 +425,7 @@ public class Configuration {
                 + ", ajpHost=" + ajpHost
                 + ", instanceName=" + instanceName
                 + ", instanceBaseURL=" + instanceBaseURL
+                + ", pluginsDirectory=" + pluginsDirectory
                 + ", defaultRepresentationFromat=" + defaultRepresentationFormat
                 + ", useEmbeddedKeystore=" + useEmbeddedKeystore
                 + ", keystoreFile=" + keystoreFile
@@ -1241,6 +1246,13 @@ public class Configuration {
     public boolean isAllowUnescapedCharactersInUrl() {
         return allowUnescapedCharactersInUrl;
     }
+    
+    /**
+     * @return the pluginsDirectory
+     */
+    public String getPluginsDirectory() {
+        return pluginsDirectory;
+    }
 
     public enum METRICS_GATHERING_LEVEL {
         /**
@@ -1262,5 +1274,4 @@ public class Configuration {
          */
         COLLECTION
     }
-
 }

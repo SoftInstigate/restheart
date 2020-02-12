@@ -80,6 +80,11 @@ public interface ConfigurationKeys {
      * default restheart instance name default
      */
     public static final String DEFAULT_INSTANCE_NAME = "default";
+    
+    /**
+     * the key for the log-file-path property.
+     */
+    public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
 
     /**
      * default represetation format
