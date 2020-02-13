@@ -19,7 +19,6 @@ package org.restheart.plugins;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ScanResult;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -38,7 +37,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.logging.Level;
 import org.restheart.Bootstrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -237,62 +235,7 @@ public class PluginsRegistry {
             });
         }
     }
-
-    private URL[] findPluginsJars(Path pluginsDirectory) {
-        var urls = new ArrayList<URL>();
-
-        try (DirectoryStream<Path> directoryStream = Files
-                .newDirectoryStream(pluginsDirectory, "*.jar")) {
-            for (Path path : directoryStream) {
-                var jar = path.toUri().toURL();
-                urls.add(jar);
-                LOGGER.info("Added to classpath the plugins jar {}", jar);
-            }
-        } catch(IOException ex) {
-            LOGGER.error("Cannot read jars in plugins directory {}", 
-                    Bootstrapper.getConfiguration().getPluginsDirectory(),
-                    ex.getMessage());
-        }
-
-        return urls.toArray(new URL[urls.size()]);
-    }
-
-    private Path getPluginsDirectory() {
-        var pluginsDir = Bootstrapper.getConfiguration().getPluginsDirectory();
-
-        if (pluginsDir == null) {
-            return null;
-        }
-
-        if (pluginsDir.startsWith("/")) {
-            return Paths.get(pluginsDir);
-        } else {
-            // this is to allow specifying the plugin directory path 
-            // relative to the jar (also working when running from classes)
-            URL location = this.getClass().getProtectionDomain()
-                    .getCodeSource()
-                    .getLocation();
-            
-            File locationFile = new File(location.getPath());
-            
-            pluginsDir = locationFile.getParent()
-                + File.separator
-                + pluginsDir;
-            
-            return FileSystems.getDefault().getPath(pluginsDir);
-        }
-    }
-    
-    private static URL[] PLUGINS_JARS_CACHE = null;
-    
-    private URLClassLoader getPluginsClassloader() {
-        if (PLUGINS_JARS_CACHE == null) {
-            PLUGINS_JARS_CACHE = findPluginsJars(getPluginsDirectory());
-        }
-        
-        return new URLClassLoader(PLUGINS_JARS_CACHE);
-    }
-    
+   
     /**
      * finds the services
      */
@@ -544,5 +487,60 @@ public class PluginsRegistry {
 
         // The Route annotation has a parameter named "path"
         return (T) annotationParamVals.getValue(param);
+    }
+    
+    private URL[] findPluginsJars(Path pluginsDirectory) {
+        var urls = new ArrayList<URL>();
+
+        try (DirectoryStream<Path> directoryStream = Files
+                .newDirectoryStream(pluginsDirectory, "*.jar")) {
+            for (Path path : directoryStream) {
+                var jar = path.toUri().toURL();
+                urls.add(jar);
+                LOGGER.info("Added to classpath the plugins jar {}", jar);
+            }
+        } catch(IOException ex) {
+            LOGGER.error("Cannot read jars in plugins directory {}", 
+                    Bootstrapper.getConfiguration().getPluginsDirectory(),
+                    ex.getMessage());
+        }
+
+        return urls.toArray(new URL[urls.size()]);
+    }
+
+    private Path getPluginsDirectory() {
+        var pluginsDir = Bootstrapper.getConfiguration().getPluginsDirectory();
+
+        if (pluginsDir == null) {
+            return null;
+        }
+
+        if (pluginsDir.startsWith("/")) {
+            return Paths.get(pluginsDir);
+        } else {
+            // this is to allow specifying the plugin directory path 
+            // relative to the jar (also working when running from classes)
+            URL location = this.getClass().getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation();
+            
+            File locationFile = new File(location.getPath());
+            
+            pluginsDir = locationFile.getParent()
+                + File.separator
+                + pluginsDir;
+            
+            return FileSystems.getDefault().getPath(pluginsDir);
+        }
+    }
+    
+    private static URL[] PLUGINS_JARS_CACHE = null;
+    
+    private URLClassLoader getPluginsClassloader() {
+        if (PLUGINS_JARS_CACHE == null) {
+            PLUGINS_JARS_CACHE = findPluginsJars(getPluginsDirectory());
+        }
+        
+        return new URLClassLoader(PLUGINS_JARS_CACHE);
     }
 }
