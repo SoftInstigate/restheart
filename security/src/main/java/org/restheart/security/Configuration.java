@@ -76,6 +76,7 @@ import static org.restheart.security.ConfigurationKeys.LOG_FILE_PATH_KEY;
 import static org.restheart.security.ConfigurationKeys.LOG_LEVEL_KEY;
 import static org.restheart.security.ConfigurationKeys.LOG_REQUESTS_LEVEL_KEY;
 import static org.restheart.security.ConfigurationKeys.PLUGINS_ARGS_KEY;
+import static org.restheart.security.ConfigurationKeys.PLUGINS_DIRECTORY_PATH_KEY;
 import static org.restheart.security.ConfigurationKeys.PROXY_KEY;
 import static org.restheart.security.ConfigurationKeys.REQUESTS_LIMIT_KEY;
 import static org.restheart.security.ConfigurationKeys.SERVICES_KEY;
@@ -111,6 +112,7 @@ public class Configuration {
     private final int httpPort;
     private final String httpHost;
     private final String instanceName;
+    private final String pluginsDirectory;
     private final boolean useEmbeddedKeystore;
     private final String keystoreFile;
     private final String keystorePassword;
@@ -162,6 +164,8 @@ public class Configuration {
         proxies = new ArrayList<>();
         initDefaultProxy();
 
+        pluginsDirectory = "plugins";
+        
         pluginsArgs = new LinkedHashMap<>();
         services = new ArrayList<>();
         authMechanisms = new ArrayList<>();
@@ -243,6 +247,8 @@ public class Configuration {
         if (proxies.isEmpty()) {
             initDefaultProxy();
         }
+        
+        pluginsDirectory = getAsString(conf, PLUGINS_DIRECTORY_PATH_KEY, "plugins");
 
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
         services = getAsListOfMaps(conf, SERVICES_KEY, new ArrayList<>());
@@ -353,6 +359,7 @@ public class Configuration {
                 ", httpPort=" + httpPort +
                 ", httpHost=" + httpHost +
                 ", instanceName=" + instanceName +
+                ", pluginsDirectory=" + pluginsDirectory +
                 ", useEmbeddedKeystore=" + useEmbeddedKeystore +
                 ", keystoreFile=" + keystoreFile +
                 ", keystorePassword=" + keystorePassword +
@@ -395,260 +402,6 @@ public class Configuration {
      */
     public boolean isAnsiConsole() {
         return ansiConsole;
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key,
-            final List<Map<String, Object>> defaultValue) {
-        if (conf == null) {
-            if (!silent) {
-                LOGGER.trace("parameter {} not specified in the "
-                        + "configuration file. using its default value {}",
-                        key, defaultValue);
-            }
-
-            return defaultValue;
-        }
-
-        Object o = conf.get(key);
-
-        if (o == null) {
-            if (!silent) {
-                LOGGER.trace("configuration parameter {} not specified in the "
-                        + "configuration file, using its default value {}",
-                        key, defaultValue);
-            }
-            return defaultValue;
-        } else if (o instanceof List) {
-            try {
-                return (List<Map<String, Object>>) o;
-            } catch (Throwable t) {
-                LOGGER.warn("wrong configuration parameter {}", key);
-                return defaultValue;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong configuration parameter {}, expecting an array of objects",
-                        key, defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Map<String, Object>> getAsMapOfMaps(
-            final Map<String, Object> conf,
-            final String key,
-            final Map<String, Map<String, Object>> defaultValue) {
-        if (conf == null) {
-            if (!silent) {
-                LOGGER.trace("parameter {} not specified in the "
-                        + "configuration file. using its default value {}",
-                        key, defaultValue);
-            }
-
-            return defaultValue;
-        }
-
-        Object o = conf.get(key);
-
-        if (o == null) {
-            if (!silent) {
-                LOGGER.trace("configuration parameter {} not specified in the "
-                        + "configuration file, using its default value {}",
-                        key, defaultValue);
-            }
-            return defaultValue;
-        } else if (o instanceof Map) {
-            try {
-                return (Map<String, Map<String, Object>>) o;
-            } catch (Throwable t) {
-                LOGGER.warn("wrong configuration parameter {}", key);
-                return defaultValue;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong configuration parameter {}, expecting an object",
-                        key, defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
-        if (conf == null) {
-            if (!silent) {
-                LOGGER.trace("parameter {} not specified in the "
-                        + "configuration file. using its default value {}",
-                        key, null);
-            }
-
-            return null;
-        }
-
-        Object o = conf.get(key);
-
-        if (o instanceof Map) {
-            try {
-                return (Map<String, Object>) o;
-            } catch (Throwable t) {
-                LOGGER.warn("wrong configuration parameter {}", key);
-                return null;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.trace("configuration parameter {} not specified in the configuration file.", key);
-            }
-            return null;
-        }
-    }
-    
-    @SuppressWarnings("unchecked")
-    private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key, final List<String> defaultValue) {
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof List) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
-
-            List<String> ret = ((List<String>) conf.get(key));
-
-            if (ret.isEmpty()) {
-                if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}."
-                            + " Using its default value {}", key, conf.get(key), defaultValue);
-                }
-                return defaultValue;
-            } else {
-                return ret;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}."
-                        + " Using its default value {}", key, conf.get(key), defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param <V>
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @param silent
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    public static <V extends Object> V getOrDefault(
-            final Map<String, Object> conf,
-            final String key,
-            final V defaultValue,
-            boolean silent) {
-
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.warn("Parameter \"{}\" not specified in the configuration file. "
-                        + "using its default value \"{}\"", key, defaultValue);
-            }
-            return defaultValue;
-        }
-
-        try {
-            if (!silent) {
-                LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", key, conf.get(key));
-            }
-            return (V) conf.get(key);
-        } catch (Throwable t) {
-            if (!silent) {
-                LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\". using its default value \"{}\"",
-                        key, conf.get(key), defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param key
-     * @return the environment or java property variable, if found
-     */
-    private static String overriddenValueFromEnv(final String key) {
-        String shellKey = "RESTHEART_SECURITY_" + key.toUpperCase().replaceAll("-", "_");
-        String envValue = System.getProperty(key);
-
-        if (envValue == null) {
-            envValue = System.getProperty(shellKey);
-        }
-
-        if (envValue == null) {
-            envValue = System.getenv(shellKey);
-        }
-        if (null != envValue) {
-            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
-                    shellKey, key, envValue);
-        }
-        return envValue;
-    }
-
-    private Boolean getAsBoolean(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
-        if (envValue != null) {
-            return Boolean.valueOf(envValue);
-        }
-        return getOrDefault(conf, key, defaultValue);
-    }
-
-    private String getAsString(final Map<String, Object> conf, final String key, final String defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
-        if (envValue != null) {
-            return envValue;
-        }
-        return getOrDefault(conf, key, defaultValue);
-    }
-
-    private Integer getAsInteger(final Map<String, Object> conf, final String key, final Integer defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
-        if (envValue != null) {
-            return Integer.valueOf(envValue);
-        }
-        return getOrDefault(conf, key, defaultValue);
-    }
-
-    private Long getAsLong(final Map<String, Object> conf, final String key, final Long defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
-        if (envValue != null) {
-            return Long.valueOf(envValue);
-        }
-        return getOrDefault(conf, key, defaultValue);
     }
 
     /**
@@ -702,6 +455,13 @@ public class Configuration {
      */
     public String getHttpHost() {
         return httpHost;
+    }
+    
+    /**
+     * @return the pluginsDirectory
+     */
+    public String getPluginsDirectory() {
+        return this.pluginsDirectory;
     }
 
     /**
@@ -964,5 +724,259 @@ public class Configuration {
             throw new ConfigurationException("Wrong proxy location URI "
                     + proxyLocation, ex);
         }
+    }
+    
+    /**
+     *
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key,
+            final List<Map<String, Object>> defaultValue) {
+        if (conf == null) {
+            if (!silent) {
+                LOGGER.trace("parameter {} not specified in the "
+                        + "configuration file. using its default value {}",
+                        key, defaultValue);
+            }
+
+            return defaultValue;
+        }
+
+        Object o = conf.get(key);
+
+        if (o == null) {
+            if (!silent) {
+                LOGGER.trace("configuration parameter {} not specified in the "
+                        + "configuration file, using its default value {}",
+                        key, defaultValue);
+            }
+            return defaultValue;
+        } else if (o instanceof List) {
+            try {
+                return (List<Map<String, Object>>) o;
+            } catch (Throwable t) {
+                LOGGER.warn("wrong configuration parameter {}", key);
+                return defaultValue;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.warn("wrong configuration parameter {}, expecting an array of objects",
+                        key, defaultValue);
+            }
+            return defaultValue;
+        }
+    }
+
+    /**
+     *
+     * @param conf
+     * @param key
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, Object>> getAsMapOfMaps(
+            final Map<String, Object> conf,
+            final String key,
+            final Map<String, Map<String, Object>> defaultValue) {
+        if (conf == null) {
+            if (!silent) {
+                LOGGER.trace("parameter {} not specified in the "
+                        + "configuration file. using its default value {}",
+                        key, defaultValue);
+            }
+
+            return defaultValue;
+        }
+
+        Object o = conf.get(key);
+
+        if (o == null) {
+            if (!silent) {
+                LOGGER.trace("configuration parameter {} not specified in the "
+                        + "configuration file, using its default value {}",
+                        key, defaultValue);
+            }
+            return defaultValue;
+        } else if (o instanceof Map) {
+            try {
+                return (Map<String, Map<String, Object>>) o;
+            } catch (Throwable t) {
+                LOGGER.warn("wrong configuration parameter {}", key);
+                return defaultValue;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.warn("wrong configuration parameter {}, expecting an object",
+                        key, defaultValue);
+            }
+            return defaultValue;
+        }
+    }
+
+    /**
+     *
+     * @param conf
+     * @param key
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
+        if (conf == null) {
+            if (!silent) {
+                LOGGER.trace("parameter {} not specified in the "
+                        + "configuration file. using its default value {}",
+                        key, null);
+            }
+
+            return null;
+        }
+
+        Object o = conf.get(key);
+
+        if (o instanceof Map) {
+            try {
+                return (Map<String, Object>) o;
+            } catch (Throwable t) {
+                LOGGER.warn("wrong configuration parameter {}", key);
+                return null;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.trace("configuration parameter {} not specified in the configuration file.", key);
+            }
+            return null;
+        }
+    }
+    
+    @SuppressWarnings("unchecked")
+    private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key, final List<String> defaultValue) {
+        if (conf == null || conf.get(key) == null) {
+            // if default value is null there is no default value actually
+            if (defaultValue != null && !silent) {
+                LOGGER.debug("parameter {} not specified in the configuration file."
+                        + " Using its default value {}", key, defaultValue);
+            }
+            return defaultValue;
+        } else if (conf.get(key) instanceof List) {
+            if (!silent) {
+                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
+            }
+
+            List<String> ret = ((List<String>) conf.get(key));
+
+            if (ret.isEmpty()) {
+                if (!silent) {
+                    LOGGER.warn("wrong value for parameter {}: {}."
+                            + " Using its default value {}", key, conf.get(key), defaultValue);
+                }
+                return defaultValue;
+            } else {
+                return ret;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.warn("wrong value for parameter {}: {}."
+                        + " Using its default value {}", key, conf.get(key), defaultValue);
+            }
+            return defaultValue;
+        }
+    }
+
+    /**
+     *
+     * @param <V>
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @param silent
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public static <V extends Object> V getOrDefault(
+            final Map<String, Object> conf,
+            final String key,
+            final V defaultValue,
+            boolean silent) {
+
+        if (conf == null || conf.get(key) == null) {
+            // if default value is null there is no default value actually
+            if (defaultValue != null && !silent) {
+                LOGGER.warn("Parameter \"{}\" not specified in the configuration file. "
+                        + "using its default value \"{}\"", key, defaultValue);
+            }
+            return defaultValue;
+        }
+
+        try {
+            if (!silent) {
+                LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", key, conf.get(key));
+            }
+            return (V) conf.get(key);
+        } catch (Throwable t) {
+            if (!silent) {
+                LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\". using its default value \"{}\"",
+                        key, conf.get(key), defaultValue);
+            }
+            return defaultValue;
+        }
+    }
+
+    /**
+     *
+     * @param key
+     * @return the environment or java property variable, if found
+     */
+    private static String overriddenValueFromEnv(final String key) {
+        String shellKey = "RESTHEART_SECURITY_" + key.toUpperCase().replaceAll("-", "_");
+        String envValue = System.getProperty(key);
+
+        if (envValue == null) {
+            envValue = System.getProperty(shellKey);
+        }
+
+        if (envValue == null) {
+            envValue = System.getenv(shellKey);
+        }
+        if (null != envValue) {
+            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
+                    shellKey, key, envValue);
+        }
+        return envValue;
+    }
+
+    private Boolean getAsBoolean(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Boolean.valueOf(envValue);
+        }
+        return getOrDefault(conf, key, defaultValue);
+    }
+
+    private String getAsString(final Map<String, Object> conf, final String key, final String defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return envValue;
+        }
+        return getOrDefault(conf, key, defaultValue);
+    }
+
+    private Integer getAsInteger(final Map<String, Object> conf, final String key, final Integer defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Integer.valueOf(envValue);
+        }
+        return getOrDefault(conf, key, defaultValue);
+    }
+
+    private Long getAsLong(final Map<String, Object> conf, final String key, final Long defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Long.valueOf(envValue);
+        }
+        return getOrDefault(conf, key, defaultValue);
     }
 }

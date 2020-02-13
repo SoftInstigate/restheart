@@ -61,6 +61,11 @@ public interface ConfigurationKeys {
     public static final String DEFAULT_INSTANCE_NAME = "default";
 
     /**
+     * the key for the log-file-path property.
+     */
+    public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
+    
+    /**
      * the key for the services property.
      */
     public static final String SERVICES_KEY = "services";

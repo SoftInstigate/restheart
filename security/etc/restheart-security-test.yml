@@ -192,6 +192,13 @@ services:
  
 #### Plugins configuration
 
+# The directory containing the plugins jars. 
+# The path is either absolute (starts with /) or relative to the restheart.jar file
+# Just add the plugins jar to plugins-directory and they will be automatically
+# added to the classpath and registered.
+
+plugins-directory: {{{plugins-directory}}}
+
 # All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object 
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).
 # The property 'enabled' allows enabling plugins that are not enabled by default,
