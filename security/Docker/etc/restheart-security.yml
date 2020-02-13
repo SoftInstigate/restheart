@@ -147,32 +147,6 @@ token-manager:
       ttl: 15
       srv-uri: /tokens
 
-## Services
-
- # RESTHeart Security allows exposing custom services
- # The service class must extend the prg.restheart.security.plugins.Service
- # and can be bound to an URI via the service option
-
- # See README.md for the list of available Services
-
-services:
-    - name: rndTokenService
-      class: org.restheart.security.plugins.services.RndTokenService
-      uri: /tokens
-      secured: false
-    - name: ping
-      class: org.restheart.security.plugins.services.PingService
-      uri: /ping
-      secured: false
-      args:
-          msg: "{{{ping-hello-message}}}"
-    - name: getRoles
-      class: org.restheart.security.plugins.services.GetRoleService
-      uri: /roles
-      secured: true
-      args:
-          url: /roles
-
 #### Plugins configuration
 
 # The directory containing the plugins jars. 
