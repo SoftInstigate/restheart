@@ -20,6 +20,7 @@ package org.restheart.security.plugins;
 import java.util.Map;
 
 import org.restheart.security.handlers.PipedHttpHandler;
+import org.restheart.security.handlers.ResponseSender;
 
 /**
  * @see https://restheart.org/docs/develop/security-plugins/#services
@@ -27,64 +28,27 @@ import org.restheart.security.handlers.PipedHttpHandler;
  */
 public abstract class Service extends PipedHttpHandler
         implements ConfigurablePlugin {
-
-    private final String name;
-
-    private final String uri;
-
-    private final Boolean secured;
-
-    /**
+/**
      * The configuration properties passed to this handler.
      */
-    private final Map<String, Object> args;
+    protected final Map<String, Object> confArgs;
 
     /**
      * Creates a new instance of the Service
      *
-     * @param next
-     * @param name
-     * @param uri
-     * @param secured
-     * @param args
+     * @param confArgs arguments optionally specified in the configuration file
      */
-    public Service(PipedHttpHandler next,
-            String name,
-            String uri,
-            Boolean secured,
-            Map<String, Object> args) {
-        super(next);
-        this.name = name;
-        this.uri = uri;
-        this.secured = secured;
-        this.args = args;
+    public Service(Map<String, Object> confArgs) {
+        super(new ResponseSender());
+        this.confArgs = confArgs;
     }
-
+    
     /**
-     * @return the name
+     *
+     * @return the default uri of the service, used if not specified in plugin
+     * configuration
      */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * @return the uri
-     */
-    public String getUri() {
-        return uri;
-    }
-
-    /**
-     * @return the secured
-     */
-    public Boolean getSecured() {
-        return secured;
-    }
-
-    /**
-     * @return the args
-     */
-    public Map<String, Object> getArgs() {
-        return args;
+    public String defaultUri() {
+        return null;
     }
 }

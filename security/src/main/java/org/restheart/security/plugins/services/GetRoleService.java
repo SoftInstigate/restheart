@@ -25,7 +25,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 import org.restheart.security.handlers.exchange.JsonRequest;
-import org.restheart.security.handlers.PipedHttpHandler;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_VALID_HEADER;
@@ -35,30 +34,35 @@ import org.restheart.security.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
+import org.restheart.security.ConfigurationException;
+import org.restheart.security.plugins.ConfigurablePlugin;
+import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.security.plugins.RegisterPlugin;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@RegisterPlugin(
+        name = "roles",
+        description = "returns the roles of the authenticated clien",
+        enabledByDefault = true)
 public class GetRoleService extends Service {
+
     /**
      * Creates a new instance of GetRoleService
      *
-     * @param next
      * @param args
      * @throws Exception
      */
-    public GetRoleService(PipedHttpHandler next,
-            String name,
-            String uri,
-            Boolean secured,
-            Map<String, Object> args)
+    public GetRoleService(Map<String, Object> args)
             throws Exception {
-        super(next, name, uri, secured, args);
+        super(args);
+    }
 
-        if (args == null) {
-            throw new IllegalArgumentException("args cannot be null");
-        }
+    @Override
+    public String defaultUri() {
+        return "/roles";
     }
 
     /**
@@ -121,6 +125,15 @@ public class GetRoleService extends Service {
         } else {
             exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             exchange.endExchange();
+        }
+    }
+
+    private String getUri() {
+        try {
+            return ConfigurablePlugin.argValue(confArgs, "uri");
+        }
+        catch (ConfigurationException ex) {
+            return defaultUri();
         }
     }
 }

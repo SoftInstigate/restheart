@@ -19,7 +19,16 @@ package org.restheart.security.plugins;
 
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 import org.restheart.security.Bootstrapper;
@@ -28,7 +37,6 @@ import org.restheart.security.cache.CacheFactory;
 import org.restheart.security.cache.LoadingCache;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -43,15 +51,16 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PluginsRegistry {
+
     private static final Logger LOGGER = LoggerFactory
             .getLogger(PluginsRegistry.class);
 
     private static final String AUTH_TOKEN_MANAGER_NAME = "@@authTokenManager";
-    private static final String AUTHORIZER_NAME = "@@authrizer";
-    
+    private static final String AUTHORIZER_NAME = "@@authorizer";
+
     private static final String REGISTER_PLUGIN_CLASS_NAME = RegisterPlugin.class
             .getName();
-    
+
     private final Map<String, Map<String, Object>> confs = consumeConfiguration();
 
     private static final LoadingCache<String, Authenticator> AUTHENTICATORS_CACHE
@@ -70,7 +79,8 @@ public class PluginsRegistry {
                             try {
                                 return PluginsFactory
                                         .createAuthenticator(authenticatorConf.get());
-                            } catch (ConfigurationException pcex) {
+                            }
+                            catch (ConfigurationException pcex) {
                                 throw new IllegalStateException(
                                         pcex.getMessage(), pcex);
                             }
@@ -98,7 +108,8 @@ public class PluginsRegistry {
                             try {
                                 return PluginsFactory
                                         .createAutenticationMechanism(amConf.get());
-                            } catch (ConfigurationException pcex) {
+                            }
+                            catch (ConfigurationException pcex) {
                                 throw new IllegalStateException(
                                         pcex.getMessage(), pcex);
                             }
@@ -118,7 +129,7 @@ public class PluginsRegistry {
                     Cache.EXPIRE_POLICY.NEVER, -1, name -> {
                         var authorizersConf = Bootstrapper.getConfiguration()
                                 .getAuthorizers();
-                        
+
                         var authorizerConf = authorizersConf.stream().filter(am -> name
                         .equals(am.get("name")))
                                 .findFirst();
@@ -127,7 +138,8 @@ public class PluginsRegistry {
                             try {
                                 return PluginsFactory
                                         .createAuthorizer(authorizerConf.get());
-                            } catch (ConfigurationException pcex) {
+                            }
+                            catch (ConfigurationException pcex) {
                                 throw new IllegalStateException(
                                         pcex.getMessage(), pcex);
                             }
@@ -140,38 +152,12 @@ public class PluginsRegistry {
                         }
                     });
 
-    private static final LoadingCache<String, Service> SERVICES_CACHE
-            = CacheFactory.createLocalLoadingCache(
-                    Integer.MAX_VALUE,
-                    Cache.EXPIRE_POLICY.NEVER, -1, name -> {
-                        var srvsConf = Bootstrapper.getConfiguration()
-                                .getServices();
-
-                        var srvConf = srvsConf.stream().filter(srv -> name
-                        .equals(srv.get("name")))
-                                .findFirst();
-
-                        if (srvConf.isPresent()) {
-                            try {
-                                return PluginsFactory
-                                        .createService(srvConf.get());
-                            } catch (ConfigurationException pcex) {
-                                throw new IllegalStateException(
-                                        pcex.getMessage(), pcex);
-                            }
-                        } else {
-                            var errorMsg = "Service "
-                            + name
-                            + " not found.";
-
-                            throw new IllegalStateException(errorMsg,
-                                    new ConfigurationException(errorMsg));
-                        }
-                    });
+    private final Set<PluginRecord<Service>> services
+            = new LinkedHashSet<>();
 
     private final Set<PluginRecord<Initializer>> initializers
             = new LinkedHashSet<>();
-    
+
     private final Set<PluginRecord<PreStartupInitializer>> preStartupInitializers
             = new LinkedHashSet<>();
 
@@ -194,8 +180,9 @@ public class PluginsRegistry {
     private PluginsRegistry() {
         this.initializers.addAll(findIPlugins(Initializer.class.getName()));
         this.preStartupInitializers.addAll(findIPlugins(PreStartupInitializer.class.getName()));
+        findServices();
     }
-    
+
     private Map<String, Map<String, Object>> consumeConfiguration() {
         Map<String, Map<String, Object>> pluginsArgs = Bootstrapper
                 .getConfiguration()
@@ -213,83 +200,19 @@ public class PluginsRegistry {
 
         return confs;
     }
-    
+
     public Set<PluginRecord<Initializer>> getInitializers() {
         return this.initializers;
     }
-    
+
     public Set<PluginRecord<PreStartupInitializer>> getPreStartupInitializers() {
         return this.preStartupInitializers;
     }
 
-    /**
-     * finds the initializers
-     */
-    @SuppressWarnings("unchecked")
-    private <T extends Plugin> Set<PluginRecord<T>> findIPlugins(String interfaceName) {
-        Set<PluginRecord<T>> ret = new LinkedHashSet<>();
-                
-        try (var scanResult = new ClassGraph()
-                .enableAnnotationInfo()
-                .scan()) {
-            var registeredPlugins = scanResult
-                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
-
-            var listOfType = scanResult.getClassesImplementing(interfaceName);
-
-            var registeredInitializers = registeredPlugins.intersect(listOfType);
-
-            // sort @Initializers by priority
-            registeredInitializers.sort((ClassInfo ci1, ClassInfo ci2) -> {                
-                return Integer.compare(annotationParam(ci1, "priority"),
-                        annotationParam(ci2, "priority"));
-            });
-
-            registeredInitializers.stream().forEachOrdered(registeredInitializer -> {
-                Object i;
-
-                try {
-                    i = registeredInitializer.loadClass(false)
-                            .getConstructor()
-                            .newInstance();
-
-                    String name = annotationParam(registeredInitializer,
-                            "name");
-                    String description = annotationParam(registeredInitializer,
-                            "description");
-                    Boolean enabledByDefault = annotationParam(registeredInitializer,
-                            "enabledByDefault");
-
-                    var pr = new PluginRecord(
-                            name,
-                            description,
-                            enabledByDefault,
-                            registeredInitializer.getName(),
-                            (T) i,
-                            confs.get(name));
-
-                    if (pr.isEnabled()) {
-                        ret.add(pr);
-                        LOGGER.info("Registered initializer {}: {}",
-                                name,
-                                description);
-                    } else {
-                        LOGGER.debug("Initializer {} is disabled", name);
-                    }
-                } catch (InstantiationException
-                        | IllegalAccessException
-                        | InvocationTargetException
-                        | NoSuchMethodException t) {
-                    LOGGER.error("Error registering initializer {}",
-                            registeredInitializer.getName(),
-                            t);
-                }
-            });
-        }
-        
-        return ret;
+    public Set<PluginRecord<Service>> getServices() {
+        return this.services;
     }
-    
+
     public Authenticator getAuthenticator(String name)
             throws ConfigurationException {
         Optional<Authenticator> op = AUTHENTICATORS_CACHE
@@ -325,7 +248,7 @@ public class PluginsRegistry {
                     "No Authentication Mechanism configured with name: " + name);
         }
     }
-    
+
     public Authorizer getAuthorizer(String name)
             throws ConfigurationException {
         Optional<Authorizer> op = AUTHORIZERS_CACHE
@@ -344,21 +267,73 @@ public class PluginsRegistry {
         }
     }
 
-    public Service getService(String name)
-            throws ConfigurationException {
-        Optional<Service> op = SERVICES_CACHE
-                .getLoading(name);
+    /**
+     * finds the services
+     */
+    @SuppressWarnings("unchecked")
+    private void findServices() {
+        try (var scanResult = new ClassGraph()
+                .enableAnnotationInfo()
+                .addClassLoader(getPluginsClassloader())
+                .scan()) {
+            var registeredPlugins = scanResult
+                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
 
-        if (op == null) {
-            throw new ConfigurationException(
-                    "No Service configured with name: " + name);
-        }
+            var listOfType = scanResult.getSubclasses(Service.class.getName());
 
-        if (op.isPresent()) {
-            return op.get();
-        } else {
-            throw new ConfigurationException(
-                    "No Service configured with name: " + name);
+            var registeredServices = registeredPlugins.intersect(listOfType);
+
+            registeredServices.stream().forEach(registeredService -> {
+                Object srv;
+
+                try {
+                    String name = annotationParam(registeredService,
+                            "name");
+                    String description = annotationParam(registeredService,
+                            "description");
+                    Boolean enabledByDefault = annotationParam(registeredService,
+                            "enabledByDefault");
+
+                    srv = registeredService.loadClass(false)
+                            .getConstructor(Map.class)
+                            .newInstance(confs.get(name));
+
+                    var pr = new PluginRecord(
+                            name,
+                            description,
+                            enabledByDefault,
+                            registeredService.getName(),
+                            (Service) srv,
+                            confs.get(name));
+
+                    if (pr.isEnabled()) {
+                        this.services.add(pr);
+                        LOGGER.info("Registered service {}: {}",
+                                name,
+                                description);
+                    } else {
+                        LOGGER.debug("Service {} is disabled", name);
+                    }
+                }
+                catch (NoSuchMethodException nsme) {
+                    LOGGER.error("Plugin class {} annotated with "
+                            + "@RegisterPlugin must have a constructor "
+                            + "with single argument of type Map<String, Object>",
+                            registeredService.getName());
+                }
+                catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException t) {
+                    LOGGER.error("Error registering service {}",
+                            registeredService.getName(),
+                            t);
+                }
+                catch (Throwable t) {
+                    LOGGER.error("Error registering service {}",
+                            registeredService.getName(),
+                            t);
+                }
+            });
         }
     }
 
@@ -391,7 +366,77 @@ public class PluginsRegistry {
     public List<ResponseInterceptor> getResponseInterceptors() {
         return RESPONSE_INTECEPTORS;
     }
-    
+
+    /**
+     * finds the initializers
+     */
+    @SuppressWarnings("unchecked")
+    private <T extends Plugin> Set<PluginRecord<T>> findIPlugins(String interfaceName) {
+        Set<PluginRecord<T>> ret = new LinkedHashSet<>();
+
+        try (var scanResult = new ClassGraph()
+                .addClassLoader(getPluginsClassloader())
+                .enableAnnotationInfo()
+                .scan()) {
+            var registeredPlugins = scanResult
+                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+
+            var listOfType = scanResult.getClassesImplementing(interfaceName);
+
+            var registeredInitializers = registeredPlugins.intersect(listOfType);
+
+            // sort @Initializers by priority
+            registeredInitializers.sort((ClassInfo ci1, ClassInfo ci2) -> {
+                return Integer.compare(annotationParam(ci1, "priority"),
+                        annotationParam(ci2, "priority"));
+            });
+
+            registeredInitializers.stream().forEachOrdered(registeredInitializer -> {
+                Object i;
+
+                try {
+                    i = registeredInitializer.loadClass(false)
+                            .getConstructor()
+                            .newInstance();
+
+                    String name = annotationParam(registeredInitializer,
+                            "name");
+                    String description = annotationParam(registeredInitializer,
+                            "description");
+                    Boolean enabledByDefault = annotationParam(registeredInitializer,
+                            "enabledByDefault");
+
+                    var pr = new PluginRecord(
+                            name,
+                            description,
+                            enabledByDefault,
+                            registeredInitializer.getName(),
+                            (T) i,
+                            confs.get(name));
+
+                    if (pr.isEnabled()) {
+                        ret.add(pr);
+                        LOGGER.info("Registered initializer {}: {}",
+                                name,
+                                description);
+                    } else {
+                        LOGGER.debug("Initializer {} is disabled", name);
+                    }
+                }
+                catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException
+                        | NoSuchMethodException t) {
+                    LOGGER.error("Error registering initializer {}",
+                            registeredInitializer.getName(),
+                            t);
+                }
+            });
+        }
+
+        return ret;
+    }
+
     private static <T extends Object> T annotationParam(ClassInfo ci,
             String param) {
         var annotationInfo = ci.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME);
@@ -399,5 +444,61 @@ public class PluginsRegistry {
 
         // The Route annotation has a parameter named "path"
         return (T) annotationParamVals.getValue(param);
+    }
+
+    private URL[] findPluginsJars(Path pluginsDirectory) {
+        var urls = new ArrayList<URL>();
+
+        try (DirectoryStream<Path> directoryStream = Files
+                .newDirectoryStream(pluginsDirectory, "*.jar")) {
+            for (Path path : directoryStream) {
+                var jar = path.toUri().toURL();
+                urls.add(jar);
+                LOGGER.info("Added to classpath the plugins jar {}", jar);
+            }
+        }
+        catch (IOException ex) {
+            LOGGER.error("Cannot read jars in plugins directory {}",
+                    Bootstrapper.getConfiguration().getPluginsDirectory(),
+                    ex.getMessage());
+        }
+
+        return urls.toArray(new URL[urls.size()]);
+    }
+
+    private Path getPluginsDirectory() {
+        var pluginsDir = Bootstrapper.getConfiguration().getPluginsDirectory();
+
+        if (pluginsDir == null) {
+            return null;
+        }
+
+        if (pluginsDir.startsWith("/")) {
+            return Paths.get(pluginsDir);
+        } else {
+            // this is to allow specifying the plugin directory path 
+            // relative to the jar (also working when running from classes)
+            URL location = this.getClass().getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation();
+
+            File locationFile = new File(location.getPath());
+
+            pluginsDir = locationFile.getParent()
+                    + File.separator
+                    + pluginsDir;
+
+            return FileSystems.getDefault().getPath(pluginsDir);
+        }
+    }
+
+    private static URL[] PLUGINS_JARS_CACHE = null;
+
+    private URLClassLoader getPluginsClassloader() {
+        if (PLUGINS_JARS_CACHE == null) {
+            PLUGINS_JARS_CACHE = findPluginsJars(getPluginsDirectory());
+        }
+
+        return new URLClassLoader(PLUGINS_JARS_CACHE);
     }
 }

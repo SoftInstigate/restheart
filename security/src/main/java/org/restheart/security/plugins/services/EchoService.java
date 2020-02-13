@@ -21,7 +21,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import org.restheart.security.handlers.exchange.JsonRequest;
-import org.restheart.security.handlers.PipedHttpHandler;
 import org.restheart.security.handlers.exchange.ByteArrayRequest;
 import org.restheart.security.handlers.exchange.JsonResponse;
 import org.restheart.security.handlers.exchange.Request;
@@ -33,6 +32,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Map;
+import org.restheart.security.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@RegisterPlugin(
+        name = "echo",
+        description = "echoes the request",
+        enabledByDefault = true)
 public class EchoService extends Service {
 
     private static final Logger LOGGER = LoggerFactory
@@ -47,15 +52,17 @@ public class EchoService extends Service {
 
     /**
      *
-     * @param next
-     * @param name
-     * @param uri
-     * @param secured
+     * @param args
      */
-    public EchoService(PipedHttpHandler next, String name, String uri, Boolean secured) {
-        super(next, name, uri, secured, null);
+    public EchoService(Map<String, Object> args) {
+        super(args);
     }
 
+    @Override
+    public String defaultUri() {
+        return "echo";
+    }
+    
     /**
      *
      * @param exchange
@@ -136,5 +143,4 @@ public class EchoService extends Service {
             return new String(Arrays.copyOfRange(content, 0, 1023), StandardCharsets.UTF_8);
         }
     }
-
 }

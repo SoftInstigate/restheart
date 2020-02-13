@@ -176,7 +176,8 @@ public class Bootstrapper {
                     : parameters.envFile;
 
             PROPERTIES_FILE = FileUtils.getFileAbsolutePath(propFilePath);
-        } catch (com.beust.jcommander.ParameterException ex) {
+        }
+        catch (com.beust.jcommander.ParameterException ex) {
             LOGGER.error(ex.getMessage());
             cmd.usage();
             System.exit(1);
@@ -249,7 +250,8 @@ public class Bootstrapper {
                     d.init();
                     LOGGER.info("Forked process: {}", LIBC.getpid());
                     initLogging(d);
-                } catch (Exception t) {
+                }
+                catch (Exception t) {
                     logErrorAndExit("Error staring forked process", t, false, false, -1);
                 }
                 startServer(true);
@@ -271,7 +273,8 @@ public class Bootstrapper {
                     logLoggingConfiguration(true);
 
                     d.daemonize();
-                } catch (Throwable t) {
+                }
+                catch (Throwable t) {
                     logErrorAndExit("Error forking", t, false, false, -1);
                 }
             }
@@ -290,7 +293,8 @@ public class Bootstrapper {
                             + "For more information check https://restheart.org/docs/configuration",
                             null, false, -1);
                 }
-            } catch (IOException ioe) {
+            }
+            catch (IOException ioe) {
                 logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
             }
 
@@ -300,9 +304,11 @@ public class Bootstrapper {
             try (InputStreamReader reader = new InputStreamReader(
                     new FileInputStream(PROPERTIES_FILE.toFile()), "UTF-8")) {
                 p.load(reader);
-            } catch (FileNotFoundException fnfe) {
+            }
+            catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
-            } catch (IOException ieo) {
+            }
+            catch (IOException ieo) {
                 logErrorAndExit("Error reading properties file " + PROPERTIES_FILE, null, false, -1);
             }
 
@@ -311,11 +317,14 @@ public class Bootstrapper {
                 Mustache m = new DefaultMustacheFactory().compile(reader, "configuration-file");
                 m.execute(writer, p);
                 writer.flush();
-            } catch (MustacheNotFoundException ex) {
+            }
+            catch (MustacheNotFoundException ex) {
                 logErrorAndExit("Configuration file not found: " + CONFIGURATION_FILE, ex, false, -1);
-            } catch (FileNotFoundException fnfe) {
+            }
+            catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
-            } catch (IOException ieo) {
+            }
+            catch (IOException ieo) {
                 logErrorAndExit("Error reading configuration file " + CONFIGURATION_FILE, null, false, -1);
             }
 
@@ -464,7 +473,8 @@ public class Bootstrapper {
         // re-read configuration file, to log errors new that logger is initialized
         try {
             loadConfiguration();
-        } catch (ConfigurationException | IOException ex) {
+        }
+        catch (ConfigurationException | IOException ex) {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
@@ -475,14 +485,16 @@ public class Bootstrapper {
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
-                    } catch (Throwable t) {
+                    }
+                    catch (Throwable t) {
                         LOGGER.error("Error executing initializer {}", i.getName());
                     }
                 });
 
         try {
             startCoreSystem();
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             logErrorAndExit("Error starting RESTHeart Security. Exiting...",
                     t,
                     false,
@@ -513,7 +525,8 @@ public class Bootstrapper {
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
-                    } catch (Throwable t) {
+                    }
+                    catch (Throwable t) {
                         LOGGER.error("Error executing initializer {}", i.getName());
                     }
                 });
@@ -556,7 +569,8 @@ public class Bootstrapper {
             try {
                 HANDLERS.shutdown();
                 HANDLERS.awaitShutdown(60 * 1000); // up to 1 minute
-            } catch (InterruptedException ie) {
+            }
+            catch (InterruptedException ie) {
                 LOGGER.error("Error while waiting for pending request "
                         + "to complete", ie);
                 Thread.currentThread().interrupt();
@@ -573,7 +587,8 @@ public class Bootstrapper {
             }
             try {
                 Files.deleteIfExists(pidFilePath);
-            } catch (IOException ex) {
+            }
+            catch (IOException ex) {
                 LOGGER.error("Can't delete pid file {}",
                         pidFilePath.toString(), ex);
             }
@@ -585,7 +600,8 @@ public class Bootstrapper {
         TMP_EXTRACTED_FILES.keySet().forEach(k -> {
             try {
                 ResourcesExtractor.deleteTempDir(k, TMP_EXTRACTED_FILES.get(k));
-            } catch (URISyntaxException | IOException ex) {
+            }
+            catch (URISyntaxException | IOException ex) {
                 LOGGER.error("Error cleaning up temporary directory {}",
                         TMP_EXTRACTED_FILES.get(k).toString(), ex);
             }
@@ -661,7 +677,8 @@ public class Bootstrapper {
             tmf.init(ks);
 
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        } catch (KeyManagementException
+        }
+        catch (KeyManagementException
                 | NoSuchAlgorithmException
                 | KeyStoreException
                 | CertificateException
@@ -671,13 +688,15 @@ public class Bootstrapper {
                     + "Check the keystore-file, "
                     + "keystore-password and certpassword options. Exiting..",
                     ex, false, -1);
-        } catch (FileNotFoundException ex) {
+        }
+        catch (FileNotFoundException ex) {
             logErrorAndExit(
                     "Couldn't start RESTHeart Security, keystore file not found. "
                     + "Check the keystore-file, "
                     + "keystore-password and certpassword options. Exiting..",
                     ex, false, -1);
-        } catch (IOException ex) {
+        }
+        catch (IOException ex) {
             logErrorAndExit(
                     "Couldn't start RESTHeart Security, error reading the keystore file. "
                     + "Check the keystore-file, "
@@ -787,7 +806,8 @@ public class Bootstrapper {
                                             name);
                                 }
                             }
-                        } catch (ConfigurationException pcex) {
+                        }
+                        catch (ConfigurationException pcex) {
                             logErrorAndExit(pcex.getMessage(), pcex, false, -3);
                         }
                     });
@@ -820,7 +840,8 @@ public class Bootstrapper {
 
                             LOGGER.info("Authorizer {} enabled",
                                     name);
-                        } catch (ConfigurationException pcex) {
+                        }
+                        catch (ConfigurationException pcex) {
                             logErrorAndExit(pcex.getMessage(), pcex, false, -3);
                         }
                     });
@@ -889,7 +910,7 @@ public class Bootstrapper {
                 + "is {} bytes",
                 MAX_CONTENT_SIZE);
 
-        plugServices(configuration, getRootPathHandler(),
+        plugServices(getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
 
         proxyResources(configuration, getRootPathHandler(),
@@ -931,70 +952,170 @@ public class Bootstrapper {
      * @param identityManager
      * @param authorizers
      */
-    private static void plugServices(final Configuration conf,
-            final PathHandler paths,
+//    private static void _plugServices(final Configuration conf,
+//            final PathHandler paths,
+//            final List<AuthMechanism> authMechanisms,
+//            final LinkedHashSet<Authorizer> authorizers,
+//            final TokenManager tokenManager) {
+//        if (!conf.getServices().isEmpty()) {
+//            conf.getServices().stream()
+//                    .map(am -> am.get(ConfigurationKeys.NAME_KEY))
+//                    .filter(name -> name instanceof String)
+//                    .map(name -> (String) name)
+//                    .forEachOrdered(name -> {
+//                        try {
+//                            Service _srv = PluginsRegistry.getInstance()
+//                                    .getService(name);
+//
+//                            LOGGER.debug("{} secured {}", name, _srv.getSecured());
+//
+//                            SecurityHandler securityHandler;
+//
+//                            if (_srv.getSecured()) {
+//                                securityHandler = new SecurityHandler(
+//                                        authMechanisms,
+//                                        authorizers,
+//                                        tokenManager);
+//                            } else {
+//                                var _fauthorizers = new LinkedHashSet<Authorizer>();
+//                                _fauthorizers.add(new FullAuthorizer(false));
+//
+//                                securityHandler = new SecurityHandler(
+//                                        authMechanisms,
+//                                        _fauthorizers,
+//                                        tokenManager);
+//                            }
+//
+//                            var srv = pipe(new TracingInstrumentationHandler(),
+//                                    new RequestLogger(),
+//                                    new CORSHandler(),
+//                                    new XPoweredByInjector(),
+//                                    new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
+//                                    new RequestInterceptorsExecutor(BEFORE_AUTH),
+//                                    new QueryStringRebuilder(),
+//                                    securityHandler,
+//                                    new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
+//                                    new RequestInterceptorsExecutor(AFTER_AUTH),
+//                                    new QueryStringRebuilder(),
+//                                    new ConduitInjector(),
+//                                    PipedWrappingHandler.wrap(
+//                                            new ConfigurableEncodingHandler(_srv,
+//                                                    configuration.isForceGzipEncoding())),
+//                                    new ResponseSender()
+//                            );
+//
+//                            paths.addPrefixPath(_srv.getUri(), srv);
+//
+//                            LOGGER.info("URI {} bound to service {}, secured: {}",
+//                                    _srv.getUri(),
+//                                    _srv.getName(),
+//                                    _srv.getSecured());
+//
+//                        }
+//                        catch (ConfigurationException pce) {
+//                            LOGGER.error("Error plugging in the service", pce);
+//                        }
+//                    });
+//        }
+//    }
+
+    /**
+     * pipe services
+     *
+     * @param paths
+     * @param authMechanisms
+     * @param authorizers
+     * @param tokenManager
+     */
+    private static void plugServices(final PathHandler paths,
             final List<AuthMechanism> authMechanisms,
             final LinkedHashSet<Authorizer> authorizers,
             final TokenManager tokenManager) {
-        if (!conf.getServices().isEmpty()) {
-            conf.getServices().stream()
-                    .map(am -> am.get(ConfigurationKeys.NAME_KEY))
-                    .filter(name -> name instanceof String)
-                    .map(name -> (String) name)
-                    .forEachOrdered(name -> {
-                        try {
-                            Service _srv = PluginsRegistry.getInstance()
-                                    .getService(name);
+        PluginsRegistry.getInstance().getServices().stream().forEach(srv -> {
+            var srvConfArgs = srv.getConfArgs();
 
-                            LOGGER.debug("{} secured {}", name, _srv.getSecured());
+            String uri;
 
-                            SecurityHandler securityHandler;
+            if (srvConfArgs == null
+                    || !srvConfArgs.containsKey("uri")
+                    || srvConfArgs.get("uri") == null) {
+                uri = srv.getInstance().defaultUri();
+            } else {
+                if (!(srvConfArgs.get("uri") instanceof String)) {
+                    LOGGER.error("Cannot start service {}:"
+                            + " the configuration property 'uri' must be a string",
+                            srv.getName());
 
-                            if (_srv.getSecured()) {
-                                securityHandler = new SecurityHandler(
-                                        authMechanisms,
-                                        authorizers,
-                                        tokenManager);
-                            } else {
-                                var _fauthorizers = new LinkedHashSet<Authorizer>();
-                                _fauthorizers.add(new FullAuthorizer(false));
+                    return;
+                } else {
+                    uri = (String) srvConfArgs.get("uri");
+                }
+            }
 
-                                securityHandler = new SecurityHandler(
-                                        authMechanisms,
-                                        _fauthorizers,
-                                        tokenManager);
-                            }
+            if (uri == null) {
+                LOGGER.error("Cannot start service {}:"
+                        + " the configuration property 'uri' is not defined"
+                        + " and the service does not have a default value",
+                        srv.getName());
+                return;
+            }
 
-                            var srv = pipe(new TracingInstrumentationHandler(),
-                                    new RequestLogger(),
-                                    new CORSHandler(),
-                                    new XPoweredByInjector(),
-                                    new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
-                                    new RequestInterceptorsExecutor(BEFORE_AUTH),
-                                    new QueryStringRebuilder(),
-                                    securityHandler,
-                                    new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
-                                    new RequestInterceptorsExecutor(AFTER_AUTH),
-                                    new QueryStringRebuilder(),
-                                    new ConduitInjector(),
-                                    PipedWrappingHandler.wrap(
-                                            new ConfigurableEncodingHandler(_srv,
-                                                    configuration.isForceGzipEncoding())),
-                                    new ResponseSender()
-                            );
+            if (!uri.startsWith("/")) {
+                LOGGER.error("Cannot start service {}:"
+                        + " the configuration property 'uri' must start with /",
+                        srv.getName(),
+                        uri);
 
-                            paths.addPrefixPath(_srv.getUri(), srv);
+                return;
+            }
 
-                            LOGGER.info("URI {} bound to service {}, secured: {}",
-                                    _srv.getUri(),
-                                    _srv.getName(),
-                                    _srv.getSecured());
+            boolean secured = srvConfArgs.containsKey("secured")
+                    && srvConfArgs.get("secured") instanceof Boolean
+                    ? (boolean) srvConfArgs.get("secured")
+                    : true;
 
-                        } catch (ConfigurationException pce) {
-                            LOGGER.error("Error plugging in the service", pce);
-                        }
-                    });
-        }
+            SecurityHandler securityHandler;
+
+            if (secured) {
+                securityHandler = new SecurityHandler(
+                        authMechanisms,
+                        authorizers,
+                        tokenManager);
+            } else {
+                var _fauthorizers = new LinkedHashSet<Authorizer>();
+                _fauthorizers.add(new FullAuthorizer(false));
+
+                securityHandler = new SecurityHandler(
+                        authMechanisms,
+                        _fauthorizers,
+                        tokenManager);
+            }
+
+            var _srv = pipe(new TracingInstrumentationHandler(),
+                    new RequestLogger(),
+                    new CORSHandler(),
+                    new XPoweredByInjector(),
+                    new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
+                    new RequestInterceptorsExecutor(BEFORE_AUTH),
+                    new QueryStringRebuilder(),
+                    securityHandler,
+                    new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
+                    new RequestInterceptorsExecutor(AFTER_AUTH),
+                    new QueryStringRebuilder(),
+                    new ConduitInjector(),
+                    PipedWrappingHandler.wrap(
+                            new ConfigurableEncodingHandler(srv.getInstance(),
+                                    configuration.isForceGzipEncoding())),
+                    new ResponseSender()
+            );
+
+            paths.addPrefixPath(uri, _srv);
+
+            LOGGER.info("URI {} bound to service {}, secured: {}",
+                    uri,
+                    srv.getName(),
+                    secured);
+        });
     }
 
     /**
@@ -1011,7 +1132,8 @@ public class Bootstrapper {
 
         try {
             return PluginsRegistry.getInstance().getTokenManager();
-        } catch (ConfigurationException pce) {
+        }
+        catch (ConfigurationException pce) {
             LOGGER.error("Error configuring token manager", pce);
             return null;
         }
@@ -1088,7 +1210,8 @@ public class Bootstrapper {
 
             try {
                 sslProvider = xnio.getSslProvider(optionMap);
-            } catch (GeneralSecurityException ex) {
+            }
+            catch (GeneralSecurityException ex) {
                 logErrorAndExit("error configuring ssl", ex, false, -13);
             }
 
@@ -1147,7 +1270,8 @@ public class Bootstrapper {
                 paths.addPrefixPath(location, proxy);
 
                 LOGGER.info("URI {} bound to resource {}", location, _proxyPass);
-            } catch (URISyntaxException ex) {
+            }
+            catch (URISyntaxException ex) {
                 LOGGER.warn("Invalid location URI {}, resource {} not bound ",
                         location,
                         _proxyPass);

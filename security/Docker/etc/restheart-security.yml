@@ -186,9 +186,22 @@ plugins-directory: {{{plugins-directory}}}
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).
 # The property 'enabled' allows enabling plugins that are not enabled by default,
 # i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false)
-# NOTE: currently only Initializers are registered with @RegisterPlugin annotation
+# NOTE: currently only Initializers and Services 
+#       work with @RegisterPlugin annotation
 
-#plugins-args:
+plugins-args:
+  rndTokenService:
+    uri: /tokens
+    secured: false
+  ping:
+    secured: false
+    msg: {{{ping-hello-message}}}
+  roles:
+    uri: /roles
+    secured: true
+  echo:
+    uri: /echo
+    secured: false
 
 #### Logging
 

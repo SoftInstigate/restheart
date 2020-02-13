@@ -22,32 +22,37 @@ import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
 import java.util.Map;
 
 import org.restheart.security.handlers.exchange.JsonRequest;
-import org.restheart.security.handlers.PipedHttpHandler;
 import org.restheart.security.plugins.Service;
 import org.restheart.security.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.security.ConfigurationException;
+import org.restheart.security.plugins.RegisterPlugin;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@RegisterPlugin(
+        name = "ping",
+        description = "simple ping service",
+        enabledByDefault = true)
 public class PingService extends Service {
 
     private final String msg;
 
     /**
      *
-     * @param next
      * @param args
+     * @throws org.restheart.security.ConfigurationException
      */
-    public PingService(PipedHttpHandler next,
-            String name,
-            String uri,
-            Boolean secured,
-            Map<String, Object> args)
-            throws Exception {
-        super(next, name, uri, secured, args);
+    public PingService(Map<String, Object> args) throws ConfigurationException {
+        super(args);
         this.msg = argValue(args, "msg");
+    }
+
+    @Override
+    public String defaultUri() {
+        return "/ping";
     }
 
     /**

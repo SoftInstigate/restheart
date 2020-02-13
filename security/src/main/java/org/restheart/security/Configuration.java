@@ -857,7 +857,7 @@ public class Configuration {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
+                LOGGER.trace("parameter {} not specified in the configuration file."
                         + " Using its default value {}", key, defaultValue);
             }
             return defaultValue;

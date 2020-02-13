@@ -144,36 +144,37 @@ token-manager:
     args:
       ttl: 15
       srv-uri: /tokens
+      
+#### Plugins configuration
 
-## Services
+# The directory containing the plugins jars. 
+# The path is either absolute (starts with /) or relative to the restheart.jar file
+# Just add the plugins jar to plugins-directory and they will be automatically
+# added to the classpath and registered.
 
- # RESTHeart Security allows exposing custom services
- # The service class must extend the prg.restheart.security.plugins.Service
- # and can be bound to an URI via the service option
+plugins-directory: ../plugins
 
- # See README.md for the list of available Services
+# All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object 
+# with the same name of the plugin (as defined in its @RegisterPlugin annotation).
+# The property 'enabled' allows enabling plugins that are not enabled by default,
+# i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false) 
+# NOTE: currently only Initializers and Services 
+#       work with @RegisterPlugin annotation
 
-services:
-    - name: rndTokenService
-      class: org.restheart.security.plugins.services.RndTokenService
-      uri: /tokens
-      secured: false
-    - name: ping
-      class: org.restheart.security.plugins.services.PingService
-      uri: /ping
-      secured: false
-      args:
-          msg: "Hello World!"
-    - name: getRoles
-      class: org.restheart.security.plugins.services.GetRoleService
-      uri: /roles
-      secured: true
-      args:
-          url: /roles
-    - name: requestEchoer
-      class: org.restheart.security.plugins.services.EchoService
-      uri: /echo
-      secured: false
+plugins-args:
+  rndTokenService:
+    uri: /tokens
+    secured: false
+  ping:
+    secured: false
+    msg: {{{ping-hello-message}}}
+  roles:
+    uri: /roles
+    secured: true
+  echo:
+    uri: /echo
+    secured: false
+
       
 #### Logging
 

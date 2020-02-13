@@ -152,44 +152,6 @@ token-manager:
       ttl: 15
       srv-uri: /tokens
 
-## Services
-
- # RESTHeart Security allows exposing custom services
- # The service class must extend the prg.restheart.security.plugins.Service
- # and can be bound to an URI via the service option
-
- # See README.md for the list of available Services
-
-services:
-    - name: rndTokenService
-      class: org.restheart.security.plugins.services.RndTokenService
-      uri: /tokens
-      secured: false
-    - name: ping
-      class: org.restheart.security.plugins.services.PingService
-      uri: /ping
-      secured: false
-      args:
-          msg: "Hello World!"
-    - name: getRoles
-      class: org.restheart.security.plugins.services.GetRoleService
-      uri: /roles
-      secured: true
-      args:
-          url: /roles
-    - name: requestEchoer
-      class: org.restheart.security.plugins.services.EchoService
-      uri: /echo
-      secured: false
-    - name: securedRequestEchoer
-      class: org.restheart.security.plugins.services.EchoService
-      uri: /secho
-      secured: true
-    - name: interceptedRequestEchoer
-      class: org.restheart.security.plugins.services.EchoService
-      uri: /iecho
-      secured: false
- 
 #### Plugins configuration
 
 # The directory containing the plugins jars. 
@@ -197,16 +159,37 @@ services:
 # Just add the plugins jar to plugins-directory and they will be automatically
 # added to the classpath and registered.
 
-plugins-directory: {{{plugins-directory}}}
+plugins-directory: ../plugins
 
 # All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object 
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).
 # The property 'enabled' allows enabling plugins that are not enabled by default,
 # i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false) 
-# NOTE: currently only Initializers are registered with @RegisterPlugin annotation
+# NOTE: currently only Initializers and Services 
+#       work with @RegisterPlugin annotation
 
 plugins-args:
   testInitializer:
+    enabled: true 
+  rndTokenService:
+    uri: /tokens
+    secured: false
+  ping:
+    secured: false
+    msg: "Ping!"
+  roles:
+    uri: /roles
+    secured: true
+  echo:
+    uri: /echo
+    secured: false
+  secho:
+    uri: /secho
+    secured: true
+    enabled: true
+  iecho:
+    uri: /iecho
+    secured: false
     enabled: true
       
 #### Logging
@@ -227,7 +210,7 @@ enable-log-console: true
 log-level: DEBUG
 requests-log-level: 1
 ansi-console: true
-requests-log-trace-headers:
+requests-log-trace-headers: 
 #  - x-b3-traceid      # vv Zipkin headers, see https://github.com/openzipkin/b3-propagation
 #  - x-b3-spanid
 #  - x-b3-parentspanid
