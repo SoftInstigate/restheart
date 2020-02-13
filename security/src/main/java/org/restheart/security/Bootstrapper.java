@@ -1069,10 +1069,11 @@ public class Bootstrapper {
                 return;
             }
 
-            boolean secured = srvConfArgs.containsKey("secured")
+            boolean secured = srvConfArgs != null 
+                    && srvConfArgs.containsKey("secured")
                     && srvConfArgs.get("secured") instanceof Boolean
                     ? (boolean) srvConfArgs.get("secured")
-                    : true;
+                    : false;
 
             SecurityHandler securityHandler;
 
