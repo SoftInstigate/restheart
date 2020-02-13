@@ -37,6 +37,7 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import org.restheart.security.ConfigurationException;
+import org.restheart.security.plugins.PluginRecord;
 import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.authenticators.PwdCredentialAccount;
@@ -66,7 +67,14 @@ public class RndTokenManager implements TokenManager {
             AUTH_TOKEN_LOCATION_HEADER.toString() };
         
         PluginsRegistry.getInstance().getResponseInterceptors()
-                .add(new TokenCORSResponseInterceptor(headers));
+                .add(new PluginRecord("tokenCORSResponseInterceptor",
+                        "helper interceptor to add token headers to "
+                                + "Access-Control-Expose-Headers to "
+                                + "handle CORS request",
+                        true,
+                        TokenCORSResponseInterceptor.class.getName(),
+                        new TokenCORSResponseInterceptor(headers),
+                        null));
     }
 
     @Override

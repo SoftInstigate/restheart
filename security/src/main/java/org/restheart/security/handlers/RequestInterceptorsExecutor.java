@@ -68,8 +68,9 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
                 .getInstance()
                 .getRequestInterceptors()
                 .stream()
-                .filter(ri -> ri.resolve(exchange))
-                .filter(ri -> interceptPoint.equals(ri.interceptPoint()))
+                .filter(ri -> ri.isEnabled())
+                .filter(ri -> ri.getInstance().resolve(exchange))
+                .filter(ri -> interceptPoint.equals(ri.getInstance().interceptPoint()))
                 .forEachOrdered(ri -> {
                     try {
                         LOGGER.debug("Executing request interceptor {} for {} on intercept point {}",
@@ -77,7 +78,7 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
                                 exchange.getRequestPath(),
                                 interceptPoint);
 
-                        ri.handleRequest(exchange);
+                        ri.getInstance().handleRequest(exchange);
                     } catch (Exception ex) {
                         LOGGER.error("Error executing request interceptor {} for {} on intercept point {}",
                                 ri.getClass().getSimpleName(),

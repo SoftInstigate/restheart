@@ -22,6 +22,8 @@ import com.google.gson.JsonObject;
 import org.restheart.security.handlers.exchange.JsonRequest;
 import io.undertow.server.HttpServerExchange;
 import java.util.LinkedList;
+import java.util.Map;
+import org.restheart.security.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.restheart.security.plugins.RequestInterceptor;
@@ -30,10 +32,18 @@ import org.restheart.security.plugins.RequestInterceptor;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
+@RegisterPlugin(
+        name = "echoExampleRequestInterceptor",
+        description = "used for testing purposes",
+        enabledByDefault = false)
 public class EchoExampleRequestInterceptor implements RequestInterceptor {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(EchoExampleRequestInterceptor.class);
+    
+    public EchoExampleRequestInterceptor(Map<String, Object> args) {
+        LOGGER.debug("got args {}", args);
+    }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {

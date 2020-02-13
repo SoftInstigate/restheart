@@ -191,6 +191,12 @@ plugins-args:
     uri: /iecho
     secured: false
     enabled: true
+  echoExampleRequestInterceptor:
+    enabled: true
+  echoExampleResponseInterceptor:
+    enabled: true
+  secretHider:
+    enabled: true
       
 #### Logging
 

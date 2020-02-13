@@ -115,9 +115,10 @@ public class RequestContentInjector extends PipedHttpHandler {
         return PluginsRegistry
                 .getInstance()
                 .getRequestInterceptors().stream()
-                .filter(t -> t.resolve(exchange))
-                .filter(t -> interceptPoint.equals(t.interceptPoint()))
-                .anyMatch(t -> t.requiresContent());
+                .filter(ri -> ri.isEnabled())
+                .filter(ri -> ri.getInstance().resolve(exchange))
+                .filter(ri -> interceptPoint.equals(ri.getInstance().interceptPoint()))
+                .anyMatch(ri -> ri.getInstance().requiresContent());
     }
     
     private static final AttachmentKey<Boolean> INJECTED_KEY

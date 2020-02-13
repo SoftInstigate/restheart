@@ -129,14 +129,15 @@ public class ModifiableContentSinkConduit
             PluginsRegistry.getInstance()
                     .getResponseInterceptors()
                     .stream()
-                    .filter(ri -> ri.resolve(exchange))
+                    .filter(ri -> ri.isEnabled())
+                    .filter(ri -> ri.getInstance().resolve(exchange))
                     .forEachOrdered(ri -> {
                         LOGGER.debug("Executing response interceptor {} for {}",
                                 ri.getClass().getSimpleName(),
                                 exchange.getRequestPath());
 
                         try {
-                            ri.handleRequest(exchange);
+                            ri.getInstance().handleRequest(exchange);
                         } catch (Exception ex) {
                             LOGGER.error("Error executing response interceptor {} for {}",
                                     ri.getClass().getSimpleName(),

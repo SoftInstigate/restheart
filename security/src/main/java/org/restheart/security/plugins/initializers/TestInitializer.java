@@ -68,17 +68,5 @@ public class TestInitializer implements Initializer {
                                 exchange.getRequestPath())));
             }
         });
-
-        // add an example response interceptor
-        PluginsRegistry
-                .getInstance()
-                .getResponseInterceptors()
-                .add(new EchoExampleResponseInterceptor());
-
-        // add an example request interceptor
-        PluginsRegistry
-                .getInstance()
-                .getRequestInterceptors()
-                .add(new EchoExampleRequestInterceptor());
     }
 }

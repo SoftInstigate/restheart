@@ -20,12 +20,11 @@ package org.restheart.security.plugins.interceptors;
 import com.google.gson.JsonElement;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
+import java.util.Map;
 import org.restheart.security.handlers.exchange.ByteArrayRequest;
 import org.restheart.security.handlers.exchange.ByteArrayResponse;
 import org.restheart.security.handlers.exchange.JsonRequest;
-import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.RegisterPlugin;
-import org.restheart.security.plugins.Initializer;
 import org.restheart.security.plugins.RequestInterceptor;
 import org.restheart.security.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -37,73 +36,64 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(
         name = "secretHider",
-        priority = 100,
-        description = "adds an Interceptor that forbis write requests "
+        description = "it that forbis write requests "
         + "on '/coll' "
         + "containing the property 'secret' "
         + "to users does not have the role 'admin'",
         enabledByDefault = false)
-public class SecretHider implements Initializer {
+public class SecretHider implements RequestInterceptor {
+
     static final Logger LOGGER = LoggerFactory.getLogger(SecretHider.class);
+    
+    public SecretHider(Map<String, Object> args) {
+        LOGGER.debug("got args {}", args);
+    }
 
     @Override
-    public void init() {
+    public RequestInterceptor.IPOINT interceptPoint() {
+        return RequestInterceptor.IPOINT.AFTER_AUTH;
+    }
 
-        PluginsRegistry.getInstance()
-                .getRequestInterceptors()
-                .add(new RequestInterceptor() {
-                    @Override
-                    public boolean requiresContent() {
-                        return true;
-                    }
+    @Override
+    public void handleRequest(HttpServerExchange hse) throws Exception {
+        var content = JsonRequest.wrap(hse).readContent();
 
-                    @Override
-                    public RequestInterceptor.IPOINT interceptPoint() {
-                        return RequestInterceptor.IPOINT.AFTER_AUTH;
-                    }
+        if (keys(content).stream()
+                .anyMatch(k -> "secret".equals(k)
+                || k.endsWith(".secret"))) {
+            var response = ByteArrayResponse.wrap(hse);
 
-                    @Override
-                    public void handleRequest(HttpServerExchange hse) throws Exception {
-                        var content = JsonRequest.wrap(hse).readContent();
+            response.endExchangeWithMessage(HttpStatus.SC_FORBIDDEN, "cannot write secret");
+        }
+    }
 
-                        if (keys(content).stream()
-                                .anyMatch(k -> "secret".equals(k)
-                                || k.endsWith(".secret"))) {
-                            var response = ByteArrayResponse.wrap(hse);
+    @Override
+    public boolean resolve(HttpServerExchange hse) {
+        var req = ByteArrayRequest.wrap(hse);
 
-                            response.endExchangeWithMessage(HttpStatus.SC_FORBIDDEN, "cannot write secret");
-                        }
-                    }
+        return ByteArrayRequest.isContentTypeJson(hse)
+                && !req.isAccountInRole("admin")
+                && hse.getRequestPath().startsWith("/coll")
+                && (req.isPost() || req.isPatch() || req.isPut());
+    }
 
-                    @Override
-                    public boolean resolve(HttpServerExchange hse) {
-                        var req = ByteArrayRequest.wrap(hse);
+    /**
+     * @return the keys of the JSON
+     */
+    private ArrayList<String> keys(JsonElement val) {
+        var keys = new ArrayList<String>();
 
-                        return ByteArrayRequest.isContentTypeJson(hse)
-                                && !req.isAccountInRole("admin")
-                                && hse.getRequestPath().startsWith("/coll")
-                                && (req.isPost() || req.isPatch() || req.isPut());
-                    }
+        if (val == null) {
+            return keys;
+        } else if (val.isJsonObject()) {
+            val.getAsJsonObject().keySet().forEach(k -> {
+                keys.add(k);
+                keys.addAll(keys(val.getAsJsonObject().get(k)));
+            });
+        } else if (val.isJsonArray()) {
+            val.getAsJsonArray().forEach(v -> keys.addAll(keys(v)));
+        }
 
-                    /**
-                     * @return the keys of the JSON
-                     */
-                    private ArrayList<String> keys(JsonElement val) {
-                        var keys = new ArrayList<String>();
-
-                        if (val == null) {
-                            return keys;
-                        } else if (val.isJsonObject()) {
-                            val.getAsJsonObject().keySet().forEach(k -> {
-                                keys.add(k);
-                                keys.addAll(keys(val.getAsJsonObject().get(k)));
-                            });
-                        } else if (val.isJsonArray()) {
-                            val.getAsJsonArray().forEach(v -> keys.addAll(keys(v)));
-                        }
-
-                        return keys;
-                    }
-                });
+        return keys;
     }
 }

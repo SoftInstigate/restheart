@@ -161,11 +161,11 @@ public class PluginsRegistry {
     private final Set<PluginRecord<PreStartupInitializer>> preStartupInitializers
             = new LinkedHashSet<>();
 
-    private static final List<RequestInterceptor> REQUEST_INTERCEPTORS
-            = Collections.synchronizedList(new ArrayList<>());
+    private final Set<PluginRecord<RequestInterceptor>> requestInterceptors
+            = new LinkedHashSet<>();
 
-    private static final List<ResponseInterceptor> RESPONSE_INTECEPTORS
-            = Collections.synchronizedList(new ArrayList<>());
+    private final Set<PluginRecord<ResponseInterceptor>> responseInterceptors
+            = new LinkedHashSet<>();
 
     private static PluginsRegistry HOLDER;
 
@@ -181,6 +181,7 @@ public class PluginsRegistry {
         this.initializers.addAll(findIPlugins(Initializer.class.getName()));
         this.preStartupInitializers.addAll(findIPlugins(PreStartupInitializer.class.getName()));
         findServices();
+        findInterceptors();
     }
 
     private Map<String, Map<String, Object>> consumeConfiguration() {
@@ -267,6 +268,83 @@ public class PluginsRegistry {
         }
     }
 
+    /**
+     * finds the services
+     */
+    @SuppressWarnings("unchecked")
+    private void findInterceptors() {
+        try (var scanResult = new ClassGraph()
+                .enableAnnotationInfo()
+                .addClassLoader(getPluginsClassloader())
+                .scan()) {
+            var registeredPlugins = scanResult
+                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+
+            var listOfType = scanResult.getClassesImplementing(Interceptor.class.getName());
+
+            var registeredInterceptors = registeredPlugins.intersect(listOfType);
+
+            registeredInterceptors.stream().forEach(registeredInterceptor -> {
+                Object srv;
+
+                try {
+                    String name = annotationParam(registeredInterceptor,
+                            "name");
+                    String description = annotationParam(registeredInterceptor,
+                            "description");
+                    Boolean enabledByDefault = annotationParam(registeredInterceptor,
+                            "enabledByDefault");
+
+                    srv = registeredInterceptor.loadClass(false)
+                            .getConstructor(Map.class)
+                            .newInstance(confs.get(name));
+
+                    var pr = new PluginRecord(
+                            name,
+                            description,
+                            enabledByDefault,
+                            registeredInterceptor.getName(),
+                            (Interceptor) srv,
+                            confs.get(name));
+
+                    if (pr.isEnabled()) {
+                        if (pr.getInstance() instanceof RequestInterceptor) {
+                            this.requestInterceptors.add(pr);
+                            LOGGER.info("Registered request interceptor {}: {}",
+                                name,
+                                description);
+                        } else if (pr.getInstance() instanceof ResponseInterceptor) {
+                            this.responseInterceptors.add(pr);
+                            LOGGER.info("Registered response interceptor {}: {}",
+                                name,
+                                description);
+                        }
+                    } else {
+                        LOGGER.debug("Interceptor {} is disabled", name);
+                    }
+                }
+                catch (NoSuchMethodException nsme) {
+                    LOGGER.error("Plugin class {} annotated with "
+                            + "@RegisterPlugin must have a constructor "
+                            + "with single argument of type Map<String, Object>",
+                            registeredInterceptor.getName());
+                }
+                catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException t) {
+                    LOGGER.error("Error registering interceptor {}",
+                            registeredInterceptor.getName(),
+                            t);
+                }
+                catch (Throwable t) {
+                    LOGGER.error("Error registering interceptor {}",
+                            registeredInterceptor.getName(),
+                            t);
+                }
+            });
+        }
+    }
+    
     /**
      * finds the services
      */
@@ -359,12 +437,12 @@ public class PluginsRegistry {
         }
     }
 
-    public List<RequestInterceptor> getRequestInterceptors() {
-        return REQUEST_INTERCEPTORS;
+    public Set<PluginRecord<RequestInterceptor>> getRequestInterceptors() {
+        return requestInterceptors;
     }
 
-    public List<ResponseInterceptor> getResponseInterceptors() {
-        return RESPONSE_INTECEPTORS;
+    public Set<PluginRecord<ResponseInterceptor>> getResponseInterceptors() {
+        return responseInterceptors;
     }
 
     /**

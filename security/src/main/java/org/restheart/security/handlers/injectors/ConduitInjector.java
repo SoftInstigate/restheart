@@ -60,7 +60,7 @@ public class ConduitInjector extends PipedHttpHandler {
     }
 
     /**
-     * 
+     *
      */
     public ConduitInjector() {
         super();
@@ -83,8 +83,10 @@ public class ConduitInjector extends PipedHttpHandler {
                 if (PluginsRegistry.getInstance()
                         .getResponseInterceptors()
                         .stream()
-                        .filter(ri -> ri.resolve(exchange))
-                        .anyMatch(ri -> ri.requiresResponseContent())) {
+                        .filter(ri -> ri.isEnabled())
+                        .filter(ri -> ri.getInstance().resolve(exchange))
+                        .anyMatch(ri -> ri.getInstance()
+                                .requiresResponseContent())) {
                     var mcsc = new ModifiableContentSinkConduit(
                             factory.create(),
                             exchange);
@@ -111,12 +113,14 @@ public class ConduitInjector extends PipedHttpHandler {
      *
      * @param exchange
      */
-    private static void forceIdentityEncodingForInterceptors(HttpServerExchange exchange) {
+    private static void forceIdentityEncodingForInterceptors(
+            HttpServerExchange exchange) {
         if (PluginsRegistry.getInstance()
                 .getResponseInterceptors()
                 .stream()
-                .filter(ri -> ri.resolve(exchange))
-                .anyMatch(ri -> ri.requiresResponseContent())) {
+                .filter(ri -> ri.isEnabled())
+                .filter(ri -> ri.getInstance().resolve(exchange))
+                .anyMatch(ri -> ri.getInstance().requiresResponseContent())) {
             var _before = exchange.getRequestHeaders()
                     .get(Headers.ACCEPT_ENCODING);
 
