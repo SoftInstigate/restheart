@@ -24,7 +24,7 @@ import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 
 /**
- *
+ * @see https://restheart.org/docs/develop/security-plugins/#authentication-mechanisms
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface AuthMechanism extends

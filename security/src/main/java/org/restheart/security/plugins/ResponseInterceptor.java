@@ -23,6 +23,7 @@ package org.restheart.security.plugins;
  * resource before sending it to the client. Can be setup by an Initializer
  * using PluginsRegistry.getResponseInterceptors().add()
  *
+ * @see https://restheart.org/docs/develop/security-plugins/#interceptors
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface ResponseInterceptor extends Interceptor {

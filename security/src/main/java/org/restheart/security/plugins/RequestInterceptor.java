@@ -24,6 +24,7 @@ import static org.restheart.security.plugins.RequestInterceptor.IPOINT.BEFORE_AU
  * Can be setup by an Initializer using
  * PluginsRegistry.getRequestInterceptors().add()
  *
+ * @see https://restheart.org/docs/develop/security-plugins/#interceptors
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface RequestInterceptor extends Interceptor {

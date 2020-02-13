@@ -22,7 +22,7 @@ import java.util.Map;
 import org.restheart.security.handlers.PipedHttpHandler;
 
 /**
- *
+ * @see https://restheart.org/docs/develop/security-plugins/#services
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class Service extends PipedHttpHandler

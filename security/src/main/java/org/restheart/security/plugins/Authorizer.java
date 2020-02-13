@@ -20,7 +20,7 @@ package org.restheart.security.plugins;
 import io.undertow.server.HttpServerExchange;
 
 /**
- *
+ * @see https://restheart.org/docs/develop/security-plugins/#authorizers
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface Authorizer extends ConfigurablePlugin {

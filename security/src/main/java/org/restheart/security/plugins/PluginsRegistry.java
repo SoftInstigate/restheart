@@ -240,15 +240,9 @@ public class PluginsRegistry {
             var registeredInitializers = registeredPlugins.intersect(listOfType);
 
             // sort @Initializers by priority
-            registeredInitializers.sort(new Comparator<ClassInfo>() {
-                @Override
-                public int compare(ClassInfo ci1, ClassInfo ci2) {
-                    int p1 = annotationParam(ci1, "priority");
-
-                    int p2 = annotationParam(ci2, "priority");
-
-                    return Integer.compare(p1, p2);
-                }
+            registeredInitializers.sort((ClassInfo ci1, ClassInfo ci2) -> {                
+                return Integer.compare(annotationParam(ci1, "priority"),
+                        annotationParam(ci2, "priority"));
             });
 
             registeredInitializers.stream().forEachOrdered(registeredInitializer -> {

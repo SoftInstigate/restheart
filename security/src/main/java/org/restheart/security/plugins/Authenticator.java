@@ -22,7 +22,7 @@ import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
 
 /**
- *
+ * @see https://restheart.org/docs/develop/security-plugins/#authenticators
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface Authenticator extends IdentityManager, ConfigurablePlugin {

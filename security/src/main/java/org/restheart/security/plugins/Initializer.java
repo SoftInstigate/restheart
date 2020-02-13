@@ -18,7 +18,7 @@
 package org.restheart.security.plugins;
 
 /**
- *
+ * @see https://restheart.org/docs/develop/security-plugins/#initializers
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface Initializer extends ConfigurablePlugin {
