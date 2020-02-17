@@ -913,7 +913,7 @@ public class Bootstrapper {
         plugServices(getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
 
-        proxyResources(configuration, getRootPathHandler(),
+        plugResources(configuration, getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
 
         return buildGracefulShutdownHandler(getRootPathHandler());
@@ -944,83 +944,7 @@ public class Bootstrapper {
     }
 
     /**
-     * plugServices
-     *
-     * @param conf
-     * @param paths
-     * @param authMechanisms
-     * @param identityManager
-     * @param authorizers
-     */
-//    private static void _plugServices(final Configuration conf,
-//            final PathHandler paths,
-//            final List<AuthMechanism> authMechanisms,
-//            final LinkedHashSet<Authorizer> authorizers,
-//            final TokenManager tokenManager) {
-//        if (!conf.getServices().isEmpty()) {
-//            conf.getServices().stream()
-//                    .map(am -> am.get(ConfigurationKeys.NAME_KEY))
-//                    .filter(name -> name instanceof String)
-//                    .map(name -> (String) name)
-//                    .forEachOrdered(name -> {
-//                        try {
-//                            Service _srv = PluginsRegistry.getInstance()
-//                                    .getService(name);
-//
-//                            LOGGER.debug("{} secured {}", name, _srv.getSecured());
-//
-//                            SecurityHandler securityHandler;
-//
-//                            if (_srv.getSecured()) {
-//                                securityHandler = new SecurityHandler(
-//                                        authMechanisms,
-//                                        authorizers,
-//                                        tokenManager);
-//                            } else {
-//                                var _fauthorizers = new LinkedHashSet<Authorizer>();
-//                                _fauthorizers.add(new FullAuthorizer(false));
-//
-//                                securityHandler = new SecurityHandler(
-//                                        authMechanisms,
-//                                        _fauthorizers,
-//                                        tokenManager);
-//                            }
-//
-//                            var srv = pipe(new TracingInstrumentationHandler(),
-//                                    new RequestLogger(),
-//                                    new CORSHandler(),
-//                                    new XPoweredByInjector(),
-//                                    new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
-//                                    new RequestInterceptorsExecutor(BEFORE_AUTH),
-//                                    new QueryStringRebuilder(),
-//                                    securityHandler,
-//                                    new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
-//                                    new RequestInterceptorsExecutor(AFTER_AUTH),
-//                                    new QueryStringRebuilder(),
-//                                    new ConduitInjector(),
-//                                    PipedWrappingHandler.wrap(
-//                                            new ConfigurableEncodingHandler(_srv,
-//                                                    configuration.isForceGzipEncoding())),
-//                                    new ResponseSender()
-//                            );
-//
-//                            paths.addPrefixPath(_srv.getUri(), srv);
-//
-//                            LOGGER.info("URI {} bound to service {}, secured: {}",
-//                                    _srv.getUri(),
-//                                    _srv.getName(),
-//                                    _srv.getSecured());
-//
-//                        }
-//                        catch (ConfigurationException pce) {
-//                            LOGGER.error("Error plugging in the service", pce);
-//                        }
-//                    });
-//        }
-//    }
-
-    /**
-     * pipe services
+     * plug services
      *
      * @param paths
      * @param authMechanisms
@@ -1141,7 +1065,7 @@ public class Bootstrapper {
     }
 
     /**
-     * proxyResources
+     * plugResources
      *
      * @param conf
      * @param paths
@@ -1149,7 +1073,7 @@ public class Bootstrapper {
      * @param identityManager
      * @param authorizers
      */
-    private static void proxyResources(final Configuration conf,
+    private static void plugResources(final Configuration conf,
             final PathHandler paths,
             final List<AuthMechanism> authMechanisms,
             final LinkedHashSet<Authorizer> authorizers,

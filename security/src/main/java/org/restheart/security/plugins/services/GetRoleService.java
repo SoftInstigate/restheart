@@ -36,7 +36,6 @@ import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import org.restheart.security.ConfigurationException;
 import org.restheart.security.plugins.ConfigurablePlugin;
-import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.RegisterPlugin;
 
 /**
@@ -45,7 +44,7 @@ import org.restheart.security.plugins.RegisterPlugin;
  */
 @RegisterPlugin(
         name = "roles",
-        description = "returns the roles of the authenticated clien",
+        description = "returns the roles of the authenticated client",
         enabledByDefault = true)
 public class GetRoleService extends Service {
 

@@ -22,9 +22,6 @@ import org.slf4j.LoggerFactory;
 
 import org.restheart.security.handlers.exchange.JsonRequest;
 import org.restheart.security.handlers.GlobalSecurityPredicatesAuthorizer;
-import org.restheart.security.plugins.PluginsRegistry;
-import org.restheart.security.plugins.interceptors.EchoExampleRequestInterceptor;
-import org.restheart.security.plugins.interceptors.EchoExampleResponseInterceptor;
 import org.restheart.security.utils.URLUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;

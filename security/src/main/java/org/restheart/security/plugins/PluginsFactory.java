@@ -17,18 +17,45 @@
  */
 package org.restheart.security.plugins;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ClassInfoList;
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
+import org.restheart.security.Bootstrapper;
 
 import org.restheart.security.ConfigurationException;
 import org.restheart.security.ConfigurationKeys;
-import org.restheart.security.handlers.PipedHttpHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * 
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class PluginsFactory {
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(PluginsFactory.class);
+
+    private static final String REGISTER_PLUGIN_CLASS_NAME = RegisterPlugin.class
+            .getName();
+
+    private static final Map<String, Map<String, Object>> CONFS = consumeConfiguration();
+
     /**
      * getAutenticationMechanism
      *
@@ -171,7 +198,7 @@ public class PluginsFactory {
     }
 
     /**
-     * 
+     *
      * @return the Authorizer
      */
     static Authorizer createAuthorizer(
@@ -302,126 +329,230 @@ public class PluginsFactory {
     }
 
     /**
-     * getService
-     *
-     * @return the Service
+     * create the initializers
      */
-    static Service createService(Map<String, Object> conf)
-            throws ConfigurationException {
-        Object _name = conf.get(ConfigurationKeys.NAME_KEY);
-
-        if (_name == null || !(_name instanceof String)) {
-            throw new ConfigurationException(
-                    "Error configuring Service, missing "
-                    + ConfigurationKeys.NAME_KEY
-                    + " property");
-        }
-
-        Object _secured = conf.get(ConfigurationKeys.SERVICE_SECURED_KEY);
-
-        if (_secured == null || !(_secured instanceof Boolean)) {
-            throw new ConfigurationException(
-                    "Error configuring Service "
-                    + (String) _name
-                    + ", missing "
-                    + ConfigurationKeys.SERVICE_SECURED_KEY
-                    + " property");
-        }
-
-        Object _uri = conf.get(ConfigurationKeys.SERVICE_URI_KEY);
-
-        if (_uri == null || !(_uri instanceof String)
-                || !((String) _uri).startsWith("/")) {
-            throw new ConfigurationException(
-                    "Error configuring Service "
-                    + (String) _name
-                    + ", missing "
-                    + ConfigurationKeys.SERVICE_URI_KEY
-                    + " property");
-        }
-
-        Object _clazz = conf.get(ConfigurationKeys.CLASS_KEY);
-
-        if (!(_clazz instanceof String)) {
-            throw new ConfigurationException(
-                    "Error configuring Service "
-                    + (String) _name
-                    + ", "
-                    + ConfigurationKeys.CLASS_KEY
-                    + " property is not a String");
-        }
-
-        Object _args = conf.get(ConfigurationKeys.ARGS_KEY);
-
-        try {
-            if (_args == null) {
-                return (Service) Class.forName((String) _clazz)
-                        .getDeclaredConstructor(PipedHttpHandler.class,
-                                String.class,
-                                String.class,
-                                Boolean.class)
-                        .newInstance(null,
-                                (String) _name,
-                                (String) _uri,
-                                (Boolean) _secured);
-            } else {
-                if (!(_args instanceof Map)) {
-                    throw new ConfigurationException(
-                            "Error configuring Service "
-                            + (String) _name
-                            + ", property "
-                            + ConfigurationKeys.ARGS_KEY + " is not a map");
-                } else {
-                    return (Service) Class.forName((String) _clazz)
-                            .getDeclaredConstructor(PipedHttpHandler.class,
-                                    String.class,
-                                    String.class,
-                                    Boolean.class,
-                                    Map.class)
-                            .newInstance(null,
-                                    (String) _name,
-                                    (String) _uri,
-                                    (Boolean) _secured,
-                                    (Map<?, ?>) _args);
-                }
-            }
-        } catch (ClassNotFoundException
-                | IllegalAccessException
-                | IllegalArgumentException
-                | InstantiationException
-                | NoSuchMethodException
-                | SecurityException
-                | InvocationTargetException ex) {
-            throw new ConfigurationException("Error configuring Service "
-                    + (_name != null ? _name : ""), ex);
-        }
+    static Set<PluginRecord<Initializer>> createInitializers() {
+        return createPlugins(Initializer.class);
     }
 
     /**
-     * TODO move to PluginFactory
-     *
-     * @param configuration
+     * create the pre statup initializers
      */
-    static Initializer createInitializer(String initializerClass)
-            throws ConfigurationException {
-        try {
-            Object o = Class.forName(initializerClass)
-                    .getDeclaredConstructor().newInstance();
+    static Set<PluginRecord<PreStartupInitializer>> createPreStartupInitializers() {
+        return createPlugins(PreStartupInitializer.class);
+    }
 
-            if (o instanceof Initializer) {
-                return ((Initializer) o);
-            } else throw new ConfigurationException(
-                    "Error configuring Initializer "
-                    + initializerClass 
-                    + " it does not implement Initializer interface");
-        } catch (ClassNotFoundException
-                | NoSuchMethodException
-                | InvocationTargetException
-                | InstantiationException
-                | IllegalAccessException ex) {
-            throw new ConfigurationException(
-                    "Error configuring Initializer "
-                    + initializerClass, ex);
+    /**
+     * creates the request interceptors
+     */
+    @SuppressWarnings("unchecked")
+    static Set<PluginRecord<RequestInterceptor>> createRequestInterceptors() {
+        return createPlugins(RequestInterceptor.class);
+    }
+
+    /**
+     * creates the response interceptors
+     */
+    @SuppressWarnings("unchecked")
+    static Set<PluginRecord<ResponseInterceptor>> createResponseInterceptors() {
+        return createPlugins(ResponseInterceptor.class);
+    }
+
+    /**
+     * creates the services
+     */
+    @SuppressWarnings("unchecked")
+    static Set<PluginRecord<Service>> createServices() {
+        return createPlugins(Service.class);
+    }
+
+    /**
+     * @param type the class of the plugin , e.g. Initializer.class
+     */
+    @SuppressWarnings("unchecked")
+    private static <T extends Plugin> Set<PluginRecord<T>> createPlugins(
+            Class type) {
+        Set<PluginRecord<T>> ret = new LinkedHashSet<>();
+
+        var _type = type.getSimpleName();
+
+        try (var scanResult = new ClassGraph()
+                .addClassLoader(getPluginsClassloader())
+                .enableAnnotationInfo()
+                .scan()) {
+            var registeredPlugins = scanResult
+                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+
+            ClassInfoList listOfType;
+
+            if (type.isInterface()) {
+                listOfType = scanResult.getClassesImplementing(type.getName());
+            } else {
+                listOfType = scanResult.getSubclasses(type.getName());
+            }
+
+            var plugins = registeredPlugins.intersect(listOfType);
+
+            // sort by priority
+            plugins.sort((ClassInfo ci1, ClassInfo ci2) -> {
+                return Integer.compare(annotationParam(ci1, "priority"),
+                        annotationParam(ci2, "priority"));
+            });
+
+            plugins.stream().forEachOrdered(plugin -> {
+                Object i;
+
+                try {
+                    String name = annotationParam(plugin,
+                            "name");
+                    String description = annotationParam(plugin,
+                            "description");
+                    Boolean enabledByDefault = annotationParam(plugin,
+                            "enabledByDefault");
+
+                    var confArgs = false; 
+                    
+                    try {
+                        i = plugin.loadClass(false)
+                                .getConstructor(Map.class)
+                                .newInstance(CONFS.get(name));
+                        confArgs = true;
+                    } catch (NoSuchMethodException nme) {
+                        // Plugin does not have constructor with confArgs
+                        i = plugin.loadClass(false)
+                                .getConstructor()
+                                .newInstance();
+                        
+                        // warn in case there is a configuration
+                        // but the plugins does not take it via its constructor
+                        // but for enabled key that is managed by pr.isEnabled()
+                        if (CONFS.containsKey(name) && 
+                                CONFS.get(name).keySet()
+                                .stream()
+                                .filter(k -> !"enabled".equals(k))
+                                .count() > 0) {
+                            LOGGER.warn("{} {} don't implement the constructor {}"
+                                    + "(Map<String, Object> confArgs)"
+                                    + " to get arguments from the configuration file"
+                                    + " but configuration has been defined for it {}",
+                                    _type,
+                                    name,
+                                    i.getClass().getSimpleName(),
+                                    CONFS.get(name));
+                        }
+                    }
+
+                    var pr = new PluginRecord(
+                            name,
+                            description,
+                            enabledByDefault,
+                            plugin.getName(),
+                            (T) i,
+                            CONFS.get(name));
+
+                    if (pr.isEnabled()) {
+                        ret.add(pr);
+                        LOGGER.info("Registered {} {}: {}",
+                                _type,
+                                name,
+                                description);
+                    } else {
+                        LOGGER.debug("{} {} is disabled", _type, name);
+                    }
+                } catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException
+                        | NoSuchMethodException t) {
+                    LOGGER.error("Error registering {} {}",
+                            _type,
+                            plugin.getName(),
+                            t);
+                }
+            });
         }
+
+        return ret;
+    }
+
+    private static <T extends Object> T annotationParam(ClassInfo ci,
+            String param) {
+        var annotationInfo = ci.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME);
+        var annotationParamVals = annotationInfo.getParameterValues();
+
+        // The Route annotation has a parameter named "path"
+        return (T) annotationParamVals.getValue(param);
+    }
+
+    private static URL[] findPluginsJars(Path pluginsDirectory) {
+        var urls = new ArrayList<>();
+
+        try (DirectoryStream<Path> directoryStream = Files
+                .newDirectoryStream(pluginsDirectory, "*.jar")) {
+            for (Path path : directoryStream) {
+                var jar = path.toUri().toURL();
+                urls.add(jar);
+                LOGGER.info("Added to classpath the plugins jar {}", jar);
+            }
+        } catch (IOException ex) {
+            LOGGER.error("Cannot read jars in plugins directory {}",
+                    Bootstrapper.getConfiguration().getPluginsDirectory(),
+                    ex.getMessage());
+        }
+
+        return urls.toArray(new URL[urls.size()]);
+    }
+
+    private static Path getPluginsDirectory() {
+        var pluginsDir = Bootstrapper.getConfiguration().getPluginsDirectory();
+
+        if (pluginsDir == null) {
+            return null;
+        }
+
+        if (pluginsDir.startsWith("/")) {
+            return Paths.get(pluginsDir);
+        } else {
+            // this is to allow specifying the plugin directory path 
+            // relative to the jar (also working when running from classes)
+            URL location = PluginsFactory.class.getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation();
+
+            File locationFile = new File(location.getPath());
+
+            pluginsDir = locationFile.getParent()
+                    + File.separator
+                    + pluginsDir;
+
+            return FileSystems.getDefault().getPath(pluginsDir);
+        }
+    }
+
+    private static URL[] PLUGINS_JARS_CACHE = null;
+
+    private static URLClassLoader getPluginsClassloader() {
+        if (PLUGINS_JARS_CACHE == null) {
+            PLUGINS_JARS_CACHE = findPluginsJars(getPluginsDirectory());
+        }
+
+        return new URLClassLoader(PLUGINS_JARS_CACHE);
+    }
+
+    private static Map<String, Map<String, Object>> consumeConfiguration() {
+        Map<String, Map<String, Object>> pluginsArgs = Bootstrapper
+                .getConfiguration()
+                .getPluginsArgs();
+
+        Map<String, Map<String, Object>> confs = new HashMap<>();
+
+        pluginsArgs.forEach((name, params) -> {
+            if (params instanceof Map) {
+                confs.put(name, (Map) params);
+            } else {
+                confs.put(name, new HashMap<>());
+            }
+        });
+
+        return confs;
     }
 }

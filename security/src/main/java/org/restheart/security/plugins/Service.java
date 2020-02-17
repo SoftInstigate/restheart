@@ -28,11 +28,19 @@ import org.restheart.security.handlers.ResponseSender;
  */
 public abstract class Service extends PipedHttpHandler
         implements ConfigurablePlugin {
-/**
+    /**
      * The configuration properties passed to this handler.
      */
     protected final Map<String, Object> confArgs;
-
+    
+    /**
+     * Creates a new instance of the Service
+     *
+     */
+    public Service() {
+        this(null);
+    }
+    
     /**
      * Creates a new instance of the Service
      *

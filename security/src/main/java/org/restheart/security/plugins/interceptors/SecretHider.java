@@ -36,19 +36,14 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(
         name = "secretHider",
-        description = "it that forbis write requests "
+        description = "forbis write requests "
         + "on '/coll' "
         + "containing the property 'secret' "
         + "to users does not have the role 'admin'",
         enabledByDefault = false)
 public class SecretHider implements RequestInterceptor {
-
     static final Logger LOGGER = LoggerFactory.getLogger(SecretHider.class);
     
-    public SecretHider(Map<String, Object> args) {
-        LOGGER.debug("got args {}", args);
-    }
-
     @Override
     public RequestInterceptor.IPOINT interceptPoint() {
         return RequestInterceptor.IPOINT.AFTER_AUTH;
