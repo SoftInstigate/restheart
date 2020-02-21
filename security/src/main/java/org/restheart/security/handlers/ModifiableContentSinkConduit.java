@@ -133,14 +133,14 @@ public class ModifiableContentSinkConduit
                     .filter(ri -> ri.getInstance().resolve(exchange))
                     .forEachOrdered(ri -> {
                         LOGGER.debug("Executing response interceptor {} for {}",
-                                ri.getClass().getSimpleName(),
+                                ri.getInstance().getClass().getSimpleName(),
                                 exchange.getRequestPath());
 
                         try {
                             ri.getInstance().handleRequest(exchange);
                         } catch (Exception ex) {
                             LOGGER.error("Error executing response interceptor {} for {}",
-                                    ri.getClass().getSimpleName(),
+                                    ri.getInstance().getClass().getSimpleName(),
                                     exchange.getRequestPath(),
                                     ex);
                             AbstractExchange.setInError(exchange);
@@ -156,7 +156,7 @@ public class ModifiableContentSinkConduit
                             response.endExchangeWithMessage(
                                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                                     "Error executing response interceptor "
-                                    + ri.getClass().getSimpleName(),
+                                    + ri.getInstance().getClass().getSimpleName(),
                                     ex);
                         }
                     });

@@ -74,14 +74,14 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
                 .forEachOrdered(ri -> {
                     try {
                         LOGGER.debug("Executing request interceptor {} for {} on intercept point {}",
-                                ri.getClass().getSimpleName(),
+                                ri.getInstance().getClass().getSimpleName(),
                                 exchange.getRequestPath(),
                                 interceptPoint);
 
                         ri.getInstance().handleRequest(exchange);
                     } catch (Exception ex) {
                         LOGGER.error("Error executing request interceptor {} for {} on intercept point {}",
-                                ri.getClass().getSimpleName(),
+                                ri.getInstance().getClass().getSimpleName(),
                                 exchange.getRequestPath(),
                                 interceptPoint,
                                 ex);

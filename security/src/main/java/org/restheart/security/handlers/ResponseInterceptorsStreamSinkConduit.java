@@ -69,15 +69,14 @@ public class ResponseInterceptorsStreamSinkConduit
                     .filter(ri -> !ri.getInstance().requiresResponseContent())
                     .forEachOrdered(ri -> {
                         LOGGER.debug("Executing response interceptor {} for {}",
-                                ri.getClass().getSimpleName(),
+                                ri.getInstance().getClass().getSimpleName(),
                                 exchange.getRequestPath());
 
                         try {
                             ri.getInstance().handleRequest(exchange);
-                        }
-                        catch (Exception ex) {
+                        } catch (Exception ex) {
                             LOGGER.error("Error executing response interceptor {} for {}",
-                                    ri.getClass().getSimpleName(),
+                                    ri.getInstance().getClass().getSimpleName(),
                                     exchange.getRequestPath(),
                                     ex);
                             AbstractExchange.setInError(exchange);
