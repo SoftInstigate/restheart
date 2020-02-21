@@ -66,16 +66,10 @@ public class BeforeWriteCheckHandler extends CheckHandler {
             HttpServerExchange exchange,
             RequestContext context)
             throws Exception {
-        if (doesCheckersApply(context) && !applyCheckers(exchange, context)) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_BAD_REQUEST,
-                    "request check failed");
-        }
-
-        if (doesGlobalCheckersApply()
-                && !applyGlobalCheckers(exchange, context)) {
+        if ((doesCheckersApply(context)
+                && !applyCheckers(exchange, context))
+                || (doesGlobalCheckersApply()
+                && !applyGlobalCheckers(exchange, context))) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,

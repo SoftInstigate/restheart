@@ -121,8 +121,6 @@ public class AfterWriteCheckHandler
                     context,
                     HttpStatus.SC_BAD_REQUEST,
                     "request check failed");
-            next(exchange, context);
-            return;
         }
 
         next(exchange, context);
