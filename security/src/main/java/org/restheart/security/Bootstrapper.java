@@ -88,7 +88,6 @@ import org.restheart.security.plugins.Authorizer;
 import org.restheart.security.plugins.PluginsRegistry;
 import static org.restheart.security.plugins.RequestInterceptor.IPOINT.AFTER_AUTH;
 import static org.restheart.security.plugins.RequestInterceptor.IPOINT.BEFORE_AUTH;
-import org.restheart.security.plugins.Service;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.authorizers.FullAuthorizer;
 import org.restheart.security.utils.FileUtils;
