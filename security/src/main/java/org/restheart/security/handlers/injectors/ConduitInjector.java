@@ -20,7 +20,6 @@ package org.restheart.security.handlers.injectors;
 import org.restheart.security.handlers.ModifiableContentSinkConduit;
 import org.restheart.security.handlers.PipedHttpHandler;
 import org.restheart.security.plugins.PluginsRegistry;
-import io.undertow.server.ConduitWrapper;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
@@ -75,29 +74,22 @@ public class ConduitInjector extends PipedHttpHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         // wrap the response buffering it if any interceptor resolvers the request 
         // and requires the content from the backend
-        exchange.addResponseWrapper(new ConduitWrapper<StreamSinkConduit>() {
-            @Override
-            public StreamSinkConduit wrap(
-                    ConduitFactory<StreamSinkConduit> factory,
-                    HttpServerExchange exchange) {
-                if (PluginsRegistry.getInstance()
-                        .getResponseInterceptors()
-                        .stream()
-                        .filter(ri -> ri.isEnabled())
-                        .filter(ri -> ri.getInstance().resolve(exchange))
-                        .anyMatch(ri -> ri.getInstance()
-                                .requiresResponseContent())) {
-                    var mcsc = new ModifiableContentSinkConduit(
-                            factory.create(),
-                            exchange);
-
-                    exchange.putAttachment(MCSC_KEY, mcsc);
-
-                    return mcsc;
-                } else {
-                    return new ResponseInterceptorsStreamSinkConduit(
-                            factory.create(), exchange);
-                }
+        exchange.addResponseWrapper((ConduitFactory<StreamSinkConduit> factory,
+                HttpServerExchange cexchange) -> {
+            if (PluginsRegistry.getInstance()
+                    .getResponseInterceptors()
+                    .stream()
+                    .filter(ri -> ri.isEnabled())
+                    .filter((ri) -> ri.getInstance().resolve(cexchange))
+                    .anyMatch(ri -> ri.getInstance()
+                    .requiresResponseContent())) {
+                var mcsc = new ModifiableContentSinkConduit(factory.create(), 
+                        cexchange);
+                cexchange.putAttachment(MCSC_KEY, mcsc);
+                return mcsc;
+            } else {
+                return new ResponseInterceptorsStreamSinkConduit(factory.create(), 
+                        cexchange);
             }
         });
 
@@ -126,9 +118,9 @@ public class ConduitInjector extends PipedHttpHandler {
 
             var before = new HeaderMap();
 
-            for (var value : _before) {
+            _before.forEach((value) -> {
                 before.add(Headers.ACCEPT_ENCODING, value);
-            }
+            });
 
             exchange.putAttachment(ORIGINAL_ACCEPT_ENCODINGS_KEY, before);
 
