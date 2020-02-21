@@ -18,8 +18,14 @@
 package org.restheart.test.performance;
 
 /**
- * install ldt from https://github.com/bazhenov/load-test-tool run it from
- * target/class directory (current directory is added to classpath) as follows:
+ * install ldt from https://github.com/bazhenov/load-test-tool
+ *
+ * copy deps to target: mvn install dependency:copy-dependencies
+ *
+ * Modify ldt.sh to add all build, test and dependecy jars to classpath
+ * 
+ * run it as follows:
+ *
  * <PATH_TO_ldt-assembly-1.1>/bin/ldt.sh -z
  * org.restheart.test.performance.LoadPutPT#put -c 20 -n 500 -w 5 -p
  * "url=http://127.0.0.1:8080/testdb/testcoll,id=a,pwd=a"
