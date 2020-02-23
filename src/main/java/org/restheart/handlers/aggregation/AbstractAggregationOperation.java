@@ -214,7 +214,7 @@ public abstract class AbstractAggregationOperation {
         if (obj == null) {
             return null;
         }
-
+        
         if (obj.isDocument()) {
             BsonDocument _obj = obj.asDocument();
 
