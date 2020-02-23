@@ -110,15 +110,15 @@ public class AggregationPipeline extends AbstractAggregationOperation {
     }
 
     /**
-     * @param vars RequestContext.getAggregationVars()
+     * @param avars RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables
      * @throws org.restheart.handlers.metadata.InvalidMetadataException
      * @throws org.restheart.handlers.aggregation.QueryVariableNotBoundException
      */
-    public List<BsonDocument> getResolvedStagesAsList(BsonDocument vars)
+    public List<BsonDocument> getResolvedStagesAsList(BsonDocument avars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
         BsonArray replacedStages = bindAggregationVariables(
-                JsonUtils.unescapeKeys(stages), vars)
+                JsonUtils.unescapeKeys(stages), avars)
                 .asArray();
 
         List<BsonDocument> ret = new ArrayList<>();

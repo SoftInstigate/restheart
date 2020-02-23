@@ -103,6 +103,18 @@ public class GetAggregationHandler extends PipedHttpHandler {
             next(exchange, context);
             return;
         } else {
+            var avars = context.getAggreationVars() == null
+                    ? new BsonDocument()
+                    : context.getAggreationVars();
+
+            // add @page, @pagesize, @limit and @skip to avars to allow handling 
+            // paging in the aggragation via default page and pagesize qparams
+            avars.put("@page", new BsonInt32(context.getPage()));
+            avars.put("@pagesize", new BsonInt32(context.getPagesize()));
+            avars.put("@limit", new BsonInt32(context.getPagesize()));
+            avars.put("@skip", new BsonInt32(context.getPagesize()
+                    * (context.getPage() - 1)));
+
             switch (query.getType()) {
                 case MAP_REDUCE:
                     MapReduceIterable<BsonDocument> mrOutput;
@@ -112,10 +124,10 @@ public class GetAggregationHandler extends PipedHttpHandler {
                                 .getCollection(context.getDBName(),
                                         context.getCollectionName())
                                 .mapReduce(
-                                        mapReduce.getResolvedMap(context.getAggreationVars()),
-                                        mapReduce.getResolvedReduce(context.getAggreationVars()))
+                                        mapReduce.getResolvedMap(avars),
+                                        mapReduce.getResolvedReduce(avars))
                                 .filter(
-                                        mapReduce.getResolvedQuery(context.getAggreationVars()))
+                                        mapReduce.getResolvedQuery(avars))
                                 .maxTime(Bootstrapper.getConfiguration().getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
                     } catch (MongoCommandException | InvalidMetadataException ex) {
                         ResponseHelper.endExchangeWithMessage(
@@ -149,9 +161,7 @@ public class GetAggregationHandler extends PipedHttpHandler {
                                         context.getDBName(),
                                         context.getCollectionName())
                                 .aggregate(
-                                        pipeline.getResolvedStagesAsList(
-                                                context
-                                                        .getAggreationVars()))
+                                        pipeline.getResolvedStagesAsList(avars))
                                 .maxTime(Bootstrapper.getConfiguration()
                                         .getAggregationTimeLimit(),
                                         TimeUnit.MILLISECONDS)
