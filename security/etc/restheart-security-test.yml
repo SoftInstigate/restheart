@@ -83,28 +83,24 @@ use-embedded-keystore: true
  # See README.md for the list of available Authentication Mechanisms
 
 auth-mechanisms:
-    - name: authTokenBasicAuthMechanism
-      class: org.restheart.security.plugins.mechanisms.TokenBasicAuthMechanism
-      args: 
-        realm: RESTHeart Realm
-    - name: basicAuthenticationMechanism
-      class:  org.restheart.security.plugins.mechanisms.BasicAuthMechanism
-      args:
-        realm: RESTHeart Realm
-        authenticator: simpleFileAuthenticator
-    - name: digestAuthenticationMechanism
-      class:  org.restheart.security.plugins.mechanisms.DigestAuthMechanism
-      args: 
-        realm: RESTHeart Realm
-        domain: localhost
-        authenticator: simpleFileAuthenticator
-#    - name: identityAuthenticationMechanism
-#      class: org.restheart.security.plugins.mechanisms.IdentityAuthMechanism
-#      args:
-#        username: admin
-#        roles:
-#            - admin
-#            - user
+  tokenBasicAuthMechanism:
+    enabled: true
+    realm: RESTHeart Realm
+  basicAuthMechanism:
+    enabled: true
+    realm: RESTHeart Realm
+    authenticator: simpleFileAuthenticator
+  digestAuthMechanism:
+    enabled: true
+    realm: RESTHeart Realm
+    domain: localhost
+    authenticator: simpleFileAuthenticator
+  identityAuthMechanism:
+    enabled: false
+    username: admin
+    roles:
+      - admin
+      - user
 
 ## Authenticators
 
@@ -165,8 +161,6 @@ plugins-directory: ../plugins
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).
 # The property 'enabled' allows enabling plugins that are not enabled by default,
 # i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false) 
-# NOTE: currently only Initializers and Services 
-#       work with @RegisterPlugin annotation
 
 plugins-args:
   testInitializer:

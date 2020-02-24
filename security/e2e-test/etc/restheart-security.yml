@@ -158,8 +158,6 @@ plugins-directory: ../plugins
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).
 # The property 'enabled' allows enabling plugins that are not enabled by default,
 # i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false) 
-# NOTE: currently only Initializers and Services 
-#       work with @RegisterPlugin annotation
 
 plugins-args:
   rndTokenService:

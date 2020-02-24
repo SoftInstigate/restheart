@@ -85,6 +85,7 @@ import org.restheart.security.handlers.injectors.XForwardedHeadersInjector;
 import org.restheart.security.handlers.injectors.XPoweredByInjector;
 import org.restheart.security.plugins.AuthMechanism;
 import org.restheart.security.plugins.Authorizer;
+import org.restheart.security.plugins.PluginRecord;
 import org.restheart.security.plugins.PluginsRegistry;
 import static org.restheart.security.plugins.RequestInterceptor.IPOINT.AFTER_AUTH;
 import static org.restheart.security.plugins.RequestInterceptor.IPOINT.BEFORE_AUTH;
@@ -633,7 +634,9 @@ public class Bootstrapper {
 
         final TokenManager tokenManager = loadTokenManager();
 
-        final List<AuthMechanism> authMechanisms = authMechanisms();
+        final var authMechanisms = PluginsRegistry
+                .getInstance()
+                .getAuthMechanisms();
 
         final LinkedHashSet<Authorizer> authorizers = authorizers();
 
@@ -762,61 +765,7 @@ public class Bootstrapper {
         undertowServer.start();
     }
 
-    /**
-     *
-     * @return the AuthenticationMechanisms
-     */
-    private static List<AuthMechanism> authMechanisms() {
-        var authMechanisms = new ArrayList<AuthMechanism>();
-
-        var amsConf = getConfiguration().getAuthMechanisms();
-
-        if (configuration.getAuthMechanisms() != null
-                && !configuration.getAuthMechanisms().isEmpty()) {
-            configuration.getAuthMechanisms().stream()
-                    .map(am -> am.get(ConfigurationKeys.NAME_KEY))
-                    .filter(name -> name instanceof String)
-                    .map(name -> (String) name)
-                    .forEachOrdered(name -> {
-
-                        try {
-                            authMechanisms.add(PluginsRegistry.getInstance()
-                                    .getAuthenticationMechanism(name));
-
-                            if (LOGGER.isInfoEnabled()) {
-                                var amConf = amsConf.stream().filter(am -> name
-                                        .equals(am.get("name")))
-                                        .findFirst();
-
-                                if (amConf != null
-                                        && amConf.isPresent()
-                                        && amConf.get().get("args") != null
-                                        && amConf.get().get("args") instanceof Map
-                                        && ((Map) amConf.get().get("args"))
-                                                .containsKey("authenticator")) {
-                                    LOGGER.info("Authentication Mechanism {} "
-                                            + "enabled with Authenticator {}",
-                                            name,
-                                            ((Map) amConf.get().get("args"))
-                                                    .get("authenticator"));
-                                } else {
-                                    LOGGER.info("Authentication Mechanism {} "
-                                            + "enabled",
-                                            name);
-                                }
-                            }
-                        }
-                        catch (ConfigurationException pcex) {
-                            logErrorAndExit(pcex.getMessage(), pcex, false, -3);
-                        }
-                    });
-        } else {
-            LOGGER.warn("***** No Authentication Mechanism specified. "
-                    + "Authentication disabled.");
-        }
-
-        return authMechanisms;
-    }
+    
 
     /**
      *
@@ -899,7 +848,7 @@ public class Bootstrapper {
      * @return a GracefulShutdownHandler
      */
     private static GracefulShutdownHandler getHandlersPipe(
-            final List<AuthMechanism> authMechanisms,
+            final Set<PluginRecord<AuthMechanism>> authMechanisms,
             final LinkedHashSet<Authorizer> authorizers,
             final TokenManager tokenManager
     ) {
@@ -951,7 +900,7 @@ public class Bootstrapper {
      * @param tokenManager
      */
     private static void plugServices(final PathHandler paths,
-            final List<AuthMechanism> authMechanisms,
+            final Set<PluginRecord<AuthMechanism>> authMechanisms,
             final LinkedHashSet<Authorizer> authorizers,
             final TokenManager tokenManager) {
         PluginsRegistry.getInstance().getServices().stream().forEach(srv -> {
@@ -1074,7 +1023,7 @@ public class Bootstrapper {
      */
     private static void plugResources(final Configuration conf,
             final PathHandler paths,
-            final List<AuthMechanism> authMechanisms,
+            final Set<PluginRecord<AuthMechanism>> authMechanisms,
             final LinkedHashSet<Authorizer> authorizers,
             final TokenManager tokenManager) {
         if (conf.getProxies() == null || conf.getProxies().isEmpty()) {

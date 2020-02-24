@@ -17,11 +17,12 @@
  */
 package org.restheart.security.handlers;
 
-import java.util.List;
 
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
+import java.util.Set;
 import org.restheart.security.plugins.AuthMechanism;
+import org.restheart.security.plugins.PluginRecord;
 
 /**
  * This is the PipedHttpHandler version of
@@ -32,17 +33,17 @@ import org.restheart.security.plugins.AuthMechanism;
  */
 public class AuthenticatorMechanismsHandler extends PipedHttpHandler {
 
-    private final List<AuthMechanism> authenticatorMechanisms;
+    private final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms;
 
     public AuthenticatorMechanismsHandler(final PipedHttpHandler next,
-            final List<AuthMechanism> authenticatorMechanisms) {
+            final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
         super(next);
         this.authenticatorMechanisms = authenticatorMechanisms;
     }
 
     public AuthenticatorMechanismsHandler(
-            final List<AuthMechanism> authenticatorHandlers) {
-        this.authenticatorMechanisms = authenticatorHandlers;
+            final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
+        this.authenticatorMechanisms = authenticatorMechanisms;
     }
 
     @Override
@@ -53,7 +54,8 @@ public class AuthenticatorMechanismsHandler extends PipedHttpHandler {
         if (sc != null) {
             authenticatorMechanisms.forEach((mechanism) -> {
                 sc.addAuthenticationMechanism(
-                        new AuthenticatorMechanismWrapper(mechanism));
+                        new AuthenticatorMechanismWrapper(
+                                mechanism.getInstance()));
             });
         }
 

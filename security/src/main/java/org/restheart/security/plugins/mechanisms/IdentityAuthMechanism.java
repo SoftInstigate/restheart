@@ -30,10 +30,11 @@ import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.security.ConfigurationException;
 import org.restheart.security.plugins.AuthMechanism;
+import org.restheart.security.plugins.RegisterPlugin;
 import org.restheart.security.plugins.authenticators.BaseAccount;
 
 /**
- * a simple IdentityAuthenticationMechanism to demonstrate how to plug a custom
+ * a simple Auth Mechanism to demonstrate how to plug a custom
  * AuthenticationMechanism
  *
  * it authenticates all requests against the configured IdentityManager using
@@ -41,11 +42,22 @@ import org.restheart.security.plugins.authenticators.BaseAccount;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
+@RegisterPlugin(
+        name = "identityAuthMechanism",
+        description = "authenticates all requests against the configured "
+                + "IdentityManager using the credentials specified "
+                + "in the configuration file",
+        enabledByDefault = false)
 public class IdentityAuthMechanism implements AuthMechanism {
     private final String mechanismName;
     private final String username;
     private final List<String> roles;
 
+    public IdentityAuthMechanism(Map<String, Object> args)
+            throws ConfigurationException {
+        this("identityAuthMechanism", args);
+    }
+    
     public IdentityAuthMechanism(String mechanismName, Map<String, Object> args)
             throws ConfigurationException {
         this.mechanismName = mechanismName;
@@ -72,6 +84,7 @@ public class IdentityAuthMechanism implements AuthMechanism {
     /**
      * @return the mechanismName
      */
+    @Override
     public String getMechanismName() {
         return mechanismName;
     }

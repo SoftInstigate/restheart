@@ -58,6 +58,7 @@ import io.undertow.util.HexConverter;
 import org.restheart.security.ConfigurationException;
 import org.restheart.security.handlers.QueryStringRebuilder;
 import org.restheart.security.plugins.AuthMechanism;
+import org.restheart.security.plugins.RegisterPlugin;
 
 /**
  * {@link io.undertow.server.HttpHandler} to handle HTTP Digest authentication,
@@ -66,13 +67,22 @@ import org.restheart.security.plugins.AuthMechanism;
  *
  * @author <a href="mailto:darran.lofthouse@jboss.com">Darran Lofthouse</a>
  */
+@RegisterPlugin(
+        name = "digestAuthMechanism",
+        description = "handles the digest authentication scheme",
+        enabledByDefault = false)
 public class DigestAuthMechanism implements AuthMechanism {
-    
+
     private static final Logger LOGGER = LoggerFactory
             .getLogger(DigestAuthMechanism.class);
 
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
+
+    public DigestAuthMechanism(Map<String, Object> args)
+            throws ConfigurationException {
+        this("digestAuthMechanism", args);
+    }
 
     public DigestAuthMechanism(final String mechanismName,
             Map<String, Object> args) throws ConfigurationException {
@@ -182,6 +192,7 @@ public class DigestAuthMechanism implements AuthMechanism {
         return identityManager != null ? identityManager : securityContext.getIdentityManager();
     }
 
+    @Override
     public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange,
             final SecurityContext securityContext) {
         List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
@@ -230,7 +241,8 @@ public class DigestAuthMechanism implements AuthMechanism {
             mandatoryTokens.add(DigestAuthorizationToken.MESSAGE_QOP);
         }
 
-        DigestQop qop = null;
+        DigestQop qop;
+
         // This check is early as is increases the list of mandatory tokens.
         if (parsedHeader.containsKey(DigestAuthorizationToken.MESSAGE_QOP)) {
             qop = DigestQop.forName(parsedHeader.get(DigestAuthorizationToken.MESSAGE_QOP));
@@ -260,12 +272,12 @@ public class DigestAuthMechanism implements AuthMechanism {
         if (parsedHeader.containsKey(DigestAuthorizationToken.DIGEST_URI)) {
             String uri = parsedHeader.get(DigestAuthorizationToken.DIGEST_URI);
             String requestURI = exchange.getRequestURI();
-            
+
             // since the query string is rebuilt by QueryStringRebuilder
             // we need to check against the original query string 
             String originalQueryString = QueryStringRebuilder
                     .getOriginalQueryString(exchange);
-            
+
             if (!originalQueryString.isEmpty()) {
                 requestURI = requestURI + "?" + originalQueryString;
             }
@@ -319,7 +331,7 @@ public class DigestAuthMechanism implements AuthMechanism {
         }
 
         final String userName = parsedHeader.get(DigestAuthorizationToken.USERNAME);
-        final IdentityManager identityManager = getIdentityManager(securityContext);
+        final IdentityManager lidentityManager = getIdentityManager(securityContext);
         final Account account;
 
         if (algorithm.isSession()) {
@@ -332,7 +344,7 @@ public class DigestAuthMechanism implements AuthMechanism {
             throw new IllegalStateException("Not yet implemented.");
         } else {
             final DigestCredential credential = new DigestCredentialImpl(context);
-            account = identityManager.verify(userName, credential);
+            account = lidentityManager.verify(userName, credential);
         }
 
         if (account == null) {
@@ -495,9 +507,9 @@ public class DigestAuthMechanism implements AuthMechanism {
         if (supportedAlgorithms.isEmpty()) {
             responseHeader.add(WWW_AUTHENTICATE, theChallenge);
         } else {
-            for (DigestAlgorithm current : supportedAlgorithms) {
+            supportedAlgorithms.forEach((current) -> {
                 responseHeader.add(WWW_AUTHENTICATE, String.format(theChallenge, current.getToken()));
-            }
+            });
         }
 
         return new ChallengeResult(true, UNAUTHORIZED);

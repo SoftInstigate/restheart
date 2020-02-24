@@ -27,26 +27,32 @@ import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.security.ConfigurationException;
 import org.restheart.security.plugins.AuthMechanism;
+import org.restheart.security.plugins.RegisterPlugin;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
+@RegisterPlugin(
+        name = "basicAuthMechanism",
+        description = "handles the basic authentication scheme",
+        enabledByDefault = false)
 public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthenticationMechanism
         implements AuthMechanism {
 
-    private final String mechanismName;
-
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
+
+    public BasicAuthMechanism(final Map<String, Object> args)
+            throws ConfigurationException {
+        this("basicAuthMechanism", args);
+    }
 
     public BasicAuthMechanism(final String mechanismName, final Map<String, Object> args)
             throws ConfigurationException {
         super(argValue(args, "realm"), mechanismName, false,
                 PluginsRegistry.getInstance().getAuthenticator(
                         argValue(args, "authenticator")));
-
-        this.mechanismName = mechanismName;
     }
 
     @Override
@@ -67,6 +73,6 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
 
     @Override
     public String getMechanismName() {
-        return mechanismName;
+        return "basicAuthMechanism";
     }
 }

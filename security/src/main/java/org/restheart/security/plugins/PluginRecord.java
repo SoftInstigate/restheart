@@ -71,11 +71,21 @@ public class PluginRecord<T extends Plugin> {
      * @return the disabled
      */
     public boolean isEnabled() {
-        return getConfArgs() == null
+        return isEnabled(enabledByDefault, getConfArgs());
+    }
+    
+    /**
+     * @param enabledByDefault
+     * @param confArgs
+     * @return the disabled
+     */
+    public static boolean isEnabled(boolean enabledByDefault, 
+            Map<String, Object> confArgs) {
+        return confArgs == null
                 ? enabledByDefault
-                : getConfArgs().containsKey(ConfigurationKeys.PLUGIN_ENABLED_KEY)
-                && getConfArgs().get(ConfigurationKeys.PLUGIN_ENABLED_KEY) instanceof Boolean
-                ? (Boolean) getConfArgs().get(ConfigurationKeys.PLUGIN_ENABLED_KEY)
+                : confArgs.containsKey(ConfigurationKeys.PLUGIN_ENABLED_KEY)
+                && confArgs.get(ConfigurationKeys.PLUGIN_ENABLED_KEY) instanceof Boolean
+                ? (Boolean) confArgs.get(ConfigurationKeys.PLUGIN_ENABLED_KEY)
                 : enabledByDefault;
     }
 

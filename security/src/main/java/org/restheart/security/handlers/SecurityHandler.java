@@ -23,16 +23,18 @@ import java.util.List;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.server.HttpServerExchange;
 import java.util.LinkedHashSet;
+import java.util.Set;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.Authorizer;
 import org.restheart.security.plugins.AuthMechanism;
+import org.restheart.security.plugins.PluginRecord;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SecurityHandler extends PipedHttpHandler {
-    private final List<AuthMechanism> authenticationMechanisms;
+    private final Set<PluginRecord<AuthMechanism>> authenticationMechanisms;
     private final LinkedHashSet<Authorizer> accessManagers;
     private final TokenManager tokenManager;
 
@@ -41,7 +43,7 @@ public class SecurityHandler extends PipedHttpHandler {
      * @param authenticationMechanisms
      * @param accessManagers
      */
-    public SecurityHandler(final List<AuthMechanism> authenticationMechanisms,
+    public SecurityHandler(final Set<PluginRecord<AuthMechanism>> authenticationMechanisms,
             final LinkedHashSet<Authorizer> accessManagers,
             final TokenManager tokenManager) {
         super();
@@ -66,7 +68,7 @@ public class SecurityHandler extends PipedHttpHandler {
 
     private static PipedHttpHandler buildSecurityHandlersChain(
             PipedHttpHandler next,
-            final List<AuthMechanism> mechanisms,
+            final Set<PluginRecord<AuthMechanism>> mechanisms,
             final LinkedHashSet<Authorizer> accessManagers,
             final TokenManager tokenManager) {
         if (mechanisms != null && mechanisms.size() > 0) {

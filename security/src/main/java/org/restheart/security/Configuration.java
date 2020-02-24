@@ -119,8 +119,7 @@ public class Configuration {
     private final String certPassword;
     private final List<Map<String, Object>> proxies;
     private final Map<String, Map<String, Object>> pluginsArgs;
-    private final List<Map<String, Object>> services;
-    private final List<Map<String, Object>> authMechanisms;
+    private final Map<String, Map<String, Object>> authMechanisms;
     private final List<Map<String, Object>> authenticators;
     private final List<Map<String, Object>> authorizers;
     private final Map<String, Object> tokenManager;
@@ -165,10 +164,9 @@ public class Configuration {
         initDefaultProxy();
 
         pluginsDirectory = "plugins";
-        
+
         pluginsArgs = new LinkedHashMap<>();
-        services = new ArrayList<>();
-        authMechanisms = new ArrayList<>();
+        authMechanisms = new LinkedHashMap<>();
         authenticators = new ArrayList<>();
         authorizers = null;
         tokenManager = new HashMap<>();
@@ -178,8 +176,8 @@ public class Configuration {
         logToConsole = true;
         logToFile = true;
         logLevel = Level.INFO;
-        
-        traceHeaders =  Collections.emptyList();
+
+        traceHeaders = Collections.emptyList();
 
         requestsLimit = 100;
         ioThreads = 2;
@@ -223,8 +221,15 @@ public class Configuration {
      * @param silent
      * @throws org.restheart.security.ConfigurationException
      */
+    @SuppressWarnings("deprecation")
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.silent = silent;
+
+        // check if old service section is defined
+        if (conf.get(SERVICES_KEY) != null) {
+            LOGGER.error("The services configuration section is obsolete. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+            throw new ConfigurationException("Wrong Services configuration");
+        }
 
         ansiConsole = getAsBoolean(conf, ANSI_CONSOLE_KEY, true);
 
@@ -247,12 +252,25 @@ public class Configuration {
         if (proxies.isEmpty()) {
             initDefaultProxy();
         }
-        
+
         pluginsDirectory = getAsString(conf, PLUGINS_DIRECTORY_PATH_KEY, "plugins");
 
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
-        services = getAsListOfMaps(conf, SERVICES_KEY, new ArrayList<>());
-        authMechanisms = getAsListOfMaps(conf, AUTH_MECHANISMS_KEY, new ArrayList<>());
+
+        authMechanisms = getAsMapOfMaps(conf, AUTH_MECHANISMS_KEY, new LinkedHashMap<>());
+
+        if (authMechanisms.isEmpty()) {
+            // check if exception is due to old configuration format
+            var old = conf.get(AUTH_MECHANISMS_KEY);
+
+            if (old != null
+                    && old instanceof List
+                    && checkPre20Confs((List) old)) {
+                LOGGER.error("The auth-mechanisms configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+                throw new ConfigurationException("Wrong Authentication Mechanism configuration");
+            }
+        }
+
         authenticators = getAsListOfMaps(conf, AUTHENTICATORS_KEY, new ArrayList<>());
         authorizers = getAsListOfMaps(conf, AUTHORIZERS_KEY, new ArrayList<>());
         tokenManager = getAsMap(conf, AUTH_TOKEN);
@@ -267,7 +285,8 @@ public class Configuration {
         Level level;
         try {
             level = Level.valueOf(_logLevel);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (!silent) {
                 LOGGER.info("wrong value for parameter {}: {}. using its default value {}",
                         "log-level", _logLevel, "INFO");
@@ -276,9 +295,9 @@ public class Configuration {
         }
 
         logLevel = level;
-        
+
         traceHeaders = getAsListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
-        
+
         requestsLimit = getAsInteger(conf, REQUESTS_LIMIT_KEY, 100);
         ioThreads = getAsInteger(conf, IO_THREADS_KEY, 2);
         workerThreads = getAsInteger(conf, WORKER_THREADS_KEY, 32);
@@ -297,9 +316,11 @@ public class Configuration {
 
         try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
             conf = (Map<String, Object>) yaml.load(fis);
-        } catch (FileNotFoundException fne) {
+        }
+        catch (FileNotFoundException fne) {
             throw new ConfigurationException("Configuration file not found", fne);
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             throw new ConfigurationException("Error parsing the configuration file", t);
         }
 
@@ -350,43 +371,42 @@ public class Configuration {
 
     @Override
     public String toString() {
-        return "Configuration{" + 
-                "silent=" + silent +
-                ", httpsListener=" + httpsListener +
-                ", httpsPort=" + httpsPort +
-                ", httpsHost=" + httpsHost +
-                ", httpListener=" + httpListener +
-                ", httpPort=" + httpPort +
-                ", httpHost=" + httpHost +
-                ", instanceName=" + instanceName +
-                ", pluginsDirectory=" + pluginsDirectory +
-                ", useEmbeddedKeystore=" + useEmbeddedKeystore +
-                ", keystoreFile=" + keystoreFile +
-                ", keystorePassword=" + keystorePassword +
-                ", certPassword=" + certPassword +
-                ", proxies=" + proxies +
-                ", pluginsArgs=" + pluginsArgs +
-                ", services=" + services +
-                ", authMechanisms=" + authMechanisms +
-                ", authenticators=" + authenticators +
-                ", authorizers=" + authorizers +
-                ", tokenManager=" + tokenManager +
-                ", logFilePath=" + logFilePath +
-                ", logLevel=" + logLevel +
-                ", logToConsole=" + logToConsole +
-                ", logToFile=" + logToFile +
-                ", traceHeaders=" + traceHeaders +
-                ", requestsLimit=" + requestsLimit +
-                ", ioThreads=" + ioThreads +
-                ", workerThreads=" + workerThreads +
-                ", bufferSize=" + bufferSize +
-                ", directBuffers=" + directBuffers +
-                ", forceGzipEncoding=" + forceGzipEncoding +
-                ", connectionOptions=" + connectionOptions +
-                ", logExchangeDump=" + logExchangeDump +
-                ", ansiConsole=" + ansiConsole +
-                ", allowUnescapedCharactersInUrl=" +
-                allowUnescapedCharactersInUrl + '}';
+        return "Configuration{"
+                + "silent=" + silent
+                + ", httpsListener=" + httpsListener
+                + ", httpsPort=" + httpsPort
+                + ", httpsHost=" + httpsHost
+                + ", httpListener=" + httpListener
+                + ", httpPort=" + httpPort
+                + ", httpHost=" + httpHost
+                + ", instanceName=" + instanceName
+                + ", pluginsDirectory=" + pluginsDirectory
+                + ", useEmbeddedKeystore=" + useEmbeddedKeystore
+                + ", keystoreFile=" + keystoreFile
+                + ", keystorePassword=" + keystorePassword
+                + ", certPassword=" + certPassword
+                + ", proxies=" + proxies
+                + ", pluginsArgs=" + pluginsArgs
+                + ", authMechanisms=" + authMechanisms
+                + ", authenticators=" + authenticators
+                + ", authorizers=" + authorizers
+                + ", tokenManager=" + tokenManager
+                + ", logFilePath=" + logFilePath
+                + ", logLevel=" + logLevel
+                + ", logToConsole=" + logToConsole
+                + ", logToFile=" + logToFile
+                + ", traceHeaders=" + traceHeaders
+                + ", requestsLimit=" + requestsLimit
+                + ", ioThreads=" + ioThreads
+                + ", workerThreads=" + workerThreads
+                + ", bufferSize=" + bufferSize
+                + ", directBuffers=" + directBuffers
+                + ", forceGzipEncoding=" + forceGzipEncoding
+                + ", connectionOptions=" + connectionOptions
+                + ", logExchangeDump=" + logExchangeDump
+                + ", ansiConsole=" + ansiConsole
+                + ", allowUnescapedCharactersInUrl="
+                + allowUnescapedCharactersInUrl + '}';
     }
 
     /**
@@ -456,7 +476,7 @@ public class Configuration {
     public String getHttpHost() {
         return httpHost;
     }
-    
+
     /**
      * @return the pluginsDirectory
      */
@@ -527,7 +547,7 @@ public class Configuration {
     public boolean isLogToFile() {
         return logToFile;
     }
-    
+
     public List<String> getTraceHeaders() {
         return Collections.unmodifiableList(traceHeaders);
     }
@@ -577,7 +597,7 @@ public class Configuration {
     /**
      * @return the authMechanisms
      */
-    public List<Map<String, Object>> getAuthMechanisms() {
+    public Map<String, Map<String, Object>> getAuthMechanisms() {
         return authMechanisms;
     }
 
@@ -600,13 +620,6 @@ public class Configuration {
      */
     public int getRequestsLimit() {
         return requestsLimit;
-    }
-
-    /**
-     * @return the services
-     */
-    public List<Map<String, Object>> getServices() {
-        return Collections.unmodifiableList(services);
     }
 
     /**
@@ -683,7 +696,8 @@ public class Configuration {
 
         try {
             return URI.create(proxyPass);
-        } catch (IllegalArgumentException ex) {
+        }
+        catch (IllegalArgumentException ex) {
             throw new ConfigurationException("Wrong proxy pass ULR "
                     + proxyPass, ex);
         }
@@ -720,12 +734,13 @@ public class Configuration {
 
         try {
             return URI.create(proxyLocation);
-        } catch (IllegalArgumentException ex) {
+        }
+        catch (IllegalArgumentException ex) {
             throw new ConfigurationException("Wrong proxy location URI "
                     + proxyLocation, ex);
         }
     }
-    
+
     /**
      *
      * @param conf
@@ -758,7 +773,8 @@ public class Configuration {
         } else if (o instanceof List) {
             try {
                 return (List<Map<String, Object>>) o;
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 LOGGER.warn("wrong configuration parameter {}", key);
                 return defaultValue;
             }
@@ -804,13 +820,14 @@ public class Configuration {
         } else if (o instanceof Map) {
             try {
                 return (Map<String, Map<String, Object>>) o;
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 LOGGER.warn("wrong configuration parameter {}", key);
                 return defaultValue;
             }
         } else {
             if (!silent) {
-                LOGGER.warn("wrong configuration parameter {}, expecting an object",
+                LOGGER.warn("wrong configuration parameter {}, expecting a map of maps",
                         key, defaultValue);
             }
             return defaultValue;
@@ -840,7 +857,8 @@ public class Configuration {
         if (o instanceof Map) {
             try {
                 return (Map<String, Object>) o;
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 LOGGER.warn("wrong configuration parameter {}", key);
                 return null;
             }
@@ -851,7 +869,7 @@ public class Configuration {
             return null;
         }
     }
-    
+
     @SuppressWarnings("unchecked")
     private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key, final List<String> defaultValue) {
         if (conf == null || conf.get(key) == null) {
@@ -916,7 +934,8 @@ public class Configuration {
                 LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", key, conf.get(key));
             }
             return (V) conf.get(key);
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             if (!silent) {
                 LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\". using its default value \"{}\"",
                         key, conf.get(key), defaultValue);
@@ -978,5 +997,38 @@ public class Configuration {
             return Long.valueOf(envValue);
         }
         return getOrDefault(conf, key, defaultValue);
+    }
+
+    /**
+     * this checks if an old (< 2.0) configuration is found
+     *
+     * old format:
+     *
+     * <pre>
+     * auth-mechanisms:
+     *  - name: basicAuthMechanism
+     *    class: org.restheart.security.plugins.mechanisms.BasicAuthMechanism
+     *    args:
+     *      argParam1: value
+     *      argParam2: value
+     * </pre>
+     *
+     * new format
+     *
+     * <pre>
+     * auth-mechanisms:
+     *  - basicAuthMechanism:
+     *      argParam1: value
+     *      argParam2: value
+     * </pre>
+     *
+     * @param conf
+     * @return true if an old (< 2.0) configuration is found
+     */
+    private static boolean checkPre20Confs(List<Map<String, Object>> conf) {
+        return conf != null && conf.stream()
+                .anyMatch(e -> e.containsKey("name")
+                || e.containsKey("class")
+                || e.containsKey("args"));
     }
 }

@@ -80,40 +80,35 @@ use-embedded-keystore: true
  # Always prefer using basic authetication over TLS
 
 auth-mechanisms:
-    - name: tokenBasicAuthMechanism
-      class: org.restheart.security.plugins.mechanisms.TokenBasicAuthMechanism
-      args:
-        realm: RESTHeart Realm
-    - name: basicAuthMechanism
-      class:  org.restheart.security.plugins.mechanisms.BasicAuthMechanism
-      args:
-        realm: RESTHeart Realm
-        authenticator: rhAuthenticator
-#    - name: jwtAuthenticationMechanism
-#      class: com.restheart.security.plugins.mechanisms.JwtAuthenticationMechanism
-#      args:
-#          algorithm: HS256
-#          key: secret
-#          base64Encoded: false
-#          usernameClaim: sub
-#          rolesClaim: roles
-##          fixedRoles:
-##            - admin
-#          issuer: myIssuer
-#          audience: myAudience
-#    - name: identityAuthenticationMechanism
-#      class: org.restheart.security.plugins.mechanisms.IdentityAuthMechanism
-#      args:
-#        username: admin
-#        roles:
-#            - admin
-#            - user
-#    - name: digestAuthMechanism
-#      class:  org.restheart.security.plugins.mechanisms.DigestAuthMechanism
-#      args:
-#        realm: RESTHeart Realm
-#        domain: localhost
-#        authenticator: simpleFileAuthenticator
+  tokenBasicAuthMechanism:
+    enabled: true
+    realm: RESTHeart Realm
+  basicAuthMechanism:
+    enabled: true
+    realm: RESTHeart Realm
+    authenticator: rhAuthenticator  
+  jwtAuthenticationMechanism:
+    enabled: false
+    algorithm: HS256
+    key: secret
+    base64Encoded: false
+    usernameClaim: sub
+    rolesClaim: roles
+    #fixedRoles:
+    # - admin
+    issuer: myIssuer
+    audience: myAudience
+  digestAuthMechanism:
+    enabled: false
+    realm: RESTHeart Realm
+    domain: localhost
+    authenticator: rhAuthenticator
+  identityAuthMechanism:
+    enabled: false
+    username: admin
+    roles:
+      - admin
+      - user
 
 ## Authenticators
 
@@ -182,34 +177,6 @@ token-manager:
       ttl: 15
       srv-uri: /tokens
 
-## Services
-
- # RESTHeart Security allows exposing custom services
- # The service class must extend the prg.restheart.security.plugins.Service
- # and can be bound to an URI via the service option
-
-services:
-    - name: rndTokenService
-      class: org.restheart.security.plugins.services.RndTokenService
-      uri: /tokens
-      secured: false
-    - name: ping
-      class: org.restheart.security.plugins.services.PingService
-      uri: /ping
-      secured: false
-      args:
-          msg: "{{{ping-hello-message}}}"
-    - name: getRoles
-      class: org.restheart.security.plugins.services.GetRoleService
-      uri: /roles
-      secured: true
-      args:
-          url: /roles
-#    - name: requestEchoer
-#      class: org.restheart.security.plugins.services.EchoService
-#      uri: /echo
-#      secured: false
-
 #### Plugins configuration
 
 # The directory containing the plugins jars. 
@@ -217,15 +184,23 @@ services:
 # Just add the plugins jar to plugins-directory and they will be automatically
 # added to the classpath and registered.
 
-#plugins-directory: {{{plugins-directory}}}
+plugins-directory: {{{plugins-directory}}}
 
 # All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).
 # The property 'enabled' allows enabling plugins that are not enabled by default,
 # i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false)
-# NOTE: currently only Initializers are registered with @RegisterPlugin annotation
 
-#plugins-args:
+plugins-args:
+  rndTokenService:
+    uri: /tokens
+    secured: false
+  ping:
+    secured: false
+    msg: "{{{ping-hello-message}}}"
+  roles:
+    uri: /roles
+    secured: true
 
 #### Logging
 

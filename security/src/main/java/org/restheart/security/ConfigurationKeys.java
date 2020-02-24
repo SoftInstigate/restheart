@@ -67,7 +67,9 @@ public interface ConfigurationKeys {
     
     /**
      * the key for the services property.
+     * @deprecated services are now configured in plugins-args section
      */
+    @Deprecated
     public static final String SERVICES_KEY = "services";
 
     /**

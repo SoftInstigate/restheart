@@ -42,7 +42,7 @@ public class EchoExampleResponseInterceptor implements ResponseInterceptor {
             .getLogger(EchoExampleResponseInterceptor.class);
     
     public EchoExampleResponseInterceptor(Map<String, Object> args) {
-        LOGGER.debug("got args {}", args);
+        LOGGER.trace("got args {}", args);
     }
 
     @Override

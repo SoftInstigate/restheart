@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PluginsRegistry {
-
     private static final Logger LOGGER = LoggerFactory
             .getLogger(PluginsRegistry.class);
 
@@ -72,35 +71,6 @@ public class PluginsRegistry {
                         }
                     });
 
-    private static final LoadingCache<String, AuthMechanism> AUTH_MECHANISMS_CACHE
-            = CacheFactory.createLocalLoadingCache(
-                    Integer.MAX_VALUE,
-                    Cache.EXPIRE_POLICY.NEVER, -1, name -> {
-                        var amsConf = Bootstrapper.getConfiguration().getAuthMechanisms();
-
-                        var amConf = amsConf.stream().filter(am -> name
-                        .equals(am.get("name")))
-                                .findFirst();
-
-                        if (amConf.isPresent()) {
-                            try {
-                                return PluginsFactory
-                                        .createAutenticationMechanism(amConf.get());
-                            }
-                            catch (ConfigurationException pcex) {
-                                throw new IllegalStateException(
-                                        pcex.getMessage(), pcex);
-                            }
-                        } else {
-                            var errorMsg = "Authentication Mechanism "
-                            + name
-                            + " not found.";
-
-                            throw new IllegalStateException(errorMsg,
-                                    new ConfigurationException(errorMsg));
-                        }
-                    });
-
     private static final LoadingCache<String, Authorizer> AUTHORIZERS_CACHE
             = CacheFactory.createLocalLoadingCache(
                     Integer.MAX_VALUE,
@@ -130,20 +100,17 @@ public class PluginsRegistry {
                         }
                     });
 
-    private final Set<PluginRecord<Service>> services
-            = new LinkedHashSet<>();
+    private Set<PluginRecord<AuthMechanism>> authMechanisms;
+    
+    private Set<PluginRecord<Service>> services;
 
-    private final Set<PluginRecord<Initializer>> initializers
-            = new LinkedHashSet<>();
+    private Set<PluginRecord<Initializer>> initializers;
 
-    private final Set<PluginRecord<PreStartupInitializer>> preStartupInitializers
-            = new LinkedHashSet<>();
+    private Set<PluginRecord<PreStartupInitializer>> preStartupInitializers;
 
-    private final Set<PluginRecord<RequestInterceptor>> requestInterceptors
-            = new LinkedHashSet<>();
+    private Set<PluginRecord<RequestInterceptor>> requestInterceptors;
 
-    private final Set<PluginRecord<ResponseInterceptor>> responseInterceptors
-            = new LinkedHashSet<>();
+    private Set<PluginRecord<ResponseInterceptor>> responseInterceptors;
 
     private static PluginsRegistry HOLDER;
 
@@ -156,25 +123,82 @@ public class PluginsRegistry {
     }
 
     private PluginsRegistry() {
-        this.preStartupInitializers.addAll(PluginsFactory.createPreStartupInitializers());
-        this.initializers.addAll(PluginsFactory.createInitializers());
-        this.services.addAll(PluginsFactory.createServices());
-        this.requestInterceptors.addAll(PluginsFactory.createRequestInterceptors());
-        this.responseInterceptors.addAll(PluginsFactory.createResponseInterceptors());
+    }
+    
+    /**
+     * @return the authMechanisms
+     */
+    public Set<PluginRecord<AuthMechanism>> getAuthMechanisms() {
+        if (this.authMechanisms == null) {
+            this.authMechanisms = new LinkedHashSet<>();
+            this.authMechanisms.addAll(PluginsFactory.authMechanisms());
+        }
+        
+        return this.authMechanisms;
     }
 
+    /**
+     * @return the initializers
+     */
     public Set<PluginRecord<Initializer>> getInitializers() {
+        if (this.initializers == null) {
+            this.initializers = new LinkedHashSet<>();
+            this.initializers.addAll(PluginsFactory.initializers());
+        }
+        
         return this.initializers;
     }
 
+    /**
+     * @return the preStartupInitializers
+     */
     public Set<PluginRecord<PreStartupInitializer>> getPreStartupInitializers() {
+        if (this.preStartupInitializers == null) {
+            this.preStartupInitializers = new LinkedHashSet<>();
+            this.preStartupInitializers.addAll(
+                    PluginsFactory.preStartupInitializers());
+        }
+        
         return this.preStartupInitializers;
     }
+    
+    public Set<PluginRecord<RequestInterceptor>> getRequestInterceptors() {
+        if (this.requestInterceptors == null) {
+            this.requestInterceptors = new LinkedHashSet<>();
+            this.requestInterceptors.addAll(PluginsFactory
+                    .requestInterceptors());
+        }
+        
+        return requestInterceptors;
+    }
 
+    public Set<PluginRecord<ResponseInterceptor>> getResponseInterceptors() {
+        if (this.responseInterceptors == null) {
+            this.responseInterceptors = new LinkedHashSet<>();
+            this.responseInterceptors.addAll(PluginsFactory
+                    .responseInterceptors());
+        }
+        
+        return responseInterceptors;
+    }
+
+    /**
+     * @return the services
+     */
     public Set<PluginRecord<Service>> getServices() {
+        if (this.services == null) {
+            this.services = new LinkedHashSet<>();
+            this.services.addAll(PluginsFactory.services());
+        }
+        
         return this.services;
     }
 
+    /**
+     * @param name
+     * @return the authenticators
+     * @throws org.restheart.security.ConfigurationException
+     */
     public Authenticator getAuthenticator(String name)
             throws ConfigurationException {
         Optional<Authenticator> op = AUTHENTICATORS_CACHE
@@ -193,24 +217,11 @@ public class PluginsRegistry {
         }
     }
 
-    public AuthMechanism getAuthenticationMechanism(String name)
-            throws ConfigurationException {
-        Optional<AuthMechanism> op = AUTH_MECHANISMS_CACHE
-                .getLoading(name);
-
-        if (op == null) {
-            throw new ConfigurationException(
-                    "No Authentication Mechanism configured with name: " + name);
-        }
-
-        if (op.isPresent()) {
-            return op.get();
-        } else {
-            throw new ConfigurationException(
-                    "No Authentication Mechanism configured with name: " + name);
-        }
-    }
-
+    /**
+     * @param name
+     * @return the authorizers
+     * @throws org.restheart.security.ConfigurationException
+     */
     public Authorizer getAuthorizer(String name)
             throws ConfigurationException {
         Optional<Authorizer> op = AUTHORIZERS_CACHE
@@ -228,9 +239,11 @@ public class PluginsRegistry {
                     "No Authorizer configured");
         }
     }
-
     
-
+    /**
+     * @return the token manager
+     * @throws org.restheart.security.ConfigurationException
+     */
     public TokenManager getTokenManager()
             throws ConfigurationException {
         Optional<Authenticator> op = AUTHENTICATORS_CACHE
@@ -251,13 +264,5 @@ public class PluginsRegistry {
             throw new ConfigurationException(
                     "No Token Manager configured");
         }
-    }
-
-    public Set<PluginRecord<RequestInterceptor>> getRequestInterceptors() {
-        return requestInterceptors;
-    }
-
-    public Set<PluginRecord<ResponseInterceptor>> getResponseInterceptors() {
-        return responseInterceptors;
     }
 }

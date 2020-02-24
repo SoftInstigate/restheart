@@ -38,19 +38,24 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.FlexBase64;
 import org.restheart.security.ConfigurationException;
 import org.restheart.security.plugins.AuthMechanism;
+import org.restheart.security.plugins.RegisterPlugin;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * this extends the undertow BasicAuthenticationMechanism and authenticate the
- * request using the AuthTokenIdentityManager.
+ * this extends the undertow BasicAuthenticationMechanism and authenticates
+ * requests using AuthTokenIdentityManager.
  *
  * if user already authenticated via a different mechanism, that a token is
  * generated so that later calls can be use the token instead of the actual
  * password
  *
  */
+@RegisterPlugin(
+        name = "tokenBasicAuthMechanism",
+        description = "authenticates the requests using authTokenIdentityManager",
+        enabledByDefault = false)
 public class TokenBasicAuthMechanism
         extends BasicAuthenticationMechanism
         implements AuthMechanism {
@@ -73,7 +78,19 @@ public class TokenBasicAuthMechanism
 
     /**
      *
-     * @param realmName
+     * @param args
+     * @throws org.restheart.security.ConfigurationException
+     */
+    public TokenBasicAuthMechanism(final Map<String, Object> args)
+            throws ConfigurationException {
+        this("tokenBasicAuthMechanism", args);
+    }
+
+    /**
+     *
+     * @param mechanismName
+     * @param args
+     * @throws org.restheart.security.ConfigurationException
      */
     public TokenBasicAuthMechanism(final String mechanismName,
             final Map<String, Object> args)
@@ -148,6 +165,7 @@ public class TokenBasicAuthMechanism
     /**
      * @return the mechanismName
      */
+    @Override
     public String getMechanismName() {
         return mechanismName;
     }
