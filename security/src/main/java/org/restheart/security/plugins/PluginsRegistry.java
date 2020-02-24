@@ -17,59 +17,20 @@
  */
 package org.restheart.security.plugins;
 
-import java.util.Optional;
-
-import org.restheart.security.Bootstrapper;
-import org.restheart.security.cache.Cache;
-import org.restheart.security.cache.CacheFactory;
-import org.restheart.security.cache.LoadingCache;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.restheart.security.ConfigurationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PluginsRegistry {
-
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(PluginsRegistry.class);
-
-    private static final LoadingCache<String, Authorizer> AUTHORIZERS_CACHE
-            = CacheFactory.createLocalLoadingCache(
-                    Integer.MAX_VALUE,
-                    Cache.EXPIRE_POLICY.NEVER, -1, name -> {
-                        var authorizersConf = Bootstrapper.getConfiguration()
-                                .getAuthorizers();
-
-                        var authorizerConf = authorizersConf.stream().filter(am -> name
-                        .equals(am.get("name")))
-                                .findFirst();
-
-                        if (authorizerConf != null) {
-                            try {
-                                return PluginsFactory
-                                        .createAuthorizer(authorizerConf.get());
-                            }
-                            catch (ConfigurationException pcex) {
-                                throw new IllegalStateException(
-                                        pcex.getMessage(), pcex);
-                            }
-                        } else {
-                            var errorMsg = "Authorizer "
-                            + " not configured.";
-
-                            throw new IllegalStateException(errorMsg,
-                                    new ConfigurationException(errorMsg));
-                        }
-                    });
-
     private Set<PluginRecord<AuthMechanism>> authMechanisms;
 
     private Set<PluginRecord<Authenticator>> authenticators;
+    
+    private Set<PluginRecord<Authorizer>> authorizers;
     
     private PluginRecord<TokenManager> tokenManager;
 
@@ -147,13 +108,25 @@ public class PluginsRegistry {
     /**
      * @return the authenticators
      */
-    public PluginRecord<TokenManager> tokenManager() {
+    public PluginRecord<TokenManager> getTokenManager() {
         if (this.tokenManager == null) {
             this.tokenManager = PluginsFactory.tokenManager();
         }
 
         return this.tokenManager;
     }
+    
+    /**
+     * @return the authenticators
+     */
+    public Set<PluginRecord<Authorizer>> getAuthorizers() {
+        if (this.authorizers == null) {
+            this.authorizers = PluginsFactory.authorizers();
+        }
+
+        return this.authorizers;
+    }
+    
 
     /**
      * @return the initializers
@@ -211,62 +184,4 @@ public class PluginsRegistry {
 
         return this.services;
     }
-
-    /**
-     * @param name
-     * @return the authorizers
-     * @throws org.restheart.security.ConfigurationException
-     */
-    public Authorizer getAuthorizer(String name)
-            throws ConfigurationException {
-        Optional<Authorizer> op = AUTHORIZERS_CACHE
-                .getLoading(name);
-
-        if (op == null) {
-            throw new ConfigurationException(
-                    "No Authorizer configured");
-        }
-
-        if (op.isPresent()) {
-            return op.get();
-        } else {
-            throw new ConfigurationException(
-                    "No Authorizer configured");
-        }
-    }
-
-    public PluginRecord<TokenManager> getTokenManager()
-            throws ConfigurationException {
-        if (this.tokenManager == null) {
-            this.tokenManager = PluginsFactory.tokenManager();
-        }
-
-        return this.tokenManager;
-    }
-
-    /**
-     * @return the token manager
-     * @throws org.restheart.security.ConfigurationException
-     */
-//    public TokenManager getTokenManager()
-//            throws ConfigurationException {
-//        Optional<Authenticator> op = AUTHENTICATORS_CACHE
-//                .get(AUTH_TOKEN_MANAGER_NAME);
-//
-//        if (op == null) {
-//            Authenticator atm = PluginsFactory
-//                    .createTokenManager(Bootstrapper.getConfiguration()
-//                            .getTokenManager());
-//
-//            AUTHENTICATORS_CACHE.put(AUTH_TOKEN_MANAGER_NAME, atm);
-//            return (TokenManager) atm;
-//        }
-//
-//        if (op.isPresent()) {
-//            return (TokenManager) op.get();
-//        } else {
-//            throw new ConfigurationException(
-//                    "No Token Manager configured");
-//        }
-//    }
 }

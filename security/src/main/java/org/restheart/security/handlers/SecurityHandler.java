@@ -18,11 +18,9 @@
 package org.restheart.security.handlers;
 
 import org.restheart.security.handlers.injectors.TokenInjector;
-import java.util.List;
 
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.server.HttpServerExchange;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.Authorizer;
@@ -34,22 +32,23 @@ import org.restheart.security.plugins.PluginRecord;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SecurityHandler extends PipedHttpHandler {
-    private final Set<PluginRecord<AuthMechanism>> authenticationMechanisms;
-    private final LinkedHashSet<Authorizer> accessManagers;
-    private final TokenManager tokenManager;
+    private final Set<PluginRecord<AuthMechanism>> mechanisms;
+    private final Set<PluginRecord<Authorizer>> authorizers;
+    private final PluginRecord<TokenManager> tokenManager;
 
     /**
      *
-     * @param authenticationMechanisms
-     * @param accessManagers
+     * @param mechanisms
+     * @param authorizers
+     * @param tokenManager
      */
-    public SecurityHandler(final Set<PluginRecord<AuthMechanism>> authenticationMechanisms,
-            final LinkedHashSet<Authorizer> accessManagers,
-            final TokenManager tokenManager) {
+    public SecurityHandler(final Set<PluginRecord<AuthMechanism>> mechanisms,
+            final Set<PluginRecord<Authorizer>> authorizers,
+            final PluginRecord<TokenManager> tokenManager) {
         super();
 
-        this.authenticationMechanisms = authenticationMechanisms;
-        this.accessManagers = accessManagers;        
+        this.mechanisms = mechanisms;
+        this.authorizers = authorizers;        
         this.tokenManager = tokenManager;
     }
 
@@ -61,20 +60,20 @@ public class SecurityHandler extends PipedHttpHandler {
     @Override
     protected void setNext(PipedHttpHandler next) {
         super.setNext(buildSecurityHandlersChain(next,
-                authenticationMechanisms, 
-                accessManagers, 
+                mechanisms, 
+                authorizers, 
                 tokenManager));
     }
 
     private static PipedHttpHandler buildSecurityHandlersChain(
             PipedHttpHandler next,
             final Set<PluginRecord<AuthMechanism>> mechanisms,
-            final LinkedHashSet<Authorizer> accessManagers,
-            final TokenManager tokenManager) {
+            final Set<PluginRecord<Authorizer>> authorizers,
+            final PluginRecord<TokenManager> tokenManager) {
         if (mechanisms != null && mechanisms.size() > 0) {
             PipedHttpHandler handler;
 
-            if (accessManagers == null || accessManagers.isEmpty()) {
+            if (authorizers == null || authorizers.isEmpty()) {
                 throw new IllegalArgumentException("Error, accessManagers cannot "
                         + "be null or empty. "
                         + "Eventually use FullAccessManager "
@@ -82,15 +81,15 @@ public class SecurityHandler extends PipedHttpHandler {
             }
 
             handler = new TokenInjector(
-                    new GlobalSecurityPredicatesAuthorizer(accessManagers, next),
-                    tokenManager);
+                    new GlobalSecurityPredicatesAuthorizer(authorizers, next),
+                    tokenManager.getInstance());
 
             handler = new SecurityInitialHandler(
                     AuthenticationMode.PRO_ACTIVE,
                     new AuthenticatorMechanismsHandler(
                             new AuthenticationConstraintHandler(
                                     new AuthenticationCallHandler(handler),
-                                    accessManagers),
+                                    authorizers),
                             mechanisms));
 
             return handler;

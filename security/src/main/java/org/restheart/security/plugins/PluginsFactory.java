@@ -36,9 +36,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import org.restheart.security.Bootstrapper;
-
 import org.restheart.security.ConfigurationException;
-import org.restheart.security.ConfigurationKeys;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +76,15 @@ public class PluginsFactory {
 
     /**
      *
+     * @return the Authorizers
+     */
+    static Set<PluginRecord<Authorizer>> authorizers() {
+        return createPlugins(Authorizer.class,
+                Bootstrapper.getConfiguration().getAuthorizers());
+    }
+
+    /**
+     *
      * @return the Token Manager
      */
     static PluginRecord<TokenManager> tokenManager() {
@@ -93,72 +101,6 @@ public class PluginsFactory {
             }
         } else {
             return null;
-        }
-    }
-
-    /**
-     *
-     * @return the Authorizer
-     */
-    static Authorizer createAuthorizer(
-            Map<String, Object> conf)
-            throws ConfigurationException {
-        if (conf == null || conf.isEmpty()) {
-            throw new ConfigurationException(
-                    "Error configuring Authorizer, missing configuration");
-        }
-
-        Object _name = conf.get(ConfigurationKeys.NAME_KEY);
-
-        if (_name == null || !(_name instanceof String)) {
-            throw new ConfigurationException(
-                    "Error configuring Authorizer, missing "
-                    + ConfigurationKeys.NAME_KEY
-                    + " property");
-        }
-
-        Object _clazz = conf.get(ConfigurationKeys.CLASS_KEY);
-
-        if (_clazz == null || !(_clazz instanceof String)) {
-            throw new ConfigurationException(
-                    "Error configuring Authorizer "
-                    + (String) _name
-                    + ", missing "
-                    + ConfigurationKeys.CLASS_KEY
-                    + " property");
-        }
-
-        Object _args = conf.get(ConfigurationKeys.ARGS_KEY);
-
-        try {
-            if (_args == null) {
-                return (Authorizer) Class.forName((String) _clazz)
-                        .getDeclaredConstructor(String.class)
-                        .newInstance((String) _name);
-            } else {
-                if (!(_args instanceof Map)) {
-                    throw new ConfigurationException(
-                            "Error configuring Authorizer "
-                            + (String) _name
-                            + ", property "
-                            + ConfigurationKeys.ARGS_KEY + " is not a map");
-                } else {
-                    return (Authorizer) Class.forName((String) _clazz)
-                            .getDeclaredConstructor(String.class, Map.class)
-                            .newInstance((String) _name, (Map<?, ?>) _args);
-                }
-            }
-        }
-        catch (ClassNotFoundException
-                | IllegalAccessException
-                | IllegalArgumentException
-                | InstantiationException
-                | NoSuchMethodException
-                | SecurityException
-                | InvocationTargetException ex) {
-            throw new ConfigurationException(
-                    "Error configuring Authorizer "
-                    + _name, ex);
         }
     }
 
@@ -252,12 +194,13 @@ public class PluginsFactory {
                     Boolean enabledByDefault = annotationParam(plugin,
                             "enabledByDefault");
 
-                    if (!confs.containsKey(name)) {
+                    if (confs == null || !confs.containsKey(name)) {
                         LOGGER.debug("No configuration found for plugin {} ", name);
                     }
 
-                    var enabled = PluginRecord.isEnabled(enabledByDefault,
-                            confs.get(name));
+                    var enabled = confs != null
+                            && PluginRecord.isEnabled(enabledByDefault,
+                                    confs.get(name));
 
                     if (enabled) {
                         try {
@@ -313,15 +256,25 @@ public class PluginsFactory {
                         | IllegalAccessException
                         | InvocationTargetException
                         | NoSuchMethodException t) {
-                    LOGGER.error("Error registering {} {}",
+                    LOGGER.error("Error registering {} {}: {}",
                             _type,
-                            plugin.getName(),
-                            t);
+                            annotationParam(plugin, "name") != null
+                            ? (String) annotationParam(plugin, "name")
+                            : plugin.getName(),
+                            getRootException(t).getMessage());
                 }
             });
         }
 
         return ret;
+    }
+
+    private static Throwable getRootException(Throwable t) {
+        if (t.getCause() != null) {
+            return t.getCause();
+        } else {
+            return t;
+        }
     }
 
     private static <T extends Object> T annotationParam(ClassInfo ci,

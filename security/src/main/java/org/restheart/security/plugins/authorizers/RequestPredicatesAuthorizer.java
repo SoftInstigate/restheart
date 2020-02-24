@@ -38,10 +38,15 @@ import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.security.ConfigurationException;
 import org.restheart.security.plugins.Authorizer;
+import org.restheart.security.plugins.RegisterPlugin;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@RegisterPlugin(
+        name = "requestPredicatesAuthorizer",
+        description = "authorizes requests according to acl defined in a configuration file",
+        enabledByDefault = false)
 public class RequestPredicatesAuthorizer
         extends FileConfigurablePlugin
         implements Authorizer {
@@ -49,14 +54,25 @@ public class RequestPredicatesAuthorizer
     private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 
     /**
-     * @param configuration
+     * @param name
+     * @param confArgs
      * @throws java.io.FileNotFoundException
      * @throws ConfigurationException
      */
     public RequestPredicatesAuthorizer(String name,
-            Map<String, Object> configuration)
+            Map<String, Object> confArgs)
             throws FileNotFoundException, ConfigurationException {
-        init(configuration, "permissions");
+        init(confArgs, "permissions");
+    }
+    
+    /**
+     * @param confArgs
+     * @throws java.io.FileNotFoundException
+     * @throws ConfigurationException
+     */
+    public RequestPredicatesAuthorizer(Map<String, Object> confArgs)
+            throws FileNotFoundException, ConfigurationException {
+        this("requestPredicatesAuthorizer", confArgs);
     }
 
     @Override

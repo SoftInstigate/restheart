@@ -121,7 +121,7 @@ public class Configuration {
     private final Map<String, Map<String, Object>> pluginsArgs;
     private final Map<String, Map<String, Object>> authMechanisms;
     private final Map<String, Map<String, Object>> authenticators;
-    private final List<Map<String, Object>> authorizers;
+    private final Map<String, Map<String, Object>> authorizers;
     private final Map<String, Map<String, Object>> tokenManagers;
     private final String logFilePath;
     private final Level logLevel;
@@ -225,7 +225,7 @@ public class Configuration {
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.silent = silent;
 
-        // check if old service section is defined
+        // check if service configuration follows old (<2.0)format
         if (conf.get(SERVICES_KEY) != null) {
             LOGGER.error("The services configuration section is obsolete. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
             throw new ConfigurationException("Wrong Services configuration");
@@ -259,6 +259,7 @@ public class Configuration {
 
         authMechanisms = getAsMapOfMaps(conf, AUTH_MECHANISMS_KEY, new LinkedHashMap<>());
 
+        // check if configuration follows old (<2.0)format
         if (authMechanisms.isEmpty()) {
             // check if exception is due to old configuration format
             var old = conf.get(AUTH_MECHANISMS_KEY);
@@ -273,6 +274,7 @@ public class Configuration {
 
         authenticators = getAsMapOfMaps(conf, AUTHENTICATORS_KEY, new LinkedHashMap<>());
 
+        // check if configuration follows old (<2.0)format
         if (authenticators.isEmpty()) {
             // check if exception is due to old configuration format
             var old = conf.get(AUTHENTICATORS_KEY);
@@ -285,10 +287,24 @@ public class Configuration {
             }
         }
 
-        authorizers = getAsListOfMaps(conf, AUTHORIZERS_KEY, new ArrayList<>());
+        authorizers = getAsMapOfMaps(conf, AUTHORIZERS_KEY, new LinkedHashMap<>());
+        
+        // check if configuration follows old (<2.0)format
+        if (authorizers.isEmpty()) {
+            // check if exception is due to old configuration format
+            var old = conf.get(AUTHORIZERS_KEY);
+
+            if (old != null
+                    && old instanceof List
+                    && checkPre20Confs((List) old)) {
+                LOGGER.error("The authorizers configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+                throw new ConfigurationException("Wrong Authorizers configuration");
+            }
+        }
 
         tokenManagers = getAsMapOfMaps(conf, TOKEN_MANAGER, new LinkedHashMap<>());
 
+        // check if configuration follows old (<2.0)format
         if (checkPre20Confs(tokenManagers)) {
             // check if exception is due to old configuration format
             LOGGER.error("The token-manager configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
@@ -631,7 +647,7 @@ public class Configuration {
     /**
      * @return the authorizers
      */
-    public List<Map<String, Object>> getAuthorizers() {
+    public Map<String, Map<String, Object>> getAuthorizers() {
         return authorizers;
     }
 

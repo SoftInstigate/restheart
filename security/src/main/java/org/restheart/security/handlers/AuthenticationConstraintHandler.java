@@ -19,8 +19,9 @@ package org.restheart.security.handlers;
 
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
-import java.util.LinkedHashSet;
+import java.util.Set;
 import org.restheart.security.plugins.Authorizer;
+import org.restheart.security.plugins.PluginRecord;
 
 /**
  *
@@ -28,25 +29,27 @@ import org.restheart.security.plugins.Authorizer;
  */
 public class AuthenticationConstraintHandler extends PipedHttpHandler {
 
-    private final LinkedHashSet<Authorizer> authorizers;
+    private final Set<PluginRecord<Authorizer>> authorizers;
 
     /**
      *
      * @param next
      * @param authorizers
      */
-    public AuthenticationConstraintHandler(PipedHttpHandler next, 
-            LinkedHashSet<Authorizer> authorizers) {
+    public AuthenticationConstraintHandler(PipedHttpHandler next,
+            Set<PluginRecord<Authorizer>> authorizers) {
         super(next);
         this.authorizers = authorizers;
     }
 
     protected boolean isAuthenticationRequired(final HttpServerExchange exchange) {
-        return authorizers == null 
-                ? false 
+        return authorizers == null
+                ? false
                 : authorizers
                         .stream()
-                        .allMatch(a -> a.isAuthenticationRequired(exchange));
+                        .filter(a -> a.isEnabled())
+                        .filter(a -> a.getInstance() != null)
+                        .allMatch(a -> a.getInstance().isAuthenticationRequired(exchange));
     }
 
     @Override

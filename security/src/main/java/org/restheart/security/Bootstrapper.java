@@ -46,7 +46,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -632,13 +631,28 @@ public class Bootstrapper {
             logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
 
-        final TokenManager tokenManager = loadTokenManager();
+        final var tokenManager = PluginsRegistry.getInstance()
+                .getTokenManager();
 
         final var authMechanisms = PluginsRegistry
                 .getInstance()
                 .getAuthMechanisms();
 
-        final LinkedHashSet<Authorizer> authorizers = authorizers();
+        if (authMechanisms == null || authMechanisms.isEmpty()) {
+            LOGGER.warn(ansi().fg(RED).bold()
+                    .a("No Authentication Mechanisms defined")
+                    .reset().toString());
+        }
+
+        final var authorizers = PluginsRegistry
+                .getInstance()
+                .getAuthorizers();
+
+        if (authorizers == null || authorizers.isEmpty()) {
+            LOGGER.warn(ansi().fg(RED).bold()
+                    .a("No Authorizers defined")
+                    .reset().toString());
+        }
 
         SSLContext sslContext = null;
 
@@ -765,42 +779,6 @@ public class Bootstrapper {
         undertowServer.start();
     }
 
-    
-
-    /**
-     *
-     * @return the AuthenticationMechanisms
-     */
-    private static LinkedHashSet<Authorizer> authorizers() {
-        var authorizers = new LinkedHashSet<Authorizer>();
-
-        if (configuration.getAuthorizers() != null
-                && !configuration.getAuthorizers().isEmpty()) {
-            configuration.getAuthorizers().stream()
-                    .map(am -> am.get(ConfigurationKeys.NAME_KEY))
-                    .filter(name -> name instanceof String)
-                    .map(name -> (String) name)
-                    .forEachOrdered(name -> {
-
-                        try {
-                            authorizers.add(PluginsRegistry.getInstance()
-                                    .getAuthorizer(name));
-
-                            LOGGER.info("Authorizer {} enabled",
-                                    name);
-                        }
-                        catch (ConfigurationException pcex) {
-                            logErrorAndExit(pcex.getMessage(), pcex, false, -3);
-                        }
-                    });
-        } else {
-            LOGGER.warn("***** No Authorizer specified. "
-                    + "All requests are allowed.");
-        }
-
-        return authorizers;
-    }
-
     /**
      * logErrorAndExit
      *
@@ -849,8 +827,8 @@ public class Bootstrapper {
      */
     private static GracefulShutdownHandler getHandlersPipe(
             final Set<PluginRecord<AuthMechanism>> authMechanisms,
-            final LinkedHashSet<Authorizer> authorizers,
-            final TokenManager tokenManager
+            final Set<PluginRecord<Authorizer>> authorizers,
+            final PluginRecord<TokenManager> tokenManager
     ) {
         getRootPathHandler().addPrefixPath("/", new RequestNotManagedHandler());
 
@@ -895,14 +873,14 @@ public class Bootstrapper {
      * plug services
      *
      * @param paths
-     * @param authMechanisms
+     * @param mechanisms
      * @param authorizers
      * @param tokenManager
      */
     private static void plugServices(final PathHandler paths,
-            final Set<PluginRecord<AuthMechanism>> authMechanisms,
-            final LinkedHashSet<Authorizer> authorizers,
-            final TokenManager tokenManager) {
+            final Set<PluginRecord<AuthMechanism>> mechanisms,
+            final Set<PluginRecord<Authorizer>> authorizers,
+            final PluginRecord<TokenManager> tokenManager) {
         PluginsRegistry.getInstance().getServices().stream().forEach(srv -> {
             var srvConfArgs = srv.getConfArgs();
 
@@ -941,7 +919,7 @@ public class Bootstrapper {
                 return;
             }
 
-            boolean secured = srvConfArgs != null 
+            boolean secured = srvConfArgs != null
                     && srvConfArgs.containsKey("secured")
                     && srvConfArgs.get("secured") instanceof Boolean
                     ? (boolean) srvConfArgs.get("secured")
@@ -951,15 +929,25 @@ public class Bootstrapper {
 
             if (secured) {
                 securityHandler = new SecurityHandler(
-                        authMechanisms,
+                        mechanisms,
                         authorizers,
                         tokenManager);
             } else {
-                var _fauthorizers = new LinkedHashSet<Authorizer>();
-                _fauthorizers.add(new FullAuthorizer(false));
+                var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
+
+                PluginRecord<Authorizer> _fauthorizer = new PluginRecord(
+                        "fullAuthorizer",
+                        "authorize any operation to any user",
+                        true,
+                        FullAuthorizer.class.getName(),
+                        new FullAuthorizer(false),
+                        null
+                );
+
+                _fauthorizers.add(_fauthorizer);
 
                 securityHandler = new SecurityHandler(
-                        authMechanisms,
+                        mechanisms,
                         _fauthorizers,
                         tokenManager);
             }
@@ -992,27 +980,6 @@ public class Bootstrapper {
     }
 
     /**
-     * loadTokenManager
-     *
-     * @return the TokenManager, or null if it is not configured
-     */
-    private static TokenManager loadTokenManager() {
-        try {
-            var tm = PluginsRegistry.getInstance().getTokenManager();
-            
-            if (tm != null) {
-                return tm.getInstance();
-            } else {
-                return null;
-            }
-        }
-        catch (ConfigurationException pce) {
-            LOGGER.error("Error configuring token manager", pce);
-            return null;
-        }
-    }
-
-    /**
      * plugResources
      *
      * @param conf
@@ -1024,8 +991,8 @@ public class Bootstrapper {
     private static void plugResources(final Configuration conf,
             final PathHandler paths,
             final Set<PluginRecord<AuthMechanism>> authMechanisms,
-            final LinkedHashSet<Authorizer> authorizers,
-            final TokenManager tokenManager) {
+            final Set<PluginRecord<Authorizer>> authorizers,
+            final PluginRecord<TokenManager> tokenManager) {
         if (conf.getProxies() == null || conf.getProxies().isEmpty()) {
             LOGGER.info("No {} specified", ConfigurationKeys.PROXY_KEY);
             return;

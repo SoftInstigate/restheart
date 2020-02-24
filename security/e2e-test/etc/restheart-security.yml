@@ -106,10 +106,12 @@ authenticators:
  # See README.md for the list of available Authorizers
 
 authorizers:
-    - name: requestPredicatesAuthorizer
-      class: org.restheart.security.plugins.authorizers.RequestPredicatesAuthorizer
-      args:
-        conf-file: /opt/restheart/etc/acl.yml
+  requestPredicatesAuthorizer:
+    enabled: true
+    conf-file: /opt/restheart/etc/acl.yml
+  fullAuthorizer:
+    enabled: false
+    authentication-required: true
 
 ## Token Manager
 

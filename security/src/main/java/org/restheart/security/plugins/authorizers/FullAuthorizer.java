@@ -19,20 +19,41 @@ package org.restheart.security.plugins.authorizers;
 
 import org.restheart.security.handlers.exchange.ByteArrayRequest;
 import io.undertow.server.HttpServerExchange;
+import java.util.Map;
+import org.restheart.security.ConfigurationException;
 import org.restheart.security.plugins.Authorizer;
+import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
+import org.restheart.security.plugins.RegisterPlugin;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@RegisterPlugin(
+        name = "fullAuthorizer",
+        description = "authorizes all requests",
+        enabledByDefault = false)
 public class FullAuthorizer implements Authorizer {
-    private boolean authenticationRequired;
+
+    private final boolean authenticationRequired;
 
     /**
      * this Authorizer allows any operation to any user
+     *
+     * @param authenticationRequired
      */
     public FullAuthorizer(boolean authenticationRequired) {
         this.authenticationRequired = authenticationRequired;
+    }
+    
+    /**
+     * this Authorizer allows any operation to any user
+     *
+     * @param confArgs
+     * @throws org.restheart.security.ConfigurationException
+     */
+    public FullAuthorizer(Map<String, Object> confArgs) throws ConfigurationException {
+        this((boolean) argValue(confArgs, "authentication-required"));
     }
 
     @Override

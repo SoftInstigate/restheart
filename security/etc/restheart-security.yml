@@ -121,10 +121,12 @@ authenticators:
  # See README.md for the list of available Authorizers
 
 authorizers:
-  - name: requestPredicatesAuthorizer
-    class: org.restheart.security.plugins.authorizers.RequestPredicatesAuthorizer
-    args:
-      conf-file: {{{acl-conf-file}}}
+  requestPredicatesAuthorizer:
+    enabled: true
+    conf-file: {{{acl-conf-file}}}
+  fullAuthorizer:
+    enabled: false
+    authentication-required: true
 
 ## Token Manager
 

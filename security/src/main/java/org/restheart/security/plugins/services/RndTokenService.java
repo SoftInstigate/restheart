@@ -27,7 +27,6 @@ import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_VALID_HEADER;
 import org.restheart.security.plugins.authenticators.BaseAccount;
-import org.restheart.security.plugins.tokens.RndTokenManager;
 import org.restheart.security.plugins.Service;
 import org.restheart.security.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
@@ -142,22 +141,16 @@ public class RndTokenService extends Service {
     }
 
     private void invalidate(Account account) {
-        try {
-            var tokenManager = PluginsRegistry
-                    .getInstance()
-                    .getTokenManager();
+        var tokenManager = PluginsRegistry
+                .getInstance()
+                .getTokenManager();
 
-            if (tokenManager == null) {
-                throw new IllegalStateException("Error, cannot invalidate, "
-                        + "token manager not active");
-            }
-
-            tokenManager.getInstance().invalidate(account);
-        }
-        catch (ConfigurationException cce) {
+        if (tokenManager == null) {
             throw new IllegalStateException("Error, cannot invalidate, "
                     + "token manager not active");
         }
+
+        tokenManager.getInstance().invalidate(account);
     }
 
     private void removeAuthTokens(HttpServerExchange exchange) {

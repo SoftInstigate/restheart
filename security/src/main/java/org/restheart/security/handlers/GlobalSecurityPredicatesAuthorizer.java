@@ -23,8 +23,8 @@ import java.util.Set;
 import org.restheart.security.utils.HttpStatus;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
-import java.util.LinkedHashSet;
 import org.restheart.security.plugins.Authorizer;
+import org.restheart.security.plugins.PluginRecord;
 
 /**
  *
@@ -32,8 +32,8 @@ import org.restheart.security.plugins.Authorizer;
  */
 public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
 
-    private final LinkedHashSet<Authorizer> authorizers;
-    private static Set<Predicate> globalSecurityPredicates = new HashSet<>();
+    private final Set<PluginRecord<Authorizer>> authorizers;
+    private final static Set<Predicate> GLOBAL_SEC_PREDICATES = new HashSet<>();
 
     /**
      * Creates a new instance of AccessManagerHandler
@@ -42,7 +42,7 @@ public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
      * @param next
      */
     public GlobalSecurityPredicatesAuthorizer(
-            LinkedHashSet<Authorizer> authorizers, 
+            Set<PluginRecord<Authorizer>> authorizers, 
             PipedHttpHandler next) {
         super(next);
         this.authorizers = authorizers;
@@ -82,7 +82,10 @@ public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
         if (authorizers == null) {
             return true;
         } else {
-            return authorizers.stream().anyMatch(am -> am.isAllowed(exchange));
+            return authorizers.stream()
+                    .filter(a -> a.getInstance() != null)
+                    .filter(a -> a.isEnabled())
+                    .anyMatch(a -> a.getInstance().isAllowed(exchange));
         }
     }
 
@@ -104,6 +107,6 @@ public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
      * security predicates to apply to all requests
      */
     public static Set<Predicate> getGlobalSecurityPredicates() {
-        return globalSecurityPredicates;
+        return GLOBAL_SEC_PREDICATES;
     }
 }

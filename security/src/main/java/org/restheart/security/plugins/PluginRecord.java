@@ -23,6 +23,7 @@ import org.restheart.security.ConfigurationKeys;
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @param <T>
  */
 public class PluginRecord<T extends Plugin> {
     private final String name;
