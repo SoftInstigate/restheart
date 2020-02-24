@@ -89,10 +89,10 @@ public class DigestAuthMechanism implements AuthMechanism {
         this(argValue(args, "realm"),
                 argValue(args, "domain"),
                 mechanismName,
-                PluginsRegistry
-                        .getInstance()
-                        .getAuthenticator(
-                                argValue(args, "authenticator")));
+                // the authenticator specified in auth mechanism configuration
+                PluginsRegistry.getInstance()
+                        .getAuthenticator(argValue(args, "authenticator"))
+                        .getInstance());
     }
 
     @Override

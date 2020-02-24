@@ -105,10 +105,9 @@ auth-mechanisms:
  # See README.md for the list of available Authenticators
 
 authenticators:
-    - name: simpleFileAuthenticator
-      class: org.restheart.security.plugins.authenticators.SimpleFileAuthenticator
-      args:
-        conf-file: /opt/restheart/etc/users.yml
+  simpleFileAuthenticator:
+    enabled: true
+    conf-file: /opt/restheart/etc/users.yml
 
 ## Authorizers
 
@@ -137,11 +136,10 @@ authorizers:
  # See README.md for the list of available Token Managers.
 
 token-manager:
-    name: rndTokenManager
-    class: org.restheart.security.plugins.tokens.RndTokenManager
-    args:
-      ttl: 15
-      srv-uri: /tokens
+  rndTokenManager:
+    enabled: true
+    ttl: 15
+    srv-uri: /tokens
 
 #### Plugins configuration
 

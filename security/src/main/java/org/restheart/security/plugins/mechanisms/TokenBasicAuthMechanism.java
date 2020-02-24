@@ -99,11 +99,15 @@ public class TokenBasicAuthMechanism
         super(argValue(args, "realm"),
                 mechanismName,
                 true,
-                PluginsRegistry.getInstance().getTokenManager());
+                PluginsRegistry.getInstance().getTokenManager() != null
+                ? PluginsRegistry.getInstance().getTokenManager().getInstance()
+                : null);
 
         this.mechanismName = mechanismName;
 
-        this.identityManager = PluginsRegistry.getInstance().getTokenManager();
+        this.identityManager = PluginsRegistry.getInstance().getTokenManager() != null
+                ? PluginsRegistry.getInstance().getTokenManager().getInstance()
+                : null;
     }
 
     @Override
@@ -119,7 +123,8 @@ public class TokenBasicAuthMechanism
                     try {
                         ByteBuffer decode = FlexBase64.decode(base64Challenge);
                         plainChallenge = new String(decode.array(), decode.arrayOffset(), decode.limit(), UTF_8);
-                    } catch (IOException e) {
+                    }
+                    catch (IOException e) {
                     }
                     int colonPos;
                     if (plainChallenge != null && (colonPos = plainChallenge.indexOf(COLON)) > -1) {
@@ -138,7 +143,8 @@ public class TokenBasicAuthMechanism
                                 result = AuthenticationMechanismOutcome.NOT_ATTEMPTED;
                             }
                             return result;
-                        } finally {
+                        }
+                        finally {
                             clear(password);
                         }
                     }

@@ -290,7 +290,7 @@ public interface ConfigurationKeys {
     /**
      * the key for the tokenManager property.
      */
-    public static final String AUTH_TOKEN = "token-manager";
+    public static final String TOKEN_MANAGER = "token-manager";
 
     /**
      * Force http requests logging even if DEBUG is not set

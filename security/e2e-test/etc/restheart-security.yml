@@ -90,10 +90,9 @@ auth-mechanisms:
  # See README.md for the list of available Authenticators
 
 authenticators:
-    - name: simpleFileAuthenticator
-      class: org.restheart.security.plugins.authenticators.SimpleFileAuthenticator
-      args:
-        conf-file: /opt/restheart/etc/users.yml
+  simpleFileAuthenticator:
+    enabled: true
+    conf-file: /opt/restheart/etc/users.yml
 
 ## Authorizers
 
@@ -116,17 +115,17 @@ authorizers:
 
  # If a token-manager is configured, RESTHeart Security will use it to generate 
  # and verify auth tokens.
+ # If more than one token-manager are defined, the first one will be used
  # The token is returned to the caller via auth-token header when the user
  # autheticates succesfully. The token can be used by Authentication Mechanisms.
 
  # See README.md for the list of available Token Managers.
 
 token-manager:
-    name: rndTokenManager
-    class: org.restheart.security.plugins.tokens.RndTokenManager
-    args:
-      ttl: 15
-      srv-uri: /tokens
+  rndTokenManager:
+    enabled: true
+    ttl: 15
+    srv-uri: /tokens
       
 #### Plugins configuration
 

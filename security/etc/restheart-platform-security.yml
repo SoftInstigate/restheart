@@ -116,28 +116,26 @@ auth-mechanisms:
  # AuthMachanisms
 
 authenticators:
-#    - name: simpleFileAuthenticator
-#      class: org.restheart.security.plugins.authenticators.SimpleFileAuthenticator
-#      args:
-#        conf-file: ../etc/users.yml
-    - name: rhAuthenticator
-      class: com.restheart.security.plugins.authenticators.RHAuthenticator
-      args:
-        users-collection-uri: /users
-        prop-id: _id
-        prop-password: password
-        json-path-roles: $.roles
-        bcrypt-hashed-password: true
-        bcrypt-complexity: 12
-        create-user: true
-        create-user-document: '{"_id": "admin", "password": "$2a$12$lZiMMNJ6pkyg4uq/I1cF5uxzUbU25aXHtg7W7sD2ED7DG1wzUoo6u", "roles": ["admin"]}'
-        # create-user-document.password must be hashed when bcrypt-hashed-password=true
-        # default password is 'secret'
-        # see https://bcrypt-generator.com but replace initial '$2y' with '$2a'
-        cache-enabled: true
-        cache-size: 1000
-        cache-ttl: 60000
-        cache-expire-policy: AFTER_WRITE
+  rhAuthenticator:
+    enabled: true
+    users-collection-uri: /users
+    prop-id: _id
+    prop-password: password
+    json-path-roles: $.roles
+    bcrypt-hashed-password: true
+    bcrypt-complexity: 12
+    create-user: true
+    create-user-document: '{"_id": "admin", "password": "$2a$12$lZiMMNJ6pkyg4uq/I1cF5uxzUbU25aXHtg7W7sD2ED7DG1wzUoo6u", "roles": ["admin"]}'
+    # create-user-document.password must be hashed when bcrypt-hashed-password=true
+    # default password is 'secret'
+    # see https://bcrypt-generator.com but replace initial '$2y' with '$2a'
+    cache-enabled: true
+    cache-size: 1000
+    cache-ttl: 60000
+    cache-expire-policy: AFTER_WRITE
+  simpleFileAuthenticator:
+    enabled: false
+    conf-file: ../etc/users.yml
 
 ## Authorizers
 
@@ -167,15 +165,14 @@ authorizers:
 
  # If a token-manager is configured, RESTHeart Security will use it to generate
  # and verify auth tokens.
+ # If more than one token-manager are defined, the first one will be used
  # The token is returned to the caller via auth-token header when the user
  # autheticates succesfully. The token can be used by Authentication Mechanisms.
 
 token-manager:
-    name: rndTokenManager
-    class: org.restheart.security.plugins.tokens.RndTokenManager
-    args:
-      ttl: 15
-      srv-uri: /tokens
+  rndTokenManager:
+    ttl: 15
+    srv-uri: /tokens
 
 #### Plugins configuration
 

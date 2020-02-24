@@ -143,7 +143,7 @@ public class RndTokenService extends Service {
 
     private void invalidate(Account account) {
         try {
-            var tokenManager = (RndTokenManager) PluginsRegistry
+            var tokenManager = PluginsRegistry
                     .getInstance()
                     .getTokenManager();
 
@@ -152,7 +152,7 @@ public class RndTokenService extends Service {
                         + "token manager not active");
             }
 
-            tokenManager.invalidate(account);
+            tokenManager.getInstance().invalidate(account);
         }
         catch (ConfigurationException cce) {
             throw new IllegalStateException("Error, cannot invalidate, "

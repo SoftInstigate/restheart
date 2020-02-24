@@ -40,6 +40,7 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.util.HexConverter;
 import org.restheart.security.ConfigurationException;
 import org.restheart.security.plugins.Authenticator;
+import org.restheart.security.plugins.RegisterPlugin;
 
 /**
  *
@@ -49,6 +50,10 @@ import org.restheart.security.plugins.Authenticator;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@RegisterPlugin(
+        name = "simpleFileAuthenticator",
+        description = "authenticates clients credentials defined in a configuration file",
+        enabledByDefault = false)
 public class SimpleFileAuthenticator
         extends FileConfigurablePlugin
         implements Authenticator {
@@ -57,12 +62,23 @@ public class SimpleFileAuthenticator
 
     /**
      *
+     * @param confArgs
+     * @throws java.io.FileNotFoundException
+     * @throws org.restheart.security.ConfigurationException
+     */
+    public SimpleFileAuthenticator(Map<String, Object> confArgs)
+            throws FileNotFoundException, ConfigurationException {
+        this("simpleFileAuthenticator", confArgs);
+    }
+    
+    /**
+     *
      * @param arguments
      * @throws java.io.FileNotFoundException
      */
-    public SimpleFileAuthenticator(String name, Map<String, Object> arguments)
+    public SimpleFileAuthenticator(String name, Map<String, Object> confArgs)
             throws FileNotFoundException, ConfigurationException {
-        init(arguments, "users");
+        init(confArgs, "users");
     }
 
     @Override

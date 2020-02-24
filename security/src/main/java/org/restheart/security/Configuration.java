@@ -46,7 +46,7 @@ import static org.restheart.security.ConfigurationKeys.ANSI_CONSOLE_KEY;
 import static org.restheart.security.ConfigurationKeys.AUTHENTICATORS_KEY;
 import static org.restheart.security.ConfigurationKeys.AUTHORIZERS_KEY;
 import static org.restheart.security.ConfigurationKeys.AUTH_MECHANISMS_KEY;
-import static org.restheart.security.ConfigurationKeys.AUTH_TOKEN;
+import static org.restheart.security.ConfigurationKeys.TOKEN_MANAGER;
 import static org.restheart.security.ConfigurationKeys.BUFFER_SIZE_KEY;
 import static org.restheart.security.ConfigurationKeys.CERT_PASSWORD_KEY;
 import static org.restheart.security.ConfigurationKeys.CONNECTION_OPTIONS_KEY;
@@ -120,9 +120,9 @@ public class Configuration {
     private final List<Map<String, Object>> proxies;
     private final Map<String, Map<String, Object>> pluginsArgs;
     private final Map<String, Map<String, Object>> authMechanisms;
-    private final List<Map<String, Object>> authenticators;
+    private final Map<String, Map<String, Object>> authenticators;
     private final List<Map<String, Object>> authorizers;
-    private final Map<String, Object> tokenManager;
+    private final Map<String, Map<String, Object>> tokenManagers;
     private final String logFilePath;
     private final Level logLevel;
     private final boolean logToConsole;
@@ -167,9 +167,9 @@ public class Configuration {
 
         pluginsArgs = new LinkedHashMap<>();
         authMechanisms = new LinkedHashMap<>();
-        authenticators = new ArrayList<>();
+        authenticators = new LinkedHashMap<>();
         authorizers = null;
-        tokenManager = new HashMap<>();
+        tokenManagers = new HashMap<>();
 
         logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "restheart-security.log");
@@ -267,13 +267,33 @@ public class Configuration {
                     && old instanceof List
                     && checkPre20Confs((List) old)) {
                 LOGGER.error("The auth-mechanisms configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
-                throw new ConfigurationException("Wrong Authentication Mechanism configuration");
+                throw new ConfigurationException("Wrong Authentication Mechanisms configuration");
             }
         }
 
-        authenticators = getAsListOfMaps(conf, AUTHENTICATORS_KEY, new ArrayList<>());
+        authenticators = getAsMapOfMaps(conf, AUTHENTICATORS_KEY, new LinkedHashMap<>());
+
+        if (authenticators.isEmpty()) {
+            // check if exception is due to old configuration format
+            var old = conf.get(AUTHENTICATORS_KEY);
+
+            if (old != null
+                    && old instanceof List
+                    && checkPre20Confs((List) old)) {
+                LOGGER.error("The authenticator configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+                throw new ConfigurationException("Wrong Authenticators configuration");
+            }
+        }
+
         authorizers = getAsListOfMaps(conf, AUTHORIZERS_KEY, new ArrayList<>());
-        tokenManager = getAsMap(conf, AUTH_TOKEN);
+
+        tokenManagers = getAsMapOfMaps(conf, TOKEN_MANAGER, new LinkedHashMap<>());
+
+        if (checkPre20Confs(tokenManagers)) {
+            // check if exception is due to old configuration format
+            LOGGER.error("The token-manager configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+            throw new ConfigurationException("Wrong Token Manager configuration");
+        }
 
         logFilePath = getAsString(conf, LOG_FILE_PATH_KEY, URLUtils
                 .removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
@@ -390,7 +410,7 @@ public class Configuration {
                 + ", authMechanisms=" + authMechanisms
                 + ", authenticators=" + authenticators
                 + ", authorizers=" + authorizers
-                + ", tokenManager=" + tokenManager
+                + ", tokenManager=" + tokenManagers
                 + ", logFilePath=" + logFilePath
                 + ", logLevel=" + logLevel
                 + ", logToConsole=" + logToConsole
@@ -604,7 +624,7 @@ public class Configuration {
     /**
      * @return the authenticators
      */
-    public List<Map<String, Object>> getAuthenticators() {
+    public Map<String, Map<String, Object>> getAuthenticators() {
         return authenticators;
     }
 
@@ -623,10 +643,10 @@ public class Configuration {
     }
 
     /**
-     * @return the authToken
+     * @return the tokenManagers
      */
-    public Map<String, Object> getTokenManager() {
-        return tokenManager;
+    public Map<String, Map<String, Object>> getTokenManagers() {
+        return tokenManagers;
     }
 
     /**
@@ -1030,5 +1050,11 @@ public class Configuration {
                 .anyMatch(e -> e.containsKey("name")
                 || e.containsKey("class")
                 || e.containsKey("args"));
+    }
+
+    private static boolean checkPre20Confs(Map<String, Map<String, Object>> conf) {
+        return conf != null && (conf.containsKey("name")
+                || conf.containsKey("class")
+                || conf.containsKey("args"));
     }
 }

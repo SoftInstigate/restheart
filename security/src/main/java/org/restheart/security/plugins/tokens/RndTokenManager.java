@@ -39,10 +39,15 @@ import java.util.Arrays;
 import org.restheart.security.ConfigurationException;
 import org.restheart.security.plugins.PluginRecord;
 import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.security.plugins.RegisterPlugin;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.authenticators.PwdCredentialAccount;
 import org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor;
 
+@RegisterPlugin(
+        name = "rndTokenManager",
+        description = "generates random auth tokens",
+        enabledByDefault = false)
 public class RndTokenManager implements TokenManager {
 
     private static SecureRandom RND_GENERATOR = new SecureRandom();
@@ -52,25 +57,30 @@ public class RndTokenManager implements TokenManager {
     private final int ttl;
     private final String srvURI;
 
-    public RndTokenManager(String name, Map<String, Object> args)
+    public RndTokenManager(Map<String, Object> confArgs)
             throws ConfigurationException {
-        this.ttl = ConfigurablePlugin.argValue(args, "ttl");
+        this("rndTokenManager", confArgs);
+    }
 
-        this.srvURI = ConfigurablePlugin.argValue(args, "srv-uri");
+    public RndTokenManager(String name, Map<String, Object> confArgs)
+            throws ConfigurationException {
+        this.ttl = ConfigurablePlugin.argValue(confArgs, "ttl");
 
-        this.CACHE = CacheFactory.createLocalCache(Long.MAX_VALUE,
+        this.srvURI = ConfigurablePlugin.argValue(confArgs, "srv-uri");
+
+        CACHE = CacheFactory.createLocalCache(Long.MAX_VALUE,
                 Cache.EXPIRE_POLICY.AFTER_READ,
                 ttl * 60 * 1_000);
-        
-        String[] headers = { AUTH_TOKEN_HEADER.toString(), 
-            AUTH_TOKEN_VALID_HEADER.toString(), 
-            AUTH_TOKEN_LOCATION_HEADER.toString() };
-        
+
+        String[] headers = {AUTH_TOKEN_HEADER.toString(),
+            AUTH_TOKEN_VALID_HEADER.toString(),
+            AUTH_TOKEN_LOCATION_HEADER.toString()};
+
         PluginsRegistry.getInstance().getResponseInterceptors()
                 .add(new PluginRecord("tokenCORSResponseInterceptor",
                         "helper interceptor to add token headers to "
-                                + "Access-Control-Expose-Headers to "
-                                + "handle CORS request",
+                        + "Access-Control-Expose-Headers to "
+                        + "handle CORS request",
                         true,
                         TokenCORSResponseInterceptor.class.getName(),
                         new TokenCORSResponseInterceptor(headers),
@@ -115,7 +125,7 @@ public class RndTokenManager implements TokenManager {
 
     @Override
     public PasswordCredential get(Account account) {
-        Optional<PwdCredentialAccount> cachedAccount = this.CACHE
+        Optional<PwdCredentialAccount> cachedAccount = CACHE
                 .get(account.getPrincipal().getName());
 
         if (cachedAccount != null && cachedAccount.isPresent()) {
@@ -127,7 +137,7 @@ public class RndTokenManager implements TokenManager {
                     token,
                     Sets.newTreeSet(account.getRoles()));
 
-            this.CACHE.put(account.getPrincipal().getName(),
+            CACHE.put(account.getPrincipal().getName(),
                     newCachedTokenAccount);
 
             return newCachedTokenAccount.getCredentials();
@@ -136,7 +146,7 @@ public class RndTokenManager implements TokenManager {
 
     @Override
     public void invalidate(Account account) {
-        this.CACHE.invalidate(account.getPrincipal().getName());
+        CACHE.invalidate(account.getPrincipal().getName());
     }
 
     @Override
@@ -144,7 +154,7 @@ public class RndTokenManager implements TokenManager {
         String id = account.getPrincipal().getName();
 
         Optional<PwdCredentialAccount> _authTokenAccount
-                = this.CACHE.get(id);
+                = CACHE.get(id);
 
         if (_authTokenAccount != null && _authTokenAccount.isPresent()) {
             PwdCredentialAccount authTokenAccount = _authTokenAccount.get();
@@ -155,7 +165,7 @@ public class RndTokenManager implements TokenManager {
                             authTokenAccount.getCredentials().getPassword(),
                             account.getRoles());
 
-            this.CACHE.put(id, updatedAuthTokenAccount);
+            CACHE.put(id, updatedAuthTokenAccount);
         }
     }
 
@@ -177,7 +187,7 @@ public class RndTokenManager implements TokenManager {
                     .getAuthenticatedAccount()
                     .getPrincipal()
                     .getName();
-            
+
             exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
                     URLUtils.removeTrailingSlashes(srvURI)
                             .concat("/")

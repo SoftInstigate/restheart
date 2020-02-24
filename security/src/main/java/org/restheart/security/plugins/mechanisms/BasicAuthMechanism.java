@@ -50,9 +50,13 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
 
     public BasicAuthMechanism(final String mechanismName, final Map<String, Object> args)
             throws ConfigurationException {
-        super(argValue(args, "realm"), mechanismName, false,
-                PluginsRegistry.getInstance().getAuthenticator(
-                        argValue(args, "authenticator")));
+        super(argValue(args, "realm"),
+                mechanismName,
+                false,
+                // the authenticator specified in auth mechanism configuration
+                PluginsRegistry.getInstance()
+                        .getAuthenticator(argValue(args, "authenticator"))
+                        .getInstance());
     }
 
     @Override

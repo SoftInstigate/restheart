@@ -997,14 +997,14 @@ public class Bootstrapper {
      * @return the TokenManager, or null if it is not configured
      */
     private static TokenManager loadTokenManager() {
-        final Map<String, Object> tokenManager = configuration.getTokenManager();
-
-        if (tokenManager == null || tokenManager.isEmpty()) {
-            return null;
-        }
-
         try {
-            return PluginsRegistry.getInstance().getTokenManager();
+            var tm = PluginsRegistry.getInstance().getTokenManager();
+            
+            if (tm != null) {
+                return tm.getInstance();
+            } else {
+                return null;
+            }
         }
         catch (ConfigurationException pce) {
             LOGGER.error("Error configuring token manager", pce);

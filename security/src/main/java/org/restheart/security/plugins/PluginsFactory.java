@@ -33,10 +33,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.restheart.security.Bootstrapper;
 
 import org.restheart.security.ConfigurationException;
@@ -64,78 +62,37 @@ public class PluginsFactory {
      * @return the AuthenticationMechanisms
      */
     static Set<PluginRecord<AuthMechanism>> authMechanisms() {
-        return createPlugins(AuthMechanism.class, 
+        return createPlugins(AuthMechanism.class,
                 Bootstrapper.getConfiguration().getAuthMechanisms());
     }
 
     /**
-     * createAuthenticator
      *
-     * @param conf the configuration Map
-     * @return the Authenticator
+     * @return the Authenticators
      */
-    static Authenticator createAuthenticator(
-            Map<String, Object> conf)
-            throws ConfigurationException {
-        if (conf == null || conf.isEmpty()) {
-            throw new ConfigurationException(
-                    "Error configuring Authenticator, missing configuration");
-        }
+    static Set<PluginRecord<Authenticator>> authenticators() {
+        return createPlugins(Authenticator.class,
+                Bootstrapper.getConfiguration().getAuthenticators());
+    }
 
-        Object _name = conf.get(ConfigurationKeys.NAME_KEY);
+    /**
+     *
+     * @return the Token Manager
+     */
+    static PluginRecord<TokenManager> tokenManager() {
+        Set<PluginRecord<TokenManager>> tkms = createPlugins(TokenManager.class,
+                Bootstrapper.getConfiguration().getTokenManagers());
 
-        if (_name == null || !(_name instanceof String)) {
-            throw new ConfigurationException(
-                    "Error configuring Authenticator, missing "
-                    + ConfigurationKeys.NAME_KEY
-                    + " property");
-        }
+        if (tkms != null) {
+            var tkm = tkms.stream().filter(t -> t.isEnabled()).findFirst();
 
-        Object _clazz = conf.get(ConfigurationKeys.CLASS_KEY);
-
-        if (_clazz == null || !(_clazz instanceof String)) {
-            throw new ConfigurationException(
-                    "Error configuring Authenticator "
-                    + (String) _name
-                    + ", missing "
-                    + ConfigurationKeys.CLASS_KEY
-                    + " property");
-        }
-
-        Object _args = conf.get(ConfigurationKeys.ARGS_KEY);
-
-        try {
-            if (_args == null) {
-                return (Authenticator) Class.forName((String) _clazz)
-                        .getDeclaredConstructor(String.class)
-                        .newInstance((String) _name);
+            if (tkm != null && tkm.isPresent()) {
+                return tkm.get();
             } else {
-                if (!(_args instanceof Map<?, ?>)) {
-                    throw new ConfigurationException(
-                            "Error configuring Authenticator "
-                            + (String) _name
-                            + ", "
-                            + ConfigurationKeys.ARGS_KEY
-                            + " property is not a map");
-                } else {
-                    return (Authenticator) Class.forName(
-                            (String) _clazz)
-                            .getDeclaredConstructor(String.class, Map.class)
-                            .newInstance((String) _name, (Map<?, ?>) _args);
-                }
+                return null;
             }
-        }
-        catch (ClassNotFoundException
-                | IllegalAccessException
-                | IllegalArgumentException
-                | InstantiationException
-                | NoSuchMethodException
-                | SecurityException
-                | InvocationTargetException ex) {
-            throw new ConfigurationException(
-                    "Error configuring Authenticator "
-                    + _name, ex);
-
+        } else {
+            return null;
         }
     }
 
@@ -208,80 +165,6 @@ public class PluginsFactory {
     /**
      * create the initializers
      */
-    static Set<PluginRecord<Initializer>> tokenManagers() {
-        return createPlugins(TokenManager.class, ARGS_CONFS);
-    }
-
-    /**
-     * createTokenManager
-     *
-     * @return the TokenManager
-     */
-    static TokenManager createTokenManager(
-            Map<String, Object> conf)
-            throws ConfigurationException {
-        if (conf == null || conf.isEmpty()) {
-            throw new ConfigurationException(
-                    "Error configuring Token Manager, missing configuration");
-        }
-
-        Object _name = conf.get(ConfigurationKeys.NAME_KEY);
-
-        if (_name == null || !(_name instanceof String)) {
-            throw new ConfigurationException(
-                    "Error configuring Token Manager, missing "
-                    + ConfigurationKeys.NAME_KEY
-                    + " property");
-        }
-
-        Object _clazz = conf.get(ConfigurationKeys.CLASS_KEY);
-
-        if (_clazz == null || !(_clazz instanceof String)) {
-            throw new ConfigurationException(
-                    "Error configuring Token Manager "
-                    + (String) _name
-                    + ", missing "
-                    + ConfigurationKeys.CLASS_KEY
-                    + " property");
-        }
-
-        Object _args = conf.get(ConfigurationKeys.ARGS_KEY);
-
-        try {
-            if (_args == null) {
-                return (TokenManager) Class.forName((String) _clazz)
-                        .getDeclaredConstructor(String.class)
-                        .newInstance((String) _name);
-            } else {
-                if (!(_args instanceof Map)) {
-                    throw new ConfigurationException(
-                            "Error configuring Token Manager "
-                            + (String) _name
-                            + ", property "
-                            + ConfigurationKeys.ARGS_KEY + " is not a map");
-                } else {
-                    return (TokenManager) Class.forName((String) _clazz)
-                            .getDeclaredConstructor(String.class, Map.class)
-                            .newInstance((String) _name, (Map<?, ?>) _args);
-                }
-            }
-        }
-        catch (ClassNotFoundException
-                | IllegalAccessException
-                | IllegalArgumentException
-                | InstantiationException
-                | NoSuchMethodException
-                | SecurityException
-                | InvocationTargetException ex) {
-            throw new ConfigurationException(
-                    "Error configuring Token Manager "
-                    + _name, ex);
-        }
-    }
-
-    /**
-     * create the initializers
-     */
     static Set<PluginRecord<Initializer>> initializers() {
         return createPlugins(Initializer.class, ARGS_CONFS);
     }
@@ -337,7 +220,15 @@ public class PluginsFactory {
             ClassInfoList listOfType;
 
             if (type.isInterface()) {
-                listOfType = scanResult.getClassesImplementing(type.getName());
+                if (type.equals(Authenticator.class)) {
+                    var tms = scanResult.getClassesImplementing(TokenManager.class.getName());
+
+                    listOfType = scanResult
+                            .getClassesImplementing(type.getName())
+                            .exclude(tms);
+                } else {
+                    listOfType = scanResult.getClassesImplementing(type.getName());
+                }
             } else {
                 listOfType = scanResult.getSubclasses(type.getName());
             }
@@ -364,7 +255,7 @@ public class PluginsFactory {
                     if (!confs.containsKey(name)) {
                         LOGGER.debug("No configuration found for plugin {} ", name);
                     }
-                    
+
                     var enabled = PluginRecord.isEnabled(enabledByDefault,
                             confs.get(name));
 

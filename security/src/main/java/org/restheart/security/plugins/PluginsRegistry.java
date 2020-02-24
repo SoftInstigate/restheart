@@ -34,42 +34,9 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PluginsRegistry {
+
     private static final Logger LOGGER = LoggerFactory
             .getLogger(PluginsRegistry.class);
-
-    private static final String AUTH_TOKEN_MANAGER_NAME = "@@authTokenManager";
-    private static final String AUTHORIZER_NAME = "@@authorizer";
-
-    private static final LoadingCache<String, Authenticator> AUTHENTICATORS_CACHE
-            = CacheFactory.createLocalLoadingCache(
-                    Integer.MAX_VALUE,
-                    Cache.EXPIRE_POLICY.NEVER, -1, name -> {
-                        var authenticators = Bootstrapper.getConfiguration()
-                                .getAuthenticators();
-
-                        var authenticatorConf = authenticators.stream().filter(
-                                authenticator -> name
-                                        .equals(authenticator.get("name")))
-                                .findFirst();
-
-                        if (authenticatorConf.isPresent()) {
-                            try {
-                                return PluginsFactory
-                                        .createAuthenticator(authenticatorConf.get());
-                            }
-                            catch (ConfigurationException pcex) {
-                                throw new IllegalStateException(
-                                        pcex.getMessage(), pcex);
-                            }
-                        } else {
-                            var errorMsg = "Authenticator "
-                            + name
-                            + " not found.";
-
-                            throw new IllegalStateException(errorMsg,
-                                    new ConfigurationException(errorMsg));
-                        }
-                    });
 
     private static final LoadingCache<String, Authorizer> AUTHORIZERS_CACHE
             = CacheFactory.createLocalLoadingCache(
@@ -101,7 +68,11 @@ public class PluginsRegistry {
                     });
 
     private Set<PluginRecord<AuthMechanism>> authMechanisms;
+
+    private Set<PluginRecord<Authenticator>> authenticators;
     
+    private PluginRecord<TokenManager> tokenManager;
+
     private Set<PluginRecord<Service>> services;
 
     private Set<PluginRecord<Initializer>> initializers;
@@ -124,7 +95,7 @@ public class PluginsRegistry {
 
     private PluginsRegistry() {
     }
-    
+
     /**
      * @return the authMechanisms
      */
@@ -133,8 +104,55 @@ public class PluginsRegistry {
             this.authMechanisms = new LinkedHashSet<>();
             this.authMechanisms.addAll(PluginsFactory.authMechanisms());
         }
-        
+
         return this.authMechanisms;
+    }
+
+    /**
+     * @return the authenticators
+     */
+    public Set<PluginRecord<Authenticator>> getAuthenticators() {
+        if (this.authenticators == null) {
+            this.authenticators = new LinkedHashSet<>();
+            this.authenticators.addAll(PluginsFactory.authenticators());
+        }
+
+        return this.authenticators;
+    }
+
+    /**
+     *
+     * @param name the name of the authenticator
+     * @return the authenticator
+     * @throws org.restheart.security.ConfigurationException
+     */
+    public PluginRecord<Authenticator> getAuthenticator(String name) throws
+            ConfigurationException {
+
+        var auth = getAuthenticators()
+                .stream()
+                .filter(p -> name.equals(p.getName()))
+                .findFirst();
+
+        if (auth != null && auth.isPresent()) {
+            return auth.get();
+        } else {
+            throw new ConfigurationException("Authenticator "
+                    + name
+                    + " not found");
+
+        }
+    }
+    
+    /**
+     * @return the authenticators
+     */
+    public PluginRecord<TokenManager> tokenManager() {
+        if (this.tokenManager == null) {
+            this.tokenManager = PluginsFactory.tokenManager();
+        }
+
+        return this.tokenManager;
     }
 
     /**
@@ -145,7 +163,7 @@ public class PluginsRegistry {
             this.initializers = new LinkedHashSet<>();
             this.initializers.addAll(PluginsFactory.initializers());
         }
-        
+
         return this.initializers;
     }
 
@@ -158,17 +176,17 @@ public class PluginsRegistry {
             this.preStartupInitializers.addAll(
                     PluginsFactory.preStartupInitializers());
         }
-        
+
         return this.preStartupInitializers;
     }
-    
+
     public Set<PluginRecord<RequestInterceptor>> getRequestInterceptors() {
         if (this.requestInterceptors == null) {
             this.requestInterceptors = new LinkedHashSet<>();
             this.requestInterceptors.addAll(PluginsFactory
                     .requestInterceptors());
         }
-        
+
         return requestInterceptors;
     }
 
@@ -178,7 +196,7 @@ public class PluginsRegistry {
             this.responseInterceptors.addAll(PluginsFactory
                     .responseInterceptors());
         }
-        
+
         return responseInterceptors;
     }
 
@@ -190,31 +208,8 @@ public class PluginsRegistry {
             this.services = new LinkedHashSet<>();
             this.services.addAll(PluginsFactory.services());
         }
-        
+
         return this.services;
-    }
-
-    /**
-     * @param name
-     * @return the authenticators
-     * @throws org.restheart.security.ConfigurationException
-     */
-    public Authenticator getAuthenticator(String name)
-            throws ConfigurationException {
-        Optional<Authenticator> op = AUTHENTICATORS_CACHE
-                .getLoading(name);
-
-        if (op == null) {
-            throw new ConfigurationException(
-                    "No Authenticator configured with name: " + name);
-        }
-
-        if (op.isPresent()) {
-            return op.get();
-        } else {
-            throw new ConfigurationException(
-                    "No Authenticator configured with name: " + name);
-        }
     }
 
     /**
@@ -239,30 +234,39 @@ public class PluginsRegistry {
                     "No Authorizer configured");
         }
     }
-    
+
+    public PluginRecord<TokenManager> getTokenManager()
+            throws ConfigurationException {
+        if (this.tokenManager == null) {
+            this.tokenManager = PluginsFactory.tokenManager();
+        }
+
+        return this.tokenManager;
+    }
+
     /**
      * @return the token manager
      * @throws org.restheart.security.ConfigurationException
      */
-    public TokenManager getTokenManager()
-            throws ConfigurationException {
-        Optional<Authenticator> op = AUTHENTICATORS_CACHE
-                .get(AUTH_TOKEN_MANAGER_NAME);
-
-        if (op == null) {
-            Authenticator atm = PluginsFactory
-                    .createTokenManager(Bootstrapper.getConfiguration()
-                            .getTokenManager());
-
-            AUTHENTICATORS_CACHE.put(AUTH_TOKEN_MANAGER_NAME, atm);
-            return (TokenManager) atm;
-        }
-
-        if (op.isPresent()) {
-            return (TokenManager) op.get();
-        } else {
-            throw new ConfigurationException(
-                    "No Token Manager configured");
-        }
-    }
+//    public TokenManager getTokenManager()
+//            throws ConfigurationException {
+//        Optional<Authenticator> op = AUTHENTICATORS_CACHE
+//                .get(AUTH_TOKEN_MANAGER_NAME);
+//
+//        if (op == null) {
+//            Authenticator atm = PluginsFactory
+//                    .createTokenManager(Bootstrapper.getConfiguration()
+//                            .getTokenManager());
+//
+//            AUTHENTICATORS_CACHE.put(AUTH_TOKEN_MANAGER_NAME, atm);
+//            return (TokenManager) atm;
+//        }
+//
+//        if (op.isPresent()) {
+//            return (TokenManager) op.get();
+//        } else {
+//            throw new ConfigurationException(
+//                    "No Token Manager configured");
+//        }
+//    }
 }
