@@ -23,9 +23,8 @@ import org.restheart.handlers.RequestContext;
 import org.restheart.plugins.GlobalTransformer;
 import org.restheart.metadata.TransformerMetadata;
 import org.restheart.plugins.transformers.WriteResultTransformer;
-import org.restheart.handlers.RequestContextPredicate;
-import org.restheart.handlers.metadata.TransformerHandler;
 import org.restheart.plugins.Initializer;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,25 +34,23 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(
-        name = "addBodyToWriteResponsesInitializer", 
-        priority = 100, 
+        name = "addBodyToWriteResponsesInitializer",
+        priority = 100,
         description = "Add writeResult to global transformers",
         enabledByDefault = false)
 public class AddBodyToWriteResponsesInitializer implements Initializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AddBodyToWriteResponsesInitializer.class);
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(AddBodyToWriteResponsesInitializer.class);
 
     @Override
     public void init(Map<String, Object> confArgs) {
-        TransformerHandler.getGlobalTransformers().add(
-                new GlobalTransformer(new WriteResultTransformer(),
-                        new RequestContextPredicate() {
-                    @Override
-                    public boolean resolve(HttpServerExchange hse, RequestContext context) {
-                        return (context.isPost() && context.isCollection()) 
-                                || (context.isPatch()&& context.isDocument()) 
-                                || (context.isPut() && context.isDocument());
-                    }
-                },
+        PluginsRegistry.getInstance().getGlobalTransformers().add(
+                new GlobalTransformer(
+                        new WriteResultTransformer(), (HttpServerExchange hse,
+                                RequestContext context)
+                        -> (context.isPost() && context.isCollection())
+                        || (context.isPatch() && context.isDocument())
+                        || (context.isPut() && context.isDocument()),
                         TransformerMetadata.PHASE.RESPONSE,
                         TransformerMetadata.SCOPE.THIS,
                         null, null)

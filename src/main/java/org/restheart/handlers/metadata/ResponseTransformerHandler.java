@@ -111,7 +111,7 @@ public class ResponseTransformerHandler
     @Override
     void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context) {
         // execture global response tranformers
-        getGlobalTransformers().stream()
+        PluginsRegistry.getInstance().getGlobalTransformers().stream()
                 .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
                 .forEachOrdered(gt -> {
                     if (gt.getScope() == TransformerMetadata.SCOPE.THIS) {

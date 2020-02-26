@@ -17,19 +17,16 @@
  */
 package org.restheart.handlers.metadata;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.plugins.GlobalChecker;
+import org.restheart.plugins.PluginsRegistry;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public abstract class CheckHandler extends PipedHttpHandler {
-    private static List<GlobalChecker> globalCheckers
-            = new ArrayList<>();
-    
     /**
      *
      * @param next
@@ -37,12 +34,14 @@ public abstract class CheckHandler extends PipedHttpHandler {
     public CheckHandler(PipedHttpHandler next) {
         super(next);
     }
-    
+
     /**
      *
+     * @deprecated use PluginsRegistry.getInstance().getGlobalCheckers() instead
      * @return the globalCheckers
      */
+    @Deprecated
     public static List<GlobalChecker> getGlobalCheckers() {
-        return globalCheckers;
+        return PluginsRegistry.getInstance().getGlobalCheckers();
     }
 }

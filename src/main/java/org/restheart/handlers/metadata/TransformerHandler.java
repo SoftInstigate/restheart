@@ -18,8 +18,6 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -28,6 +26,7 @@ import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.plugins.GlobalTransformer;
 import org.restheart.metadata.TransformerMetadata;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.Transformer;
 
 /**
@@ -35,10 +34,6 @@ import org.restheart.plugins.Transformer;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class TransformerHandler extends PipedHttpHandler {
-
-    private static final List<GlobalTransformer> GLOBAL_TRANSFORMERS
-            = Collections.synchronizedList(new ArrayList<>());
-
     /**
      * Creates a new instance of AbstractTransformerHandler
      *
@@ -79,10 +74,12 @@ public abstract class TransformerHandler extends PipedHttpHandler {
     }
 
     /**
+     * @deprecated use PluginsRegistry.getInstance().getGlobalTransformers() instead
      * @return the GLOBAL_TRANSFORMERS
      */
+    @Deprecated
     public static synchronized List<GlobalTransformer> getGlobalTransformers() {
-        return GLOBAL_TRANSFORMERS;
+        return PluginsRegistry.getInstance().getGlobalTransformers();
     }
 
     abstract boolean doesGlobalTransformerAppy(GlobalTransformer gt,

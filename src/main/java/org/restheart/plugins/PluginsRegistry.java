@@ -34,6 +34,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -61,11 +62,20 @@ public class PluginsRegistry {
     private final Map<String, PluginRecord<Transformer>> transformers
             = new LinkedHashMap<>();
 
+    private final List<GlobalTransformer> globalTransformers
+            = new ArrayList<>();
+
     private final Map<String, PluginRecord<Hook>> hooks
             = new LinkedHashMap<>();
 
+    private final List<GlobalHook> globalHooks
+            = new ArrayList<>();
+
     private final Map<String, PluginRecord<Checker>> checkers
             = new LinkedHashMap<>();
+
+    private final List<GlobalChecker> globalCheckers
+            = new ArrayList<>();
 
     private final Map<String, Map<String, Object>> confs = consumeConfiguration();
 
@@ -235,7 +245,7 @@ public class PluginsRegistry {
             });
         }
     }
-   
+
     /**
      * finds the services
      */
@@ -479,6 +489,28 @@ public class PluginsRegistry {
         }
     }
 
+    /**
+     *
+     * @return the globalCheckers
+     */
+    public List<GlobalChecker> getGlobalCheckers() {
+        return globalCheckers;
+    }
+
+    /**
+     * @return the GLOBAL_TRANSFORMERS
+     */
+    public synchronized List<GlobalTransformer> getGlobalTransformers() {
+        return globalTransformers;
+    }
+
+    /**
+     * @return the GLOBAL_HOOKS
+     */
+    public synchronized List<GlobalHook> getGlobalHooks() {
+        return globalHooks;
+    }
+
     @SuppressWarnings("unchecked")
     private static <T extends Object> T annotationParam(ClassInfo ci,
             String param) {
@@ -488,7 +520,7 @@ public class PluginsRegistry {
         // The Route annotation has a parameter named "path"
         return (T) annotationParamVals.getValue(param);
     }
-    
+
     private URL[] findPluginsJars(Path pluginsDirectory) {
         var urls = new ArrayList<URL>();
 
@@ -499,8 +531,8 @@ public class PluginsRegistry {
                 urls.add(jar);
                 LOGGER.info("Added to classpath the plugins jar {}", jar);
             }
-        } catch(IOException ex) {
-            LOGGER.error("Cannot read jars in plugins directory {}", 
+        } catch (IOException ex) {
+            LOGGER.error("Cannot read jars in plugins directory {}",
                     Bootstrapper.getConfiguration().getPluginsDirectory(),
                     ex.getMessage());
         }
@@ -523,24 +555,24 @@ public class PluginsRegistry {
             URL location = this.getClass().getProtectionDomain()
                     .getCodeSource()
                     .getLocation();
-            
+
             File locationFile = new File(location.getPath());
-            
+
             pluginsDir = locationFile.getParent()
-                + File.separator
-                + pluginsDir;
-            
+                    + File.separator
+                    + pluginsDir;
+
             return FileSystems.getDefault().getPath(pluginsDir);
         }
     }
-    
+
     private static URL[] PLUGINS_JARS_CACHE = null;
-    
+
     private URLClassLoader getPluginsClassloader() {
         if (PLUGINS_JARS_CACHE == null) {
             PLUGINS_JARS_CACHE = findPluginsJars(getPluginsDirectory());
         }
-        
+
         return new URLClassLoader(PLUGINS_JARS_CACHE);
     }
 }
