@@ -26,6 +26,7 @@ import org.restheart.security.utils.URLUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.security.plugins.Initializer;
+import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.RegisterPlugin;
 
 /**
@@ -55,15 +56,12 @@ public class TestInitializer implements Initializer {
         LOGGER.info("\tadds a request and a response interceptors for /iecho and /siecho");
 
         // add a global security predicate
-        GlobalSecurityPredicatesAuthorizer.getGlobalSecurityPredicates().add(new Predicate() {
-            @Override
-            public boolean resolve(HttpServerExchange exchange) {
-                var request = JsonRequest.wrap(exchange);
-
-                return !(request.isGet()
-                        && "/secho/foo".equals(URLUtils.removeTrailingSlashes(
-                                exchange.getRequestPath())));
-            }
-        });
+        PluginsRegistry.getInstance().getGlobalSecurityPredicates()
+                .add((Predicate) (HttpServerExchange exchange) -> {
+                    var request = JsonRequest.wrap(exchange);
+                    return !(request.isGet()
+                            && "/secho/foo".equals(URLUtils.removeTrailingSlashes(
+                                    exchange.getRequestPath())));
+                });
     }
 }

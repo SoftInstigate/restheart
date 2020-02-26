@@ -17,6 +17,7 @@
  */
 package org.restheart.security.plugins;
 
+import io.undertow.predicate.Predicate;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.restheart.security.ConfigurationException;
@@ -29,9 +30,9 @@ public class PluginsRegistry {
     private Set<PluginRecord<AuthMechanism>> authMechanisms;
 
     private Set<PluginRecord<Authenticator>> authenticators;
-    
+
     private Set<PluginRecord<Authorizer>> authorizers;
-    
+
     private PluginRecord<TokenManager> tokenManager;
 
     private Set<PluginRecord<Service>> services;
@@ -43,6 +44,9 @@ public class PluginsRegistry {
     private Set<PluginRecord<RequestInterceptor>> requestInterceptors;
 
     private Set<PluginRecord<ResponseInterceptor>> responseInterceptors;
+
+    private final Set<Predicate> globalSecurityPredicates
+            = new LinkedHashSet<>();
 
     private static PluginsRegistry HOLDER;
 
@@ -104,7 +108,7 @@ public class PluginsRegistry {
 
         }
     }
-    
+
     /**
      * @return the authenticators
      */
@@ -115,7 +119,7 @@ public class PluginsRegistry {
 
         return this.tokenManager;
     }
-    
+
     /**
      * @return the authenticators
      */
@@ -126,7 +130,6 @@ public class PluginsRegistry {
 
         return this.authorizers;
     }
-    
 
     /**
      * @return the initializers
@@ -183,5 +186,15 @@ public class PluginsRegistry {
         }
 
         return this.services;
+    }
+
+    /**
+     * global security predicates must all resolve to true to allow the request
+     *
+     * @return the globalSecurityPredicates allow to get and set the global
+     * security predicates to apply to all requests
+     */
+    public Set<Predicate> getGlobalSecurityPredicates() {
+        return globalSecurityPredicates;
     }
 }

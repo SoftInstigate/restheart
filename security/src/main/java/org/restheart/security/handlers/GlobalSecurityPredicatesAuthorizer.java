@@ -17,7 +17,6 @@
  */
 package org.restheart.security.handlers;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import org.restheart.security.utils.HttpStatus;
@@ -25,6 +24,7 @@ import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.security.plugins.Authorizer;
 import org.restheart.security.plugins.PluginRecord;
+import org.restheart.security.plugins.PluginsRegistry;
 
 /**
  *
@@ -33,7 +33,6 @@ import org.restheart.security.plugins.PluginRecord;
 public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
 
     private final Set<PluginRecord<Authorizer>> authorizers;
-    private final static Set<Predicate> GLOBAL_SEC_PREDICATES = new HashSet<>();
 
     /**
      * Creates a new instance of AccessManagerHandler
@@ -42,7 +41,7 @@ public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
      * @param next
      */
     public GlobalSecurityPredicatesAuthorizer(
-            Set<PluginRecord<Authorizer>> authorizers, 
+            Set<PluginRecord<Authorizer>> authorizers,
             PipedHttpHandler next) {
         super(next);
         this.authorizers = authorizers;
@@ -90,23 +89,26 @@ public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
     }
 
     /**
-     * 
+     *
      * @param exchange
      * @return true if all global security predicates resolve the request
      */
     private boolean checkGlobalPredicates(HttpServerExchange exchange) {
-        return getGlobalSecurityPredicates()
+        return PluginsRegistry.getInstance().getGlobalSecurityPredicates()
                 .stream()
                 .allMatch(predicate -> predicate.resolve(exchange));
     }
 
     /**
      * global security predicates must all resolve to true to allow the request
-     * 
+     *
+     * @deprecated use
+     * PluginsRegistry.getInstance().getGlobalSecurityPredicates() instead
      * @return the globalSecurityPredicates allow to get and set the global
      * security predicates to apply to all requests
      */
+    @Deprecated
     public static Set<Predicate> getGlobalSecurityPredicates() {
-        return GLOBAL_SEC_PREDICATES;
+        return PluginsRegistry.getInstance().getGlobalSecurityPredicates();
     }
 }
