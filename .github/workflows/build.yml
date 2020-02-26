@@ -13,5 +13,5 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 11
-    - name: Deploy to Github Package Registry
+    - name: Verify build
       run: mvn verify
