@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.google.common.collect.Sets;
-import org.restheart.security.cache.Cache;
-import org.restheart.security.cache.CacheFactory;
+import org.restheart.cache.Cache;
+import org.restheart.cache.CacheFactory;
 import org.restheart.security.handlers.exchange.JsonRequest;
 
 import org.restheart.security.plugins.ConfigurablePlugin;
