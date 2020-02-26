@@ -18,8 +18,6 @@
 package org.restheart.handlers.metadata;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.restheart.handlers.PipedHttpHandler;
@@ -41,9 +39,6 @@ public class HookHandler extends PipedHttpHandler {
     static final Logger LOGGER
             = LoggerFactory.getLogger(HookHandler.class);
     
-    private static final List<GlobalHook> GLOBAL_HOOKS
-            = Collections.synchronizedList(new ArrayList<>());
-
     /**
      * Creates a new instance of HookMetadataHandler
      */
@@ -122,9 +117,11 @@ public class HookHandler extends PipedHttpHandler {
     }
     
     /**
+     * @deprecated use PluginsRegistry.getInstance().getGlobalHooks() instead
      * @return the GLOBAL_HOOKS
      */
+    @Deprecated
     public static synchronized List<GlobalHook> getGlobalHooks() {
-        return GLOBAL_HOOKS;
+        return PluginsRegistry.getInstance().getGlobalHooks();
     }
 }

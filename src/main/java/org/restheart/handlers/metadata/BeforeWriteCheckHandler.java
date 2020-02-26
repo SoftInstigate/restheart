@@ -226,7 +226,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
 
     boolean applyGlobalCheckers(HttpServerExchange exchange, RequestContext context) {
         // execture global request tranformers
-        return getGlobalCheckers().stream()
+        return PluginsRegistry.getInstance().getGlobalCheckers().stream()
                 .filter(gc -> doesGlobalCheckerApply(gc, exchange, context))
                 .allMatch(gc
                         -> applyChecker(exchange,
@@ -244,7 +244,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
     }
 
     boolean doesGlobalCheckersApply() {
-        return !getGlobalCheckers().isEmpty();
+        return !PluginsRegistry.getInstance().getGlobalCheckers().isEmpty();
     }
 
     protected boolean doesCheckersApply(
