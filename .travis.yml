@@ -18,7 +18,7 @@ cache:
     - "$HOME/.m2"
 install: true
 script:
-  - mvn clean install -DskipITs=false
+  - mvn clean install -U -DskipITs=false
   - ./bin/push.sh
 deploy:
   provider: releases

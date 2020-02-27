@@ -36,7 +36,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import org.restheart.security.Bootstrapper;
-import org.restheart.security.ConfigurationException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
