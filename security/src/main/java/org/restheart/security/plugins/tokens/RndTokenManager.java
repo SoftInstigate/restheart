@@ -29,15 +29,15 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.handlers.exchange.JsonRequest;
 
-import org.restheart.security.plugins.ConfigurablePlugin;
 import org.restheart.security.utils.URLUtils;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
-import org.restheart.security.ConfigurationException;
-import org.restheart.security.plugins.PluginRecord;
+import org.restheart.ConfigurationException;
+import org.restheart.plugins.ConfigurablePlugin;
+import org.restheart.plugins.PluginRecord;
 import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.RegisterPlugin;
 import org.restheart.security.plugins.TokenManager;

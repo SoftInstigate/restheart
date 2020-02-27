@@ -35,6 +35,8 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import org.restheart.plugins.Plugin;
+import org.restheart.plugins.PluginRecord;
 import org.restheart.security.Bootstrapper;
 
 import org.slf4j.Logger;
@@ -205,7 +207,9 @@ public class PluginsFactory {
                         try {
                             i = plugin.loadClass(false)
                                     .getConstructor(Map.class)
-                                    .newInstance(confs.get(name));
+                                    .newInstance(confs != null
+                                            ? confs.get(name)
+                                            : null);
                         }
                         catch (NoSuchMethodException nme) {
                             // Plugin does not have constructor with confArgs
@@ -216,7 +220,8 @@ public class PluginsFactory {
                             // warn in case there is a configuration
                             // but the plugins does not take it via its constructor
                             // but for enabled key that is managed by pr.isEnabled()
-                            if (confs.containsKey(name)
+                            if (confs != null
+                                    && confs.containsKey(name)
                                     && confs.get(name).keySet()
                                             .stream()
                                             .filter(k -> !"enabled".equals(k))
@@ -238,7 +243,9 @@ public class PluginsFactory {
                                 enabledByDefault,
                                 plugin.getName(),
                                 (T) i,
-                                confs.get(name));
+                                confs != null
+                                        ? confs.get(name)
+                                        : null);
 
                         if (pr.isEnabled()) {
                             ret.add(pr);

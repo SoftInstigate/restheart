@@ -18,6 +18,7 @@
 package org.restheart.security.plugins;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.plugins.ConfigurablePlugin;
 
 /**
  * Base interface for RequestInterceptor and ResponseInterceptor

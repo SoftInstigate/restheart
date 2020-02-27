@@ -20,6 +20,7 @@ package org.restheart.security.plugins;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
+import org.restheart.plugins.ConfigurablePlugin;
 
 /**
  * @see https://restheart.org/docs/develop/security-plugins/#authenticators

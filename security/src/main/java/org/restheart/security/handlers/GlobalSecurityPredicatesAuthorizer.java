@@ -23,8 +23,8 @@ import org.restheart.utils.HttpStatus;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.plugins.PluginRecord;
 import org.restheart.security.plugins.Authorizer;
-import org.restheart.security.plugins.PluginRecord;
 import org.restheart.security.plugins.PluginsRegistry;
 
 /**

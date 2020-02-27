@@ -41,6 +41,7 @@ import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Scanner;
 import java.util.regex.Pattern;
+import org.restheart.ConfigurationException;
 import static org.restheart.security.ConfigurationKeys.ALLOW_UNESCAPED_CHARACTERS_IN_URL;
 import static org.restheart.security.ConfigurationKeys.ANSI_CONSOLE_KEY;
 import static org.restheart.security.ConfigurationKeys.AUTHENTICATORS_KEY;
@@ -195,7 +196,7 @@ public class Configuration {
      * any missing property the default value is used.
      *
      * @param confFilePath the path of the configuration file
-     * @throws org.restheart.security.ConfigurationException
+     * @throws org.restheart.ConfigurationException
      */
     public Configuration(final Path confFilePath) throws ConfigurationException {
         this(confFilePath, false);
@@ -207,7 +208,7 @@ public class Configuration {
      *
      * @param confFilePath the path of the configuration file
      * @param silent
-     * @throws org.restheart.security.ConfigurationException
+     * @throws org.restheart.ConfigurationException
      */
     public Configuration(final Path confFilePath, boolean silent) throws ConfigurationException {
         this(getConfigurationFromFile(confFilePath), silent);
@@ -219,7 +220,7 @@ public class Configuration {
      *
      * @param conf the key-value configuration map
      * @param silent
-     * @throws org.restheart.security.ConfigurationException
+     * @throws org.restheart.ConfigurationException
      */
     @SuppressWarnings("deprecation")
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {

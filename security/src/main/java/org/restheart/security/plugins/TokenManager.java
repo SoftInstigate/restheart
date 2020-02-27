@@ -21,6 +21,7 @@ import io.undertow.security.idm.Account;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import org.restheart.plugins.ConfigurablePlugin;
 
 /**
  * Interface for token managers

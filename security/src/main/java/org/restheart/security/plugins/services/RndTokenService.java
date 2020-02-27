@@ -34,8 +34,8 @@ import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import java.util.Map;
-import org.restheart.security.ConfigurationException;
-import org.restheart.security.plugins.ConfigurablePlugin;
+import org.restheart.ConfigurationException;
+import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.security.plugins.RegisterPlugin;
 
 /**

@@ -17,7 +17,7 @@
  */
 package org.restheart.security.plugins.services;
 
-import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 
 import java.util.Map;
 
@@ -25,7 +25,7 @@ import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.security.plugins.Service;
 import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.security.ConfigurationException;
+import org.restheart.ConfigurationException;
 import org.restheart.security.plugins.RegisterPlugin;
 
 /**

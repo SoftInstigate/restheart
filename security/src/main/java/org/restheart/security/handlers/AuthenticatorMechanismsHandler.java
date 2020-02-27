@@ -23,7 +23,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Set;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.security.plugins.AuthMechanism;
-import org.restheart.security.plugins.PluginRecord;
+import org.restheart.plugins.PluginRecord;
 
 /**
  * This is the PipedHttpHandler version of

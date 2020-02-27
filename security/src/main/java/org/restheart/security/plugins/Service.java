@@ -19,6 +19,7 @@ package org.restheart.security.plugins;
 
 import java.util.Map;
 import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.plugins.ConfigurablePlugin;
 
 import org.restheart.security.handlers.ResponseSender;
 

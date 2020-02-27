@@ -22,7 +22,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Set;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.security.plugins.Authorizer;
-import org.restheart.security.plugins.PluginRecord;
+import org.restheart.plugins.PluginRecord;
 
 /**
  *

@@ -19,7 +19,7 @@ package org.restheart.security.plugins.authorizers;
 
 import static com.google.common.collect.Sets.newHashSet;
 import org.restheart.handlers.exchange.ByteArrayRequest;
-import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 
 import java.io.FileNotFoundException;
@@ -30,13 +30,13 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.restheart.security.plugins.FileConfigurablePlugin;
+import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.security.utils.LambdaUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.security.ConfigurationException;
+import org.restheart.ConfigurationException;
 import org.restheart.security.plugins.Authorizer;
 import org.restheart.security.plugins.RegisterPlugin;
 

@@ -17,7 +17,7 @@
  */
 package org.restheart.security.plugins.mechanisms;
 
-import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import static io.undertow.util.Headers.AUTHORIZATION;
 import static io.undertow.util.Headers.BASIC;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
@@ -36,7 +36,7 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.FlexBase64;
-import org.restheart.security.ConfigurationException;
+import org.restheart.ConfigurationException;
 import org.restheart.security.plugins.AuthMechanism;
 import org.restheart.security.plugins.RegisterPlugin;
 

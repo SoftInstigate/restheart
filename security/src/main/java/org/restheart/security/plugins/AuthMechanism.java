@@ -22,6 +22,7 @@ import io.undertow.security.api.AuthenticationMechanism.AuthenticationMechanismO
 import io.undertow.security.api.AuthenticationMechanism.ChallengeResult;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.plugins.ConfigurablePlugin;
 
 /**
  * @see https://restheart.org/docs/develop/security-plugins/#authentication-mechanisms

@@ -34,8 +34,8 @@ import org.restheart.security.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
-import org.restheart.security.ConfigurationException;
-import org.restheart.security.plugins.ConfigurablePlugin;
+import org.restheart.ConfigurationException;
+import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.security.plugins.RegisterPlugin;
 
 /**

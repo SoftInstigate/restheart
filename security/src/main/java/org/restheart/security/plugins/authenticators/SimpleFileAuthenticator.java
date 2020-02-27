@@ -30,15 +30,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import com.google.common.collect.Sets;
-import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
-import org.restheart.security.plugins.FileConfigurablePlugin;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.security.utils.LambdaUtils;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.DigestCredential;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.util.HexConverter;
-import org.restheart.security.ConfigurationException;
+import org.restheart.ConfigurationException;
 import org.restheart.security.plugins.Authenticator;
 import org.restheart.security.plugins.RegisterPlugin;
 
@@ -64,7 +64,7 @@ public class SimpleFileAuthenticator
      *
      * @param confArgs
      * @throws java.io.FileNotFoundException
-     * @throws org.restheart.security.ConfigurationException
+     * @throws org.restheart.ConfigurationException
      */
     public SimpleFileAuthenticator(Map<String, Object> confArgs)
             throws FileNotFoundException, ConfigurationException {
@@ -73,7 +73,8 @@ public class SimpleFileAuthenticator
     
     /**
      *
-     * @param arguments
+     * @param name
+     * @param confArgs
      * @throws java.io.FileNotFoundException
      */
     public SimpleFileAuthenticator(String name, Map<String, Object> confArgs)

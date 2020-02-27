@@ -20,9 +20,9 @@ package org.restheart.security.plugins.authorizers;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
-import org.restheart.security.ConfigurationException;
+import org.restheart.ConfigurationException;
 import org.restheart.security.plugins.Authorizer;
-import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.security.plugins.RegisterPlugin;
 
 /**
@@ -50,7 +50,7 @@ public class FullAuthorizer implements Authorizer {
      * this Authorizer allows any operation to any user
      *
      * @param confArgs
-     * @throws org.restheart.security.ConfigurationException
+     * @throws org.restheart.ConfigurationException
      */
     public FullAuthorizer(Map<String, Object> confArgs) throws ConfigurationException {
         this((boolean) argValue(confArgs, "authentication-required"));

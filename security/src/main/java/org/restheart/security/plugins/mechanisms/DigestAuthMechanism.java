@@ -17,7 +17,7 @@
  */
 package org.restheart.security.plugins.mechanisms;
 
-import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import static io.undertow.UndertowMessages.MESSAGES;
 import static io.undertow.security.impl.DigestAuthorizationToken.parseHeader;
 import static io.undertow.util.Headers.AUTHENTICATION_INFO;
@@ -55,7 +55,7 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
 import io.undertow.util.HexConverter;
-import org.restheart.security.ConfigurationException;
+import org.restheart.ConfigurationException;
 import org.restheart.security.handlers.QueryStringRebuilder;
 import org.restheart.security.plugins.AuthMechanism;
 import org.restheart.security.plugins.RegisterPlugin;

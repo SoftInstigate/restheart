@@ -17,7 +17,7 @@
  */
 package org.restheart.security.plugins.mechanisms;
 
-import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 
 import java.util.List;
 import java.util.Map;
@@ -28,7 +28,7 @@ import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.security.ConfigurationException;
+import org.restheart.ConfigurationException;
 import org.restheart.security.plugins.AuthMechanism;
 import org.restheart.security.plugins.RegisterPlugin;
 import org.restheart.security.plugins.authenticators.BaseAccount;

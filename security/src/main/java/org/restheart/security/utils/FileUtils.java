@@ -45,7 +45,7 @@ import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.restheart.security.Configuration;
-import org.restheart.security.ConfigurationException;
+import org.restheart.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;

@@ -20,7 +20,8 @@ package org.restheart.security.plugins;
 import io.undertow.predicate.Predicate;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import org.restheart.security.ConfigurationException;
+import org.restheart.ConfigurationException;
+import org.restheart.plugins.PluginRecord;
 
 /**
  *
@@ -89,7 +90,7 @@ public class PluginsRegistry {
      *
      * @param name the name of the authenticator
      * @return the authenticator
-     * @throws org.restheart.security.ConfigurationException
+     * @throws org.restheart.ConfigurationException
      */
     public PluginRecord<Authenticator> getAuthenticator(String name) throws
             ConfigurationException {

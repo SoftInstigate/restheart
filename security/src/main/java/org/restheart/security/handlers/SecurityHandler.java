@@ -23,10 +23,10 @@ import io.undertow.security.api.AuthenticationMode;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
 import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.plugins.PluginRecord;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.Authorizer;
 import org.restheart.security.plugins.AuthMechanism;
-import org.restheart.security.plugins.PluginRecord;
 
 /**
  *
