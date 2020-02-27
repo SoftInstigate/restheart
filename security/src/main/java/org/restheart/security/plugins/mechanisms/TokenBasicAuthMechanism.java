@@ -28,7 +28,6 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
-import org.restheart.security.plugins.PluginsRegistry;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
@@ -37,8 +36,9 @@ import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.FlexBase64;
 import org.restheart.ConfigurationException;
-import org.restheart.security.plugins.AuthMechanism;
-import org.restheart.security.plugins.RegisterPlugin;
+import org.restheart.plugins.security.AuthMechanism;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.plugins.PluginsRegistry;
 
 /**
  *
@@ -79,7 +79,7 @@ public class TokenBasicAuthMechanism
     /**
      *
      * @param args
-     * @throws org.restheart.security.ConfigurationException
+     * @throws org.restheart.ConfigurationException
      */
     public TokenBasicAuthMechanism(final Map<String, Object> args)
             throws ConfigurationException {
@@ -90,7 +90,7 @@ public class TokenBasicAuthMechanism
      *
      * @param mechanismName
      * @param args
-     * @throws org.restheart.security.ConfigurationException
+     * @throws org.restheart.ConfigurationException
      */
     public TokenBasicAuthMechanism(final String mechanismName,
             final Map<String, Object> args)

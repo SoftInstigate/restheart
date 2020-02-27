@@ -24,7 +24,6 @@ import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.JsonResponse;
 import org.restheart.handlers.exchange.Request;
-import org.restheart.security.plugins.Service;
 import org.restheart.utils.BuffersUtils;
 import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
@@ -33,7 +32,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
-import org.restheart.security.plugins.RegisterPlugin;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

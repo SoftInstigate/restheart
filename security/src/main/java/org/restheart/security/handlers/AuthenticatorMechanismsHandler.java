@@ -22,8 +22,8 @@ import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
 import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.security.plugins.AuthMechanism;
 import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.security.AuthMechanism;
 
 /**
  * This is the PipedHttpHandler version of

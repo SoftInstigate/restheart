@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import org.restheart.security.Bootstrapper;
 import org.restheart.security.Configuration;
-import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_HEADER;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpServerExchange;
@@ -43,6 +42,7 @@ import io.undertow.util.QueryParameterUtils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import org.restheart.handlers.PipedHttpHandler;
+import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 
 /**
  *
@@ -102,7 +102,7 @@ public class RequestLogger extends PipedHttpHandler {
         var request = JsonRequest.wrap(exchange);
 
         final StringBuilder sb = new StringBuilder();
-        final long start = request.getStartTime() != null 
+        final long start = request != null && request.getStartTime() != null 
                 ? request.getStartTime() 
                 : System.currentTimeMillis();
 

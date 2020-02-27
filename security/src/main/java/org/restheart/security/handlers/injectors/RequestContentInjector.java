@@ -18,21 +18,21 @@
 package org.restheart.security.handlers.injectors;
 
 import io.undertow.server.HttpHandler;
-import org.restheart.security.plugins.PluginsRegistry;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.RequestBufferingHandler;
 import io.undertow.util.AttachmentKey;
 import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.plugins.security.RequestInterceptor;
+import static org.restheart.plugins.security.RequestInterceptor.IPOINT.AFTER_AUTH;
+import static org.restheart.plugins.security.RequestInterceptor.IPOINT.BEFORE_AUTH;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
-import org.restheart.security.plugins.RequestInterceptor;
-import static org.restheart.security.plugins.RequestInterceptor.IPOINT.AFTER_AUTH;
-import static org.restheart.security.plugins.RequestInterceptor.IPOINT.BEFORE_AUTH;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
+import org.restheart.security.plugins.PluginsRegistry;
 
 /**
  * injects in the exchange the request content if the request involves a Service

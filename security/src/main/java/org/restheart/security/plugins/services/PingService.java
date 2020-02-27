@@ -22,11 +22,11 @@ import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import java.util.Map;
 
 import org.restheart.handlers.exchange.JsonRequest;
-import org.restheart.security.plugins.Service;
 import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.ConfigurationException;
-import org.restheart.security.plugins.RegisterPlugin;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.Service;
 
 /**
  *

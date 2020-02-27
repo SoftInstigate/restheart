@@ -38,9 +38,12 @@ import java.util.Arrays;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.TokenManager;
+import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
+import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
+import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
 import org.restheart.security.plugins.PluginsRegistry;
-import org.restheart.security.plugins.RegisterPlugin;
-import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.authenticators.PwdCredentialAccount;
 import org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor;
 

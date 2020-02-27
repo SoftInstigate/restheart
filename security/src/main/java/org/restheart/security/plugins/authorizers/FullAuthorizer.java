@@ -21,9 +21,9 @@ import org.restheart.handlers.exchange.ByteArrayRequest;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.restheart.ConfigurationException;
-import org.restheart.security.plugins.Authorizer;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import org.restheart.security.plugins.RegisterPlugin;
+import org.restheart.plugins.security.Authorizer;
+import org.restheart.plugins.RegisterPlugin;
 
 /**
  *

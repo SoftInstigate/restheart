@@ -24,7 +24,7 @@ import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.plugins.PluginRecord;
-import org.restheart.security.plugins.Authorizer;
+import org.restheart.plugins.security.Authorizer;
 import org.restheart.security.plugins.PluginsRegistry;
 
 /**
@@ -95,7 +95,8 @@ public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
      * @return true if all global security predicates resolve the request
      */
     private boolean checkGlobalPredicates(HttpServerExchange exchange) {
-        return PluginsRegistry.getInstance().getGlobalSecurityPredicates()
+        return PluginsRegistry.getInstance()
+                .getGlobalSecurityPredicates()
                 .stream()
                 .allMatch(predicate -> predicate.resolve(exchange));
     }
@@ -110,6 +111,7 @@ public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
      */
     @Deprecated
     public static Set<Predicate> getGlobalSecurityPredicates() {
-        return PluginsRegistry.getInstance().getGlobalSecurityPredicates();
+        return PluginsRegistry.getInstance()
+                .getGlobalSecurityPredicates();
     }
 }

@@ -39,9 +39,8 @@ import io.undertow.security.idm.DigestCredential;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.util.HexConverter;
 import org.restheart.ConfigurationException;
-import org.restheart.security.plugins.Authenticator;
-import org.restheart.security.plugins.RegisterPlugin;
-
+import org.restheart.plugins.security.Authenticator;
+import org.restheart.plugins.RegisterPlugin;
 /**
  *
  * Authenticator with permission defined in a yml configuration file

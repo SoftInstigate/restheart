@@ -21,13 +21,13 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 
 import java.util.Map;
 
-import org.restheart.security.plugins.PluginsRegistry;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import org.restheart.security.plugins.AuthMechanism;
-import org.restheart.security.plugins.RegisterPlugin;
+import org.restheart.plugins.security.AuthMechanism;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.plugins.PluginsRegistry;
 
 /**
  *

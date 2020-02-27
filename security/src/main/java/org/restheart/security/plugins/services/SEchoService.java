@@ -18,7 +18,7 @@
 package org.restheart.security.plugins.services;
 
 import java.util.Map;
-import org.restheart.security.plugins.RegisterPlugin;
+import org.restheart.plugins.RegisterPlugin;
 
 /**
  *

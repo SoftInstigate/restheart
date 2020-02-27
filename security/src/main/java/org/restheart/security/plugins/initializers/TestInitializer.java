@@ -24,9 +24,9 @@ import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.security.utils.URLUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.security.plugins.Initializer;
+import org.restheart.plugins.security.Initializer;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.plugins.PluginsRegistry;
-import org.restheart.security.plugins.RegisterPlugin;
 
 /**
  * Just an example initializer. It is not enabledByDefault; to enable it add to

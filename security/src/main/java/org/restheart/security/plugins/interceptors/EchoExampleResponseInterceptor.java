@@ -23,8 +23,8 @@ import org.restheart.handlers.exchange.JsonResponse;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Map;
-import org.restheart.security.plugins.RegisterPlugin;
-import org.restheart.security.plugins.ResponseInterceptor;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.ResponseInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

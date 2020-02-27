@@ -18,8 +18,8 @@
 package org.restheart.security.plugins.interceptors;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.security.plugins.ResponseInterceptor;
-import static org.restheart.security.plugins.TokenManager.ACCESS_CONTROL_EXPOSE_HEADERS;
+import org.restheart.plugins.security.ResponseInterceptor;
+import static org.restheart.plugins.security.TokenManager.ACCESS_CONTROL_EXPOSE_HEADERS;
 
 /**
  * helper interceptor to add token headers to Access-Control-Expose-Headers to

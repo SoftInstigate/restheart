@@ -25,10 +25,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 import org.restheart.handlers.exchange.JsonRequest;
-import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_HEADER;
-import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
-import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_VALID_HEADER;
-import org.restheart.security.plugins.Service;
 import org.restheart.utils.HttpStatus;
 import org.restheart.security.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
@@ -36,7 +32,11 @@ import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.ConfigurablePlugin;
-import org.restheart.security.plugins.RegisterPlugin;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.Service;
+import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
+import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
+import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
 
 /**
  *

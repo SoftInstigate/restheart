@@ -29,8 +29,8 @@ import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.ConfigurationException;
-import org.restheart.security.plugins.AuthMechanism;
-import org.restheart.security.plugins.RegisterPlugin;
+import org.restheart.plugins.security.AuthMechanism;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.plugins.authenticators.BaseAccount;
 
 /**

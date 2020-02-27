@@ -19,7 +19,6 @@ package org.restheart.security.handlers;
 
 import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.exchange.ByteArrayResponse;
-import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.utils.HttpStatus;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,6 +27,7 @@ import java.nio.channels.FileChannel;
 import org.xnio.channels.StreamSourceChannel;
 import org.xnio.conduits.StreamSinkConduit;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.security.plugins.PluginsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.conduits.AbstractStreamSinkConduit;

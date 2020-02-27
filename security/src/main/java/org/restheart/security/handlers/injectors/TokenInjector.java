@@ -21,7 +21,7 @@ import io.undertow.security.idm.Account;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.security.plugins.TokenManager;
+import org.restheart.plugins.security.TokenManager;
 
 /**
  *

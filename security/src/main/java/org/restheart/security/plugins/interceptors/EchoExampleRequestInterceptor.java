@@ -23,10 +23,10 @@ import org.restheart.handlers.exchange.JsonRequest;
 import io.undertow.server.HttpServerExchange;
 import java.util.LinkedList;
 import java.util.Map;
-import org.restheart.security.plugins.RegisterPlugin;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.RequestInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.security.plugins.RequestInterceptor;
 
 /**
  *
@@ -54,7 +54,7 @@ public class EchoExampleRequestInterceptor implements RequestInterceptor {
 
         var request = JsonRequest.wrap(exchange);
 
-        JsonElement requestContent = null;
+        JsonElement requestContent;
 
         if (!request.isContentAvailable()) {
             request.writeContent(new JsonObject());

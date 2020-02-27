@@ -37,8 +37,8 @@ import io.undertow.predicate.PredicateParser;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.ConfigurationException;
-import org.restheart.security.plugins.Authorizer;
-import org.restheart.security.plugins.RegisterPlugin;
+import org.restheart.plugins.security.Authorizer;
+import org.restheart.plugins.RegisterPlugin;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
