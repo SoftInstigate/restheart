@@ -4,7 +4,7 @@
   
   <groupId>org.restheart</groupId>
   <artifactId>restheart-common</artifactId>
-  <version>master-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>jar</packaging>
   <name>restheart-common</name>
   
