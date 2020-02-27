@@ -1,5 +1,8 @@
 # restheart-common
 
+![Verify build](https://github.com/SoftInstigate/restheart-common/workflows/Verify/badge.svg)
+[![](https://jitpack.io/v/org.restheart/restheart-common.svg)](https://jitpack.io/#org.restheart/restheart-common)
+
 RESTHeart common classes
 
 See *Unified extensions API* in [RESTHeart Roadmap](https://restheart.org/docs/roadmap/#restheart-platform-42) 
