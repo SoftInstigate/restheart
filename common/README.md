@@ -7,4 +7,29 @@ for a general description of restheart-common
 
 # Use with maven
 
-The artifacts are published to [SoftIstigate Github Package Registry](https://github.com/SoftInstigate/restheart-common/packages)
+restheart-common is published via jitpack
+
+see https://jitpack.io/#org.restheart/restheart-common
+
+## Step 1. Add the JitPack repository to your build file
+
+```
+	<repositories>
+		<repository>
+		    <id>jitpack.io</id>
+		    <url>https://jitpack.io</url>
+		</repository>
+	</repositories>
+```
+
+## Step 2. Add the dependency
+
+```
+	<dependency>
+	    <groupId>org.restheart</groupId>
+	    <artifactId>restheart-common</artifactId>
+	    <version>Tag</version>
+	</dependency>
+```
+
+Use Tag=`master-SNAPSHOT` for snapshot builds
