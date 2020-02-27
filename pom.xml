@@ -111,7 +111,7 @@
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-common</artifactId>
-      <version>master-SNAPSHOT</version>
+      <version>075cab8027</version>
     </dependency>
 
     <dependency>
@@ -294,7 +294,7 @@
                 <requireReleaseDeps>
                   <message>No Snapshots Allowed!</message>
                   <excludes>
-                      org.restheart:*
+                    org.restheart:*
                   </excludes>
                 </requireReleaseDeps>
                 <requireJavaVersion>
