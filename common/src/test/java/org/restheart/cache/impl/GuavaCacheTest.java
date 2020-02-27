@@ -1,5 +1,5 @@
 /*
- * RESTHeart Security
+ * RESTHeart Common
  * 
  * Copyright (C) SoftInstigate Srl
  * 
