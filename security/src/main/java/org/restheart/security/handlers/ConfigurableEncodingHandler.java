@@ -17,11 +17,11 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.security.handlers.exchange.AbstractExchange;
-import org.restheart.security.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.AbstractExchange;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import java.util.Arrays;
 
-import org.restheart.security.utils.HttpStatus;
+import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;

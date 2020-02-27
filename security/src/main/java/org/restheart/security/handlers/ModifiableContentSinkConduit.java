@@ -17,13 +17,13 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.security.handlers.exchange.AbstractExchange;
-import org.restheart.security.handlers.exchange.Response;
-import static org.restheart.security.handlers.exchange.AbstractExchange.MAX_BUFFERS;
-import org.restheart.security.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.AbstractExchange;
+import org.restheart.handlers.exchange.Response;
+import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.security.plugins.PluginsRegistry;
-import org.restheart.security.utils.BuffersUtils;
-import org.restheart.security.utils.HttpStatus;
+import org.restheart.utils.BuffersUtils;
+import org.restheart.utils.HttpStatus;
 import io.undertow.connector.PooledByteBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;

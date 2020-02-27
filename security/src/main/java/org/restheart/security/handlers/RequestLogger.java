@@ -17,7 +17,7 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.security.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.JsonRequest;
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
@@ -42,6 +42,7 @@ import io.undertow.util.LocaleUtils;
 import io.undertow.util.QueryParameterUtils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import org.restheart.handlers.PipedHttpHandler;
 
 /**
  *

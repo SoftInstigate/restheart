@@ -17,7 +17,7 @@
  */
 package org.restheart.security.plugins.authorizers;
 
-import org.restheart.security.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayRequest;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.restheart.security.ConfigurationException;

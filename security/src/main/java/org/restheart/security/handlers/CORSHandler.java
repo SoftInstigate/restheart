@@ -32,6 +32,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
+import org.restheart.handlers.PipedHttpHandler;
 
 /**
  *

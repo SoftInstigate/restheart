@@ -28,7 +28,7 @@ import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_LOCATION_HE
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_VALID_HEADER;
 import org.restheart.security.plugins.authenticators.BaseAccount;
 import org.restheart.security.plugins.Service;
-import org.restheart.security.utils.HttpStatus;
+import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;

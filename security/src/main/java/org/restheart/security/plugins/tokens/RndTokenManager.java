@@ -27,7 +27,7 @@ import java.util.Optional;
 import com.google.common.collect.Sets;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
-import org.restheart.security.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.JsonRequest;
 
 import org.restheart.security.plugins.ConfigurablePlugin;
 import org.restheart.security.utils.URLUtils;

@@ -22,6 +22,7 @@ import org.restheart.security.handlers.injectors.TokenInjector;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.security.plugins.TokenManager;
 import org.restheart.security.plugins.Authorizer;
 import org.restheart.security.plugins.AuthMechanism;

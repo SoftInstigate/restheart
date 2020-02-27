@@ -17,10 +17,10 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.security.handlers.exchange.AbstractExchange;
-import org.restheart.security.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.AbstractExchange;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.security.plugins.PluginsRegistry;
-import org.restheart.security.utils.HttpStatus;
+import org.restheart.utils.HttpStatus;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;

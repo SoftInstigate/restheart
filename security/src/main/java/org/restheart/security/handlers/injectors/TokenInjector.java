@@ -20,7 +20,7 @@ package org.restheart.security.handlers.injectors;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.security.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.security.plugins.TokenManager;
 
 /**

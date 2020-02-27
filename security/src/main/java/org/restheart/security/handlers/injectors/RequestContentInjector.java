@@ -19,12 +19,12 @@ package org.restheart.security.handlers.injectors;
 
 import io.undertow.server.HttpHandler;
 import org.restheart.security.plugins.PluginsRegistry;
-import static org.restheart.security.handlers.exchange.AbstractExchange.MAX_BUFFERS;
+import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.RequestBufferingHandler;
 import io.undertow.util.AttachmentKey;
-import org.restheart.security.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipedHttpHandler;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import org.restheart.security.plugins.RequestInterceptor;
 import static org.restheart.security.plugins.RequestInterceptor.IPOINT.AFTER_AUTH;

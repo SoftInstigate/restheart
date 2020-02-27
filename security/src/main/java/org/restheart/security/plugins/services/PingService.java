@@ -21,9 +21,9 @@ import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
 
 import java.util.Map;
 
-import org.restheart.security.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.security.plugins.Service;
-import org.restheart.security.utils.HttpStatus;
+import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.security.ConfigurationException;
 import org.restheart.security.plugins.RegisterPlugin;

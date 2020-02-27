@@ -20,6 +20,7 @@ package org.restheart.security.handlers;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.security.plugins.Authorizer;
 import org.restheart.security.plugins.PluginRecord;
 

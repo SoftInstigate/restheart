@@ -63,16 +63,17 @@ import org.fusesource.jansi.AnsiConsole;
 import org.restheart.security.handlers.CORSHandler;
 import org.restheart.security.handlers.ConfigurableEncodingHandler;
 import org.restheart.security.handlers.ErrorHandler;
-import static org.restheart.security.handlers.PipedHttpHandler.pipe;
-import org.restheart.security.handlers.PipedWrappingHandler;
+import static org.restheart.handlers.PipedHttpHandler.pipe;
+import org.restheart.handlers.PipedWrappingHandler;
 import org.restheart.security.handlers.QueryStringRebuilder;
 import org.restheart.security.handlers.RequestInterceptorsExecutor;
 import org.restheart.security.handlers.RequestLogger;
 import org.restheart.security.handlers.RequestNotManagedHandler;
 import org.restheart.security.handlers.ResponseSender;
 import org.restheart.security.handlers.SecurityHandler;
-import static org.restheart.security.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
-import org.restheart.security.handlers.exchange.AbstractExchange.METHOD;
+import org.restheart.handlers.exchange.AbstractExchange;
+import static org.restheart.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
+import org.restheart.handlers.exchange.AbstractExchange.METHOD;
 import org.restheart.security.handlers.injectors.AuthHeadersRemover;
 import org.restheart.security.handlers.injectors.ConduitInjector;
 import org.restheart.security.handlers.injectors.RequestContentInjector;
@@ -756,6 +757,10 @@ public class Bootstrapper {
         HANDLERS = getHandlersPipe(authMechanisms,
                 authorizers,
                 tokenManager);
+        
+        // update buffer size in 
+        
+        AbstractExchange.updateBufferSize(configuration.getBufferSize());
 
         builder = builder
                 .setIoThreads(configuration.getIoThreads())

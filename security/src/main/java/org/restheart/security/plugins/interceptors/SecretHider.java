@@ -20,13 +20,12 @@ package org.restheart.security.plugins.interceptors;
 import com.google.gson.JsonElement;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
-import java.util.Map;
-import org.restheart.security.handlers.exchange.ByteArrayRequest;
-import org.restheart.security.handlers.exchange.ByteArrayResponse;
-import org.restheart.security.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.security.plugins.RegisterPlugin;
 import org.restheart.security.plugins.RequestInterceptor;
-import org.restheart.security.utils.HttpStatus;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

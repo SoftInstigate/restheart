@@ -17,7 +17,6 @@
  */
 package org.restheart.security.utils;
 
-import org.restheart.security.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import org.junit.After;
 import org.junit.AfterClass;

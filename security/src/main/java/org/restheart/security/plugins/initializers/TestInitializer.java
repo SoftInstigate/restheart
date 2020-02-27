@@ -20,8 +20,7 @@ package org.restheart.security.plugins.initializers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.restheart.security.handlers.exchange.JsonRequest;
-import org.restheart.security.handlers.GlobalSecurityPredicatesAuthorizer;
+import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.security.utils.URLUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;

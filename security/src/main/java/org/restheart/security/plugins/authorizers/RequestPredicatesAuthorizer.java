@@ -18,7 +18,7 @@
 package org.restheart.security.plugins.authorizers;
 
 import static com.google.common.collect.Sets.newHashSet;
-import org.restheart.security.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayRequest;
 import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 

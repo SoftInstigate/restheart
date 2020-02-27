@@ -19,7 +19,7 @@ package org.restheart.security.plugins.interceptors;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.restheart.security.handlers.exchange.JsonResponse;
+import org.restheart.handlers.exchange.JsonResponse;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Map;

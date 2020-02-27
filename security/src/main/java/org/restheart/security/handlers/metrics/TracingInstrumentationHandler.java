@@ -6,8 +6,8 @@ import java.util.Optional;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.security.Bootstrapper;
-import org.restheart.security.handlers.PipedHttpHandler;
 
 /**
  * Handler to write tracing headers to the logging MDC. Pick it up via the

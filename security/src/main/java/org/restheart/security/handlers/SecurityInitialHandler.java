@@ -41,6 +41,7 @@ import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.SecurityContextFactoryImpl;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.PipedHttpHandler;
 
 /**
  * This is the PipedHttpHandler version of

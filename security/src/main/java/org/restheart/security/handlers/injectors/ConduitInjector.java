@@ -18,13 +18,13 @@
 package org.restheart.security.handlers.injectors;
 
 import org.restheart.security.handlers.ModifiableContentSinkConduit;
-import org.restheart.security.handlers.PipedHttpHandler;
 import org.restheart.security.plugins.PluginsRegistry;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
+import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.security.handlers.ResponseInterceptorsStreamSinkConduit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -24,12 +24,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-import org.restheart.security.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.JsonRequest;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.security.plugins.TokenManager.AUTH_TOKEN_VALID_HEADER;
 import org.restheart.security.plugins.Service;
-import org.restheart.security.utils.HttpStatus;
+import org.restheart.utils.HttpStatus;
 import org.restheart.security.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;

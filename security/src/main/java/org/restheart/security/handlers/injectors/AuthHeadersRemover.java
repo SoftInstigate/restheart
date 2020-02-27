@@ -17,7 +17,7 @@
  */
 package org.restheart.security.handlers.injectors;
 
-import org.restheart.security.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipedHttpHandler;
 import io.undertow.server.HttpServerExchange;
 
 /**
