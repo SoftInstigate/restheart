@@ -111,7 +111,7 @@
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-common</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>-SNAPSHOT</version>
     </dependency>
 
     <dependency>
