@@ -111,6 +111,7 @@ public abstract class Request<T> extends AbstractExchange<T> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected AttachmentKey<PooledByteBuffer[]> getRawContentKey() {
         Field f;
 
@@ -184,6 +185,7 @@ public abstract class Request<T> extends AbstractExchange<T> {
     /**
      * helper method to check if the request content is Json
      *
+     * @param exchange
      * @return true if Content-Type request header is application/json
      */
     public static boolean isContentTypeJson(HttpServerExchange exchange) {
@@ -199,7 +201,7 @@ public abstract class Request<T> extends AbstractExchange<T> {
     public boolean isContentTypeFormOrMultipart() {
         return isContentTypeFormOrMultipart(wrapped);
     }
-    
+
     /**
      * helper method to check request method
      *

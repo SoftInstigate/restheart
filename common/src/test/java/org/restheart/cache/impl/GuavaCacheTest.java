@@ -41,7 +41,7 @@ public class GuavaCacheTest {
     @Test
     public void testGet() {
         String key = "A";
-        GuavaCache<String, Integer> instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
+        GuavaCache<String, Integer> instance = new GuavaCache<>(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
         instance.put(key, 1);
         Optional<Integer> result = instance.get(key);
         assertTrue(result.isPresent());
@@ -50,7 +50,7 @@ public class GuavaCacheTest {
 
     @Test
     public void getNonExistent() {
-        GuavaCache<String, Integer> instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
+        GuavaCache<String, Integer> instance = new GuavaCache<>(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
         Optional<Integer> result = instance.get("A");
         assertNull(result);
     }
@@ -59,7 +59,7 @@ public class GuavaCacheTest {
     public void testPutNull() {
         String key = "B";
         Integer value = null;
-        GuavaCache<String, Integer> instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
+        GuavaCache<String, Integer> instance = new GuavaCache<>(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
         instance.put(key, value);
         Optional<Integer> result = instance.get(key);
         assertFalse(result.isPresent());
