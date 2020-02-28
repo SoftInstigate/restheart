@@ -17,7 +17,6 @@
  */
 package org.restheart.plugins.services;
 
-import org.restheart.plugins.Service;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import io.undertow.server.HttpServerExchange;
@@ -37,11 +36,12 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.representation.Resource;
 import org.restheart.handlers.RequestContext;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Service;
 import org.restheart.plugins.Transformer;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.restheart.utils.ResponseHelper;

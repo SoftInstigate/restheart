@@ -1,17 +1,14 @@
 package org.restheart.handlers.metrics;
 
-import org.restheart.handlers.metrics.MetricsHandler;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import static org.junit.Assert.assertEquals;
+import org.junit.Before;
+import org.junit.Test;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;

@@ -18,9 +18,9 @@
 package org.restheart.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;

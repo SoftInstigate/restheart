@@ -17,11 +17,11 @@
  */
 package org.restheart.plugins.checkers;
 
-import org.restheart.plugins.Checker;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
+import org.restheart.plugins.Checker;
 import org.restheart.plugins.Checker.PHASE;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;

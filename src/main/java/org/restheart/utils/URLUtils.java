@@ -35,10 +35,10 @@ import org.bson.BsonType;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.Bootstrapper;
-import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
 import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.STRING;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

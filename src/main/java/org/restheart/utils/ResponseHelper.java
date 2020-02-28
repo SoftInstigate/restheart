@@ -29,8 +29,8 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
-import org.restheart.representation.Resource;
 import org.restheart.handlers.RequestContext;
+import org.restheart.representation.Resource;
 
 /**
  *

@@ -1,25 +1,21 @@
 package org.restheart.handlers.metrics;
 
-import org.restheart.handlers.metrics.MetricsHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Methods;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
-
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.restheart.Configuration;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.OFF;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
-
-import org.restheart.Configuration;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.metrics.SharedMetricRegistryProxy;
 
 public class MetricsHandlerTest {
 

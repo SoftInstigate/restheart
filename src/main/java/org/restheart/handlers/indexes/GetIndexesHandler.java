@@ -20,9 +20,9 @@ package org.restheart.handlers.indexes;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
-import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**

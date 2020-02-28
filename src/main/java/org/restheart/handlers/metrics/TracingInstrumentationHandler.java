@@ -1,14 +1,12 @@
 package org.restheart.handlers.metrics;
 
-import org.restheart.Bootstrapper;
-import org.slf4j.MDC;
-
-import java.util.Optional;
-
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import java.util.Optional;
+import org.restheart.Bootstrapper;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.slf4j.MDC;
 
 /**
  * Handler to write tracing headers to the logging MDC. Pick it up via the

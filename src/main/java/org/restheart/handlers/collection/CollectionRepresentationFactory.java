@@ -26,19 +26,19 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.representation.AbstractRepresentationFactory;
-import org.restheart.representation.Link;
-import org.restheart.representation.Resource;
-import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
 import org.restheart.handlers.metadata.InvalidMetadataException;
-import org.restheart.plugins.checkers.JsonSchemaChecker;
 import org.restheart.metadata.CheckerMetadata;
+import org.restheart.plugins.checkers.JsonSchemaChecker;
+import org.restheart.representation.AbstractRepresentationFactory;
+import org.restheart.representation.Link;
 import org.restheart.representation.RepUtils;
+import org.restheart.representation.Resource;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.utils.URLUtils;
 
 /**

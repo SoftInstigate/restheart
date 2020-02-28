@@ -17,7 +17,6 @@
  */
 package org.restheart.plugins.checkers;
 
-import org.restheart.plugins.Checker;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +27,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
+import org.restheart.plugins.Checker;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;

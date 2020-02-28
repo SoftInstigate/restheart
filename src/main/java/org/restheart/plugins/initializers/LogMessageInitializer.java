@@ -18,12 +18,12 @@
 package org.restheart.plugins.initializers;
 
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.LogUtils;
 import org.restheart.utils.LogUtils.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *

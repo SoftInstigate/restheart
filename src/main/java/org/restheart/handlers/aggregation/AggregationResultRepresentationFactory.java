@@ -21,11 +21,11 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.restheart.handlers.IllegalQueryParamenterException;
+import org.restheart.handlers.RequestContext;
 import org.restheart.representation.AbstractRepresentationFactory;
 import org.restheart.representation.Link;
 import org.restheart.representation.Resource;
-import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.RequestContext;
 import org.restheart.utils.URLUtils;
 
 /**

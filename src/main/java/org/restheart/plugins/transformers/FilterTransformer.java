@@ -17,13 +17,13 @@
  */
 package org.restheart.plugins.transformers;
 
-import org.restheart.plugins.Transformer;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Transformer;
 
 /**
  *
