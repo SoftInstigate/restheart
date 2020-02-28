@@ -23,12 +23,12 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.Version;
-import org.restheart.representation.AbstractRepresentationFactory;
-import org.restheart.representation.Link;
-import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.database.DBRepresentationFactory;
+import org.restheart.representation.AbstractRepresentationFactory;
+import org.restheart.representation.Link;
+import org.restheart.representation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

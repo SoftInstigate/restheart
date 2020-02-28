@@ -2,7 +2,6 @@ package org.restheart.handlers.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
-
 import java.util.stream.Stream;
 
 /**

@@ -30,9 +30,9 @@ import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
+import org.restheart.metadata.CheckerMetadata;
 import org.restheart.plugins.Checker;
 import org.restheart.plugins.GlobalChecker;
-import org.restheart.metadata.CheckerMetadata;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 

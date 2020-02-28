@@ -17,7 +17,6 @@
  */
 package org.restheart.plugins.transformers;
 
-import org.restheart.plugins.Transformer;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashSet;
 import java.util.Set;
@@ -29,6 +28,7 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.RequestContext;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Transformer;
 
 /**
  *

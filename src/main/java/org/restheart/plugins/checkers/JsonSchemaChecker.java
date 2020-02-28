@@ -17,7 +17,6 @@
  */
 package org.restheart.plugins.checkers;
 
-import org.restheart.plugins.Checker;
 import io.undertow.server.HttpServerExchange;
 import java.util.Objects;
 import org.bson.BsonDocument;
@@ -26,12 +25,13 @@ import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.handlers.schema.JsonSchemaNotFoundException;
+import org.restheart.plugins.Checker;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;

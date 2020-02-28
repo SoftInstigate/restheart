@@ -22,9 +22,9 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
-import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 

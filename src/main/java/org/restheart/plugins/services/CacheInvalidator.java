@@ -17,7 +17,6 @@
  */
 package org.restheart.plugins.services;
 
-import org.restheart.plugins.Service;
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.Map;
@@ -25,6 +24,7 @@ import org.restheart.Bootstrapper;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 

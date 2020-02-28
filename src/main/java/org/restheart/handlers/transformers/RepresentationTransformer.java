@@ -22,9 +22,9 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.Bootstrapper;
-import org.restheart.representation.Resource;
 import org.restheart.handlers.RequestContext;
 import org.restheart.plugins.Transformer;
+import org.restheart.representation.Resource;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.HttpStatus;
 

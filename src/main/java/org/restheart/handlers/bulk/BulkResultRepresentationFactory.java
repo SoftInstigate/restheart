@@ -26,12 +26,12 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.restheart.db.BulkOperationResult;
-import org.restheart.representation.AbstractRepresentationFactory;
-import org.restheart.representation.Link;
-import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.representation.AbstractRepresentationFactory;
+import org.restheart.representation.Link;
 import org.restheart.representation.RepUtils;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 

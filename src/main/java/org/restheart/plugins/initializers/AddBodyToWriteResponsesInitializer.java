@@ -20,12 +20,12 @@ package org.restheart.plugins.initializers;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.restheart.handlers.RequestContext;
-import org.restheart.plugins.GlobalTransformer;
 import org.restheart.metadata.TransformerMetadata;
-import org.restheart.plugins.transformers.WriteResultTransformer;
+import org.restheart.plugins.GlobalTransformer;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.transformers.WriteResultTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

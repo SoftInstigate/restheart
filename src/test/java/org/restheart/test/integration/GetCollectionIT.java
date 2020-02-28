@@ -33,8 +33,8 @@ import org.apache.http.util.EntityUtils;
 import org.bson.Document;
 import static org.junit.Assert.*;
 import org.junit.Test;
-import org.restheart.representation.Resource;
 import org.restheart.db.MongoDBClientSingleton;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**

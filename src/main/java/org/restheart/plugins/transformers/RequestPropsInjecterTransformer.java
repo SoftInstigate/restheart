@@ -17,7 +17,6 @@
  */
 package org.restheart.plugins.transformers;
 
-import org.restheart.plugins.Transformer;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
@@ -32,6 +31,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Transformer;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -24,10 +24,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
 import org.restheart.db.Database;
-import org.restheart.representation.Resource;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**

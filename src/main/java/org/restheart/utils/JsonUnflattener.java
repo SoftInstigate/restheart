@@ -19,7 +19,6 @@ package org.restheart.utils;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;

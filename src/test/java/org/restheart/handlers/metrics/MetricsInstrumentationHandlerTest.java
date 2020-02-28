@@ -1,6 +1,5 @@
 package org.restheart.handlers.metrics;
 
-import org.restheart.handlers.metrics.MetricsInstrumentationHandler;
 import com.codahale.metrics.MetricRegistry;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Methods;
