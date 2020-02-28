@@ -85,6 +85,7 @@ public interface Checker extends Plugin {
      *
      * @param exchange the server exchange
      * @param context the request context
+     * @param contentToCheck
      * @param args the args sepcified in the collection metadata via args property
      * @param confArgs the args specified in the configuration file via args property
      * @return true if check completes successfully

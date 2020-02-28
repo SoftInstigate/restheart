@@ -24,7 +24,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.Configuration;
 import org.restheart.representation.Link;
 import org.restheart.representation.Resource;
 import org.restheart.handlers.IllegalQueryParamenterException;

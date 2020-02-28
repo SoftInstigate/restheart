@@ -9,7 +9,6 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
 import org.restheart.Configuration;
-import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.RequestContext;
 
 public class MetricsInstrumentationHandlerTest {

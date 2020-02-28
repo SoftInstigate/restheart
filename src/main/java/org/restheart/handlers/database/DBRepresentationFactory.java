@@ -25,7 +25,6 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.Configuration;
 import org.restheart.representation.AbstractRepresentationFactory;
 import org.restheart.representation.Link;
 import org.restheart.representation.Resource;

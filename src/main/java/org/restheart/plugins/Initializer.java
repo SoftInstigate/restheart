@@ -18,7 +18,6 @@
 package org.restheart.plugins;
 
 import java.util.Map;
-import org.restheart.plugins.Plugin;
 
 /**
  *

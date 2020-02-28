@@ -22,7 +22,6 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.Configuration;
 import org.restheart.Version;
 import org.restheart.representation.AbstractRepresentationFactory;
 import org.restheart.representation.Link;

@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.Properties;
-import org.junit.Test;
 import static org.junit.Assert.*;
 import org.yaml.snakeyaml.Yaml;
 

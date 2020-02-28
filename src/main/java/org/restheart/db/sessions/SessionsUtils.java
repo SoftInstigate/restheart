@@ -21,7 +21,6 @@ import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;
 import com.mongodb.client.internal.MongoClientDelegate;
-import static com.mongodb.client.internal.Crypts.createCrypt;
 import com.mongodb.connection.Cluster;
 import com.mongodb.internal.session.ServerSessionPool;
 import java.lang.reflect.InvocationTargetException;
