@@ -17,11 +17,10 @@
  */
 package org.restheart.security.utils;
 
+import io.undertow.server.HttpServerExchange;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Deque;
-
-import io.undertow.server.HttpServerExchange;
 
 /**
  *

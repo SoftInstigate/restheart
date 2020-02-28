@@ -17,15 +17,14 @@
  */
 package org.restheart.security.handlers;
 
-import java.util.Set;
-
-import org.restheart.utils.HttpStatus;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
+import java.util.Set;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.utils.HttpStatus;
 
 /**
  *

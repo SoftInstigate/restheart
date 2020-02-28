@@ -17,25 +17,22 @@
  */
 package org.restheart.security.plugins.tokens;
 
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Map;
-import java.util.Optional;
-
 import com.google.common.collect.Sets;
-import org.restheart.cache.Cache;
-import org.restheart.cache.CacheFactory;
-import org.restheart.handlers.exchange.JsonRequest;
-
-import org.restheart.security.utils.URLUtils;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
 import org.restheart.ConfigurationException;
+import org.restheart.cache.Cache;
+import org.restheart.cache.CacheFactory;
+import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.RegisterPlugin;
@@ -46,6 +43,7 @@ import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADE
 import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.authenticators.PwdCredentialAccount;
 import org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor;
+import org.restheart.security.utils.URLUtils;
 
 @RegisterPlugin(
         name = "rndTokenManager",

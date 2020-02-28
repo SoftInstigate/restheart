@@ -17,11 +17,6 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.handlers.exchange.AbstractExchange;
-import org.restheart.handlers.exchange.ByteArrayResponse;
-import java.util.Arrays;
-
-import org.restheart.utils.HttpStatus;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
@@ -30,6 +25,10 @@ import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import java.util.Arrays;
+import org.restheart.handlers.exchange.AbstractExchange;
+import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.utils.HttpStatus;
 
 /**
  *

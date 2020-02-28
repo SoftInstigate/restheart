@@ -17,9 +17,8 @@
  */
 package org.restheart.security.plugins.authenticators;
 
-import java.util.Set;
-
 import io.undertow.security.idm.PasswordCredential;
+import java.util.Set;
 
 /**
  * Account implementation that holds PasswordCredential

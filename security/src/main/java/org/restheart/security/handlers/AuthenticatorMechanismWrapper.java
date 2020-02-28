@@ -20,12 +20,11 @@ package org.restheart.security.handlers;
 import io.undertow.security.api.AuthenticationMechanism.AuthenticationMechanismOutcome;
 import static io.undertow.security.api.AuthenticationMechanism.AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
 import io.undertow.security.api.AuthenticationMechanism.ChallengeResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.plugins.security.AuthMechanism;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * log the wapped AuthenticatorMechanism outcomes and makes sure that it can't

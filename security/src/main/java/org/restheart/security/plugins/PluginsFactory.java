@@ -37,18 +37,17 @@ import java.util.Map;
 import java.util.Set;
 import org.restheart.plugins.Plugin;
 import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Initializer;
 import org.restheart.plugins.security.PreStartupInitializer;
-import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.RequestInterceptor;
 import org.restheart.plugins.security.ResponseInterceptor;
 import org.restheart.plugins.security.Service;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.Bootstrapper;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

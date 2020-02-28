@@ -17,28 +17,22 @@
  */
 package org.restheart.security;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+import com.google.common.collect.Maps;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.collect.Maps;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
-
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
-import java.net.URI;
-import java.util.LinkedHashMap;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import org.restheart.ConfigurationException;
@@ -47,7 +41,6 @@ import static org.restheart.security.ConfigurationKeys.ANSI_CONSOLE_KEY;
 import static org.restheart.security.ConfigurationKeys.AUTHENTICATORS_KEY;
 import static org.restheart.security.ConfigurationKeys.AUTHORIZERS_KEY;
 import static org.restheart.security.ConfigurationKeys.AUTH_MECHANISMS_KEY;
-import static org.restheart.security.ConfigurationKeys.TOKEN_MANAGER;
 import static org.restheart.security.ConfigurationKeys.BUFFER_SIZE_KEY;
 import static org.restheart.security.ConfigurationKeys.CERT_PASSWORD_KEY;
 import static org.restheart.security.ConfigurationKeys.CONNECTION_OPTIONS_KEY;
@@ -69,7 +62,6 @@ import static org.restheart.security.ConfigurationKeys.HTTP_HOST_KEY;
 import static org.restheart.security.ConfigurationKeys.HTTP_LISTENER_KEY;
 import static org.restheart.security.ConfigurationKeys.HTTP_PORT_KEY;
 import static org.restheart.security.ConfigurationKeys.INSTANCE_NAME_KEY;
-import static org.restheart.security.ConfigurationKeys.REQUESTS_LOG_TRACE_HEADERS_KEY;
 import static org.restheart.security.ConfigurationKeys.IO_THREADS_KEY;
 import static org.restheart.security.ConfigurationKeys.KEYSTORE_FILE_KEY;
 import static org.restheart.security.ConfigurationKeys.KEYSTORE_PASSWORD_KEY;
@@ -80,10 +72,15 @@ import static org.restheart.security.ConfigurationKeys.PLUGINS_ARGS_KEY;
 import static org.restheart.security.ConfigurationKeys.PLUGINS_DIRECTORY_PATH_KEY;
 import static org.restheart.security.ConfigurationKeys.PROXY_KEY;
 import static org.restheart.security.ConfigurationKeys.REQUESTS_LIMIT_KEY;
+import static org.restheart.security.ConfigurationKeys.REQUESTS_LOG_TRACE_HEADERS_KEY;
 import static org.restheart.security.ConfigurationKeys.SERVICES_KEY;
+import static org.restheart.security.ConfigurationKeys.TOKEN_MANAGER;
 import static org.restheart.security.ConfigurationKeys.USE_EMBEDDED_KEYSTORE_KEY;
 import static org.restheart.security.ConfigurationKeys.WORKER_THREADS_KEY;
 import org.restheart.security.utils.URLUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 /**
  * Utility class to help dealing with the configuration file.

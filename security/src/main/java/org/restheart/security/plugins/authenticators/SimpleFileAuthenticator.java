@@ -17,9 +17,14 @@
  */
 package org.restheart.security.plugins.authenticators;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
+import com.google.common.collect.Sets;
+import io.undertow.security.idm.Account;
+import io.undertow.security.idm.Credential;
+import io.undertow.security.idm.DigestCredential;
+import io.undertow.security.idm.PasswordCredential;
+import io.undertow.util.HexConverter;
 import java.io.FileNotFoundException;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -29,18 +34,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import com.google.common.collect.Sets;
+import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.FileConfigurablePlugin;
-import org.restheart.security.utils.LambdaUtils;
-import io.undertow.security.idm.Account;
-import io.undertow.security.idm.Credential;
-import io.undertow.security.idm.DigestCredential;
-import io.undertow.security.idm.PasswordCredential;
-import io.undertow.util.HexConverter;
-import org.restheart.ConfigurationException;
-import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.Authenticator;
+import org.restheart.security.utils.LambdaUtils;
 /**
  *
  * Authenticator with permission defined in a yml configuration file

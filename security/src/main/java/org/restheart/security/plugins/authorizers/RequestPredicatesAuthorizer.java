@@ -18,10 +18,11 @@
 package org.restheart.security.plugins.authorizers;
 
 import static com.google.common.collect.Sets.newHashSet;
-import org.restheart.handlers.exchange.ByteArrayRequest;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import io.undertow.predicate.Predicate;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
-
+import io.undertow.predicate.PredicateParser;
+import io.undertow.security.idm.Account;
+import io.undertow.server.HttpServerExchange;
 import java.io.FileNotFoundException;
 import java.security.Principal;
 import java.util.HashMap;
@@ -30,15 +31,13 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.restheart.plugins.FileConfigurablePlugin;
-import org.restheart.security.utils.LambdaUtils;
-import io.undertow.predicate.Predicate;
-import io.undertow.predicate.PredicateParser;
-import io.undertow.security.idm.Account;
-import io.undertow.server.HttpServerExchange;
 import org.restheart.ConfigurationException;
-import org.restheart.plugins.security.Authorizer;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.Authorizer;
+import org.restheart.security.utils.LambdaUtils;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}

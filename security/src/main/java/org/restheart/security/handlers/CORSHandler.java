@@ -17,22 +17,20 @@
  */
 package org.restheart.security.handlers;
 
-import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
-import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
-import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
-import static io.undertow.util.Headers.LOCATION_STRING;
-import static io.undertow.util.Headers.ORIGIN;
-
 import com.google.common.net.HttpHeaders;
-
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
+import static io.undertow.util.Headers.LOCATION_STRING;
+import static io.undertow.util.Headers.ORIGIN;
 import io.undertow.util.HttpString;
 import org.restheart.handlers.PipedHttpHandler;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
+import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
+import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
 
 /**
  *

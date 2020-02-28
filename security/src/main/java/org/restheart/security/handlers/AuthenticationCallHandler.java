@@ -17,11 +17,11 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.utils.HttpStatus;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.utils.HttpStatus;
 
 /**
  * This is the PipedHttpHandler version of

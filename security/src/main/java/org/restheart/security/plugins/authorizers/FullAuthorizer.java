@@ -17,13 +17,13 @@
  */
 package org.restheart.security.plugins.authorizers;
 
-import org.restheart.handlers.exchange.ByteArrayRequest;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.restheart.ConfigurationException;
+import org.restheart.handlers.exchange.ByteArrayRequest;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.Authorizer;
 
 /**
  *

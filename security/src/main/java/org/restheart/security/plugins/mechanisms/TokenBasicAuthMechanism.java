@@ -17,17 +17,6 @@
  */
 package org.restheart.security.plugins.mechanisms;
 
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import static io.undertow.util.Headers.AUTHORIZATION;
-import static io.undertow.util.Headers.BASIC;
-import static io.undertow.util.StatusCodes.UNAUTHORIZED;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.List;
-import java.util.Map;
-
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
@@ -35,9 +24,18 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.FlexBase64;
+import static io.undertow.util.Headers.AUTHORIZATION;
+import static io.undertow.util.Headers.BASIC;
+import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Map;
 import org.restheart.ConfigurationException;
-import org.restheart.plugins.security.AuthMechanism;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.security.plugins.PluginsRegistry;
 
 /**

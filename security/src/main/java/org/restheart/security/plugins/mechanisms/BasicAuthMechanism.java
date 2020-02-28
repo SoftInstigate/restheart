@@ -17,16 +17,14 @@
  */
 package org.restheart.security.plugins.mechanisms;
 
-import static io.undertow.util.StatusCodes.UNAUTHORIZED;
-
-import java.util.Map;
-
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
+import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+import java.util.Map;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.security.plugins.PluginsRegistry;
 
 /**

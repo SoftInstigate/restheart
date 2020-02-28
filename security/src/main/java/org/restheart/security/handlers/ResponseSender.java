@@ -17,10 +17,10 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.handlers.exchange.ByteArrayResponse;
 import io.undertow.server.HttpServerExchange;
 import java.nio.ByteBuffer;
 import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 
 /**
  *

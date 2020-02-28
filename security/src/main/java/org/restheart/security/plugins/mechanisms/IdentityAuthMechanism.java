@@ -17,20 +17,17 @@
  */
 package org.restheart.security.plugins.mechanisms;
 
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
-
-import java.util.List;
-import java.util.Map;
-
 import com.google.common.collect.Sets;
-
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
+import java.util.List;
+import java.util.Map;
 import org.restheart.ConfigurationException;
-import org.restheart.plugins.security.AuthMechanism;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.security.plugins.authenticators.BaseAccount;
 
 /**

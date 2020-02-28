@@ -17,16 +17,15 @@
  */
 package org.restheart.security.plugins.initializers;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.restheart.handlers.exchange.JsonRequest;
-import org.restheart.security.utils.URLUtils;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.plugins.security.Initializer;
+import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.Initializer;
 import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.security.utils.URLUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Just an example initializer. It is not enabledByDefault; to enable it add to

@@ -19,10 +19,10 @@ package org.restheart.security.plugins.interceptors;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.restheart.handlers.exchange.JsonRequest;
 import io.undertow.server.HttpServerExchange;
 import java.util.LinkedList;
 import java.util.Map;
+import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.RequestInterceptor;
 import org.slf4j.Logger;

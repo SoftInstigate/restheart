@@ -17,15 +17,14 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.handlers.exchange.AbstractExchange;
-
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.plugins.security.RequestInterceptor.IPOINT;
 import org.restheart.security.plugins.PluginsRegistry;
-import org.restheart.utils.HttpStatus;
 import org.restheart.security.utils.LambdaUtils;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

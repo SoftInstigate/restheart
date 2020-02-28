@@ -17,20 +17,6 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.handlers.exchange.JsonRequest;
-import static org.fusesource.jansi.Ansi.ansi;
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.RED;
-
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.restheart.security.Bootstrapper;
-import org.restheart.security.Configuration;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpServerExchange;
@@ -41,8 +27,19 @@ import io.undertow.util.LocaleUtils;
 import io.undertow.util.QueryParameterUtils;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.Map;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.exchange.JsonRequest;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
+import org.restheart.security.Bootstrapper;
+import org.restheart.security.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *

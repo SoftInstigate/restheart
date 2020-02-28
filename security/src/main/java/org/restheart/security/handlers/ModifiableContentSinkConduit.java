@@ -17,30 +17,29 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.handlers.exchange.AbstractExchange;
-import org.restheart.handlers.exchange.Response;
-import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
-import org.restheart.handlers.exchange.ByteArrayResponse;
-import org.restheart.utils.BuffersUtils;
-import org.restheart.utils.HttpStatus;
 import io.undertow.connector.PooledByteBuffer;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-
-import org.xnio.IoUtils;
-import org.xnio.channels.StreamSourceChannel;
-import org.xnio.conduits.ConduitWritableByteChannel;
-import org.xnio.conduits.StreamSinkConduit;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.protocol.http.ServerFixedLengthStreamSinkConduit;
 import io.undertow.util.Headers;
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import org.restheart.handlers.exchange.AbstractExchange;
+import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
+import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.Response;
 import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.utils.BuffersUtils;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xnio.IoUtils;
+import org.xnio.channels.StreamSourceChannel;
 import org.xnio.conduits.AbstractStreamSinkConduit;
+import org.xnio.conduits.ConduitWritableByteChannel;
 import org.xnio.conduits.Conduits;
+import org.xnio.conduits.StreamSinkConduit;
 
 /**
  * a conduit that buffers data allowing to modify it it also responsible of

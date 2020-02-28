@@ -1,3 +1,20 @@
+/*
+ * RESTHeart Security
+ *
+ * Copyright (C) SoftInstigate Srl
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.restheart.security;
 
 import com.beust.jcommander.JCommander;
@@ -60,37 +77,37 @@ import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
+import org.restheart.ConfigurationException;
+import static org.restheart.handlers.PipedHttpHandler.pipe;
+import org.restheart.handlers.PipedWrappingHandler;
+import org.restheart.handlers.exchange.AbstractExchange;
+import static org.restheart.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
+import org.restheart.handlers.exchange.AbstractExchange.METHOD;
+import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.security.AuthMechanism;
+import org.restheart.plugins.security.Authorizer;
+import static org.restheart.plugins.security.RequestInterceptor.IPOINT.AFTER_AUTH;
+import static org.restheart.plugins.security.RequestInterceptor.IPOINT.BEFORE_AUTH;
+import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.handlers.CORSHandler;
 import org.restheart.security.handlers.ConfigurableEncodingHandler;
 import org.restheart.security.handlers.ErrorHandler;
-import static org.restheart.handlers.PipedHttpHandler.pipe;
-import org.restheart.handlers.PipedWrappingHandler;
 import org.restheart.security.handlers.QueryStringRebuilder;
 import org.restheart.security.handlers.RequestInterceptorsExecutor;
 import org.restheart.security.handlers.RequestLogger;
 import org.restheart.security.handlers.RequestNotManagedHandler;
 import org.restheart.security.handlers.ResponseSender;
 import org.restheart.security.handlers.SecurityHandler;
-import org.restheart.handlers.exchange.AbstractExchange;
-import static org.restheart.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
-import org.restheart.handlers.exchange.AbstractExchange.METHOD;
 import org.restheart.security.handlers.injectors.AuthHeadersRemover;
 import org.restheart.security.handlers.injectors.ConduitInjector;
 import org.restheart.security.handlers.injectors.RequestContentInjector;
-import org.restheart.security.handlers.metrics.TracingInstrumentationHandler;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.security.handlers.injectors.XForwardedHeadersInjector;
 import org.restheart.security.handlers.injectors.XPoweredByInjector;
-import org.restheart.plugins.security.AuthMechanism;
-import org.restheart.plugins.security.Authorizer;
-import org.restheart.ConfigurationException;
-import org.restheart.plugins.PluginRecord;
+import org.restheart.security.handlers.metrics.TracingInstrumentationHandler;
 import org.restheart.security.plugins.PluginsRegistry;
-import static org.restheart.plugins.security.RequestInterceptor.IPOINT.AFTER_AUTH;
-import static org.restheart.plugins.security.RequestInterceptor.IPOINT.BEFORE_AUTH;
-import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.plugins.authorizers.FullAuthorizer;
 import org.restheart.security.utils.FileUtils;
 import org.restheart.security.utils.LoggingInitializer;

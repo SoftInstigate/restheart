@@ -17,26 +17,24 @@
  */
 package org.restheart.security.plugins.services;
 
-import java.util.Map;
-import java.util.Set;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-
-import org.restheart.handlers.exchange.JsonRequest;
-import org.restheart.utils.HttpStatus;
-import org.restheart.security.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
+import java.util.Map;
+import java.util.Set;
 import org.restheart.ConfigurationException;
+import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Service;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
+import org.restheart.security.utils.URLUtils;
+import org.restheart.utils.HttpStatus;
 
 /**
  *

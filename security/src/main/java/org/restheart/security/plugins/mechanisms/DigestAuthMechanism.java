@@ -17,18 +17,30 @@
  */
 package org.restheart.security.plugins.mechanisms;
 
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import static io.undertow.UndertowMessages.MESSAGES;
 import io.undertow.security.api.AuthenticationMechanism.AuthenticationMechanismOutcome;
 import io.undertow.security.api.AuthenticationMechanism.ChallengeResult;
+import io.undertow.security.api.NonceManager;
+import io.undertow.security.api.SecurityContext;
+import io.undertow.security.idm.Account;
+import io.undertow.security.idm.DigestAlgorithm;
+import io.undertow.security.idm.DigestCredential;
+import io.undertow.security.idm.IdentityManager;
+import io.undertow.security.impl.DigestAuthorizationToken;
 import static io.undertow.security.impl.DigestAuthorizationToken.parseHeader;
+import io.undertow.security.impl.DigestQop;
+import io.undertow.security.impl.SimpleNonceManager;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
+import io.undertow.util.HeaderMap;
+import io.undertow.util.Headers;
 import static io.undertow.util.Headers.AUTHENTICATION_INFO;
 import static io.undertow.util.Headers.AUTHORIZATION;
 import static io.undertow.util.Headers.DIGEST;
 import static io.undertow.util.Headers.NEXT_NONCE;
 import static io.undertow.util.Headers.WWW_AUTHENTICATE;
+import io.undertow.util.HexConverter;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -38,29 +50,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.undertow.security.api.NonceManager;
-import io.undertow.security.api.SecurityContext;
-import io.undertow.security.idm.Account;
-import io.undertow.security.idm.DigestAlgorithm;
-import io.undertow.security.idm.DigestCredential;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.security.impl.DigestAuthorizationToken;
-import io.undertow.security.impl.DigestQop;
-import io.undertow.security.impl.SimpleNonceManager;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.AttachmentKey;
-import io.undertow.util.HeaderMap;
-import io.undertow.util.Headers;
-import io.undertow.util.HexConverter;
 import org.restheart.ConfigurationException;
-import org.restheart.plugins.security.AuthMechanism;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.security.handlers.QueryStringRebuilder;
 import org.restheart.security.plugins.PluginsRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link io.undertow.server.HttpHandler} to handle HTTP Digest authentication,

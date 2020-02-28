@@ -33,14 +33,13 @@
  */
 package org.restheart.security.handlers;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.SecurityContextFactoryImpl;
 import io.undertow.server.HttpServerExchange;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import org.restheart.handlers.PipedHttpHandler;
 
 /**

@@ -17,16 +17,13 @@
  */
 package org.restheart.security;
 
-import java.nio.file.Path;
-
 import com.sun.akuma.CLibrary;
+import java.nio.file.Path;
 import org.restheart.ConfigurationException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.restheart.security.utils.FileUtils;
 import org.restheart.security.utils.OSChecker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
