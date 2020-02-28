@@ -18,7 +18,6 @@
 package org.restheart.handlers.exchange;
 
 import io.undertow.connector.PooledByteBuffer;
-
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;

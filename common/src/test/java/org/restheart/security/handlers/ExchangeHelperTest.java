@@ -17,11 +17,11 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.handlers.exchange.JsonRequest;
-import static org.junit.Assert.assertEquals;
-
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -29,11 +29,9 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.restheart.handlers.exchange.JsonRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 
 /**
  *

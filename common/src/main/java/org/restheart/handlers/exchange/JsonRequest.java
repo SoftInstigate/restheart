@@ -21,14 +21,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
-import org.restheart.utils.BuffersUtils;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
+import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
 
 /**

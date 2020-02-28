@@ -17,12 +17,12 @@
  */
 package org.restheart.handlers.exchange;
 
-import org.restheart.utils.HttpStatus;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
 import java.io.IOException;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
