@@ -20,7 +20,6 @@ package org.restheart.handlers.schema;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.logging.Level;
 import org.bson.BsonDocument;
 import org.everit.json.schema.loader.SchemaClient;
 import org.everit.json.schema.loader.internal.DefaultSchemaClient;

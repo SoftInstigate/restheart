@@ -17,7 +17,6 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.plugins.Transformer;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;

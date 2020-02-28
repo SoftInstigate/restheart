@@ -25,6 +25,7 @@ import org.restheart.utils.JsonUtils;
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @param <T>
  */
 public class PluginRecord<T extends Plugin> {
     private final String name;
