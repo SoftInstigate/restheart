@@ -22,19 +22,20 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Objects;
 
 /**
- *
+ * base class to implement a PipelinedHandler
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public abstract class PipedHttpHandler implements HttpHandler {
+public abstract class PipelinedHandler implements HttpHandler {
 
     protected static final String CONTENT_TYPE = "contentType";
 
-    private PipedHttpHandler next;
+    private PipelinedHandler next;
 
     /**
      * Creates a default instance of PipedHttpHandler with next = null
      */
-    public PipedHttpHandler() {
+    public PipelinedHandler() {
         this(null);
     }
 
@@ -42,22 +43,10 @@ public abstract class PipedHttpHandler implements HttpHandler {
      *
      * @param next the next handler in this chain
      */
-    public PipedHttpHandler(PipedHttpHandler next) {
+    public PipelinedHandler(PipelinedHandler next) {
         this.next = next;
     }
-
-    public static PipedHttpHandler pipe(PipedHttpHandler... handlers) {
-        if (Objects.isNull(handlers)) {
-            return null;
-        }
-
-        for (var idx = 0; idx < handlers.length - 1; idx++) {
-            handlers[idx].setNext(handlers[idx + 1]);
-        }
-
-        return handlers[0];
-    }
-
+    
     /**
      *
      * @param exchange
@@ -69,7 +58,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
     /**
      * @return the next PipedHttpHandler
      */
-    protected PipedHttpHandler getNext() {
+    protected PipelinedHandler getNext() {
         return next;
     }
 
@@ -77,13 +66,30 @@ public abstract class PipedHttpHandler implements HttpHandler {
      * set the next PipedHttpHandler
      * @param next
      */
-    protected void setNext(PipedHttpHandler next) {
+    protected void setNext(PipelinedHandler next) {
         this.next = next;
     }
 
     protected void next(HttpServerExchange exchange) throws Exception {
-        if (getNext() != null) {
-            getNext().handleRequest(exchange);
+        if (this.next  != null) {
+            this.next .handleRequest(exchange);
         }
+    }  
+    
+    /**
+     * pipes multiple PipelinedHandler in an handlers pipe
+     * @param handlers
+     * @return 
+     */
+    public static PipelinedHandler pipe(PipelinedHandler... handlers) {
+        if (Objects.isNull(handlers)) {
+            return null;
+        }
+
+        for (var idx = 0; idx < handlers.length - 1; idx++) {
+            handlers[idx].setNext(handlers[idx + 1]);
+        }
+
+        return handlers[0];
     }
 }

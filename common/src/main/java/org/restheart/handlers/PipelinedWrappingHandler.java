@@ -21,10 +21,11 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
 /**
- *
+ * wraps a HttpHandler into a PipelinedHttpHandler
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PipedWrappingHandler extends PipedHttpHandler {
+public class PipelinedWrappingHandler extends PipelinedHandler {
 
     private final HttpHandler wrapped;
 
@@ -34,7 +35,7 @@ public class PipedWrappingHandler extends PipedHttpHandler {
      * @param next
      * @param handler
      */
-    private PipedWrappingHandler(PipedHttpHandler next, HttpHandler handler) {
+    private PipelinedWrappingHandler(PipelinedHandler next, HttpHandler handler) {
         super(next);
         wrapped = handler;
     }
@@ -44,7 +45,7 @@ public class PipedWrappingHandler extends PipedHttpHandler {
      *
      * @param handler
      */
-    private PipedWrappingHandler(HttpHandler handler) {
+    private PipelinedWrappingHandler(HttpHandler handler) {
         super(null);
         wrapped = handler;
     }
@@ -54,7 +55,7 @@ public class PipedWrappingHandler extends PipedHttpHandler {
      * @param handler
      * @return the wrapping handler
      */
-    public static PipedWrappingHandler wrap(HttpHandler handler) {
+    public static PipelinedWrappingHandler wrap(HttpHandler handler) {
         return wrap(null, handler);
     }
     
@@ -64,8 +65,8 @@ public class PipedWrappingHandler extends PipedHttpHandler {
      * @param handler
      * @return the wrapping handler 
      */
-    public static PipedWrappingHandler wrap(PipedHttpHandler next, HttpHandler handler) {
-        return new PipedWrappingHandler(next, handler);
+    public static PipelinedWrappingHandler wrap(PipelinedHandler next, HttpHandler handler) {
+        return new PipelinedWrappingHandler(next, handler);
     }
 
     /**

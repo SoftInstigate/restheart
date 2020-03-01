@@ -18,14 +18,14 @@
 package org.restheart.plugins.security;
 
 import java.util.Map;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.ConfigurablePlugin;
 
 /**
  * @see https://restheart.org/docs/develop/security-plugins/#services
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public abstract class Service extends PipedHttpHandler
+public abstract class Service extends PipelinedHandler
         implements ConfigurablePlugin {
     /**
      * The configuration properties passed to this handler.
