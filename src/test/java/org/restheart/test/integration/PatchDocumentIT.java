@@ -45,9 +45,16 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
 
     private HttpResponse resp;
 
+    /**
+     *
+     */
     public PatchDocumentIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPatchDocument() throws Exception {
         Response resp;
@@ -98,6 +105,10 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
         assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -115,6 +126,10 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPatchDocumentDotNotation() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid1"))
@@ -178,6 +193,10 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
                 && string.asString().equals("ciao"));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPatchDocumentOperators() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid2"))

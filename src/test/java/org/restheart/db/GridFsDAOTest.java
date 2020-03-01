@@ -36,7 +36,14 @@ public class GridFsDAOTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(GridFsDAOTest.class);
 
+    /**
+     *
+     */
     public static final String FILENAME = "sample.pdf";
+
+    /**
+     *
+     */
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -45,9 +52,16 @@ public class GridFsDAOTest {
         }
     };
 
+    /**
+     *
+     */
     public GridFsDAOTest() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testDetectMediatype() throws Exception {
         InputStream is = GridFsDAOTest.class.getResourceAsStream("/" + FILENAME);

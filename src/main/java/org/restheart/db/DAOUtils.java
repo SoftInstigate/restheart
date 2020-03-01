@@ -60,37 +60,73 @@ import org.slf4j.LoggerFactory;
  */
 public class DAOUtils {
 
+    /**
+     *
+     */
     public final static Logger LOGGER = LoggerFactory.getLogger(DAOUtils.class);
 
+    /**
+     *
+     */
     public static final int DUPLICATE_KEY_ERROR = 11000;
 
+    /**
+     *
+     */
     public final static FindOneAndUpdateOptions FAU_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(true).returnDocument(ReturnDocument.AFTER);
 
+    /**
+     *
+     */
     public final static FindOneAndUpdateOptions FAU_NOT_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(false).returnDocument(ReturnDocument.AFTER);
 
+    /**
+     *
+     */
     public final static FindOneAndUpdateOptions FOU_AFTER_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(true).returnDocument(ReturnDocument.AFTER);
 
+    /**
+     *
+     */
     public final static FindOneAndReplaceOptions FOR_AFTER_UPSERT_OPS = new FindOneAndReplaceOptions()
             .upsert(true).returnDocument(ReturnDocument.AFTER);
 
+    /**
+     *
+     */
     public final static FindOneAndUpdateOptions FOU_AFTER_NOT_UPSERT_OPS = new FindOneAndUpdateOptions()
             .upsert(false).returnDocument(ReturnDocument.AFTER);
 
+    /**
+     *
+     */
     public final static FindOneAndReplaceOptions FOR_AFTER_NOT_UPSERT_OPS = new FindOneAndReplaceOptions()
             .upsert(false).returnDocument(ReturnDocument.AFTER);
 
+    /**
+     *
+     */
     public final static UpdateOptions U_UPSERT_OPS = new UpdateOptions()
             .upsert(true);
 
+    /**
+     *
+     */
     public final static UpdateOptions U_NOT_UPSERT_OPS = new UpdateOptions()
             .upsert(false);
 
+    /**
+     *
+     */
     public final static ReplaceOptions R_NOT_UPSERT_OPS = new ReplaceOptions()
             .upsert(false);
 
+    /**
+     *
+     */
     public final static BulkWriteOptions BWO_NOT_ORDERED = new BulkWriteOptions()
             .ordered(false);
 

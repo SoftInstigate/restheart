@@ -31,13 +31,37 @@ import org.restheart.handlers.metadata.InvalidMetadataException;
  */
 public class TransformerMetadata {
 
+    /**
+     *
+     */
     public static final String RTS_ELEMENT_NAME = "rts";
 
+    /**
+     *
+     */
     public static final String RT_PHASE_ELEMENT_NAME = "phase";
+
+    /**
+     *
+     */
     public static final String RT_NAME_ELEMENT_NAME = "name";
+
+    /**
+     *
+     */
     public static final String RT_SCOPE_ELEMENT_NAME = "scope";
+
+    /**
+     *
+     */
     public static final String RT_ARGS_ELEMENT_NAME = "args";
 
+    /**
+     *
+     * @param props
+     * @return
+     * @throws InvalidMetadataException
+     */
     public static List<TransformerMetadata> getFromJson(BsonDocument props) throws InvalidMetadataException {
         BsonValue _rts = props.get(RTS_ELEMENT_NAME);
 
@@ -145,11 +169,35 @@ public class TransformerMetadata {
         return args;
     }
 
+    /**
+     *
+     */
     public enum PHASE {
-        REQUEST, RESPONSE
+
+        /**
+         *
+         */
+        REQUEST, 
+
+        /**
+         *
+         */
+        RESPONSE
     }
 
+    /**
+     *
+     */
     public enum SCOPE {
-        THIS, CHILDREN
+
+        /**
+         *
+         */
+        THIS, 
+
+        /**
+         *
+         */
+        CHILDREN
     }
 }

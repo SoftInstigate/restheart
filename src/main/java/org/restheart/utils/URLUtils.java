@@ -50,6 +50,12 @@ public class URLUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(URLUtils.class);
 
+    /**
+     *
+     * @param id
+     * @return
+     * @throws UnsupportedDocumentIdException
+     */
     public static DOC_ID_TYPE checkId(BsonValue id)
             throws UnsupportedDocumentIdException {
         Objects.requireNonNull(id);
@@ -450,6 +456,12 @@ public class URLUtils {
         }
     }
 
+    /**
+     *
+     * @param id
+     * @return
+     * @throws UnsupportedDocumentIdException
+     */
     public static String getIdString(BsonValue id)
             throws UnsupportedDocumentIdException {
         if (id == null) {

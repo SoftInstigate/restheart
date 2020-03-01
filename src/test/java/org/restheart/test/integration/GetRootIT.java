@@ -39,14 +39,25 @@ import org.restheart.utils.HttpStatus;
  */
 public class GetRootIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public GetRootIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetRoot() throws Exception {
         testGetRoot(rootUri);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetRootRemappedAll() throws Exception {
         testGetRoot(rootUriRemapped);

@@ -43,21 +43,39 @@ public class PostBucketHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(PostBucketHandler.class);
     private final GridFsRepository gridFsDAO;
 
+    /**
+     *
+     */
     public PostBucketHandler() {
         super();
         this.gridFsDAO = new GridFsDAO();
     }
 
+    /**
+     *
+     * @param next
+     */
     public PostBucketHandler(PipedHttpHandler next) {
         super(next);
         this.gridFsDAO = new GridFsDAO();
     }
 
+    /**
+     *
+     * @param next
+     * @param gridFsDAO
+     */
     public PostBucketHandler(PipedHttpHandler next, GridFsDAO gridFsDAO) {
         super(next);
         this.gridFsDAO = gridFsDAO;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(
             HttpServerExchange exchange,

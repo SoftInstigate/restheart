@@ -31,6 +31,10 @@ public class OperationResult {
     private final BsonDocument oldData;
     private final BsonValue newId;
     
+    /**
+     *
+     * @param httpCode
+     */
     public OperationResult(int httpCode) {
         this.httpCode = httpCode;
         this.etag = null;
@@ -39,6 +43,12 @@ public class OperationResult {
         this.newId = null;
     }
     
+    /**
+     *
+     * @param httpCode
+     * @param oldData
+     * @param newData
+     */
     public OperationResult(int httpCode, BsonDocument oldData, BsonDocument newData) {
         this.httpCode = httpCode;
         this.etag = null;
@@ -47,6 +57,11 @@ public class OperationResult {
         this.newId = newData == null ? null : newData.get("_id");
     }
     
+    /**
+     *
+     * @param httpCode
+     * @param etag
+     */
     public OperationResult(int httpCode, Object etag) {
         this.httpCode = httpCode;
         this.etag = etag;
@@ -55,6 +70,12 @@ public class OperationResult {
         this.newId = null;
     }
     
+    /**
+     *
+     * @param httpCode
+     * @param etag
+     * @param newId
+     */
     public OperationResult(int httpCode, Object etag, BsonValue newId) {
         this.httpCode = httpCode;
         this.etag = etag;
@@ -63,7 +84,15 @@ public class OperationResult {
         this.oldData = null;
     }
     
-    public OperationResult(int httpCode, Object etag, BsonDocument oldData, BsonDocument newData) {
+    /**
+     *
+     * @param httpCode
+     * @param etag
+     * @param oldData
+     * @param newData
+     */
+    public OperationResult(int httpCode, Object etag, 
+            BsonDocument oldData, BsonDocument newData) {
         this.httpCode = httpCode;
         this.etag = etag;
         this.newData = newData;

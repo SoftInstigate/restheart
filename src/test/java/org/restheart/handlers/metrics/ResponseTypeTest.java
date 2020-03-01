@@ -10,6 +10,10 @@ import org.restheart.handlers.metrics.MetricsHandler.ResponseType.AcceptHeaderEn
  */
 public class ResponseTypeTest {
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testIsAcceptableFor() throws Exception {
         assertTrue(ResponseType.JSON.isAcceptableFor(AcceptHeaderEntry.of("application/json")));
@@ -38,12 +42,20 @@ public class ResponseTypeTest {
         assertFalse(ResponseType.PROMETHEUS.isAcceptableFor(AcceptHeaderEntry.of("text/plain; version= 0.0.5")));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testCalculateMediaRange() throws Exception {
         assertEquals("application/*", ResponseType.calculateMediaRange("application/json"));
         assertEquals("text/*", ResponseType.calculateMediaRange("text/plain"));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testResponseTypeCreation() throws Exception {
         assertEquals(ResponseType.JSON, ResponseType.forAcceptHeader("application/json"));

@@ -35,9 +35,17 @@ public class ConfigurationTest {
 
     MustacheFactory mf = new DefaultMustacheFactory();
 
+    /**
+     *
+     */
     public ConfigurationTest() {
     }
 
+    /**
+     *
+     * @throws IOException
+     * @throws ConfigurationException
+     */
     public void testConfigurationTemplate() throws IOException, ConfigurationException {
         Map<String, Object> obj = LoadConfiguration("env.properties");
 

@@ -45,6 +45,12 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(DBRepresentationFactory.class);
 
+    /**
+     *
+     * @param rep
+     * @param type
+     * @param data
+     */
     public static void addSpecialProperties(
             final Resource rep,
             RequestContext.TYPE type,
@@ -63,9 +69,21 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         }
     }
 
+    /**
+     *
+     */
     public DBRepresentationFactory() {
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param embeddedData
+     * @param size
+     * @return
+     * @throws IllegalQueryParamenterException
+     */
     @Override
     public Resource getRepresentation(
             HttpServerExchange exchange,
@@ -187,7 +205,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
                     }
 
                     rep.addChild("rh:bucket", nrep);
-                } else if (RequestContext._SCHEMAS.equals(id)) {
+                } else if (RequestContext._SCHEMAS.equals(id.getValue())) {
                     if (context.isFullHalMode()) {
                         CollectionRepresentationFactory.addSpecialProperties(
                                 nrep, TYPE.SCHEMA_STORE, d);

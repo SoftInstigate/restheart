@@ -29,6 +29,10 @@ import com.sun.akuma.JavaVMArguments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ *
+ * @author uji
+ */
 public class RHDaemon extends Daemon {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RHDaemon.class);

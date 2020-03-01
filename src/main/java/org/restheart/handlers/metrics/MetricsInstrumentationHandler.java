@@ -35,6 +35,10 @@ public class MetricsInstrumentationHandler extends PipedHttpHandler {
     @VisibleForTesting
     SharedMetricRegistryProxy metrics = new SharedMetricRegistryProxy();
 
+    /**
+     *
+     * @param next
+     */
     public MetricsInstrumentationHandler(PipedHttpHandler next) {
         super(next);
     }
@@ -44,6 +48,12 @@ public class MetricsInstrumentationHandler extends PipedHttpHandler {
         super(next, dbsDAO);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         final long requestStartTime = context.getRequestStartTime();

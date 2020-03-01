@@ -26,7 +26,14 @@ import com.mongodb.bulk.BulkWriteResult;
 public class BulkOperationResult extends OperationResult {
     private final BulkWriteResult bulkResult;
     
-    public BulkOperationResult(int httpCode, Object etag, BulkWriteResult bulkResult) {
+    /**
+     *
+     * @param httpCode
+     * @param etag
+     * @param bulkResult
+     */
+    public BulkOperationResult(int httpCode, Object etag, 
+            BulkWriteResult bulkResult) {
         super(httpCode, etag);
         
         this.bulkResult = bulkResult;

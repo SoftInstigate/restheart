@@ -33,9 +33,16 @@ import org.restheart.utils.HttpStatus;
  */
 public class DeleteDocumentIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public DeleteDocumentIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testDeleteDocument() throws Exception {
         Response resp;

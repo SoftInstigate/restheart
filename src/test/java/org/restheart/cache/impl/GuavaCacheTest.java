@@ -29,9 +29,15 @@ import org.restheart.cache.Cache;
 @SuppressWarnings("unchecked")
 public class GuavaCacheTest {
 
+    /**
+     *
+     */
     public GuavaCacheTest() {
     }
 
+    /**
+     *
+     */
     @Test
     public void testGet() {
         Object key = "A";
@@ -42,6 +48,9 @@ public class GuavaCacheTest {
         assertEquals(Integer.valueOf(1), result.get());
     }
 
+    /**
+     *
+     */
     @Test
     public void getNonExistent() {
         GuavaCache instance = new GuavaCache(100, Cache.EXPIRE_POLICY.AFTER_WRITE, 10000);
@@ -49,6 +58,9 @@ public class GuavaCacheTest {
         assertNull(result);
     }
 
+    /**
+     *
+     */
     @Test
     public void testPutNull() {
         String key = "B";

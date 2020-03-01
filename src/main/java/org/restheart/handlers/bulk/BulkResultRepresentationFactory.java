@@ -41,9 +41,20 @@ import org.restheart.utils.ResponseHelper;
  */
 public class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
 
+    /**
+     *
+     */
     public BulkResultRepresentationFactory() {
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param result
+     * @return
+     * @throws IllegalQueryParamenterException
+     */
     public Resource getRepresentation(HttpServerExchange exchange, RequestContext context, BulkOperationResult result)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
@@ -54,6 +65,13 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
         return rep;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param mbwe
+     * @return
+     * @throws IllegalQueryParamenterException
+     */
     public Resource getRepresentation(HttpServerExchange exchange, MongoBulkWriteException mbwe)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
@@ -178,6 +196,15 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
         });
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param embeddedData
+     * @param size
+     * @return
+     * @throws IllegalQueryParamenterException
+     */
     @Override
     public Resource getRepresentation(HttpServerExchange exchange, RequestContext context, List<BsonDocument> embeddedData, long size) throws IllegalQueryParamenterException {
         throw new UnsupportedOperationException("Not supported."); //To change body of generated methods, choose Tools | Templates.

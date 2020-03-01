@@ -49,9 +49,19 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstactIT {
 
+    /**
+     *
+     */
     protected static final Logger LOG = LoggerFactory.getLogger(AbstactIT.class);
 
+    /**
+     *
+     */
     protected static final String ADMIN_ID = "admin";
+
+    /**
+     *
+     */
     protected static final String ADMIN_PWD = "changeit";
 
     /**
@@ -60,7 +70,14 @@ public abstract class AbstactIT {
      */
     public static final String TEST_DB_PREFIX = "test";
 
+    /**
+     *
+     */
     protected static final HttpHost HTTP_HOST = new HttpHost("127.0.0.1", 18080, HTTP);
+
+    /**
+     *
+     */
     public static final MongoClientURI MONGO_URI = new MongoClientURI("mongodb://127.0.0.1");
 
     static {
@@ -69,15 +86,29 @@ public abstract class AbstactIT {
         MongoDBClientSingleton.init(MONGO_URI);
     }
 
+    /**
+     *
+     * @throws URISyntaxException
+     */
     @BeforeClass
     public static void setUpClass() throws URISyntaxException {
     }
 
+    /**
+     *
+     */
     @AfterClass
     public static void tearDownClass() {
         deleteTestData();
     }
 
+    /**
+     *
+     * @param resourcePath
+     * @return
+     * @throws IOException
+     * @throws URISyntaxException
+     */
     protected static String getResourceFile(String resourcePath) throws IOException, URISyntaxException {
         StringBuilder result = new StringBuilder();
 
@@ -125,6 +156,9 @@ public abstract class AbstactIT {
         return sb.toString();
     }
     
+    /**
+     *
+     */
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -133,10 +167,16 @@ public abstract class AbstactIT {
         }
     };
 
+    /**
+     *
+     */
     @Before
     public void setUp() {
     }
 
+    /**
+     *
+     */
     @After
     public void tearDown() {
         deleteTestData();

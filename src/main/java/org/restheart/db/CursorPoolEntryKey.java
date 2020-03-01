@@ -38,6 +38,16 @@ public class CursorPoolEntryKey {
     private final int skipped;
     private final long cursorId;
 
+    /**
+     * @param session
+     * @param collection
+     * @param sort
+     * @param filter
+     * @param keys
+     * @param hint
+     * @param skipped
+     * @param cursorId
+     */
     public CursorPoolEntryKey(
             ClientSession session,
             MongoCollection<BsonDocument> collection,
@@ -57,6 +67,9 @@ public class CursorPoolEntryKey {
         this.cursorId = cursorId;
     }
 
+    /**
+     * @param key
+     */
     public CursorPoolEntryKey(CursorPoolEntryKey key) {
         this.session = key.session;
         this.collection = key.collection;

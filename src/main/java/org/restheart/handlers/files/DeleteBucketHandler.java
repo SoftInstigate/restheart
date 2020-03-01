@@ -51,6 +51,12 @@ public class DeleteBucketHandler extends DeleteCollectionHandler {
         this.gridFsDAO = new GridFsDAO();
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (context.isInError()) {

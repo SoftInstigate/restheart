@@ -35,6 +35,15 @@ public class PluginRecord<T extends Plugin> {
     private final T instance;
     private final Map<String, Object> confArgs;
 
+    /**
+     *
+     * @param name
+     * @param description
+     * @param enabledByDefault
+     * @param className
+     * @param instance
+     * @param confArgs
+     */
     public PluginRecord(String name,
             String description,
             boolean enabledByDefault,

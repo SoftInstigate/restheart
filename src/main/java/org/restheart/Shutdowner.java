@@ -32,6 +32,10 @@ public class Shutdowner {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Shutdowner.class);
 
+    /**
+     *
+     * @param args
+     */
     public static void main(final String[] args) {
         if (askingForHelp(args)) {
             printHelp();
@@ -51,6 +55,10 @@ public class Shutdowner {
         }
     }
 
+    /**
+     *
+     * @param args
+     */
     protected static void shutdown(final String[] args) {
         if (FileUtils.getConfigurationFilePath(args) == null) {
             LOGGER.info("Shutting down RESTHeart instance run without configuration file");

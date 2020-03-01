@@ -10,10 +10,18 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import org.restheart.handlers.metrics.MetricsJsonGenerator;
 
+/**
+ *
+ * @author uji
+ */
 public class MetricsJsonGeneratorTest {
 
     JsonWriterSettings writerSettings = JsonWriterSettings.builder().outputMode(JsonMode.RELAXED).indent(false).build();
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGenerationWithEmptyRegistry() throws Exception {
         MetricRegistry registry = new MetricRegistry();
@@ -24,6 +32,10 @@ public class MetricsJsonGeneratorTest {
         );
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGenerationWithOneTimer() throws Exception {
         MetricRegistry registry = new MetricRegistry();
@@ -35,6 +47,10 @@ public class MetricsJsonGeneratorTest {
                         .replaceAll("\"mean_rate\": [0-9.]+", "\"mean_rate\": 1"));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGenerationWithGauges() throws Exception {
         MetricRegistry registry = new MetricRegistry();
@@ -44,6 +60,10 @@ public class MetricsJsonGeneratorTest {
                 bson.toJson(writerSettings));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGenerationWithHistogram() throws Exception {
         MetricRegistry registry = new MetricRegistry();
@@ -53,6 +73,10 @@ public class MetricsJsonGeneratorTest {
                 bson.toJson(writerSettings));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGenerationWithCounter() throws Exception {
         MetricRegistry registry = new MetricRegistry();
@@ -65,6 +89,10 @@ public class MetricsJsonGeneratorTest {
                 bson.toJson(writerSettings));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGenerationWithMeter() throws Exception {
         MetricRegistry registry = new MetricRegistry();

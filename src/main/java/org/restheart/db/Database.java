@@ -64,6 +64,7 @@ public interface Database {
             final boolean checkEtag);
 
     /**
+     * @param cs
      * @param dbName
      * @return true if DB dbName exists
      *
@@ -195,6 +196,7 @@ public interface Database {
             final String dbName);
 
     /**
+     * @param cs
      * @param dbName
      * @return the db props
      *

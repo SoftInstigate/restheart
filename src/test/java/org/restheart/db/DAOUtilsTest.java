@@ -24,6 +24,9 @@ public class DAOUtilsTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(DAOUtilsTest.class);
 
+    /**
+     *
+     */
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -32,19 +35,33 @@ public class DAOUtilsTest {
         }
     };
 
+    /**
+     *
+     */
     public DAOUtilsTest() {
     }
 
     //@Test
+
+    /**
+     *
+     */
     public void testGetDataFromRows() {
         // TODO
     }
 
     //@Test
+
+    /**
+     *
+     */
     public void testGetDataFromRow() {
         // TODO
     }
 
+    /**
+     *
+     */
     @Test
     public void testValidContent() {
         BsonDocument dbo = DAOUtils.validContent(null);

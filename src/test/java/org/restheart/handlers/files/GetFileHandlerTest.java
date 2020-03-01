@@ -34,6 +34,9 @@ public class GetFileHandlerTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(GetFileHandlerTest.class);
 
+    /**
+     *
+     */
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -42,9 +45,15 @@ public class GetFileHandlerTest {
         }
     };
 
+    /**
+     *
+     */
     public GetFileHandlerTest() {
     }
 
+    /**
+     *
+     */
     @Test
     public void testExtractBucket() {
         assertEquals("mybucket", GetFileBinaryHandler.extractBucketName("mybucket.files"));

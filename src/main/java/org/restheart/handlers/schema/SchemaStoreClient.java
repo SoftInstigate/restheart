@@ -39,9 +39,17 @@ public class SchemaStoreClient implements SchemaClient {
 
     private static final SchemaClient WRAPPED = new DefaultSchemaClient();
 
+    /**
+     *
+     */
     public SchemaStoreClient() {
     }
 
+    /**
+     *
+     * @param uri
+     * @return
+     */
     @Override
     public InputStream get(String uri) {
         LOGGER.trace("@@@ loading schema {}", uri);

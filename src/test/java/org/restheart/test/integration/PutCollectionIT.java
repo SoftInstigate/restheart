@@ -34,9 +34,16 @@ import org.restheart.utils.HttpStatus;
  */
 public class PutCollectionIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public PutCollectionIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPutCollection() throws Exception {
         Response resp;

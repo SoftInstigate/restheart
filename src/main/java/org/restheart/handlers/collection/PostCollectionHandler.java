@@ -47,14 +47,27 @@ public class PostCollectionHandler extends PipedHttpHandler {
         this(null, new DocumentDAO());
     }
 
+    /**
+     *
+     * @param documentDAO
+     */
     public PostCollectionHandler(DocumentDAO documentDAO) {
         this(null, new DocumentDAO());
     }
 
+    /**
+     *
+     * @param next
+     */
     public PostCollectionHandler(PipedHttpHandler next) {
         this(next, new DocumentDAO());
     }
 
+    /**
+     *
+     * @param next
+     * @param documentDAO
+     */
     public PostCollectionHandler(
             PipedHttpHandler next,
             DocumentDAO documentDAO) {

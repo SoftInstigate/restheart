@@ -61,6 +61,11 @@ public class FileUtils {
     private static final Path DEFAULT_PID_DIR = new File("/var/run").toPath();
     private static final Path TMP_DIR = new File(System.getProperty("java.io.tmpdir")).toPath();
 
+    /**
+     *
+     * @param path
+     * @return
+     */
     public static Path getFileAbsolutePath(String path) {
         if (path == null) {
             return null;
@@ -69,6 +74,12 @@ public class FileUtils {
         return FileSystems.getDefault().getPath(path).toAbsolutePath();
     }
 
+    /**
+     *
+     * @param confFilePath
+     * @param propFilePath
+     * @return
+     */
     public static int getFileAbsolutePathHash(Path confFilePath, Path propFilePath) {
         if (confFilePath == null) {
             return 0;
@@ -77,12 +88,25 @@ public class FileUtils {
         return Objects.hash(confFilePath, propFilePath);
     }
 
+    /**
+     *
+     * @param args
+     * @return
+     * @throws ConfigurationException
+     */
     public static Configuration getConfiguration(String[] args) throws ConfigurationException {
         return getConfiguration(getConfigurationFilePath(args),
                 getPropertiesFilePath(args),
                 false);
     }
 
+    /**
+     *
+     * @param args
+     * @param silent
+     * @return
+     * @throws ConfigurationException
+     */
     public static Configuration getConfiguration(String[] args, boolean silent) throws ConfigurationException {
         return getConfiguration(
                 getConfigurationFilePath(args),
@@ -90,6 +114,14 @@ public class FileUtils {
                 silent);
     }
 
+    /**
+     *
+     * @param configurationFilePath
+     * @param propsFilePath
+     * @param silent
+     * @return
+     * @throws ConfigurationException
+     */
     public static Configuration getConfiguration(Path configurationFilePath, Path propsFilePath, boolean silent) throws ConfigurationException {
         if (configurationFilePath != null) {
             if (propsFilePath != null) {
@@ -126,6 +158,11 @@ public class FileUtils {
         }
     }
 
+    /**
+     *
+     * @param args
+     * @return
+     */
     public static Path getConfigurationFilePath(String[] args) {
         if (args != null) {
             for (String arg : args) {
@@ -138,6 +175,11 @@ public class FileUtils {
         return null;
     }
 
+    /**
+     *
+     * @param args
+     * @return
+     */
     public static Path getPropertiesFilePath(String[] args) {
         if (args != null) {
             var _args = Arrays.asList(args);
@@ -154,10 +196,19 @@ public class FileUtils {
         return null;
     }
 
+    /**
+     *
+     * @return
+     */
     public static Path getTmpDirPath() {
         return TMP_DIR;
     }
 
+    /**
+     *
+     * @param configurationFileHash
+     * @return
+     */
     public static Path getPidFilePath(int configurationFileHash) {
         if (OSChecker.isWindows()) {
             return null;
@@ -170,6 +221,10 @@ public class FileUtils {
         }
     }
 
+    /**
+     *
+     * @param pidFile
+     */
     public static void createPidFile(Path pidFile) {
         if (OSChecker.isWindows()) {
             LOGGER.warn("this method is not supported on Windows.");
@@ -182,6 +237,11 @@ public class FileUtils {
         }
     }
 
+    /**
+     *
+     * @param pidFile
+     * @return
+     */
     public static int getPidFromFile(Path pidFile) {
         try {
             try (BufferedReader br = new BufferedReader(new FileReader(pidFile.toFile()))) {
@@ -201,6 +261,10 @@ public class FileUtils {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public static Set<Entry<Object, Object>> findManifestInfo() {
         Set<Entry<Object, Object>> result = null;
         try {

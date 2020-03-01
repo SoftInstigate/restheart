@@ -70,8 +70,14 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(name = "csvLoader", description = "Uploads a csv file in a collection")
 public class CsvLoader extends Service {
 
+    /**
+     *
+     */
     public static final String CVS_CONTENT_TYPE = "text/csv";
 
+    /**
+     *
+     */
     public static final String FILTER_PROPERTY = "_filter";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CsvLoader.class);
@@ -107,11 +113,21 @@ public class CsvLoader extends Service {
         super(confArgs);
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public String defaultUri() {
         return "/csv";
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
         boolean respBodySet = false;
@@ -235,7 +251,7 @@ public class CsvLoader extends Service {
                         } else {
                             String propname;
 
-                            if (cols.size() <= idx) {
+                            if (cols == null || cols.size() <= idx) {
                                 propname = "unnamed_" + unnamedProps;
                                 unnamedProps++;
                             } else {
@@ -359,6 +375,9 @@ class CsvRequestParams {
 
         update = _update != null && (_update.isEmpty() || "true".equalsIgnoreCase(_update.getFirst()));
 
-        upsert = _upsert == null || _update.isEmpty() || "true".equalsIgnoreCase(_upsert.getFirst());
+        upsert = _upsert == null 
+                || _update == null 
+                || _update.isEmpty() 
+                || "true".equalsIgnoreCase(_upsert.getFirst());
     }
 }

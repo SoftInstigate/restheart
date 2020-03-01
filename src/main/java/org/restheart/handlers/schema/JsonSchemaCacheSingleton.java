@@ -55,6 +55,13 @@ public class JsonSchemaCacheSingleton {
         }
     }
 
+    /**
+     *
+     * @param schemaStoreDb
+     * @param schemaId
+     * @return
+     * @throws JsonSchemaNotFoundException
+     */
     public Schema get(
             String schemaStoreDb,
             BsonValue schemaId)
@@ -80,6 +87,13 @@ public class JsonSchemaCacheSingleton {
         }
     }
 
+    /**
+     *
+     * @param schemaStoreDb
+     * @param schemaId
+     * @return
+     * @throws JsonSchemaNotFoundException
+     */
     public BsonDocument getRaw(
             String schemaStoreDb,
             BsonValue schemaId)

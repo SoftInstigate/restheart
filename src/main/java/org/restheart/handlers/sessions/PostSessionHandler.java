@@ -60,10 +60,19 @@ public class PostSessionHandler extends PipedHttpHandler {
         super();
     }
 
+    /**
+     *
+     * @param next
+     */
     public PostSessionHandler(PipedHttpHandler next) {
         super(next, new DatabaseImpl());
     }
 
+    /**
+     *
+     * @param next
+     * @param dbsDAO
+     */
     public PostSessionHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }

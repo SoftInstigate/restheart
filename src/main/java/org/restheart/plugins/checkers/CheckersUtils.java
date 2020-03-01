@@ -29,11 +29,21 @@ import org.restheart.utils.JsonUtils;
  */
 public class CheckersUtils {
 
+    /**
+     *
+     * @param context
+     * @return
+     */
     public static boolean isBulkRequest(RequestContext context) {
         return context.getType() == RequestContext.TYPE.BULK_DOCUMENTS
                 || context.getContent().isArray();
     }
 
+    /**
+     *
+     * @param content
+     * @return
+     */
     public static boolean doesRequestUsesUpdateOperators(BsonValue content) {
         if (content.isDocument()) {
             return JsonUtils.containsUpdateOperators(content.asDocument());
@@ -52,6 +62,11 @@ public class CheckersUtils {
         }
     }
 
+    /**
+     *
+     * @param content
+     * @return
+     */
     public static boolean doesRequestUsesDotNotation(BsonValue content) {
         if (content.isDocument()) {
             BsonDocument obj = content.asDocument();

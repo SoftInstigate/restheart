@@ -45,6 +45,10 @@ public class ClientSessionFactory {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(ClientSessionFactory.class);
     
+    /**
+     *
+     * @return
+     */
     public static ClientSessionFactory getInstance() {
         return ClientSessionFactoryHolder.INSTANCE;
     }
@@ -54,13 +58,24 @@ public class ClientSessionFactory {
                 = new ClientSessionFactory();
     }
     
+    /**
+     *
+     */
     protected ClientSessionFactory() {
     }
 
+    /**
+     *
+     */
     protected MongoClient mClient = MongoDBClientSingleton
             .getInstance()
             .getClient();
 
+    /**
+     *
+     * @param sid
+     * @return
+     */
     public ServerSession createServerSession(UUID sid) {
         return new ServerSessionImpl(createServerSessionIdentifier(sid));
     }

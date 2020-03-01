@@ -74,6 +74,12 @@ public class CollectionRepresentationFactory
     
     private static final String STREAMS_ELEMENT_NAME = "streams";
 
+    /**
+     *
+     * @param rep
+     * @param type
+     * @param data
+     */
     public static void addSpecialProperties(
             final Resource rep,
             final RequestContext.TYPE type,
@@ -137,6 +143,9 @@ public class CollectionRepresentationFactory
         }
     }
 
+    /**
+     *
+     */
     public CollectionRepresentationFactory() {
     }
 

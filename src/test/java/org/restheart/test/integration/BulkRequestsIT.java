@@ -37,9 +37,17 @@ public class BulkRequestsIT extends AbstactIT {
 
     HttpResponse resp;
 
+    /**
+     *
+     * @throws URISyntaxException
+     */
     public BulkRequestsIT() throws URISyntaxException {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -57,6 +65,10 @@ public class BulkRequestsIT extends AbstactIT {
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testBulkPostCreate() throws Exception {
         resp = Unirest.post(url(DB, COLL))
@@ -114,6 +126,10 @@ public class BulkRequestsIT extends AbstactIT {
                 && inserted.asInt() == 4);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testBulkPostUpdate() throws Exception {
         // this creates
@@ -175,6 +191,10 @@ public class BulkRequestsIT extends AbstactIT {
                 && matched.asInt() == 4);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testBulkDeleteWithoutFilter() throws Exception {
         // this update
@@ -185,6 +205,10 @@ public class BulkRequestsIT extends AbstactIT {
         Assert.assertEquals("check response status of delete without filter qparam", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testBulkDelete() throws Exception {
         // create test data
@@ -276,6 +300,10 @@ public class BulkRequestsIT extends AbstactIT {
 
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testBulkPatchWithoutFilter() throws Exception {
         // this update
@@ -286,6 +314,10 @@ public class BulkRequestsIT extends AbstactIT {
         Assert.assertEquals("check response status of patch without filter qparam", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testBulkPatch() throws Exception {
         // create test data

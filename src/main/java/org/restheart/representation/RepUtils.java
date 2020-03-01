@@ -141,6 +141,13 @@ public class RepUtils {
         return links;
     }
     
+    /**
+     *
+     * @param context
+     * @param parentUrl
+     * @param docId
+     * @return
+     */
     public static String getReferenceLink(
             RequestContext context,
             String parentUrl,
@@ -240,6 +247,12 @@ public class RepUtils {
         return uri;
     }
 
+    /**
+     *
+     * @param parentUrl
+     * @param docId
+     * @return
+     */
     public static String getReferenceLink(String parentUrl, Object docId) {
         if (parentUrl == null) {
             LOGGER.error("error creating URI, null arguments: "

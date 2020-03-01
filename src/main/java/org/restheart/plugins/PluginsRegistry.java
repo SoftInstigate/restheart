@@ -30,7 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -87,6 +86,10 @@ public class PluginsRegistry {
         findCheckers();
     }
 
+    /**
+     *
+     * @return
+     */
     public static PluginsRegistry getInstance() {
         return ExtensionsRegistryHolder.INSTANCE;
     }
@@ -192,15 +195,12 @@ public class PluginsRegistry {
             var registeredInitializers = registeredPlugins.intersect(listOfType);
 
             // sort @Initializers by priority
-            registeredInitializers.sort(new Comparator<ClassInfo>() {
-                @Override
-                public int compare(ClassInfo ci1, ClassInfo ci2) {
-                    int p1 = annotationParam(ci1, "priority");
-
-                    int p2 = annotationParam(ci2, "priority");
-
-                    return Integer.compare(p1, p2);
-                }
+            registeredInitializers.sort((ClassInfo ci1, ClassInfo ci2) -> {
+                int p1 = annotationParam(ci1, "priority");
+                
+                int p2 = annotationParam(ci2, "priority");
+                
+                return Integer.compare(p1, p2);
             });
 
             registeredInitializers.stream().forEachOrdered(registeredInitializer -> {

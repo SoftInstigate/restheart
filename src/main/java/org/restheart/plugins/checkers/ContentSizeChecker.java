@@ -46,6 +46,14 @@ public class ContentSizeChecker implements Checker {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ContentSizeChecker.class);
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param contentToCheck
+     * @param args
+     * @return
+     */
     @Override
     public boolean check(
             HttpServerExchange exchange,
@@ -55,7 +63,7 @@ public class ContentSizeChecker implements Checker {
         if (args.isDocument()) {
             BsonDocument condition = args.asDocument();
 
-            Integer maxSize = null;
+            Integer maxSize;
             BsonValue _maxSize = condition.get("max");
 
             if (_maxSize != null && _maxSize.isInt32()) {
@@ -109,6 +117,11 @@ public class ContentSizeChecker implements Checker {
         return PHASE.BEFORE_WRITE;
     }
 
+    /**
+     *
+     * @param context
+     * @return
+     */
     @Override
     public boolean doesSupportRequests(RequestContext context) {
         return true;

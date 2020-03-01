@@ -39,24 +39,43 @@ import org.restheart.utils.HttpStatus;
  */
 public class GetDBIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public GetDBIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDB() throws Exception {
         testGetDb(dbUri);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDBRemappedAll() throws Exception {
         testGetDb(dbUriRemappedAll);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDBRemappedDb() throws Exception {
         testGetDb(dbUriRemappedDb);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDBPaging() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(dbUriPaging));

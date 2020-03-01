@@ -36,9 +36,16 @@ import org.restheart.utils.HttpStatus;
  */
 public class GetMetricsIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public GetMetricsIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetMetrics() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(metricsUri).addHeader("Accept", "application/json"));
@@ -59,6 +66,10 @@ public class GetMetricsIT extends HttpClientAbstactIT {
         assertTrue(content.contains("\"METRICS.GET\": {"));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetMetricsPrometheus() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(metricsUri));
@@ -75,6 +86,10 @@ public class GetMetricsIT extends HttpClientAbstactIT {
         assertEquals("check content type", "text/plain; version=0.0.4", entity.getContentType().getValue());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetMetricsForUnknownCollection() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(metricsUnknownCollectionUri));

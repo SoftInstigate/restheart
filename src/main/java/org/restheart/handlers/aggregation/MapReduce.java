@@ -30,8 +30,19 @@ import org.restheart.utils.JsonUtils;
  */
 public class MapReduce extends AbstractAggregationOperation {
 
+    /**
+     *
+     */
     public static final String MAP_ELEMENT_NAME = "map";
+
+    /**
+     *
+     */
     public static final String REDUCE_ELEMENT_NAME = "reduce";
+
+    /**
+     *
+     */
     public static final String QUERY_ELEMENT_NAME = "query";
     private final String map;
     private final String reduce;

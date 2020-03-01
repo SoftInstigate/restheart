@@ -49,21 +49,40 @@ public class FileMetadataHandler extends PipedHttpHandler {
         this(null, new FileMetadataDAO());
     }
 
+    /**
+     *
+     * @param fileMetadataDAO
+     */
     public FileMetadataHandler(FileMetadataRepository fileMetadataDAO) {
         super(null);
         this.fileMetadataDAO = fileMetadataDAO;
     }
 
+    /**
+     *
+     * @param next
+     */
     public FileMetadataHandler(PipedHttpHandler next) {
         super(next);
         this.fileMetadataDAO = new FileMetadataDAO();
     }
 
+    /**
+     *
+     * @param next
+     * @param fileMetadataDAO
+     */
     public FileMetadataHandler(PipedHttpHandler next, FileMetadataRepository fileMetadataDAO) {
         super(next);
         this.fileMetadataDAO = fileMetadataDAO;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(
             HttpServerExchange exchange,

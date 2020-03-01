@@ -48,6 +48,10 @@ public class PingService extends Service {
                 : "ping";
     }
     
+    /**
+     *
+     * @return
+     */
     @Override
     public String defaultUri() {
         return "/ping";

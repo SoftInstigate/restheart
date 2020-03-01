@@ -52,6 +52,12 @@ public class GlobalHook {
         this.confArgs = confArgs;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @return
+     */
     public boolean hook(
             HttpServerExchange exchange,
             RequestContext context) {
@@ -63,6 +69,12 @@ public class GlobalHook {
                         this.getConfArgs());
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @return
+     */
     public boolean resolve(HttpServerExchange exchange,
             RequestContext context) {
         return this.predicate.resolve(exchange, context);

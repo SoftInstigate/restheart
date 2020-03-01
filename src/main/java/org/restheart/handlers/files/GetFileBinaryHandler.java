@@ -41,9 +41,15 @@ import org.slf4j.LoggerFactory;
  */
 public class GetFileBinaryHandler extends PipedHttpHandler {
 
+    /**
+     *
+     */
     public static final String APPLICATION_OCTET_STREAM
             = "application/octet-stream";
 
+    /**
+     *
+     */
     public static final String CONTENT_TRANSFER_ENCODING_BINARY
             = "binary";
 
@@ -75,6 +81,12 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
         super(null, null);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(
             HttpServerExchange exchange,

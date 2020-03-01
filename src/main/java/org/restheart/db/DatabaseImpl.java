@@ -47,6 +47,9 @@ import org.restheart.utils.HttpStatus;
  */
 public class DatabaseImpl implements Database {
 
+    /**
+     *
+     */
     public static final Bson PROPS_QUERY = eq("_id", DB_META_DOCID);
 
     private static final Document FIELDS_TO_RETURN;
@@ -65,6 +68,9 @@ public class DatabaseImpl implements Database {
 
     private final MongoClient client;
 
+    /**
+     *
+     */
     public DatabaseImpl() {
         client = MongoDBClientSingleton.getInstance().getClient();
         this.collectionDAO = new CollectionDAO(client);

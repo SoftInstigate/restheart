@@ -35,6 +35,9 @@ import org.restheart.utils.URLUtils;
 public class AggregationResultRepresentationFactory
         extends AbstractRepresentationFactory {
 
+    /**
+     *
+     */
     public AggregationResultRepresentationFactory() {
     }
 
@@ -104,6 +107,11 @@ public class AggregationResultRepresentationFactory
         });
     }
     
+    /**
+     *
+     * @param size
+     * @param rep
+     */
     protected void addSize(
             final long size,
             final Resource rep) {

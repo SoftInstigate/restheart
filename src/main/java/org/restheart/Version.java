@@ -38,6 +38,10 @@ public class Version {
         this.buildTime = extractBuildTime();
     }
 
+    /**
+     *
+     * @return
+     */
     public static Version getInstance() {
         return VersionHolder.INSTANCE;
     }

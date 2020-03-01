@@ -124,6 +124,9 @@ public class LoggingInitializer {
         rootLogger.addAppender(asyncAppender);
     }
 
+    /**
+     *
+     */
     public static void stopLogging() {
         Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         root.getLoggerContext().stop();

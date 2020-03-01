@@ -33,14 +33,25 @@ public class PostBucketHandlerIT extends FileHandlerAbstractIT {
 
     String bucketUrl;
 
+    /**
+     *
+     */
     public PostBucketHandlerIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void init() throws Exception {
         bucketUrl = createBucket();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testRequestIsOkWhenIsMultipart() throws Exception {
         Response response = adminExecutor.execute(Request.Post(bucketUrl)
@@ -49,6 +60,10 @@ public class PostBucketHandlerIT extends FileHandlerAbstractIT {
         this.check("Should return 200 OK", response, HttpStatus.SC_CREATED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testBadRequestWhenPostIsNotMultipart() throws Exception {
         Response response = adminExecutor

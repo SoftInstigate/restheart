@@ -39,11 +39,19 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
 
     private static URI userURI;
 
+    /**
+     *
+     * @throws URISyntaxException
+     */
     public JsonPathConditionsCheckerIT() throws URISyntaxException {
         super();
         userURI = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/a@si.com");
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void createDBandCollection() throws Exception {
         Response resp;
@@ -63,6 +71,10 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
         check("check put mytmpdb.tmpcoll", resp, HttpStatus.SC_CREATED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostData() throws Exception {
         Response resp;
@@ -91,6 +103,10 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
         check("check update post invalid data", resp, HttpStatus.SC_BAD_REQUEST);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostDataDotNotation() throws Exception {
         Response resp;
@@ -105,6 +121,10 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
         check("check post valid data with dot notation", resp, HttpStatus.SC_CREATED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostIncompleteDataDotNotation() throws Exception {
         Response resp;
@@ -119,6 +139,10 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
         check("check post valid data with dot notation", resp, HttpStatus.SC_BAD_REQUEST);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPutDataDotNotation() throws Exception {
         Response resp;
@@ -133,6 +157,10 @@ public class JsonPathConditionsCheckerIT extends HttpClientAbstactIT {
         check("check post valid data with dot notation", resp, HttpStatus.SC_CREATED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPatchData() throws Exception {
         Response resp;

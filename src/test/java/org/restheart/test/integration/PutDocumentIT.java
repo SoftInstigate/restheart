@@ -46,9 +46,16 @@ public class PutDocumentIT extends HttpClientAbstactIT {
 
     private HttpResponse resp;
 
+    /**
+     *
+     */
     public PutDocumentIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPutDocument() throws Exception {
         Response response;
@@ -95,6 +102,10 @@ public class PutDocumentIT extends HttpClientAbstactIT {
         assertTrue("check put content", content.get("b").asInt() == 2);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -112,6 +123,10 @@ public class PutDocumentIT extends HttpClientAbstactIT {
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPutDocumentWithNotMatchingFilter() throws Exception {
         resp = Unirest.put(url(DB, COLL, "testPutWithWrongFilter"))
@@ -132,6 +147,10 @@ public class PutDocumentIT extends HttpClientAbstactIT {
         Assert.assertEquals(HttpStatus.SC_CONFLICT, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPutDocumentDotNotation() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid1"))
@@ -168,6 +187,10 @@ public class PutDocumentIT extends HttpClientAbstactIT {
                 && number.asInt() == 1);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPutDocumentOperators() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid2"))

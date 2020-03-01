@@ -42,6 +42,10 @@ public class AddBodyToWriteResponsesInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(AddBodyToWriteResponsesInitializer.class);
 
+    /**
+     *
+     * @param confArgs
+     */
     @Override
     public void init(Map<String, Object> confArgs) {
         PluginsRegistry.getInstance().getGlobalTransformers().add(

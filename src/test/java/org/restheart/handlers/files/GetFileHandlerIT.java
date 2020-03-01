@@ -50,18 +50,36 @@ import static org.restheart.utils.HttpStatus.SC_OK;
  */
 public class GetFileHandlerIT extends FileHandlerAbstractIT {
 
+    /**
+     *
+     */
     public static Object ID = "myfile";
+
+    /**
+     *
+     */
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
+    /**
+     *
+     */
     public GetFileHandlerIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void init() throws Exception {
         createBucket();
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     @Test
     public void testGetFile() throws IOException {
         ObjectId fileId = createFile();
@@ -78,6 +96,11 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
         assertTrue(tempFile.length() > 0);
     }
 
+    /**
+     *
+     * @throws IOException
+     * @throws UnirestException
+     */
     @Test
     public void testGetNotExistingFile() throws IOException, UnirestException {
         final String url = dbTmpUri.toString().concat("/").concat(BUCKET.concat(".files"));
@@ -92,6 +115,10 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
                 adminExecutor.execute(Request.Get(url.concat("/notexistingid/binary"))), SC_NOT_FOUND);
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     @Test
     public void testEmptyBucket() throws IOException {
         // test that GET /db includes the rh:bucket array
@@ -108,6 +135,10 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
         assertTrue(!json.get("_embedded").asObject().get("rh:bucket").asArray().isEmpty());
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     @Test
     public void testBucketWithFile() throws IOException {
         ObjectId fileId = createFile();
@@ -125,6 +156,10 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
         assertTrue(json.get("_embedded").asObject().get("rh:file").isArray());
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     @Test
     public void testPutFile() throws IOException {
         String id = "test";

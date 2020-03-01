@@ -38,9 +38,17 @@ public class PlainJsonRepIT extends AbstactIT {
 
     HttpResponse<String> resp;
 
+    /**
+     *
+     * @throws URISyntaxException
+     */
     public PlainJsonRepIT() throws URISyntaxException {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -73,6 +81,10 @@ public class PlainJsonRepIT extends AbstactIT {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetRoot() throws Exception {
         resp = Unirest.get(HTTP_HOST.toURI())
@@ -112,6 +124,10 @@ public class PlainJsonRepIT extends AbstactIT {
         });
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetRootNp() throws Exception {
         resp = Unirest.get(HTTP_HOST.toURI())
@@ -138,6 +154,10 @@ public class PlainJsonRepIT extends AbstactIT {
         });
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDb() throws Exception {
         resp = Unirest.get(url(DB))
@@ -177,6 +197,10 @@ public class PlainJsonRepIT extends AbstactIT {
         });
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDbNp() throws Exception {
         resp = Unirest.get(url(DB))
@@ -203,6 +227,10 @@ public class PlainJsonRepIT extends AbstactIT {
         });
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetColl() throws Exception {
         resp = Unirest.get(url(DB, COLL))
@@ -246,6 +274,10 @@ public class PlainJsonRepIT extends AbstactIT {
         });
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetCollEmptyResultSet() throws Exception {
         resp = Unirest.get(url(DB, COLL))
@@ -277,6 +309,10 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertTrue(body.asDocument().get("_embedded").asArray().isEmpty());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetCollNpEmptyResultSet() throws Exception {
         resp = Unirest.get(url(DB, COLL))
@@ -304,6 +340,10 @@ public class PlainJsonRepIT extends AbstactIT {
         });
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetIndexes() throws Exception {
         resp = Unirest.get(url(DB, COLL, "_indexes"))
@@ -340,6 +380,10 @@ public class PlainJsonRepIT extends AbstactIT {
         });
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDoc() throws Exception {
         resp = Unirest.get(url(DB, COLL, "1"))
@@ -360,6 +404,10 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertTrue(body.asDocument().keySet().size() == 3);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDocNp() throws Exception {
         resp = Unirest.get(url(DB, COLL, "1"))
@@ -381,6 +429,10 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertTrue(body.asDocument().keySet().size() == 3);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetError() throws Exception {
         resp = Unirest.get(url(DB, COLL))
@@ -408,6 +460,10 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertNotNull(body.asDocument().get("message"));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDocError() throws Exception {
         resp = Unirest.get(url(DB, COLL, "1"))
@@ -435,6 +491,10 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertNotNull(body.asDocument().get("message"));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetErrorNp() throws Exception {
         resp = Unirest.get(url(DB, COLL))
@@ -464,6 +524,10 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertNotNull(body.asDocument().get("message"));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testAggregation() throws Exception {
         final String _aggrs = "{ \"aggrs\" : [ "
@@ -561,6 +625,10 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertTrue(body.asDocument().get("_embedded").asArray().isEmpty());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testAggregationEmpty() throws Exception {
         final String _aggrs2 = "{ \"aggrs\" : [ "
@@ -611,6 +679,10 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertTrue(body.asDocument().get("_embedded").asArray().isEmpty());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testBulkPost() throws Exception {
         resp = Unirest.post(url(DB, COLL))
@@ -653,6 +725,10 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertTrue(body.asDocument().keySet().size() == 5);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testBulkPatch() throws Exception {
         resp = Unirest.patch(url(DB, COLL, "*"))

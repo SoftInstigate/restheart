@@ -53,6 +53,7 @@ public final class JsonUnflattener {
     /**
      * Creates a JSON unflattener.
      *
+     * @param json
      */
     public JsonUnflattener(BsonValue json) {
         root = json;
@@ -169,7 +170,7 @@ public final class JsonUnflattener {
     private BsonArray unflattenArray(BsonArray array) {
         BsonArray unflattenArray = new BsonArray();
 
-        for (BsonValue value : array) {
+        array.forEach((value) -> {
             if (value.isArray()) {
                 unflattenArray.add(unflattenArray(value.asArray()));
             } else if (value.isDocument()) {
@@ -178,7 +179,7 @@ public final class JsonUnflattener {
             } else {
                 unflattenArray.add(value);
             }
-        }
+        });
 
         return unflattenArray;
     }
@@ -264,10 +265,10 @@ public final class JsonUnflattener {
         if (objKey != null) {
             if (val.isArray()) {
                 BsonValue jsonArray = new BsonArray();
-                for (BsonValue arrayVal : val.asArray()) {
+                val.asArray().forEach((arrayVal) -> {
                     jsonArray.asArray().add(newJsonUnflattener(
                             arrayVal).unflatten());
-                }
+                });
                 currentVal.asDocument().put(objKey, jsonArray);
             } else {
                 currentVal.asDocument().put(objKey, val);

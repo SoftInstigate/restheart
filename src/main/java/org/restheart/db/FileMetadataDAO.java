@@ -40,6 +40,9 @@ public class FileMetadataDAO implements FileMetadataRepository {
 
     private final MongoClient client;
 
+    /**
+     *
+     */
     public FileMetadataDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
     }

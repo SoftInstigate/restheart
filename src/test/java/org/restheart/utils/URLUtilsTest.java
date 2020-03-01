@@ -48,13 +48,23 @@ public class URLUtilsTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(URLUtilsTest.class);
 
+    /**
+     *
+     */
     @BeforeClass
     public static void setUpClass() {
     }
 
+    /**
+     *
+     */
     @AfterClass
     public static void tearDownClass() {
     }
+
+    /**
+     *
+     */
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -63,17 +73,29 @@ public class URLUtilsTest {
         }
     };
 
+    /**
+     *
+     */
     public URLUtilsTest() {
     }
 
+    /**
+     *
+     */
     @Before
     public void setUp() {
     }
 
+    /**
+     *
+     */
     @After
     public void tearDown() {
     }
 
+    /**
+     *
+     */
     @Test
     public void testRemoveTrailingSlashes() {
         String s = "/ciao/this/has/trailings/////";
@@ -82,6 +104,9 @@ public class URLUtilsTest {
         assertEquals(expResult, result);
     }
 
+    /**
+     *
+     */
     @Test
     public void testDecodeQueryString() {
         String qs = "one%2Btwo";
@@ -90,6 +115,9 @@ public class URLUtilsTest {
         assertEquals(expResult, result);
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetParentPath() {
         String path = "/a/b/c/d";
@@ -98,6 +126,9 @@ public class URLUtilsTest {
         assertEquals(expResult, result);
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithDocId() {
         RequestContext context = prepareRequestContext();
@@ -111,6 +142,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithDocIdStringValidObjectId() {
         RequestContext context = prepareRequestContext();
@@ -124,6 +158,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithLongDocId() {
         RequestContext context = prepareRequestContext();
@@ -137,6 +174,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithFilterMany() {
         BsonValue[] ids = new BsonValue[]{
@@ -155,6 +195,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithFilterManyIdsWithSpaces() {
         BsonValue[] ids = new BsonValue[]{
@@ -172,6 +215,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithFilterManyString() {
         BsonValue[] ids = new BsonValue[]{
@@ -190,6 +236,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithFilterOne() {
         RequestContext context = prepareRequestContext();
@@ -203,6 +252,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithFilterOneInteger() {
         RequestContext context = prepareRequestContext();
@@ -216,6 +268,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithFilterOneObjectId() {
         BsonObjectId id = new BsonObjectId(new ObjectId());
@@ -230,6 +285,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithFilterManyInverse() {
         RequestContext context = prepareRequestContext();
@@ -243,6 +301,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithFilterManyInverseLong() {
         RequestContext context = prepareRequestContext();
@@ -256,6 +317,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetUriWithFilterManyInverseObjectId() {
         RequestContext context = prepareRequestContext();
@@ -270,6 +334,9 @@ public class URLUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetQueryStringRemovingParams() {
         HttpServerExchange exchange = new HttpServerExchange();

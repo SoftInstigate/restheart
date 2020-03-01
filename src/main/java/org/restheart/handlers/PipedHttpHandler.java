@@ -21,10 +21,29 @@ import org.restheart.utils.ResponseHelper;
  */
 public abstract class PipedHttpHandler implements HttpHandler {
 
+    /**
+     *
+     */
     protected static final String PROPERTIES = "properties";
+
+    /**
+     *
+     */
     protected static final String FILE_METADATA = "metadata";
+
+    /**
+     *
+     */
     protected static final String _ID = "_id";
+
+    /**
+     *
+     */
     protected static final String CONTENT_TYPE = "contentType";
+
+    /**
+     *
+     */
     protected static final String FILENAME = "filename";
 
     private final Database dbsDAO;
@@ -68,6 +87,11 @@ public abstract class PipedHttpHandler implements HttpHandler {
             RequestContext context)
             throws Exception;
 
+    /**
+     *
+     * @param exchange
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         handleRequest(exchange, null);
@@ -87,12 +111,26 @@ public abstract class PipedHttpHandler implements HttpHandler {
         return next;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     protected void next(HttpServerExchange exchange, RequestContext context) throws Exception {
         if (getNext() != null) {
             getNext().handleRequest(exchange, context);
         }
     }
 
+    /**
+     *
+     * @param content
+     * @param exchange
+     * @param context
+     * @return
+     * @throws Exception
+     */
     protected boolean isInvalidMetadata(BsonDocument content, HttpServerExchange exchange, RequestContext context) throws Exception {
         // check RELS metadata
         if (content.containsKey(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
@@ -142,6 +180,14 @@ public abstract class PipedHttpHandler implements HttpHandler {
         return false;
     }
 
+    /**
+     *
+     * @param _content
+     * @param exchange
+     * @param context
+     * @return
+     * @throws Exception
+     */
     protected boolean isNotAcceptableContent(BsonValue _content, HttpServerExchange exchange, RequestContext context) throws Exception {
         // cannot proceed with no data
         if (_content == null) {
@@ -175,6 +221,14 @@ public abstract class PipedHttpHandler implements HttpHandler {
         return false;
     }
 
+    /**
+     *
+     * @param context
+     * @param result
+     * @param exchange
+     * @return
+     * @throws Exception
+     */
     protected boolean isResponseInConflict(RequestContext context, OperationResult result, HttpServerExchange exchange) throws Exception {
         context.setDbOperationResult(result);
         // inject the etag

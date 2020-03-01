@@ -98,6 +98,9 @@ public class Minify {
     private int line;
     private int column;
 
+    /**
+     *
+     */
     public Minify() {
         this.in = null;
         this.out = null;
@@ -414,8 +417,25 @@ public class Minify {
         return c;
     }
 
+    /**
+     *
+     */
     public static enum Action {
-        OUTPUT_CURR, DELETE_CURR, DELETE_NEXT
+
+        /**
+         *
+         */
+        OUTPUT_CURR, 
+
+        /**
+         *
+         */
+        DELETE_CURR, 
+
+        /**
+         *
+         */
+        DELETE_NEXT
     }
 
     /**
@@ -423,6 +443,11 @@ public class Minify {
      */
     public static class UnterminatedCommentException extends Exception {
 
+        /**
+         *
+         * @param line
+         * @param column
+         */
         public UnterminatedCommentException(int line, int column) {
             super("Unterminated comment at line " + line + " and column " + column);
         }
@@ -434,6 +459,11 @@ public class Minify {
      */
     public static class UnterminatedStringLiteralException extends Exception {
 
+        /**
+         *
+         * @param line
+         * @param column
+         */
         public UnterminatedStringLiteralException(int line, int column) {
             super("Unterminated string literal at line " + line + " and column " + column);
         }
@@ -445,6 +475,11 @@ public class Minify {
      */
     public static class UnterminatedRegExpLiteralException extends Exception {
 
+        /**
+         *
+         * @param line
+         * @param column
+         */
         public UnterminatedRegExpLiteralException(int line, int column) {
             super("Unterminated regular expression at line " + line + " and column " + column);
         }

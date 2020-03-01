@@ -91,6 +91,10 @@ public class RequestDispatcherHandler extends PipedHttpHandler {
                             PHASE.RESPONSE,
                             new RepresentationTransformer()));
 
+    /**
+     *
+     * @return
+     */
     public static RequestDispatcherHandler getInstance() {
         return RequestDispatcherHandlerHolder.INSTANCE;
     }

@@ -40,12 +40,39 @@ public class Relationship {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Relationship.class);
 
+    /**
+     *
+     */
     public static final String RELATIONSHIPS_ELEMENT_NAME = "rels";
+
+    /**
+     *
+     */
     public static final String REL_ELEMENT_NAME = "rel";
+
+    /**
+     *
+     */
     public static final String TYPE_ELEMENT_NAME = "type";
+
+    /**
+     *
+     */
     public static final String ROLE_ELEMENT_NAME = "role";
+
+    /**
+     *
+     */
     public static final String TARGET_DB_ELEMENT_NAME = "target-db";
+
+    /**
+     *
+     */
     public static final String TARGET_COLLECTION_ELEMENT_NAME = "target-coll";
+
+    /**
+     *
+     */
     public static final String REF_ELEMENT_NAME = "ref-field";
 
     /**
@@ -416,15 +443,45 @@ public class Relationship {
         return referenceField;
     }
 
+    /**
+     *
+     */
     public enum TYPE {
+
+        /**
+         *
+         */
         ONE_TO_ONE,
+
+        /**
+         *
+         */
         ONE_TO_MANY,
+
+        /**
+         *
+         */
         MANY_TO_ONE,
+
+        /**
+         *
+         */
         MANY_TO_MANY
     }
 
+    /**
+     *
+     */
     public enum ROLE {
+
+        /**
+         *
+         */
         OWNING,
+
+        /**
+         *
+         */
         INVERSE
     }
 }

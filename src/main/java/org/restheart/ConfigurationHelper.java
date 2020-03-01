@@ -80,6 +80,11 @@ public class ConfigurationHelper {
         LONG_UNDERTOW_OPTIONS.add(UndertowOptions.MULTIPART_MAX_ENTITY_SIZE);
     }
 
+    /**
+     *
+     * @param builder
+     * @param configuration
+     */
     @SuppressWarnings("unchecked")
     public static void setConnectionOptions(
             Builder builder,

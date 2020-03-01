@@ -29,6 +29,17 @@ import org.bson.BsonValue;
  */
 public interface GridFsRepository {
 
+    /**
+     *
+     * @param db
+     * @param dbName
+     * @param bucketName
+     * @param metadata
+     * @param filePath
+     * @return
+     * @throws IOException
+     * @throws DuplicateKeyException
+     */
     OperationResult createFile(
             Database db,
             String dbName,
@@ -37,6 +48,19 @@ public interface GridFsRepository {
             Path filePath)
             throws IOException, DuplicateKeyException;
 
+    /**
+     *
+     * @param db
+     * @param dbName
+     * @param bucketName
+     * @param metadata
+     * @param filePath
+     * @param fileId
+     * @param requestEtag
+     * @param checkEtag
+     * @return
+     * @throws IOException
+     */
     OperationResult upsertFile(
             final Database db,
             final String dbName,
@@ -48,6 +72,16 @@ public interface GridFsRepository {
             final boolean checkEtag)
             throws IOException;
 
+    /**
+     *
+     * @param db
+     * @param dbName
+     * @param bucketName
+     * @param fileId
+     * @param requestEtag
+     * @param checkEtag
+     * @return
+     */
     OperationResult deleteFile(
             Database db, 
             String dbName, 
@@ -56,6 +90,12 @@ public interface GridFsRepository {
             String requestEtag, 
             final boolean checkEtag);
 
+    /**
+     *
+     * @param db
+     * @param dbName
+     * @param bucketName
+     */
     void deleteChunksCollection(
             Database db, 
             String dbName, 

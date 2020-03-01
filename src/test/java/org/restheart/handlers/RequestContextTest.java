@@ -42,13 +42,23 @@ public class RequestContextTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(RequestContextTest.class);
 
+    /**
+     *
+     */
     @BeforeClass
     public static void setUpClass() {
     }
 
+    /**
+     *
+     */
     @AfterClass
     public static void tearDownClass() {
     }
+
+    /**
+     *
+     */
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -57,17 +67,29 @@ public class RequestContextTest {
         }
     };
 
+    /**
+     *
+     */
     public RequestContextTest() {
     }
 
+    /**
+     *
+     */
     @Before
     public void setUp() {
     }
 
+    /**
+     *
+     */
     @After
     public void tearDown() {
     }
 
+    /**
+     *
+     */
     @Test
     public void testSelectRequestMethod() {
         HttpString _method = new HttpString("UNKNOWN");
@@ -80,6 +102,9 @@ public class RequestContextTest {
         assertEquals(RequestContext.METHOD.PATCH, RequestContext.selectRequestMethod(_method));
     }
 
+    /**
+     *
+     */
     @Test
     public void testSelectRequestType() {
         String[] pathTokens = "/".split("/");
@@ -104,12 +129,18 @@ public class RequestContextTest {
         assertEquals(RequestContext.TYPE.AGGREGATION, RequestContext.selectRequestType(pathTokens));
     }
 
+    /**
+     *
+     */
     @Test
     public void test_COLLECTION_FILES_selectRequestType() {
         String[] pathTokens = "/db/mybucket.files".split("/");
         assertEquals(RequestContext.TYPE.FILES_BUCKET, RequestContext.selectRequestType(pathTokens));
     }
 
+    /**
+     *
+     */
     @Test
     public void test_FILE_selectRequestType() {
         String[] pathTokens = "/db/mybucket.files/123".split("/");
@@ -122,6 +153,9 @@ public class RequestContextTest {
         assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetMappedRequestUri() {
         HttpServerExchange ex = mock(HttpServerExchange.class);
@@ -177,6 +211,9 @@ public class RequestContextTest {
         assertEquals("/db/coll", context.getUnmappedRequestUri());
     }
 
+    /**
+     *
+     */
     @Test
     public void testGetMappedRequestUri2() {
         HttpServerExchange ex = mock(HttpServerExchange.class);

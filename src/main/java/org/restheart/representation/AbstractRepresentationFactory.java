@@ -49,6 +49,12 @@ public abstract class AbstractRepresentationFactory {
             long size)
             throws IllegalQueryParamenterException;
 
+    /**
+     *
+     * @param size
+     * @param context
+     * @param rep
+     */
     protected void addSizeAndTotalPagesProperties(
             final long size,
             final RequestContext context,
@@ -78,6 +84,11 @@ public abstract class AbstractRepresentationFactory {
         }
     }
 
+    /**
+     *
+     * @param embeddedData
+     * @param rep
+     */
     protected void addReturnedProperty(
             final List<BsonDocument> embeddedData,
             final Resource rep) {
@@ -86,6 +97,13 @@ public abstract class AbstractRepresentationFactory {
         rep.addProperty("_returned", new BsonInt32(toIntExact(count)));
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param requestPath
+     * @return
+     */
     protected Resource createRepresentation(
             final HttpServerExchange exchange,
             final RequestContext context,
@@ -108,12 +126,25 @@ public abstract class AbstractRepresentationFactory {
         return rep;
     }
 
+    /**
+     *
+     * @param exchange
+     * @return
+     */
     protected String buildRequestPath(final HttpServerExchange exchange) {
         String requestPath = URLUtils.removeTrailingSlashes(
                 exchange.getRequestPath());
         return requestPath;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param size
+     * @param rep
+     * @throws IllegalQueryParamenterException
+     */
     protected void addPaginationLinks(
             HttpServerExchange exchange,
             RequestContext context,
@@ -131,6 +162,11 @@ public abstract class AbstractRepresentationFactory {
         }
     }
 
+    /**
+     *
+     * @param requestPath
+     * @return
+     */
     protected boolean hasTrailingSlash(final String requestPath) {
         return requestPath.substring(requestPath.length() > 0
                 ? requestPath.length() - 1

@@ -90,7 +90,6 @@ public class ResponseHelper {
      * @param context
      * @param code
      * @param rep
-     * @param t
      */
     public static void endExchangeWithRepresentation(
             HttpServerExchange exchange,
@@ -103,6 +102,17 @@ public class ResponseHelper {
         context.setResponseContent(rep.asBsonDocument());
     }
 
+    /**
+     *
+     * @param href
+     * @param code
+     * @param context
+     * @param httpStatusText
+     * @param message
+     * @param t
+     * @param includeStackTrace
+     * @return
+     */
     public static Resource getErrorJsonDocument(String href,
             int code,
             RequestContext context,

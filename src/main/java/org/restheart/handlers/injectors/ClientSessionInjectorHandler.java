@@ -36,6 +36,10 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(ClientSessionInjectorHandler.class);
     
+    /**
+     *
+     * @return
+     */
     public static ClientSessionInjectorHandler getInstance() {
         if (ClientSessionInjectorHandlerHolder.INSTANCE == null) {
             throw new IllegalStateException("Singleton not initialized");
@@ -48,6 +52,10 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
         private static ClientSessionInjectorHandler INSTANCE = null;
     }
     
+    /**
+     *
+     * @param next
+     */
     public static void build(PipedHttpHandler next) {
         if (ClientSessionInjectorHandlerHolder.INSTANCE != null) {
             throw new IllegalStateException("Singleton already initialized");

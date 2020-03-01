@@ -45,6 +45,7 @@ public class GlobalTransformer {
      * @param predicate the transformer is applied only to requests that resolve
      * the predicate
      * @param args
+     * @param bv1
      * @param confArgs
      */
     public GlobalTransformer(Transformer transformer,
@@ -61,6 +62,12 @@ public class GlobalTransformer {
         this.confArgs = confArgs;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param contentToTransform
+     */
     public void transform(
             HttpServerExchange exchange,
             RequestContext context,
@@ -73,6 +80,12 @@ public class GlobalTransformer {
         }
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @return
+     */
     public boolean resolve(HttpServerExchange exchange,
             RequestContext context) {
         return this.predicate.resolve(exchange, context);

@@ -30,7 +30,7 @@ public class ServerSessionImpl implements ServerSession {
         long millis();
     }
 
-    private Clock clock = new Clock() {
+    private final Clock clock = new Clock() {
         @Override
         public long millis() {
             return System.currentTimeMillis();
@@ -54,26 +54,46 @@ public class ServerSessionImpl implements ServerSession {
         return lastUsedAtMillis;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public long getTransactionNumber() {
         return transactionNumber;
     }
 
+    /**
+     *
+     * @param number
+     */
     public void setTransactionNumber(long number) {
         this.transactionNumber = number;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public BsonDocument getIdentifier() {
         lastUsedAtMillis = clock.millis();
         return identifier;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public long advanceTransactionNumber() {
         return transactionNumber++;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public boolean isClosed() {
         return closed;

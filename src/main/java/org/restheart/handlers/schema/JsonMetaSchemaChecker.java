@@ -63,6 +63,14 @@ public class JsonMetaSchemaChecker implements Checker {
         }
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param contentToCheck
+     * @param args
+     * @return
+     */
     @Override
     public boolean check(
             HttpServerExchange exchange,
@@ -100,6 +108,11 @@ public class JsonMetaSchemaChecker implements Checker {
         }
     }
 
+    /**
+     *
+     * @param context
+     * @return
+     */
     @Override
     public boolean doesSupportRequests(RequestContext context) {
         return !(CheckersUtils.isBulkRequest(context)
