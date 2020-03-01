@@ -20,14 +20,14 @@ package org.restheart.security.handlers.injectors;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.security.TokenManager;
-import org.restheart.security.handlers.PipedHttpHandler;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class TokenInjector extends PipedHttpHandler {
+public class TokenInjector extends PipelinedHandler {
     private final TokenManager tokenManager;
 
     /**
@@ -36,7 +36,7 @@ public class TokenInjector extends PipedHttpHandler {
      * @param next
      * @param tokenManager
      */
-    public TokenInjector(PipedHttpHandler next, TokenManager tokenManager) {
+    public TokenInjector(PipelinedHandler next, TokenManager tokenManager) {
         super(next);
         this.tokenManager = tokenManager;
     }

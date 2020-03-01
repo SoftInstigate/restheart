@@ -22,8 +22,8 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.List;
 import java.util.Map;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.ByteArrayRequest;
-import org.restheart.security.handlers.PipedHttpHandler;
 import org.restheart.security.plugins.authenticators.BaseAccount;
 
 /**
@@ -35,14 +35,14 @@ import org.restheart.security.plugins.authenticators.BaseAccount;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  */
-public class XForwardedHeadersInjector extends PipedHttpHandler {
+public class XForwardedHeadersInjector extends PipelinedHandler {
 
     /**
      * Creates a new instance of AccountHeadersInjector
      *
      * @param next
      */
-    public XForwardedHeadersInjector(PipedHttpHandler next) {
+    public XForwardedHeadersInjector(PipelinedHandler next) {
         super(next);
     }
 

@@ -20,12 +20,13 @@ package org.restheart.security.handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.StatusCodes;
+import org.restheart.handlers.PipelinedHandler;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestNotManagedHandler extends PipedHttpHandler {
+public class RequestNotManagedHandler extends PipelinedHandler {
     /**
      * Creates a new instance of RequestProxyHandler
      *
@@ -39,7 +40,7 @@ public class RequestNotManagedHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public RequestNotManagedHandler(PipedHttpHandler next) {
+    public RequestNotManagedHandler(PipelinedHandler next) {
         super(next);
     }
 

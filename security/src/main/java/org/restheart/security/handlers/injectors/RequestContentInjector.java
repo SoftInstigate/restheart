@@ -26,7 +26,6 @@ import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.plugins.security.RequestInterceptor;
 import static org.restheart.plugins.security.RequestInterceptor.IPOINT.AFTER_AUTH;
 import static org.restheart.plugins.security.RequestInterceptor.IPOINT.BEFORE_AUTH;
-import org.restheart.security.handlers.PipedHttpHandler;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
@@ -44,7 +43,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestContentInjector extends PipedHttpHandler {
+public class RequestContentInjector extends PipelinedHandler {
     public enum Policy {
         ALWAYS,
         ON_REQUIRES_CONTENT_BEFORE_AUTH,
@@ -62,7 +61,7 @@ public class RequestContentInjector extends PipedHttpHandler {
      * @param next
      * @param policy set the injection policy
      */
-    public RequestContentInjector(PipedHttpHandler next, Policy policy) {
+    public RequestContentInjector(PipelinedHandler next, Policy policy) {
         super(next);
         this.bufferingHandler = new RequestBufferingHandler(next, MAX_BUFFERS);
         this.policy = policy;

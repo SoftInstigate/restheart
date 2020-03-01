@@ -25,6 +25,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
 import java.util.TreeMap;
+import org.restheart.handlers.PipelinedHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  */
-public class QueryStringRebuilder extends PipedHttpHandler {
+public class QueryStringRebuilder extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(QueryStringRebuilder.class);
@@ -49,7 +50,7 @@ public class QueryStringRebuilder extends PipedHttpHandler {
      *
      * @param next
      */
-    public QueryStringRebuilder(PipedHttpHandler next) {
+    public QueryStringRebuilder(PipelinedHandler next) {
         super(next);
     }
 

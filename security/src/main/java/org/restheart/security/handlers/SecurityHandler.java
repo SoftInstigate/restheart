@@ -31,7 +31,7 @@ import org.restheart.security.handlers.injectors.TokenInjector;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SecurityHandler extends PipedHttpHandler {
+public class SecurityHandler extends PipelinedHandler {
     private final Set<PluginRecord<AuthMechanism>> mechanisms;
     private final Set<PluginRecord<Authorizer>> authorizers;
     private final PluginRecord<TokenManager> tokenManager;
@@ -71,7 +71,7 @@ public class SecurityHandler extends PipedHttpHandler {
             final Set<PluginRecord<Authorizer>> authorizers,
             final PluginRecord<TokenManager> tokenManager) {
         if (mechanisms != null && mechanisms.size() > 0) {
-            PipedHttpHandler handler;
+            PipelinedHandler handler;
 
             if (authorizers == null || authorizers.isEmpty()) {
                 throw new IllegalArgumentException("Error, accessManagers cannot "

@@ -3,19 +3,19 @@ package org.restheart.security.handlers.metrics;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Optional;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.security.Bootstrapper;
-import org.restheart.security.handlers.PipedHttpHandler;
 import org.slf4j.MDC;
 
 /**
  * Handler to write tracing headers to the logging MDC. Pick it up via the
  * default way with "%X{name}", e.g. "%X{x-b3-traceid}".
  */
-public class TracingInstrumentationHandler extends PipedHttpHandler {
+public class TracingInstrumentationHandler extends PipelinedHandler {
     public TracingInstrumentationHandler() {
     }
     
-    public TracingInstrumentationHandler(final PipedHttpHandler next) {
+    public TracingInstrumentationHandler(final PipelinedHandler next) {
         super(next);
     }
 

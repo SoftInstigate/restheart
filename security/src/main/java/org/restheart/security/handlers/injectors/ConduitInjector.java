@@ -22,8 +22,8 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.security.handlers.ModifiableContentSinkConduit;
-import org.restheart.security.handlers.PipedHttpHandler;
 import org.restheart.security.handlers.ResponseInterceptorsStreamSinkConduit;
 import org.restheart.security.plugins.PluginsRegistry;
 import org.slf4j.Logger;
@@ -41,7 +41,7 @@ import org.xnio.conduits.StreamSinkConduit;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ConduitInjector extends PipedHttpHandler {
+public class ConduitInjector extends PipelinedHandler {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ConduitInjector.class);
 
@@ -54,7 +54,7 @@ public class ConduitInjector extends PipedHttpHandler {
     /**
      * @param next
      */
-    public ConduitInjector(PipedHttpHandler next) {
+    public ConduitInjector(PipelinedHandler next) {
         super(next);
     }
 

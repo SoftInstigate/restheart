@@ -19,6 +19,7 @@ package org.restheart.security.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import java.nio.ByteBuffer;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 
 /**
@@ -29,7 +30,7 @@ import org.restheart.handlers.exchange.ByteArrayResponse;
  * ExchangeHelper.getResponseContent()
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseSender extends PipedHttpHandler {
+public class ResponseSender extends PipelinedHandler {
 
     /**
      *
@@ -41,7 +42,7 @@ public class ResponseSender extends PipedHttpHandler {
     /**
      * @param next
      */
-    public ResponseSender(PipedHttpHandler next) {
+    public ResponseSender(PipelinedHandler next) {
         super(next);
     }
 

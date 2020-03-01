@@ -33,6 +33,7 @@ import java.util.Map;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.JsonRequest;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import org.restheart.security.Bootstrapper;
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestLogger extends PipedHttpHandler {
+public class RequestLogger extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestLogger.class);
 
@@ -64,7 +65,7 @@ public class RequestLogger extends PipedHttpHandler {
      *
      * @param next
      */
-    public RequestLogger(PipedHttpHandler next) {
+    public RequestLogger(PipelinedHandler next) {
         super(next);
     }
 

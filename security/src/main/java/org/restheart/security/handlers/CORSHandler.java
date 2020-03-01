@@ -24,6 +24,7 @@ import io.undertow.util.Headers;
 import static io.undertow.util.Headers.LOCATION_STRING;
 import static io.undertow.util.Headers.ORIGIN;
 import io.undertow.util.HttpString;
+import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
@@ -39,7 +40,7 @@ import static org.restheart.security.handlers.CORSHandler.CORSHeaders.ACCESS_CON
  * expose to the API of a CORS API specification.
  *
  */
-public class CORSHandler extends PipedHttpHandler {
+public class CORSHandler extends PipelinedHandler {
 
     public static final String ALL_ORIGINS = "*";
 
@@ -56,7 +57,7 @@ public class CORSHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public CORSHandler(PipedHttpHandler next) {
+    public CORSHandler(PipelinedHandler next) {
         super(next);
     }
 

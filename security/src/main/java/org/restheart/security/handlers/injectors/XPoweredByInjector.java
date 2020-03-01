@@ -20,7 +20,7 @@ package org.restheart.security.handlers.injectors;
 import com.google.common.net.HttpHeaders;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-import org.restheart.security.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 
 /**
  *
@@ -28,13 +28,13 @@ import org.restheart.security.handlers.PipedHttpHandler;
  *
  * It injects the X-Powered-By response header
  */
-public class XPoweredByInjector extends PipedHttpHandler {
+public class XPoweredByInjector extends PipelinedHandler {
     /**
      * Creates a new instance of XPoweredByInjector
      *
      * @param next
      */
-    public XPoweredByInjector(PipedHttpHandler next) {
+    public XPoweredByInjector(PipelinedHandler next) {
         super(next);
     }
 

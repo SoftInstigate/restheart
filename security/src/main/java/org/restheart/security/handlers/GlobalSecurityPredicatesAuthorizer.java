@@ -30,7 +30,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GlobalSecurityPredicatesAuthorizer extends PipedHttpHandler {
+public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
 
     private final Set<PluginRecord<Authorizer>> authorizers;
 

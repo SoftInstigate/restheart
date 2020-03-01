@@ -20,6 +20,7 @@ package org.restheart.security.handlers;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.Authorizer;
 
@@ -27,7 +28,7 @@ import org.restheart.plugins.security.Authorizer;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AuthenticationConstraintHandler extends PipedHttpHandler {
+public class AuthenticationConstraintHandler extends PipelinedHandler {
 
     private final Set<PluginRecord<Authorizer>> authorizers;
 
@@ -36,7 +37,7 @@ public class AuthenticationConstraintHandler extends PipedHttpHandler {
      * @param next
      * @param authorizers
      */
-    public AuthenticationConstraintHandler(PipedHttpHandler next,
+    public AuthenticationConstraintHandler(PipelinedHandler next,
             Set<PluginRecord<Authorizer>> authorizers) {
         super(next);
         this.authorizers = authorizers;

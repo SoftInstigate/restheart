@@ -18,7 +18,7 @@
 package org.restheart.security.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.security.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 
 /**
  *
@@ -26,7 +26,7 @@ import org.restheart.security.handlers.PipedHttpHandler;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AuthHeadersRemover extends PipedHttpHandler {
+public class AuthHeadersRemover extends PipelinedHandler {
     /**
      * Creates a new instance of AuthHeadersRemover
      *
@@ -40,7 +40,7 @@ public class AuthHeadersRemover extends PipedHttpHandler {
      *
      * @param next
      */
-    public AuthHeadersRemover(PipedHttpHandler next) {
+    public AuthHeadersRemover(PipelinedHandler next) {
         super(next);
     }
 

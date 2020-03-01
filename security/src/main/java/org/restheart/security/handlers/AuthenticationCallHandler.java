@@ -20,10 +20,11 @@ package org.restheart.security.handlers;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.utils.HttpStatus;
 
 /**
- * This is the PipedHttpHandler version of
+ * This is the PipelinedHandler version of
  * io.undertow.security.handlers.AuthenticationCallHandler that is the final
  * {@link HttpHandler} in the security chain, it's purpose is to act as a
  * barrier at the end of the chain to ensure authenticate is called after the
@@ -31,9 +32,9 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AuthenticationCallHandler extends PipedHttpHandler {
+public class AuthenticationCallHandler extends PipelinedHandler {
 
-    public AuthenticationCallHandler(final PipedHttpHandler next) {
+    public AuthenticationCallHandler(final PipelinedHandler next) {
         super(next);
     }
 

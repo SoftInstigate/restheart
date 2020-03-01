@@ -40,9 +40,10 @@ import io.undertow.security.impl.SecurityContextFactoryImpl;
 import io.undertow.server.HttpServerExchange;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import org.restheart.handlers.PipelinedHandler;
 
 /**
- * This is the PipedHttpHandler version of
+ * This is the PipelinedHandler version of
  * io.undertow.security.handlers.SecurityInitialHandler the security handler
  * responsible for attaching the SecurityContext to the current
  * {@link HttpServerExchange}.
@@ -54,7 +55,7 @@ import java.security.PrivilegedAction;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SecurityInitialHandler extends PipedHttpHandler {
+public class SecurityInitialHandler extends PipelinedHandler {
 
     private final AuthenticationMode authenticationMode;
     private final String programaticMechName;
@@ -75,7 +76,7 @@ public class SecurityInitialHandler extends PipedHttpHandler {
     public SecurityInitialHandler(final AuthenticationMode authenticationMode,
             final String programaticMechName,
             final SecurityContextFactoryImpl contextFactory,
-            final PipedHttpHandler next) {
+            final PipelinedHandler next) {
         super(next);
         this.authenticationMode = authenticationMode;
         this.programaticMechName = programaticMechName;
@@ -85,7 +86,7 @@ public class SecurityInitialHandler extends PipedHttpHandler {
     public SecurityInitialHandler(final AuthenticationMode authenticationMode,
             final IdentityManager identityManager,
             final String programaticMechName,
-            final PipedHttpHandler next) {
+            final PipelinedHandler next) {
         this(authenticationMode,
                 programaticMechName,
                 (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,
@@ -93,7 +94,7 @@ public class SecurityInitialHandler extends PipedHttpHandler {
     }
 
     public SecurityInitialHandler(final AuthenticationMode authenticationMode,
-            final PipedHttpHandler next) {
+            final PipelinedHandler next) {
         this(authenticationMode,
                 null,
                 (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,

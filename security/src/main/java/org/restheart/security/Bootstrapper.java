@@ -78,7 +78,7 @@ import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
 import org.restheart.ConfigurationException;
-import static org.restheart.security.handlers.PipedHttpHandler.pipe;
+import static org.restheart.handlers.PipelinedHandler.pipe;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;

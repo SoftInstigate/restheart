@@ -18,6 +18,7 @@
 package org.restheart.security.handlers;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.plugins.security.RequestInterceptor.IPOINT;
@@ -31,7 +32,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestInterceptorsExecutor extends PipedHttpHandler {
+public class RequestInterceptorsExecutor extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RequestInterceptorsExecutor.class);
@@ -51,7 +52,7 @@ public class RequestInterceptorsExecutor extends PipedHttpHandler {
     /**
      * @param next
      */
-    public RequestInterceptorsExecutor(PipedHttpHandler next, IPOINT interceptPoint) {
+    public RequestInterceptorsExecutor(PipelinedHandler next, IPOINT interceptPoint) {
         super(next);
         this.interceptPoint = interceptPoint;
     }
