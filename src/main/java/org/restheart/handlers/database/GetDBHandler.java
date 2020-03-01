@@ -41,10 +41,19 @@ public class GetDBHandler extends PipedHttpHandler {
         super();
     }
 
+    /**
+     *
+     * @param next
+     */
     public GetDBHandler(PipedHttpHandler next) {
         super(next, new DatabaseImpl());
     }
 
+    /**
+     *
+     * @param next
+     * @param dbsDAO
+     */
     public GetDBHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }

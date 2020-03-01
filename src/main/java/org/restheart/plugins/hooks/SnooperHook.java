@@ -38,6 +38,14 @@ public class SnooperHook implements Hook {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(SnooperHook.class);
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param args
+     * @param confArgs
+     * @return
+     */
     @Override
     public boolean hook(
             HttpServerExchange exchange,
@@ -87,6 +95,11 @@ public class SnooperHook implements Hook {
         return true;
     }
 
+    /**
+     *
+     * @param context
+     * @return
+     */
     @Override
     public boolean doesSupportRequests(RequestContext context) {
         return true;

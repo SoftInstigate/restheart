@@ -17,6 +17,10 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.OFF;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.handlers.RequestContext;
 
+/**
+ *
+ * @author uji
+ */
 public class MetricsHandlerTest {
 
     private static final String URI_METRICS_ROOT = "/_metrics";
@@ -25,22 +29,34 @@ public class MetricsHandlerTest {
 
     MetricsHandler handler;
 
+    /**
+     *
+     */
     @Before
     public void setUp() {
         handler = new MetricsHandler(null, null);
         handler.metrics = mock(SharedMetricRegistryProxy.class);
     }
 
+    /**
+     *
+     */
     @Test
     public void testRequestContextForMetricsRequestToRoot() {
         assertRequestContextForMetricsRequest(createRequestContext(URI_METRICS_ROOT), "_metrics", null);
     }
 
+    /**
+     *
+     */
     @Test
     public void testRequestContextForMetricsRequestToDatabase() {
         assertRequestContextForMetricsRequest(createRequestContext(URI_METRICS_DATABASE), "foo", "_metrics");
     }
 
+    /**
+     *
+     */
     @Test
     public void testRequestContextForMetricsRequestToCollection() {
         assertRequestContextForMetricsRequest(createRequestContext(URI_METRICS_COLLECTION), "foo", "bar");
@@ -51,16 +67,25 @@ public class MetricsHandlerTest {
         assertEquals(expectedCollectionName, requestContext.getCollectionName());
     }
 
+    /**
+     *
+     */
     @Test
     public void testMetricsLevelForRequestToRoot() {
         assertMetricsLevelForRequest(URI_METRICS_ROOT, OFF, ROOT, ROOT, ROOT);
     }
 
+    /**
+     *
+     */
     @Test
     public void testMetricsLevelForRequestToDatabase() {
         assertMetricsLevelForRequest(URI_METRICS_DATABASE, OFF, OFF, DATABASE, DATABASE);
     }
 
+    /**
+     *
+     */
     @Test
     public void testMetricsLevelForRequestToCollection() {
         assertMetricsLevelForRequest(URI_METRICS_COLLECTION, OFF, OFF, OFF, COLLECTION);
@@ -95,6 +120,9 @@ public class MetricsHandlerTest {
         };
     }
 
+    /**
+     *
+     */
     @Test
     public void testMetricsRegistryForRequestToRoot() {
         RequestContext requestContext = createRequestContext(URI_METRICS_ROOT);
@@ -102,6 +130,9 @@ public class MetricsHandlerTest {
         verify(handler.metrics, times(1)).registry();
     }
 
+    /**
+     *
+     */
     @Test
     public void testMetricsRegistryForRequestToDatabase() {
         RequestContext requestContext = createRequestContext(URI_METRICS_DATABASE);
@@ -109,6 +140,9 @@ public class MetricsHandlerTest {
         verify(handler.metrics, times(1)).registry(eq(requestContext.getDBName()));
     }
 
+    /**
+     *
+     */
     @Test
     public void testMetricsRegistryForRequestToCollection() {
         RequestContext requestContext = createRequestContext(URI_METRICS_COLLECTION);

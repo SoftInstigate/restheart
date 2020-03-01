@@ -56,6 +56,7 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of DeleteDocumentHandler
      *
+     * @param next
      * @param documentDAO
      */
     public DeleteDocumentHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
@@ -65,6 +66,7 @@ public class DeleteDocumentHandler extends PipedHttpHandler {
 
     /**
      * Default ctor
+     * @param next
      */
     public DeleteDocumentHandler(PipedHttpHandler next) {
         super(next);

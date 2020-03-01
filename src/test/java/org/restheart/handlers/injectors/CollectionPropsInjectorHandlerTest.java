@@ -41,13 +41,23 @@ public class CollectionPropsInjectorHandlerTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(CollectionPropsInjectorHandlerTest.class);
 
+    /**
+     *
+     */
     @BeforeClass
     public static void setUpClass() {
     }
 
+    /**
+     *
+     */
     @AfterClass
     public static void tearDownClass() {
     }
+
+    /**
+     *
+     */
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -56,17 +66,29 @@ public class CollectionPropsInjectorHandlerTest {
         }
     };
 
+    /**
+     *
+     */
     public CollectionPropsInjectorHandlerTest() {
     }
 
+    /**
+     *
+     */
     @Before
     public void setUp() {
     }
 
+    /**
+     *
+     */
     @After
     public void tearDown() {
     }
 
+    /**
+     *
+     */
     @Test
     public void testCheckCollectionPut() {
         RequestContext context = createContext("/db/collection", "PUT");
@@ -76,6 +98,9 @@ public class CollectionPropsInjectorHandlerTest {
         assertEquals(false, CollectionPropsInjectorHandler.checkCollection(context));
     }
 
+    /**
+     *
+     */
     @Test
     public void testCheckCollectionFilesPost() {
         RequestContext context = createContext("/db/fs.files", "POST");
@@ -85,6 +110,9 @@ public class CollectionPropsInjectorHandlerTest {
         assertEquals(true, CollectionPropsInjectorHandler.checkCollection(context));
     }
 
+    /**
+     *
+     */
     @Test
     public void testCheckCollectionRoot() {
         RequestContext context = createContext("/", "PUT");

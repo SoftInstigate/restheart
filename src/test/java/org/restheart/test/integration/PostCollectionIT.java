@@ -47,9 +47,16 @@ public class PostCollectionIT extends HttpClientAbstactIT {
 
     private com.mashape.unirest.http.HttpResponse resp;
 
+    /**
+     *
+     */
     public PostCollectionIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostCollection() throws Exception {
         Response response;
@@ -107,6 +114,10 @@ public class PostCollectionIT extends HttpClientAbstactIT {
         check("check post created doc without etag", response, HttpStatus.SC_OK);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -124,6 +135,10 @@ public class PostCollectionIT extends HttpClientAbstactIT {
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL), org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostDocumentDotNotation() throws Exception {
         resp = Unirest.post(url(DB, COLL))
@@ -160,6 +175,10 @@ public class PostCollectionIT extends HttpClientAbstactIT {
                 && number.asInt() == 1);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostDocumentOperators() throws Exception {
         resp = Unirest.post(url(DB, COLL))

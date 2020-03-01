@@ -55,6 +55,12 @@ public class HookHandler extends PipedHttpHandler {
         super(next);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(
             HttpServerExchange exchange,

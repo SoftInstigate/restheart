@@ -515,6 +515,12 @@ public class JsonUtils {
         return subpath.toArray(new String[subpath.size()]);
     }
 
+    /**
+     *
+     * @param o
+     * @param type
+     * @return
+     */
     public static boolean checkType(Optional<BsonValue> o, String type) {
         if (!o.isPresent() && !"null".equals(type) && !"notnull".equals(type)) {
             return false;
@@ -674,6 +680,7 @@ public class JsonUtils {
 
     /**
      * @param bson either a BsonDocument or a BsonArray
+     * @param mode
      * @return the minified string representation of the bson value
      * @throws IllegalArgumentException if bson is not a BsonDocument or a
      * BsonArray
@@ -749,6 +756,11 @@ public class JsonUtils {
         }
     }
 
+    /**
+     *
+     * @param map
+     * @return
+     */
     public static BsonDocument toBsonDocument(Map<String, Object> map) {
         Document d = new Document(map);
 
@@ -839,6 +851,7 @@ public class JsonUtils {
 
     /**
      *
+     * @param json
      * @param ignoreUpdateOperators true to not flatten update operators
      *
      * @return the flatten json objects using dot notation from {"a":{"b":1},

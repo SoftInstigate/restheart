@@ -30,6 +30,9 @@ import org.restheart.handlers.PipedHttpHandler;
  */
 public class BodyInjectorHandlerTest {
 
+    /**
+     *
+     */
     public BodyInjectorHandlerTest() {
     }
 

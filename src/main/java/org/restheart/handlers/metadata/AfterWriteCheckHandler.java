@@ -43,14 +43,27 @@ import org.restheart.utils.ResponseHelper;
 public class AfterWriteCheckHandler
         extends BeforeWriteCheckHandler {
 
+    /**
+     *
+     */
     public AfterWriteCheckHandler() {
         super(null);
     }
 
+    /**
+     *
+     * @param phh
+     */
     public AfterWriteCheckHandler(PipedHttpHandler next) {
         super(next);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(
             HttpServerExchange exchange,
@@ -144,6 +157,12 @@ public class AfterWriteCheckHandler
                 && context.getDbOperationResult().getHttpCode() < 300);
     }
 
+    /**
+     *
+     * @param context
+     * @param checker
+     * @return
+     */
     @Override
     protected boolean doesCheckersApply(
             RequestContext context,

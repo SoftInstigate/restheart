@@ -13,6 +13,10 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
 
+/**
+ *
+ * @author uji
+ */
 public class MetricsHandlerResponseTypePrometheusTest {
 
     private static final String REGISTRY_NAME_DATABASE = "fancy-shop";
@@ -29,6 +33,9 @@ public class MetricsHandlerResponseTypePrometheusTest {
     MetricRegistry databaseRegistry;
     MetricRegistry collectionRegistry;
 
+    /**
+     *
+     */
     @Before
     public void setUp() {
 
@@ -56,6 +63,10 @@ public class MetricsHandlerResponseTypePrometheusTest {
         registry.timer(METRICS_TIMER_NAME).update(timerValue, TimeUnit.MILLISECONDS);
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     @Test
     public void testMetricsForRoot() throws IOException {
         String expectedMetrics = "http_response_timers_count{database=\"_all_\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 3 $TIMESTAMP$\n" +
@@ -108,6 +119,10 @@ public class MetricsHandlerResponseTypePrometheusTest {
         assertMetrics(expectedMetrics, MetricsHandler.ResponseType.PROMETHEUS.generateResponse(ROOT, rootRegistry));
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     @Test
     public void testMetricsForDatabase() throws IOException {
         String expectedMetrics = "http_response_timers_count{type=\"requests\",method=\"GET\",code=\"2xx\"} 2 $TIMESTAMP$\n" +
@@ -128,6 +143,10 @@ public class MetricsHandlerResponseTypePrometheusTest {
         assertMetrics(expectedMetrics, MetricsHandler.ResponseType.PROMETHEUS.generateResponse(DATABASE, databaseRegistry));
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     @Test
     public void testMetricsForCollection() throws IOException {
         String expectedMetrics = "http_response_timers_count{type=\"requests\",method=\"GET\",code=\"2xx\"} 1 $TIMESTAMP$\n" +

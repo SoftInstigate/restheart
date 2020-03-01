@@ -38,16 +38,29 @@ public class BulkPatchDocumentsHandler extends PipedHttpHandler {
         this(null, new DocumentDAO());
     }
 
+    /**
+     *
+     * @param documentDAO
+     */
     public BulkPatchDocumentsHandler(DocumentDAO documentDAO) {
         super(null);
         this.documentDAO = documentDAO;
     }
     
+    /**
+     *
+     * @param next
+     */
     public BulkPatchDocumentsHandler(PipedHttpHandler next) {
         super(next);
         this.documentDAO = new DocumentDAO();
     }
     
+    /**
+     *
+     * @param next
+     * @param documentDAO
+     */
     public BulkPatchDocumentsHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
         super(next);
         this.documentDAO = documentDAO;

@@ -37,13 +37,32 @@ import org.restheart.utils.HttpStatus;
  */
 @Ignore
 public class SecurityIT extends HttpClientAbstactIT {
+
+    /**
+     *
+     */
     public static String JWT_AUTH_HEADER_PREFIX = "Bearer ";
+
+    /**
+     *
+     */
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
+
+    /**
+     *
+     */
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
+    /**
+     *
+     */
     public SecurityIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testAuthentication() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(rootUri));
@@ -57,6 +76,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         assertEquals("check authorized", HttpStatus.SC_OK, statusLine.getStatusCode());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetUnauthenticated() throws Exception {
         // *** GET root
@@ -93,6 +116,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         assertTrue("check get root unauthorized silent", httpResp.getHeaders(Headers.WWW_AUTHENTICATE_STRING).length == 0);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostUnauthenticated() throws Exception {
         // *** POST coll1
@@ -104,6 +131,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         check("check post coll2b unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPutUnauthenticated() throws Exception {
         // *** PUT root
@@ -131,6 +162,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         check("check put doc2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPatchUnauthenticated() throws Exception {
         // *** PATCH root
@@ -158,6 +193,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         check("check patch doc2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testDeleteUnauthenticated() throws Exception {
         // *** DELETE root
@@ -185,6 +224,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         check("check delete doc2 unauthorized", resp, HttpStatus.SC_UNAUTHORIZED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetAsAdmin() throws Exception {
         // *** GET root
@@ -212,6 +255,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         check("check get doc2 as admin", resp, HttpStatus.SC_OK);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostAsAdmin() throws Exception {
         // *** POST coll1
@@ -223,6 +270,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         check("check post coll2b asadmin", resp, HttpStatus.SC_CREATED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPutAsAdmin() throws Exception {
         // *** PUT root
@@ -242,6 +293,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         check("check put doc1 as admin", resp, HttpStatus.SC_CREATED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetAsPowerUser() throws Exception {
         // *** GET root
@@ -269,6 +324,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         check("check get doc2 as user1", resp, HttpStatus.SC_OK);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPutAsPowerUser() throws Exception {
         // *** PUT root
@@ -292,6 +351,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         check("check put doc1 as user1", resp, HttpStatus.SC_CREATED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPathPefixAndRegexPredicates() throws Exception {
         // *** create dbs
@@ -310,6 +373,10 @@ public class SecurityIT extends HttpClientAbstactIT {
         check("check regex predicate creating user collection " + collectionTmpUserUri3 + " as user2", resp, HttpStatus.SC_CREATED);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     @Ignore
     public void testJwtAuthentication() throws Exception {

@@ -123,7 +123,7 @@ public class Bootstrapper {
     private static Path PROPERTIES_FILE;
 
     private static GracefulShutdownHandler shutdownHandler = null;
-    private static final PathHandler rootPathHandler = path();
+    private static final PathHandler ROOT_HANDLER = path();
 
     private static Configuration configuration;
     private static Undertow undertowServer;
@@ -159,7 +159,7 @@ public class Bootstrapper {
      * @return the restheart root path handler
      */
     public static PathHandler getRootPathHandler() {
-        return rootPathHandler;
+        return ROOT_HANDLER;
     }
 
     private static void parseCommandLineParameters(final String[] args) {

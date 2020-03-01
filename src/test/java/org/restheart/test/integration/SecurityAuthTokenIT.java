@@ -48,9 +48,16 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
     static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
     static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
     
+    /**
+     *
+     */
     public SecurityAuthTokenIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testAuthToken() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(rootUri));
@@ -100,6 +107,10 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
         assertEquals("check authorized via auth token", HttpStatus.SC_OK, statusLine2.getStatusCode());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testAuthTokenResourceLocation() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(rootUri));
@@ -180,6 +191,10 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
         assertEquals(json.get("auth_token_valid_until").asString(), _authTokenValid2[0].getValue());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testAuthTokenInvalidation() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(rootUri));

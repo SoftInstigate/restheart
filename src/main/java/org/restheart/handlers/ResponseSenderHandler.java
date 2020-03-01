@@ -34,7 +34,6 @@ import org.restheart.utils.JsonUtils;
  */
 public class ResponseSenderHandler extends PipedHttpHandler {
     /**
-     * @param next
      */
     public ResponseSenderHandler() {
         super(null);

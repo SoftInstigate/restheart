@@ -43,6 +43,10 @@ public class JsonSchemaTransformer implements Transformer {
     private static final BsonString $SCHEMA
             = new BsonString("http://json-schema.org/draft-04/schema#");
 
+    /**
+     *
+     * @param schema
+     */
     public static void escapeSchema(BsonDocument schema) {
         BsonValue escaped = JsonUtils.escapeKeys(schema, false);
 
@@ -55,6 +59,10 @@ public class JsonSchemaTransformer implements Transformer {
         }
     }
 
+    /**
+     *
+     * @param schema
+     */
     public static void unescapeSchema(BsonDocument schema) {
         BsonValue unescaped = JsonUtils.unescapeKeys(schema);
 

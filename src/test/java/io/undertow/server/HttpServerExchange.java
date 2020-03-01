@@ -45,9 +45,16 @@ public class HttpServerExchange extends AbstractAttachable {
     private HttpString requestMethod;
     private Map<String, Deque<String>> queryParameters;
 
+    /**
+     *
+     */
     public HttpServerExchange() {
     }
 
+    /**
+     *
+     * @return
+     */
     public HttpServerExchange endExchange() {
         return this;
     }
@@ -64,6 +71,12 @@ public class HttpServerExchange extends AbstractAttachable {
         return Collections.unmodifiableMap(queryParameters);
     }
 
+    /**
+     *
+     * @param name
+     * @param param
+     * @return
+     */
     public HttpServerExchange addQueryParam(final String name, final String param) {
         if (queryParameters == null) {
             queryParameters = new TreeMap<>();
@@ -85,6 +98,10 @@ public class HttpServerExchange extends AbstractAttachable {
         return statusCode;
     }
 
+    /**
+     *
+     * @return
+     */
     public int getStatusCode() {
         return statusCode;
     }
@@ -142,14 +159,26 @@ public class HttpServerExchange extends AbstractAttachable {
         this.requestMethod = requestMethod;
     }
 
+    /**
+     *
+     * @return
+     */
     public InputStream getInputStream() {
         return new ByteArrayInputStream("FAKE_STREAM".getBytes());
     }
 
+    /**
+     *
+     * @return
+     */
     public HeaderMap getRequestHeaders() {
         return null;
     }
 
+    /**
+     *
+     * @return
+     */
     public SecurityContext getSecurityContext() {
         return null;
     }

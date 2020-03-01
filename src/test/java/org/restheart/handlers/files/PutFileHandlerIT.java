@@ -43,9 +43,16 @@ import static org.restheart.utils.HttpStatus.SC_OK;
  */
 public class PutFileHandlerIT extends FileHandlerAbstractIT {
 
+    /**
+     *
+     */
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void init() throws Exception {
         Thread.sleep(1000); // Sleep 1 second to avoid NoHttpResponseException
@@ -70,6 +77,10 @@ public class PutFileHandlerIT extends FileHandlerAbstractIT {
         return httpResp;
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     @Test
     public void testPutNonExistingFile() throws IOException {
         String id = "nonexistingfile" + UUID.randomUUID().toString();
@@ -86,6 +97,10 @@ public class PutFileHandlerIT extends FileHandlerAbstractIT {
         checkNotNullMetadata(entity);
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     @Test
     public void testPutAndOverwriteExistingFile() throws IOException {
         String id = "nonexistingfile" + UUID.randomUUID().toString();

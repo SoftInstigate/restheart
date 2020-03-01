@@ -98,6 +98,10 @@ public class CacheInvalidator extends Service {
         next(exchange, context);
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public String defaultUri() {
         return "/ic";

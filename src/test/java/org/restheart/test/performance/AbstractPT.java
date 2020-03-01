@@ -36,17 +36,44 @@ import static org.restheart.test.integration.AbstactIT.MONGO_URI;
  */
 public abstract class AbstractPT {
 
+    /**
+     *
+     */
     protected String url;
 
+    /**
+     *
+     */
     protected String mongoUri;
 
+    /**
+     *
+     */
     protected String id;
+
+    /**
+     *
+     */
     protected String pwd;
+
+    /**
+     *
+     */
     protected String db;
+
+    /**
+     *
+     */
     protected String coll;
 
+    /**
+     *
+     */
     protected Executor httpExecutor;
 
+    /**
+     *
+     */
     public void prepare() {
         Authenticator.setDefault(new Authenticator() {
             @Override

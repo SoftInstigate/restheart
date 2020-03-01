@@ -33,7 +33,14 @@ import org.restheart.utils.JsonUtils;
  */
 public class AggregationPipeline extends AbstractAggregationOperation {
 
+    /**
+     *
+     */
     public static final String STAGES_ELEMENT_NAME = "stages";
+
+    /**
+     *
+     */
     public static final String ALLOW_DISK_USER_ELEMENT_NAME = "allowDiskUse";
     
     private final BsonArray stages;

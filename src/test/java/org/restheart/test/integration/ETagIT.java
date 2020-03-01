@@ -37,9 +37,17 @@ public class ETagIT extends AbstactIT {
 
     HttpResponse resp;
 
+    /**
+     *
+     * @throws URISyntaxException
+     */
     public ETagIT() throws URISyntaxException {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -101,6 +109,10 @@ public class ETagIT extends AbstactIT {
         Assert.assertEquals("create document " + DB.concat("/").concat(COLL).concat("/docid"), HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testUpdateNotRequired() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid"))
@@ -112,6 +124,10 @@ public class ETagIT extends AbstactIT {
         Assert.assertEquals("check response status of create test data", HttpStatus.SC_OK, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testUpdateRequired() throws Exception {
         resp = Unirest.put(url(DB, COLL_REQUIRED, "docid"))
@@ -174,6 +190,10 @@ public class ETagIT extends AbstactIT {
         Assert.assertEquals("check response status of update data with correct etag", HttpStatus.SC_OK, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testUpdateEtagQParam() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid"))

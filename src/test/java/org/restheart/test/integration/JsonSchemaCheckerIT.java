@@ -43,9 +43,17 @@ public class JsonSchemaCheckerIT extends AbstactIT {
 
     HttpResponse resp;
 
+    /**
+     *
+     * @throws URISyntaxException
+     */
     public JsonSchemaCheckerIT() throws URISyntaxException {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -106,6 +114,10 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL_CHILD), HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetSchamaStore() throws Exception {
         resp = Unirest.get(url(DB, SCHEMA_STORE))
@@ -124,6 +136,10 @@ public class JsonSchemaCheckerIT extends AbstactIT {
                 && rbody.asObject().get("_returned").asInt() == 3);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetSchema() throws Exception {
         resp = Unirest.get(url(DB, SCHEMA_STORE, "basic"))
@@ -152,6 +168,10 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         Assert.assertEquals("test create schema with dollar prefixed field", HttpStatus.SC_CREATED, resp.getStatus());
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     @Ignore
     public void testPutSchemaWithDollarAsObjectPropertyPrefix() throws Exception {
@@ -165,11 +185,19 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         Assert.assertEquals("test create schema with dollar prefixed object property", HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostData() throws Exception {
         _testPostData(COLL_BASIC);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostDataComposite() throws Exception {
         _testPostData(COLL_CHILD);
@@ -229,6 +257,10 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         Assert.assertEquals("test update valid data", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws UnirestException
+     */
     @Test
     public void testPostInvalidDueToAdditionalProperty() throws UnirestException {
         resp = Unirest.post(url(DB, COLL_BASIC))
@@ -240,6 +272,10 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         Assert.assertEquals("test invalid data due to additional property", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostDataDotNotation() throws Exception {
         // create valid data
@@ -272,6 +308,10 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         // *** test post valid data with dot notation
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostIncompleteDataDotNotation() throws Exception {
         resp = Unirest.post(url(DB, COLL_BASIC))
@@ -283,6 +323,10 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         Assert.assertEquals("test create incomplete data with dot notation", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPutDataDotNotation() throws Exception {
         // create valid data
@@ -313,6 +357,10 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         Assert.assertEquals("test create invalid data with dot notation 2", HttpStatus.SC_BAD_REQUEST, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPatchData() throws Exception {
         String id = new ObjectId().toString();

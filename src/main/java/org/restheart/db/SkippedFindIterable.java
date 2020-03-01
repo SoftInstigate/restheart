@@ -28,6 +28,11 @@ public class SkippedFindIterable {
     private final FindIterable<BsonDocument> findIterable;
     private final int alreadySkipped;
 
+    /**
+     *
+     * @param findIterable
+     * @param alreadySkipped
+     */
     public SkippedFindIterable(
             FindIterable<BsonDocument> findIterable, 
             int alreadySkipped) {

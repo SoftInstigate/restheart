@@ -43,9 +43,16 @@ import org.restheart.utils.HttpStatus;
  */
 public class GetAggregationIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public GetAggregationIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetAggregationPipeline() throws Exception {
         String uri = "avg_ages";
@@ -67,6 +74,10 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         _testGetAggregation(uri);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetAggregationPipelineDotNotation() throws Exception {
         String uri = "avg_ages";
@@ -88,6 +99,10 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         _testGetAggregation(uri);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetMapReduce() throws Exception {
         String uri = "avg_ages";
@@ -106,6 +121,10 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         _testGetAggregation(uri);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetMapReduceWithVariable() throws Exception {
         String uri = "avg_ages";
@@ -188,6 +207,10 @@ public class GetAggregationIT extends HttpClientAbstactIT {
         });
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testUnboundVariable() throws Exception {
         String uri = "avg_ages";

@@ -43,9 +43,21 @@ import static org.restheart.utils.HttpStatus.SC_CREATED;
  */
 public abstract class FileHandlerAbstractIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public static final String FILENAME = "sample.pdf";
+
+    /**
+     *
+     */
     public static final String BUCKET = "mybucket";
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     protected String createBucket() throws IOException {
         // create db
         Response resp = adminExecutor
@@ -74,6 +86,10 @@ public abstract class FileHandlerAbstractIT extends HttpClientAbstactIT {
         return bucketUrl;
     }
 
+    /**
+     *
+     * @return
+     */
     protected HttpEntity buildMultipartResource() {
         InputStream is = this.getClass().getResourceAsStream("/" + FILENAME);
         HttpEntity entity = MultipartEntityBuilder
@@ -84,6 +100,12 @@ public abstract class FileHandlerAbstractIT extends HttpClientAbstactIT {
         return entity;
     }
 
+    /**
+     *
+     * @param entity
+     * @throws IOException
+     * @throws ParseException
+     */
     protected void checkNotNullMetadata(HttpEntity entity) throws IOException, ParseException {
         String content = EntityUtils.toString(entity);
         JsonObject json = Json.parse(content).asObject();
@@ -91,6 +113,12 @@ public abstract class FileHandlerAbstractIT extends HttpClientAbstactIT {
         assertNotNull(json.get("metadata"));
     }
 
+    /**
+     *
+     * @param httpResp
+     * @param representation
+     * @return
+     */
     protected HttpEntity checkContentType(HttpResponse httpResp, String representation) {
         HttpEntity entity = httpResp.getEntity();
         assertNotNull(entity);

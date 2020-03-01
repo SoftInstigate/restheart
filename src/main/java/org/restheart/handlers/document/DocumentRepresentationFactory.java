@@ -32,6 +32,12 @@ public class DocumentRepresentationFactory {
         return data.containsKey("filename") && data.containsKey("chunkSize");
     }
 
+    /**
+     *
+     * @param rep
+     * @param type
+     * @param data
+     */
     public static void addSpecialProperties(final Resource rep, RequestContext.TYPE type, BsonDocument data) {
         rep.addProperty("_type", new BsonString(type.name()));
 
@@ -81,6 +87,9 @@ public class DocumentRepresentationFactory {
         }
     }
 
+    /**
+     *
+     */
     public DocumentRepresentationFactory() {
 
     }

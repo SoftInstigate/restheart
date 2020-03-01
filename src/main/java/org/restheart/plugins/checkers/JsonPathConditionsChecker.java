@@ -93,10 +93,23 @@ import org.slf4j.LoggerFactory;
 public class JsonPathConditionsChecker implements Checker {
     static final Logger LOGGER = LoggerFactory.getLogger(JsonPathConditionsChecker.class);
 
+    /**
+     *
+     * @param s
+     * @return
+     */
     protected static String avoidEscapedChars(String s) {
         return s.replaceAll("\"", "'").replaceAll("\t", "  ");
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param contentToCheck
+     * @param args
+     * @return
+     */
     @Override
     public boolean check(
             HttpServerExchange exchange,
@@ -131,12 +144,24 @@ public class JsonPathConditionsChecker implements Checker {
         }
     }
 
+    /**
+     *
+     * @param context
+     * @return
+     */
     @Override
     public boolean doesSupportRequests(RequestContext context) {
         return !(CheckersUtils.isBulkRequest(context)
                 && getPhase(context) == PHASE.AFTER_WRITE);
     }
 
+    /**
+     *
+     * @param conditions
+     * @param json
+     * @param context
+     * @return
+     */
     protected boolean applyConditions(BsonArray conditions, BsonDocument json, final RequestContext context) {
         return conditions.stream().allMatch(_condition -> {
             if (_condition.isDocument()) {
@@ -425,6 +450,14 @@ public class JsonPathConditionsChecker implements Checker {
         return ret;
     }
 
+    /**
+     *
+     * @param json
+     * @param path
+     * @param expectedCounts
+     * @param context
+     * @return
+     */
     protected boolean checkCount(BsonValue json,
             String path, Set<Integer> expectedCounts,
             RequestContext context) {
@@ -451,6 +484,18 @@ public class JsonPathConditionsChecker implements Checker {
         return ret;
     }
 
+    /**
+     *
+     * @param json
+     * @param path
+     * @param type
+     * @param mandatoryFields
+     * @param optionalFields
+     * @param optional
+     * @param nullable
+     * @param context
+     * @return
+     */
     protected boolean checkType(BsonDocument json,
             String path, String type,
             Set<String> mandatoryFields,
@@ -589,6 +634,16 @@ public class JsonPathConditionsChecker implements Checker {
         return ret;
     }
 
+    /**
+     *
+     * @param json
+     * @param path
+     * @param regex
+     * @param optional
+     * @param nullable
+     * @param context
+     * @return
+     */
     protected boolean checkRegex(BsonDocument json,
             String path, String regex,
             boolean optional,

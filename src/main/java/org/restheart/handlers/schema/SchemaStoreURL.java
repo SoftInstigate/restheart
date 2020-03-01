@@ -37,9 +37,17 @@ import org.restheart.utils.JsonUtils;
  */
 public class SchemaStoreURL {
 
+    /**
+     *
+     */
     public static final String SCHEMA_STORE_URL_PREFIX
             = "http://schema-store/";
 
+    /**
+     *
+     * @param url
+     * @return
+     */
     public static boolean isValid(String url) {
         return url != null
                 && url.startsWith(SCHEMA_STORE_URL_PREFIX)
@@ -52,6 +60,11 @@ public class SchemaStoreURL {
     private final String schemaDb;
     private final BsonValue schemaId;
 
+    /**
+     *
+     * @param schemaDb
+     * @param schemaId
+     */
     public SchemaStoreURL(String schemaDb, BsonValue schemaId) {
         Objects.requireNonNull(schemaDb);
         Objects.requireNonNull(schemaId);
@@ -66,6 +79,10 @@ public class SchemaStoreURL {
         }
     }
 
+    /**
+     *
+     * @param url
+     */
     public SchemaStoreURL(String url) {
         Objects.requireNonNull(url);
 
@@ -81,10 +98,18 @@ public class SchemaStoreURL {
                 : tokens[1]);
     }
 
+    /**
+     *
+     * @return
+     */
     public String getSchemaDb() {
         return schemaDb;
     }
 
+    /**
+     *
+     * @return
+     */
     public BsonValue getSchemaId() {
         return schemaId;
     }

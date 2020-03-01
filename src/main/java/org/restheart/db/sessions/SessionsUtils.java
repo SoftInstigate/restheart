@@ -40,10 +40,10 @@ public class SessionsUtils {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(SessionsUtils.class);
 
-    private static MongoClient MCLIENT = MongoDBClientSingleton
+    private static final MongoClient MCLIENT = MongoDBClientSingleton
             .getInstance().getClient();
 
-    private static MongoClientDelegate delegate;
+    private static final MongoClientDelegate DELEGATE;
 
     static {
         List<MongoCredential> credentialsList
@@ -51,13 +51,17 @@ public class SessionsUtils {
                 ? singletonList(MCLIENT.getCredential())
                 : Collections.<MongoCredential>emptyList();
 
-        delegate = new MongoClientDelegate(
+        DELEGATE = new MongoClientDelegate(
                 getCluster(),
                 credentialsList,
                 MCLIENT,
                 null);
     }
 
+    /**
+     *
+     * @return
+     */
     @SuppressWarnings({"unchecked", "deprecation"})
     public static Cluster getCluster() {
         try {
@@ -76,7 +80,10 @@ public class SessionsUtils {
         }
     }
 
-    
+    /**
+     *
+     * @return
+     */
     @SuppressWarnings({"unchecked", "deprecation"})
     public static ServerSessionPool getServerSessionPool() {
         try {
@@ -95,7 +102,11 @@ public class SessionsUtils {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public static MongoClientDelegate getMongoClientDelegate() {
-        return delegate;
+        return DELEGATE;
     }
 }

@@ -64,11 +64,11 @@ public class RequestLoggerHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of RequestLoggerHandler
      *
-     * @param handler
+     * @param next
      */
-    public RequestLoggerHandler(HttpHandler handler) {
+    public RequestLoggerHandler(HttpHandler next) {
         super(null);
-        this.handler = handler;
+        this.handler = next;
     }
 
     /**

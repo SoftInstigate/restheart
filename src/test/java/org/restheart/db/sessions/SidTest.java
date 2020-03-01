@@ -26,9 +26,15 @@ import org.junit.Test;
  */
 public class SidTest {
 
+    /**
+     *
+     */
     public SidTest() {
     }
 
+    /**
+     *
+     */
     @Test
     public void testSessionOptionCase1() {
         for (int cont = 0; cont < 10; cont++) {
@@ -40,6 +46,9 @@ public class SidTest {
         }
     }
     
+    /**
+     *
+     */
     @Test
     public void testSessionOptionCase2() {
         for (int cont = 0; cont < 10; cont++) {

@@ -49,76 +49,324 @@ import org.restheart.representation.Resource;
  */
 public abstract class HttpClientAbstactIT extends AbstactIT {
 
+    /**
+     *
+     */
     protected static final String HTTP = "http";
 
+    /**
+     *
+     */
     protected static Executor adminExecutor = null;
+
+    /**
+     *
+     */
     protected static Executor user1Executor = null;
+
+    /**
+     *
+     */
     protected static Executor user2Executor = null;
+
+    /**
+     *
+     */
     protected static Executor unauthExecutor = null;
 
+    /**
+     *
+     */
     protected static URI rootUri;
+
+    /**
+     *
+     */
     protected static URI rootUriRemapped;
+
+    /**
+     *
+     */
     protected static URI dbUri;
+
+    /**
+     *
+     */
     protected static URI dbUriRemappedAll;
+
+    /**
+     *
+     */
     protected static URI dbUriRemappedDb;
+
+    /**
+     *
+     */
     protected static final String dbName = TEST_DB_PREFIX + "db";
+
+    /**
+     *
+     */
     protected static URI dbTmpUri;
+
+    /**
+     *
+     */
     protected static final String dbTmpName = TEST_DB_PREFIX + "mytmpdb";
+
+    /**
+     *
+     */
     protected static URI dbTmpUri2;
+
+    /**
+     *
+     */
     protected static final String dbTmpName2 = TEST_DB_PREFIX + "tmpdb2";
+
+    /**
+     *
+     */
     protected static URI dbTmpUri3;
+
+    /**
+     *
+     */
     protected static final String dbTmpName3 = TEST_DB_PREFIX + "tmpdb3";
+
+    /**
+     *
+     */
     protected static URI collection1Uri;
+
+    /**
+     *
+     */
     protected static URI collection1UriRemappedAll;
+
+    /**
+     *
+     */
     protected static URI collection1UriRemappedDb;
+
+    /**
+     *
+     */
     protected static URI collection1UriRemappedCollection;
+
+    /**
+     *
+     */
     protected static final String collection1Name = "refcoll1";
+
+    /**
+     *
+     */
     protected static URI collection2Uri;
+
+    /**
+     *
+     */
     protected static URI collection2UriRemappedAll;
+
+    /**
+     *
+     */
     protected static URI collection2UriRemappedDb;
+
+    /**
+     *
+     */
     protected static URI collection2UriRemappedCollection;
+
+    /**
+     *
+     */
     protected static final String collection2Name = "refcoll2";
+
+    /**
+     *
+     */
     protected static URI collectionTmpUri;
+
+    /**
+     *
+     */
     protected static final String collectionTmpName = "tmpcoll";
+
+    /**
+     *
+     */
     protected static URI collectionTmpUserUri2;
+
+    /**
+     *
+     */
     protected static URI collectionTmpUserUri3;
+
+    /**
+     *
+     */
     protected static final String collectionTmpUserName2 = "user2";
+
+    /**
+     *
+     */
     protected static URI docsCollectionUri;
+
+    /**
+     *
+     */
     protected static URI docsCollectionUriPaging;
+
+    /**
+     *
+     */
     protected static URI docsCollectionUriCountAndPaging;
+
+    /**
+     *
+     */
     protected static URI docsCollectionUriSort;
+
+    /**
+     *
+     */
     protected static URI docsCollectionUriFilter;
+
+    /**
+     *
+     */
     protected static final String docsCollectionName = "bandleaders";
+
+    /**
+     *
+     */
     protected static URI indexesUri;
+
+    /**
+     *
+     */
     protected static URI indexesUriRemappedAll;
+
+    /**
+     *
+     */
     protected static URI indexesUriRemappedDb;
+
+    /**
+     *
+     */
     protected static URI document1Uri;
+
+    /**
+     *
+     */
     protected static URI dbUriPaging;
+
+    /**
+     *
+     */
     protected static URI document1UriRemappedAll;
+
+    /**
+     *
+     */
     protected static URI document1UriRemappedDb;
+
+    /**
+     *
+     */
     protected static URI document1UriRemappedCollection;
+
+    /**
+     *
+     */
     protected static URI document1UriRemappedDocument;
+
+    /**
+     *
+     */
     protected static URI document2Uri;
+
+    /**
+     *
+     */
     protected static URI document2UriRemappedAll;
+
+    /**
+     *
+     */
     protected static URI document2UriRemappedDb;
+
+    /**
+     *
+     */
     protected static URI document2UriRemappedCollection;
+
+    /**
+     *
+     */
     protected static URI document2UriRemappedDocument;
+
+    /**
+     *
+     */
     protected static URI documentTmpUri;
+
+    /**
+     *
+     */
     protected static URI indexesTmpUri;
+
+    /**
+     *
+     */
     protected static URI indexTmpUri;
+
+    /**
+     *
+     */
     protected static URI metricsUri;
+
+    /**
+     *
+     */
     protected static URI metricsUnknownCollectionUri;
+
+    /**
+     *
+     */
     protected static final String document1Id = "doc1";
+
+    /**
+     *
+     */
     protected static final String document2Id = "doc2";
+
+    /**
+     *
+     */
     protected static final String documentTmpId = "tmpdoc";
 
+    /**
+     *
+     */
     protected static final String dbPropsString = "{ \"a\": 1, \"b\": \"two\", \"c\": { \"d\": 3, \"f\": [\"g\",\"h\",4,{\"i\":5, \"l\":\"six\"}]}}";
+
+    /**
+     *
+     */
     protected static final String coll1PropsString = "{ \"a\":1, \"rels\" :  ["
             + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"oto\" },"
             + "{ \"rel\": \"otm\", \"type\": \"ONE_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"otm\" },"
             + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"mto\" },"
             + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"OWNING\", \"target-coll\": \"refcoll2\", \"ref-field\": \"mtm\" }"
             + "]}";
+
+    /**
+     *
+     */
     protected static final String coll2PropsString = "{ \"a\":2, \"rels\" :  ["
             + "{ \"rel\": \"oto\", \"type\": \"ONE_TO_ONE\",  \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"oto\" },"
             + "{ \"rel\": \"mto\", \"type\": \"MANY_TO_ONE\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"otm\" },"
@@ -126,24 +374,69 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
             + "{ \"rel\": \"mtm\", \"type\": \"MANY_TO_MANY\", \"role\": \"INVERSE\", \"target-coll\": \"refcoll1\", \"ref-field\": \"mtm\" }"
             + "]}";
 
+    /**
+     *
+     */
     protected static final ContentType halCT = ContentType.create(Resource.HAL_JSON_MEDIA_TYPE);
 
+    /**
+     *
+     */
     protected static String docsCollectionPropsStrings = "{}";
 
+    /**
+     *
+     */
     protected static final String collTmpPropsString = "{ \"a\":1 }";
 
+    /**
+     *
+     */
     protected static final String document1PropsString = "{ \"a\": 1, \"oto\": \"doc2\", \"otm\" : [ \"doc2\" ], \"mto\" : \"doc2\", \"mtm\" : [ \"doc2\" ] }";
+
+    /**
+     *
+     */
     protected static final String document2PropsString = "{ \"a\": 2 }";
 
+    /**
+     *
+     */
     protected static BsonDocument dbProps = BsonDocument.parse(HttpClientAbstactIT.dbPropsString);
+
+    /**
+     *
+     */
     protected static BsonDocument coll1Props = BsonDocument.parse(HttpClientAbstactIT.coll1PropsString);
+
+    /**
+     *
+     */
     protected static BsonDocument coll2Props = BsonDocument.parse(HttpClientAbstactIT.coll2PropsString);
+
+    /**
+     *
+     */
     protected static BsonDocument collTmpProps = BsonDocument.parse(HttpClientAbstactIT.collTmpPropsString);
+
+    /**
+     *
+     */
     protected static BsonDocument docsCollectionProps = BsonDocument.parse(HttpClientAbstactIT.docsCollectionPropsStrings);
 
+    /**
+     *
+     */
     protected static BsonDocument document1Props = BsonDocument.parse(HttpClientAbstactIT.document1PropsString);
+
+    /**
+     *
+     */
     protected static BsonDocument document2Props = BsonDocument.parse(HttpClientAbstactIT.document2PropsString);
 
+    /**
+     *
+     */
     protected static final String[] docsPropsStrings = {
         "{ \"ranking\": 1, \"name\": \"Nick\", \"surname\": \"Cave\", \"band\": \"Nick Cave & the Bad Seeds\"}",
         "{ \"ranking\": 2, \"name\": \"Robert\", \"surname\": \"Smith\", \"band\": \"The Cure\"}",
@@ -156,6 +449,10 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         "{ \"ranking\": 9, \"name\": \"Ian\", \"surname\": \"Astbury\", \"band\": \"The Cult\"}",
         "{ \"ranking\": 10, \"name\": \"Polly Jean\", \"surname\": \"Harvey\", \"band\": \"PJ Harvey\"}",};
     // { keys: {a:1, b:-1} }
+
+    /**
+     *
+     */
     protected static final String[] docsCollectionIndexesStrings = {
         "{ \"name\": 1 }",
         "{ \"surname\": 1 }",
@@ -170,6 +467,10 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     private static final String REMAPPEDDOC2 = "/remappeddoc2";
     private static final String REMAPPEDREFCOLL1 = "/remappedrefcoll1";
 
+    /**
+     *
+     * @throws URISyntaxException
+     */
     @BeforeClass
     public static void setUpClass() throws URISyntaxException {
 
@@ -183,6 +484,9 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         unauthExecutor = Executor.newInstance();
     }
 
+    /**
+     *
+     */
     @AfterClass
     public static void tearDownClass() {
     }
@@ -359,12 +663,25 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         metricsUnknownCollectionUri = buildURI("/someunknowndb/unknowncollection/_metrics");
     }
 
+    /**
+     *
+     * @param path
+     * @param parameters
+     * @return
+     * @throws URISyntaxException
+     */
     protected static URI buildURI(String path, NameValuePair[] parameters) throws URISyntaxException {
         return createURIBuilder(path)
                 .addParameters(Arrays.asList(parameters))
                 .build();
     }
 
+    /**
+     *
+     * @param path
+     * @return
+     * @throws URISyntaxException
+     */
     protected static URI buildURI(String path) throws URISyntaxException {
         return createURIBuilder(path)
                 .build();
@@ -378,6 +695,12 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
                 .setPath(path);
     }
 
+    /**
+     *
+     * @param uri
+     * @return
+     * @throws URISyntaxException
+     */
     protected static URI addCheckEtag(URI uri) throws URISyntaxException {
         return createURIBuilder(uri.getPath())
                 .addParameter("checkEtag", null)
@@ -386,14 +709,28 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     }
     private final Database dbsDAO = new DatabaseImpl();
 
+    /**
+     *
+     */
     public HttpClientAbstactIT() {
     }
 
+    /**
+     *
+     */
     @Before
     public void setUp() {
         createTestData();
     }
 
+    /**
+     *
+     * @param message
+     * @param resp
+     * @param expectedCode
+     * @return
+     * @throws IOException
+     */
     protected HttpResponse check(String message, Response resp, int expectedCode) throws IOException {
         HttpResponse httpResp = resp.returnResponse();
         assertNotNull(httpResp);

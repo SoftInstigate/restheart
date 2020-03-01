@@ -28,25 +28,29 @@ import java.lang.annotation.RetentionPolicy;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RegisterPlugin {
     /**
-     * Defines the name of the plugin. The name can be used in the configuration
-     * file to pass confArgs
+     * Defines the name of the plugin.The name can be used in the configuration
+ file to pass confArgs
+     * @return 
      */
     String name();
 
     /**
      * Describes the plugin
+     * @return 
      */
     String description();
 
     /**
      * Set the order of execution (less is higher priority)
+     * @return 
      */
     int priority() default 10;
 
     /**
-     * Set to true to enable the plugin by default. Otherwise it can be enabled
-     * setting the configuration argument 'enabled'
+     * Set to true to enable the plugin by default.Otherwise it can be enabled
+ setting the configuration argument 'enabled'
      *
+     * @return 
      */
     boolean enabledByDefault() default true;
 }

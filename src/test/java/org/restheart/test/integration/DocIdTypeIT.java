@@ -51,10 +51,17 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
 
     com.mashape.unirest.http.HttpResponse<String> resp;
 
+    /**
+     *
+     */
     public DocIdTypeIT() {
         super();
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostCollectionInt() throws Exception {
         // *** PUT tmpdb
@@ -102,6 +109,10 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         assertTrue("check created doc content", content.get("a").asInt() == 1);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPostCollectionString() throws Exception {
         // *** PUT tmpdb
@@ -173,6 +184,10 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
         assertTrue("check created doc content", content.get("_returned").asInt() == 1);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -192,6 +207,10 @@ public class DocIdTypeIT extends HttpClientAbstactIT {
                 org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testComplexId() throws Exception {
         String body = "{'_id':{'a':1,'b':2}}";

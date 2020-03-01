@@ -43,14 +43,26 @@ public class GetCollectionHandler extends PipedHttpHandler {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(GetCollectionHandler.class);
 
+    /**
+     *
+     */
     public GetCollectionHandler() {
         super();
     }
 
+    /**
+     *
+     * @param next
+     */
     public GetCollectionHandler(PipedHttpHandler next) {
         super(next, new DatabaseImpl());
     }
 
+    /**
+     *
+     * @param next
+     * @param dbsDAO
+     */
     public GetCollectionHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }

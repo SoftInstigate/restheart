@@ -116,6 +116,14 @@ public abstract class TransformerHandler extends PipedHttpHandler {
         applyTransformLogic(exchange, context, collRts);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param t
+     * @param args
+     * @param confArgs
+     */
     protected void applyChildrenTransformLogic(
             HttpServerExchange exchange,
             RequestContext context,

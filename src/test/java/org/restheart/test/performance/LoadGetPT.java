@@ -76,6 +76,7 @@ public class LoadGetPT extends AbstractPT {
 
     /**
      *
+     * @throws IOException
      */
     public void get() throws IOException {
         URLConnection connection = new URL(url).openConnection();
@@ -167,6 +168,10 @@ public class LoadGetPT extends AbstractPT {
         }
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void getPagesLinearly() throws Exception {
         Integer _page = threadPages.get(Thread.currentThread().getId());
 
@@ -226,6 +231,10 @@ public class LoadGetPT extends AbstractPT {
         //assertTrue("check _size > 0", json.get("_returned").asInt() > 0);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void getPagesRandomly() throws Exception {
 
         long rpage = Math.round(Math.random() * 10000);

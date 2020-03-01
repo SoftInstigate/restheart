@@ -59,6 +59,12 @@ public class TransformersListHandler extends PipedHttpHandler {
         this.transformers = Arrays.asList(transformers);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(
             HttpServerExchange exchange,

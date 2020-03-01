@@ -42,17 +42,31 @@ import org.restheart.utils.HttpStatus;
  */
 public class ContentEncodingIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     protected static Executor notDecompressingExecutor = null;
 
+    /**
+     *
+     * @throws Exception
+     */
     @BeforeClass
     public static void init() throws Exception {
         notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build())
                 .authPreemptive(HTTP_HOST).auth(new HttpHost(HTTP_HOST.getHostName()), "admin", "changeit");
     }
 
+    /**
+     *
+     */
     public ContentEncodingIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGzipAcceptEncoding() throws Exception {
         Response resp = notDecompressingExecutor.execute(Request.Get(rootUri).addHeader(Headers.ACCEPT_ENCODING_STRING, Headers.GZIP.toString()));

@@ -43,19 +43,34 @@ import org.restheart.utils.HttpStatus;
  */
 public class GetIndexesIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public GetIndexesIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetIndexes() throws Exception {
         testGetIndexes(indexesUri);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetIndexesRemappedAll() throws Exception {
         testGetIndexes(indexesUriRemappedAll);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetIndexesRemappedDb() throws Exception {
         testGetIndexes(indexesUriRemappedDb);
@@ -125,6 +140,10 @@ public class GetIndexesIT extends HttpClientAbstactIT {
     private final String DB = TEST_DB_PREFIX + "-indexes-db";
     private final String COLL = "coll";
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -176,6 +195,10 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         Assert.assertEquals("create doc two", org.apache.http.HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetHintStringFormat() throws Exception {
         com.mashape.unirest.http.HttpResponse resp = Unirest.get(url(DB, COLL))
@@ -253,6 +276,10 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         Assert.assertTrue("doc prop a equals 2", a.asInt() == 2);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetHintObjectFormat() throws Exception {
         com.mashape.unirest.http.HttpResponse resp = Unirest.get(url(DB, COLL))

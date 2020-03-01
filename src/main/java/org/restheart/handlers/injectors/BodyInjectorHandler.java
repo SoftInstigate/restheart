@@ -469,9 +469,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             if (_id != null && _id.isArray()) {
                 String errMsg = "the type of _id in request data "
                         + "is not supported: "
-                        + (_id == null
-                                ? ""
-                                : _id.getBsonType().name());
+                        + _id.getBsonType().name();
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,

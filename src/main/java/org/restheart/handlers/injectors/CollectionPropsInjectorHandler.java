@@ -43,6 +43,11 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
     private static final String FILE_BUCKET_DOES_NOT_EXIST = "File Bucket '%s' does not exist";
     private static final String SCHEMA_STORE_DOES_NOT_EXIST = "Schema Store does not exist";
 
+    /**
+     *
+     * @param context
+     * @return
+     */
     public static boolean checkCollection(RequestContext context) {
         return !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
                 && !(context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.PUT)
@@ -113,6 +118,12 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
                 .handleRequest(exchange, context);
     }
 
+    /**
+     *
+     * @param context
+     * @param exchange
+     * @throws Exception
+     */
     protected void doesNotExists(RequestContext context, HttpServerExchange exchange) throws Exception {
         final String errMsg;
         final String resourceName = context.getCollectionName();

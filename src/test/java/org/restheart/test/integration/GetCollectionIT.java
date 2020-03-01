@@ -42,29 +42,52 @@ import org.restheart.utils.HttpStatus;
  */
 public class GetCollectionIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public GetCollectionIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetCollection() throws Exception {
         testGetCollection(collection1Uri);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetCollectionRemappedAll() throws Exception {
         testGetCollection(collection1UriRemappedAll);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetCollectionRemappedDb() throws Exception {
         testGetCollection(collection1UriRemappedDb);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetCollectionRemappedCollection() throws Exception {
         testGetCollection(collection1UriRemappedCollection);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetCollectionCountAndPaging() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriCountAndPaging));
@@ -140,6 +163,10 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         assertEquals("check get last response status code", HttpStatus.SC_OK, httpRespLast.getStatusLine().getStatusCode());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetCollectionPaging() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriPaging));
@@ -293,6 +320,10 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         assertNotNull("check not null rh:paging", links.get("rh:paging"));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetCollectionSort() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriSort));
@@ -351,6 +382,10 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         assertEquals("check not null _embedded.rh:doc[1].name", "Ian", rhdoc1.get("name").asString());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetCollectionFilter() throws Exception {
         Response resp = adminExecutor.execute(Request.Get(docsCollectionUriFilter));
@@ -417,7 +452,10 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         assertEquals("check _embedded.rh:doc[1].name value to be Nick", "Nick", rhdoc1.get("name").asString());
     }
 
-
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testBinaryProperty() throws Exception {
         byte[] data = "DqnEq7hiWZ1jHoYf/YJpNHevlGrRmT5V9NGN7daoPYetiTvgeP4C9n4j8Gu5mduhEYzWDFK2a3gO+CvzrDgM3BBFG07fF6qabHXDsGTo92m93QohjGtqn8nkNP6KVnWIcbgBbw==".getBytes();

@@ -35,6 +35,13 @@ public class MetricsJsonGenerator {
         return unitString.substring(0, unitString.length() - 1);
     }
 
+    /**
+     *
+     * @param registry
+     * @param rateUnit
+     * @param durationUnit
+     * @return
+     */
     public static BsonDocument generateMetricsBson(MetricRegistry registry, TimeUnit rateUnit, TimeUnit durationUnit) {
         MetricsJsonGenerator generator = new MetricsJsonGenerator(rateUnit, durationUnit);
 

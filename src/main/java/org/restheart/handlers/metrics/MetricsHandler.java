@@ -66,10 +66,21 @@ public class MetricsHandler extends PipedHttpHandler {
     @VisibleForTesting
     SharedMetricRegistryProxy metrics = new SharedMetricRegistryProxy();
 
+    /**
+     *
+     * @param next
+     * @param phh
+     */
     public MetricsHandler(PipedHttpHandler next) {
         super(next);
     }
 
+    /**
+     *
+     * @param phh
+     * @param db
+     * @param di
+     */
     public MetricsHandler(PipedHttpHandler next, DatabaseImpl db) {
         super(next, db);
     }
@@ -129,6 +140,12 @@ public class MetricsHandler extends PipedHttpHandler {
         }
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
 

@@ -33,9 +33,16 @@ import org.restheart.utils.HttpStatus;
  */
 public class DeleteCollectionIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public DeleteCollectionIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testDeleteCollection() throws Exception {
         Response resp;

@@ -48,12 +48,28 @@ import org.slf4j.LoggerFactory;
         name = "jsonSchema",
         description = "Checks the request according to the specified JSON schema")
 public class JsonSchemaChecker implements Checker {
+
+    /**
+     *
+     */
     public static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";
+
+    /**
+     *
+     */
     public static final String SCHEMA_ID_PROPERTY = "schemaId";
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(JsonSchemaChecker.class);
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param contentToCheck
+     * @param args
+     * @return
+     */
     @Override
     public boolean check(
             HttpServerExchange exchange,
@@ -156,6 +172,11 @@ public class JsonSchemaChecker implements Checker {
         }
     }
 
+    /**
+     *
+     * @param context
+     * @return
+     */
     @Override
     public boolean doesSupportRequests(RequestContext context) {
         return !(CheckersUtils.isBulkRequest(context)

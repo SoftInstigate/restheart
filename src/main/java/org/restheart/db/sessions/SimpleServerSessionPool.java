@@ -27,8 +27,13 @@ import java.util.UUID;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class SimpleServerSessionPool extends ServerSessionPool {
-    private UUID sid;
+    private final UUID sid;
     
+    /**
+     *
+     * @param cluster
+     * @param sid
+     */
     @SuppressWarnings("deprecation")
     public SimpleServerSessionPool(Cluster cluster, UUID sid) {
         super(cluster);
@@ -36,6 +41,10 @@ public class SimpleServerSessionPool extends ServerSessionPool {
         this.sid = sid;
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public ServerSession get() {
         return ClientSessionFactory.getInstance().createServerSession(sid);

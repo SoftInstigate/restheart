@@ -43,6 +43,7 @@ public class GlobalChecker {
      * the predicate
      * @param skipNotSupported
      * @param args
+     * @param bv1
      * @param confArgs 
      */
     public GlobalChecker(Checker checker,
@@ -57,6 +58,13 @@ public class GlobalChecker {
         this.confArgs = confArgs;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param contentToCheck
+     * @return
+     */
     public boolean check(
             HttpServerExchange exchange,
             RequestContext context,
@@ -70,15 +78,31 @@ public class GlobalChecker {
                         this.getConfArgs());
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @return
+     */
     public boolean resolve(HttpServerExchange exchange,
             RequestContext context) {
         return this.predicate.resolve(exchange, context);
     }
 
+    /**
+     *
+     * @param context
+     * @return
+     */
     public Checker.PHASE getPhase(RequestContext context) {
         return this.getChecker().getPhase(context);
     }
 
+    /**
+     *
+     * @param context
+     * @return
+     */
     public boolean doesSupportRequests(RequestContext context) {
         return this.getChecker().doesSupportRequests(context);
     }

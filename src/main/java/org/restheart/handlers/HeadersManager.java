@@ -28,10 +28,19 @@ public class HeadersManager {
 
     private final HttpServerExchange exchange;
 
+    /**
+     *
+     * @param exchange
+     */
     public HeadersManager(HttpServerExchange exchange) {
         this.exchange = exchange;
     }
 
+    /**
+     *
+     * @param headerName
+     * @return
+     */
     public boolean isRequestHeaderSet(HttpString headerName) {
         return isSet(getRequestHeader(headerName));
     }
@@ -40,14 +49,29 @@ public class HeadersManager {
         return vals != null && !vals.isEmpty();
     }
 
+    /**
+     *
+     * @param headerName
+     * @return
+     */
     public HeaderValues getRequestHeader(HttpString headerName) {
         return exchange.getRequestHeaders().get(headerName);
     }
 
+    /**
+     *
+     * @param headerName
+     * @param value
+     */
     public void addResponseHeader(HttpString headerName, String value) {
         exchange.getResponseHeaders().put(headerName, value);
     }
 
+    /**
+     *
+     * @param headerName
+     * @param value
+     */
     public void addResponseHeader(HttpString headerName, Boolean value) {
         exchange.getResponseHeaders().put(headerName, value.toString());
     }

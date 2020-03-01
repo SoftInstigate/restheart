@@ -47,13 +47,23 @@ public class JsonUtilsTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(JsonUtilsTest.class);
 
+    /**
+     *
+     */
     @BeforeClass
     public static void setUpClass() {
     }
 
+    /**
+     *
+     */
     @AfterClass
     public static void tearDownClass() {
     }
+
+    /**
+     *
+     */
     @Rule
     public TestRule watcher = new TestWatcher() {
         @Override
@@ -62,17 +72,29 @@ public class JsonUtilsTest {
         }
     };
 
+    /**
+     *
+     */
     public JsonUtilsTest() {
     }
 
+    /**
+     *
+     */
     @Before
     public void setUp() {
     }
 
+    /**
+     *
+     */
     @After
     public void tearDown() {
     }
 
+    /**
+     *
+     */
     @Test
     public void testMinify() {
         String json = "{ '_id'  :   {   '$in' : [1, 20.0, 'id']}}";
@@ -81,6 +103,10 @@ public class JsonUtilsTest {
         Assert.assertEquals(minified, JsonUtils.minify(json));
     }
     
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetPropFromPath() throws Exception {
         String _json1 = "{a: {b:1, c: {d:{\"$oid\": \"550c6e62c2e62b5640673e93\"}, e:3}}, f: null}";
@@ -165,6 +191,10 @@ public class JsonUtilsTest {
 
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testJsonArray() throws Exception {
         String _json1 = "{a: []}}";
@@ -204,6 +234,10 @@ public class JsonUtilsTest {
         Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]", "{e: 1}", "{e: 2}", "{e: 3}"));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testJsonObject() throws Exception {
         String _json1 = "{o: {}}";
@@ -232,6 +266,9 @@ public class JsonUtilsTest {
         Assert.assertTrue(checkGetPropsFromPath(json3, "$.o.*.f", "1"));
     }
 
+    /**
+     *
+     */
     @Test
     public void checkCountOnComplexJson() {
         String _json = "{\n"
@@ -573,6 +610,9 @@ public class JsonUtilsTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testParseToBsonObject() {
         String object = JsonUtils.minify("{\"a\" :1 }");
@@ -584,6 +624,9 @@ public class JsonUtilsTest {
         Assert.assertEquals(object, actual);
     }
 
+    /**
+     *
+     */
     @Test
     public void testParseToBsonArray() {
         String array = "[\"a\", \"b\", 2 ]";
@@ -595,6 +638,9 @@ public class JsonUtilsTest {
         Assert.assertEquals(JsonUtils.minify(array), actual);
     }
 
+    /**
+     *
+     */
     @Test
     public void testParseObjectId() {
         ObjectId id = new ObjectId();
@@ -608,6 +654,9 @@ public class JsonUtilsTest {
         Assert.assertEquals(parsed.asObjectId().getValue(), id);
     }
 
+    /**
+     *
+     */
     @Test
     public void testParseFloat() {
         BsonValue parsed = JsonUtils.parse("3.1415");
@@ -616,6 +665,9 @@ public class JsonUtilsTest {
         Assert.assertEquals(parsed.asDouble(), new BsonDouble(3.1415));
     }
 
+    /**
+     *
+     */
     @Test
     public void testParseToBsonArrayOfObjectets() {
         String arrayOfObjs = "[{\"a\" :1 },{\"b\" :2 }]";
@@ -740,6 +792,9 @@ public class JsonUtilsTest {
         return typeMatch;
     }
 
+    /**
+     *
+     */
     @Test
     public void testJsonUnflatten() {
         BsonDocument grandchild1 = new BsonDocument("a", BsonNull.VALUE);
@@ -775,6 +830,9 @@ public class JsonUtilsTest {
                 .asDocument().containsKey("grandchild2"));
     }
     
+    /**
+     *
+     */
     @Test
     public void testParseLong() {
         var json = "[{'n':2084824280},{'n':5887391606}]";
@@ -800,6 +858,9 @@ public class JsonUtilsTest {
         System.out.println(parsed3);
     }
     
+    /**
+     *
+     */
     @Test
     public void testParseLong2() {
         System.out.println(JsonUtils.toJson(
@@ -816,6 +877,9 @@ public class JsonUtilsTest {
                 JsonUtils.parse(ls)));
     }
     
+    /**
+     *
+     */
     @Test
     public void testParseInt() {
         System.out.println(JsonUtils.toJson(
@@ -823,6 +887,9 @@ public class JsonUtilsTest {
                         "{'n':"+10+"}")));
     }
     
+    /**
+     *
+     */
     @Test
     public void testParseDouble() {
         System.out.println(JsonUtils.toJson(

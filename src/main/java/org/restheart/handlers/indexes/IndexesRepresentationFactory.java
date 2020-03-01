@@ -47,6 +47,7 @@ public class IndexesRepresentationFactory {
      * @param context
      * @param embeddedData
      * @param size
+     * @return 
      * @throws IllegalQueryParamenterException
      */
     static public Resource getRepresentation(

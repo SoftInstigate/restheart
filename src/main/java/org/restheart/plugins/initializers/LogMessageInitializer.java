@@ -38,6 +38,10 @@ public class LogMessageInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(LogMessageInitializer.class);
 
+    /**
+     *
+     * @param confArgs
+     */
     @Override
     public void init(Map<String, Object> confArgs) {
         

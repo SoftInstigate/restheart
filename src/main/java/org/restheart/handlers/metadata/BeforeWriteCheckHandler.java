@@ -46,8 +46,14 @@ public class BeforeWriteCheckHandler extends CheckHandler {
     static final Logger LOGGER
             = LoggerFactory.getLogger(BeforeWriteCheckHandler.class);
 
+    /**
+     *
+     */
     public static final String SINGLETON_GROUP_NAME = "checkers";
 
+    /**
+     *
+     */
     public static final String ROOT_KEY = "checkers";
 
     /**
@@ -61,6 +67,12 @@ public class BeforeWriteCheckHandler extends CheckHandler {
         super(next);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(
             HttpServerExchange exchange,
@@ -80,6 +92,13 @@ public class BeforeWriteCheckHandler extends CheckHandler {
         next(exchange, context);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @return
+     * @throws InvalidMetadataException
+     */
     protected boolean applyCheckers(
             HttpServerExchange exchange,
             RequestContext context)
@@ -247,6 +266,12 @@ public class BeforeWriteCheckHandler extends CheckHandler {
         return !PluginsRegistry.getInstance().getGlobalCheckers().isEmpty();
     }
 
+    /**
+     *
+     * @param context
+     * @param checker
+     * @return
+     */
     protected boolean doesCheckersApply(
             RequestContext context,
             Checker checker) {

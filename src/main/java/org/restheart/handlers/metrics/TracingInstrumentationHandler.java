@@ -13,10 +13,21 @@ import org.slf4j.MDC;
  * default way with "%X{name}", e.g. "%X{x-b3-traceid}".
  */
 public class TracingInstrumentationHandler extends PipedHttpHandler {
+
+    /**
+     *
+     * @param next
+     */
     public TracingInstrumentationHandler(PipedHttpHandler next) {
         super(next);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange,
             RequestContext context) throws Exception {

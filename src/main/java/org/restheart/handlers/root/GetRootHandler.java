@@ -35,14 +35,29 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetRootHandler extends PipedHttpHandler {
+
+    /**
+     *
+     */
     public GetRootHandler() {
         super();
     }
 
+    /**
+     *
+     * @param next
+     * @param phh
+     */
     public GetRootHandler(PipedHttpHandler next) {
         super(next);
     }
 
+    /**
+     *
+     * @param phh
+     * @param dbsDAO
+     * @param dtbs
+     */
     public GetRootHandler(PipedHttpHandler next, Database dbsDAO) {
         super(next, dbsDAO);
     }

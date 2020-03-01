@@ -29,27 +29,75 @@ import org.restheart.handlers.RequestContext;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Resource {
+
+    /**
+     *
+     */
     public enum REPRESENTATION_FORMAT {
+
+        /**
+         *
+         */
         HAL, // Hypertext Application Language
+
+        /**
+         *
+         */
         SHAL, // Simplified HAL with children as direct elements of _embedded array
         
         // root and dbs represeted as an array of children's ids,
         // collection as arrays of document objects
         // documents as objects
+
+        /**
+         *
+         */
         STANDARD, 
 
+        /**
+         *
+         */
         S, // Alias for STANDARD
-        PLAIN_JSON, PJ, // Aliases for SHAL
+
+        /**
+         *
+         */
+        PLAIN_JSON, 
+
+        /**
+         *
+         */
+        PJ, // Aliases for SHAL
     }
 
     /**
      * Supported content types
      */
     public static final String HAL_JSON_MEDIA_TYPE = "application/hal+json";
+
+    /**
+     *
+     */
     public static final String JSON_MEDIA_TYPE = "application/json";
+
+    /**
+     *
+     */
     public static final String APP_FORM_URLENCODED_TYPE = "application/x-www-form-urlencoded";
+
+    /**
+     *
+     */
     public static final String APPLICATION_PDF_TYPE = "application/pdf";
+
+    /**
+     *
+     */
     public static final String MULTIPART_FORM_DATA_TYPE = "multipart/form-data";
+
+    /**
+     *
+     */
     public static final String JAVACRIPT_MEDIA_TYPE = "application/javascript";
     private static final String TYPE = "_type";
     private static final String EMBEDDED = "_embedded";
@@ -80,6 +128,10 @@ public class Resource {
         this(null);
     }
 
+    /**
+     *
+     * @return
+     */
     public RequestContext.TYPE getType() {
         if (properties == null) {
             return null;
@@ -94,6 +146,10 @@ public class Resource {
         return RequestContext.TYPE.valueOf(_type.toString());
     }
 
+    /**
+     *
+     * @return
+     */
     public BsonDocument asBsonDocument() {
         if (embedded == null || embedded.isEmpty()) {
             properties.remove(EMBEDDED);
@@ -186,6 +242,10 @@ public class Resource {
         repArray.add(rep.asBsonDocument());
     }
 
+    /**
+     *
+     * @param warning
+     */
     public void addWarning(String warning) {
         Resource nrep = new Resource("#warnings");
         nrep.addProperty("message", new BsonString(warning));
@@ -221,6 +281,7 @@ public class Resource {
     }
 
     /**
+     * @param context
      * @return true if representationFormat == HAL
      */
     public static boolean isHALRep(RequestContext context) {
@@ -228,6 +289,7 @@ public class Resource {
     }
 
     /**
+     * @param context
      * @return true if representationFormat == SHAL or PLAIN_JSON or PJ
      */
     public static boolean isSHALRep(RequestContext context) {
@@ -239,6 +301,7 @@ public class Resource {
     }
 
     /**
+     * @param context
      * @return true if representationFormat == STSNDARD or S
      */
     public static boolean isStandardRep(RequestContext context) {

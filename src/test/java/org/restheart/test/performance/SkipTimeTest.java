@@ -33,26 +33,45 @@ public class SkipTimeTest {
     private static final int REQUESTED_SKIPS = 1500000;
     private static final int POOL_SKIPS = 1400000;
 
+    /**
+     *
+     * @throws Exception
+     */
     @BeforeClass
     public static void setUpClass() throws Exception {
         MongoDBClientSingleton.init(MONGO_URI);
     }
 
+    /**
+     *
+     */
     @AfterClass
     public static void tearDownClass() {
     }
 
+    /**
+     *
+     */
     public SkipTimeTest() {
     }
 
+    /**
+     *
+     */
     @Before
     public void setUp() {
     }
 
+    /**
+     *
+     */
     @After
     public void tearDown() {
     }
 
+    /**
+     *
+     */
     @Test
     public void testSkip() {
 
@@ -79,6 +98,9 @@ public class SkipTimeTest {
 
     }
 
+    /**
+     *
+     */
     @Test
     public void testTwoSkips() {
 

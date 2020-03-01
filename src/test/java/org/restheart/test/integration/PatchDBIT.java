@@ -34,9 +34,16 @@ import org.restheart.utils.HttpStatus;
  */
 public class PatchDBIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public PatchDBIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPatchDB() throws Exception {
         Response resp;

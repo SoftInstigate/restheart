@@ -26,20 +26,38 @@ import static org.restheart.db.sessions.Sid.longToBytes;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class SessionOptions {
+
+    /**
+     *
+     */
     public static final int CAUSALLY_CONSISTENT_FLAG = 0x20; // 0010 0000
 
+    /**
+     *
+     */
     public static final String CAUSALLY_CONSISTENT_PROP = "causallyConsistent";
     
     private final boolean causallyConsistent;
 
+    /**
+     *
+     * @param causallyConsistent
+     */
     public SessionOptions(boolean causallyConsistent) {
         this.causallyConsistent = causallyConsistent;
     }
     
+    /**
+     *
+     */
     public SessionOptions() {
         this(true);
     }
 
+    /**
+     *
+     * @param sid
+     */
     public SessionOptions(UUID sid) {
         var lsb = longToBytes(sid.getLeastSignificantBits());
 

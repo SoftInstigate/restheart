@@ -24,9 +24,19 @@ public abstract class AbstractAggregationOperation {
         "aggregation pipeline", "aggregationPipeline", "pipeline",
         "aggregation-pipeline", "aggregation", "aggregate", "ap"});
 
+    /**
+     *
+     */
     public static final String AGGREGATIONS_ELEMENT_NAME = "aggrs";
 
+    /**
+     *
+     */
     public static final String URI_ELEMENT_NAME = "uri";
+
+    /**
+     *
+     */
     public static final String TYPE_ELEMENT_NAME = "type";
 
     /**
@@ -264,8 +274,19 @@ public abstract class AbstractAggregationOperation {
         }
     }
 
+    /**
+     *
+     */
     public enum TYPE {
+
+        /**
+         *
+         */
         MAP_REDUCE,
+
+        /**
+         *
+         */
         AGGREGATION_PIPELINE,
     }
 }

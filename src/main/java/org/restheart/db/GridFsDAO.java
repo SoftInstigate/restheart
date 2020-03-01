@@ -58,6 +58,9 @@ public class GridFsDAO implements GridFsRepository {
 
     private final Lock deleteLock = new ReentrantLock();
 
+    /**
+     *
+     */
     public GridFsDAO() {
         client = MongoDBClientSingleton.getInstance().getClient();
     }
@@ -127,6 +130,19 @@ public class GridFsDAO implements GridFsRepository {
         }
     }
 
+    /**
+     *
+     * @param db
+     * @param dbName
+     * @param bucketName
+     * @param metadata
+     * @param filePath
+     * @param fileId
+     * @param requestEtag
+     * @param checkEtag
+     * @return
+     * @throws IOException
+     */
     @Override
     public OperationResult upsertFile(final Database db,
             final String dbName,

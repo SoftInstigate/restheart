@@ -50,6 +50,10 @@ import org.restheart.utils.HttpStatus;
  */
 public class LoadPutPT extends AbstractPT {
 
+    /**
+     *
+     * @throws Exception
+     */
     public void post() throws Exception {
         HttpRequestWithBody req = Unirest.post(url);
         HttpResponse resp;
@@ -67,6 +71,10 @@ public class LoadPutPT extends AbstractPT {
                 HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void postWitId() throws Exception {
         HttpRequestWithBody req = Unirest.post(url);
         HttpResponse resp;
@@ -89,6 +97,10 @@ public class LoadPutPT extends AbstractPT {
                 resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void put() throws Exception {
         String _url = url + "/" + new ObjectId().toString();
 
@@ -110,6 +122,10 @@ public class LoadPutPT extends AbstractPT {
                 resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     public void putUrl() throws Exception {
         String _url = this.url;
 
@@ -131,6 +147,10 @@ public class LoadPutPT extends AbstractPT {
                 || resp.getStatus() == HttpStatus.SC_OK);
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void dbdirect() throws IOException {
         BsonDocument content = new BsonDocument("random",
                 new BsonDouble(Math.random()));

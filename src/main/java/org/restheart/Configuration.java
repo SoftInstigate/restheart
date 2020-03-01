@@ -59,6 +59,9 @@ public class Configuration {
      */
     public static final String CONNECTION_OPTIONS_KEY = "connection-options";
     
+    /**
+     *
+     */
     public final static Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
     private boolean silent = false;
@@ -955,6 +958,10 @@ public class Configuration {
         return logToFile;
     }
 
+    /**
+     *
+     * @return
+     */
     public List<String> getTraceHeaders() {
         return Collections.unmodifiableList(traceHeaders);
     }
@@ -1243,6 +1250,10 @@ public class Configuration {
         return defaultPagesize;
     }
 
+    /**
+     *
+     * @return
+     */
     public boolean isAllowUnescapedCharactersInUrl() {
         return allowUnescapedCharactersInUrl;
     }
@@ -1254,6 +1265,9 @@ public class Configuration {
         return pluginsDirectory;
     }
 
+    /**
+     *
+     */
     public enum METRICS_GATHERING_LEVEL {
         /**
          * do not gather any metrics

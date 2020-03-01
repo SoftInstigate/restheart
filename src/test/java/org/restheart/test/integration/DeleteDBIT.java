@@ -33,9 +33,16 @@ import org.restheart.utils.HttpStatus;
  */
 public class DeleteDBIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public DeleteDBIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testDeleteDB() throws Exception {
         Response resp;

@@ -713,6 +713,11 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         next(exchange, rcontext);
     }
 
+    /**
+     *
+     * @param exchange
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         handleRequest(exchange, new RequestContext(exchange, whereUri, whatUri));

@@ -38,9 +38,16 @@ public class RelationshipsIT extends AbstactIT {
 
     HttpResponse<String> resp;
 
+    /**
+     *
+     */
     public RelationshipsIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Before
     public void createTestData() throws Exception {
         // create test db
@@ -99,6 +106,10 @@ public class RelationshipsIT extends AbstactIT {
         Assert.assertEquals("create parent doc", HttpStatus.SC_CREATED, resp.getStatus());
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetParent() throws Exception {
         resp = Unirest.get(url(DB, COLL_PARENT, "parent"))

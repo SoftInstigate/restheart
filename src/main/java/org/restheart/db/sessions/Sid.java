@@ -46,6 +46,7 @@ public class Sid {
      * The {@code UUID} is generated using a cryptographically strong pseudo
      * random number generator weakend by using 2 bits for flagging.
      *
+     * @param options
      * @return A randomly generated {@code UUID}
      */
     public static UUID randomUUID(SessionOptions options) {
@@ -58,6 +59,11 @@ public class Sid {
         return new UUID(uuid.getMostSignificantBits(), bytesToLong(lsb));
     }
 
+    /**
+     *
+     * @param uuid
+     * @return
+     */
     public static SessionOptions getSessionOptions(UUID uuid) {
         var lsb = longToBytes(uuid.getLeastSignificantBits());
 

@@ -10,12 +10,23 @@ import static org.mockito.Mockito.*;
 import org.restheart.Configuration;
 import org.restheart.handlers.RequestContext;
 
+/**
+ *
+ * @author uji
+ */
 public class MetricsInstrumentationHandlerTest {
 
+    /**
+     *
+     */
     @Before
     public void setUp() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testIfFilledAndNotMetrics() throws Exception {
         assertTrue(MetricsInstrumentationHandler.isFilledAndNotMetrics("foobar"));
@@ -26,6 +37,10 @@ public class MetricsInstrumentationHandlerTest {
         assertFalse(MetricsInstrumentationHandler.isFilledAndNotMetrics(null));
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testAddMetrics() throws Exception {
         Configuration config = mock(Configuration.class);

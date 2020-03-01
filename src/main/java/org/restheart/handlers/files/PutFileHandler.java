@@ -25,21 +25,39 @@ public class PutFileHandler extends PipedHttpHandler {
 
     private final GridFsRepository gridFsDAO;
 
+    /**
+     *
+     */
     public PutFileHandler() {
         super();
         this.gridFsDAO = new GridFsDAO();
     }
 
+    /**
+     *
+     * @param next
+     */
     public PutFileHandler(PipedHttpHandler next) {
         super(next);
         this.gridFsDAO = new GridFsDAO();
     }
 
+    /**
+     *
+     * @param next
+     * @param gridFsDAO
+     */
     public PutFileHandler(PipedHttpHandler next, GridFsDAO gridFsDAO) {
         super(next);
         this.gridFsDAO = gridFsDAO;
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(
             HttpServerExchange exchange,

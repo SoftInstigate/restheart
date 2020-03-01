@@ -41,9 +41,21 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(RootRepresentationFactory.class);
 
+    /**
+     *
+     */
     public RootRepresentationFactory() {
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @param embeddedData
+     * @param size
+     * @return
+     * @throws IllegalQueryParamenterException
+     */
     @Override
     public Resource getRepresentation(
             HttpServerExchange exchange,

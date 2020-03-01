@@ -78,6 +78,10 @@ public class CursorPool {
                             .build()
             );
 
+    /**
+     *
+     * @return
+     */
     public static CursorPool getInstance() {
         return DBCursorPoolSingletonHolder.INSTANCE;
     }
@@ -136,6 +140,12 @@ public class CursorPool {
         }
     }
 
+    /**
+     *
+     * @param key
+     * @param allocationPolicy
+     * @return
+     */
     public synchronized SkippedFindIterable get(
             CursorPoolEntryKey key,
             EAGER_CURSOR_ALLOCATION_POLICY allocationPolicy) {
@@ -405,9 +415,24 @@ public class CursorPool {
         }
     };
 
+    /**
+     *
+     */
     public enum EAGER_CURSOR_ALLOCATION_POLICY {
+
+        /**
+         *
+         */
         LINEAR,
+
+        /**
+         *
+         */
         RANDOM,
+
+        /**
+         *
+         */
         NONE
     }
 }

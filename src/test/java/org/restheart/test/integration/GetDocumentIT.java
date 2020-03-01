@@ -38,24 +38,43 @@ import org.restheart.utils.HttpStatus;
  */
 public class GetDocumentIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public GetDocumentIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDocumentRemappedAll() throws Exception {
         testGetDocument(document1UriRemappedAll);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDocumentRemappedDb() throws Exception {
         testGetDocument(document1UriRemappedDb);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDocumentRemappedCollection() throws Exception {
         testGetDocument(document1UriRemappedCollection);
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testGetDocumentRemappedDoc() throws Exception {
         testGetDocument(document1UriRemappedDocument);

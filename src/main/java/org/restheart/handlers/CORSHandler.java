@@ -40,6 +40,9 @@ import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPO
  */
 public class CORSHandler extends PipedHttpHandler {
 
+    /**
+     *
+     */
     public static final String ALL_ORIGINS = "*";
     private final HttpHandler noPipedNext;
 

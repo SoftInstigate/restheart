@@ -40,9 +40,16 @@ import org.restheart.utils.HttpStatus;
  */
 public class PutIndexIT extends HttpClientAbstactIT {
 
+    /**
+     *
+     */
     public PutIndexIT() {
     }
 
+    /**
+     *
+     * @throws Exception
+     */
     @Test
     public void testPutIndex() throws Exception {
         Response resp;

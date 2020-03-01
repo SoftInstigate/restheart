@@ -30,15 +30,41 @@ import org.restheart.handlers.metadata.InvalidMetadataException;
  */
 public class CheckerMetadata {
 
+    /**
+     *
+     */
     public final static String ROOT_KEY = "checkers";
+
+    /**
+     *
+     */
     public final static String NAME_KEY = "name";
+
+    /**
+     *
+     */
     public final static String ARGS_KEY = "args";
+
+    /**
+     *
+     */
     public final static String SKIP_NOT_SUPPORTED = "skipNotSupported";
 
+    /**
+     *
+     * @param props
+     * @return
+     */
     public static BsonValue getProps(BsonDocument props) {
         return props.get(ROOT_KEY);
     }
 
+    /**
+     *
+     * @param props
+     * @return
+     * @throws InvalidMetadataException
+     */
     public static List<CheckerMetadata> getFromJson(BsonDocument props)
             throws InvalidMetadataException {
         BsonValue _scs = getProps(props);

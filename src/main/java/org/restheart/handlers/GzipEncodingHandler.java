@@ -50,6 +50,11 @@ public class GzipEncodingHandler extends EncodingHandler {
         this.forceCompression = forceCompression;
     }
 
+    /**
+     *
+     * @param exchange
+     * @throws Exception
+     */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (forceCompression) {

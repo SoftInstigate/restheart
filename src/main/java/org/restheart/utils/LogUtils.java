@@ -30,10 +30,45 @@ import org.slf4j.Logger;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class LogUtils {
+
+    /**
+     *
+     */
     public static enum Level {
-        TRACE, DEBUG, INFO, WARN, ERROR
+
+        /**
+         *
+         */
+        TRACE, 
+
+        /**
+         *
+         */
+        DEBUG, 
+
+        /**
+         *
+         */
+        INFO, 
+
+        /**
+         *
+         */
+        WARN, 
+
+        /**
+         *
+         */
+        ERROR
     }
 
+    /**
+     *
+     * @param logger
+     * @param level
+     * @param format
+     * @param argArray
+     */
     public static void log(Logger logger, Level level, String format, Object... argArray) {
         if (logger != null && level != null) {
             switch (level) {
@@ -56,24 +91,47 @@ public class LogUtils {
         }
     }
     
+    /**
+     *
+     * @param LOGGER
+     * @param rows
+     */
     public static void boxedError(
             Logger LOGGER,
             String... rows) {
         boxedMessage(LOGGER, Level.ERROR, RED, GREEN, rows);
     }
     
+    /**
+     *
+     * @param LOGGER
+     * @param rows
+     */
     public static void boxedWarn(
             Logger LOGGER,
             String... rows) {
         boxedMessage(LOGGER, Level.WARN, MAGENTA, GREEN, rows);
     }
     
+    /**
+     *
+     * @param LOGGER
+     * @param rows
+     */
     public static void boxedInfo(
             Logger LOGGER,
             String... rows) {
         boxedMessage(LOGGER, Level.INFO, GREEN, GREEN, rows);
     }
     
+    /**
+     *
+     * @param LOGGER
+     * @param level
+     * @param firstRowColor
+     * @param rowsColor
+     * @param rows
+     */
     public static void boxedMessage(
             Logger LOGGER,
             Level level,

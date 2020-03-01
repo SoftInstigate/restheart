@@ -51,6 +51,12 @@ public class CheckersListHandler extends PipedHttpHandler {
         this.checkers = Arrays.asList(checkers);
     }
 
+    /**
+     *
+     * @param exchange
+     * @param context
+     * @throws Exception
+     */
     @Override
     public void handleRequest(
             HttpServerExchange exchange,

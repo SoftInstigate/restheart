@@ -29,6 +29,10 @@ public interface ConfigurationKeys {
      * default mongo uri mongodb://127.0.0.1
      */
     public static final String DEFAULT_MONGO_URI = "mongodb://127.0.0.1";
+
+    /**
+     *
+     */
     public static final String DEFAULT_ROUTE = "127.0.0.1";
 
     /**
