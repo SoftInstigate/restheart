@@ -20,7 +20,6 @@ package org.restheart.security.handlers;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.utils.HttpStatus;
 
 /**

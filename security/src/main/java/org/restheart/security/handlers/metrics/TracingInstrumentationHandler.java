@@ -3,8 +3,8 @@ package org.restheart.security.handlers.metrics;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Optional;
-import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.security.Bootstrapper;
+import org.restheart.security.handlers.PipedHttpHandler;
 import org.slf4j.MDC;
 
 /**

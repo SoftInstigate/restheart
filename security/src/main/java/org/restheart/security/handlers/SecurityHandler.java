@@ -20,7 +20,7 @@ package org.restheart.security.handlers;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
@@ -58,15 +58,15 @@ public class SecurityHandler extends PipedHttpHandler {
     }
 
     @Override
-    protected void setNext(PipedHttpHandler next) {
+    protected void setNext(PipelinedHandler next) {
         super.setNext(buildSecurityHandlersChain(next,
                 mechanisms, 
                 authorizers, 
                 tokenManager));
     }
 
-    private static PipedHttpHandler buildSecurityHandlersChain(
-            PipedHttpHandler next,
+    private static PipelinedHandler buildSecurityHandlersChain(
+            PipelinedHandler next,
             final Set<PluginRecord<AuthMechanism>> mechanisms,
             final Set<PluginRecord<Authorizer>> authorizers,
             final PluginRecord<TokenManager> tokenManager) {

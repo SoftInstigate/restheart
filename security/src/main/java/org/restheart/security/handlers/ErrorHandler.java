@@ -19,7 +19,6 @@ package org.restheart.security.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;

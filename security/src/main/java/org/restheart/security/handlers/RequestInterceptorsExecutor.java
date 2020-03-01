@@ -18,7 +18,6 @@
 package org.restheart.security.handlers;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.plugins.security.RequestInterceptor.IPOINT;

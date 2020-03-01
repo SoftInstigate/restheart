@@ -25,7 +25,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
 import java.util.TreeMap;
-import org.restheart.handlers.PipedHttpHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

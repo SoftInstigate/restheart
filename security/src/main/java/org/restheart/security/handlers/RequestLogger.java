@@ -33,7 +33,6 @@ import java.util.Map;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
-import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.exchange.JsonRequest;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import org.restheart.security.Bootstrapper;

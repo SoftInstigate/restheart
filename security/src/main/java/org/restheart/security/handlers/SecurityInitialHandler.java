@@ -40,7 +40,6 @@ import io.undertow.security.impl.SecurityContextFactoryImpl;
 import io.undertow.server.HttpServerExchange;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import org.restheart.handlers.PipedHttpHandler;
 
 /**
  * This is the PipedHttpHandler version of

@@ -21,11 +21,12 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.RequestBufferingHandler;
 import io.undertow.util.AttachmentKey;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.plugins.security.RequestInterceptor;
 import static org.restheart.plugins.security.RequestInterceptor.IPOINT.AFTER_AUTH;
 import static org.restheart.plugins.security.RequestInterceptor.IPOINT.BEFORE_AUTH;
+import org.restheart.security.handlers.PipedHttpHandler;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
@@ -55,7 +56,7 @@ public class RequestContentInjector extends PipedHttpHandler {
 
     private final Policy policy;
 
-    private HttpHandler bufferingHandler;
+    private HttpHandler bufferingHandler = null; 
 
     /**
      * @param next
@@ -69,7 +70,6 @@ public class RequestContentInjector extends PipedHttpHandler {
 
     /**
      * @param policy set the injection policy
-     * ù
      */
     public RequestContentInjector(Policy policy) {
         super();
@@ -78,11 +78,11 @@ public class RequestContentInjector extends PipedHttpHandler {
     }
 
     @Override
-    protected void setNext(PipedHttpHandler next) {
+    protected void setNext(PipelinedHandler next) {
         super.setNext(next);
         this.bufferingHandler = new RequestBufferingHandler(next, MAX_BUFFERS);
     }
-
+    
     /**
      *
      * @param exchange
@@ -90,11 +90,17 @@ public class RequestContentInjector extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
+        if (this.bufferingHandler == null) {
+            throw new IllegalStateException("Cannot invoke handleRequest next "
+                    + "if not set via setNext()");
+        }
+        
         if (shallInject(exchange, this.policy)) {
 
             LOGGER.trace("Request content available for Request.getContent()");
 
             markInjected(exchange);
+            
             bufferingHandler.handleRequest(exchange);
         } else {
             LOGGER.trace("Request content is not available for Request.getContent()");

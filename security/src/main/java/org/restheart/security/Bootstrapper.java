@@ -78,8 +78,8 @@ import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
 import org.restheart.ConfigurationException;
-import static org.restheart.handlers.PipedHttpHandler.pipe;
-import org.restheart.handlers.PipedWrappingHandler;
+import static org.restheart.security.handlers.PipedHttpHandler.pipe;
+import org.restheart.handlers.PipelinedWrappingHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
 import org.restheart.handlers.exchange.AbstractExchange.METHOD;
@@ -987,7 +987,7 @@ public class Bootstrapper {
                     new RequestInterceptorsExecutor(AFTER_AUTH),
                     new QueryStringRebuilder(),
                     new ConduitInjector(),
-                    PipedWrappingHandler.wrap(
+                    PipelinedWrappingHandler.wrap(
                             new ConfigurableEncodingHandler(srv.getInstance(),
                                     configuration.isForceGzipEncoding())),
                     new ResponseSender()
@@ -1125,7 +1125,7 @@ public class Bootstrapper {
                         new RequestInterceptorsExecutor(AFTER_AUTH),
                         new QueryStringRebuilder(),
                         new ConduitInjector(),
-                        PipedWrappingHandler.wrap(
+                        PipelinedWrappingHandler.wrap(
                                 new ConfigurableEncodingHandler( // Must be after ConduitInjector
                                         proxyHandler,
                                         configuration.isForceGzipEncoding())));

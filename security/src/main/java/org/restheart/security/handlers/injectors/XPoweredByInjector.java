@@ -20,7 +20,7 @@ package org.restheart.security.handlers.injectors;
 import com.google.common.net.HttpHeaders;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.security.handlers.PipedHttpHandler;
 
 /**
  *
