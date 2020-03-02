@@ -18,8 +18,10 @@ cache:
     - "$HOME/.m2"
 install: true
 script:
+  - set -e
   - mvn clean install -U -DskipITs=false
   - ./bin/push.sh
+  - set +e
 deploy:
   provider: releases
   api_key:
