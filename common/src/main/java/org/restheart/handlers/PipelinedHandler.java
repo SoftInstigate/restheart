@@ -77,7 +77,7 @@ public abstract class PipelinedHandler implements HttpHandler {
     }  
     
     /**
-     * pipes multiple PipelinedHandler in an handlers pipe
+     * pipes multiple PipelinedHandler in a pipeline
      * @param handlers
      * @return 
      */
