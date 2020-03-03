@@ -60,7 +60,7 @@ public class EchoService extends Service {
 
     @Override
     public String defaultUri() {
-        return "echo";
+        return "/echo";
     }
     
     /**
