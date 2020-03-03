@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.security.plugins.PluginsRegistry;
@@ -79,6 +80,7 @@ public class TokenBasicAuthMechanism
      * @param args
      * @throws org.restheart.ConfigurationException
      */
+    @OnInit
     public TokenBasicAuthMechanism(final Map<String, Object> args)
             throws ConfigurationException {
         this("tokenBasicAuthMechanism", args);

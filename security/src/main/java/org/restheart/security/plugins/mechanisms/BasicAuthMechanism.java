@@ -23,6 +23,7 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 import java.util.Map;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.security.plugins.PluginsRegistry;
@@ -41,6 +42,7 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
+    @OnInit
     public BasicAuthMechanism(final Map<String, Object> args)
             throws ConfigurationException {
         this("basicAuthMechanism", args);

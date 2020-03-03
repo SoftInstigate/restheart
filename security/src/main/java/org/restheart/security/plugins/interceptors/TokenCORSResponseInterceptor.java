@@ -18,7 +18,9 @@
 package org.restheart.security.plugins.interceptors;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.plugins.security.ResponseInterceptor;
+import org.restheart.plugins.RegisterPlugin;
+import static org.restheart.plugins.security.InterceptPoint.RESPONSE;
+import org.restheart.plugins.security.Interceptor;
 import static org.restheart.plugins.security.TokenManager.ACCESS_CONTROL_EXPOSE_HEADERS;
 
 /**
@@ -27,16 +29,21 @@ import static org.restheart.plugins.security.TokenManager.ACCESS_CONTROL_EXPOSE_
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class TokenCORSResponseInterceptor implements ResponseInterceptor {
+@RegisterPlugin(name="tokenCORSResponseInterceptor",
+        description = "helper interceptor to add token headers to "
+                + "Access-Control-Expose-Headers to handle CORS request",
+        interceptPoint = RESPONSE
+)
+public class TokenCORSResponseInterceptor implements Interceptor {
 
-    private final String[] headers;
+    private String[] headers;
 
     public TokenCORSResponseInterceptor(String... headers) {
         this.headers = headers;
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handle(HttpServerExchange exchange) throws Exception {
         var hs = exchange
                 .getResponseHeaders()
                 .get(ACCESS_CONTROL_EXPOSE_HEADERS);
@@ -79,5 +86,12 @@ public class TokenCORSResponseInterceptor implements ResponseInterceptor {
         }
         
         return ret;
+    }
+
+    /**
+     * @param headers the headers to set
+     */
+    public void setHeaders(String[] headers) {
+        this.headers = headers;
     }
 }

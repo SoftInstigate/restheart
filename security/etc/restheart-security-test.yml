@@ -190,6 +190,8 @@ plugins-args:
     enabled: true
   echoExampleResponseInterceptor:
     enabled: true
+  echoExampleAsyncResponseInterceptor:
+    enabled: true
   secretHider:
     enabled: true
       

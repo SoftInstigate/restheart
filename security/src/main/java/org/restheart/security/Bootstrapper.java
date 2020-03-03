@@ -86,8 +86,9 @@ import org.restheart.handlers.exchange.AbstractExchange.METHOD;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
-import static org.restheart.plugins.security.RequestInterceptor.IPOINT.AFTER_AUTH;
-import static org.restheart.plugins.security.RequestInterceptor.IPOINT.BEFORE_AUTH;
+import org.restheart.plugins.security.InterceptPoint;
+import static org.restheart.plugins.security.InterceptPoint.REQUEST_AFTER_AUTH;
+import static org.restheart.plugins.security.InterceptPoint.REQUEST_BEFORE_AUTH;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.handlers.CORSHandler;
 import org.restheart.security.handlers.ConfigurableEncodingHandler;
@@ -114,6 +115,7 @@ import org.restheart.security.utils.LoggingInitializer;
 import org.restheart.security.utils.OSChecker;
 import org.restheart.security.utils.RESTHeartSecurityDaemon;
 import org.restheart.security.utils.ResourcesExtractor;
+import static org.restheart.utils.PluginUtils.defaultURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.OptionMap;
@@ -775,9 +777,8 @@ public class Bootstrapper {
         HANDLERS = getHandlersPipe(authMechanisms,
                 authorizers,
                 tokenManager);
-        
+
         // update buffer size in 
-        
         AbstractExchange.updateBufferSize(configuration.getBufferSize());
 
         builder = builder
@@ -912,7 +913,7 @@ public class Bootstrapper {
             if (srvConfArgs == null
                     || !srvConfArgs.containsKey("uri")
                     || srvConfArgs.get("uri") == null) {
-                uri = srv.getInstance().defaultUri();
+                uri = defaultURI(srv.getInstance());
             } else {
                 if (!(srvConfArgs.get("uri") instanceof String)) {
                     LOGGER.error("Cannot start service {}:"
@@ -980,15 +981,17 @@ public class Bootstrapper {
                     new CORSHandler(),
                     new XPoweredByInjector(),
                     new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
-                    new RequestInterceptorsExecutor(BEFORE_AUTH),
+                    new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
                     new QueryStringRebuilder(),
                     securityHandler,
                     new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
-                    new RequestInterceptorsExecutor(AFTER_AUTH),
+                    new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
                     new QueryStringRebuilder(),
                     new ConduitInjector(),
-                    PipelinedWrappingHandler.wrap(
-                            new ConfigurableEncodingHandler(srv.getInstance(),
+                    PipelinedWrappingHandler
+                            .wrap(new ConfigurableEncodingHandler(
+                                    PipelinedWrappingHandler
+                                            .wrap(srv.getInstance()),
                                     configuration.isForceGzipEncoding())),
                     new ResponseSender()
             );
@@ -1114,7 +1117,7 @@ public class Bootstrapper {
                         new RequestLogger(),
                         new XPoweredByInjector(),
                         new RequestContentInjector(ALWAYS),
-                        new RequestInterceptorsExecutor(BEFORE_AUTH),
+                        new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
                         new QueryStringRebuilder(),
                         new SecurityHandler(
                                 authMechanisms,
@@ -1122,7 +1125,7 @@ public class Bootstrapper {
                                 tokenManager),
                         new AuthHeadersRemover(),
                         new XForwardedHeadersInjector(),
-                        new RequestInterceptorsExecutor(AFTER_AUTH),
+                        new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
                         new QueryStringRebuilder(),
                         new ConduitInjector(),
                         PipelinedWrappingHandler.wrap(

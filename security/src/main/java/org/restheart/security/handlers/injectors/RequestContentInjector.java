@@ -23,13 +23,13 @@ import io.undertow.server.handlers.RequestBufferingHandler;
 import io.undertow.util.AttachmentKey;
 import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
-import org.restheart.plugins.security.RequestInterceptor;
-import static org.restheart.plugins.security.RequestInterceptor.IPOINT.AFTER_AUTH;
-import static org.restheart.plugins.security.RequestInterceptor.IPOINT.BEFORE_AUTH;
+import org.restheart.plugins.security.InterceptPoint;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.security.plugins.PluginsRegistry;
+import static org.restheart.utils.PluginUtils.interceptPoint;
+import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,19 +110,21 @@ public class RequestContentInjector extends PipelinedHandler {
     private boolean shallInject(HttpServerExchange exchange, Policy policy) {
         return !isAlreadyInjected(exchange) && (policy == ALWAYS
                 || (policy == ON_REQUIRES_CONTENT_AFTER_AUTH
-                && isContentRequired(exchange, AFTER_AUTH))
+                && isContentRequired(exchange, InterceptPoint.REQUEST_AFTER_AUTH))
                 || (policy == ON_REQUIRES_CONTENT_BEFORE_AUTH
-                && isContentRequired(exchange, BEFORE_AUTH)));
+                && isContentRequired(exchange, InterceptPoint.REQUEST_BEFORE_AUTH)));
     }
 
-    private boolean isContentRequired(HttpServerExchange exchange, RequestInterceptor.IPOINT interceptPoint) {
+    private boolean isContentRequired(HttpServerExchange exchange, 
+            InterceptPoint interceptPoint) {
         return PluginsRegistry
                 .getInstance()
-                .getRequestInterceptors().stream()
+                .getInterceptors().stream()
                 .filter(ri -> ri.isEnabled())
-                .filter(ri -> ri.getInstance().resolve(exchange))
-                .filter(ri -> interceptPoint.equals(ri.getInstance().interceptPoint()))
-                .anyMatch(ri -> ri.getInstance().requiresContent());
+                .map(ri -> ri.getInstance())
+                .filter(ri -> interceptPoint == interceptPoint(ri))
+                .filter(ri -> ri.resolve(exchange))
+                .anyMatch(ri -> requiresContent(ri));
     }
     
     private static final AttachmentKey<Boolean> INJECTED_KEY

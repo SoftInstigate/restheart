@@ -34,7 +34,7 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.ConfigurablePlugin;
-import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.TokenManager;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
@@ -44,12 +44,17 @@ import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.authenticators.PwdCredentialAccount;
 import org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor;
 import org.restheart.security.utils.URLUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(
         name = "rndTokenManager",
         description = "generates random auth tokens",
         enabledByDefault = false)
 public class RndTokenManager implements TokenManager {
+    
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(RndTokenManager.class);
 
     private static SecureRandom RND_GENERATOR = new SecureRandom();
 
@@ -58,6 +63,7 @@ public class RndTokenManager implements TokenManager {
     private final int ttl;
     private final String srvURI;
 
+    @OnInit
     public RndTokenManager(Map<String, Object> confArgs)
             throws ConfigurationException {
         this("rndTokenManager", confArgs);
@@ -73,19 +79,24 @@ public class RndTokenManager implements TokenManager {
                 Cache.EXPIRE_POLICY.AFTER_READ,
                 ttl * 60 * 1_000);
 
+        // add the auth token header to CORS header Access-Control-Expose-Headers
+        // using helper interceptor tokenCORSResponseInterceptor
         String[] headers = {AUTH_TOKEN_HEADER.toString(),
             AUTH_TOKEN_VALID_HEADER.toString(),
             AUTH_TOKEN_LOCATION_HEADER.toString()};
 
-        PluginsRegistry.getInstance().getResponseInterceptors()
-                .add(new PluginRecord("tokenCORSResponseInterceptor",
-                        "helper interceptor to add token headers to "
-                        + "Access-Control-Expose-Headers to "
-                        + "handle CORS request",
-                        true,
-                        TokenCORSResponseInterceptor.class.getName(),
-                        new TokenCORSResponseInterceptor(headers),
-                        null));
+        var ti = PluginsRegistry.getInstance().getInterceptors()
+                .stream().filter(i -> 
+                        "tokenCORSResponseInterceptor".equals(i.getName()))
+                .findFirst();
+        
+        if (ti.isPresent()) {
+            ((TokenCORSResponseInterceptor)ti.get().getInstance())
+                    .setHeaders(headers);
+        } else {
+            LOGGER.warn("Cound not find tokenCORSResponseInterceptor. "
+                    + "Auth token headers are not added to CORS");
+        }
     }
 
     @Override

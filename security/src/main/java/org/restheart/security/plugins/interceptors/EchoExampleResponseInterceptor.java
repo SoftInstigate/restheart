@@ -23,8 +23,10 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Map;
 import org.restheart.handlers.exchange.JsonResponse;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.ResponseInterceptor;
+import static org.restheart.plugins.security.InterceptPoint.RESPONSE;
+import org.restheart.plugins.security.Interceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,18 +37,25 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "echoExampleResponseInterceptor",
         description = "used for testing purposes",
-        enabledByDefault = false)
-public class EchoExampleResponseInterceptor implements ResponseInterceptor {
+        enabledByDefault = false,
+        requiresContent = true,
+        interceptPoint = RESPONSE)
+public class EchoExampleResponseInterceptor implements Interceptor {
     
     private static final Logger LOGGER = LoggerFactory
             .getLogger(EchoExampleResponseInterceptor.class);
     
-    public EchoExampleResponseInterceptor(Map<String, Object> args) {
+    /**
+     * shows how to inject configuration via @OnInit
+     * @param args
+     */
+    @OnInit
+    public void init(Map<String, Object> args) {
         LOGGER.trace("got args {}", args);
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handle(HttpServerExchange exchange) throws Exception {
         var response = JsonResponse.wrap(exchange);
 
         exchange.getResponseHeaders().add(HttpString.tryFromString("header"),
@@ -76,8 +85,4 @@ public class EchoExampleResponseInterceptor implements ResponseInterceptor {
                 || exchange.getRequestPath().equals("/anything");
     }
 
-    @Override
-    public boolean requiresResponseContent() {
-        return true;
-    }
 }

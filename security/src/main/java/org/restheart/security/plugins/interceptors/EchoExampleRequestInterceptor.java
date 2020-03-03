@@ -21,12 +21,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.LinkedList;
-import java.util.Map;
 import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.RequestInterceptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.restheart.plugins.security.InterceptPoint;
+import org.restheart.plugins.security.Interceptor;
 
 /**
  *
@@ -35,18 +33,11 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "echoExampleRequestInterceptor",
         description = "used for testing purposes",
-        enabledByDefault = false)
-public class EchoExampleRequestInterceptor implements RequestInterceptor {
-
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(EchoExampleRequestInterceptor.class);
-    
-    public EchoExampleRequestInterceptor(Map<String, Object> args) {
-        LOGGER.trace("got args {}", args);
-    }
-
+        enabledByDefault = false,
+        requiresContent = true)
+public class EchoExampleRequestInterceptor implements Interceptor {
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handle(HttpServerExchange exchange) throws Exception {
         // add query parameter ?pagesize=0
         var vals = new LinkedList<String>();
         vals.add("param added by EchoExampleRequestInterceptor");
@@ -77,10 +68,5 @@ public class EchoExampleRequestInterceptor implements RequestInterceptor {
     public boolean resolve(HttpServerExchange exchange) {
         return exchange.getRequestPath().equals("/iecho")
                 || exchange.getRequestPath().equals("/anything");
-    }
-
-    @Override
-    public boolean requiresContent() {
-        return true;
     }
 }

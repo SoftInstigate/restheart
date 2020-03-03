@@ -17,7 +17,6 @@
  */
 package org.restheart.security.plugins.services;
 
-import java.util.Map;
 import org.restheart.plugins.RegisterPlugin;
 
 /**
@@ -27,19 +26,8 @@ import org.restheart.plugins.RegisterPlugin;
 @RegisterPlugin(
         name = "secho",
         description = "only used for automatic testing purposes",
-        enabledByDefault = false)
+        enabledByDefault = false,
+        defaultURI = "/secho")
 public class SEchoService extends EchoService {
 
-    /**
-     *
-     * @param args
-     */
-    public SEchoService(Map<String, Object> args) {
-        super(args);
-    }
-
-    @Override
-    public String defaultUri() {
-        return "secho";
-    }
 }

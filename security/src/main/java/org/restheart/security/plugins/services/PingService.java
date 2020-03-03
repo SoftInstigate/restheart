@@ -22,6 +22,7 @@ import java.util.Map;
 import org.restheart.ConfigurationException;
 import org.restheart.handlers.exchange.JsonRequest;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Service;
 import org.restheart.utils.HttpStatus;
@@ -33,33 +34,29 @@ import org.restheart.utils.HttpStatus;
 @RegisterPlugin(
         name = "ping",
         description = "simple ping service",
-        enabledByDefault = true)
-public class PingService extends Service {
+        enabledByDefault = true,
+        defaultURI = "/ping")
+public class PingService implements Service {
 
     private final String msg;
 
     /**
      *
      * @param args
-     * @throws org.restheart.security.ConfigurationException
+     * @throws org.restheart.ConfigurationException
      */
+    @OnInit
     public PingService(Map<String, Object> args) throws ConfigurationException {
-        super(args);
         this.msg = argValue(args, "msg");
     }
-
-    @Override
-    public String defaultUri() {
-        return "/ping";
-    }
-
+    
     /**
      *
      * @param exchange
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handle(HttpServerExchange exchange) throws Exception {
         var request = JsonRequest.wrap(exchange);
 
         if (request.isGet()) {

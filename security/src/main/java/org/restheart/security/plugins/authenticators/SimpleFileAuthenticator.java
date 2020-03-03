@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.FileConfigurablePlugin;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.security.utils.LambdaUtils;
@@ -64,6 +65,7 @@ public class SimpleFileAuthenticator
      * @throws java.io.FileNotFoundException
      * @throws org.restheart.ConfigurationException
      */
+    @OnInit
     public SimpleFileAuthenticator(Map<String, Object> confArgs)
             throws FileNotFoundException, ConfigurationException {
         this("simpleFileAuthenticator", confArgs);

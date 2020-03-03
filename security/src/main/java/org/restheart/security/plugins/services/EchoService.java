@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Map;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.handlers.exchange.JsonResponse;
@@ -44,32 +43,20 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "echo",
         description = "echoes the request",
-        enabledByDefault = true)
-public class EchoService extends Service {
+        enabledByDefault = true,
+        defaultURI = "/echo")
+public class EchoService implements Service {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(EchoService.class);
 
     /**
-     *
-     * @param args
-     */
-    public EchoService(Map<String, Object> args) {
-        super(args);
-    }
-
-    @Override
-    public String defaultUri() {
-        return "/echo";
-    }
-    
-    /**
-     *
+     * handle the request
      * @param exchange
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handle(HttpServerExchange exchange) throws Exception {
         JsonObject resp = new JsonObject();
 
         resp.addProperty("method", exchange.getRequestMethod().toString());

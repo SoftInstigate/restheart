@@ -21,10 +21,11 @@ import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.exchange.ByteArrayResponse;
-import org.restheart.plugins.security.RequestInterceptor.IPOINT;
+import org.restheart.plugins.security.InterceptPoint;
 import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.utils.LambdaUtils;
 import org.restheart.utils.HttpStatus;
+import static org.restheart.utils.PluginUtils.interceptPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,20 +40,23 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
 
     private final ResponseSender sender = new ResponseSender();
 
-    private final IPOINT interceptPoint;
+    private final InterceptPoint interceptPoint;
 
     /**
      *
+     * @param interceptPoint
      */
-    public RequestInterceptorsExecutor(IPOINT interceptPoint) {
+    public RequestInterceptorsExecutor(InterceptPoint interceptPoint) {
         super(null);
         this.interceptPoint = interceptPoint;
     }
 
     /**
      * @param next
+     * @param interceptPoint
      */
-    public RequestInterceptorsExecutor(PipelinedHandler next, IPOINT interceptPoint) {
+    public RequestInterceptorsExecutor(PipelinedHandler next,
+            InterceptPoint interceptPoint) {
         super(next);
         this.interceptPoint = interceptPoint;
     }
@@ -66,22 +70,24 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         PluginsRegistry
                 .getInstance()
-                .getRequestInterceptors()
+                .getInterceptors()
                 .stream()
                 .filter(ri -> ri.isEnabled())
-                .filter(ri -> ri.getInstance().resolve(exchange))
-                .filter(ri -> interceptPoint.equals(ri.getInstance().interceptPoint()))
+                .map(ri -> ri.getInstance())
+                .filter(ri -> ri.resolve(exchange))
+                .filter(ri -> interceptPoint == interceptPoint(ri))
                 .forEachOrdered(ri -> {
                     try {
                         LOGGER.debug("Executing request interceptor {} for {} on intercept point {}",
-                                ri.getInstance().getClass().getSimpleName(),
+                                ri.getClass().getSimpleName(),
                                 exchange.getRequestPath(),
                                 interceptPoint);
 
-                        ri.getInstance().handleRequest(exchange);
-                    } catch (Exception ex) {
+                        ri.handle(exchange);
+                    }
+                    catch (Exception ex) {
                         LOGGER.error("Error executing request interceptor {} for {} on intercept point {}",
-                                ri.getInstance().getClass().getSimpleName(),
+                                ri.getClass().getSimpleName(),
                                 exchange.getRequestPath(),
                                 interceptPoint,
                                 ex);

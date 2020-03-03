@@ -24,7 +24,8 @@ import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.RequestInterceptor;
+import org.restheart.plugins.security.InterceptPoint;
+import org.restheart.plugins.security.Interceptor;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,17 +40,13 @@ import org.slf4j.LoggerFactory;
         + "on '/coll' "
         + "containing the property 'secret' "
         + "to users does not have the role 'admin'",
-        enabledByDefault = false)
-public class SecretHider implements RequestInterceptor {
+        enabledByDefault = false,
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
+public class SecretHider implements Interceptor {
     static final Logger LOGGER = LoggerFactory.getLogger(SecretHider.class);
     
     @Override
-    public RequestInterceptor.IPOINT interceptPoint() {
-        return RequestInterceptor.IPOINT.AFTER_AUTH;
-    }
-
-    @Override
-    public void handleRequest(HttpServerExchange hse) throws Exception {
+    public void handle(HttpServerExchange hse) throws Exception {
         var content = JsonRequest.wrap(hse).readContent();
 
         if (keys(content).stream()

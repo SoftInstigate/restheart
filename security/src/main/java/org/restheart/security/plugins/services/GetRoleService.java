@@ -28,6 +28,7 @@ import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.ConfigurablePlugin;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Service;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
@@ -43,23 +44,19 @@ import org.restheart.utils.HttpStatus;
 @RegisterPlugin(
         name = "roles",
         description = "returns the roles of the authenticated client",
-        enabledByDefault = true)
-public class GetRoleService extends Service {
-
+        enabledByDefault = true,
+        defaultURI = "/roles")
+public class GetRoleService implements Service {
+    Map<String, Object> confArgs = null;
+    
     /**
-     * Creates a new instance of GetRoleService
+     * init the service
      *
-     * @param args
-     * @throws Exception
+     * @param confArgs
      */
-    public GetRoleService(Map<String, Object> args)
-            throws Exception {
-        super(args);
-    }
-
-    @Override
-    public String defaultUri() {
-        return "/roles";
+    @OnInit
+    public void init (Map<String, Object> confArgs) {
+        this.confArgs = confArgs;
     }
 
     /**
@@ -69,7 +66,7 @@ public class GetRoleService extends Service {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handle(HttpServerExchange exchange) throws Exception {
         var request = JsonRequest.wrap(exchange);
 
         if (request.isOptions()) {
@@ -126,11 +123,15 @@ public class GetRoleService extends Service {
     }
 
     private String getUri() {
+        if (confArgs == null) {
+            return "/roles";
+        }
+        
         try {
             return ConfigurablePlugin.argValue(confArgs, "uri");
         }
         catch (ConfigurationException ex) {
-            return defaultUri();
+            return "/roles";
         }
     }
 }

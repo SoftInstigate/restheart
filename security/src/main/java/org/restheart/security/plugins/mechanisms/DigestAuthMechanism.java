@@ -52,6 +52,7 @@ import java.util.Map;
 import java.util.Set;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.security.handlers.QueryStringRebuilder;
@@ -78,6 +79,7 @@ public class DigestAuthMechanism implements AuthMechanism {
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
+    @OnInit
     public DigestAuthMechanism(Map<String, Object> args)
             throws ConfigurationException {
         this("digestAuthMechanism", args);

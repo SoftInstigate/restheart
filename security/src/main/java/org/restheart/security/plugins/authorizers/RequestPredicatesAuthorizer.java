@@ -35,6 +35,7 @@ import org.restheart.ConfigurationException;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.FileConfigurablePlugin;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.security.utils.LambdaUtils;
@@ -53,6 +54,17 @@ public class RequestPredicatesAuthorizer
     private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 
     /**
+     * @param confArgs
+     * @throws java.io.FileNotFoundException
+     * @throws ConfigurationException
+     */
+    @OnInit
+    public RequestPredicatesAuthorizer(Map<String, Object> confArgs)
+            throws FileNotFoundException, ConfigurationException {
+        this("requestPredicatesAuthorizer", confArgs);
+    }
+            
+    /**
      * @param name
      * @param confArgs
      * @throws java.io.FileNotFoundException
@@ -64,16 +76,6 @@ public class RequestPredicatesAuthorizer
         init(confArgs, "permissions");
     }
     
-    /**
-     * @param confArgs
-     * @throws java.io.FileNotFoundException
-     * @throws ConfigurationException
-     */
-    public RequestPredicatesAuthorizer(Map<String, Object> confArgs)
-            throws FileNotFoundException, ConfigurationException {
-        this("requestPredicatesAuthorizer", confArgs);
-    }
-
     @Override
     public Consumer<? super Map<String, Object>> consumeConfiguration() {
         return u -> {

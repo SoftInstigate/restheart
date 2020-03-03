@@ -26,9 +26,8 @@ import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Initializer;
+import org.restheart.plugins.security.Interceptor;
 import org.restheart.plugins.security.PreStartupInitializer;
-import org.restheart.plugins.security.RequestInterceptor;
-import org.restheart.plugins.security.ResponseInterceptor;
 import org.restheart.plugins.security.Service;
 import org.restheart.plugins.security.TokenManager;
 
@@ -51,9 +50,7 @@ public class PluginsRegistry {
 
     private Set<PluginRecord<PreStartupInitializer>> preStartupInitializers;
 
-    private Set<PluginRecord<RequestInterceptor>> requestInterceptors;
-
-    private Set<PluginRecord<ResponseInterceptor>> responseInterceptors;
+    private Set<PluginRecord<Interceptor>> interceptors;
 
     private final Set<Predicate> globalSecurityPredicates
             = new LinkedHashSet<>();
@@ -166,24 +163,14 @@ public class PluginsRegistry {
         return this.preStartupInitializers;
     }
 
-    public Set<PluginRecord<RequestInterceptor>> getRequestInterceptors() {
-        if (this.requestInterceptors == null) {
-            this.requestInterceptors = new LinkedHashSet<>();
-            this.requestInterceptors.addAll(PluginsFactory
-                    .requestInterceptors());
+    public Set<PluginRecord<Interceptor>> getInterceptors() {
+        if (this.interceptors == null) {
+            this.interceptors = new LinkedHashSet<>();
+            this.interceptors.addAll(PluginsFactory
+                    .interceptors());
         }
 
-        return requestInterceptors;
-    }
-
-    public Set<PluginRecord<ResponseInterceptor>> getResponseInterceptors() {
-        if (this.responseInterceptors == null) {
-            this.responseInterceptors = new LinkedHashSet<>();
-            this.responseInterceptors.addAll(PluginsFactory
-                    .responseInterceptors());
-        }
-
-        return responseInterceptors;
+        return this.interceptors;
     }
 
     /**

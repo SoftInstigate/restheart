@@ -35,6 +35,9 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import org.restheart.ConfigurationException;
+import org.restheart.plugins.ConfigurationScope;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.Plugin;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.RegisterPlugin;
@@ -42,9 +45,8 @@ import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Initializer;
+import org.restheart.plugins.security.Interceptor;
 import org.restheart.plugins.security.PreStartupInitializer;
-import org.restheart.plugins.security.RequestInterceptor;
-import org.restheart.plugins.security.ResponseInterceptor;
 import org.restheart.plugins.security.Service;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.Bootstrapper;
@@ -129,19 +131,11 @@ public class PluginsFactory {
     }
 
     /**
-     * creates the request interceptors
+     * creates the interceptors
      */
     @SuppressWarnings("unchecked")
-    static Set<PluginRecord<RequestInterceptor>> requestInterceptors() {
-        return createPlugins(RequestInterceptor.class, ARGS_CONFS);
-    }
-
-    /**
-     * creates the response interceptors
-     */
-    @SuppressWarnings("unchecked")
-    static Set<PluginRecord<ResponseInterceptor>> responseInterceptors() {
-        return createPlugins(ResponseInterceptor.class, ARGS_CONFS);
+    static Set<PluginRecord<Interceptor>> interceptors() {
+        return createPlugins(Interceptor.class, ARGS_CONFS);
     }
 
     /**
@@ -165,6 +159,7 @@ public class PluginsFactory {
         try (var scanResult = new ClassGraph()
                 .addClassLoader(getPluginsClassloader())
                 .enableAnnotationInfo()
+                .enableMethodInfo()
                 .scan()) {
             var registeredPlugins = scanResult
                     .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
@@ -213,38 +208,7 @@ public class PluginsFactory {
                                     confs.get(name));
 
                     if (enabled) {
-                        try {
-                            i = plugin.loadClass(false)
-                                    .getConstructor(Map.class)
-                                    .newInstance(confs != null
-                                            ? confs.get(name)
-                                            : null);
-                        }
-                        catch (NoSuchMethodException nme) {
-                            // Plugin does not have constructor with confArgs
-                            i = plugin.loadClass(false)
-                                    .getConstructor()
-                                    .newInstance();
-
-                            // warn in case there is a configuration
-                            // but the plugins does not take it via its constructor
-                            // but for enabled key that is managed by pr.isEnabled()
-                            if (confs != null
-                                    && confs.containsKey(name)
-                                    && confs.get(name).keySet()
-                                            .stream()
-                                            .filter(k -> !"enabled".equals(k))
-                                            .count() > 0) {
-                                LOGGER.warn("{} {} don't implement the constructor {}"
-                                        + "(Map<String, Object> confArgs)"
-                                        + " to get arguments from the configuration file"
-                                        + " but configuration has been defined for it {}",
-                                        _type,
-                                        name,
-                                        i.getClass().getSimpleName(),
-                                        confs.get(name));
-                            }
-                        }
+                        i = instantiatePlugin(plugin, _type, name, confs);
 
                         var pr = new PluginRecord(
                                 name,
@@ -267,21 +231,151 @@ public class PluginsFactory {
                         LOGGER.debug("{} {} is disabled", _type, name);
                     }
                 }
-                catch (InstantiationException
+                catch (ConfigurationException
+                        | InstantiationException
                         | IllegalAccessException
-                        | InvocationTargetException
-                        | NoSuchMethodException t) {
+                        | InvocationTargetException t) {
                     LOGGER.error("Error registering {} {}: {}",
                             _type,
                             annotationParam(plugin, "name") != null
                             ? (String) annotationParam(plugin, "name")
-                            : plugin.getName(),
+                            : plugin.getSimpleName(),
                             getRootException(t).getMessage());
                 }
             });
         }
 
         return ret;
+    }
+
+    private static Plugin instantiatePlugin(
+            ClassInfo pluginClassInfo,
+            String pluginType,
+            String pluginName,
+            Map confs)
+            throws ConfigurationException,
+            InstantiationException,
+            IllegalAccessException,
+            InvocationTargetException {
+        var cil = pluginClassInfo.getDeclaredConstructorInfo();
+
+        final Plugin ret;
+
+        // check if a Constructor with @OnInit exists
+        var contructorWihtOnInit = cil.stream()
+                .filter(ci -> ci.hasAnnotation(OnInit.class.getName()))
+                .findFirst();
+
+        if (contructorWihtOnInit.isPresent()) {
+            var ai = contructorWihtOnInit.get()
+                    .getAnnotationInfo(OnInit.class.getName());
+
+            // check
+            var allConfScope = ai.getParameterValues().stream()
+                    .anyMatch(p -> "scope".equals(p.getName())
+                    && (ConfigurationScope.class.getName()
+                            + "." + ConfigurationScope.ALL.name()).equals(
+                            p.getValue().toString()));
+
+            var scopedConf = (Map) (allConfScope
+                    ? confs
+                    : confs != null
+                            ? confs.get(pluginName)
+                            : null);
+
+            // try to instanitate the constructor 
+            try {
+                ret = (Plugin) pluginClassInfo.loadClass(false)
+                        .getDeclaredConstructor(Map.class)
+                        .newInstance(scopedConf);
+
+                invokeOnInitMethods(pluginName,
+                        pluginType,
+                        pluginClassInfo,
+                        ret,
+                        confs);
+            }
+            catch (NoSuchMethodException nme) {
+                throw new ConfigurationException(
+                        pluginType
+                        + " " + pluginName
+                        + " has an invalid constructor with @OnInit. "
+                        + "Constructor signature must be "
+                        + pluginClassInfo.getSimpleName()
+                        + "(Map<String, Object> configuration)");
+            }
+        } else {
+            try {
+                ret = (Plugin) pluginClassInfo.loadClass(false)
+                        .getDeclaredConstructor()
+                        .newInstance();
+
+                invokeOnInitMethods(pluginName,
+                        pluginType,
+                        pluginClassInfo,
+                        ret,
+                        confs);
+            }
+            catch (NoSuchMethodException nme) {
+                throw new ConfigurationException(
+                        pluginType
+                        + " " + pluginName
+                        + " does not have default constructor "
+                        + pluginClassInfo.getSimpleName()
+                        + "()");
+            }
+        }
+
+        return ret;
+    }
+
+    private static void invokeOnInitMethods(String pluginName,
+            String pluginType,
+            ClassInfo pluginClassInfo,
+            Object pluingInstance,
+            Map confs) throws ConfigurationException,
+            InstantiationException,
+            IllegalAccessException,
+            InvocationTargetException {
+
+        // finds @OnInit methods
+        // check if a Constructor with @OnInit exists
+        var mil = pluginClassInfo.getDeclaredMethodInfo();
+
+        for (var mi : mil) {
+            if (mi.hasAnnotation(OnInit.class.getName())) {
+                var ai = mi.getAnnotationInfo(OnInit.class.getName());
+
+                // check
+                var allConfScope = ai.getParameterValues().stream()
+                        .anyMatch(p -> "scope".equals(p.getName())
+                        && (ConfigurationScope.class.getName()
+                                + "." +ConfigurationScope.ALL.name()).equals(
+                                p.getValue().toString()));
+
+                var scopedConf = (Map) (allConfScope
+                        ? confs
+                        : confs != null
+                                ? confs.get(pluginName)
+                                : null);
+
+                // try to inovke @OnInit method
+                try {
+                    pluginClassInfo.loadClass(false)
+                            .getDeclaredMethod(mi.getName(), Map.class)
+                            .invoke(pluingInstance, scopedConf);
+                }
+                catch (NoSuchMethodException nme) {
+                    throw new ConfigurationException(
+                            pluginType
+                            + " " + pluginName
+                            + " has an invalid method with @OnInit. "
+                            + "Method signature must be "
+                            + mi.getName()
+                            + "(Map<String, Object> configuration)");
+                }
+            }
+        }
     }
 
     private static Throwable getRootException(Throwable t) {

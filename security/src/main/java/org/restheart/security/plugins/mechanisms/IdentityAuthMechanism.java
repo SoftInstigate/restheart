@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.security.plugins.authenticators.BaseAccount;
@@ -50,6 +51,7 @@ public class IdentityAuthMechanism implements AuthMechanism {
     private final String username;
     private final List<String> roles;
 
+    @OnInit
     public IdentityAuthMechanism(Map<String, Object> args)
             throws ConfigurationException {
         this("identityAuthMechanism", args);
