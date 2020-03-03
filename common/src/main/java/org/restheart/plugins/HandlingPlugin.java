@@ -15,25 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.restheart.plugins.security;
+package org.restheart.plugins;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
- * A response interceptor can snoop and modify the response from the proxied
- * resource before sending it to the client. Can be setup by an Initializer
- * using PluginsRegistry.getResponseInterceptors().add()
- *
- * @see https://restheart.org/docs/develop/security-plugins/#interceptors
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface ResponseInterceptor extends Interceptor {
+public interface HandlingPlugin extends ConfigurablePlugin {
+    /**
+     * handle the request
+     *
+     * @param exchange
+     * @throws Exception
+     */
+    public void handle(final HttpServerExchange exchange) throws Exception;
 
     /**
      *
-     * @return true if the Interceptor requiers the response from the proxied
-     * backend before sending it to the client
+     * @param exchange
+     * @return true if the plugin must handle the request
      */
-    default boolean requiresResponseContent() {
-        return false;
-    }
+    public boolean resolve(final HttpServerExchange exchange);
 }

@@ -17,45 +17,16 @@
  */
 package org.restheart.plugins.security;
 
-import java.util.Map;
-import org.restheart.handlers.PipelinedHandler;
-import org.restheart.plugins.ConfigurablePlugin;
+import io.undertow.server.HttpServerExchange;
+import org.restheart.plugins.HandlingPlugin;
 
 /**
  * @see https://restheart.org/docs/develop/security-plugins/#services
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public abstract class Service extends PipelinedHandler
-        implements ConfigurablePlugin {
-    /**
-     * The configuration properties passed to this handler.
-     */
-    protected final Map<String, Object> confArgs;
-    
-    /**
-     * Creates a new instance of the Service
-     *
-     */
-    public Service() {
-        this(null);
-    }
-    
-    /**
-     * Creates a new instance of the Service
-     *
-     * @param confArgs arguments optionally specified in the configuration file
-     */
-    public Service(Map<String, Object> confArgs) {
-        super(null);
-        this.confArgs = confArgs;
-    }
-    
-    /**
-     *
-     * @return the default uri of the service, used if not specified in plugin
-     * configuration
-     */
-    public String defaultUri() {
-        return null;
+public interface Service extends HandlingPlugin {
+    @Override
+    default boolean resolve(HttpServerExchange exchange) {
+        return true;
     }
 }

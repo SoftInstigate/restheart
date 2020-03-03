@@ -19,6 +19,7 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.plugins.security.Service;
 
 /**
  * wraps a HttpHandler into a PipelinedHttpHandler
@@ -38,6 +39,17 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
     private PipelinedWrappingHandler(PipelinedHandler next, HttpHandler handler) {
         super(next);
         wrapped = handler;
+    }
+    
+    /**
+     * Creates a new instance of PipedWrappingHandler
+     *
+     * @param next
+     * @param service
+     */
+    private PipelinedWrappingHandler(PipelinedHandler next, Service service) {
+        super(next);
+        wrapped = new ServiceWrapper(service);
     }
 
     /**
@@ -61,6 +73,15 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
     
     /**
      * 
+     * @param service
+     * @return the wrapping handler
+     */
+    public static PipelinedWrappingHandler wrap(Service service) {
+        return wrap(null, service);
+    }
+    
+    /**
+     * 
      * @param next
      * @param handler
      * @return the wrapping handler 
@@ -68,7 +89,17 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
     public static PipelinedWrappingHandler wrap(PipelinedHandler next, HttpHandler handler) {
         return new PipelinedWrappingHandler(next, handler);
     }
-
+    
+    /**
+     * 
+     * @param next
+     * @param service
+     * @return the wrapping handler 
+     */
+    public static PipelinedWrappingHandler wrap(PipelinedHandler next, Service service) {
+        return new PipelinedWrappingHandler(next, service);
+    }
+    
     /**
      *
      * @param exchange
@@ -85,5 +116,18 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
                 next(exchange);
             }
         }
+    }
+}
+
+class ServiceWrapper extends PipelinedHandler {
+    final Service service;
+    
+    ServiceWrapper(Service service) {
+        this.service = service;
+    }
+
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        service.handle(exchange);
     }
 }

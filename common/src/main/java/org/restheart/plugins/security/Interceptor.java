@@ -17,28 +17,14 @@
  */
 package org.restheart.plugins.security;
 
-import io.undertow.server.HttpServerExchange;
-import org.restheart.plugins.ConfigurablePlugin;
+import org.restheart.plugins.HandlingPlugin;
 
 /**
- * Base interface for RequestInterceptor and ResponseInterceptor
+ * Interface for Interceptors
  * 
  * @see https://restheart.org/docs/develop/security-plugins/#interceptors
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface Interceptor extends ConfigurablePlugin {
-    /**
-     * implements the interceptor logic
-     *
-     * @param exchange
-     * @throws Exception
-     */
-    public void handleRequest(final HttpServerExchange exchange) throws Exception;
-
-    /**
-     *
-     * @param exchange
-     * @return true if the interceptor must handle the request
-     */
-    public boolean resolve(final HttpServerExchange exchange);
+public interface Interceptor extends HandlingPlugin {
+    
 }

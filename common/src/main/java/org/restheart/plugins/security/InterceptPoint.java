@@ -17,32 +17,28 @@
  */
 package org.restheart.plugins.security;
 
-import static org.restheart.plugins.security.RequestInterceptor.IPOINT.BEFORE_AUTH;
-
 /**
- * An request interceptor can snoop and modify requests before proxying them.
- * Can be setup by an Initializer using
- * PluginsRegistry.getRequestInterceptors().add()
- *
- * @see https://restheart.org/docs/develop/security-plugins/#interceptors
+ * Define the intercept point of an Interceptor
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface RequestInterceptor extends Interceptor {
-    public enum IPOINT { BEFORE_AUTH, AFTER_AUTH }
+public enum InterceptPoint {
+    /**
+     * intercept the request before authentication occurs
+     */
+    REQUEST_BEFORE_AUTH, 
     
     /**
-     *
-     * @return true if the Interceptor requires to access the request content
+     * intercept the request after authentication occurs 
      */
-    default boolean requiresContent() {
-        return false;
-    }
+    REQUEST_AFTER_AUTH, 
     
     /**
-     *
-     * @return the intecept point
+     * intercept the response and executes blocking the response
      */
-    default IPOINT interceptPoint() {
-        return BEFORE_AUTH;
-    }
+    RESPONSE, 
+    
+    /**
+     * intercept the response and executes asynchronously with the response
+     */
+    RESPONSE_ASYNC
 }
