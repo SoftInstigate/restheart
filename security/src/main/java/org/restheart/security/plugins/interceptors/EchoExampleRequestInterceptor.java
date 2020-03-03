@@ -23,7 +23,6 @@ import io.undertow.server.HttpServerExchange;
 import java.util.LinkedList;
 import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.InterceptPoint;
 import org.restheart.plugins.security.Interceptor;
 
 /**
@@ -63,7 +62,7 @@ public class EchoExampleRequestInterceptor implements Interceptor {
             }
         }
     }
-
+    
     @Override
     public boolean resolve(HttpServerExchange exchange) {
         return exchange.getRequestPath().equals("/iecho")

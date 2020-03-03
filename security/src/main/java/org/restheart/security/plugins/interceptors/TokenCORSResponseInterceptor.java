@@ -32,11 +32,16 @@ import static org.restheart.plugins.security.TokenManager.ACCESS_CONTROL_EXPOSE_
 @RegisterPlugin(name="tokenCORSResponseInterceptor",
         description = "helper interceptor to add token headers to "
                 + "Access-Control-Expose-Headers to handle CORS request",
-        interceptPoint = RESPONSE
+        interceptPoint = RESPONSE,
+        enabledByDefault = true
 )
 public class TokenCORSResponseInterceptor implements Interceptor {
 
     private String[] headers;
+    
+    public TokenCORSResponseInterceptor() {
+        this.headers = new String[0];
+    }
 
     public TokenCORSResponseInterceptor(String... headers) {
         this.headers = headers;

@@ -57,5 +57,4 @@ public class EchoExampleAsyncResponseInterceptor implements Interceptor {
                 || exchange.getRequestPath().equals("/piecho")
                 || exchange.getRequestPath().equals("/anything");
     }
-
 }

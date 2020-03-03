@@ -199,13 +199,8 @@ public class PluginsFactory {
                     Boolean enabledByDefault = annotationParam(plugin,
                             "enabledByDefault");
 
-                    if (confs == null || !confs.containsKey(name)) {
-                        LOGGER.debug("No configuration found for plugin {} ", name);
-                    }
-
-                    var enabled = confs != null
-                            && PluginRecord.isEnabled(enabledByDefault,
-                                    confs.get(name));
+                    var enabled = PluginRecord.isEnabled(enabledByDefault,
+                                    confs != null ? confs.get(name) : null);
 
                     if (enabled) {
                         i = instantiatePlugin(plugin, _type, name, confs);
@@ -283,6 +278,13 @@ public class PluginsFactory {
                             ? confs.get(pluginName)
                             : null);
 
+            if (scopedConf == null) {
+                LOGGER.warn("{} {} defines constructor with @OnInit "
+                        + "but no configuration found for it",
+                        pluginType,
+                        pluginName);
+            }
+
             // try to instanitate the constructor 
             try {
                 ret = (Plugin) pluginClassInfo.loadClass(false)
@@ -350,7 +352,7 @@ public class PluginsFactory {
                 var allConfScope = ai.getParameterValues().stream()
                         .anyMatch(p -> "scope".equals(p.getName())
                         && (ConfigurationScope.class.getName()
-                                + "." +ConfigurationScope.ALL.name()).equals(
+                                + "." + ConfigurationScope.ALL.name()).equals(
                                 p.getValue().toString()));
 
                 var scopedConf = (Map) (allConfScope
@@ -358,6 +360,14 @@ public class PluginsFactory {
                         : confs != null
                                 ? confs.get(pluginName)
                                 : null);
+
+                if (scopedConf == null) {
+                    LOGGER.warn("{} {} defines method {} with @OnInit "
+                            + "but no configuration found for it",
+                            pluginType,
+                            pluginName,
+                            mi.getName());
+                }
 
                 // try to inovke @OnInit method
                 try {
