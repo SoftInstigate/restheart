@@ -23,8 +23,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.plugins.security.InterceptPoint;
 import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.utils.HttpStatus;
+import static org.restheart.utils.PluginUtils.interceptPoint;
+import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.channels.StreamSourceChannel;
@@ -59,23 +62,74 @@ public class ResponseInterceptorsStreamSinkConduit
         if (!AbstractExchange.isInError(exchange)
                 && !AbstractExchange.responseInterceptorsExecuted(exchange)) {
             AbstractExchange.setResponseInterceptorsExecuted(exchange);
-            PluginsRegistry.getInstance()
-                    .getResponseInterceptors()
-                    .stream()
-                    .filter(ri -> ri.isEnabled())
-                    .filter(ri -> ri.getInstance().resolve(exchange))
-                    // this conduit does not provide access to response content
-                    .filter(ri -> !ri.getInstance().requiresResponseContent())
-                    .forEachOrdered(ri -> {
-                        LOGGER.debug("Executing response interceptor {} for {}",
-                                ri.getInstance().getClass().getSimpleName(),
+            executeAsyncResponseInterceptor(exchange);
+            executeResponseInterceptor(exchange);
+        }
+    }
+
+    private void executeResponseInterceptor(HttpServerExchange exchange) {
+        AbstractExchange.setResponseInterceptorsExecuted(exchange);
+        PluginsRegistry.getInstance()
+                .getInterceptors()
+                .stream()
+                .filter(i -> interceptPoint(
+                i.getInstance()) == InterceptPoint.RESPONSE)
+                .filter(ri -> ri.isEnabled())
+                .map(ri -> ri.getInstance())
+                .filter(ri -> ri.resolve(exchange))
+                // this conduit does not provide access to response content
+                .filter(ri -> !requiresContent(ri))
+                .forEachOrdered(ri -> {
+                    LOGGER.debug("Executing response interceptor {} for {}",
+                            ri.getClass().getSimpleName(),
+                            exchange.getRequestPath());
+
+                    try {
+                        ri.handle(exchange);
+                    }
+                    catch (Exception ex) {
+                        LOGGER.error("Error executing response interceptor {} for {}",
+                                ri.getClass().getSimpleName(),
+                                exchange.getRequestPath(),
+                                ex);
+                        AbstractExchange.setInError(exchange);
+                        // set error message
+                        ByteArrayResponse response = ByteArrayResponse
+                                .wrap(exchange);
+
+                        response.endExchangeWithMessage(
+                                HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                                "Error executing response interceptor "
+                                + ri.getClass().getSimpleName(),
+                                ex);
+                    }
+                });
+    }
+
+    private void executeAsyncResponseInterceptor(HttpServerExchange exchange) {
+        AbstractExchange.setResponseInterceptorsExecuted(exchange);
+        PluginsRegistry.getInstance()
+                .getInterceptors()
+                .stream()
+                .filter(i -> interceptPoint(
+                i.getInstance()) == InterceptPoint.RESPONSE_ASYNC)
+                .filter(ri -> ri.isEnabled())
+                .map(ri -> ri.getInstance())
+                .filter(ri -> ri.resolve(exchange))
+                // this conduit does not provide access to response content
+                .filter(ri -> !requiresContent(ri))
+                .forEachOrdered(ri -> {
+                    exchange.getConnection().getWorker().execute(() -> {
+                        LOGGER.debug("Executing async response interceptor {} for {}",
+                                ri.getClass().getSimpleName(),
                                 exchange.getRequestPath());
 
                         try {
-                            ri.getInstance().handleRequest(exchange);
-                        } catch (Exception ex) {
+                            ri.handle(exchange);
+                        }
+                        catch (Exception ex) {
                             LOGGER.error("Error executing response interceptor {} for {}",
-                                    ri.getInstance().getClass().getSimpleName(),
+                                    ri.getClass().getSimpleName(),
                                     exchange.getRequestPath(),
                                     ex);
                             AbstractExchange.setInError(exchange);
@@ -90,7 +144,8 @@ public class ResponseInterceptorsStreamSinkConduit
                                     ex);
                         }
                     });
-        }
+                });
+
     }
 
     @Override
