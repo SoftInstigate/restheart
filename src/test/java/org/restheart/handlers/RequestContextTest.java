@@ -92,21 +92,6 @@ public class RequestContextTest {
      *
      */
     @Test
-    public void testSelectRequestMethod() {
-        HttpString _method = new HttpString("UNKNOWN");
-        assertEquals(AbstractExchange.METHOD.OTHER, RequestContext.selectRequestMethod(_method));
-
-        _method = new HttpString("GET");
-        assertEquals(AbstractExchange.METHOD.GET, RequestContext.selectRequestMethod(_method));
-
-        _method = new HttpString("PATCH");
-        assertEquals(AbstractExchange.METHOD.PATCH, RequestContext.selectRequestMethod(_method));
-    }
-
-    /**
-     *
-     */
-    @Test
     public void testSelectRequestType() {
         String[] pathTokens = "/".split("/");
         assertEquals(RequestContext.TYPE.ROOT, RequestContext.selectRequestType(pathTokens));
