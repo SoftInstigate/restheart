@@ -65,16 +65,15 @@ public class AggregationTransformer implements Transformer {
                 return;
             }
 
-            if (context.getMethod() == RequestContext.METHOD.PUT
-                    || context.getMethod() == RequestContext.METHOD.PATCH) {
+            if (context.isPut() || context.isPatch()) {
                 _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
                         JsonUtils.escapeKeys(aggrs, true));
-            } else if (context.getMethod() == RequestContext.METHOD.GET) {
+            } else if (context.isGet()) {
                 _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
                         JsonUtils.unescapeKeys(aggrs));
             }
         } else if ((context.isDb())
-                && context.getMethod() == RequestContext.METHOD.GET) {
+                && context.isGet()) {
             // apply transformation on embedded schemas
 
             if (_contentToTransform.containsKey("_embedded")) {

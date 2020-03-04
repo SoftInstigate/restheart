@@ -79,7 +79,7 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
             // if dbProps is null, the db does not exist
             if (dbProps == null
                     && !(context.getType() == RequestContext.TYPE.DB
-                    && context.getMethod() == RequestContext.METHOD.PUT)
+                    && context.isPut())
                     && context.getType() != RequestContext.TYPE.ROOT) {
                 ResponseHelper
                         .endExchangeWithMessage(

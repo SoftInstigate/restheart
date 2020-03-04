@@ -86,9 +86,9 @@ import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.GzipEncodingHandler;
 import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.RequestDispatcherHandler;
 import org.restheart.handlers.RequestLoggerHandler;
+import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.injectors.AccountInjectorHandler;
 import org.restheart.handlers.injectors.BodyInjectorHandler;
 import org.restheart.handlers.injectors.ClientSessionInjectorHandler;
@@ -853,12 +853,12 @@ public class Bootstrapper {
                                                 ), configuration.isForceGzipEncoding()
                                         )
                                 ), // allowed methods
-                                HttpString.tryFromString(RequestContext.METHOD.GET.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.POST.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.PUT.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.DELETE.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.PATCH.name()),
-                                HttpString.tryFromString(RequestContext.METHOD.OPTIONS.name())
+                                HttpString.tryFromString(AbstractExchange.METHOD.GET.name()),
+                                HttpString.tryFromString(AbstractExchange.METHOD.POST.name()),
+                                HttpString.tryFromString(AbstractExchange.METHOD.PUT.name()),
+                                HttpString.tryFromString(AbstractExchange.METHOD.DELETE.name()),
+                                HttpString.tryFromString(AbstractExchange.METHOD.PATCH.name()),
+                                HttpString.tryFromString(AbstractExchange.METHOD.OPTIONS.name())
                         )
                 )
         );

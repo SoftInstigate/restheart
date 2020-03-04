@@ -25,7 +25,6 @@ import org.restheart.db.FileMetadataRepository;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -101,7 +100,7 @@ public class FileMetadataHandler extends PipedHttpHandler {
 
         if (context.getFilePath() != null) {
             // PUT request with non null data will be dealt with by previous handler (PutFileHandler)
-            if (context.getMethod() == METHOD.PATCH) {
+            if (context.isPatch()) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
                         context,
@@ -154,7 +153,7 @@ public class FileMetadataHandler extends PipedHttpHandler {
                 context.getShardKey(),
                 content,
                 context.getETag(),
-                context.getMethod() == METHOD.PATCH,
+                context.isPatch(),
                 context.isETagCheckRequired());
 
         if (isResponseInConflict(context, result, exchange)) {

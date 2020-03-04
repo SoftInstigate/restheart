@@ -271,9 +271,9 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             return;
         }
 
-        if (context.getMethod() == RequestContext.METHOD.GET
-                || context.getMethod() == RequestContext.METHOD.OPTIONS
-                || context.getMethod() == RequestContext.METHOD.DELETE) {
+        if (context.isGet()
+                || context.isOptions()
+                || context.isDelete()) {
             next(exchange, context);
             return;
         }

@@ -29,7 +29,6 @@ import org.restheart.db.DAOUtils;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.metadata.CheckerMetadata;
 import org.restheart.plugins.Checker;
 import org.restheart.plugins.GlobalChecker;
@@ -142,12 +141,12 @@ public class AfterWriteCheckHandler
     @Override
     boolean doesCheckersApply(RequestContext context) {
         return context.getCollectionProps() != null
-                && (((context.getMethod() == METHOD.PUT
-                || context.getMethod() == METHOD.PATCH)
+                && (((context.isPut()
+                || context.isPatch())
                 && context.getType() == RequestContext.TYPE.FILE
                 || context.getType() == RequestContext.TYPE.DOCUMENT
                 || context.getType() == RequestContext.TYPE.SCHEMA)
-                || context.getMethod() == METHOD.POST
+                || context.isPost()
                 && (context.getType() == RequestContext.TYPE.COLLECTION
                 || context.getType() == RequestContext.TYPE.FILES_BUCKET
                 || context.getType() == RequestContext.TYPE.SCHEMA_STORE))
