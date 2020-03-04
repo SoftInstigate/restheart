@@ -33,7 +33,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.*;
 import org.junit.Test;
-import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.exchange.ExchangeKeys._AGGREGATIONS;
 import org.restheart.representation.Resource;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
@@ -143,9 +143,10 @@ public class GetAggregationIT extends HttpClientAbstactIT {
 
         Response resp;
 
-        URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + RequestContext._AGGREGATIONS + "/" + uri, new NameValuePair[]{
-            new BasicNameValuePair("avars", "{\"name\": \"a\", \"minage\": 20}")
-        });
+        URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/"
+                + _AGGREGATIONS + "/" + uri, new NameValuePair[]{
+                    new BasicNameValuePair("avars", "{\"name\": \"a\", \"minage\": 20}")
+                });
 
         resp = adminExecutor.execute(Request.Get(aggrUri));
 
@@ -229,7 +230,8 @@ public class GetAggregationIT extends HttpClientAbstactIT {
 
         Response resp;
 
-        URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + RequestContext._AGGREGATIONS + "/" + uri);
+        URI aggrUri = buildURI("/" + dbTmpName
+                + "/" + collectionTmpName + "/" + _AGGREGATIONS + "/" + uri);
 
         resp = adminExecutor.execute(Request.Get(aggrUri));
 
@@ -299,7 +301,8 @@ public class GetAggregationIT extends HttpClientAbstactIT {
     private void _testGetAggregation(String uri) throws Exception {
         Response resp;
 
-        URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + RequestContext._AGGREGATIONS + "/" + uri);
+        URI aggrUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/"
+                + _AGGREGATIONS + "/" + uri);
 
         resp = adminExecutor.execute(Request.Get(aggrUri));
 

@@ -17,7 +17,7 @@
  */
 package org.restheart;
 
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.representation.Resource;
 
 /**
@@ -109,20 +109,20 @@ public interface ConfigurationKeys {
     /**
      * default db etag check policy
      */
-    public static final RequestContext.ETAG_CHECK_POLICY DEFAULT_DB_ETAG_CHECK_POLICY
-            = RequestContext.ETAG_CHECK_POLICY.REQUIRED_FOR_DELETE;
+    public static final ETAG_CHECK_POLICY DEFAULT_DB_ETAG_CHECK_POLICY
+            = ETAG_CHECK_POLICY.REQUIRED_FOR_DELETE;
 
     /**
      * default coll etag check policy
      */
-    public static final RequestContext.ETAG_CHECK_POLICY DEFAULT_COLL_ETAG_CHECK_POLICY
-            = RequestContext.ETAG_CHECK_POLICY.REQUIRED_FOR_DELETE;
+    public static final ETAG_CHECK_POLICY DEFAULT_COLL_ETAG_CHECK_POLICY
+            = ETAG_CHECK_POLICY.REQUIRED_FOR_DELETE;
 
     /**
      * default doc etag check policy
      */
-    public static final RequestContext.ETAG_CHECK_POLICY DEFAULT_DOC_ETAG_CHECK_POLICY
-            = RequestContext.ETAG_CHECK_POLICY.OPTIONAL;
+    public static final ETAG_CHECK_POLICY DEFAULT_DOC_ETAG_CHECK_POLICY
+            = ETAG_CHECK_POLICY.OPTIONAL;
 
     /**
      * default doc etag check policy

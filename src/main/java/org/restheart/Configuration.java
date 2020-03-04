@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import static org.restheart.ConfigurationKeys.*;
-import org.restheart.handlers.RequestContext.ETAG_CHECK_POLICY;
+import org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;

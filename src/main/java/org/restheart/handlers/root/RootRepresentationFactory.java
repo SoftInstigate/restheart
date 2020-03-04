@@ -26,6 +26,7 @@ import org.restheart.Version;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.database.DBRepresentationFactory;
+import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.representation.AbstractRepresentationFactory;
 import org.restheart.representation.Link;
 import org.restheart.representation.Resource;
@@ -154,7 +155,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
                     DBRepresentationFactory.addSpecialProperties(
                             nrep,
-                            RequestContext.TYPE.DB,
+                            TYPE.DB,
                             d);
                 } else {
                     nrep = new Resource();

@@ -435,7 +435,6 @@ public interface ExchangeKeys {
      *
      */
     public enum METHOD {
-
         /**
          *
          */
@@ -478,49 +477,49 @@ public interface ExchangeKeys {
     public enum DOC_ID_TYPE {
 
         /**
-         *
+         * ObjectId
          */
-        OID, // ObjectId
+        OID,
 
         /**
-         *
+         * String eventually converted to ObjectId in case ObjectId.isValid() is true
          */
-        STRING_OID, // String eventually converted to ObjectId in case ObjectId.isValid() is true
+        STRING_OID,
 
         /**
-         *
+         * String
          */
-        STRING, // String
+        STRING,
 
         /**
-         *
+         * any Number (including mongodb NumberLong)
          */
-        NUMBER, // any Number (including mongodb NumberLong)
+        NUMBER,
 
         /**
-         *
+         * Date
          */
-        DATE, // Date
+        DATE,
 
         /**
-         *
+         * org.bson.types.MinKey;
          */
-        MINKEY, // org.bson.types.MinKey;
+        MINKEY,
 
         /**
-         *
+         * org.bson.types.MaxKey
          */
-        MAXKEY, // org.bson.types.MaxKey
+        MAXKEY, 
 
         /**
-         *
+         * null
          */
-        NULL, // null
+        NULL,
 
         /**
-         *
+         * boolean
          */
-        BOOLEAN     // boolean
+        BOOLEAN
     }
 
     /**
@@ -529,24 +528,24 @@ public interface ExchangeKeys {
     public enum HAL_MODE {
 
         /**
-         *
+         * full mode
          */
-        FULL, // full mode
+        FULL, 
 
         /**
-         *
+         * alias for full
          */
-        F, // alias for full
+        F,
 
         /**
-         *
+         * compact mode
          */
-        COMPACT, // new compact mode
+        COMPACT,
 
         /**
-         *
+         * alias for compact
          */
-        C           // alias for compact
+        C
     }
 
     /**
@@ -555,18 +554,18 @@ public interface ExchangeKeys {
     public enum ETAG_CHECK_POLICY {
 
         /**
-         *
+         * always requires the etag, return PRECONDITION FAILED if missing
          */
-        REQUIRED, // always requires the etag, return PRECONDITION FAILED if missing
+        REQUIRED, 
 
         /**
-         *
+         * only requires the etag for DELETE, return PRECONDITION FAILED if missing
          */
-        REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
+        REQUIRED_FOR_DELETE, 
 
         /**
-         *
+         * checks the etag only if provided by client via If-Match header
          */
-        OPTIONAL                // checks the etag only if provided by client via If-Match header
+        OPTIONAL
     }
 }

@@ -32,12 +32,23 @@ import org.bson.BsonNumber;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonType;
+import static org.bson.BsonType.BOOLEAN;
+import static org.bson.BsonType.STRING;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.Bootstrapper;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE.STRING;
+import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
+import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE.MAXKEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE.MINKEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE.NUMBER;
+import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE.OID;
+import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE.STRING_OID;
+import static org.restheart.handlers.exchange.ExchangeKeys.FALSE_KEY_ID;
+import static org.restheart.handlers.exchange.ExchangeKeys.MAX_KEY_ID;
+import static org.restheart.handlers.exchange.ExchangeKeys.MIN_KEY_ID;
+import static org.restheart.handlers.exchange.ExchangeKeys.NULL_KEY_ID;
+import static org.restheart.handlers.exchange.ExchangeKeys.TRUE_KEY_ID;
 import org.restheart.representation.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,27 +125,27 @@ public class URLUtils {
         }
 
         // MaxKey can be also determined from the _id
-        if (RequestContext.MAX_KEY_ID.equalsIgnoreCase(id)) {
+        if (MAX_KEY_ID.equalsIgnoreCase(id)) {
             return new BsonMaxKey();
         }
 
         // MaxKey can be also determined from the _id
-        if (RequestContext.MIN_KEY_ID.equalsIgnoreCase(id)) {
+        if (MIN_KEY_ID.equalsIgnoreCase(id)) {
             return new BsonMinKey();
         }
 
         // null can be also determined from the _id
-        if (RequestContext.NULL_KEY_ID.equalsIgnoreCase(id)) {
+        if (NULL_KEY_ID.equalsIgnoreCase(id)) {
             return new BsonNull();
         }
 
         // true can be also determined from the _id
-        if (RequestContext.TRUE_KEY_ID.equalsIgnoreCase(id)) {
+        if (TRUE_KEY_ID.equalsIgnoreCase(id)) {
             return new BsonBoolean(true);
         }
 
         // false can be also determined from the _id
-        if (RequestContext.FALSE_KEY_ID.equalsIgnoreCase(id)) {
+        if (FALSE_KEY_ID.equalsIgnoreCase(id)) {
             return new BsonBoolean(false);
         }
 
@@ -414,11 +425,11 @@ public class URLUtils {
     }
 
     private static BsonBoolean getIdAsBoolean(String id) throws IllegalArgumentException {
-        if (id.equals(RequestContext.TRUE_KEY_ID)) {
+        if (id.equals(TRUE_KEY_ID)) {
             return new BsonBoolean(true);
         }
 
-        if (id.equals(RequestContext.FALSE_KEY_ID)) {
+        if (id.equals(FALSE_KEY_ID)) {
             return new BsonBoolean(false);
         }
 

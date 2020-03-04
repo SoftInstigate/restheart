@@ -20,6 +20,7 @@ package org.restheart.handlers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.restheart.utils.HttpStatus;
+import static org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 
 /**
  *

@@ -45,7 +45,8 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys._METRICS;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -121,7 +122,7 @@ public class MetricsHandler extends PipedHttpHandler {
     }
 
     private boolean isFilledAndNotMetrics(String dbOrCollectionName) {
-        return dbOrCollectionName != null && !dbOrCollectionName.equalsIgnoreCase(RequestContext._METRICS);
+        return dbOrCollectionName != null && !dbOrCollectionName.equalsIgnoreCase(_METRICS);
     }
 
     /**

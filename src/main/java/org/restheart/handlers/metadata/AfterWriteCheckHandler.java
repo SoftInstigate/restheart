@@ -143,13 +143,13 @@ public class AfterWriteCheckHandler
         return context.getCollectionProps() != null
                 && (((context.isPut()
                 || context.isPatch())
-                && context.getType() == RequestContext.TYPE.FILE
-                || context.getType() == RequestContext.TYPE.DOCUMENT
-                || context.getType() == RequestContext.TYPE.SCHEMA)
+                && context.isFile()
+                || context.isDocument()
+                || context.isSchema())
                 || context.isPost()
-                && (context.getType() == RequestContext.TYPE.COLLECTION
-                || context.getType() == RequestContext.TYPE.FILES_BUCKET
-                || context.getType() == RequestContext.TYPE.SCHEMA_STORE))
+                && (context.isCollection()
+                || context.isFilesBucket()
+                || context.isSchemaStore()))
                 && context.getCollectionProps()
                         .containsKey(CheckerMetadata.ROOT_KEY)
                 && (context.getDbOperationResult() != null

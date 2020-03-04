@@ -24,7 +24,7 @@ import org.restheart.db.BulkOperationResult;
 import org.restheart.db.DocumentDAO;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
+import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 

@@ -21,6 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import org.restheart.db.sessions.ClientSessionFactory;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
@@ -88,7 +89,7 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
             RequestContext context) throws Exception {
         if (context.isInError()
                 || !exchange.getQueryParameters()
-                        .containsKey(RequestContext.CLIENT_SESSION_KEY)) {
+                        .containsKey(CLIENT_SESSION_KEY)) {
             next(exchange, context);
             return;
         }

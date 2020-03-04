@@ -26,6 +26,8 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.exchange.ExchangeKeys.FS_FILES_SUFFIX;
+import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.representation.Link;
 import org.restheart.representation.Resource;
 import org.restheart.utils.URLUtils;
@@ -100,7 +102,7 @@ public class IndexesRepresentationFactory {
             if (context.isParentAccessible()) {
                 // this can happen due to mongo-mounts mapped URL
                 if (context.getCollectionName().endsWith(
-                        RequestContext.FS_FILES_SUFFIX)) {
+                        FS_FILES_SUFFIX)) {
                     rep.addLink(new Link(
                             "rh:bucket",
                             URLUtils.getParentPath(requestPath)));
@@ -132,7 +134,7 @@ public class IndexesRepresentationFactory {
 
                 if (isHal) {
                     nrep.addProperty("_type",
-                            new BsonString(RequestContext.TYPE.INDEX.name()));
+                            new BsonString(TYPE.INDEX.name()));
                 }
 
                 nrep.addProperties(d);

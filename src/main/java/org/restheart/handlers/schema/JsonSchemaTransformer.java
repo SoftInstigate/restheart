@@ -116,7 +116,7 @@ public class JsonSchemaTransformer implements Transformer {
                     _contentToTransform.put("_$schema", $SCHEMA);
                 }
             }
-        } else if (context.getType() == RequestContext.TYPE.SCHEMA_STORE) {
+        } else if (context.isSchemaStore()) {
             if (context.isPost()) {
                 BsonDocument content;
 

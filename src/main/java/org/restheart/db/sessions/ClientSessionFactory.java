@@ -33,7 +33,7 @@ import static org.bson.assertions.Assertions.notNull;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.UuidCodec;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +102,7 @@ public class ClientSessionFactory {
     public ClientSessionImpl getClientSession(HttpServerExchange exchange)
             throws IllegalArgumentException {
         String _sid = exchange.getQueryParameters()
-                .get(RequestContext.CLIENT_SESSION_KEY).getFirst();
+                .get(CLIENT_SESSION_KEY).getFirst();
 
         UUID sid;
 

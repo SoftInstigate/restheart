@@ -35,8 +35,7 @@ public class CheckersUtils {
      * @return
      */
     public static boolean isBulkRequest(RequestContext context) {
-        return context.getType() == RequestContext.TYPE.BULK_DOCUMENTS
-                || context.getContent().isArray();
+        return context.isBulkDocuments() || context.getContent().isArray();
     }
 
     /**

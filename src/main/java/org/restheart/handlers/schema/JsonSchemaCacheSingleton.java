@@ -12,7 +12,7 @@ import org.restheart.Bootstrapper;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.db.DatabaseImpl;
-import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,7 +132,7 @@ public class JsonSchemaCacheSingleton {
             BsonValue schemaId)
             throws JsonSchemaNotFoundException {
         BsonDocument document = dbsDAO
-                .getCollection(schemaStoreDb, RequestContext._SCHEMAS)
+                .getCollection(schemaStoreDb, _SCHEMAS)
                 .find(eq("_id", schemaId))
                 .first();
 
