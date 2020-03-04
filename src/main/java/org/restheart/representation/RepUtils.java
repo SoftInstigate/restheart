@@ -38,8 +38,8 @@ import org.bson.types.ObjectId;
 import static org.restheart.db.DAOUtils.LOGGER;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
+import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
+import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
 import org.restheart.utils.URLUtils;
 
 /**

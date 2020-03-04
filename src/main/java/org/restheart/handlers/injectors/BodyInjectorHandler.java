@@ -36,6 +36,11 @@ import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.exchange.ExchangeKeys.FALSE_KEY_ID;
+import static org.restheart.handlers.exchange.ExchangeKeys.MAX_KEY_ID;
+import static org.restheart.handlers.exchange.ExchangeKeys.MIN_KEY_ID;
+import static org.restheart.handlers.exchange.ExchangeKeys.NULL_KEY_ID;
+import static org.restheart.handlers.exchange.ExchangeKeys.TRUE_KEY_ID;
 import org.restheart.representation.Resource;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
@@ -97,11 +102,11 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
             String _id = id.asString().getValue();
 
-            if (RequestContext.MAX_KEY_ID.equalsIgnoreCase(_id)
-                    || RequestContext.MIN_KEY_ID.equalsIgnoreCase(_id)
-                    || RequestContext.NULL_KEY_ID.equalsIgnoreCase(_id)
-                    || RequestContext.TRUE_KEY_ID.equalsIgnoreCase(_id)
-                    || RequestContext.FALSE_KEY_ID.equalsIgnoreCase(_id)) {
+            if (MAX_KEY_ID.equalsIgnoreCase(_id)
+                    || MIN_KEY_ID.equalsIgnoreCase(_id)
+                    || NULL_KEY_ID.equalsIgnoreCase(_id)
+                    || TRUE_KEY_ID.equalsIgnoreCase(_id)
+                    || FALSE_KEY_ID.equalsIgnoreCase(_id)) {
                 return _id;
             } else {
                 return null;

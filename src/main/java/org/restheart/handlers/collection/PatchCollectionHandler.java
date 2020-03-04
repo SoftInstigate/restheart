@@ -23,6 +23,7 @@ import org.bson.BsonValue;
 import org.restheart.db.OperationResult;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -74,7 +75,7 @@ public class PatchCollectionHandler extends PipedHttpHandler {
 
         if (context.getCollectionName().isEmpty()
                 || (context.getCollectionName().startsWith("_")
-                && !context.getCollectionName().equals(RequestContext._SCHEMAS))) {
+                && !context.getCollectionName().equals(_SCHEMAS))) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     context,

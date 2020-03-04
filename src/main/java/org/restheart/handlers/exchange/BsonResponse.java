@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import org.bson.BsonNull;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
+import org.restheart.db.OperationResult;
 import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.utils.BuffersUtils;
@@ -36,6 +37,8 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class BsonResponse extends Response<BsonValue> {
+    private OperationResult dbOperationResult;
+    
     protected BsonResponse(HttpServerExchange exchange) {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(BsonResponse.class);
@@ -77,6 +80,13 @@ public class BsonResponse extends Response<BsonValue> {
 
     @Override
     public void writeContent(BsonValue content) throws IOException {
+        if (content != null
+                && !(content.isDocument()
+                || content.isArray())) {
+            throw new IllegalArgumentException("response content must be "
+                    + "either an object or an array");
+        }
+        
         setContentTypeAsJson();
         if (content == null) {
             setRawContent(null);
@@ -90,10 +100,24 @@ public class BsonResponse extends Response<BsonValue> {
             }
 
             BuffersUtils.transfer(
-                    ByteBuffer.wrap(content.toString().getBytes()),
+                    ByteBuffer.wrap(JsonUtils.toJson(content).getBytes()),
                     dest,
                     wrapped);
         }
     }
     
+    /**
+     * @return the dbOperationResult
+     */
+    public OperationResult getDbOperationResult() {
+        return dbOperationResult;
+    }
+
+    /**
+     * @param dbOperationResult the dbOperationResult to set
+     */
+    public void setDbOperationResult(OperationResult dbOperationResult) {
+        this.dbOperationResult = dbOperationResult;
+    }
+
 }

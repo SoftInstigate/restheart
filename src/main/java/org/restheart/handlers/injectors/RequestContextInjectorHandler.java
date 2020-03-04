@@ -29,21 +29,23 @@ import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.DOC_ID_TYPE;
-import static org.restheart.handlers.RequestContext.DOC_ID_TYPE_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.FILTER_QPARAM_KEY;
-import org.restheart.handlers.RequestContext.HAL_MODE;
-import static org.restheart.handlers.RequestContext.HAL_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.HINT_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.KEYS_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.PAGESIZE_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.PAGE_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.SHARDKEY_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.SORT_BY_QPARAM_KEY;
-import static org.restheart.handlers.RequestContext.SORT_QPARAM_KEY;
-import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AggregationPipeline;
+import static org.restheart.handlers.exchange.ExchangeKeys.AGGREGATION_VARIABLES_QPARAM_KEY;
+import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
+import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.FILTER_QPARAM_KEY;
+import org.restheart.handlers.exchange.ExchangeKeys.HAL_MODE;
+import static org.restheart.handlers.exchange.ExchangeKeys.HAL_QPARAM_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.HINT_QPARAM_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.KEYS_QPARAM_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.PAGESIZE_QPARAM_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.PAGE_QPARAM_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.SHARDKEY_QPARAM_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.SORT_BY_QPARAM_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.SORT_QPARAM_KEY;
+import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.utils.HttpStatus;
@@ -122,7 +124,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         // get and check rep parameter (representation format)
         Deque<String> __rep = exchange
                 .getQueryParameters()
-                .get(RequestContext.REPRESENTATION_FORMAT_KEY);
+                .get(REPRESENTATION_FORMAT_KEY);
 
         // default value
         REPRESENTATION_FORMAT rep = Bootstrapper
@@ -445,7 +447,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         }
 
         // get and check avars parameter
-        Deque<String> avars = exchange.getQueryParameters().get(RequestContext.AGGREGATION_VARIABLES_QPARAM_KEY);
+        Deque<String> avars = exchange.getQueryParameters().get(AGGREGATION_VARIABLES_QPARAM_KEY);
 
         if (avars != null) {
             Optional<String> _qvars = avars.stream().findFirst();
@@ -635,7 +637,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             // if representation has not been set explicitly, set it to HAL
             if (exchange
                     .getQueryParameters()
-                    .get(RequestContext.REPRESENTATION_FORMAT_KEY) == null) {
+                    .get(REPRESENTATION_FORMAT_KEY) == null) {
                 rcontext.setRepresentationFormat(REPRESENTATION_FORMAT.HAL);
             }
         }

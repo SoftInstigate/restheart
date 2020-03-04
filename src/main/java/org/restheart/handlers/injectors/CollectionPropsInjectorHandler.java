@@ -22,6 +22,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.exchange.ExchangeKeys.FS_FILES_SUFFIX;
+import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
@@ -49,12 +51,12 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
      * @return
      */
     public static boolean checkCollection(RequestContext context) {
-        return !(context.getType() == RequestContext.TYPE.COLLECTION && context.isPut())
-                && !(context.getType() == RequestContext.TYPE.FILES_BUCKET && context.isPut())
-                && !(context.getType() == RequestContext.TYPE.SCHEMA_STORE && context.isPut())
-                && context.getType() != RequestContext.TYPE.ROOT
-                && context.getType() != RequestContext.TYPE.DB
-                && context.getType() != RequestContext.TYPE.DB_SIZE;
+        return !(context.isCollection() && context.isPut())
+                && !(context.isFilesBucket() && context.isPut())
+                && !(context.isSchemaStore() && context.isPut())
+                && !context.isRoot()
+                && !context.isDb()
+                && !context.isDbSize();
     }
 
     /**
@@ -130,9 +132,9 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
         if (resourceName == null) {
             errMsg = RESOURCE_DOES_NOT_EXIST;
-        } else if (resourceName.endsWith(RequestContext.FS_FILES_SUFFIX)) {
+        } else if (resourceName.endsWith(FS_FILES_SUFFIX)) {
             errMsg = String.format(FILE_BUCKET_DOES_NOT_EXIST, context.getCollectionName());
-        } else if (RequestContext._SCHEMAS.equals(resourceName)) {
+        } else if (_SCHEMAS.equals(resourceName)) {
             errMsg = SCHEMA_STORE_DOES_NOT_EXIST;
         } else {
             errMsg = String.format(COLLECTION_DOES_NOT_EXIST, context.getCollectionName());

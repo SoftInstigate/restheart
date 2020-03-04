@@ -23,6 +23,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.ExchangeKeys;
+import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 
 /**
  *
@@ -132,7 +134,7 @@ public class Resource {
      *
      * @return
      */
-    public RequestContext.TYPE getType() {
+    public TYPE getType() {
         if (properties == null) {
             return null;
         }
@@ -143,7 +145,7 @@ public class Resource {
             return null;
         }
 
-        return RequestContext.TYPE.valueOf(_type.toString());
+        return ExchangeKeys.TYPE.valueOf(_type.toString());
     }
 
     /**

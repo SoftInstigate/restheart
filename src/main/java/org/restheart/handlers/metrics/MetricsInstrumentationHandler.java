@@ -12,6 +12,7 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.exchange.ExchangeKeys._METRICS;
 
 /**
  * Handler to measure calls to restheart. Will only take actions if metrics
@@ -23,7 +24,7 @@ public class MetricsInstrumentationHandler extends PipedHttpHandler {
     static boolean isFilledAndNotMetrics(String dbOrCollectionName) {
         return dbOrCollectionName != null
                 && !dbOrCollectionName.trim().isEmpty()
-                && !dbOrCollectionName.equalsIgnoreCase(RequestContext._METRICS);
+                && !dbOrCollectionName.equalsIgnoreCase(_METRICS);
     }
 
     /**

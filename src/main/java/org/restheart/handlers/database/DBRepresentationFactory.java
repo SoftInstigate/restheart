@@ -27,8 +27,10 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.collection.CollectionRepresentationFactory;
+import static org.restheart.handlers.exchange.ExchangeKeys.FS_FILES_SUFFIX;
+import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
+import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.representation.AbstractRepresentationFactory;
 import org.restheart.representation.Link;
 import org.restheart.representation.Resource;
@@ -53,7 +55,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
      */
     public static void addSpecialProperties(
             final Resource rep,
-            RequestContext.TYPE type,
+            TYPE type,
             BsonDocument data) {
         rep.addProperty("_type", new BsonString(type.name()));
 
@@ -167,7 +169,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
         rep.addLink(new Link("rh:coll", requestPath + "/{collname}", true));
         rep.addLink(new Link("rh:bucket", requestPath
                 + "/{bucketname}"
-                + RequestContext.FS_FILES_SUFFIX, true));
+                + FS_FILES_SUFFIX, true));
 
         rep.addLink(new Link("rh:paging", requestPath
                 + "{?page}{&pagesize}", true));
@@ -198,14 +200,14 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
                 nrep.addProperties(d);
 
-                if (id.getValue().endsWith(RequestContext.FS_FILES_SUFFIX)) {
+                if (id.getValue().endsWith(FS_FILES_SUFFIX)) {
                     if (context.isFullHalMode()) {
                         CollectionRepresentationFactory.addSpecialProperties(
                                 nrep, TYPE.FILES_BUCKET, d);
                     }
 
                     rep.addChild("rh:bucket", nrep);
-                } else if (RequestContext._SCHEMAS.equals(id.getValue())) {
+                } else if (_SCHEMAS.equals(id.getValue())) {
                     if (context.isFullHalMode()) {
                         CollectionRepresentationFactory.addSpecialProperties(
                                 nrep, TYPE.SCHEMA_STORE, d);

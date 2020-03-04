@@ -36,8 +36,8 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import static org.restheart.handlers.RequestContext.DB_META_DOCID;
-import static org.restheart.handlers.RequestContext.META_COLLNAME;
+import static org.restheart.handlers.exchange.ExchangeKeys.DB_META_DOCID;
+import static org.restheart.handlers.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
 

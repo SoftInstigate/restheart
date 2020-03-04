@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers;
+package org.restheart.handlers.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
@@ -29,9 +29,11 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.restheart.handlers.RequestContext;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import org.restheart.handlers.exchange.AbstractExchange;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.ExchangeKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,9 +41,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class RequestContextTest {
+public class BsonRequestTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RequestContextTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BsonRequestTest.class);
 
     /**
      *
@@ -71,7 +73,7 @@ public class RequestContextTest {
     /**
      *
      */
-    public RequestContextTest() {
+    public BsonRequestTest() {
     }
 
     /**
@@ -94,25 +96,25 @@ public class RequestContextTest {
     @Test
     public void testSelectRequestType() {
         String[] pathTokens = "/".split("/");
-        assertEquals(RequestContext.TYPE.ROOT, RequestContext.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.ROOT, BsonRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db".split("/");
-        assertEquals(RequestContext.TYPE.DB, RequestContext.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.DB, BsonRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/collection".split("/");
-        assertEquals(RequestContext.TYPE.COLLECTION, RequestContext.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.COLLECTION, BsonRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/collection/document".split("/");
-        assertEquals(RequestContext.TYPE.DOCUMENT, RequestContext.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.DOCUMENT, BsonRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/collection/_indexes".split("/");
-        assertEquals(RequestContext.TYPE.COLLECTION_INDEXES, RequestContext.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.COLLECTION_INDEXES, BsonRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/collection/_indexes/123".split("/");
-        assertEquals(RequestContext.TYPE.INDEX, RequestContext.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.INDEX, BsonRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/collection/_aggrs/test".split("/");
-        assertEquals(RequestContext.TYPE.AGGREGATION, RequestContext.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.AGGREGATION, BsonRequest.selectRequestType(pathTokens));
     }
 
     /**
@@ -121,7 +123,7 @@ public class RequestContextTest {
     @Test
     public void test_COLLECTION_FILES_selectRequestType() {
         String[] pathTokens = "/db/mybucket.files".split("/");
-        assertEquals(RequestContext.TYPE.FILES_BUCKET, RequestContext.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.FILES_BUCKET, BsonRequest.selectRequestType(pathTokens));
     }
 
     /**
@@ -130,13 +132,13 @@ public class RequestContextTest {
     @Test
     public void test_FILE_selectRequestType() {
         String[] pathTokens = "/db/mybucket.files/123".split("/");
-        assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.FILE, BsonRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/mybucket.files/123/binary".split("/");
-        assertEquals(RequestContext.TYPE.FILE_BINARY, RequestContext.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.FILE_BINARY, BsonRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/mybucket.files/123/456".split("/");
-        assertEquals(RequestContext.TYPE.FILE, RequestContext.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.FILE, BsonRequest.selectRequestType(pathTokens));
     }
 
     /**

@@ -31,6 +31,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.exchange.AbstractExchange;
+import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +95,7 @@ public class CollectionPropsInjectorHandlerTest {
     public void testCheckCollectionPut() {
         RequestContext context = createContext("/db/collection", "PUT");
 
-        assertEquals(RequestContext.TYPE.COLLECTION, context.getType());
+        assertEquals(TYPE.COLLECTION, context.getType());
         assertEquals(AbstractExchange.METHOD.PUT, context.getMethod());
         assertEquals(false, CollectionPropsInjectorHandler.checkCollection(context));
     }
@@ -106,7 +107,7 @@ public class CollectionPropsInjectorHandlerTest {
     public void testCheckCollectionFilesPost() {
         RequestContext context = createContext("/db/fs.files", "POST");
 
-        assertEquals(RequestContext.TYPE.FILES_BUCKET, context.getType());
+        assertEquals(TYPE.FILES_BUCKET, context.getType());
         assertEquals(AbstractExchange.METHOD.POST, context.getMethod());
         assertEquals(true, CollectionPropsInjectorHandler.checkCollection(context));
     }
@@ -118,7 +119,7 @@ public class CollectionPropsInjectorHandlerTest {
     public void testCheckCollectionRoot() {
         RequestContext context = createContext("/", "PUT");
 
-        assertEquals(RequestContext.TYPE.ROOT, context.getType());
+        assertEquals(TYPE.ROOT, context.getType());
         assertEquals(AbstractExchange.METHOD.PUT, context.getMethod());
         assertEquals(false, CollectionPropsInjectorHandler.checkCollection(context));
     }

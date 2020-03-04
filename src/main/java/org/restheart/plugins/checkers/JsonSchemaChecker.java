@@ -26,6 +26,7 @@ import org.everit.json.schema.ValidationException;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.restheart.handlers.RequestContext;
+import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.handlers.schema.JsonSchemaNotFoundException;
 import org.restheart.plugins.Checker;
@@ -131,7 +132,7 @@ public class JsonSchemaChecker implements Checker {
             throw new IllegalArgumentException("cannot validate, schema "
                     + schemaStoreDb
                     + "/"
-                    + RequestContext._SCHEMAS
+                    + _SCHEMAS
                     + "/" + schemaId.toString() + " not found");
         }
 

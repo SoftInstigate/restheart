@@ -28,9 +28,12 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.TYPE;
 import org.restheart.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
+import static org.restheart.handlers.exchange.ExchangeKeys.FS_FILES_SUFFIX;
+import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
+import static org.restheart.handlers.exchange.ExchangeKeys._AGGREGATIONS;
+import static org.restheart.handlers.exchange.ExchangeKeys._STREAMS;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.CheckerMetadata;
 import org.restheart.plugins.checkers.JsonSchemaChecker;
@@ -82,7 +85,7 @@ public class CollectionRepresentationFactory
      */
     public static void addSpecialProperties(
             final Resource rep,
-            final RequestContext.TYPE type,
+            final TYPE type,
             final BsonDocument data) {
         rep.addProperty(_TYPE, new BsonString(type.name()));
 
@@ -251,7 +254,7 @@ public class CollectionRepresentationFactory
                                 new Link(uri,
                                         requestPath
                                         + "/"
-                                        + RequestContext._AGGREGATIONS + "/"
+                                        + _AGGREGATIONS + "/"
                                         + uri));
                     }
                 }
@@ -281,7 +284,7 @@ public class CollectionRepresentationFactory
                                 new Link(uri,
                                         requestPath
                                         + "/"
-                                        + RequestContext._STREAMS + "/"
+                                        + _STREAMS + "/"
                                         + uri));
                     }
                 }
@@ -304,7 +307,7 @@ public class CollectionRepresentationFactory
                     RHBUCKET,
                     URLUtils.getParentPath(requestPath)
                     + "/{bucketname}"
-                    + RequestContext.FS_FILES_SUFFIX,
+                    + FS_FILES_SUFFIX,
                     true));
             rep.addLink(new Link(
                     RHFILE,

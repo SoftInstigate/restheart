@@ -9,7 +9,8 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.TYPE;
+import static org.restheart.handlers.exchange.ExchangeKeys.BINARY_CONTENT;
+import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.Relationship;
 import org.restheart.representation.Link;
@@ -38,7 +39,9 @@ public class DocumentRepresentationFactory {
      * @param type
      * @param data
      */
-    public static void addSpecialProperties(final Resource rep, RequestContext.TYPE type, BsonDocument data) {
+    public static void addSpecialProperties(final Resource rep, 
+            TYPE type, 
+            BsonDocument data) {
         rep.addProperty("_type", new BsonString(type.name()));
 
         Object etag = data.get("_etag");
@@ -138,7 +141,7 @@ public class DocumentRepresentationFactory {
 
         if (isBinaryFile(data)) {
             rep.addLink(new Link("rh:data",
-                    String.format("%s/%s", href, RequestContext.BINARY_CONTENT)));
+                    String.format("%s/%s", href, BINARY_CONTENT)));
         }
 
         // link templates
