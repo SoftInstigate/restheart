@@ -320,26 +320,6 @@ public class RequestContext {
      */
     private static final String NUL = Character.toString('\0');
 
-    static METHOD selectRequestMethod(HttpString _method) {
-        METHOD method;
-        if (Methods.GET.equals(_method)) {
-            method = METHOD.GET;
-        } else if (Methods.POST.equals(_method)) {
-            method = METHOD.POST;
-        } else if (Methods.PUT.equals(_method)) {
-            method = METHOD.PUT;
-        } else if (Methods.DELETE.equals(_method)) {
-            method = METHOD.DELETE;
-        } else if (PATCH.equals(_method.toString())) {
-            method = METHOD.PATCH;
-        } else if (Methods.OPTIONS.equals(_method)) {
-            method = METHOD.OPTIONS;
-        } else {
-            method = METHOD.OTHER;
-        }
-        return method;
-    }
-
     static TYPE selectRequestType(String[] pathTokens) {
         TYPE type;
 
