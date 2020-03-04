@@ -2,20 +2,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.restheart</groupId>
-    <artifactId>restheart-platform-security</artifactId>
-    <version>1.4.4</version>
-    <packaging>jar</packaging>
-    <name>restheart-platform-security</name>
-    <description>RESTHeart Platform Security - IAM microservice.</description>
-    <url>http://www.restheart.org</url>
-    <inceptionYear>2019</inceptionYear>
-
     <parent>
         <groupId>com.softinstigate.restheart</groupId>
         <artifactId>restheart-platform</artifactId>
         <version>4.1.15-SNAPSHOT</version>
     </parent>
+    <groupId>com.restheart</groupId>
+    <artifactId>restheart-platform-security</artifactId>
+    <packaging>jar</packaging>
+    <name>restheart-platform-security</name>
+    <description>RESTHeart Platform Security - IAM microservice.</description>
+    <url>http://www.restheart.org</url>
+    <inceptionYear>2019</inceptionYear>
 
     <properties>
         <mainclass>org.restheart.security.Bootstrapper</mainclass>
