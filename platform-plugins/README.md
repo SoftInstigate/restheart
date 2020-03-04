@@ -1,3 +1,5 @@
+[TOC]
+
 # RESTHeart Platform packager
 
 This projects packages the RESTHeart Platform files into a single zip file to make it available to the public.
