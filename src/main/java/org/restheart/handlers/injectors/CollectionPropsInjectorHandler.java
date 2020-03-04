@@ -49,9 +49,9 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
      * @return
      */
     public static boolean checkCollection(RequestContext context) {
-        return !(context.getType() == RequestContext.TYPE.COLLECTION && context.getMethod() == RequestContext.METHOD.PUT)
-                && !(context.getType() == RequestContext.TYPE.FILES_BUCKET && context.getMethod() == RequestContext.METHOD.PUT)
-                && !(context.getType() == RequestContext.TYPE.SCHEMA_STORE && context.getMethod() == RequestContext.METHOD.PUT)
+        return !(context.getType() == RequestContext.TYPE.COLLECTION && context.isPut())
+                && !(context.getType() == RequestContext.TYPE.FILES_BUCKET && context.isPut())
+                && !(context.getType() == RequestContext.TYPE.SCHEMA_STORE && context.isPut())
                 && context.getType() != RequestContext.TYPE.ROOT
                 && context.getType() != RequestContext.TYPE.DB
                 && context.getType() != RequestContext.TYPE.DB_SIZE;
@@ -107,7 +107,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
             }
 
             if (collProps == null
-                    && context.getMethod() == RequestContext.METHOD.GET) {
+                    && context.isGet()) {
                 collProps = new BsonDocument("_id", new BsonString(collName));
             }
 

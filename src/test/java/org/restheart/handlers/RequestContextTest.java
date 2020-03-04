@@ -31,6 +31,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import org.restheart.handlers.exchange.AbstractExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,13 +94,13 @@ public class RequestContextTest {
     @Test
     public void testSelectRequestMethod() {
         HttpString _method = new HttpString("UNKNOWN");
-        assertEquals(RequestContext.METHOD.OTHER, RequestContext.selectRequestMethod(_method));
+        assertEquals(AbstractExchange.METHOD.OTHER, RequestContext.selectRequestMethod(_method));
 
         _method = new HttpString("GET");
-        assertEquals(RequestContext.METHOD.GET, RequestContext.selectRequestMethod(_method));
+        assertEquals(AbstractExchange.METHOD.GET, RequestContext.selectRequestMethod(_method));
 
         _method = new HttpString("PATCH");
-        assertEquals(RequestContext.METHOD.PATCH, RequestContext.selectRequestMethod(_method));
+        assertEquals(AbstractExchange.METHOD.PATCH, RequestContext.selectRequestMethod(_method));
     }
 
     /**

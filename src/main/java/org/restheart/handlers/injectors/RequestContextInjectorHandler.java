@@ -37,7 +37,6 @@ import org.restheart.handlers.RequestContext.HAL_MODE;
 import static org.restheart.handlers.RequestContext.HAL_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.HINT_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.KEYS_QPARAM_KEY;
-import org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.PAGESIZE_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.PAGE_QPARAM_KEY;
 import static org.restheart.handlers.RequestContext.SHARDKEY_QPARAM_KEY;
@@ -115,7 +114,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         // skip parameters injection if method is OPTIONS
         // this makes sure OPTIONS works even on wrong paramenter
         // e.g. OPTIONS 127.0.0.1:8080?page=a
-        if (rcontext.getMethod() == METHOD.OPTIONS) {
+        if (rcontext.isOptions()) {
             next(exchange, rcontext);
             return;
         }
@@ -433,8 +432,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
         // filter qparam is mandatory for bulk DELETE and PATCH 
         if (rcontext.getType() == TYPE.BULK_DOCUMENTS
-                && (rcontext.getMethod() == METHOD.DELETE
-                || rcontext.getMethod() == METHOD.PATCH)
+                && (rcontext.isDelete() || rcontext.isPatch())
                 && (filters == null || filters.isEmpty())) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
@@ -580,7 +578,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         rcontext.setDocIdType(docIdType);
 
         // for POST the doc _id is set by BodyjectorHandler
-        if (rcontext.getMethod() != METHOD.POST) {
+        if (!rcontext.isPost()) {
             // get and check the document id
             String _docId = rcontext.getDocumentIdRaw();
 

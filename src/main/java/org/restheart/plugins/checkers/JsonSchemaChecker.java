@@ -26,7 +26,6 @@ import org.everit.json.schema.ValidationException;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.METHOD;
 import org.restheart.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.handlers.schema.JsonSchemaNotFoundException;
 import org.restheart.plugins.Checker;
@@ -161,7 +160,7 @@ public class JsonSchemaChecker implements Checker {
 
     @Override
     public PHASE getPhase(RequestContext context) {
-        if (context.getMethod() == METHOD.PATCH
+        if (context.isPatch()
                 || CheckersUtils
                         .doesRequestUsesDotNotation(context.getContent())
                 || CheckersUtils

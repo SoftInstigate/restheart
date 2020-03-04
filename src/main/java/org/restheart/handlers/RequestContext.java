@@ -45,6 +45,8 @@ import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.db.OperationResult;
 import org.restheart.db.sessions.ClientSessionImpl;
+import org.restheart.handlers.exchange.AbstractExchange.METHOD;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -54,6 +56,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@Deprecated
 public class RequestContext {
 
     private static final Logger LOGGER
@@ -311,6 +314,10 @@ public class RequestContext {
      *
      */
     public static final String UNDERSCORE = "_";
+    
+    /**
+     * 
+     */
     private static final String NUL = Character.toString('\0');
 
     static METHOD selectRequestMethod(HttpString _method) {
@@ -534,7 +541,6 @@ public class RequestContext {
     private final String whatUri;
 
     private final TYPE type;
-    private final METHOD method;
     private final String[] pathTokens;
 
     private BsonDocument dbProps;
@@ -599,6 +605,9 @@ public class RequestContext {
     private final PathTemplateMatch pathTemplateMatch;
 
     private final JsonMode jsonMode;
+    
+    // ****************** starting delegating requests method *****
+    private final BsonRequest bsonRequest;
 
     /**
      *
@@ -622,13 +631,14 @@ public class RequestContext {
      * then the requestPath /data is rewritten to /
      *
      * @param whereUri the uri to map to
-     * @param string1
      * @param whatUri the uri to map
      */
     public RequestContext(
             HttpServerExchange exchange,
             String whereUri,
             String whatUri) {
+        this.bsonRequest = BsonRequest.wrap(exchange);
+        
         this.whereUri = URLUtils.removeTrailingSlashes(whereUri == null ? null
                 : whereUri.startsWith("/") ? whereUri
                 : "/" + whereUri);
@@ -653,8 +663,6 @@ public class RequestContext {
         // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
         this.pathTokens = this.unmappedUri.split(SLASH);
         this.type = selectRequestType(pathTokens);
-
-        this.method = selectRequestMethod(exchange.getRequestMethod());
 
         // etag
         HeaderValues etagHvs = exchange.getRequestHeaders() == null
@@ -976,7 +984,7 @@ public class RequestContext {
      * @return method
      */
     public METHOD getMethod() {
-        return method;
+        return this.bsonRequest.getMethod();
     }
 
     /**
@@ -1648,7 +1656,7 @@ public class RequestContext {
             }
 
             if (null != policy) {
-                if (method == METHOD.DELETE) {
+                if (getMethod() == METHOD.DELETE) {
                     return policy != ETAG_CHECK_POLICY.OPTIONAL;
                 } else {
                     return policy == ETAG_CHECK_POLICY.REQUIRED;
@@ -1676,7 +1684,7 @@ public class RequestContext {
             }
 
             if (null != policy) {
-                if (method == METHOD.DELETE) {
+                if (getMethod() == METHOD.DELETE) {
                     return policy != ETAG_CHECK_POLICY.OPTIONAL;
                 } else {
                     return policy == ETAG_CHECK_POLICY.REQUIRED;
@@ -1716,7 +1724,7 @@ public class RequestContext {
             }
 
             if (null != policy) {
-                if (method == METHOD.DELETE) {
+                if (getMethod() == METHOD.DELETE) {
                     return policy != ETAG_CHECK_POLICY.OPTIONAL;
                 } else {
                     return policy == ETAG_CHECK_POLICY.REQUIRED;
@@ -1758,7 +1766,7 @@ public class RequestContext {
         }
 
         if (null != policy) {
-            if (method == METHOD.DELETE) {
+            if (getMethod() == METHOD.DELETE) {
                 return policy != ETAG_CHECK_POLICY.OPTIONAL;
             } else {
                 return policy == ETAG_CHECK_POLICY.REQUIRED;
@@ -2079,7 +2087,7 @@ public class RequestContext {
      * @return true if method is METHOD.DELETE
      */
     public boolean isDelete() {
-        return this.method == METHOD.DELETE;
+        return this.bsonRequest.isDelete();
     }
 
     /**
@@ -2088,7 +2096,7 @@ public class RequestContext {
      * @return true if method is METHOD.GET
      */
     public boolean isGet() {
-        return this.method == METHOD.GET;
+        return this.bsonRequest.isGet();
     }
 
     /**
@@ -2097,7 +2105,7 @@ public class RequestContext {
      * @return true if method is METHOD.OPTIONS
      */
     public boolean isOptions() {
-        return this.method == METHOD.OPTIONS;
+        return this.bsonRequest.isOptions();
     }
 
     /**
@@ -2106,7 +2114,7 @@ public class RequestContext {
      * @return true if method is METHOD.PATCH
      */
     public boolean isPatch() {
-        return this.method == METHOD.PATCH;
+        return this.bsonRequest.isPatch();
     }
 
     /**
@@ -2115,7 +2123,7 @@ public class RequestContext {
      * @return true if method is METHOD.POST
      */
     public boolean isPost() {
-        return this.method == METHOD.POST;
+        return this.bsonRequest.isPost();
     }
 
     /**
@@ -2124,7 +2132,7 @@ public class RequestContext {
      * @return true if method is METHOD.PUT
      */
     public boolean isPut() {
-        return this.method == METHOD.PUT;
+        return this.bsonRequest.isPut();
     }
 
     /**
@@ -2297,47 +2305,6 @@ public class RequestContext {
          *
          */
         TRANSACTION
-    }
-
-    /**
-     *
-     */
-    public enum METHOD {
-
-        /**
-         *
-         */
-        GET,
-
-        /**
-         *
-         */
-        POST,
-
-        /**
-         *
-         */
-        PUT,
-
-        /**
-         *
-         */
-        DELETE,
-
-        /**
-         *
-         */
-        PATCH,
-
-        /**
-         *
-         */
-        OPTIONS,
-
-        /**
-         *
-         */
-        OTHER
     }
 
     /**

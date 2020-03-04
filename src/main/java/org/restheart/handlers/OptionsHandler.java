@@ -53,7 +53,7 @@ public class OptionsHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (!(context.getMethod() == RequestContext.METHOD.OPTIONS)) {
+        if (!(context.isOptions())) {
             next(exchange, context);
             return;
         }

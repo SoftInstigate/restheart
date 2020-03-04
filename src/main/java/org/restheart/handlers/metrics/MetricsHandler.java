@@ -45,7 +45,6 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestContext.METHOD;
 import static org.restheart.handlers.RequestContext.REPRESENTATION_FORMAT_KEY;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
@@ -153,7 +152,7 @@ public class MetricsHandler extends PipedHttpHandler {
         MetricRegistry registry = getMetricsRegistry(context, metricsLevelForRequest);
 
         if (registry != null) {
-            if (context.getMethod() == METHOD.GET) {
+            if (context.isGet()) {
 
                 // detect metrics response type
                 Deque<String> representationFormatParameters = exchange.getQueryParameters().get(REPRESENTATION_FORMAT_KEY);

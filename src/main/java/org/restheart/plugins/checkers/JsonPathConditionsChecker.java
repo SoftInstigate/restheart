@@ -133,7 +133,7 @@ public class JsonPathConditionsChecker implements Checker {
 
     @Override
     public PHASE getPhase(RequestContext context) {
-        if (context.getMethod() == RequestContext.METHOD.PATCH
+        if (context.isPatch()
                 || CheckersUtils
                         .doesRequestUsesDotNotation(context.getContent())
                 || CheckersUtils
