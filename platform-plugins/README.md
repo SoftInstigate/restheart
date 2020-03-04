@@ -81,7 +81,7 @@ Just include the BOM POM in your pom.xml. Add a `dependencyManagement` element, 
         <dependency>
             <groupId>com.softinstigate.restheart</groupId>
             <artifactId>restheart-platform</artifactId>
-            <version>4.1.15-SNAPSHOT</version>
+            <version>4.1.15</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -100,7 +100,7 @@ A complete example of a project's parent POM extending the restheart-platform. N
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.acme</groupId>
     <artifactId>restheart-platform</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -115,9 +115,6 @@ A complete example of a project's parent POM extending the restheart-platform. N
         <maven.compiler.target>11</maven.compiler.target>
         <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
         <dependency.locations.enabled>false</dependency.locations.enabled>
-        <!-- Runtime dependencies -->
-        <restheart-platform-security>1.4.4</restheart-platform-security>
-        <restheart-platform-core>4.1.10</restheart-platform-core>
     </properties>
 
     <organization>
@@ -138,7 +135,7 @@ A complete example of a project's parent POM extending the restheart-platform. N
             <dependency>
                 <groupId>com.softinstigate.restheart</groupId>
                 <artifactId>restheart-platform</artifactId>
-                <version>4.1.15-SNAPSHOT</version>
+                <version>4.1.15</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -282,13 +279,13 @@ A complete example of a project's parent POM extending the restheart-platform. N
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.restheart</groupId>
     <artifactId>security</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>com.acme</groupId>
         <artifactId>restheart-platform</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
     </parent>
 
     <properties>
@@ -336,13 +333,13 @@ A complete example of a project's parent POM extending the restheart-platform. N
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.acme</groupId>
     <artifactId>core</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>com.acme</groupId>
         <artifactId>restheart-platform</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
     </parent>
 
     <properties>
