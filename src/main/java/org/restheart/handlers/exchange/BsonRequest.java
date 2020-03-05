@@ -19,6 +19,7 @@ package org.restheart.handlers.exchange;
 
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
@@ -52,7 +53,6 @@ import org.restheart.representation.Resource;
 import org.restheart.utils.URLUtils;
 import org.slf4j.LoggerFactory;
 
-
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
@@ -65,7 +65,7 @@ public class BsonRequest extends Request<BsonValue> {
 
     private BsonDocument dbProps;
     private BsonDocument collectionProps;
-    
+
     private BsonValue content;
 
     private Path filePath;
@@ -115,23 +115,25 @@ public class BsonRequest extends Request<BsonValue> {
     private final PathTemplateMatch pathTemplateMatch;
 
     private final JsonMode jsonMode;
-    
-    
+
+    private static final AttachmentKey<BsonRequest> BSON_REQUEST_ATTACHMENT_KEY
+            = AttachmentKey.create(BsonRequest.class);
+
     protected BsonRequest(HttpServerExchange exchange,
-            String whereUri,
-            String whatUri) {
+            String requestUri,
+            String resourceUri) {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(BsonResponse.class);
-        
-        this.whereUri = URLUtils.removeTrailingSlashes(whereUri == null ? null
-                : whereUri.startsWith("/") ? whereUri
-                : "/" + whereUri);
+
+        this.whereUri = URLUtils.removeTrailingSlashes(requestUri == null ? null
+                : requestUri.startsWith("/") ? requestUri
+                : "/" + requestUri);
 
         this.whatUri = URLUtils.removeTrailingSlashes(
-                whatUri == null ? null
-                        : whatUri.startsWith("/")
-                        || "*".equals(whatUri) ? whatUri
-                        : "/" + whatUri);
+                resourceUri == null ? null
+                        : resourceUri.startsWith("/")
+                        || "*".equals(resourceUri) ? resourceUri
+                        : "/" + resourceUri);
 
         this.mappedUri = exchange.getRequestPath();
 
@@ -179,38 +181,54 @@ public class BsonRequest extends Request<BsonValue> {
             this.jsonMode = null;
         }
     }
-    
+
     /**
      *
-     * @param exchange the url rewriting feature is implemented by the whatUri
-     * and whereUri parameters.
+     * @param exchange
      *
      * the exchange request path (mapped uri) is rewritten replacing the
-     * whereUri string with the whatUri string the special whatUri value * means
-     * any resource: the whereUri is replaced with /
+     * resourceUri with the requestUri
+     *
+     * the special resourceUri value * means any resource: the requestUri is
+     * mapped to the root resource /
      *
      * example 1
      *
-     * whatUri = /db/mycollection whereUri = /
+     * resourceUri = /db/mycollection requestUri = /
      *
      * then the requestPath / is rewritten to /db/mycollection
      *
      * example 2
      *
-     * whatUri = * whereUri = /data
+     * resourceUri = * requestUri = /data
      *
      * then the requestPath /data is rewritten to /
      *
-     * @param whereUri the uri to map to
-     * @param whatUri the uri to ma
+     * @param requestUri the request URI to map to the resource URI
+     * @param resourceUri the resource URI identifying a resource in the DB
      * @return the BsonRequest
      */
-    public static BsonRequest wrap(HttpServerExchange exchange,
-            String whereUri,
-            String whatUri) {
-        return new BsonRequest(exchange, whereUri, whatUri);
+    public static BsonRequest init(HttpServerExchange exchange,
+            String requestUri,
+            String resourceUri) {
+        var request = new BsonRequest(exchange, requestUri, resourceUri);
+        
+        exchange.putAttachment(BSON_REQUEST_ATTACHMENT_KEY, request);
+        
+        return request;
     }
     
+    public static BsonRequest wrap(HttpServerExchange exchange) {
+        var cached = exchange.getAttachment(BSON_REQUEST_ATTACHMENT_KEY);
+        
+        if (cached == null) {
+            throw new IllegalStateException("BsonRequest.wrap() invoked "
+                    + "before BsonRequest.init()");
+        } else {
+            return cached;
+        }
+    }
+
     /**
      *
      * @param dbName
@@ -227,7 +245,7 @@ public class BsonRequest extends Request<BsonValue> {
                 || dbName.startsWith(UNDERSCORE)
                 || dbName.equals(RESOURCES_WILDCARD_KEY));
     }
-    
+
     /**
      *
      * @param collectionName
@@ -244,8 +262,8 @@ public class BsonRequest extends Request<BsonValue> {
                 || collectionName.endsWith(FS_CHUNKS_SUFFIX)
                 || collectionName.equals(RESOURCES_WILDCARD_KEY));
     }
-    
-     /**
+
+    /**
      *
      * @param type
      * @param documentIdRaw
@@ -283,7 +301,7 @@ public class BsonRequest extends Request<BsonValue> {
                 || (documentIdRaw.equals(RESOURCES_WILDCARD_KEY)
                 && !(type == TYPE.BULK_DOCUMENTS));
     }
-    
+
     /**
      *
      * @return type
@@ -291,15 +309,15 @@ public class BsonRequest extends Request<BsonValue> {
     public TYPE getType() {
         return selectRequestType(pathTokens);
     }
-    
+
     public BsonValue getContent() {
         return this.content;
     }
-    
+
     public void setContent(BsonValue content) {
         this.content = content;
     }
-    
+
     static TYPE selectRequestType(String[] pathTokens) {
         TYPE type;
 
@@ -423,7 +441,7 @@ public class BsonRequest extends Request<BsonValue> {
 
         return type;
     }
-    
+
     /**
      * given a mapped uri (/some/mapping/coll) returns the canonical uri
      * (/db/coll) URLs are mapped to mongodb resources by using the mongo-mounts
@@ -523,7 +541,7 @@ public class BsonRequest extends Request<BsonValue> {
             ret = URLUtils.removeTrailingSlashes(
                     ret.replaceFirst("^" + this.whatUri, this.whereUri));
         }
-        
+
         if (ret.isEmpty()) {
             ret = SLASH;
         } else {
@@ -845,8 +863,7 @@ public class BsonRequest extends Request<BsonValue> {
 
     /**
      *
-     * @return
-     * @throws JsonParseException
+     * @return @throws JsonParseException
      */
     public BsonDocument getSortByDocument() throws JsonParseException {
         BsonDocument sort = new BsonDocument();
@@ -881,8 +898,7 @@ public class BsonRequest extends Request<BsonValue> {
 
     /**
      *
-     * @return
-     * @throws JsonParseException
+     * @return @throws JsonParseException
      */
     public BsonDocument getHintDocument() throws JsonParseException {
         BsonDocument ret = new BsonDocument();
@@ -917,8 +933,7 @@ public class BsonRequest extends Request<BsonValue> {
 
     /**
      *
-     * @return
-     * @throws JsonParseException
+     * @return @throws JsonParseException
      */
     public BsonDocument getProjectionDocument() throws JsonParseException {
         final BsonDocument projection = new BsonDocument();
@@ -1097,7 +1112,7 @@ public class BsonRequest extends Request<BsonValue> {
             return documentId;
         }
     }
-    
+
     /**
      * @return the clientSession
      */
@@ -1119,7 +1134,6 @@ public class BsonRequest extends Request<BsonValue> {
         return jsonMode;
     }
 
-    
     /**
      * @return the filePath
      */
@@ -1274,7 +1288,7 @@ public class BsonRequest extends Request<BsonValue> {
         }
 
         // for documents consider db and coll etagDocPolicy metadata
-        if (getType() == TYPE.DOCUMENT 
+        if (getType() == TYPE.DOCUMENT
                 || getType() == TYPE.FILE) {
             // check the coll metadata
             BsonValue _policy = collectionProps != null

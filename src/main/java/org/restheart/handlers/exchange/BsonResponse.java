@@ -18,6 +18,7 @@
 package org.restheart.handlers.exchange;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 import org.bson.BsonValue;
 import org.restheart.db.OperationResult;
 import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
@@ -28,6 +29,9 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class BsonResponse extends Response<BsonValue> {
+    private static final AttachmentKey<BsonResponse> BSON_RESPONSE_ATTACHMENT_KEY
+            = AttachmentKey.create(BsonResponse.class);
+    
     private BsonValue content;
     
     private OperationResult dbOperationResult;
@@ -38,7 +42,16 @@ public class BsonResponse extends Response<BsonValue> {
     }
     
     public static BsonResponse wrap(HttpServerExchange exchange) {
-        return new BsonResponse(exchange);
+        var cached = exchange.getAttachment(BSON_RESPONSE_ATTACHMENT_KEY);
+        
+        if (cached == null) {
+            var response = new BsonResponse(exchange);
+            exchange.putAttachment(BSON_RESPONSE_ATTACHMENT_KEY,
+                    response);
+            return response;
+        } else {
+            return cached;
+        }
     }
     
     /**
