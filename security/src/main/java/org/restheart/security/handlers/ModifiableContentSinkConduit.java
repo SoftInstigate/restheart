@@ -28,6 +28,7 @@ import java.nio.channels.FileChannel;
 import org.restheart.handlers.exchange.AbstractExchange;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.ProxableResponse;
 import org.restheart.handlers.exchange.Response;
 import org.restheart.plugins.security.InterceptPoint;
 import org.restheart.security.plugins.PluginsRegistry;
@@ -79,14 +80,14 @@ public class ModifiableContentSinkConduit
      */
     private void resetBufferPool(HttpServerExchange exchange) {
         var buffers = new PooledByteBuffer[MAX_BUFFERS];
-        exchange.putAttachment(Response.BUFFERED_RESPONSE_DATA,
+        exchange.putAttachment(ProxableResponse.BUFFERED_RESPONSE_DATA,
                 buffers);
     }
 
     @Override
     public int write(ByteBuffer src) throws IOException {
         return BuffersUtils.append(src,
-                exchange.getAttachment(Response.BUFFERED_RESPONSE_DATA),
+                exchange.getAttachment(ProxableResponse.BUFFERED_RESPONSE_DATA),
                 exchange);
     }
 
