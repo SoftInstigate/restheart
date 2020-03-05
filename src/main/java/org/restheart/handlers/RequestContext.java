@@ -458,14 +458,16 @@ public class RequestContext {
      * @return the rawContent
      */
     public String getRawContent() {
-        return this.bsonRequest.getContentAsString();
+        throw new UnsupportedOperationException("Not supported from v5. "
+                + "Use ByteArrayRequest instead.");
     }
 
     /**
      * @param rawContent the rawContent to set
      */
     public void setRawContent(String rawContent) {
-        this.bsonRequest.setContentAsString(rawContent);
+        throw new UnsupportedOperationException("Not supported from v5. "
+                + "Use ByteArrayRequest instead.");
     }
 
     /**
@@ -561,22 +563,14 @@ public class RequestContext {
      * @return the responseContent
      */
     public BsonValue getResponseContent() {
-        try {
-        return this.bsonResponse.readContent();
-        } catch(IOException ioe) {
-            throw new RuntimeException("error reading response content", ioe);
-        }
+        return this.bsonResponse.getContent();
     }
 
     /**
      * @param responseContent the responseContent to set
      */
     public void setResponseContent(BsonValue responseContent) {
-        try {
-            this.bsonResponse.writeContent(responseContent);
-        } catch (IOException ioe) {
-            throw new RuntimeException("error writing content", ioe);
-        }
+        this.bsonResponse.setContent(responseContent);
     }
 
     /**
