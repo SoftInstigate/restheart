@@ -17,13 +17,11 @@
  */
 package org.restheart.handlers.exchange;
 
-import io.undertow.connector.PooledByteBuffer;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -46,6 +44,10 @@ import org.restheart.db.CursorPool;
 import org.restheart.db.sessions.ClientSessionImpl;
 import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
 import static org.restheart.handlers.exchange.ExchangeKeys.*;
+import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
+import org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
+import org.restheart.handlers.exchange.ExchangeKeys.HAL_MODE;
+import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.representation.Resource;
 import org.restheart.utils.URLUtils;
 import org.slf4j.LoggerFactory;
@@ -65,7 +67,6 @@ public class BsonRequest extends Request<BsonValue> {
     private BsonDocument collectionProps;
     
     private BsonValue content;
-    private String contentAsString;
 
     private Path filePath;
 
@@ -297,32 +298,6 @@ public class BsonRequest extends Request<BsonValue> {
     
     public void setContent(BsonValue content) {
         this.content = content;
-    }
-    
-    public String getContentAsString() {
-        return this.contentAsString;
-    }
-    
-    public void setContentAsString(String contentAsString) {
-        this.contentAsString = contentAsString;
-    }
-    
-    @Override
-    public PooledByteBuffer[] getRawContent() {
-        throw new UnsupportedOperationException("BsonRequest.getRawContent() "
-                + "is unsupported. Use BsonRequest.getContentAsString() instead.");
-    }
-    
-    @Override
-    public BsonValue readContent() throws IOException {
-        throw new UnsupportedOperationException("BsonRequest.readContent() "
-                + "is unsupported. Use BsonRequest.getContent() instead.");
-    }
-
-    @Override
-    public void writeContent(BsonValue content) throws IOException {
-        throw new UnsupportedOperationException("BsonRequest.writeContent() "
-                + "is unsupported. Use BsonRequest.setContent() instead.");
     }
     
     static TYPE selectRequestType(String[] pathTokens) {

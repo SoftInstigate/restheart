@@ -37,11 +37,13 @@ import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.plugins.Transformer;
 import org.restheart.representation.Resource;
+import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.restheart.utils.ResponseHelper;
@@ -147,7 +149,9 @@ public class CsvLoader extends Service {
                             respBodySet = true;
                         } else {
                             try {
-                                List<BsonDocument> documents = parseCsv(exchange, params, context, context.getRawContent());
+                                final String content = ChannelReader.read(exchange.getRequestChannel());
+                                
+                                List<BsonDocument> documents = parseCsv(exchange, params, context, content);
 
                                 if (documents != null && documents.size() > 0) {
                                     MongoCollection<BsonDocument> mcoll = MongoDBClientSingleton.getInstance().getClient()

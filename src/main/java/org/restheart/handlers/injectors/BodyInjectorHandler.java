@@ -366,11 +366,9 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
             injectContentTypeFromFile(content.asDocument(), path.toFile());
         } else {
-            // get the raw content
-            final String contentString = ChannelReader.read(exchange.getRequestChannel());
-            context.setRawContent(contentString);
-
             if (isHalOrJson(contentType)) {
+                // get the raw content
+                final String contentString = ChannelReader.read(exchange.getRequestChannel());
 
                 // parse the json content
                 if (contentString != null
