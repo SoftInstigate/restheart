@@ -19,7 +19,7 @@ cache:
 install: true
 script:
   - set -e
-  - mvn clean install -U -DskipITs=false
+  - mvn clean install -U
   - ./bin/push.sh
   - set +e
 deploy:
