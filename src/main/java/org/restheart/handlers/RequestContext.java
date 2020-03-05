@@ -19,10 +19,8 @@ package org.restheart.handlers;
 
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Deque;
 import java.util.List;
@@ -39,9 +37,6 @@ import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys.*;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
-import org.restheart.utils.BuffersUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -49,10 +44,6 @@ import org.slf4j.LoggerFactory;
  */
 @Deprecated
 public class RequestContext {
-
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(RequestContext.class);
-
     /**
      *
      * @param dbName
@@ -83,7 +74,6 @@ public class RequestContext {
         return BsonRequest.isReservedResourceDocument(type, documentIdRaw);
     }
 
-    // ****************** starting delegating requests method *****
     private final BsonRequest bsonRequest;
     private final BsonResponse bsonResponse;
 
@@ -115,7 +105,7 @@ public class RequestContext {
             HttpServerExchange exchange,
             String whereUri,
             String whatUri) {
-        this.bsonRequest = BsonRequest.wrap(exchange, whereUri, whatUri);
+        this.bsonRequest = BsonRequest.init(exchange, whereUri, whatUri);
         this.bsonResponse = BsonResponse.wrap(exchange);
     }
 
