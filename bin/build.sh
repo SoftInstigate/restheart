@@ -1,2 +1,2 @@
 #!/bin/bash
-mvn clean verify -DskipITs=false -Dkarate.options="$KARATE_OPS"
+mvn clean verify -Dkarate.options="$KARATE_OPS"
