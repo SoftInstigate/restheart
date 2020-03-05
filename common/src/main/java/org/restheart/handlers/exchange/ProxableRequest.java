@@ -20,7 +20,6 @@ package org.restheart.handlers.exchange;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
-import io.undertow.util.Headers;
 import java.io.IOException;
 import java.lang.reflect.Field;
 
@@ -37,10 +36,6 @@ public abstract class ProxableRequest<T> extends Request<T> {
     public abstract T readContent() throws IOException;
 
     public abstract void writeContent(T content) throws IOException;
-
-    protected void setContentLength(int length) {
-        wrapped.getRequestHeaders().put(Headers.CONTENT_LENGTH, length);
-    }
 
     @SuppressWarnings("unchecked")
     protected AttachmentKey<PooledByteBuffer[]> getRawContentKey() {
