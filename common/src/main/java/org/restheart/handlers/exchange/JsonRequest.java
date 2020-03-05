@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JsonRequest extends Request<JsonElement> {
+public class JsonRequest extends ProxableRequest<JsonElement> {
 
     protected JsonRequest(HttpServerExchange exchange) {
         super(exchange);

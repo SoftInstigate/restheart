@@ -17,12 +17,10 @@
  */
 package org.restheart.handlers.exchange;
 
-import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
 import java.io.IOException;
-import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -32,8 +30,6 @@ public abstract class Response<T> extends AbstractExchange<T> {
 
     private static final AttachmentKey<Integer> STATUS_CODE
             = AttachmentKey.create(Integer.class);
-    public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA
-            = AttachmentKey.create(PooledByteBuffer[].class);
 
     protected Response(HttpServerExchange exchange) {
         super(exchange);
@@ -57,11 +53,6 @@ public abstract class Response<T> extends AbstractExchange<T> {
         }
     }
 
-    @Override
-    public AttachmentKey<PooledByteBuffer[]> getRawContentKey() {
-        return BUFFERED_RESPONSE_DATA;
-    }
-
     /**
      * @param responseContentType the responseContentType to set
      */
@@ -81,8 +72,9 @@ public abstract class Response<T> extends AbstractExchange<T> {
      * @return the responseStatusCode of -1 if not set
      */
     public int getStatusCode() {
-        return getWrapped().getAttachment(STATUS_CODE) == null 
-                ? -1 
+        return getWrapped() == null
+                && getWrapped().getAttachment(STATUS_CODE) == null
+                ? -1
                 : getWrapped().getAttachment(STATUS_CODE);
     }
 
@@ -93,18 +85,13 @@ public abstract class Response<T> extends AbstractExchange<T> {
         getWrapped().putAttachment(STATUS_CODE, responseStatusCode);
     }
 
-    @Override
-    protected void setContentLength(int length) {
-        wrapped.getResponseHeaders().put(Headers.CONTENT_LENGTH, length);
-    }
-
     /**
      * @return the inError
      */
     public boolean isInError() {
         return getWrapped().getAttachment(IN_ERROR_KEY) != null
                 && getWrapped().getAttachment(IN_ERROR_KEY);
-        
+
     }
 
     /**
@@ -112,47 +99,6 @@ public abstract class Response<T> extends AbstractExchange<T> {
      */
     public void setInError(boolean inError) {
         getWrapped().putAttachment(IN_ERROR_KEY, inError);
-    }
-
-    /**
-     *
-     * @param code
-     * @param body
-     */
-    public void endExchange(int code, T body) throws IOException {
-        setStatusCode(code);
-        setInError(true);
-        writeContent(body);
-    }
-
-    /**
-     *
-     * @param code
-     * @param message
-     */
-    public void endExchangeWithMessage(int code, String message) {
-        endExchangeWithMessage(code, message, null);
-    }
-
-    /**
-     *
-     * @param code
-     * @param message
-     * @param t
-     */
-    public void endExchangeWithMessage(int code, String message, Throwable t) {
-        setStatusCode(code);
-        setContentTypeAsJson();
-        setInError(true);
-        try {
-            writeContent(getErrorContent(code,
-                    HttpStatus.getStatusText(code),
-                    message,
-                    t,
-                    false));
-        } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
-        }
     }
 
     protected abstract T getErrorContent(int code,

@@ -17,14 +17,12 @@
  */
 package org.restheart.handlers.exchange;
 
-import io.undertow.connector.PooledByteBuffer;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -108,27 +106,7 @@ public abstract class Request<T> extends AbstractExchange<T> {
     public void setContentTypeAsJson() {
         setContentType("application/json");
     }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    protected AttachmentKey<PooledByteBuffer[]> getRawContentKey() {
-        Field f;
-
-        try {
-            f = HttpServerExchange.class.getDeclaredField("BUFFERED_REQUEST_DATA");
-            f.setAccessible(true);
-        } catch (NoSuchFieldException | SecurityException ex) {
-            throw new RuntimeException("could not find BUFFERED_REQUEST_DATA field", ex);
-        }
-
-        try {
-            return (AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped());
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
-            throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
-        }
-    }
-
-    @Override
+    
     protected void setContentLength(int length) {
         wrapped.getRequestHeaders().put(Headers.CONTENT_LENGTH, length);
     }

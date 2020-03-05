@@ -17,15 +17,14 @@
  */
 package org.restheart.handlers.exchange;
 
-import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
-import java.io.IOException;
 import org.slf4j.Logger;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @param <T>
  */
 public abstract class AbstractExchange<T> {
 
@@ -87,35 +86,7 @@ public abstract class AbstractExchange<T> {
                 .putAttachment(RESPONSE_INTERCEPTOR_EXECUTED, true);
     }
 
-    public abstract T readContent() throws IOException;
-
-    public abstract void writeContent(T content) throws IOException;
-
-    protected abstract void setContentLength(int length);
-
-    protected abstract AttachmentKey<PooledByteBuffer[]> getRawContentKey();
-
-    public PooledByteBuffer[] getRawContent() {
-        if (!isContentAvailable()) {
-            throw new IllegalStateException("Response content is not available. "
-                    + "Add a Response Inteceptor overriding requiresResponseContent() "
-                    + "to return true in order to make the content available.");
-        }
-
-        return getWrapped().getAttachment(getRawContentKey());
-    }
-
-    public void setRawContent(PooledByteBuffer[] raw) {
-        getWrapped().putAttachment(getRawContentKey(), raw);
-    }
-
-//    protected abstract AttachmentKey<T> getContentKey();
     public abstract String getContentType();
-
-    public boolean isContentAvailable() {
-        return null != getWrapped().getAttachment(getRawContentKey());
-
-    }
 
     /**
      * helper method to check if the request content is Json
@@ -166,6 +137,7 @@ public abstract class AbstractExchange<T> {
     /**
      * helper method to check if authenticated account is in the specified role
      *
+     * @param role
      * @return
      */
     public boolean isAccountInRole(String role) {
