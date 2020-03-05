@@ -109,4 +109,10 @@ public abstract class ProxableResponse<T> extends Response<T> {
             throw new RuntimeException(ioe);
         }
     }
+    
+    protected abstract T getErrorContent(int code,
+            String httpStatusText,
+            String message,
+            Throwable t,
+            boolean includeStackTrace) throws IOException;
 }

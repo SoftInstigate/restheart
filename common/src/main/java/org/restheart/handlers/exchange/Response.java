@@ -100,10 +100,4 @@ public abstract class Response<T> extends AbstractExchange<T> {
     public void setInError(boolean inError) {
         getWrapped().putAttachment(IN_ERROR_KEY, inError);
     }
-
-    protected abstract T getErrorContent(int code,
-            String httpStatusText,
-            String message,
-            Throwable t,
-            boolean includeStackTrace) throws IOException;
 }
