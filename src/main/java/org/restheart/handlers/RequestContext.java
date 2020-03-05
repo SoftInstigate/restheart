@@ -35,7 +35,9 @@ import org.restheart.db.sessions.ClientSessionImpl;
 import org.restheart.handlers.exchange.AbstractExchange.METHOD;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import static org.restheart.handlers.exchange.ExchangeKeys.*;
+import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
+import org.restheart.handlers.exchange.ExchangeKeys.HAL_MODE;
+import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 
 /**
@@ -44,6 +46,50 @@ import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
  */
 @Deprecated
 public class RequestContext {
+    /**
+     *
+     * @param exchange the url rewriting feature is implemented by the whatUri
+     * and whereUri parameters.
+     *
+     * the exchange request path (mapped uri) is rewritten replacing the
+     * whereUri string with the whatUri string the special whatUri value * means
+     * any resource: the whereUri is replaced with /
+     *
+     * example 1
+     *
+     * whatUri = /db/mycollection whereUri = /
+     *
+     * then the requestPath / is rewritten to /db/mycollection
+     *
+     * example 2
+     *
+     * whatUri = * whereUri = /data
+     *
+     * then the requestPath /data is rewritten to /
+     *
+     * @param whereUri the uri to map to
+     * @param whatUri the uri to map
+     */
+    public RequestContext(
+            HttpServerExchange exchange,
+            String whereUri,
+            String whatUri) {
+        this.bsonRequest = BsonRequest.init(exchange, whereUri, whatUri);
+        this.bsonResponse = BsonResponse.wrap(exchange);
+    }
+    
+    private RequestContext(
+            BsonRequest bsonRequest,
+            BsonResponse bsonResponse) {
+        this.bsonRequest = bsonRequest;
+        this.bsonResponse = bsonResponse;
+    }
+    
+    public static RequestContext wrap(HttpServerExchange exchange) {
+        return new RequestContext(BsonRequest.wrap(exchange),
+                BsonResponse.wrap(exchange));
+    }
+    
     /**
      *
      * @param dbName
@@ -76,38 +122,6 @@ public class RequestContext {
 
     private final BsonRequest bsonRequest;
     private final BsonResponse bsonResponse;
-
-    /**
-     *
-     * @param exchange the url rewriting feature is implemented by the whatUri
-     * and whereUri parameters.
-     *
-     * the exchange request path (mapped uri) is rewritten replacing the
-     * whereUri string with the whatUri string the special whatUri value * means
-     * any resource: the whereUri is replaced with /
-     *
-     * example 1
-     *
-     * whatUri = /db/mycollection whereUri = /
-     *
-     * then the requestPath / is rewritten to /db/mycollection
-     *
-     * example 2
-     *
-     * whatUri = * whereUri = /data
-     *
-     * then the requestPath /data is rewritten to /
-     *
-     * @param whereUri the uri to map to
-     * @param whatUri the uri to map
-     */
-    public RequestContext(
-            HttpServerExchange exchange,
-            String whereUri,
-            String whatUri) {
-        this.bsonRequest = BsonRequest.init(exchange, whereUri, whatUri);
-        this.bsonResponse = BsonResponse.wrap(exchange);
-    }
 
     /**
      * given a canonical uri (/db/coll) returns the mapped uri

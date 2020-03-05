@@ -22,8 +22,10 @@ import io.undertow.server.HttpServerExchange;
 
 /**
  *
+ * @deprecated use PipelinedWrappingHandler instead
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@Deprecated
 public class PipedWrappingHandler extends PipedHttpHandler {
 
     private final HttpHandler wrapped;
