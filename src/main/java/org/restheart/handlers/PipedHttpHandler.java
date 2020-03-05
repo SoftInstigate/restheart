@@ -17,8 +17,10 @@ import org.restheart.utils.ResponseHelper;
 
 /**
  *
+ * @deprecated use PipelinedHandler instead
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@Deprecated
 public abstract class PipedHttpHandler implements HttpHandler {
 
     /**

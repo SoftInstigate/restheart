@@ -30,6 +30,7 @@ import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.handlers.PipedHttpHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.aggregation.AggregationPipeline;
+import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.AGGREGATION_VARIABLES_QPARAM_KEY;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
@@ -68,38 +69,38 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             .getConfiguration()
             .getMaxPagesize();
 
-    private final String whereUri;
-    private final String whatUri;
+    private final String requestUri;
+    private final String resourceUri;
     private final boolean checkAggregationOperators;
 
     /**
      *
-     * @param whereUri
-     * @param whatUri
+     * @param requestUri
+     * @param resourceUri
      * @param checkAggregationOperators
      * @param next
      */
-    public RequestContextInjectorHandler(String whereUri, String whatUri, boolean checkAggregationOperators, PipedHttpHandler next) {
+    public RequestContextInjectorHandler(String requestUri, String resourceUri, boolean checkAggregationOperators, PipedHttpHandler next) {
         super(next);
 
-        if (whereUri == null) {
+        if (requestUri == null) {
             throw new IllegalArgumentException("whereUri cannot be null. check your mongo-mounts.");
         }
 
-        if (!whereUri.startsWith("/")) {
+        if (!requestUri.startsWith("/")) {
             throw new IllegalArgumentException("whereUri must start with \"/\". check your mongo-mounts");
         }
         
-        if (whatUri == null) {
+        if (resourceUri == null) {
             throw new IllegalArgumentException("whatUri cannot be null. check your mongo-mounts.");
         }
 
-        if (!whatUri.startsWith("/") && !whatUri.equals("*")) {
+        if (!resourceUri.startsWith("/") && !resourceUri.equals("*")) {
             throw new IllegalArgumentException("whatUri must be * (all db resorces) or start with \"/\". (eg. /db/coll) check your mongo-mounts");
         }
 
-        this.whereUri = URLUtils.removeTrailingSlashes(whereUri);
-        this.whatUri = whatUri;
+        this.requestUri = URLUtils.removeTrailingSlashes(requestUri);
+        this.resourceUri = resourceUri;
         this.checkAggregationOperators = checkAggregationOperators;
     }
     
@@ -111,7 +112,9 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        RequestContext rcontext = new RequestContext(exchange, whereUri, whatUri);
+        BsonRequest.init(exchange, requestUri, resourceUri);
+        
+        RequestContext rcontext = RequestContext.wrap(exchange);
 
         // skip parameters injection if method is OPTIONS
         // this makes sure OPTIONS works even on wrong paramenter
@@ -720,6 +723,6 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        handleRequest(exchange, new RequestContext(exchange, whereUri, whatUri));
+        handleRequest(exchange, new RequestContext(exchange, requestUri, resourceUri));
     }
 }
