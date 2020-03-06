@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@SuppressWarnings("deprecation")
 public class BeforeWriteCheckHandler extends CheckHandler {
 
     static final Logger LOGGER

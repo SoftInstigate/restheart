@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "checkContentSize", 
         description = "Checks the request content length")
+@SuppressWarnings("deprecation")
 public class ContentSizeChecker implements Checker {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ContentSizeChecker.class);

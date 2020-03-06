@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "jsonSchema",
         description = "Checks the request according to the specified JSON schema")
+@SuppressWarnings("deprecation")
 public class JsonSchemaChecker implements Checker {
 
     /**

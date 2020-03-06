@@ -37,6 +37,7 @@ import org.restheart.plugins.Transformer;
  */
 @RegisterPlugin(name = "oidsToStrings",
         description = "Replaces ObjectId with strings.")
+@SuppressWarnings("deprecation")
 public class OidsAsStringsTransformer implements Transformer {
     /**
      *

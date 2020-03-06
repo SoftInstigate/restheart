@@ -16,6 +16,7 @@ import org.restheart.plugins.Transformer;
 @RegisterPlugin(name = "writeResult",
         description = "Adds a body to write responses with "
                 + "updated and old version of the written document.")
+@SuppressWarnings("deprecation")
 public class WriteResultTransformer implements Transformer {
 
     @Override

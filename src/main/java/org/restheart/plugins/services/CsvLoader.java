@@ -70,8 +70,10 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @SuppressWarnings("unchecked")
-@RegisterPlugin(name = "csvLoader", description = "Uploads a csv file in a collection")
-public class CsvLoader extends Service {
+@RegisterPlugin(name = "csvLoader", 
+        description = "Uploads a csv file in a collection",
+        defaultURI = "/csv")
+public class CsvLoader implements Service {
 
     /**
      *
@@ -108,30 +110,12 @@ public class CsvLoader extends Service {
     private final static FindOneAndUpdateOptions FAU_WITH_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(true);
 
     /**
-     * Creates a new instance of CsvLoaderHandler
-     *
-     * @param confArgs arguments optionally specified in the configuration file
-     */
-    public CsvLoader(Map<String, Object> confArgs) {
-        super(confArgs);
-    }
-
-    /**
-     *
-     * @return
-     */
-    @Override
-    public String defaultUri() {
-        return "/csv";
-    }
-
-    /**
      *
      * @param exchange
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handle(HttpServerExchange exchange) throws Exception {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
 
@@ -230,8 +214,6 @@ public class CsvLoader extends Service {
         if (!respBodySet) {
             response.setContent(null);
         }
-
-        next(exchange);
     }
 
     private List<BsonDocument> parseCsv(HttpServerExchange exchange,

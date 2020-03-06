@@ -90,6 +90,7 @@ import org.slf4j.LoggerFactory;
         name = "checkContent",
         description = "Checks the request content by using conditions "
         + " based on json path expressions")
+@SuppressWarnings("deprecation")
 public class JsonPathConditionsChecker implements Checker {
     static final Logger LOGGER = LoggerFactory.getLogger(JsonPathConditionsChecker.class);
 
