@@ -15,16 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.restheart.plugins.security;
+package org.restheart.plugins;
 
+import io.undertow.server.HttpServerExchange;
 import org.restheart.plugins.HandlingPlugin;
 
 /**
- * Interface for Interceptors
- * 
- * @see https://restheart.org/docs/develop/security-plugins/#interceptors
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @see https://restheart.org/docs/develop/security-plugins/#services
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Interceptor extends HandlingPlugin {
-    
+public interface Service extends HandlingPlugin {
+    @Override
+    default boolean resolve(HttpServerExchange exchange) {
+        return true;
+    }
 }

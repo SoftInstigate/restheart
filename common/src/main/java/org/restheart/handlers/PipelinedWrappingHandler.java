@@ -19,7 +19,7 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.plugins.security.Service;
+import org.restheart.plugins.Service;
 
 /**
  * wraps a HttpHandler into a PipelinedHttpHandler

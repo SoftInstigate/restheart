@@ -19,7 +19,6 @@ package org.restheart.plugins;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import org.restheart.plugins.security.InterceptPoint;
 
 /**
  * Annotation to register a Plugin

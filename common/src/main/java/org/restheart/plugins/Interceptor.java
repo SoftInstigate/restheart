@@ -15,14 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.restheart.plugins.security;
+package org.restheart.plugins;
 
-import org.restheart.plugins.ConfigurablePlugin;
+import org.restheart.plugins.HandlingPlugin;
 
 /**
- * @see https://restheart.org/docs/develop/security-plugins/#initializers
+ * Interface for Interceptors
+ * 
+ * @see https://restheart.org/docs/develop/security-plugins/#interceptors
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface PreStartupInitializer extends ConfigurablePlugin {
-    public void init();
+public interface Interceptor extends HandlingPlugin {
+    
 }

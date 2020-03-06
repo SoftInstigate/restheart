@@ -15,14 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.restheart.plugins.security;
-
-import org.restheart.plugins.ConfigurablePlugin;
+package org.restheart.plugins;
 
 /**
- * @see https://restheart.org/docs/develop/security-plugins/#initializers
+ * Define the intercept point of an Interceptor
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface Initializer extends ConfigurablePlugin {
-    public void init();
+public enum InterceptPoint {
+    /**
+     * intercept the request before authentication occurs
+     */
+    REQUEST_BEFORE_AUTH, 
+    
+    /**
+     * intercept the request after authentication occurs 
+     */
+    REQUEST_AFTER_AUTH, 
+    
+    /**
+     * intercept the response and executes blocking the response
+     */
+    RESPONSE, 
+    
+    /**
+     * intercept the response and executes asynchronously with the response
+     */
+    RESPONSE_ASYNC
 }

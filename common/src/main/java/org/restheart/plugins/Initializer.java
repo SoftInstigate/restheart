@@ -15,18 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.restheart.plugins.security;
+package org.restheart.plugins;
 
-import io.undertow.server.HttpServerExchange;
-import org.restheart.plugins.HandlingPlugin;
+import org.restheart.plugins.ConfigurablePlugin;
 
 /**
- * @see https://restheart.org/docs/develop/security-plugins/#services
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @see https://restheart.org/docs/develop/security-plugins/#initializers
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface Service extends HandlingPlugin {
-    @Override
-    default boolean resolve(HttpServerExchange exchange) {
-        return true;
-    }
+public interface Initializer extends ConfigurablePlugin {
+    public void init();
 }

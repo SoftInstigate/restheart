@@ -18,9 +18,9 @@
 package org.restheart.utils;
 
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.InterceptPoint;
-import org.restheart.plugins.security.Interceptor;
-import org.restheart.plugins.security.Service;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.Service;
 
 /**
  *
