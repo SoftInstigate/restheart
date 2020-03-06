@@ -24,7 +24,7 @@ import org.restheart.handlers.exchange.JsonRequest;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.Service;
+import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
 
 /**

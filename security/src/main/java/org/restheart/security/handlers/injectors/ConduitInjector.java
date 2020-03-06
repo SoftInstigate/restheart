@@ -23,7 +23,7 @@ import io.undertow.util.ConduitFactory;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.plugins.security.InterceptPoint;
+import org.restheart.plugins.InterceptPoint;
 import org.restheart.security.handlers.ModifiableContentSinkConduit;
 import org.restheart.security.handlers.ResponseInterceptorsStreamSinkConduit;
 import org.restheart.security.plugins.PluginsRegistry;

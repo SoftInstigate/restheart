@@ -21,7 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.exchange.ByteArrayResponse;
-import org.restheart.plugins.security.InterceptPoint;
+import org.restheart.plugins.InterceptPoint;
 import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.utils.LambdaUtils;
 import org.restheart.utils.HttpStatus;

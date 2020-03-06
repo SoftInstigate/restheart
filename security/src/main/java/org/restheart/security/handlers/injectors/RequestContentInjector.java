@@ -23,7 +23,7 @@ import io.undertow.server.handlers.RequestBufferingHandler;
 import io.undertow.util.AttachmentKey;
 import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
-import org.restheart.plugins.security.InterceptPoint;
+import org.restheart.plugins.InterceptPoint;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.security.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;

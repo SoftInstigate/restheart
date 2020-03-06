@@ -30,7 +30,7 @@ import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.handlers.exchange.JsonResponse;
 import org.restheart.handlers.exchange.Request;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.Service;
+import org.restheart.plugins.Service;
 import org.restheart.utils.BuffersUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;

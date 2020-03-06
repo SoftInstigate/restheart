@@ -21,14 +21,14 @@ import io.undertow.predicate.Predicate;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.restheart.ConfigurationException;
+import org.restheart.plugins.Initializer;
+import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.PreStartupInitializer;
+import org.restheart.plugins.Service;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
-import org.restheart.plugins.security.Initializer;
-import org.restheart.plugins.security.Interceptor;
-import org.restheart.plugins.security.PreStartupInitializer;
-import org.restheart.plugins.security.Service;
 import org.restheart.plugins.security.TokenManager;
 
 /**

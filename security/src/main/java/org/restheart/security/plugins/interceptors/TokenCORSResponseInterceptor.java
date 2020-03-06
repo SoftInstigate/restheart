@@ -18,9 +18,9 @@
 package org.restheart.security.plugins.interceptors;
 
 import io.undertow.server.HttpServerExchange;
+import static org.restheart.plugins.InterceptPoint.RESPONSE;
+import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
-import static org.restheart.plugins.security.InterceptPoint.RESPONSE;
-import org.restheart.plugins.security.Interceptor;
 import static org.restheart.plugins.security.TokenManager.ACCESS_CONTROL_EXPOSE_HEADERS;
 
 /**
