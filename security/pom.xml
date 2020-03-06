@@ -108,7 +108,7 @@
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-common</artifactId>
-      <version>46c81f9094</version>
+      <version>7881d7da86</version>
     </dependency>
     
     <!-- update undertow dependency to avoid warning log message:
