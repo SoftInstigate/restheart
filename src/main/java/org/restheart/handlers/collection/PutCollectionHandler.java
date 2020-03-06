@@ -17,24 +17,28 @@
  */
 package org.restheart.handlers.collection;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.Database;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PutCollectionHandler extends PipedHttpHandler {
-
+public class PutCollectionHandler extends PipelinedHandler {
+    private Database dbsDAO = new DatabaseImpl();
     /**
      * Creates a new instance of PutCollectionHandler
      */
@@ -47,7 +51,7 @@ public class PutCollectionHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public PutCollectionHandler(PipedHttpHandler next) {
+    public PutCollectionHandler(PipelinedHandler next) {
         super(next);
     }
 
@@ -57,26 +61,28 @@ public class PutCollectionHandler extends PipedHttpHandler {
      * @param next
      * @param dbsDAO
      */
-    public PutCollectionHandler(PipedHttpHandler next, Database dbsDAO) {
-        super(next, dbsDAO);
+    @VisibleForTesting
+    public PutCollectionHandler(PipelinedHandler next, Database dbsDAO) {
+        super(next);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context) throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        BsonValue _content = context.getContent();
+        BsonValue _content = request.getContent();
 
         if (_content == null) {
             _content = new BsonDocument();
@@ -86,36 +92,36 @@ public class PutCollectionHandler extends PipedHttpHandler {
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
         final BsonDocument content = _content.asDocument();
 
-        if (isInvalidMetadata(content, exchange, context)) {
+        if (RequestHelper.isInvalidMetadata(content, exchange)) {
+            next(exchange);
             return;
         }
 
-        boolean updating = context.getCollectionProps() != null;
+        boolean updating = request.getCollectionProps() != null;
 
-        OperationResult result = getDatabase().upsertCollection(
-                context.getClientSession(),
-                context.getDBName(),
-                context.getCollectionName(),
+        OperationResult result = dbsDAO.upsertCollection(
+                request.getClientSession(),
+                request.getDBName(),
+                request.getCollectionName(),
                 content,
-                context.getETag(),
+                request.getETag(),
                 updating, false,
-                context.isETagCheckRequired());
+                request.isETagCheckRequired());
 
-        context.setDbOperationResult(result);
+        response.setDbOperationResult(result);
 
         // invalidate the cache collection item
         LocalCachesSingleton.getInstance().invalidateCollection(
-                context.getDBName(),
-                context.getCollectionName());
+                request.getDBName(),
+                request.getCollectionName());
 
         // inject the etag
         if (result.getEtag() != null) {
@@ -125,17 +131,16 @@ public class PutCollectionHandler extends PipedHttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_CONFLICT,
                     "The collection's ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header.");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
-        next(exchange, context);
+        next(exchange);
     }
 }

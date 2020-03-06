@@ -19,8 +19,8 @@ package org.restheart.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
 import org.restheart.db.sessions.ClientSessionFactory;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ClientSessionInjectorHandler extends PipedHttpHandler {
+public class ClientSessionInjectorHandler extends PipelinedHandler {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(ClientSessionInjectorHandler.class);
     
@@ -57,7 +57,7 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public static void build(PipedHttpHandler next) {
+    public static void build(PipelinedHandler next) {
         if (ClientSessionInjectorHandlerHolder.INSTANCE != null) {
             throw new IllegalStateException("Singleton already initialized");
         }
@@ -74,40 +74,39 @@ public class ClientSessionInjectorHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    private ClientSessionInjectorHandler(PipedHttpHandler next) {
+    private ClientSessionInjectorHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange,
-            RequestContext context) throws Exception {
-        if (context.isInError()
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        
+        if (request.isInError()
                 || !exchange.getQueryParameters()
                         .containsKey(CLIENT_SESSION_KEY)) {
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
         try {
-            context.setClientSession(getClientSessionFactory()
+            request.setClientSession(getClientSessionFactory()
                     .getClientSession(exchange));
         } catch (IllegalArgumentException ex) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     ex.getMessage());
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 
     /**

@@ -17,7 +17,7 @@
  */
 package org.restheart.handlers.files;
 
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.collection.PutCollectionHandler;
 
 /**
@@ -38,7 +38,7 @@ public class PutBucketHandler extends PutCollectionHandler {
      *
      * @param next
      */
-    public PutBucketHandler(PipedHttpHandler next) {
+    public PutBucketHandler(PipelinedHandler next) {
         super(next);
     }
 }

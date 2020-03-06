@@ -28,9 +28,11 @@ import java.util.concurrent.TimeUnit;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.Bootstrapper;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
@@ -40,7 +42,8 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetAggregationHandler extends PipedHttpHandler {
+public class GetAggregationHandler extends PipelinedHandler {
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     /**
      * Default ctor
@@ -54,29 +57,30 @@ public class GetAggregationHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public GetAggregationHandler(PipedHttpHandler next) {
+    public GetAggregationHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange,
-            RequestContext context) throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        String queryUri = context.getAggregationOperation();
+        String queryUri = request.getAggregationOperation();
 
         List<AbstractAggregationOperation> aggregations
                 = AbstractAggregationOperation
-                        .getFromJson(context.getCollectionProps());
+                        .getFromJson(request.getCollectionProps());
 
         Optional<AbstractAggregationOperation> _query
                 = aggregations.stream().filter(q
@@ -85,9 +89,8 @@ public class GetAggregationHandler extends PipedHttpHandler {
         if (!_query.isPresent()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_FOUND, "query does not exist");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
@@ -98,31 +101,30 @@ public class GetAggregationHandler extends PipedHttpHandler {
         if (null == query.getType()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
-            next(exchange, context);
+            next(exchange);
             return;
         } else {
-            var avars = context.getAggreationVars() == null
+            var avars = request.getAggreationVars() == null
                     ? new BsonDocument()
-                    : context.getAggreationVars();
+                    : request.getAggreationVars();
 
             // add @page, @pagesize, @limit and @skip to avars to allow handling 
             // paging in the aggragation via default page and pagesize qparams
-            avars.put("@page", new BsonInt32(context.getPage()));
-            avars.put("@pagesize", new BsonInt32(context.getPagesize()));
-            avars.put("@limit", new BsonInt32(context.getPagesize()));
-            avars.put("@skip", new BsonInt32(context.getPagesize()
-                    * (context.getPage() - 1)));
+            avars.put("@page", new BsonInt32(request.getPage()));
+            avars.put("@pagesize", new BsonInt32(request.getPagesize()));
+            avars.put("@limit", new BsonInt32(request.getPagesize()));
+            avars.put("@skip", new BsonInt32(request.getPagesize()
+                    * (request.getPage() - 1)));
 
             switch (query.getType()) {
                 case MAP_REDUCE:
                     MapReduceIterable<BsonDocument> mrOutput;
                     MapReduce mapReduce = (MapReduce) query;
                     try {
-                        mrOutput = getDatabase()
-                                .getCollection(context.getDBName(),
-                                        context.getCollectionName())
+                        mrOutput = dbsDAO
+                                .getCollection(request.getDBName(),
+                                        request.getCollectionName())
                                 .mapReduce(
                                         mapReduce.getResolvedMap(avars),
                                         mapReduce.getResolvedReduce(avars))
@@ -132,19 +134,17 @@ public class GetAggregationHandler extends PipedHttpHandler {
                     } catch (MongoCommandException | InvalidMetadataException ex) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
-                                context,
                                 HttpStatus.SC_INTERNAL_SERVER_ERROR,
                                 "error executing mapReduce", ex);
-                        next(exchange, context);
+                        next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
-                                context,
                                 HttpStatus.SC_BAD_REQUEST,
                                 "error executing mapReduce: "
                                 + qvnbe.getMessage());
-                        next(exchange, context);
+                        next(exchange);
                         return;
                     }
                     // ***** get data
@@ -156,10 +156,10 @@ public class GetAggregationHandler extends PipedHttpHandler {
                     AggregateIterable<BsonDocument> agrOutput;
                     AggregationPipeline pipeline = (AggregationPipeline) query;
                     try {
-                        agrOutput = getDatabase()
+                        agrOutput = dbsDAO
                                 .getCollection(
-                                        context.getDBName(),
-                                        context.getCollectionName())
+                                        request.getDBName(),
+                                        request.getCollectionName())
                                 .aggregate(
                                         pipeline.getResolvedStagesAsList(avars))
                                 .maxTime(Bootstrapper.getConfiguration()
@@ -171,19 +171,17 @@ public class GetAggregationHandler extends PipedHttpHandler {
                             | InvalidMetadataException ex) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
-                                context,
                                 HttpStatus.SC_INTERNAL_SERVER_ERROR,
                                 "error executing aggreation pipeline", ex);
-                        next(exchange, context);
+                        next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
-                                context,
                                 HttpStatus.SC_BAD_REQUEST,
                                 "error executing aggreation pipeline: "
                                 + qvnbe.getMessage());
-                        next(exchange, context);
+                        next(exchange);
                         return;
                     }
                     // ***** get data
@@ -194,9 +192,8 @@ public class GetAggregationHandler extends PipedHttpHandler {
                 default:
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            context,
                             HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
-                    next(exchange, context);
+                    next(exchange);
                     return;
             }
         }
@@ -207,25 +204,23 @@ public class GetAggregationHandler extends PipedHttpHandler {
         }
 
         try {
-            context.setResponseContent(new AggregationResultRepresentationFactory()
+            response.setContent(new AggregationResultRepresentationFactory()
                     .getRepresentation(
                             exchange,
-                            context,
                             data,
                             data.size())
                     .asBsonDocument());
 
-            context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-            context.setResponseStatusCode(HttpStatus.SC_OK);
+            response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+            response.setStatusCode(HttpStatus.SC_OK);
 
             // call the ResponseTransformerMetadataHandler if piped in
-            next(exchange, context);
+            next(exchange);
         } catch (IllegalQueryParamenterException ex) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
-            next(exchange, context);
+            next(exchange);
         }
     }
 }

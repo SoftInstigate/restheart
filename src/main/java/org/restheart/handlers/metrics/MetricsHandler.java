@@ -42,9 +42,8 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.OFF;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
-import org.restheart.db.DatabaseImpl;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
 import static org.restheart.handlers.exchange.ExchangeKeys._METRICS;
 import org.restheart.representation.Resource;
@@ -58,7 +57,7 @@ import org.restheart.utils.ResponseHelper;
  * @author Lena Brüder {@literal <brueder@e-spirit.com>}
  * @author Christian Groth {@literal <groth@e-spirit.com>}
  */
-public class MetricsHandler extends PipedHttpHandler {
+public class MetricsHandler extends PipelinedHandler {
 
     @VisibleForTesting
     Configuration configuration = Bootstrapper.getConfiguration();
@@ -69,38 +68,27 @@ public class MetricsHandler extends PipedHttpHandler {
     /**
      *
      * @param next
-     * @param phh
      */
-    public MetricsHandler(PipedHttpHandler next) {
+    public MetricsHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
-     *
-     * @param phh
-     * @param db
-     * @param di
-     */
-    public MetricsHandler(PipedHttpHandler next, DatabaseImpl db) {
-        super(next, db);
-    }
-
-    /**
      * Computes the needed metrics level for given request.
-     * @param context current request context
+     * @param request current request
      * @return metrics level for request
      */
-    METRICS_GATHERING_LEVEL getMetricsLevelForRequest(RequestContext context) {
+    METRICS_GATHERING_LEVEL getMetricsLevelForRequest(BsonRequest request) {
 
         // check if enabled at all
         METRICS_GATHERING_LEVEL level = OFF;
         if (configuration.gatheringAboveOrEqualToLevel(ROOT)) {
 
             // check if db context is given
-            if (isFilledAndNotMetrics(context.getDBName())) {
+            if (isFilledAndNotMetrics(request.getDBName())) {
 
                 // check if collection context is given
-                if (isFilledAndNotMetrics(context.getCollectionName())) {
+                if (isFilledAndNotMetrics(request.getCollectionName())) {
 
                     // check if collection level configured
                     if (configuration.gatheringAboveOrEqualToLevel(COLLECTION)) {
@@ -127,15 +115,15 @@ public class MetricsHandler extends PipedHttpHandler {
 
     /**
      * Resolves the metrics registry for given gathering level.
-     * @param context current request context
+     * @param request current request
      * @param metricsLevel desired metrics gathering level
      * @return metrics registry
      */
-    MetricRegistry getMetricsRegistry(RequestContext context, METRICS_GATHERING_LEVEL metricsLevel) {
+    MetricRegistry getMetricsRegistry(BsonRequest request, METRICS_GATHERING_LEVEL metricsLevel) {
         switch (metricsLevel) {
             case ROOT: return metrics.registry();
-            case DATABASE: return metrics.registry(context.getDBName());
-            case COLLECTION: return metrics.registry(context.getDBName(), context.getCollectionName());
+            case DATABASE: return metrics.registry(request.getDBName());
+            case COLLECTION: return metrics.registry(request.getDBName(), request.getCollectionName());
             default: return null;
         }
     }
@@ -143,17 +131,17 @@ public class MetricsHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
 
-        METRICS_GATHERING_LEVEL metricsLevelForRequest = getMetricsLevelForRequest(context);
-        MetricRegistry registry = getMetricsRegistry(context, metricsLevelForRequest);
+        METRICS_GATHERING_LEVEL metricsLevelForRequest = getMetricsLevelForRequest(request);
+        MetricRegistry registry = getMetricsRegistry(request, metricsLevelForRequest);
 
         if (registry != null) {
-            if (context.isGet()) {
+            if (request.isGet()) {
 
                 // detect metrics response type
                 Deque<String> representationFormatParameters = exchange.getQueryParameters().get(REPRESENTATION_FORMAT_KEY);
@@ -175,22 +163,21 @@ public class MetricsHandler extends PipedHttpHandler {
                             .map(x -> "'" + x + "'")
                             .collect(Collectors.joining(","));
                     ResponseHelper.endExchangeWithMessage(exchange,
-                            context,
                             HttpStatus.SC_NOT_ACCEPTABLE,
                             "not acceptable, acceptable content types are: " + acceptableTypes
                     );
-                    next(exchange, context);
+                    next(exchange);
                 }
             } else {
                 exchange.setStatusCode(HttpStatus.SC_OK);
-                if (context.getContent() != null) {
-                    exchange.getResponseSender().send(context.getContent().toString());
+                if (request.getContent() != null) {
+                    exchange.getResponseSender().send(request.getContent().toString());
                 }
                 exchange.endExchange();
             }
         } else {  //no matching registry found
-            ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_FOUND, "not found");
-            next(exchange, context);
+            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "not found");
+            next(exchange);
         }
     }
 

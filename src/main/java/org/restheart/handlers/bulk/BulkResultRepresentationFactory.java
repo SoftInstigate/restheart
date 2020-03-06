@@ -27,7 +27,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.restheart.db.BulkOperationResult;
 import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.representation.AbstractRepresentationFactory;
 import org.restheart.representation.Link;
 import org.restheart.representation.RepUtils;
@@ -50,17 +50,16 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
     /**
      *
      * @param exchange
-     * @param context
      * @param result
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public Resource getRepresentation(HttpServerExchange exchange, RequestContext context, BulkOperationResult result)
+    public Resource getRepresentation(HttpServerExchange exchange, BulkOperationResult result)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Resource rep = createRepresentation(exchange, context, null);
+        final Resource rep = createRepresentation(exchange, null);
 
-        addBulkResult(result, context, rep, requestPath);
+        addBulkResult(result, BsonResponse.wrap(exchange), rep, requestPath);
 
         return rep;
     }
@@ -75,7 +74,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
     public Resource getRepresentation(HttpServerExchange exchange, MongoBulkWriteException mbwe)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
-        final Resource rep = createRepresentation(exchange, null, exchange.getRequestPath());
+        final Resource rep = createRepresentation(exchange, exchange.getRequestPath());
 
         addWriteResult(mbwe.getWriteResult(), rep, requestPath);
 
@@ -86,7 +85,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
 
     private void addBulkResult(
             final BulkOperationResult result,
-            final RequestContext context,
+            final BsonResponse response,
             final Resource rep,
             final String requestPath) {
         Resource nrep = new Resource();
@@ -105,7 +104,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                                     new Link("rh:newdoc",
                                             RepUtils
                                                     .getReferenceLink(
-                                                            context,
+                                                            response,
                                                             requestPath,
                                                             update.getId())),
                                     true);
@@ -199,14 +198,15 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
     /**
      *
      * @param exchange
-     * @param context
      * @param embeddedData
      * @param size
      * @return
      * @throws IllegalQueryParamenterException
      */
     @Override
-    public Resource getRepresentation(HttpServerExchange exchange, RequestContext context, List<BsonDocument> embeddedData, long size) throws IllegalQueryParamenterException {
+    public Resource getRepresentation(HttpServerExchange exchange, 
+            List<BsonDocument> embeddedData, long size) 
+            throws IllegalQueryParamenterException {
         throw new UnsupportedOperationException("Not supported."); //To change body of generated methods, choose Tools | Templates.
     }
 }

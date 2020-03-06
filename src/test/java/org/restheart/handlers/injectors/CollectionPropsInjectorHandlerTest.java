@@ -31,6 +31,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.exchange.AbstractExchange;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +94,7 @@ public class CollectionPropsInjectorHandlerTest {
      */
     @Test
     public void testCheckCollectionPut() {
-        RequestContext context = createContext("/db/collection", "PUT");
+        var context = createRequest("/db/collection", "PUT");
 
         assertEquals(TYPE.COLLECTION, context.getType());
         assertEquals(AbstractExchange.METHOD.PUT, context.getMethod());
@@ -105,7 +106,7 @@ public class CollectionPropsInjectorHandlerTest {
      */
     @Test
     public void testCheckCollectionFilesPost() {
-        RequestContext context = createContext("/db/fs.files", "POST");
+        var context = createRequest("/db/fs.files", "POST");
 
         assertEquals(TYPE.FILES_BUCKET, context.getType());
         assertEquals(AbstractExchange.METHOD.POST, context.getMethod());
@@ -117,19 +118,18 @@ public class CollectionPropsInjectorHandlerTest {
      */
     @Test
     public void testCheckCollectionRoot() {
-        RequestContext context = createContext("/", "PUT");
+        var context = createRequest("/", "PUT");
 
         assertEquals(TYPE.ROOT, context.getType());
         assertEquals(AbstractExchange.METHOD.PUT, context.getMethod());
         assertEquals(false, CollectionPropsInjectorHandler.checkCollection(context));
     }
 
-    private RequestContext createContext(String requestPath, String httpMethod) {
+    private BsonRequest createRequest(String requestPath, String httpMethod) {
         HttpServerExchange exchange = new HttpServerExchange();
         exchange.setRequestPath(requestPath);
         exchange.setRequestMethod(new HttpString(httpMethod));
-        RequestContext context = new RequestContext(exchange, "/", "*");
-        return context;
+        return BsonRequest.init(exchange, "/", "*");
     }
 
 }

@@ -38,6 +38,7 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.Bootstrapper;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE.MAXKEY;
 import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE.MINKEY;
@@ -251,7 +252,7 @@ public class URLUtils {
 
     /**
      *
-     * @param context
+     * @param request
      * @param dbName
      * @param collName
      * @param id
@@ -259,7 +260,7 @@ public class URLUtils {
      * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithDocId(
-            RequestContext context,
+            BsonRequest request,
             String dbName,
             String collName,
             BsonValue id)
@@ -284,12 +285,12 @@ public class URLUtils {
             sb.append("?id_type=").append(docIdType.name());
         }
 
-        return context.mapUri(sb.toString());
+        return request.mapUri(sb.toString());
     }
 
     /**
      *
-     * @param context
+     * @param request
      * @param dbName
      * @param collName
      * @param ids
@@ -297,7 +298,7 @@ public class URLUtils {
      * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterMany(
-            RequestContext context,
+            BsonRequest request,
             String dbName,
             String collName,
             BsonValue[] ids)
@@ -311,12 +312,12 @@ public class URLUtils {
                 .append("{'$in'").append(":")
                 .append(getIdsString(ids)).append("}}");
 
-        return context.mapUri(sb.toString());
+        return request.mapUri(sb.toString());
     }
 
     /**
      *
-     * @param context
+     * @param request
      * @param dbName
      * @param collName
      * @param referenceField
@@ -325,7 +326,7 @@ public class URLUtils {
      * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterOne(
-            RequestContext context,
+            BsonRequest request,
             String dbName,
             String collName,
             String referenceField,
@@ -341,12 +342,12 @@ public class URLUtils {
                 .append(getIdString(id))
                 .append("}");
 
-        return context.mapUri(sb.toString());
+        return request.mapUri(sb.toString());
     }
 
     /**
      *
-     * @param context
+     * @param request
      * @param dbName
      * @param collName
      * @param referenceField
@@ -355,7 +356,7 @@ public class URLUtils {
      * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterManyInverse(
-            RequestContext context,
+            BsonRequest request,
             String dbName,
             String collName,
             String referenceField,
@@ -369,7 +370,7 @@ public class URLUtils {
                 .append("':{").append("'$elemMatch':{'$eq':")
                 .append(getIdString(id)).append("}}}");
 
-        return JsonUtils.minify(context.mapUri(sb.toString()));
+        return JsonUtils.minify(request.mapUri(sb.toString()));
     }
 
     /**

@@ -18,11 +18,13 @@
 package org.restheart.handlers.files;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.collection.DeleteCollectionHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 
 /**
  *
@@ -31,6 +33,7 @@ import org.restheart.handlers.collection.DeleteCollectionHandler;
 public class DeleteBucketHandler extends DeleteCollectionHandler {
 
     private final GridFsRepository gridFsDAO;
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     /**
      * Creates a new instance of DeleteBucketHandler
@@ -46,7 +49,7 @@ public class DeleteBucketHandler extends DeleteCollectionHandler {
      *
      * @param next
      */
-    public DeleteBucketHandler(PipedHttpHandler next) {
+    public DeleteBucketHandler(PipelinedHandler next) {
         super(next);
         this.gridFsDAO = new GridFsDAO();
     }
@@ -54,23 +57,25 @@ public class DeleteBucketHandler extends DeleteCollectionHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
         
         try {
-            gridFsDAO.deleteChunksCollection(getDatabase(), context.getDBName(), context.getCollectionName());
+            gridFsDAO.deleteChunksCollection(dbsDAO, request.getDBName(), request.getCollectionName());
         } catch (Throwable t) {
-            context.addWarning("error removing the bucket file chunks: " + t.getMessage());
+            response.addWarning("error removing the bucket file chunks: " + t.getMessage());
         }
 
         // delete the bucket collection
-        super.handleRequest(exchange, context);
+        super.handleRequest(exchange);
     }
 }

@@ -24,7 +24,7 @@ import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.utils.JsonUtils;
@@ -271,7 +271,7 @@ public class Relationship {
 
     /**
      *
-     * @param context
+     * @param request
      * @param dbName
      * @param collName
      * @param data
@@ -280,7 +280,7 @@ public class Relationship {
      * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     public String getRelationshipLink(
-            RequestContext context,
+            BsonRequest request,
             String dbName,
             String collName,
             BsonDocument data)
@@ -304,7 +304,7 @@ public class Relationship {
                     id = id.asArray().get(0);
                 }
 
-                return URLUtils.getUriWithDocId(context, db, targetCollection, id);
+                return URLUtils.getUriWithDocId(request, db, targetCollection, id);
             } else {
                 if (!_referenceValue.isArray()) {
                     throw new IllegalArgumentException(
@@ -325,7 +325,7 @@ public class Relationship {
                 List<BsonValue> bsonVals = _referenceValue.asArray().getValues();
                 BsonValue[] ids = bsonVals.toArray(new BsonValue[bsonVals.size()]);
 
-                return URLUtils.getUriWithFilterMany(context, db, targetCollection, ids);
+                return URLUtils.getUriWithFilterMany(request, db, targetCollection, ids);
             }
         } else {
             // INVERSE
@@ -333,14 +333,14 @@ public class Relationship {
 
             if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY) {
                 return URLUtils.getUriWithFilterOne(
-                        context,
+                        request,
                         db,
                         targetCollection,
                         referenceField,
                         id);
             } else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY) {
                 return URLUtils.getUriWithFilterManyInverse(
-                        context,
+                        request,
                         db,
                         targetCollection,
                         referenceField,

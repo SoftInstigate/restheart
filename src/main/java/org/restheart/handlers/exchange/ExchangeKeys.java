@@ -276,6 +276,31 @@ public interface ExchangeKeys {
     public static final String UNDERSCORE = "_";
     
     /**
+     *
+     */
+    public static final String PROPERTIES = "properties";
+
+    /**
+     *
+     */
+    public static final String FILE_METADATA = "metadata";
+
+    /**
+     *
+     */
+    public static final String _ID = "_id";
+
+    /**
+     *
+     */
+    public static final String CONTENT_TYPE = "contentType";
+
+    /**
+     *
+     */
+    public static final String FILENAME = "filename";
+    
+    /**
      * 
      */
     public static final String NUL = Character.toString('\0');

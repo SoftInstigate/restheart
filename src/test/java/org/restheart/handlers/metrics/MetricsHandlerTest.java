@@ -15,7 +15,7 @@ import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.OFF;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 
 /**
  *
@@ -34,7 +34,7 @@ public class MetricsHandlerTest {
      */
     @Before
     public void setUp() {
-        handler = new MetricsHandler(null, null);
+        handler = new MetricsHandler(null);
         handler.metrics = mock(SharedMetricRegistryProxy.class);
     }
 
@@ -43,7 +43,7 @@ public class MetricsHandlerTest {
      */
     @Test
     public void testRequestContextForMetricsRequestToRoot() {
-        assertRequestContextForMetricsRequest(createRequestContext(URI_METRICS_ROOT), "_metrics", null);
+        assertRequestContextForMetricsRequest(createRequest(URI_METRICS_ROOT), "_metrics", null);
     }
 
     /**
@@ -51,7 +51,7 @@ public class MetricsHandlerTest {
      */
     @Test
     public void testRequestContextForMetricsRequestToDatabase() {
-        assertRequestContextForMetricsRequest(createRequestContext(URI_METRICS_DATABASE), "foo", "_metrics");
+        assertRequestContextForMetricsRequest(createRequest(URI_METRICS_DATABASE), "foo", "_metrics");
     }
 
     /**
@@ -59,12 +59,12 @@ public class MetricsHandlerTest {
      */
     @Test
     public void testRequestContextForMetricsRequestToCollection() {
-        assertRequestContextForMetricsRequest(createRequestContext(URI_METRICS_COLLECTION), "foo", "bar");
+        assertRequestContextForMetricsRequest(createRequest(URI_METRICS_COLLECTION), "foo", "bar");
     }
 
-    private void assertRequestContextForMetricsRequest(RequestContext requestContext, String expectedDatabaseName, String expectedCollectionName) {
-        assertEquals(expectedDatabaseName, requestContext.getDBName());
-        assertEquals(expectedCollectionName, requestContext.getCollectionName());
+    private void assertRequestContextForMetricsRequest(BsonRequest request, String expectedDatabaseName, String expectedCollectionName) {
+        assertEquals(expectedDatabaseName, request.getDBName());
+        assertEquals(expectedCollectionName, request.getCollectionName());
     }
 
     /**
@@ -91,23 +91,23 @@ public class MetricsHandlerTest {
         assertMetricsLevelForRequest(URI_METRICS_COLLECTION, OFF, OFF, OFF, COLLECTION);
     }
 
-    private void assertMetricsLevelForRequest(String requestUri, Configuration.METRICS_GATHERING_LEVEL expectedLevelForConfigOff,
+    private void assertMetricsLevelForRequest(String resourceUri, Configuration.METRICS_GATHERING_LEVEL expectedLevelForConfigOff,
             Configuration.METRICS_GATHERING_LEVEL expectedLevelForConfigRoot, Configuration.METRICS_GATHERING_LEVEL expectedLevelForConfigDatabase,
             Configuration.METRICS_GATHERING_LEVEL expectedLevelForConfigCollection) {
 
-        RequestContext requestContext = createRequestContext(requestUri);
+        var request = createRequest(resourceUri);
 
         handler.configuration = configWith(OFF);
-        assertEquals(expectedLevelForConfigOff, handler.getMetricsLevelForRequest(requestContext));
+        assertEquals(expectedLevelForConfigOff, handler.getMetricsLevelForRequest(request));
 
         handler.configuration = configWith(ROOT);
-        assertEquals(expectedLevelForConfigRoot, handler.getMetricsLevelForRequest(requestContext));
+        assertEquals(expectedLevelForConfigRoot, handler.getMetricsLevelForRequest(request));
 
         handler.configuration = configWith(DATABASE);
-        assertEquals(expectedLevelForConfigDatabase, handler.getMetricsLevelForRequest(requestContext));
+        assertEquals(expectedLevelForConfigDatabase, handler.getMetricsLevelForRequest(request));
 
         handler.configuration = configWith(COLLECTION);
-        assertEquals(expectedLevelForConfigCollection, handler.getMetricsLevelForRequest(requestContext));
+        assertEquals(expectedLevelForConfigCollection, handler.getMetricsLevelForRequest(request));
     }
 
     private Configuration configWith(Configuration.METRICS_GATHERING_LEVEL mgl) {
@@ -125,7 +125,7 @@ public class MetricsHandlerTest {
      */
     @Test
     public void testMetricsRegistryForRequestToRoot() {
-        RequestContext requestContext = createRequestContext(URI_METRICS_ROOT);
+        var requestContext = createRequest(URI_METRICS_ROOT);
         handler.getMetricsRegistry(requestContext, ROOT);
         verify(handler.metrics, times(1)).registry();
     }
@@ -135,7 +135,7 @@ public class MetricsHandlerTest {
      */
     @Test
     public void testMetricsRegistryForRequestToDatabase() {
-        RequestContext requestContext = createRequestContext(URI_METRICS_DATABASE);
+        var requestContext = createRequest(URI_METRICS_DATABASE);
         handler.getMetricsRegistry(requestContext, DATABASE);
         verify(handler.metrics, times(1)).registry(eq(requestContext.getDBName()));
     }
@@ -145,17 +145,17 @@ public class MetricsHandlerTest {
      */
     @Test
     public void testMetricsRegistryForRequestToCollection() {
-        RequestContext requestContext = createRequestContext(URI_METRICS_COLLECTION);
+        var requestContext = createRequest(URI_METRICS_COLLECTION);
         handler.getMetricsRegistry(requestContext, COLLECTION);
         verify(handler.metrics, times(1)).registry(eq(requestContext.getDBName()), eq(requestContext.getCollectionName()));
     }
 
-    private RequestContext createRequestContext(String requestUri) {
-        HttpServerExchange httpServerExchange1 = mock(HttpServerExchange.class);
-        when(httpServerExchange1.getStatusCode()).thenReturn(200);
-        when(httpServerExchange1.getRequestMethod()).thenReturn(Methods.GET);
-        when(httpServerExchange1.getRequestPath()).thenReturn("/");
-        HttpServerExchange httpServerExchange = httpServerExchange1;
-        return new RequestContext(httpServerExchange, "/", requestUri);
+    private BsonRequest createRequest(String resourceUri) {
+        HttpServerExchange httpServerExchange = mock(HttpServerExchange.class);
+        
+        when(httpServerExchange.getStatusCode()).thenReturn(200);
+        when(httpServerExchange.getRequestMethod()).thenReturn(Methods.GET);
+        when(httpServerExchange.getRequestPath()).thenReturn("/");
+        return BsonRequest.init(httpServerExchange, "/", resourceUri);
     }
 }

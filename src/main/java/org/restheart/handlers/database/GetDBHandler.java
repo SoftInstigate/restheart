@@ -17,13 +17,15 @@
  */
 package org.restheart.handlers.database;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -32,7 +34,8 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetDBHandler extends PipedHttpHandler {
+public class GetDBHandler extends PipelinedHandler {
+    private Database dbsDAO = new DatabaseImpl();
 
     /**
      * Creates a new instance of GetDBHandler
@@ -45,8 +48,8 @@ public class GetDBHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public GetDBHandler(PipedHttpHandler next) {
-        super(next, new DatabaseImpl());
+    public GetDBHandler(PipelinedHandler next) {
+        super(next);
     }
 
     /**
@@ -54,56 +57,54 @@ public class GetDBHandler extends PipedHttpHandler {
      * @param next
      * @param dbsDAO
      */
-    public GetDBHandler(PipedHttpHandler next, Database dbsDAO) {
-        super(next, dbsDAO);
+    @VisibleForTesting
+    public GetDBHandler(PipelinedHandler next, Database dbsDAO) {
+        super(next);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        List<String> colls = getDatabase()
-                .getCollectionNames(
-                        context.getClientSession(),
-                        context.getDBName());
+        List<String> colls = dbsDAO.getCollectionNames(
+                request.getClientSession(),
+                request.getDBName());
 
         List<BsonDocument> data = null;
 
-        if (context.getPagesize() > 0) {
-            data = getDatabase().getDatabaseData(
-                    context.getClientSession(),
-                    context.getDBName(),
+        if (request.getPagesize() > 0) {
+            data = dbsDAO.getDatabaseData(
+                    request.getClientSession(),
+                    request.getDBName(),
                     colls,
-                    context.getPage(),
-                    context.getPagesize());
+                    request.getPage(),
+                    request.getPagesize());
         }
 
-        context.setResponseContent(new DBRepresentationFactory()
+        response.setContent(new DBRepresentationFactory()
                 .getRepresentation(
                         exchange,
-                        context,
                         data,
-                        getDatabase()
-                                .getDBSize(colls))
+                        dbsDAO.getDBSize(colls))
                 .asBsonDocument());
 
-        context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-        context.setResponseStatusCode(HttpStatus.SC_OK);
+        response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+        response.setStatusCode(HttpStatus.SC_OK);
 
-        ResponseHelper.injectEtagHeader(exchange, context.getDbProps());
+        ResponseHelper.injectEtagHeader(exchange, request.getDbProps());
 
-        next(exchange, context);
+        next(exchange);
     }
 }

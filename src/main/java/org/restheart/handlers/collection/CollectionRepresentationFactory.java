@@ -30,6 +30,7 @@ import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.handlers.document.DocumentRepresentationFactory;
+import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import static org.restheart.handlers.exchange.ExchangeKeys._AGGREGATIONS;
@@ -103,10 +104,10 @@ public class CollectionRepresentationFactory
 
     private static void addSchemaLinks(
             Resource rep,
-            RequestContext context) {
+            BsonRequest request) {
         try {
             List<CheckerMetadata> checkers
-                    = CheckerMetadata.getFromJson(context.getCollectionProps());
+                    = CheckerMetadata.getFromJson(request.getCollectionProps());
 
             if (checkers != null) {
                 checkers
@@ -127,14 +128,14 @@ public class CollectionRepresentationFactory
                     String schemaStoreDb;
 
                     if (_schemaStoreDb == null) {
-                        schemaStoreDb = context.getDBName();
+                        schemaStoreDb = request.getDBName();
                     } else {
                         schemaStoreDb = _schemaStoreDb.toString();
                     }
 
                     try {
                         rep.addLink(new Link("schema", URLUtils
-                                .getUriWithDocId(context,
+                                .getUriWithDocId(request,
                                         schemaStoreDb, "_schemas", schemaId)));
                     } catch (UnsupportedDocumentIdException ex) {
                     }
@@ -155,7 +156,6 @@ public class CollectionRepresentationFactory
     /**
      *
      * @param exchange
-     * @param context
      * @param embeddedData
      * @param size
      * @return
@@ -164,37 +164,38 @@ public class CollectionRepresentationFactory
     @Override
     public Resource getRepresentation(
             HttpServerExchange exchange,
-            RequestContext context,
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
+        var request = BsonRequest.wrap(exchange);
+        
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;
 
-        if (context.isFullHalMode()) {
-            rep = createRepresentation(exchange, context, requestPath);
+        if (request.isFullHalMode()) {
+            rep = createRepresentation(exchange, requestPath);
         } else {
-            rep = createRepresentation(exchange, context, null);
+            rep = createRepresentation(exchange, null);
         }
 
-        if (!context.isNoProps()) {
-            addProperties(rep, context);
+        if (!request.isNoProps()) {
+            addProperties(rep, request);
         }
 
-        addSizeAndTotalPagesProperties(size, context, rep);
-        addAggregationsLinks(context, rep, requestPath);
-        addStreamsLinks(context, rep, requestPath);
-        addSchemaLinks(rep, context);
-        addEmbeddedData(embeddedData, rep, requestPath, exchange, context);
+        addSizeAndTotalPagesProperties(size, request, rep);
+        addAggregationsLinks(request, rep, requestPath);
+        addStreamsLinks(request, rep, requestPath);
+        addSchemaLinks(rep, request);
+        addEmbeddedData(embeddedData, rep, requestPath, exchange);
 
-        if (context.isFullHalMode()) {
+        if (request.isFullHalMode()) {
             addSpecialProperties(
                     rep,
-                    context.getType(),
-                    context.getCollectionProps());
+                    request.getType(),
+                    request.getCollectionProps());
 
-            addPaginationLinks(exchange, context, size, rep);
-            addLinkTemplates(context, rep, requestPath);
+            addPaginationLinks(exchange, size, rep);
+            addLinkTemplates(request, rep, requestPath);
         }
 
         return rep;
@@ -202,9 +203,9 @@ public class CollectionRepresentationFactory
 
     private void addProperties(
             final Resource rep,
-            final RequestContext context) {
+            final BsonRequest request) {
         // add the collection properties
-        final BsonDocument collProps = context.getCollectionProps();
+        final BsonDocument collProps = request.getCollectionProps();
 
         rep.addProperties(collProps);
     }
@@ -213,8 +214,7 @@ public class CollectionRepresentationFactory
             List<BsonDocument> embeddedData,
             final Resource rep,
             final String requestPath,
-            final HttpServerExchange exchange,
-            final RequestContext context)
+            final HttpServerExchange exchange)
             throws IllegalQueryParamenterException {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
@@ -224,7 +224,6 @@ public class CollectionRepresentationFactory
                         embeddedData,
                         requestPath,
                         exchange,
-                        context,
                         rep);
             }
         } else {
@@ -233,10 +232,10 @@ public class CollectionRepresentationFactory
     }
 
     private void addAggregationsLinks(
-            final RequestContext context,
+            final BsonRequest request,
             final Resource rep,
             final String requestPath) {
-        BsonValue _aggregations = context
+        BsonValue _aggregations = request
                 .getCollectionProps()
                 .get(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME);
 
@@ -263,10 +262,10 @@ public class CollectionRepresentationFactory
     }
     
     private void addStreamsLinks(
-            final RequestContext context,
+            final BsonRequest request,
             final Resource rep,
             final String requestPath) {
-        BsonValue _streams = context
+        BsonValue _streams = request
                 .getCollectionProps()
                 .get(STREAMS_ELEMENT_NAME);
 
@@ -293,16 +292,16 @@ public class CollectionRepresentationFactory
     }
 
     private void addLinkTemplates(
-            final RequestContext context,
+            final BsonRequest request,
             final Resource rep,
             final String requestPath) {
         // link templates and curies
-        if (context.isParentAccessible()) {
+        if (request.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link(RHDB, URLUtils.getParentPath(requestPath)));
         }
 
-        if (TYPE.FILES_BUCKET.equals(context.getType())) {
+        if (TYPE.FILES_BUCKET.equals(request.getType())) {
             rep.addLink(new Link(
                     RHBUCKET,
                     URLUtils.getParentPath(requestPath)
@@ -313,7 +312,7 @@ public class CollectionRepresentationFactory
                     RHFILE,
                     requestPath + "/{fileid}{?id_type}",
                     true));
-        } else if (TYPE.COLLECTION.equals(context.getType())) {
+        } else if (TYPE.COLLECTION.equals(request.getType())) {
 
             rep.addLink(new Link(
                     RHCOLL,
@@ -328,8 +327,8 @@ public class CollectionRepresentationFactory
         rep.addLink(new Link(RHINDEXES,
                 requestPath
                 + "/"
-                + context.getDBName()
-                + "/" + context.getCollectionName()
+                + request.getDBName()
+                + "/" + request.getCollectionName()
                 + "/_indexes"));
 
         rep.addLink(new Link(RHFILTER, requestPath + "{?filter}", true));
@@ -342,9 +341,10 @@ public class CollectionRepresentationFactory
             List<BsonDocument> embeddedData,
             String requestPath,
             HttpServerExchange exchange,
-            RequestContext context,
             Resource rep)
             throws IllegalQueryParamenterException {
+        var request = BsonRequest.wrap(exchange);
+        
         for (BsonDocument d : embeddedData) {
             BsonValue _id = d.get(_ID);
 
@@ -362,19 +362,17 @@ public class CollectionRepresentationFactory
                             .getRepresentation(
                                     requestPath + "/_null",
                                     exchange,
-                                    context,
                                     d);
                 } else {
                     nrep = new DocumentRepresentationFactory()
                             .getRepresentation(
                                     RepUtils.getReferenceLink(requestPath, _id),
                                     exchange,
-                                    context,
                                     d);
                 }
 
-                if (null == context.getType()) {
-                    if (context.isFullHalMode()) {
+                if (null == request.getType()) {
+                    if (request.isFullHalMode()) {
                         DocumentRepresentationFactory.addSpecialProperties(
                                 nrep,
                                 TYPE.DOCUMENT,
@@ -383,9 +381,9 @@ public class CollectionRepresentationFactory
 
                     rep.addChild(RHDOC, nrep);
                 } else {
-                    switch (context.getType()) {
+                    switch (request.getType()) {
                         case FILES_BUCKET:
-                            if (context.isFullHalMode()) {
+                            if (request.isFullHalMode()) {
                                 DocumentRepresentationFactory.addSpecialProperties(
                                         nrep,
                                         TYPE.FILE,
@@ -394,7 +392,7 @@ public class CollectionRepresentationFactory
                             rep.addChild(RHFILE, nrep);
                             break;
                         case SCHEMA_STORE:
-                            if (context.isFullHalMode()) {
+                            if (request.isFullHalMode()) {
                                 DocumentRepresentationFactory.addSpecialProperties(
                                         nrep,
                                         TYPE.SCHEMA,
@@ -403,7 +401,7 @@ public class CollectionRepresentationFactory
                             rep.addChild(RHSCHEMA, nrep);
                             break;
                         default:
-                            if (context.isFullHalMode()) {
+                            if (request.isFullHalMode()) {
                                 DocumentRepresentationFactory.addSpecialProperties(
                                         nrep,
                                         TYPE.DOCUMENT,

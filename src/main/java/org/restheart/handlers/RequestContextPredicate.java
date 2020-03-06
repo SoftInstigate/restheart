@@ -20,9 +20,9 @@ package org.restheart.handlers;
 import io.undertow.server.HttpServerExchange;
 
 /**
- *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
+@Deprecated
 public interface RequestContextPredicate {
 
     /**

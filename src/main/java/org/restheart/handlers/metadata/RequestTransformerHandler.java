@@ -21,8 +21,10 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.metadata.TransformerMetadata;
 import org.restheart.metadata.TransformerMetadata.PHASE;
 import org.restheart.plugins.GlobalTransformer;
@@ -47,7 +49,7 @@ public class RequestTransformerHandler
      *
      * @param next
      */
-    public RequestTransformerHandler(PipedHttpHandler next) {
+    public RequestTransformerHandler(PipelinedHandler next) {
         super(next);
     }
 
@@ -104,19 +106,22 @@ public class RequestTransformerHandler
     }
 
     @Override
-    void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context) {
+    void applyGlobalTransformers(HttpServerExchange exchange) {
+        var request = BsonRequest.wrap(exchange);
+        var context = RequestContext.wrap(exchange);
+        
         // execute global request tranformers
         PluginsRegistry.getInstance().getGlobalTransformers().stream()
                 .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
                 .forEachOrdered(gt -> {
-                    if (context.getContent() == null
-                            || context.getContent().isDocument()) {
+                    if (request.getContent() == null
+                            || request.getContent().isDocument()) {
                         gt.transform(
                                 exchange,
                                 context,
-                                context.getContent());
-                    } else if (context.getContent().isArray()) {
-                        context.getContent().asArray().forEach(doc -> {
+                                request.getContent());
+                    } else if (request.getContent().isArray()) {
+                        request.getContent().asArray().forEach(doc -> {
                             gt.transform(
                                     exchange,
                                     context,
@@ -129,9 +134,11 @@ public class RequestTransformerHandler
     @Override
     void applyTransformLogic(
             HttpServerExchange exchange,
-            RequestContext context,
             List<TransformerMetadata> rts)
             throws InvalidMetadataException {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        var context = RequestContext.wrap(exchange);
 
         // execute request tranformers
         rts.stream().filter((rt)
@@ -143,9 +150,9 @@ public class RequestTransformerHandler
                         var t = tr.getInstance();
                         var confArgs = tr.getConfArgsAsBsonDocument();
 
-                        BsonValue requestContent = context.getContent() == null
+                        BsonValue requestContent = request.getContent() == null
                                 ? new BsonDocument()
-                                : context.getContent();
+                                : request.getContent();
 
                         if (requestContent.isDocument()) {
                             t.transform(
@@ -154,7 +161,7 @@ public class RequestTransformerHandler
                                     requestContent,
                                     rt.getArgs(),
                                     confArgs);
-                        } else if (context.isPost()
+                        } else if (request.isPost()
                                 && requestContent.isArray()) {
                             requestContent.asArray().stream().forEachOrdered(
                                     (doc) -> {
@@ -171,14 +178,14 @@ public class RequestTransformerHandler
                                 + rt.getName()
                                 + "' in singleton group 'transformers'";
                         LOGGER.warn(err);
-                        context.addWarning(err);
+                        response.addWarning(err);
                     } catch (Throwable t) {
                         String err = "Error executing transformer '"
                                 + rt.getName() 
                                 + "': " 
                                 + t.getMessage();
                         LOGGER.warn(err);
-                        context.addWarning(err);
+                        response.addWarning(err);
                     }
                 });
     }

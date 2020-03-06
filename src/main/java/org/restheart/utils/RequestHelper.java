@@ -20,14 +20,25 @@ package org.restheart.utils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
+import org.bson.BsonValue;
 import org.bson.types.ObjectId;
+import org.restheart.db.OperationResult;
+import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.metadata.InvalidMetadataException;
+import org.restheart.metadata.CheckerMetadata;
+import org.restheart.metadata.Relationship;
+import org.restheart.metadata.TransformerMetadata;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestHelper {
+
+    private RequestHelper() {
+    }
 
     /**
      *
@@ -77,6 +88,128 @@ public class RequestHelper {
         }
     }
 
-    private RequestHelper() {
+    /**
+     *
+     * @param content
+     * @param exchange
+     * @return true if content contains invalid metata. In this case it also
+     * invoke ResponseHelper.endExchangeWithMessage() on the exchange and the
+     * caller must invoke next() and return
+     * @throws Exception
+     */
+    public static boolean isInvalidMetadata(BsonDocument content, HttpServerExchange exchange) throws Exception {
+        // check RELS metadata
+        if (content.containsKey(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
+            try {
+                Relationship.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong relationships definition. "
+                        + ex.getMessage(), ex);
+                return true;
+            }
+        }
+        // check RT metadata
+        if (content.containsKey(TransformerMetadata.RTS_ELEMENT_NAME)) {
+            try {
+                TransformerMetadata.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong representation transformer definition. "
+                        + ex.getMessage(), ex);
+                return true;
+            }
+        }
+        // check SC metadata
+        if (content.containsKey(CheckerMetadata.ROOT_KEY)) {
+            try {
+                CheckerMetadata.getFromJson(content);
+            } catch (InvalidMetadataException ex) {
+                ResponseHelper.endExchangeWithMessage(
+                        exchange,
+                        HttpStatus.SC_NOT_ACCEPTABLE,
+                        "wrong checker definition. "
+                        + ex.getMessage(), ex);
+                return true;
+            }
+        }
+        return false;
     }
+
+    /**
+     *
+     * @param content
+     * @param exchange
+     * @return true if content is not acceptable. In this case it also
+     * invoke ResponseHelper.endExchangeWithMessage() on the exchange and the
+     * caller must invoke next() and return
+     * @throws Exception
+     */
+    public static boolean isNotAcceptableContent(BsonValue content, HttpServerExchange exchange) throws Exception {
+        // cannot proceed with no data
+        if (content == null) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "no data provided");
+            return true;
+        }
+        // cannot proceed with an array
+        if (!content.isDocument()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "data must be a json object");
+            return true;
+        }
+        if (content.asDocument().isEmpty()) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_NOT_ACCEPTABLE,
+                    "no data provided");
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     *
+     * warn side effect: invokes BsonResponse.wrap(exchange).setDbOperationResult(result)
+     * @param result
+     * @param exchange
+     * @return true if response is in coflict. In this case it also
+     * invoke ResponseHelper.endExchangeWithMessage() on the exchange and the
+     * caller must invoke next() and return
+     * @throws Exception
+     */
+    public static boolean isResponseInConflict(OperationResult result, HttpServerExchange exchange) throws Exception {
+        BsonResponse.wrap(exchange).setDbOperationResult(result);
+        // inject the etag
+        if (result.getEtag() != null) {
+            ResponseHelper.injectEtagHeader(exchange, result.getEtag());
+        }
+        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_CONFLICT,
+                    "The ETag must be provided using the '"
+                    + Headers.IF_MATCH
+                    + "' header");
+            return true;
+        }
+        // handle the case of duplicate key error
+        if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
+            ResponseHelper.endExchangeWithMessage(
+                    exchange,
+                    HttpStatus.SC_EXPECTATION_FAILED,
+                    ResponseHelper.getMessageFromErrorCode(11000));
+            return true;
+        }
+        return false;
+    }
+
 }

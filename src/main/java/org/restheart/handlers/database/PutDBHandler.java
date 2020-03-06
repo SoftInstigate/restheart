@@ -21,9 +21,11 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.handlers.metadata.InvalidMetadataException;
 import org.restheart.metadata.TransformerMetadata;
@@ -34,7 +36,8 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PutDBHandler extends PipedHttpHandler {
+public class PutDBHandler extends PipelinedHandler {
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     /**
      * Creates a new instance of PutDBHandler
@@ -48,38 +51,36 @@ public class PutDBHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public PutDBHandler(PipedHttpHandler next) {
+    public PutDBHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        if (context.getDBName().isEmpty()
-                || context.getDBName().startsWith("_")) {
+        if (request.getDBName().isEmpty()
+                || request.getDBName().startsWith("_")) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "db name cannot be empty or start with _");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
-        BsonValue _content = context.getContent();
+        BsonValue _content = request.getContent();
 
         if (_content == null) {
             _content = new BsonDocument();
@@ -89,10 +90,9 @@ public class PutDBHandler extends PipedHttpHandler {
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
@@ -105,28 +105,27 @@ public class PutDBHandler extends PipedHttpHandler {
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong representation transform logic definition. "
                         + ex.getMessage(),
                         ex);
-                next(exchange, context);
+                next(exchange);
                 return;
             }
         }
 
-        boolean updating = context.getDbProps() != null;
+        boolean updating = request.getDbProps() != null;
 
-        OperationResult result = getDatabase().upsertDB(
-                context.getClientSession(),
-                context.getDBName(),
+        OperationResult result = dbsDAO.upsertDB(
+                request.getClientSession(),
+                request.getDBName(),
                 content,
-                context.getETag(),
+                request.getETag(),
                 updating,
                 false,
-                context.isETagCheckRequired());
+                request.isETagCheckRequired());
 
-        context.setDbOperationResult(result);
+        response.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
@@ -136,20 +135,19 @@ public class PutDBHandler extends PipedHttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_CONFLICT,
                     "The database's ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header.");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
         // invalidate the cache db item
-        LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
+        LocalCachesSingleton.getInstance().invalidateDb(request.getDBName());
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
-        next(exchange, context);
+        next(exchange);
     }
 }

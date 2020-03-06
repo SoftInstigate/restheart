@@ -25,7 +25,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.representation.Link;
@@ -46,7 +46,6 @@ public class IndexesRepresentationFactory {
     /**
      *
      * @param exchange
-     * @param context
      * @param embeddedData
      * @param size
      * @return 
@@ -54,12 +53,13 @@ public class IndexesRepresentationFactory {
      */
     static public Resource getRepresentation(
             HttpServerExchange exchange,
-            RequestContext context,
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
+        var request = BsonRequest.wrap(exchange);
+        
         String requestPath = URLUtils.removeTrailingSlashes(
-                context.getUnmappedRequestUri());
+                request.getUnmappedRequestUri());
 
         String queryString = exchange.getQueryString() == null
                 || exchange.getQueryString().isEmpty()
@@ -68,7 +68,7 @@ public class IndexesRepresentationFactory {
 
         Resource rep;
 
-        if (context.isFullHalMode()) {
+        if (request.isFullHalMode()) {
             rep = new Resource(requestPath + queryString);
         } else {
             rep = new Resource();
@@ -91,17 +91,17 @@ public class IndexesRepresentationFactory {
                         embeddedData,
                         requestPath,
                         rep,
-                        context.isFullHalMode());
+                        request.isFullHalMode());
             }
         }
 
-        if (context.isFullHalMode()) {
+        if (request.isFullHalMode()) {
             rep.addProperty("_type",
-                    new BsonString(context.getType().name()));
+                    new BsonString(request.getType().name()));
 
-            if (context.isParentAccessible()) {
+            if (request.isParentAccessible()) {
                 // this can happen due to mongo-mounts mapped URL
-                if (context.getCollectionName().endsWith(
+                if (request.getCollectionName().endsWith(
                         FS_FILES_SUFFIX)) {
                     rep.addLink(new Link(
                             "rh:bucket",

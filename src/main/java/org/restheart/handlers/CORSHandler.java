@@ -38,7 +38,7 @@ import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPO
  *
  * IT also injects the X-Powered-By response header
  */
-public class CORSHandler extends PipedHttpHandler {
+public class CORSHandler extends PipelinedHandler {
 
     /**
      *
@@ -49,9 +49,17 @@ public class CORSHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of CORSHandler
      *
+     */
+    public CORSHandler() {
+        this(null);
+    }
+    
+    /**
+     * Creates a new instance of CORSHandler
+     *
      * @param next
      */
-    public CORSHandler(PipedHttpHandler next) {
+    public CORSHandler(PipelinedHandler next) {
         super(next);
         this.noPipedNext = null;
     }
@@ -69,11 +77,10 @@ public class CORSHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         HeadersManager hm = new HeadersManager(exchange);
 
         injectXPBHeader(hm);
@@ -83,7 +90,7 @@ public class CORSHandler extends PipedHttpHandler {
         if (noPipedNext != null) {
             noPipedNext.handleRequest(exchange);
         } else {
-            next(exchange, context);
+            next(exchange);
         }
     }
 

@@ -67,15 +67,12 @@ public class GzipEncodingHandler extends EncodingHandler {
                 }
             }
 
-            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    errorContext,
                     HttpStatus.SC_BAD_REQUEST,
                     "Accept-Encoding header must include gzip");
 
-            sender.handleRequest(exchange, errorContext);
+            sender.handleRequest(exchange);
         } else {
             super.handleRequest(exchange);
         }

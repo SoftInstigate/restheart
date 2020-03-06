@@ -20,8 +20,10 @@ package org.restheart.handlers.indexes;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.db.DatabaseImpl;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
@@ -29,7 +31,8 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetIndexesHandler extends PipedHttpHandler {
+public class GetIndexesHandler extends PipelinedHandler {
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     /**
      * Creates a new instance of GetIndexesHandler
@@ -43,44 +46,41 @@ public class GetIndexesHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public GetIndexesHandler(PipedHttpHandler next) {
+    public GetIndexesHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
-        
-        List<BsonDocument> indexes = getDatabase()
-                .getCollectionIndexes(
-                        context.getClientSession(),
-                        context.getDBName(),
-                        context.getCollectionName());
 
-        context.setResponseContent(
-                IndexesRepresentationFactory
+        List<BsonDocument> indexes = dbsDAO
+                .getCollectionIndexes(
+                        request.getClientSession(),
+                        request.getDBName(),
+                        request.getCollectionName());
+
+        response.setContent(IndexesRepresentationFactory
                 .getRepresentation(
                         exchange,
-                        context,
                         indexes,
                         indexes.size())
                 .asBsonDocument());
 
-        context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-        context.setResponseStatusCode(HttpStatus.SC_OK);
+        response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+        response.setStatusCode(HttpStatus.SC_OK);
 
-        next(exchange, context);
+        next(exchange);
     }
 }

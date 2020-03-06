@@ -21,6 +21,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.utils.JsonUtils;
 
 /**
@@ -28,14 +29,23 @@ import org.restheart.utils.JsonUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CheckersUtils {
-
     /**
      *
      * @param context
      * @return
      */
+    @SuppressWarnings( "deprecation" )
     public static boolean isBulkRequest(RequestContext context) {
         return context.isBulkDocuments() || context.getContent().isArray();
+    }
+    
+    /**
+     *
+     * @param request
+     * @return
+     */
+    public static boolean isBulkRequest(BsonRequest request) {
+        return request.isBulkDocuments() || request.getContent().isArray();
     }
 
     /**

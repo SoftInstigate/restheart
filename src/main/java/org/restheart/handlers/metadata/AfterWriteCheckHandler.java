@@ -27,8 +27,10 @@ import io.undertow.util.Headers;
 import org.bson.BsonDocument;
 import org.restheart.db.DAOUtils;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.metadata.CheckerMetadata;
 import org.restheart.plugins.Checker;
 import org.restheart.plugins.GlobalChecker;
@@ -51,27 +53,27 @@ public class AfterWriteCheckHandler
 
     /**
      *
-     * @param phh
+     * @param next
      */
-    public AfterWriteCheckHandler(PipedHttpHandler next) {
+    public AfterWriteCheckHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
+    public void handleRequest(HttpServerExchange exchange)
             throws Exception {
-        if ((doesCheckersApply(context)
-                && !applyCheckers(exchange, context))
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if ((doesCheckersApply(exchange)
+                && !applyCheckers(exchange))
                 || (doesGlobalCheckersApply()
-                && !applyGlobalCheckers(exchange, context))) {
+                && !applyGlobalCheckers(exchange))) {
             // restore old data
 
             MongoClient client = MongoDBClientSingleton
@@ -79,26 +81,26 @@ public class AfterWriteCheckHandler
                     .getClient();
 
             MongoDatabase mdb = client
-                    .getDatabase(context.getDBName());
+                    .getDatabase(request.getDBName());
 
             MongoCollection<BsonDocument> coll = mdb
                     .getCollection(
-                            context.getCollectionName(),
+                            request.getCollectionName(),
                             BsonDocument.class);
 
-            BsonDocument oldData = context
+            BsonDocument oldData = response
                     .getDbOperationResult()
                     .getOldData();
 
-            Object newEtag = context.getDbOperationResult().getEtag();
+            Object newEtag = response.getDbOperationResult().getEtag();
 
             if (oldData != null) {
                 // document was updated, restore old one
                 DAOUtils.restoreDocument(
-                        context.getClientSession(),
+                        request.getClientSession(),
                         coll,
                         oldData.get("_id"),
-                        context.getShardKey(),
+                        request.getShardKey(),
                         oldData,
                         newEtag,
                         "_etag");
@@ -122,7 +124,7 @@ public class AfterWriteCheckHandler
 
             } else {
                 // document was created, delete it
-                Object newId = context.getDbOperationResult()
+                Object newId = response.getDbOperationResult()
                         .getNewData().get("_id");
 
                 coll.deleteOne(and(eq("_id", newId), eq("_etag", newEtag)));
@@ -130,30 +132,32 @@ public class AfterWriteCheckHandler
 
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_BAD_REQUEST,
                     "request check failed");
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 
     @Override
-    boolean doesCheckersApply(RequestContext context) {
-        return context.getCollectionProps() != null
-                && (((context.isPut()
-                || context.isPatch())
-                && context.isFile()
-                || context.isDocument()
-                || context.isSchema())
-                || context.isPost()
-                && (context.isCollection()
-                || context.isFilesBucket()
-                || context.isSchemaStore()))
-                && context.getCollectionProps()
+    boolean doesCheckersApply(HttpServerExchange exchange) {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        return request.getCollectionProps() != null
+                && (((request.isPut()
+                || request.isPatch())
+                && request.isFile()
+                || request.isDocument()
+                || request.isSchema())
+                || request.isPost()
+                && (request.isCollection()
+                || request.isFilesBucket()
+                || request.isSchemaStore()))
+                && request.getCollectionProps()
                         .containsKey(CheckerMetadata.ROOT_KEY)
-                && (context.getDbOperationResult() != null
-                && context.getDbOperationResult().getHttpCode() < 300);
+                && (response.getDbOperationResult() != null
+                && response.getDbOperationResult().getHttpCode() < 300);
     }
 
     /**

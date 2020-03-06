@@ -36,6 +36,7 @@ import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,20 +44,28 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestLoggerHandler extends PipedHttpHandler {
+public class RequestLoggerHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestLoggerHandler.class);
 
     private final Configuration configuration = Bootstrapper.getConfiguration();
 
     private final HttpHandler handler;
-
+    
+    /**
+     * Creates a new instance of RequestLoggerHandler
+     *
+     */
+    public RequestLoggerHandler() {
+        this(null);
+    }
+    
     /**
      * Creates a new instance of RequestLoggerHandler
      *
      * @param next
      */
-    public RequestLoggerHandler(PipedHttpHandler next) {
+    public RequestLoggerHandler(PipelinedHandler next) {
         super(next);
         handler = null;
     }
@@ -74,17 +83,16 @@ public class RequestLoggerHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (configuration.logExchangeDump() > 0) {
-            dumpExchange(exchange, context, configuration.logExchangeDump());
+            dumpExchange(exchange, configuration.logExchangeDump());
         }
 
         if (getNext() != null) {
-            getNext().handleRequest(exchange, context);
+            getNext().handleRequest(exchange);
         }
 
         if (handler != null) {
@@ -98,17 +106,18 @@ public class RequestLoggerHandler extends PipedHttpHandler {
      * Log a complete dump of the HttpServerExchange (both Request and Response)
      *
      * @param exchange the HttpServerExchange
-     * @param context the RequestContext
      * @param logLevel it can be 0, 1 or 2
      */
-    protected void dumpExchange(HttpServerExchange exchange, RequestContext context, Integer logLevel) {
+    protected void dumpExchange(HttpServerExchange exchange, Integer logLevel) {
+        //TODO not initialized
+        var request = BsonRequest.wrap(exchange);
         if (logLevel < 1) {
             return;
         }
 
         final StringBuilder sb = new StringBuilder();
-        final long start = context != null 
-                ? context.getRequestStartTime() 
+        final long start = request != null 
+                ? request.getRequestStartTime() 
                 : System.currentTimeMillis();
 
         if (logLevel == 1) {

@@ -20,8 +20,9 @@ package org.restheart.handlers.injectors;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.db.DatabaseImpl;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -33,43 +34,46 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DbPropsInjectorHandler extends PipedHttpHandler {
+public class DbPropsInjectorHandler extends PipelinedHandler {
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    
     /**
      * Creates a new instance of DbPropsInjectorHandler
      *
      * @param next
      */
-    public DbPropsInjectorHandler(PipedHttpHandler next) {
+    public DbPropsInjectorHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError()
-                || context.isSessions()
-                || context.isTxn()
-                || context.isTxns()
-                || context.isRoot()
-                || context.isRootSize()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        
+        if (request.isInError()
+                || request.isSessions()
+                || request.isTxn()
+                || request.isTxns()
+                || request.isRoot()
+                || request.isRootSize()) {
+            next(exchange);
             return;
         }
 
-        String dbName = context.getDBName();
+        String dbName = request.getDBName();
 
         if (dbName != null) {
             BsonDocument dbProps;
 
             if (!LocalCachesSingleton.isEnabled()
-                    || context.getClientSession() != null) {
-                dbProps = getDatabase().getDatabaseProperties(
-                        context.getClientSession(), 
+                    || request.getClientSession() != null) {
+                dbProps = dbsDAO.getDatabaseProperties(
+                        request.getClientSession(), 
                         dbName);
             } else {
                 dbProps = LocalCachesSingleton.getInstance()
@@ -78,16 +82,15 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
 
             // if dbProps is null, the db does not exist
             if (dbProps == null
-                    && !(context.isDb()
-                    && context.isPut())
-                    && !context.isRoot()) {
+                    && !(request.isDb()
+                    && request.isPut())
+                    && !request.isRoot()) {
                 ResponseHelper
                         .endExchangeWithMessage(
                                 exchange,
-                                context,
                                 HttpStatus.SC_NOT_FOUND,
                                 "Db '" + dbName + "' does not exist");
-                next(exchange, context);
+                next(exchange);
                 return;
             }
 
@@ -95,9 +98,9 @@ public class DbPropsInjectorHandler extends PipedHttpHandler {
                 dbProps.append("_id", new BsonString(dbName));
             }
 
-            context.setDbProps(dbProps);
+            request.setDbProps(dbProps);
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 }

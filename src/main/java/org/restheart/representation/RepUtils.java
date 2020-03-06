@@ -37,7 +37,8 @@ import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
 import static org.restheart.db.DAOUtils.LOGGER;
 import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
 import org.restheart.utils.URLUtils;
@@ -51,21 +52,20 @@ public class RepUtils {
     /**
      *
      * @param exchange
-     * @param context
      * @param size
      * @return
      * @throws IllegalQueryParamenterException
      */
     public static TreeMap<String, String> getPaginationLinks(
             HttpServerExchange exchange,
-            RequestContext context,
             long size) throws IllegalQueryParamenterException {
+        var request = BsonRequest.wrap(exchange);
 
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
         String queryString = URLUtils.decodeQueryString(exchange.getQueryString());
 
-        int page = context.getPage();
-        int pagesize = context.getPagesize();
+        int page = request.getPage();
+        int pagesize = request.getPagesize();
         long totalPages = 0;
 
         if (size >= 0) {
@@ -143,19 +143,19 @@ public class RepUtils {
     
     /**
      *
-     * @param context
+     * @param response
      * @param parentUrl
      * @param docId
      * @return
      */
     public static String getReferenceLink(
-            RequestContext context,
+            BsonResponse response,
             String parentUrl,
             BsonValue docId) {
-        if (context == null || parentUrl == null) {
+        if (response == null || parentUrl == null) {
             LOGGER.error("error creating URI, null arguments: "
-                    + "context = {}, parentUrl = {}, docId = {}",
-                    context,
+                    + "response = {}, parentUrl = {}, docId = {}",
+                    response,
                     parentUrl,
                     docId);
             return "";
@@ -238,7 +238,7 @@ public class RepUtils {
                 _id = docId.toString();
             }
 
-            context.addWarning("resource with _id: "
+            response.addWarning("resource with _id: "
                     + _id + " does not have an URI "
                     + "since the _id is of type "
                     + docId.getClass().getSimpleName());
@@ -295,15 +295,27 @@ public class RepUtils {
         } else if (docId instanceof BsonInt32) {
             uri = URLUtils.removeTrailingSlashes(parentUrl)
                     .concat("/")
-                    .concat("" + ((BsonNumber) docId).asInt32().getValue());
+                    .concat("" + ((BsonNumber) docId).asInt32().getValue())
+                    .concat("?")
+                    .concat(DOC_ID_TYPE_QPARAM_KEY)
+                    .concat("=")
+                    .concat(DOC_ID_TYPE.NUMBER.name());
         } else if (docId instanceof BsonInt64) {
             uri = URLUtils.removeTrailingSlashes(parentUrl)
                     .concat("/")
-                    .concat("" + ((BsonNumber) docId).asInt64().getValue());
+                    .concat("" + ((BsonNumber) docId).asInt64().getValue())
+                    .concat("?")
+                    .concat(DOC_ID_TYPE_QPARAM_KEY)
+                    .concat("=")
+                    .concat(DOC_ID_TYPE.NUMBER.name());
         } else if (docId instanceof BsonDouble) {
             uri = URLUtils.removeTrailingSlashes(parentUrl)
                     .concat("/")
-                    .concat("" + ((BsonDouble) docId).asDouble().getValue());
+                    .concat("" + ((BsonDouble) docId).asDouble().getValue())
+            .concat("?")
+                    .concat(DOC_ID_TYPE_QPARAM_KEY)
+                    .concat("=")
+                    .concat(DOC_ID_TYPE.NUMBER.name());
         } else if (docId instanceof BsonNull) {
             uri = URLUtils.removeTrailingSlashes(parentUrl)
                     .concat("/_null");
@@ -316,7 +328,11 @@ public class RepUtils {
         } else if (docId instanceof BsonDateTime) {
             uri = URLUtils.removeTrailingSlashes(parentUrl)
                     .concat("/")
-                    .concat("" + ((BsonDateTime) docId).getValue());
+                    .concat("" + ((BsonDateTime) docId).getValue())
+                    .concat("?")
+                    .concat(DOC_ID_TYPE_QPARAM_KEY)
+                    .concat("=")
+                    .concat(DOC_ID_TYPE.DATE.name());
         } else if (docId instanceof Integer) {
             uri = URLUtils.removeTrailingSlashes(parentUrl)
                     .concat("/")

@@ -24,8 +24,10 @@ import java.util.Objects;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.metadata.CheckerMetadata;
 import org.restheart.plugins.Checker;
 import org.restheart.plugins.Checker.PHASE;
@@ -63,48 +65,44 @@ public class BeforeWriteCheckHandler extends CheckHandler {
      *
      * @param next
      */
-    public BeforeWriteCheckHandler(PipedHttpHandler next) {
+    public BeforeWriteCheckHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
+    public void handleRequest(HttpServerExchange exchange)
             throws Exception {
-        if ((doesCheckersApply(context)
-                && !applyCheckers(exchange, context))
+        if ((doesCheckersApply(exchange)
+                && !applyCheckers(exchange))
                 || (doesGlobalCheckersApply()
-                && !applyGlobalCheckers(exchange, context))) {
+                && !applyGlobalCheckers(exchange))) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_BAD_REQUEST,
                     "request check failed");
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @return
      * @throws InvalidMetadataException
      */
-    protected boolean applyCheckers(
-            HttpServerExchange exchange,
-            RequestContext context)
+    protected boolean applyCheckers(HttpServerExchange exchange)
             throws InvalidMetadataException {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
         List<CheckerMetadata> requestCheckers = CheckerMetadata.getFromJson(
-                context.getCollectionProps());
+                request.getCollectionProps());
 
         return requestCheckers != null
                 && requestCheckers.stream().allMatch(checkerMetadata -> {
@@ -117,14 +115,13 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                                 .getConfArgsAsBsonDocument();
 
                         return applyChecker(exchange,
-                                context,
                                 checkerMetadata.skipNotSupported(),
                                 checker,
                                 checkerMetadata.getArgs(),
                                 confArgs);
                     } catch (NoSuchElementException ex) {
                         LOGGER.warn(ex.getMessage());
-                        context.addWarning(ex.getMessage());
+                        response.addWarning(ex.getMessage());
                         return false;
                     } catch (Throwable t) {
                         String err = "Error executing checker '"
@@ -132,18 +129,21 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                                 + "': "
                                 + t.getMessage();
                         LOGGER.warn(err);
-                        context.addWarning(err);
+                        response.addWarning(err);
                         return false;
                     }
                 });
     }
 
     private boolean applyChecker(HttpServerExchange exchange,
-            RequestContext context,
             boolean skipNotSupported,
             Checker checker,
             BsonValue args,
             BsonValue confArgs) {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        var context = RequestContext.wrap(exchange);
+        
         // all checkers (both BEFORE_WRITE and AFTER_WRITE) are checked
         // to support the request; if any checker does not support the
         // request and it is configured to fail in this case,
@@ -153,20 +153,20 @@ public class BeforeWriteCheckHandler extends CheckHandler {
             String noteMsg = "";
 
             if (CheckersUtils.doesRequestUsesDotNotation(
-                    context.getContent())) {
+                    request.getContent())) {
                 noteMsg = noteMsg.concat(
                         "uses the dot notation");
             }
 
             if (CheckersUtils.doesRequestUsesUpdateOperators(
-                    context.getContent())) {
+                    request.getContent())) {
                 noteMsg = noteMsg.isEmpty()
                         ? "uses update operators"
                         : noteMsg
                                 .concat(" and update operators");
             }
 
-            if (CheckersUtils.isBulkRequest(context)) {
+            if (CheckersUtils.isBulkRequest(request)) {
                 noteMsg = noteMsg.isEmpty()
                         ? "is a bulk operation"
                         : noteMsg
@@ -184,7 +184,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                         + noteMsg);
             }
 
-            context.addWarning(warnMsg);
+            response.addWarning(warnMsg);
             return false;
         }
 
@@ -195,12 +195,12 @@ public class BeforeWriteCheckHandler extends CheckHandler {
 
             if (checker.getPhase(context)
                     == PHASE.BEFORE_WRITE) {
-                _data = context.getContent();
+                _data = request.getContent();
             } else {
                 Objects.requireNonNull(
-                        context.getDbOperationResult());
+                        response.getDbOperationResult());
 
-                _data = context
+                _data = response
                         .getDbOperationResult()
                         .getNewData();
             }
@@ -243,13 +243,14 @@ public class BeforeWriteCheckHandler extends CheckHandler {
         }
     }
 
-    boolean applyGlobalCheckers(HttpServerExchange exchange, RequestContext context) {
+    boolean applyGlobalCheckers(HttpServerExchange exchange) {
+        var context = RequestContext.wrap(exchange);
+        
         // execture global request tranformers
         return PluginsRegistry.getInstance().getGlobalCheckers().stream()
                 .filter(gc -> doesGlobalCheckerApply(gc, exchange, context))
                 .allMatch(gc
                         -> applyChecker(exchange,
-                        context,
                         gc.isSkipNotSupported(),
                         gc.getChecker(),
                         gc.getArgs(),
@@ -257,9 +258,11 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                 );
     }
 
-    boolean doesCheckersApply(RequestContext context) {
-        return context.getCollectionProps() != null
-                && context.getCollectionProps().containsKey(ROOT_KEY);
+    boolean doesCheckersApply(HttpServerExchange exchange) {
+        var request = BsonRequest.wrap(exchange);
+        
+        return request.getCollectionProps() != null
+                && request.getCollectionProps().containsKey(ROOT_KEY);
     }
 
     boolean doesGlobalCheckersApply() {

@@ -24,8 +24,8 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.Version;
 import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.database.DBRepresentationFactory;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.representation.AbstractRepresentationFactory;
 import org.restheart.representation.Link;
@@ -51,7 +51,6 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     /**
      *
      * @param exchange
-     * @param context
      * @param embeddedData
      * @param size
      * @return
@@ -60,27 +59,28 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     @Override
     public Resource getRepresentation(
             HttpServerExchange exchange,
-            RequestContext context,
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
+        var request = BsonRequest.wrap(exchange);
+        
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;
 
-        if (context.isFullHalMode()) {
-            rep = createRepresentation(exchange, context, requestPath);
+        if (request.isFullHalMode()) {
+            rep = createRepresentation(exchange, requestPath);
         } else {
-            rep = createRepresentation(exchange, context, null);
+            rep = createRepresentation(exchange, null);
         }
 
-        addSizeAndTotalPagesProperties(size, context, rep);
+        addSizeAndTotalPagesProperties(size, request, rep);
 
-        addEmbeddedData(context, embeddedData, rep, requestPath);
+        addEmbeddedData(request, embeddedData, rep, requestPath);
 
-        if (context.isFullHalMode()) {
-            addSpecialProperties(rep, context);
+        if (request.isFullHalMode()) {
+            addSpecialProperties(rep, request);
 
-            addPaginationLinks(exchange, context, size, rep);
+            addPaginationLinks(exchange, size, rep);
 
             addLinkTemplates(rep, requestPath);
         }
@@ -90,7 +90,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
     private void addSpecialProperties(
             final Resource rep,
-            RequestContext context) {
+            BsonRequest request) {
         if (Version.getInstance().getVersion() == null) {
             rep.addProperty("_restheart_version",
                     new BsonString("unknown, not packaged"));
@@ -99,11 +99,11 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
                     new BsonString(Version.getInstance().getVersion()));
         }
 
-        rep.addProperty("_type", new BsonString(context.getType().name()));
+        rep.addProperty("_type", new BsonString(request.getType().name()));
     }
 
     private void addEmbeddedData(
-            RequestContext context,
+            BsonRequest request,
             List<BsonDocument> embeddedData,
             final Resource rep,
             final String requestPath) {
@@ -111,7 +111,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
             addReturnedProperty(embeddedData, rep);
             if (!embeddedData.isEmpty()) {
                 embeddedDbs(
-                        context,
+                        request,
                         embeddedData,
                         hasTrailingSlash(requestPath),
                         requestPath,
@@ -131,7 +131,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void embeddedDbs(
-            RequestContext context,
+            BsonRequest request,
             List<BsonDocument> embeddedData,
             boolean trailingSlash,
             String requestPath,
@@ -143,7 +143,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
                     && _id.isString()) {
                 final Resource nrep;
 
-                if (context.isFullHalMode()) {
+                if (request.isFullHalMode()) {
                     if (trailingSlash) {
                         nrep = new Resource(requestPath
                                 + _id.asString().getValue());

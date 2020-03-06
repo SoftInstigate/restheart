@@ -18,8 +18,8 @@
 package org.restheart.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
 
 /**
  *
@@ -27,33 +27,31 @@ import org.restheart.handlers.RequestContext;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AccountInjectorHandler extends PipedHttpHandler {
+public class AccountInjectorHandler extends PipelinedHandler {
     /**
      * Creates a new instance of AccountInjectorHandler
      *
      * @param next
      */
-    public AccountInjectorHandler(PipedHttpHandler next) {
+    public AccountInjectorHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            final HttpServerExchange exchange,
-            final RequestContext context)
-            throws Exception {
+    public void handleRequest(final HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        
         // inject authenticatedAccount
         if (exchange.getSecurityContext() != null) {
-            context.setAuthenticatedAccount(exchange.getSecurityContext()
+            request.setAuthenticatedAccount(exchange.getSecurityContext()
                     .getAuthenticatedAccount());
         }
         
-        next(exchange, context);
+        next(exchange);
     }
 }

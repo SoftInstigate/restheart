@@ -9,6 +9,8 @@ import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys.BINARY_CONTENT;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.handlers.metadata.InvalidMetadataException;
@@ -39,8 +41,8 @@ public class DocumentRepresentationFactory {
      * @param type
      * @param data
      */
-    public static void addSpecialProperties(final Resource rep, 
-            TYPE type, 
+    public static void addSpecialProperties(final Resource rep,
+            TYPE type,
             BsonDocument data) {
         rep.addProperty("_type", new BsonString(type.name()));
 
@@ -63,21 +65,28 @@ public class DocumentRepresentationFactory {
         }
     }
 
-    private static void addRelationshipsLinks(Resource rep, RequestContext context, BsonDocument data) {
+    private static void addRelationshipsLinks(Resource rep,
+            HttpServerExchange exchange,
+            BsonDocument data) {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+
         List<Relationship> rels = null;
 
         try {
-            rels = Relationship.getFromJson(context.getCollectionProps());
+            rels = Relationship.getFromJson(request.getCollectionProps());
         } catch (InvalidMetadataException ex) {
-            rep.addWarning("collection " + context.getDBName()
-                    + "/" + context.getCollectionName()
+            rep.addWarning("collection " + request.getDBName()
+                    + "/" + request.getCollectionName()
                     + " has invalid relationships definition");
         }
 
         if (rels != null) {
             for (Relationship rel : rels) {
                 try {
-                    String link = rel.getRelationshipLink(context, context.getDBName(), context.getCollectionName(), data);
+                    String link = rel.getRelationshipLink(request, 
+                            request.getDBName(),
+                            request.getCollectionName(), data);
 
                     if (link != null) {
                         rep.addLink(new Link(rel.getRel(), link));
@@ -101,19 +110,22 @@ public class DocumentRepresentationFactory {
      *
      * @param href
      * @param exchange
-     * @param context
      * @param data
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public Resource getRepresentation(String href, HttpServerExchange exchange, RequestContext context, BsonDocument data)
+    public Resource getRepresentation(String href, HttpServerExchange exchange,
+            BsonDocument data)
             throws IllegalQueryParamenterException {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+
         Resource rep;
 
         BsonValue id = data.get("_id");
 
-        if (context.isFullHalMode()) {
-            rep = new Resource(RepUtils.getReferenceLink(context, URLUtils.getParentPath(href), id));
+        if (request.isFullHalMode()) {
+            rep = new Resource(RepUtils.getReferenceLink(response, URLUtils.getParentPath(href), id));
         } else {
             rep = new Resource();
         }
@@ -121,7 +133,7 @@ public class DocumentRepresentationFactory {
         data.keySet()
                 .stream().forEach((key) -> rep.addProperty(key, data.get(key)));
 
-        addRelationshipsLinks(rep, context, data);
+        addRelationshipsLinks(rep, exchange, data);
 
         // link templates and curies
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
@@ -129,9 +141,9 @@ public class DocumentRepresentationFactory {
         String parentPath;
 
         // the document (file) representation can be asked for requests to collection (bucket)
-        boolean isEmbedded = TYPE.COLLECTION.equals(context.getType())
-                || TYPE.FILES_BUCKET.equals(context.getType())
-                || TYPE.SCHEMA_STORE.equals(context.getType());
+        boolean isEmbedded = TYPE.COLLECTION.equals(request.getType())
+                || TYPE.FILES_BUCKET.equals(request.getType())
+                || TYPE.SCHEMA_STORE.equals(request.getType());
 
         if (isEmbedded) {
             parentPath = requestPath;
@@ -145,18 +157,18 @@ public class DocumentRepresentationFactory {
         }
 
         // link templates
-        if (!isEmbedded && context.isFullHalMode()) {
+        if (!isEmbedded && request.isFullHalMode()) {
 
-            addSpecialProperties(rep, context.getType(), data);
+            addSpecialProperties(rep, request.getType(), data);
 
             if (isBinaryFile(data)) {
-                if (context.isParentAccessible()) {
+                if (request.isParentAccessible()) {
                     rep.addLink(new Link("rh:bucket", parentPath));
                 }
 
                 rep.addLink(new Link("rh:file", parentPath + "/{fileid}{?id_type}", true));
             } else {
-                if (context.isParentAccessible()) {
+                if (request.isParentAccessible()) {
                     rep.addLink(new Link("rh:coll", parentPath));
                 }
 

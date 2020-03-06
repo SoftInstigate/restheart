@@ -23,8 +23,9 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -32,7 +33,7 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PutDocumentHandler extends PipedHttpHandler {
+public class PutDocumentHandler extends PipelinedHandler {
     private final DocumentDAO documentDAO;
 
     /**
@@ -47,7 +48,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public PutDocumentHandler(PipedHttpHandler next) {
+    public PutDocumentHandler(PipelinedHandler next) {
         this(next, new DocumentDAO());
     }
 
@@ -57,7 +58,7 @@ public class PutDocumentHandler extends PipedHttpHandler {
      * @param next
      * @param documentDAO
      */
-    public PutDocumentHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
+    public PutDocumentHandler(PipelinedHandler next, DocumentDAO documentDAO) {
         super(next);
         this.documentDAO = documentDAO;
     }
@@ -65,20 +66,19 @@ public class PutDocumentHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
         
-        BsonValue _content = context.getContent();
+        BsonValue _content = request.getContent();
 
         if (_content == null) {
             _content = new BsonDocument();
@@ -88,44 +88,42 @@ public class PutDocumentHandler extends PipedHttpHandler {
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a josn object");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
         BsonDocument content = _content.asDocument();
 
-        BsonValue id = context.getDocumentId();
+        BsonValue id = request.getDocumentId();
 
         if (content.get("_id") == null) {
             content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "_id in content body is different than id in URL");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
-        String etag = context.getETag();
+        String etag = request.getETag();
 
         OperationResult result = this.documentDAO.upsertDocument(
-                context.getClientSession(),
-                context.getDBName(),
-                context.getCollectionName(),
-                context.getDocumentId(),
-                context.getFiltersDocument(),
-                context.getShardKey(),
+                request.getClientSession(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getDocumentId(),
+                request.getFiltersDocument(),
+                request.getShardKey(),
                 content,
                 etag,
                 false,
-                context.isETagCheckRequired());
+                request.isETagCheckRequired());
 
-        context.setDbOperationResult(result);
+        response.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
@@ -135,12 +133,11 @@ public class PutDocumentHandler extends PipedHttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header");
-            next(exchange, context);
+            next(exchange);
             return;
         }
         
@@ -148,15 +145,14 @@ public class PutDocumentHandler extends PipedHttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_EXPECTATION_FAILED,
                     ResponseHelper.getMessageFromErrorCode(11000));
-            next(exchange, context);
+            next(exchange);
             return;
         }
         
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
-        next(exchange, context);
+        next(exchange);
     }
 }
