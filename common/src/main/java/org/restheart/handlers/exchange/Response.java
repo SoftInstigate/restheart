@@ -20,11 +20,11 @@ package org.restheart.handlers.exchange;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
-import java.io.IOException;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * @param <T>
  */
 public abstract class Response<T> extends AbstractExchange<T> {
 

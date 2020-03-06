@@ -23,7 +23,7 @@ import java.util.Objects;
 
 /**
  * base class to implement a PipelinedHandler
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class PipelinedHandler implements HttpHandler {
@@ -46,7 +46,7 @@ public abstract class PipelinedHandler implements HttpHandler {
     public PipelinedHandler(PipelinedHandler next) {
         this.next = next;
     }
-    
+
     /**
      *
      * @param exchange
@@ -64,6 +64,7 @@ public abstract class PipelinedHandler implements HttpHandler {
 
     /**
      * set the next PipedHttpHandler
+     *
      * @param next
      */
     protected void setNext(PipelinedHandler next) {
@@ -71,15 +72,16 @@ public abstract class PipelinedHandler implements HttpHandler {
     }
 
     protected void next(HttpServerExchange exchange) throws Exception {
-        if (this.next  != null) {
-            this.next .handleRequest(exchange);
+        if (this.next != null) {
+            this.next.handleRequest(exchange);
         }
-    }  
-    
+    }
+
     /**
      * pipes multiple PipelinedHandler in a pipeline
+     *
      * @param handlers
-     * @return 
+     * @return
      */
     public static PipelinedHandler pipe(PipelinedHandler... handlers) {
         if (Objects.isNull(handlers)) {
