@@ -24,9 +24,7 @@ import com.mongodb.MongoTimeoutException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.bulk.BulkResultRepresentationFactory;
-import org.restheart.handlers.metadata.TransformersListHandler;
 import org.restheart.handlers.transformers.RepresentationTransformer;
-import org.restheart.metadata.TransformerMetadata.PHASE;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -41,13 +39,25 @@ public class ErrorHandler implements HttpHandler {
 
     private final HttpHandler next;
 
-    private final PipelinedHandler sender = new TransformersListHandler(
-            new ResponseSenderHandler(null),
-            PHASE.RESPONSE,
-            new RepresentationTransformer());
+    private final PipelinedHandler sender = PipelinedHandler.pipe(
+    new RepresentationTransformer(),
+    new ResponseSenderHandler());
+            
+//            new TransformersListHandler(
+//            new ResponseSenderHandler(null),
+//            PHASE.RESPONSE,
+//            new RepresentationTransformer());
 
     private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 
+    /**
+     * Creates a new instance of ErrorHandler
+     *
+     */
+    public ErrorHandler() {
+        this(null);
+    }
+    
     /**
      * Creates a new instance of ErrorHandler
      *

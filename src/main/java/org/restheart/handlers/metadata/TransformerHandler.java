@@ -36,7 +36,7 @@ import org.restheart.plugins.Transformer;
  */
 public abstract class TransformerHandler extends PipelinedHandler {
     /**
-     * Creates a new instance of AbstractTransformerHandler
+     * Creates a new instance of TransformerHandler
      *
      * @param next
      */

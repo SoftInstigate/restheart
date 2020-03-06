@@ -23,8 +23,9 @@ import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.RequestContext;
-import org.restheart.plugins.Transformer;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,21 +36,38 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AggregationTransformer implements Transformer {
+public class AggregationTransformer extends PipelinedHandler {
     static final Logger LOGGER = LoggerFactory
             .getLogger(AggregationTransformer.class);
 
+    final boolean phase;
+
+    /**
+     *
+     * @param phase true -> transform request otherwise transform the response
+     */
+    public AggregationTransformer(boolean phase) {
+        this.phase = phase;
+    }
+
     @Override
-    public void transform(
-            HttpServerExchange exchange,
-            RequestContext context,
-            final BsonValue contentToTransform,
-            BsonValue args) {
-        if (contentToTransform == null) {
-            // nothing to do
-            return;
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var contentToTransform = phase
+                ? BsonRequest.wrap(exchange).getContent()
+                : BsonResponse.wrap(exchange).getContent();
+
+        if (contentToTransform != null && contentToTransform.isDocument()) {
+            transform(request, contentToTransform.asDocument());
+        } else if (contentToTransform != null && contentToTransform.isArray()) {
+            contentToTransform.asArray().stream().forEachOrdered(
+                    (doc) -> transform(request, doc.asDocument()));
         }
 
+        next(exchange);
+    }
+
+    private void transform(BsonRequest request, BsonDocument contentToTransform) {
         if (!contentToTransform.isDocument()) {
             throw new IllegalStateException(
                     "content to transform is not a document");
@@ -57,7 +75,7 @@ public class AggregationTransformer implements Transformer {
 
         BsonDocument _contentToTransform = contentToTransform.asDocument();
 
-        if (context.isCollection() || context.isCollectionMeta()) {
+        if (request.isCollection() || request.isCollectionMeta()) {
             BsonArray aggrs = getAggregationMetadata(_contentToTransform);
 
             if (aggrs == null) {
@@ -65,15 +83,15 @@ public class AggregationTransformer implements Transformer {
                 return;
             }
 
-            if (context.isPut() || context.isPatch()) {
+            if (request.isPut() || request.isPatch()) {
                 _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
                         JsonUtils.escapeKeys(aggrs, true));
-            } else if (context.isGet()) {
+            } else if (request.isGet()) {
                 _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
                         JsonUtils.unescapeKeys(aggrs));
             }
-        } else if ((context.isDb())
-                && context.isGet()) {
+        } else if ((request.isDb())
+                && request.isGet()) {
             // apply transformation on embedded schemas
 
             if (_contentToTransform.containsKey("_embedded")) {

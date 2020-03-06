@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;

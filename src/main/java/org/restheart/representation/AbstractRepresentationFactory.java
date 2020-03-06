@@ -24,7 +24,6 @@ import java.util.TreeMap;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.utils.URLUtils;
 

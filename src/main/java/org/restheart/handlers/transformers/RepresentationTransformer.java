@@ -22,8 +22,9 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.Bootstrapper;
-import org.restheart.handlers.RequestContext;
-import org.restheart.plugins.Transformer;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.representation.Resource;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.HttpStatus;
@@ -35,24 +36,25 @@ import org.restheart.utils.HttpStatus;
  * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class RepresentationTransformer implements Transformer {
+public class RepresentationTransformer extends PipelinedHandler {
     @Override
-    public void transform(
-            HttpServerExchange exchange,
-            RequestContext context,
-            BsonValue contentToTransform,
-            BsonValue args) {
-        if (!context.isInError()
-                && (context.isDocument()
-                || context.isFile()
-                || context.isIndex())
-                || context.isTxns()) {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        var contentToTransform = response.getContent();
+        
+        if (!request.isInError()
+                && (request.isDocument()
+                || request.isFile()
+                || request.isIndex())
+                || request.isTxns()) {
+            next(exchange);
             return;
         }
         
         // can be null if an error occurs before RequestContextInjectorHandler.handle()
-        REPRESENTATION_FORMAT rf = context.getRepresentationFormat() != null ?
-                context.getRepresentationFormat()
+        REPRESENTATION_FORMAT rf = request.getRepresentationFormat() != null ?
+                request.getRepresentationFormat()
                 : Bootstrapper.getConfiguration().getDefaultRepresentationFormat();
                         
         final boolean isStandardRepresentation = 
@@ -64,16 +66,17 @@ public class RepresentationTransformer implements Transformer {
                 rf != REPRESENTATION_FORMAT.SHAL &&
                 rf != REPRESENTATION_FORMAT.PLAIN_JSON &&
                 rf != REPRESENTATION_FORMAT.PJ)) {
+            next(exchange);
             return;
         }
 
-        context.setResponseContentType(Resource.JSON_MEDIA_TYPE);
+        response.setContentType(Resource.JSON_MEDIA_TYPE);
 
         BsonDocument responseContent = new BsonDocument();
 
         transformError(contentToTransform, responseContent);
 
-        if (context.isInError()) {
+        if (request.isInError()) {
             contentToTransform.asDocument().keySet().stream()
                     .filter(
                             key -> !"_embedded".equals(key)
@@ -83,12 +86,12 @@ public class RepresentationTransformer implements Transformer {
                             .asDocument()
                             .get(key)));
 
-            context.setResponseContent(responseContent);
-        } else if (context.isGet()) {
-            transformRead(context, contentToTransform, responseContent);
+            response.setContent(responseContent);
+        } else if (request.isGet()) {
+            transformRead(response, contentToTransform, responseContent);
 
             // add resource props if np is not specified
-            if (!context.isNoProps() && !isStandardRepresentation) {
+            if (!request.isNoProps() && !isStandardRepresentation) {
                 contentToTransform.asDocument().keySet().stream()
                         .filter(key -> !"_embedded".equals(key))
                         .forEach(key
@@ -96,14 +99,14 @@ public class RepresentationTransformer implements Transformer {
                                 .append(key, contentToTransform.asDocument()
                                         .get(key)));
 
-                context.setResponseContent(responseContent);
+                response.setContent(responseContent);
             } else {
                 // np specified, just return _embedded
                 if (responseContent.containsKey("_embedded")
                         && responseContent.get("_embedded").isArray()) {
                     if (isStandardRepresentation && (
-                            context.isRoot() ||
-                            context.isDb())) {
+                            request.isRoot() ||
+                            request.isDb())) {
                         BsonArray aresp = new BsonArray();
                         
                         responseContent.get("_embedded").asArray().stream()
@@ -113,20 +116,22 @@ public class RepresentationTransformer implements Transformer {
                                 .map(doc -> doc.get("_id"))
                                 .forEachOrdered(_id -> aresp.add(_id));
                         
-                        context.setResponseContent(aresp);
+                        response.setContent(aresp);
                     } else {
-                        context.setResponseContent(
+                        response.setContent(
                                 responseContent.get("_embedded"));
                     }
                 } else {
-                    context.setResponseContent(null);
+                    response.setContent(null);
                 }
             }
         } else {
             transformWrite(contentToTransform, responseContent);
 
-            context.setResponseContent(responseContent);
+            response.setContent(responseContent);
         }
+        
+        next(exchange);
     }
 
     private void transformError(
@@ -190,7 +195,7 @@ public class RepresentationTransformer implements Transformer {
     }
 
     private void transformRead(
-            RequestContext context,
+            BsonResponse response,
             BsonValue contentToTransform,
             BsonDocument responseContent) {
 
@@ -215,11 +220,11 @@ public class RepresentationTransformer implements Transformer {
                 addItems(__embedded, embedded, "rh:schema");
 
                 // add _items if not in error
-                if (context.getResponseStatusCode()
+                if (response.getStatusCode()
                         == HttpStatus.SC_OK) {
                     responseContent.append("_embedded", __embedded);
                 }
-            } else if (context.getResponseStatusCode()
+            } else if (response.getStatusCode()
                     == HttpStatus.SC_OK) {
                 responseContent.append("_embedded", new BsonArray());
             }

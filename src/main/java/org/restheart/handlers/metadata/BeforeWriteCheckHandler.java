@@ -63,6 +63,16 @@ public class BeforeWriteCheckHandler extends CheckHandler {
      *
      * handler that applies the checkers defined in the collection properties
      *
+     */
+    public BeforeWriteCheckHandler() {
+        this(null);
+    }
+    
+    /**
+     * Creates a new instance of CheckMetBeforeWriteCheckHandleradataHandler
+     *
+     * handler that applies the checkers defined in the collection properties
+     *
      * @param next
      */
     public BeforeWriteCheckHandler(PipelinedHandler next) {

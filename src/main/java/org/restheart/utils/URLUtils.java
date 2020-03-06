@@ -37,7 +37,6 @@ import static org.bson.BsonType.STRING;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.Bootstrapper;
-import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE.MAXKEY;

@@ -67,6 +67,13 @@ public class MetricsHandler extends PipelinedHandler {
 
     /**
      *
+     */
+    public MetricsHandler() {
+        this(null);
+    }
+    
+    /**
+     *
      * @param next
      */
     public MetricsHandler(PipelinedHandler next) {

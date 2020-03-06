@@ -43,6 +43,15 @@ public class CheckersListHandler extends PipelinedHandler {
     /**
      * Creates a new instance of CheckHandler
      *
+     * @param checkers
+     */
+    public CheckersListHandler(Checker... checkers) {
+        this(null, checkers);
+    }
+        
+    /**
+     * Creates a new instance of CheckHandler
+     *
      * @param next
      * @param checkers
      */
