@@ -17,8 +17,6 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.plugins.ConfigurablePlugin;
-
 /**
  * @see https://restheart.org/docs/develop/security-plugins/#initializers
  * @author Andrea Di Cesare <andrea@softinstigate.com>

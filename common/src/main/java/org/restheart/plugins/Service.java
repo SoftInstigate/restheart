@@ -18,7 +18,8 @@
 package org.restheart.plugins;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.plugins.HandlingPlugin;
+import io.undertow.util.HttpString;
+import org.restheart.utils.HttpStatus;
 
 /**
  * @see https://restheart.org/docs/develop/security-plugins/#services
@@ -28,5 +29,19 @@ public interface Service extends HandlingPlugin {
     @Override
     default boolean resolve(HttpServerExchange exchange) {
         return true;
+    }
+    
+     /**
+     * helper method to handle OPTIONS requests
+     *
+     * @param exchange
+     * @throws Exception
+     */
+    default void handleOptions(HttpServerExchange exchange) throws Exception {
+        exchange.getResponseHeaders()
+                .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
+                .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+        exchange.setStatusCode(HttpStatus.SC_OK);
+        exchange.endExchange();
     }
 }
