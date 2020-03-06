@@ -35,6 +35,7 @@ import org.restheart.plugins.GlobalChecker;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.checkers.CheckersUtils;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,8 +122,8 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                                 getChecker(checkerMetadata.getName());
                         var checker = checkerRecord.getInstance();
 
-                        BsonDocument confArgs = checkerRecord
-                                .getConfArgsAsBsonDocument();
+                        BsonDocument confArgs = JsonUtils.toBsonDocument(
+                                checkerRecord.getConfArgs());
 
                         return applyChecker(exchange,
                                 checkerMetadata.skipNotSupported(),

@@ -26,9 +26,10 @@ import org.restheart.handlers.RequestContextPredicate;
 /**
  *
  * wraps a checker with args and confArgs to be added as a global checker
- *
+ * @deprecated use org.restheart.plugins.Interceptor instead
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
+@Deprecated
 public class GlobalChecker {
     private final Checker checker;
     private final RequestContextPredicate predicate;

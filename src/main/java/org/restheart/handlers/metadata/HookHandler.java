@@ -27,6 +27,7 @@ import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.metadata.HookMetadata;
 import org.restheart.plugins.GlobalHook;
 import org.restheart.plugins.PluginsRegistry;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +92,8 @@ public class HookHandler extends PipelinedHandler {
                                 .getHook(mdHook.getName());
                         var hook = hookRecord.getInstance();
 
-                        var confArgs = hookRecord.getConfArgsAsBsonDocument();
+                        var confArgs = JsonUtils.toBsonDocument(
+                                hookRecord.getConfArgs());
 
                         if (hook.doesSupportRequests(context)) {
                             hook.hook(exchange,

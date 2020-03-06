@@ -26,9 +26,10 @@ import org.restheart.metadata.TransformerMetadata;
 /**
  * wraps a transformer with args and confArgs to be added as a global
  * transformer
- *
+ * @deprecated use org.restheart.plugins.Interceptor instead
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
+@Deprecated
 public class GlobalTransformer {
     private final Transformer transformer;
     private final RequestContextPredicate predicate;
