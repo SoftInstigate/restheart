@@ -762,7 +762,11 @@ public class JsonUtils {
      * @return
      */
     public static BsonDocument toBsonDocument(Map<String, Object> map) {
-        Document d = new Document(map);
+        if (map == null) {
+            return null;
+        }
+        
+        var d = new Document(map);
 
         return d.toBsonDocument(BsonDocument.class,
                 MongoClient.getDefaultCodecRegistry());

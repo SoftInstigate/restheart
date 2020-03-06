@@ -29,6 +29,7 @@ import org.restheart.metadata.TransformerMetadata;
 import org.restheart.metadata.TransformerMetadata.PHASE;
 import org.restheart.plugins.GlobalTransformer;
 import org.restheart.plugins.PluginsRegistry;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,7 +157,7 @@ public class RequestTransformerHandler
                         var tr = PluginsRegistry.getInstance()
                                 .getTransformer(rt.getName());
                         var t = tr.getInstance();
-                        var confArgs = tr.getConfArgsAsBsonDocument();
+                        var confArgs = JsonUtils.toBsonDocument(tr.getConfArgs());
 
                         BsonValue requestContent = request.getContent() == null
                                 ? new BsonDocument()
