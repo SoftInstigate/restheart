@@ -1014,13 +1014,6 @@ public class Bootstrapper {
                 return;
             }
 
-//            PipelinedHandler handler
-//                    = new RequestContextInjectorHandler(
-//                            "/",
-//                            "*",
-//                            conf.getAggregationCheckOperators(),
-//                            new BodyInjectorHandler(srv.getInstance()));
-
             pathHandler.addPrefixPath(uri,
                     PipelinedHandler.pipe(
                             new RequestContextInjectorHandler(false, conf.getAggregationCheckOperators()),
@@ -1031,9 +1024,6 @@ public class Bootstrapper {
                             new BodyInjectorHandler(),
                             srv.getInstance()));
 
-//            new TracingInstrumentationHandler(
-//                            new RequestLoggerHandler(
-//                                    new CORSHandler(handler))));
             LOGGER.info("Service {} bound to {}",
                     srv.getName(), uri);
         });

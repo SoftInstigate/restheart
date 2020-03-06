@@ -28,6 +28,14 @@ public class GetFileHandler extends GetDocumentHandler {
     /**
      * Default constructor
      *
+     */
+    public GetFileHandler() {
+        this(null);
+    }
+    
+    /**
+     * Default constructor
+     *
      * @param next
      */
     public GetFileHandler(PipelinedHandler next) {

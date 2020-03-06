@@ -45,6 +45,18 @@ public class TransformersListHandler extends PipelinedHandler {
     /**
      * Creates a new instance of TransformerHandler
      *
+     * @param phase
+     * @param transformers
+     */
+    public TransformersListHandler(
+            TransformerMetadata.PHASE phase,
+            Transformer... transformers) {
+        this(null, phase, transformers);
+    }
+    
+    /**
+     * Creates a new instance of TransformerHandler
+     *
      * @param next
      * @param phase
      * @param transformers

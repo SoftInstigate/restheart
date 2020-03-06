@@ -47,6 +47,14 @@ public class RequestTransformerHandler
     /**
      * Creates a new instance of RequestTransformerMetadataHandler
      *
+     */
+    public RequestTransformerHandler() {
+        super(null);
+    }
+    
+    /**
+     * Creates a new instance of RequestTransformerMetadataHandler
+     *
      * @param next
      */
     public RequestTransformerHandler(PipelinedHandler next) {

@@ -21,7 +21,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Map;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.ResponseSenderHandler;
 import org.restheart.utils.HttpStatus;
 

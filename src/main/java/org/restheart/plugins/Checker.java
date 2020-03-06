@@ -59,8 +59,10 @@ import org.restheart.handlers.RequestContext;
  * ExchangeAttributes.responseHeader(HttpString.tryFromString(HttpHeaders.LOCATION)).readAttribute(exchange)
  * </ul>
  *
+ * @deprecated use org.restheart.plugins.Interceptor instead
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@Deprecated
 public interface Checker extends Plugin {
 
     /**

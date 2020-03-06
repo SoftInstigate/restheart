@@ -19,40 +19,33 @@ package org.restheart.handlers.transformers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonString;
-import org.bson.BsonValue;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys._META;
-import org.restheart.plugins.Transformer;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * During request phase, this transformer just sets the pagesize to 0 to avoid
- * retrieving data for count request. During response phase set the content to
- * just contain the _size property
+ * sets the _id=_meta
  *
  */
-public class MetaRequestTransformer implements Transformer {
+public class MetaRequestTransformer extends PipelinedHandler {
 
     /**
      *
      * @param exchange
-     * @param context
-     * @param contentToTransform
-     * @param args
      */
     @Override
-    public void transform(
-            final HttpServerExchange exchange,
-            final RequestContext context,
-            BsonValue contentToTransform,
-            final BsonValue args) {
+    public void handleRequest(final HttpServerExchange exchange) throws Exception {
+        var content = BsonResponse.wrap(exchange).getContent();
         // for response phase
-        if (context.getResponseContent() != null
-                && context.getResponseContent().isDocument()
-                && context.getResponseContent().asDocument().containsKey("_id")) {
-            context.getResponseContent().asDocument().put("_id", new BsonString(_META));
+        if (content != null
+                && content.isDocument()
+                && content.asDocument().containsKey("_id")) {
+            content.asDocument().put("_id", new BsonString(_META));
         }
+        
+        next(exchange);
     }
 }

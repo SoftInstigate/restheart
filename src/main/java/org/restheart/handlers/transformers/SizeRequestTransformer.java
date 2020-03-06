@@ -19,9 +19,9 @@ package org.restheart.handlers.transformers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
-import org.restheart.handlers.RequestContext;
-import org.restheart.plugins.Transformer;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 
 /**
  *
@@ -32,34 +32,40 @@ import org.restheart.plugins.Transformer;
  * just contain the _size property
  *
  */
-public class SizeRequestTransformer implements Transformer {
+public class SizeRequestTransformer extends PipelinedHandler {
+    private final boolean phase;
+
+    /**
+     *
+     * @param phase true for request phase, false for response
+     */
+    public SizeRequestTransformer(boolean phase) {
+        this.phase = phase;
+    }
 
     /**
      *
      * @param exchange
-     * @param context
-     * @param contentToTransform
-     * @param args
      */
     @Override
-    public void transform(
-            final HttpServerExchange exchange,
-            final RequestContext context,
-            BsonValue contentToTransform,
-            final BsonValue args) {
+    public void handleRequest(final HttpServerExchange exchange) throws Exception {
         // for request phase
-        context.setPagesize(0);
+        if (phase) {
+            BsonRequest.wrap(exchange).setPagesize(0);
+        } else {
+            var response = BsonResponse.wrap(exchange);
 
-        // for response phase
-        if (context.getResponseContent() != null
-                && context.getResponseContent().isDocument()
-                && context.getResponseContent().asDocument().containsKey("_size")) {
+            // for response phase
+            if (response.getContent() != null
+                    && response.getContent().isDocument()
+                    && response.getContent().asDocument().containsKey("_size")) {
 
-            BsonDocument doc = context.getResponseContent().asDocument();
+                var doc = response.getContent().asDocument();
 
-            context.setResponseContent(new BsonDocument(
-                    "_size",
-                    doc.get("_size")));
+                response.setContent(new BsonDocument("_size", doc.get("_size")));
+            }
         }
+
+        next(exchange);
     }
 }

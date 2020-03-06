@@ -85,12 +85,10 @@ public class RequestDispatcherHandler extends PipelinedHandler {
      * the default response tranformer handlers chain
      */
     public static PipelinedHandler DEFAULT_RESP_TRANFORMERS
-            = new ResponseTransformerHandler(
-                    new TransformersListHandler(
-                            new HookHandler(
-                                    new ResponseSenderHandler()),
-                            PHASE.RESPONSE,
-                            new RepresentationTransformer()));
+            = PipelinedHandler.pipe(new ResponseTransformerHandler(),
+                    new RepresentationTransformer(),
+                    new HookHandler(),
+                    new ResponseSenderHandler());
 
     /**
      *
@@ -229,293 +227,291 @@ public class RequestDispatcherHandler extends PipelinedHandler {
 
         // *** ROOT handlers
         putHandler(TYPE.ROOT, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetRootHandler(
-                                new TransformersListHandler(
-                                        new ResponseSenderHandler(null),
-                                        PHASE.RESPONSE,
-                                        new RepresentationTransformer()))));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new GetRootHandler(),
+                        new RepresentationTransformer(),
+                        new ResponseSenderHandler()));
 
         putHandler(TYPE.ROOT_SIZE, METHOD.GET,
-                new RequestTransformerHandler(
-                        new TransformersListHandler(
-                                new GetRootHandler(
-                                        new TransformersListHandler(
-                                                new ResponseSenderHandler(null),
-                                                PHASE.RESPONSE,
-                                                new SizeRequestTransformer())),
-                                PHASE.REQUEST,
-                                new SizeRequestTransformer()))
-        );
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new SizeRequestTransformer(true),
+                        new GetRootHandler(),
+                        new SizeRequestTransformer(false),
+                        new ResponseSenderHandler()));
 
         // *** DB handlers
         putHandler(TYPE.DB, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetDBHandler(
-                                new TransformersListHandler(
-                                        new ResponseTransformerHandler(
-                                                new ResponseSenderHandler(null)),
-                                        PHASE.RESPONSE,
-                                        new AggregationTransformer(),
-                                        new RepresentationTransformer()))));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new GetDBHandler(),
+                        new AggregationTransformer(false),
+                        new RepresentationTransformer(),
+                        new ResponseTransformerHandler(),
+                        new ResponseSenderHandler()
+                ));
 
         putHandler(TYPE.DB_SIZE, METHOD.GET,
-                new RequestTransformerHandler(
-                        new TransformersListHandler(
-                                new GetDBHandler(
-                                        new TransformersListHandler(
-                                                new ResponseSenderHandler(null),
-                                                PHASE.RESPONSE,
-                                                new SizeRequestTransformer())),
-                                PHASE.REQUEST,
-                                new SizeRequestTransformer()))
-        );
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new SizeRequestTransformer(true),
+                        new GetDBHandler(),
+                        new SizeRequestTransformer(false),
+                        new ResponseSenderHandler()));
 
         putHandler(TYPE.DB_META, METHOD.GET,
-                new RequestTransformerHandler(
-                        new TransformersListHandler(
-                                new GetDocumentHandler(
-                                        new TransformersListHandler(
-                                                new ResponseSenderHandler(null),
-                                                PHASE.RESPONSE,
-                                                new AggregationTransformer(),
-                                                new MetaRequestTransformer())),
-                                PHASE.REQUEST,
-                                new MetaRequestTransformer()))
-        );
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new GetDocumentHandler(),
+                        new AggregationTransformer(false),
+                        new MetaRequestTransformer(),
+                        new ResponseSenderHandler()));
 
         putHandler(TYPE.DB, METHOD.PUT,
-                new RequestTransformerHandler(
-                        new RequestTransformerHandler(
-                                new PutDBHandler(
-                                        DEFAULT_RESP_TRANFORMERS))));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new PutDBHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.DB, METHOD.DELETE,
-                new RequestTransformerHandler(
-                        new DeleteDBHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new DeleteDBHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.DB, METHOD.PATCH,
-                new RequestTransformerHandler(
-                        new PatchDBHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new PatchDBHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         // *** COLLECTION handlers
         putHandler(TYPE.COLLECTION, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetCollectionHandler(
-                                new ResponseTransformerHandler(
-                                        new TransformersListHandler(
-                                                new HookHandler(
-                                                        new ResponseSenderHandler()),
-                                                PHASE.RESPONSE,
-                                                new RepresentationTransformer(),
-                                                new AggregationTransformer())))));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new GetCollectionHandler(),
+                        new RepresentationTransformer(),
+                        new AggregationTransformer(false),
+                        new HookHandler(),
+                        new ResponseSenderHandler()
+                ));
 
         putHandler(TYPE.COLLECTION_SIZE, METHOD.GET,
-                new RequestTransformerHandler(
-                        new TransformersListHandler(
-                                new GetCollectionHandler(
-                                        new ResponseTransformerHandler(
-                                                new TransformersListHandler(
-                                                        new HookHandler(
-                                                                new ResponseSenderHandler()),
-                                                        PHASE.RESPONSE,
-                                                        new SizeRequestTransformer()))),
-                                PHASE.REQUEST,
-                                new SizeRequestTransformer()))
-        );
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new SizeRequestTransformer(true),
+                        new GetCollectionHandler(),
+                        new SizeRequestTransformer(false),
+                        new ResponseSenderHandler()));
 
         putHandler(TYPE.COLLECTION_META, METHOD.GET,
-                new RequestTransformerHandler(
-                        new TransformersListHandler(
-                                new GetDocumentHandler(
-                                        new TransformersListHandler(
-                                                new ResponseSenderHandler(null),
-                                                PHASE.RESPONSE,
-                                                new AggregationTransformer(),
-                                                new MetaRequestTransformer())),
-                                PHASE.REQUEST,
-                                new MetaRequestTransformer()))
-        );
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new GetDocumentHandler(),
+                        new AggregationTransformer(false),
+                        new MetaRequestTransformer(),
+                        new ResponseSenderHandler()
+                ));
 
         putHandler(TYPE.COLLECTION, METHOD.POST,
                 new NormalOrBulkDispatcherHandler(
-                        new RequestTransformerHandler(
-                                new BeforeWriteCheckHandler(
-                                        new PostCollectionHandler(
-                                                new AfterWriteCheckHandler(
-                                                        DEFAULT_RESP_TRANFORMERS)))),
-                        new RequestTransformerHandler(
-                                new BeforeWriteCheckHandler(
-                                        new BulkPostCollectionHandler(
-                                                DEFAULT_RESP_TRANFORMERS)))));
+                        PipelinedHandler.pipe(
+                                new RequestTransformerHandler(),
+                                new BeforeWriteCheckHandler(),
+                                new PostCollectionHandler(),
+                                new AfterWriteCheckHandler(),
+                                DEFAULT_RESP_TRANFORMERS
+                        ),
+                        PipelinedHandler.pipe(
+                                new RequestTransformerHandler(),
+                                new BeforeWriteCheckHandler(),
+                                new BulkPostCollectionHandler(),
+                                DEFAULT_RESP_TRANFORMERS)
+                ));
 
         putHandler(TYPE.COLLECTION, METHOD.PUT,
-                new RequestTransformerHandler(
-                        new TransformersListHandler(
-                                new PutCollectionHandler(
-                                        DEFAULT_RESP_TRANFORMERS),
-                                PHASE.REQUEST,
-                                new AggregationTransformer())));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new AggregationTransformer(true),
+                        new PutCollectionHandler(),
+                        DEFAULT_RESP_TRANFORMERS));
 
         putHandler(TYPE.COLLECTION, METHOD.DELETE,
-                new RequestTransformerHandler(
-                        new DeleteCollectionHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new DeleteCollectionHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.COLLECTION, METHOD.PATCH,
-                new RequestTransformerHandler(
-                        new TransformersListHandler(
-                                new PatchCollectionHandler(
-                                        DEFAULT_RESP_TRANFORMERS),
-                                PHASE.REQUEST,
-                                new AggregationTransformer())));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new AggregationTransformer(true),
+                        new PatchCollectionHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         // *** DOCUMENT handlers
         putHandler(TYPE.DOCUMENT, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetDocumentHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new GetDocumentHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.DOCUMENT, METHOD.PUT,
-                new RequestTransformerHandler(
-                        new BeforeWriteCheckHandler(
-                                new PutDocumentHandler(
-                                        new AfterWriteCheckHandler(
-                                                DEFAULT_RESP_TRANFORMERS)))));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new BeforeWriteCheckHandler(),
+                        new PutDocumentHandler(),
+                        new AfterWriteCheckHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.DOCUMENT, METHOD.DELETE,
-                new RequestTransformerHandler(
-                        new DeleteDocumentHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new DeleteDocumentHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.DOCUMENT, METHOD.PATCH,
-                new RequestTransformerHandler(
-                        new BeforeWriteCheckHandler(
-                                new PatchDocumentHandler(
-                                        new AfterWriteCheckHandler(
-                                                DEFAULT_RESP_TRANFORMERS)))));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new BeforeWriteCheckHandler(),
+                        new PatchDocumentHandler(),
+                        new AfterWriteCheckHandler(),
+                        DEFAULT_RESP_TRANFORMERS));
 
         // *** BULK_DOCUMENTS handlers, i.e. bulk operations
         putHandler(TYPE.BULK_DOCUMENTS, METHOD.DELETE,
-                new RequestTransformerHandler(
-                        new BulkDeleteDocumentsHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new BulkDeleteDocumentsHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.BULK_DOCUMENTS, METHOD.PATCH,
-                new RequestTransformerHandler(
-                        new BeforeWriteCheckHandler(
-                                new BulkPatchDocumentsHandler(
-                                        DEFAULT_RESP_TRANFORMERS))));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new BeforeWriteCheckHandler(),
+                        new BulkPatchDocumentsHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         // *** COLLECTION_INDEXES handlers
         putHandler(TYPE.COLLECTION_INDEXES, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetIndexesHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new GetIndexesHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         // *** INDEX handlers
         putHandler(TYPE.INDEX, METHOD.PUT,
-                new RequestTransformerHandler(
-                        new PutIndexHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new PutIndexHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.INDEX, METHOD.DELETE,
-                new RequestTransformerHandler(
-                        new DeleteIndexHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new DeleteIndexHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         // *** FILES_BUCKET and FILE handlers
         putHandler(TYPE.FILES_BUCKET, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetCollectionHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new GetCollectionHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.FILES_BUCKET, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetCollectionHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new GetCollectionHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.FILES_BUCKET_SIZE, METHOD.GET,
-                new RequestTransformerHandler(
-                        new TransformersListHandler(
-                                new GetCollectionHandler(
-                                        new TransformersListHandler(
-                                                new ResponseSenderHandler(null),
-                                                PHASE.RESPONSE,
-                                                new SizeRequestTransformer())),
-                                PHASE.REQUEST,
-                                new SizeRequestTransformer()))
-        );
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new SizeRequestTransformer(true),
+                        new GetCollectionHandler(),
+                        new SizeRequestTransformer(false),
+                        new ResponseSenderHandler()));
 
         putHandler(TYPE.FILES_BUCKET_META, METHOD.GET,
-                new RequestTransformerHandler(
-                        new TransformersListHandler(
-                                new GetDocumentHandler(
-                                        new TransformersListHandler(
-                                                new ResponseSenderHandler(null),
-                                                PHASE.RESPONSE,
-                                                new MetaRequestTransformer())),
-                                PHASE.REQUEST,
-                                new MetaRequestTransformer()))
-        );
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new GetDocumentHandler(),
+                        new MetaRequestTransformer(),
+                        new ResponseSenderHandler()
+                ));
 
         putHandler(TYPE.FILES_BUCKET, METHOD.POST,
-                new RequestTransformerHandler(
-                        new BeforeWriteCheckHandler(
-                                new PostBucketHandler(
-                                        DEFAULT_RESP_TRANFORMERS))));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new BeforeWriteCheckHandler(),
+                        new PostBucketHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.FILE, METHOD.PUT,
-                new RequestTransformerHandler(
-                        new BeforeWriteCheckHandler(
-                                new PutFileHandler(
-                                        new FileMetadataHandler(
-                                                DEFAULT_RESP_TRANFORMERS)))));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new BeforeWriteCheckHandler(),
+                        new PutFileHandler(),
+                        new FileMetadataHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.FILES_BUCKET, METHOD.PUT,
-                new RequestTransformerHandler(
-                        new PutBucketHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new PutBucketHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.FILES_BUCKET, METHOD.PATCH,
-                new RequestTransformerHandler(
-                        new PatchCollectionHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new PatchCollectionHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.FILES_BUCKET, METHOD.DELETE,
-                new RequestTransformerHandler(
-                        new DeleteBucketHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new DeleteBucketHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.FILE, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetFileHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new GetFileHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.FILE_BINARY, METHOD.GET,
-                new GetFileBinaryHandler(
-                        new HookHandler(
-                                new ResponseSenderHandler())));
+                PipelinedHandler.pipe(new GetFileBinaryHandler(),
+                        new HookHandler(),
+                        new ResponseSenderHandler()
+                ));
 
         putHandler(TYPE.FILE, METHOD.DELETE,
-                new RequestTransformerHandler(
-                        new DeleteFileHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new DeleteFileHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         // PUTting or PATCHing a file involves updating the metadata in the
         // xxx.files bucket for an _id. Although the chunks are immutable we
         // can treat the metadata like a regular document.
         putHandler(TYPE.FILE, METHOD.PATCH,
-                new RequestTransformerHandler(
-                        new BeforeWriteCheckHandler(
-                                new FileMetadataHandler(
-                                        new AfterWriteCheckHandler(
-                                                DEFAULT_RESP_TRANFORMERS)))));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new BeforeWriteCheckHandler(),
+                        new FileMetadataHandler(),
+                        new AfterWriteCheckHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         /*
-         * TODO There's already a PUT handler that allows custom id's to be set. Need to think about how to handle PUT with no binary data
+         * TODO There's already a PUT handler that allows custom id's to be set. 
+        // Need to think about how to handle PUT with no binary data
         putPipedHttpHandler(TYPE.FILE, METHOD.PUT,
                 new RequestTransformerHandler(
                         new BeforeWriteCheckHandler(
@@ -525,98 +521,123 @@ public class RequestDispatcherHandler extends PipelinedHandler {
          */
         // *** AGGREGATION handler
         putHandler(TYPE.AGGREGATION, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetAggregationHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new GetAggregationHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         // *** Sessions handlers
         putHandler(TYPE.SESSIONS, METHOD.POST,
-                new RequestTransformerHandler(
-                        new PostSessionHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new PostSessionHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         // *** SCHEMA handlers
         putHandler(TYPE.SCHEMA_STORE, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetCollectionHandler(
-                                new TransformersListHandler(
-                                        DEFAULT_RESP_TRANFORMERS,
-                                        PHASE.RESPONSE,
-                                        new JsonSchemaTransformer()))));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new GetCollectionHandler(),
+                        new TransformersListHandler(null, PHASE.RESPONSE, 
+                                new JsonSchemaTransformer()),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.SCHEMA_STORE_SIZE, METHOD.GET,
-                new RequestTransformerHandler(
-                        new TransformersListHandler(
-                                new GetCollectionHandler(
-                                        new TransformersListHandler(
-                                                new ResponseSenderHandler(null),
-                                                PHASE.RESPONSE,
-                                                new SizeRequestTransformer())),
-                                PHASE.REQUEST,
-                                new SizeRequestTransformer()))
-        );
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new SizeRequestTransformer(true),
+                        new GetCollectionHandler(),
+                        new SizeRequestTransformer(false),
+                        new ResponseSenderHandler()));
 
         putHandler(TYPE.SCHEMA_STORE_META, METHOD.GET,
-                new RequestTransformerHandler(
-                        new TransformersListHandler(
-                                new GetDocumentHandler(
-                                        new TransformersListHandler(
-                                                new ResponseSenderHandler(null),
-                                                PHASE.RESPONSE,
-                                                new MetaRequestTransformer())),
-                                PHASE.REQUEST,
-                                new MetaRequestTransformer()))
-        );
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new GetDocumentHandler(),
+                        new MetaRequestTransformer(),
+                        new ResponseSenderHandler()
+                ));
 
         putHandler(TYPE.SCHEMA_STORE, METHOD.PUT,
-                new RequestTransformerHandler(
-                        new PutCollectionHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new PutCollectionHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.SCHEMA_STORE, METHOD.PATCH,
-                new RequestTransformerHandler(
-                        new PatchCollectionHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new PatchCollectionHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.SCHEMA_STORE, METHOD.POST,
-                new RequestTransformerHandler(
-                        new CheckersListHandler(
-                                new TransformersListHandler(
-                                        new PostCollectionHandler(
-                                                DEFAULT_RESP_TRANFORMERS),
-                                        PHASE.REQUEST,
-                                        new JsonSchemaTransformer()),
-                                new JsonMetaSchemaChecker())));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new CheckersListHandler(new JsonMetaSchemaChecker()),
+                        new TransformersListHandler(PHASE.REQUEST,  
+                                new JsonSchemaTransformer()),
+                        new PostCollectionHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
+//                new RequestTransformerHandler(
+//                        new CheckersListHandler(
+//                                new TransformersListHandler(
+//                                        new PostCollectionHandler(
+//                                                DEFAULT_RESP_TRANFORMERS),
+//                                        PHASE.REQUEST,
+//                                        new JsonSchemaTransformer()),
+//                                new JsonMetaSchemaChecker())));
         putHandler(TYPE.SCHEMA_STORE, METHOD.DELETE,
-                new RequestTransformerHandler(
-                        new DeleteCollectionHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new DeleteCollectionHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
         putHandler(TYPE.SCHEMA, METHOD.GET,
-                new RequestTransformerHandler(
-                        new GetDocumentHandler(
-                                new TransformersListHandler(
-                                        DEFAULT_RESP_TRANFORMERS,
-                                        PHASE.RESPONSE,
-                                        new JsonSchemaTransformer()))));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new GetDocumentHandler(),
+                        new TransformersListHandler(PHASE.RESPONSE,  
+                                new JsonSchemaTransformer()),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
+//                new RequestTransformerHandler(
+//                        new GetDocumentHandler(
+//                                new TransformersListHandler(
+//                                        DEFAULT_RESP_TRANFORMERS,
+//                                        PHASE.RESPONSE,
+//                                        new JsonSchemaTransformer()))));
         putHandler(TYPE.SCHEMA, METHOD.PUT,
-                new RequestTransformerHandler(
-                        new CheckersListHandler(
-                                new TransformersListHandler(
-                                        new PutDocumentHandler(
-                                                DEFAULT_RESP_TRANFORMERS),
-                                        PHASE.REQUEST,
-                                        new JsonSchemaTransformer()),
-                                new JsonMetaSchemaChecker())));
+                PipelinedHandler.pipe(
+                        new RequestTransformerHandler(),
+                        new CheckersListHandler(new JsonMetaSchemaChecker()),
+                        new TransformersListHandler(PHASE.REQUEST, 
+                                new JsonSchemaTransformer()),
+                        new PutDocumentHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
+//                new RequestTransformerHandler(
+//                        new CheckersListHandler(
+//                                new TransformersListHandler(
+//                                        new PutDocumentHandler(
+//                                                DEFAULT_RESP_TRANFORMERS),
+//                                        PHASE.REQUEST,
+//                                        new JsonSchemaTransformer()),
+//                                new JsonMetaSchemaChecker())));
         putHandler(TYPE.SCHEMA, METHOD.DELETE,
-                new RequestTransformerHandler(
-                        new DeleteDocumentHandler(
-                                DEFAULT_RESP_TRANFORMERS)));
+                PipelinedHandler.pipe(new RequestTransformerHandler(),
+                        new DeleteDocumentHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
 
-        putHandler(TYPE.METRICS, METHOD.GET, new MetricsHandler(DEFAULT_RESP_TRANFORMERS));
+        putHandler(TYPE.METRICS, METHOD.GET,
+                PipelinedHandler.pipe(new MetricsHandler(),
+                        DEFAULT_RESP_TRANFORMERS
+                ));
     }
 
     private PipelinedHandler getHandlerToLog(PipelinedHandler handler) {

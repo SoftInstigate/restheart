@@ -111,7 +111,7 @@
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-common</artifactId>
-      <version>7c14048b11</version>
+      <version>a9b2ee6953</version>
     </dependency>
 
     <dependency>
