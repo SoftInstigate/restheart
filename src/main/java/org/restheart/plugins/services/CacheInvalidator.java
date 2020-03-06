@@ -21,7 +21,8 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
 import java.util.Map;
 import org.restheart.Bootstrapper;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
@@ -47,34 +48,31 @@ public class CacheInvalidator extends Service {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+
         if (!Bootstrapper.getConfiguration().isLocalCacheEnabled()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_MODIFIED,
                     "caching is off");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
-        if (context.isOptions()) {
-            handleOptions(exchange, context);
-        } else if (context.isPost()) {
+        if (request.isOptions()) {
+            handleOptions(exchange);
+        } else if (request.isPost()) {
             Deque<String> _db = exchange.getQueryParameters().get("db");
             Deque<String> _coll = exchange.getQueryParameters().get("coll");
 
             if (_db == null || _db.getFirst() == null) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_BAD_REQUEST,
                         "the db query paramter is mandatory");
             } else {
@@ -89,13 +87,13 @@ public class CacheInvalidator extends Service {
                             .invalidateCollection(db, coll);
                 }
 
-                context.setResponseStatusCode(HttpStatus.SC_OK);
+                response.setStatusCode(HttpStatus.SC_OK);
             }
         } else {
-            context.setResponseStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+            response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
-        
-        next(exchange, context);
+
+        next(exchange);
     }
 
     /**

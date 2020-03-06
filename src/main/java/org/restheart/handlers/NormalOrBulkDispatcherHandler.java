@@ -19,15 +19,16 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
+import org.restheart.handlers.exchange.BsonRequest;
 
 /**
  * this handler dispatches request to normal or bulk post collection handlers
  * depending on the content to be an object or an array
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class NormalOrBulkDispatcherHandler extends PipedHttpHandler {
-    private final PipedHttpHandler nextNormal;
-    private final PipedHttpHandler nextBulk;
+public class NormalOrBulkDispatcherHandler extends PipelinedHandler {
+    private final PipelinedHandler nextNormal;
+    private final PipelinedHandler nextBulk;
 
     /**
      * Creates a new instance of PostCollectionHandler
@@ -35,8 +36,8 @@ public class NormalOrBulkDispatcherHandler extends PipedHttpHandler {
      * @param nextBulk next handler for bulk requests
      */
     public NormalOrBulkDispatcherHandler(
-            PipedHttpHandler nextNormal, 
-            PipedHttpHandler nextBulk) {
+            PipelinedHandler nextNormal, 
+            PipelinedHandler nextBulk) {
         super(null);
         
         this.nextNormal = nextNormal;
@@ -46,20 +47,17 @@ public class NormalOrBulkDispatcherHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange, 
-            RequestContext context) throws Exception {
-        BsonValue content = context.getContent();
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        BsonValue content = BsonRequest.wrap(exchange).getContent();
 
         if (content != null 
                 && content.isArray()) {
-            nextBulk.handleRequest(exchange, context);
+            nextBulk.handleRequest(exchange);
         } else {
-            nextNormal.handleRequest(exchange, context);
+            nextNormal.handleRequest(exchange);
         }
     }
 }

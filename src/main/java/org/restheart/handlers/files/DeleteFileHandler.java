@@ -20,11 +20,13 @@ package org.restheart.handlers.files;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.BsonValue;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -32,9 +34,10 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DeleteFileHandler extends PipedHttpHandler {
+public class DeleteFileHandler extends PipelinedHandler {
 
     private final GridFsRepository gridFsDAO;
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     /**
      * Creates a new instance of DeleteFileHandler
@@ -49,7 +52,7 @@ public class DeleteFileHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public DeleteFileHandler(PipedHttpHandler next) {
+    public DeleteFileHandler(PipelinedHandler next) {
         super(next);
         this.gridFsDAO = new GridFsDAO();
     }
@@ -67,25 +70,27 @@ public class DeleteFileHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
         
-        BsonValue id = context.getDocumentId();
+        BsonValue id = request.getDocumentId();
 
         OperationResult result = this.gridFsDAO
-                .deleteFile(getDatabase(), context.getDBName(),
-                        context.getCollectionName(), id,
-                        context.getETag(),
-                        context.isETagCheckRequired());
+                .deleteFile(dbsDAO, request.getDBName(),
+                        request.getCollectionName(), id,
+                        request.getETag(),
+                        request.isETagCheckRequired());
 
-        context.setDbOperationResult(result);
+        response.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
@@ -95,17 +100,16 @@ public class DeleteFileHandler extends PipedHttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_CONFLICT,
                     "The file's ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header");
-            next(exchange, context);
+            next(exchange);
             return;
         } 
         
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
         
-        next(exchange, context);
+        next(exchange);
     }
 }

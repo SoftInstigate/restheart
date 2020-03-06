@@ -29,7 +29,8 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.representation.Resource;
 
 /**
@@ -41,72 +42,70 @@ public class ResponseHelper {
     /**
      *
      * @param exchange
-     * @param context
      * @param code
      * @param message
      */
     public static void endExchangeWithMessage(
             HttpServerExchange exchange,
-            RequestContext context,
             int code,
             String message) {
-        endExchangeWithMessage(exchange, context, code, message, null);
+        endExchangeWithMessage(exchange, code, message, null);
     }
 
     /**
      *
      * @param exchange
-     * @param context might be null
      * @param code
      * @param message
      * @param t
      */
     public static void endExchangeWithMessage(
             HttpServerExchange exchange,
-            RequestContext context,
             int code,
             String message,
             Throwable t) {
-        context.setResponseStatusCode(code);
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+
+        response.setStatusCode(code);
 
         String httpStatusText = HttpStatus.getStatusText(code);
 
-        context.setInError(true);
+        request.setInError(true);
 
-        context.setResponseContent(
-                getErrorJsonDocument(
-                        exchange.getRequestPath(),
-                        code,
-                        context,
-                        httpStatusText,
-                        message,
-                        t, false)
-                        .asBsonDocument());
+        response.setContent(getErrorJsonDocument(
+                exchange.getRequestPath(),
+                code,
+                response,
+                httpStatusText,
+                message,
+                t, false)
+                .asBsonDocument());
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @param code
      * @param rep
      */
     public static void endExchangeWithRepresentation(
             HttpServerExchange exchange,
-            RequestContext context,
             int code,
             Resource rep) {
-        context.setResponseStatusCode(code);
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
 
-        context.setInError(true);
-        context.setResponseContent(rep.asBsonDocument());
+        request.setInError(true);
+        response.setStatusCode(code);
+        response.setContent(rep.asBsonDocument());
     }
 
     /**
      *
      * @param href
      * @param code
-     * @param context
+     * @param response
      * @param httpStatusText
      * @param message
      * @param t
@@ -115,7 +114,7 @@ public class ResponseHelper {
      */
     public static Resource getErrorJsonDocument(String href,
             int code,
-            RequestContext context,
+            BsonResponse response,
             String httpStatusText,
             String message,
             Throwable t,
@@ -163,9 +162,9 @@ public class ResponseHelper {
         }
 
         // add warnings
-        if (context != null
-                && context.getWarnings() != null) {
-            context.getWarnings().forEach(w -> rep.addWarning(w));
+        if (response != null
+                && response.getWarnings() != null) {
+            response.getWarnings().forEach(w -> rep.addWarning(w));
         }
 
         return rep;
@@ -316,9 +315,9 @@ public class ResponseHelper {
                 //WriteConflict
                 return HttpStatus.SC_CONFLICT;
             case 225:
-                // Cannot start transaction X on session Y because a newer transaction Z has already started
+            // Cannot start transaction X on session Y because a newer transaction Z has already started
             case 251:
-                // transaction number X does not match any in-progress transactions
+            // transaction number X does not match any in-progress transactions
             case 256:
                 // Transaction X has been committed.
                 return HttpStatus.SC_NOT_ACCEPTABLE;
@@ -361,9 +360,9 @@ public class ResponseHelper {
                 //WriteConflict
                 return "Write conflict inside transaction";
             case 225:
-                // Cannot start transaction X on session Y because a newer transaction Z has already started// Cannot start transaction X on session Y because a newer transaction Z has already started
+            // Cannot start transaction X on session Y because a newer transaction Z has already started// Cannot start transaction X on session Y because a newer transaction Z has already started
             case 251:
-                // transaction number X does not match any in-progress transactions
+            // transaction number X does not match any in-progress transactions
             case 256:
                 // Transaction X has been committed.
                 return "The given transaction is not in-progress";
@@ -373,7 +372,7 @@ public class ResponseHelper {
                 // the document exists but does not match the filter
                 return "The document does not fulfill filter "
                         + "or index constraints";
-                
+
             default:
                 return "Error handling the request, "
                         + "see log for more information";

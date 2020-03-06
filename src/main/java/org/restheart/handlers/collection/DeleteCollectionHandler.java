@@ -18,17 +18,21 @@
 package org.restheart.handlers.collection;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
+import org.restheart.utils.RequestHelper;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DeleteCollectionHandler extends PipedHttpHandler {
-
+public class DeleteCollectionHandler extends PipelinedHandler {
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    
     /**
      * Creates a new instance of DeleteCollectionHandler
      */
@@ -41,39 +45,42 @@ public class DeleteCollectionHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public DeleteCollectionHandler(PipedHttpHandler next) {
+    public DeleteCollectionHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        OperationResult result = getDatabase().deleteCollection(
-                context.getClientSession(),
-                context.getDBName(), 
-                context.getCollectionName(),
-                context.getETag(), 
-                context.isETagCheckRequired());
+        OperationResult result = dbsDAO.deleteCollection(
+                request.getClientSession(),
+                request.getDBName(), 
+                request.getCollectionName(),
+                request.getETag(), 
+                request.isETagCheckRequired());
 
-        if (isResponseInConflict(context, result, exchange)) {
+        if (RequestHelper.isResponseInConflict(result, exchange)) {
+            next(exchange);
             return;
         }
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
         LocalCachesSingleton.getInstance()
-                .invalidateCollection(context.getDBName(), context.getCollectionName());
+                .invalidateCollection(request.getDBName(), request.getCollectionName());
 
-        next(exchange, context);
+        next(exchange);
     }
 }

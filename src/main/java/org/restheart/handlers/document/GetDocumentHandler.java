@@ -27,12 +27,21 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.db.DatabaseImpl;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
 import static org.restheart.handlers.exchange.ExchangeKeys.DB_META_DOCID;
 import static org.restheart.handlers.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
+import static org.restheart.handlers.exchange.ExchangeKeys.TYPE.COLLECTION_META;
+import static org.restheart.handlers.exchange.ExchangeKeys.TYPE.DB_META;
+import static org.restheart.handlers.exchange.ExchangeKeys.TYPE.DOCUMENT;
+import static org.restheart.handlers.exchange.ExchangeKeys.TYPE.FILE;
+import static org.restheart.handlers.exchange.ExchangeKeys.TYPE.FILES_BUCKET_META;
+import static org.restheart.handlers.exchange.ExchangeKeys.TYPE.SCHEMA;
+import static org.restheart.handlers.exchange.ExchangeKeys.TYPE.SCHEMA_STORE_META;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
@@ -46,8 +55,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetDocumentHandler extends PipedHttpHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GetDocumentHandler.class);
+public class GetDocumentHandler extends PipelinedHandler {
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(GetDocumentHandler.class);
 
     /**
      * Default ctor
@@ -61,23 +73,22 @@ public class GetDocumentHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public GetDocumentHandler(PipedHttpHandler next) {
+    public GetDocumentHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
@@ -88,32 +99,32 @@ public class GetDocumentHandler extends PipedHttpHandler {
         // handling special case /_meta that is mapped to collName=_properties
         // and docId=_properties (for db meta) 
         // and docId=_properties.collName for (coll meta)
-        if (context.isDbMeta()) {
+        if (request.isDbMeta()) {
             collName = META_COLLNAME;
             docId = new BsonString(DB_META_DOCID);
-        } else if (context.isCollectionMeta()) {
+        } else if (request.isCollectionMeta()) {
             collName = META_COLLNAME;
             docId = new BsonString(COLL_META_DOCID_PREFIX.concat(
-                    context.getCollectionName()));
+                    request.getCollectionName()));
         } else {
-            collName = context.getCollectionName();
-            docId = context.getDocumentId();
+            collName = request.getCollectionName();
+            docId = request.getDocumentId();
         }
 
         Bson query = eq("_id", docId);
 
         HashSet<Bson> terms = new HashSet<>();
 
-        if (context.getShardKey() != null) {
-            terms.add(context.getShardKey());
+        if (request.getShardKey() != null) {
+            terms.add(request.getShardKey());
         }
 
         // filters are applied to GET /db/coll/docid as well 
         // to make easy implementing filter based access restrictions
         // for instance a Trasnformer can add a filter to limit access to data
         // on the basis of the user role
-        if (context.getFiltersDocument() != null) {
-            terms.add(context.getFiltersDocument());
+        if (request.getFiltersDocument() != null) {
+            terms.add(request.getFiltersDocument());
         }
 
         if (terms.size() > 0) {
@@ -123,7 +134,7 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
         final BsonDocument fieldsToReturn = new BsonDocument();
 
-        Deque<String> keys = context.getKeys();
+        Deque<String> keys = request.getKeys();
 
         if (keys != null) {
             keys.stream().forEach((String f) -> {
@@ -133,9 +144,9 @@ public class GetDocumentHandler extends PipedHttpHandler {
             });
         }
 
-        var cs = context.getClientSession();
-        var coll = getDatabase().getCollection(
-                context.getDBName(),
+        var cs = request.getClientSession();
+        var coll = dbsDAO.getCollection(
+                request.getDBName(),
                 collName);
 
         BsonDocument document = cs == null
@@ -149,14 +160,14 @@ public class GetDocumentHandler extends PipedHttpHandler {
                         .first();
 
         if (document == null) {
-            String errMsg = context.getDocumentId() == null
+            String errMsg = request.getDocumentId() == null
                     ? " does not exist"
                     : " ".concat(JsonUtils.getIdAsString(
-                            context.getDocumentId(), true))
+                            request.getDocumentId(), true))
                             .concat(" does not exist");
 
-            if (null != context.getType()) {
-                switch (context.getType()) {
+            if (null != request.getType()) {
+                switch (request.getType()) {
                     case DOCUMENT:
                         errMsg = "document".concat(errMsg);
                         break;
@@ -190,16 +201,15 @@ public class GetDocumentHandler extends PipedHttpHandler {
 
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_FOUND,
                     errMsg);
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
         Object etag;
 
-        if (context.getType() == TYPE.FILE) {
+        if (request.getType() == TYPE.FILE) {
             if (document.containsKey("metadata")
                     && document.get("metadata").isDocument()) {
                 etag = document.get("metadata").asDocument().get(("_etag"));
@@ -217,27 +227,26 @@ public class GetDocumentHandler extends PipedHttpHandler {
         // in case the request contains the IF_NONE_MATCH header with the current etag value,
         // just return 304 NOT_MODIFIED code
         if (RequestHelper.checkReadEtag(exchange, (BsonObjectId) etag)) {
-            context.setResponseStatusCode(HttpStatus.SC_NOT_MODIFIED);
-            next(exchange, context);
+            response.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
+            next(exchange);
             return;
         }
 
         String requestPath = URLUtils.removeTrailingSlashes(
                 exchange.getRequestPath());
 
-        context.setResponseContent(new DocumentRepresentationFactory()
+        response.setContent(new DocumentRepresentationFactory()
                 .getRepresentation(
                         requestPath,
                         exchange,
-                        context,
                         document)
                 .asBsonDocument());
 
-        context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-        context.setResponseStatusCode(HttpStatus.SC_OK);
+        response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+        response.setStatusCode(HttpStatus.SC_OK);
 
         ResponseHelper.injectEtagHeader(exchange, etag);
 
-        next(exchange, context);
+        next(exchange);
     }
 }

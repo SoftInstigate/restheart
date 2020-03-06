@@ -19,14 +19,14 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.utils.HttpStatus;
-import static org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class OptionsHandler extends PipedHttpHandler {
+public class OptionsHandler extends PipelinedHandler {
     /**
      * Creates a new instance of OptionsHandler
      *
@@ -42,25 +42,26 @@ public class OptionsHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public OptionsHandler(PipedHttpHandler next) {
+    public OptionsHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (!(context.isOptions())) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        
+        if (!(request.isOptions())) {
+            next(exchange);
             return;
         }
 
-        if (null != context.getType()) {
-            switch (context.getType()) {
+        if (null != request.getType()) {
+            switch (request.getType()) {
                 case ROOT:
                     exchange.getResponseHeaders()
                             .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")

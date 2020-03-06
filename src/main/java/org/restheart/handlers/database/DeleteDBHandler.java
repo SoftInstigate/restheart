@@ -19,9 +19,11 @@ package org.restheart.handlers.database;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -30,7 +32,8 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DeleteDBHandler extends PipedHttpHandler {
+public class DeleteDBHandler extends PipelinedHandler {
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     /**
      * Creates a new instance of DeleteDBHandler
@@ -44,32 +47,34 @@ public class DeleteDBHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public DeleteDBHandler(PipedHttpHandler next) {
+    public DeleteDBHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
-        
-        String etag = context.getETag();
 
-        OperationResult result = getDatabase().deleteDatabase(
-                context.getClientSession(),
-                context.getDBName(), 
-                etag, 
-                context.isETagCheckRequired());
+        String etag = request.getETag();
 
-        context.setDbOperationResult(result);
+        OperationResult result = dbsDAO.deleteDatabase(
+                request.getClientSession(),
+                request.getDBName(),
+                etag,
+                request.isETagCheckRequired());
+
+        response.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
@@ -79,12 +84,11 @@ public class DeleteDBHandler extends PipedHttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_CONFLICT,
                     "The database's ETag must be provided using the '"
                     + Headers.IF_MATCH
                     + "' header.");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
@@ -92,10 +96,10 @@ public class DeleteDBHandler extends PipedHttpHandler {
             exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
-        LocalCachesSingleton.getInstance().invalidateDb(context.getDBName());
+        LocalCachesSingleton.getInstance().invalidateDb(request.getDBName());
 
-        next(exchange, context);
+        next(exchange);
     }
 }

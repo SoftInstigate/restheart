@@ -22,8 +22,9 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.metadata.TransformerMetadata;
 import org.restheart.plugins.GlobalTransformer;
 import org.restheart.plugins.PluginsRegistry;
@@ -33,30 +34,30 @@ import org.restheart.plugins.Transformer;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public abstract class TransformerHandler extends PipedHttpHandler {
+public abstract class TransformerHandler extends PipelinedHandler {
     /**
      * Creates a new instance of AbstractTransformerHandler
      *
      * @param next
      */
-    public TransformerHandler(PipedHttpHandler next) {
+    public TransformerHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange,
-            RequestContext context) throws Exception {
-        applyGlobalTransformers(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var context = RequestContext.wrap(exchange);
+        
+        applyGlobalTransformers(exchange);
 
         if (doesCollTransformerAppy(context)) {
             try {
-                applyCollRTransformer(exchange, context);
+                applyCollRTransformer(exchange);
             } catch (InvalidMetadataException e) {
                 context.addWarning("Error applying transformer: " + e.getMessage());
             }
@@ -64,13 +65,13 @@ public abstract class TransformerHandler extends PipedHttpHandler {
 
         if (doesDBTransformerAppy(context)) {
             try {
-                applyDbTransformer(exchange, context);
+                applyDbTransformer(exchange);
             } catch (InvalidMetadataException e) {
                 context.addWarning("Error applying transformer: " + e.getMessage());
             }
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 
     /**
@@ -90,30 +91,30 @@ public abstract class TransformerHandler extends PipedHttpHandler {
 
     abstract boolean doesDBTransformerAppy(RequestContext context);
 
-    abstract void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context);
+    abstract void applyGlobalTransformers(HttpServerExchange exchange);
 
-    abstract void applyTransformLogic(HttpServerExchange exchange, RequestContext context, List<TransformerMetadata> dbRts) throws InvalidMetadataException;
+    abstract void applyTransformLogic(HttpServerExchange exchange, List<TransformerMetadata> dbRts) throws InvalidMetadataException;
 
-    void applyDbTransformer(
-            HttpServerExchange exchange,
-            RequestContext context)
+    void applyDbTransformer(HttpServerExchange exchange)
             throws InvalidMetadataException {
+        var context = RequestContext.wrap(exchange);
+        
         List<TransformerMetadata> dbRts
                 = TransformerMetadata
                         .getFromJson(context.getDbProps());
 
-        applyTransformLogic(exchange, context, dbRts);
+        applyTransformLogic(exchange, dbRts);
     }
 
-    void applyCollRTransformer(
-            HttpServerExchange exchange,
-            RequestContext context)
+    void applyCollRTransformer(HttpServerExchange exchange) 
             throws InvalidMetadataException {
+        var request = BsonRequest.wrap(exchange);
+        
         List<TransformerMetadata> collRts
                 = TransformerMetadata
-                        .getFromJson(context.getCollectionProps());
+                        .getFromJson(request.getCollectionProps());
 
-        applyTransformLogic(exchange, context, collRts);
+        applyTransformLogic(exchange, collRts);
     }
 
     /**

@@ -5,11 +5,13 @@ import com.mongodb.MongoWriteException;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
@@ -19,11 +21,12 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class PutFileHandler extends PipedHttpHandler {
+public class PutFileHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PutFileHandler.class);
 
     private final GridFsRepository gridFsDAO;
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     /**
      *
@@ -37,7 +40,7 @@ public class PutFileHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public PutFileHandler(PipedHttpHandler next) {
+    public PutFileHandler(PipelinedHandler next) {
         super(next);
         this.gridFsDAO = new GridFsDAO();
     }
@@ -47,7 +50,7 @@ public class PutFileHandler extends PipedHttpHandler {
      * @param next
      * @param gridFsDAO
      */
-    public PutFileHandler(PipedHttpHandler next, GridFsDAO gridFsDAO) {
+    public PutFileHandler(PipelinedHandler next, GridFsDAO gridFsDAO) {
         super(next);
         this.gridFsDAO = gridFsDAO;
     }
@@ -55,44 +58,42 @@ public class PutFileHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
+    public void handleRequest(HttpServerExchange exchange)
             throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        final BsonValue _metadata = context.getContent();
+        final BsonValue _metadata = request.getContent();
 
         // must be an object
         if (!_metadata.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data cannot be an array");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
         BsonDocument metadata = _metadata.asDocument();
 
-        BsonValue id = context.getDocumentId();
+        BsonValue id = request.getDocumentId();
 
         if (metadata.get("_id") != null
                 && metadata.get("_id").equals(id)) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "_id in content body is different than id in URL");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
@@ -101,20 +102,20 @@ public class PutFileHandler extends PipedHttpHandler {
         OperationResult result;
 
         try {
-            if (context.getFilePath() != null) {
+            if (request.getFilePath() != null) {
                 result = gridFsDAO
-                        .upsertFile(getDatabase(),
-                                context.getDBName(),
-                                context.getCollectionName(),
+                        .upsertFile(dbsDAO,
+                                request.getDBName(),
+                                request.getCollectionName(),
                                 metadata,
-                                context.getFilePath(),
+                                request.getFilePath(),
                                 id,
-                                context.getETag(),
-                                context.isETagCheckRequired());
+                                request.getETag(),
+                                request.isETagCheckRequired());
             } else {
                 // throw new RuntimeException("error. file data is null");
                 // try to pass to next handler in order to PUT new metadata on existing file.
-                next(exchange, context);
+                next(exchange);
                 return;
             }
         } catch (MongoWriteException t) {
@@ -125,20 +126,19 @@ public class PutFileHandler extends PipedHttpHandler {
                 LOGGER.error(errMsg, t);
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_IMPLEMENTED,
                         errMsg);
-                next(exchange, context);
+                next(exchange);
                 return;
             }
 
             throw t;
         }
 
-        context.setDbOperationResult(result);
+        response.setDbOperationResult(result);
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
-        next(exchange, context);
+        next(exchange);
     }
 }

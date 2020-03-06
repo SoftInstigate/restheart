@@ -22,7 +22,7 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.representation.AbstractRepresentationFactory;
 import org.restheart.representation.Link;
 import org.restheart.representation.Resource;
@@ -44,7 +44,6 @@ public class AggregationResultRepresentationFactory
     /**
      *
      * @param exchange
-     * @param context
      * @param embeddedData
      * @param size
      * @return
@@ -52,24 +51,25 @@ public class AggregationResultRepresentationFactory
      */
     @Override
     public Resource getRepresentation(HttpServerExchange exchange,
-            RequestContext context,
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
+        var request = BsonRequest.wrap(exchange);
+
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;
 
-        if (context.isFullHalMode()) {
-            rep = createRepresentation(exchange, context, requestPath);
+        if (request.isFullHalMode()) {
+            rep = createRepresentation(exchange, requestPath);
         } else {
-            rep = createRepresentation(exchange, context, null);
+            rep = createRepresentation(exchange, null);
         }
 
         addSize(size, rep);
 
         addEmbeddedData(embeddedData, rep);
 
-        if (context.isFullHalMode()) {
+        if (request.isFullHalMode()) {
             addLinkTemplates(rep, requestPath);
         }
 
@@ -106,7 +106,7 @@ public class AggregationResultRepresentationFactory
             rep.addChild("rh:result", nrep);
         });
     }
-    
+
     /**
      *
      * @param size

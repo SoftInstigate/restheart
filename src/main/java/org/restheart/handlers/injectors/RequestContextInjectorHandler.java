@@ -27,10 +27,10 @@ import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.Bootstrapper;
 import org.restheart.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.aggregation.AggregationPipeline;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys.AGGREGATION_VARIABLES_QPARAM_KEY;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
@@ -58,7 +58,7 @@ import org.restheart.utils.URLUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestContextInjectorHandler extends PipedHttpHandler {
+public class RequestContextInjectorHandler extends PipelinedHandler {
     private static final Logger LOGGER = Logger.getLogger(RequestContextInjectorHandler.class.getName());
 
     private static final int DEFAULT_PAGESIZE = Bootstrapper
@@ -69,19 +69,39 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             .getConfiguration()
             .getMaxPagesize();
 
+    private final boolean mongoPipeline;
+
     private final String requestUri;
     private final String resourceUri;
     private final boolean checkAggregationOperators;
 
     /**
      *
+     * @param mongoPipeline true if the target of the request is the mongo
+     * handlers pipeline
+     * @param checkAggregationOperators
+     */
+    public RequestContextInjectorHandler(boolean mongoPipeline,
+            boolean checkAggregationOperators) {
+        this("/", "*", mongoPipeline, checkAggregationOperators, null);
+    }
+
+    /**
+     *
      * @param requestUri
      * @param resourceUri
+     * @param mongoPipeline
      * @param checkAggregationOperators
      * @param next
      */
-    public RequestContextInjectorHandler(String requestUri, String resourceUri, boolean checkAggregationOperators, PipedHttpHandler next) {
+    public RequestContextInjectorHandler(String requestUri,
+            String resourceUri,
+            boolean mongoPipeline,
+            boolean checkAggregationOperators,
+            PipelinedHandler next) {
         super(next);
+
+        this.mongoPipeline = mongoPipeline;
 
         if (requestUri == null) {
             throw new IllegalArgumentException("whereUri cannot be null. check your mongo-mounts.");
@@ -90,7 +110,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (!requestUri.startsWith("/")) {
             throw new IllegalArgumentException("whereUri must start with \"/\". check your mongo-mounts");
         }
-        
+
         if (resourceUri == null) {
             throw new IllegalArgumentException("whatUri cannot be null. check your mongo-mounts.");
         }
@@ -103,24 +123,30 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         this.resourceUri = resourceUri;
         this.checkAggregationOperators = checkAggregationOperators;
     }
-    
+
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         BsonRequest.init(exchange, requestUri, resourceUri);
-        
-        RequestContext rcontext = RequestContext.wrap(exchange);
+
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
 
         // skip parameters injection if method is OPTIONS
         // this makes sure OPTIONS works even on wrong paramenter
         // e.g. OPTIONS 127.0.0.1:8080?page=a
-        if (rcontext.isOptions()) {
-            next(exchange, rcontext);
+        if (request.isOptions()) {
+            next(exchange);
+            return;
+        }
+        
+        // skip parameters injection if target resource is not the mongoPipeline
+        if (!mongoPipeline) {
+            next(exchange);
             return;
         }
 
@@ -141,7 +167,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 try {
                     rep = REPRESENTATION_FORMAT.valueOf(_rep.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    rcontext.addWarning("illegal rep parameter "
+                    response.addWarning("illegal rep parameter "
                             + _rep
                             + " (must be STANDARD, NESTED or HAL;"
                             + " S is an alias for STANDARD;"
@@ -150,56 +176,52 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
         }
 
-        rcontext.setRepresentationFormat(rep);
-
+        request.setRepresentationFormat(rep);
+        
         // check database name to be a valid mongodb name
-        if (rcontext.getDBName() != null
-                && rcontext.isDbNameInvalid()) {
+        if (request.getDBName() != null
+                && request.isDbNameInvalid()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    rcontext,
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal database name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
-            next(exchange, rcontext);
+            next(exchange);
             return;
         }
 
         // check collection name to be a valid mongodb name
-        if (rcontext.getCollectionName() != null
-                && rcontext.isCollectionNameInvalid()) {
+        if (request.getCollectionName() != null
+                && request.isCollectionNameInvalid()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    rcontext,
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal collection name, "
                     + "see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
-            next(exchange, rcontext);
+            next(exchange);
             return;
         }
 
         // check txnId to be a valid long 
-        if (rcontext.isTxn()) {
+        if (request.isTxn()) {
             try {
-                rcontext.getTxnId();
+                request.getTxnId();
             } catch (Throwable t) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        rcontext,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal txnId: it must be a number");
-                next(exchange, rcontext);
+                next(exchange);
                 return;
             }
         }
 
         // check collection name to be a valid mongodb name
-        if (rcontext.isReservedResource()) {
+        if (request.isReservedResource()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    rcontext,
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
-            next(exchange, rcontext);
+            next(exchange);
             return;
         }
 
@@ -216,10 +238,9 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             } catch (NumberFormatException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        rcontext,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal pagesize paramenter, it is not a number", ex);
-                next(exchange, rcontext);
+                next(exchange);
                 return;
             }
         }
@@ -227,14 +248,13 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (pagesize < 0 || pagesize > MAX_PAGESIZE) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    rcontext,
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal page parameter, pagesize must be >= 0 and <= "
                     + MAX_PAGESIZE);
-            next(exchange, rcontext);
+            next(exchange);
             return;
         } else {
-            rcontext.setPagesize(pagesize);
+            request.setPagesize(pagesize);
         }
 
         Deque<String> __page = exchange.getQueryParameters()
@@ -246,10 +266,9 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             } catch (NumberFormatException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        rcontext,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal page paramenter, it is not a number", ex);
-                next(exchange, rcontext);
+                next(exchange);
                 return;
             }
         }
@@ -257,19 +276,18 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
         if (page < 1) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    rcontext,
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal page paramenter, it is < 1");
-            next(exchange, rcontext);
+            next(exchange);
             return;
         } else {
-            rcontext.setPage(page);
+            request.setPage(page);
         }
 
         Deque<String> __count = exchange.getQueryParameters().get("count");
 
         if (__count != null) {
-            rcontext.setCount(true);
+            request.setCount(true);
         }
 
         // get and check sort_by parameter
@@ -286,10 +304,9 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             if (sort_by.stream().anyMatch(s -> s == null || s.isEmpty())) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        rcontext,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal sort_by paramenter");
-                next(exchange, rcontext);
+                next(exchange);
                 return;
             }
 
@@ -297,7 +314,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     .anyMatch(s -> s.trim().equals("_last_updated_on")
                     || s.trim().equals("+_last_updated_on")
                     || s.trim().equals("-_last_updated_on"))) {
-                rcontext.addWarning("unexepecting sorting; "
+                response.addWarning("unexepecting sorting; "
                         + "the _last_updated_on timestamp is generated "
                         + "from the _etag property if present");
             }
@@ -306,12 +323,12 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     .anyMatch(s -> s.trim().equals("_created_on")
                     || s.trim().equals("_created_on")
                     || s.trim().equals("_created_on"))) {
-                rcontext.addWarning("unexepecting sorting; "
+                response.addWarning("unexepecting sorting; "
                         + "the _created_on timestamp is generated "
                         + "from the _id property if it is an ObjectId");
             }
 
-            rcontext.setSortBy(sort_by);
+            request.setSortBy(sort_by);
         }
 
         // get and check hint parameter
@@ -328,14 +345,13 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             if (hint.stream().anyMatch(s -> s == null || s.isEmpty())) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        rcontext,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal hint paramenter");
-                next(exchange, rcontext);
+                next(exchange);
                 return;
             }
 
-            rcontext.setHint(hint);
+            request.setHint(hint);
         }
 
         Deque<String> keys = exchange.getQueryParameters().get(KEYS_QPARAM_KEY);
@@ -344,7 +360,6 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 if (f == null || f.isEmpty()) {
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            rcontext,
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal keys paramenter (empty)");
                     return true;
@@ -356,7 +371,6 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     if (!_keys.isDocument()) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
-                                rcontext,
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal keys paramenter, it is not a json object: "
                                 + f
@@ -367,7 +381,6 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 } catch (Throwable t) {
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            rcontext,
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal keys paramenter: " + f, t);
                     return true;
@@ -375,10 +388,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
                 return false;
             })) {
-                next(exchange, rcontext);
+                next(exchange);
                 return; // an error occurred
             }
-            rcontext.setKeys(exchange.getQueryParameters().get(KEYS_QPARAM_KEY));
+            request.setKeys(exchange.getQueryParameters().get(KEYS_QPARAM_KEY));
         }
 
         // get and check filter parameter
@@ -389,7 +402,6 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 if (f == null || f.isEmpty()) {
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            rcontext,
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal filter paramenter (empty)");
                     return true;
@@ -401,7 +413,6 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     if (!_filter.isDocument()) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
-                                rcontext,
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal filter paramenter, it is not a json object: "
                                 + f
@@ -411,7 +422,6 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     } else if (_filter.asDocument().keySet().isEmpty()) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
-                                rcontext,
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal filter paramenter (empty json object)");
                         return true;
@@ -420,7 +430,6 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 } catch (Throwable t) {
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            rcontext,
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal filter paramenter: " + f, t);
                     return true;
@@ -428,24 +437,23 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
                 return false;
             })) {
-                next(exchange, rcontext);
+                next(exchange);
                 return; // an error occurred
             }
 
-            rcontext.setFilter(exchange.getQueryParameters().get(FILTER_QPARAM_KEY));
+            request.setFilter(exchange.getQueryParameters().get(FILTER_QPARAM_KEY));
         }
 
         // filter qparam is mandatory for bulk DELETE and PATCH 
-        if (rcontext.getType() == TYPE.BULK_DOCUMENTS
-                && (rcontext.isDelete() || rcontext.isPatch())
+        if (request.getType() == TYPE.BULK_DOCUMENTS
+                && (request.isDelete() || request.isPatch())
                 && (filters == null || filters.isEmpty())) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    rcontext,
                     HttpStatus.SC_BAD_REQUEST,
                     "filter paramenter is mandatory for bulk write requests");
 
-            next(exchange, rcontext);
+            next(exchange);
             return;
         }
 
@@ -458,11 +466,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             if (!_qvars.isPresent()) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        rcontext,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal avars paramenter (empty)");
                 try {
-                    next(exchange, rcontext);
+                    next(exchange);
                 } catch (Exception e) {
                     LOGGER.warning(e.getMessage());
                 }
@@ -478,13 +485,12 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 } catch (JsonParseException jpe) {
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            rcontext,
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal avars paramenter, it is not a json object: "
                             + _qvars.get());
 
                     try {
-                        next(exchange, rcontext);
+                        next(exchange);
                     } catch (Exception e) {
                         // nothing to do
                     }
@@ -497,18 +503,17 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     AggregationPipeline.checkAggregationVariables(qvars);
                 }
 
-                rcontext.setAggregationVars(qvars);
+                request.setAggregationVars(qvars);
             } catch (SecurityException t) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        rcontext,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal avars paramenter: "
                         + _qvars.get(),
                         t);
 
                 try {
-                    next(exchange, rcontext);
+                    next(exchange);
                 } catch (Exception e) {
                     // nothing to do
                 }
@@ -532,11 +537,10 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 } catch (IllegalArgumentException iae) {
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            rcontext,
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal eager paramenter (must be LINEAR, RANDOM or NONE)");
                     try {
-                        next(exchange, rcontext);
+                        next(exchange);
                     } catch (Exception e) {
                         // nothing to do
                     }
@@ -546,7 +550,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
         }
 
-        rcontext.setCursorAllocationPolicy(eager);
+        request.setCursorAllocationPolicy(eager);
 
         // get and check the doc id type parameter
         Deque<String> __docIdType = exchange.getQueryParameters().get(DOC_ID_TYPE_QPARAM_KEY);
@@ -563,14 +567,13 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 } catch (IllegalArgumentException iae) {
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            rcontext,
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal "
                             + DOC_ID_TYPE_QPARAM_KEY
                             + " paramenter; must be "
                             + Arrays.toString(DOC_ID_TYPE.values()));
                     try {
-                        next(exchange, rcontext);
+                        next(exchange);
                     } catch (Exception e) {
                         // nothing to do
                     }
@@ -580,25 +583,24 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             }
         }
 
-        rcontext.setDocIdType(docIdType);
+        request.setDocIdType(docIdType);
 
         // for POST the doc _id is set by BodyjectorHandler
-        if (!rcontext.isPost()) {
+        if (!request.isPost()) {
             // get and check the document id
-            String _docId = rcontext.getDocumentIdRaw();
+            String _docId = request.getDocumentIdRaw();
 
             try {
-                rcontext.setDocumentId(URLUtils.getDocumentIdFromURI(_docId, docIdType));
+                request.setDocumentId(URLUtils.getDocumentIdFromURI(_docId, docIdType));
             } catch (UnsupportedDocumentIdException idide) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        rcontext,
                         HttpStatus.SC_BAD_REQUEST,
                         "wrong document id format: not a valid "
                         + docIdType.name(),
                         idide);
                 try {
-                    next(exchange, rcontext);
+                    next(exchange);
                 } catch (Exception e) {
                     // nothing to do
                 }
@@ -612,16 +614,15 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
 
         if (__halMode == null || __halMode.isEmpty()) {
             // default is compact mode
-            rcontext.setHalMode(HAL_MODE.COMPACT);
+            request.setHalMode(HAL_MODE.COMPACT);
         } else {
             String _halMode = __halMode.getFirst();
 
             try {
-                rcontext.setHalMode(HAL_MODE.valueOf(_halMode.trim().toUpperCase()));
+                request.setHalMode(HAL_MODE.valueOf(_halMode.trim().toUpperCase()));
             } catch (IllegalArgumentException iae) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        rcontext,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal "
                         + HAL_QPARAM_KEY
@@ -629,7 +630,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                         + Arrays.toString(HAL_MODE.values()));
 
                 try {
-                    next(exchange, rcontext);
+                    next(exchange);
                 } catch (Exception e) {
                     // nothing to do
                 }
@@ -641,7 +642,7 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
             if (exchange
                     .getQueryParameters()
                     .get(REPRESENTATION_FORMAT_KEY) == null) {
-                rcontext.setRepresentationFormat(REPRESENTATION_FORMAT.HAL);
+                request.setRepresentationFormat(REPRESENTATION_FORMAT.HAL);
             }
         }
 
@@ -654,12 +655,11 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 if (f == null || f.isEmpty()) {
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            rcontext,
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal shardkey paramenter (empty)");
 
                     try {
-                        next(exchange, rcontext);
+                        next(exchange);
                     } catch (Exception e) {
                         // nothing to do
                     }
@@ -673,12 +673,11 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                     if (_shardKeys.keySet().isEmpty()) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
-                                rcontext,
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal shardkey paramenter (empty json object)");
 
                         try {
-                            next(exchange, rcontext);
+                            next(exchange);
                         } catch (Exception e) {
                             // nothing to do
                         }
@@ -686,18 +685,17 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                         return true;
                     }
 
-                    rcontext.setShardKey(_shardKeys);
+                    request.setShardKey(_shardKeys);
 
                 } catch (Throwable t) {
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            rcontext,
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal shardkey paramenter: "
                             + f,
                             t);
                     try {
-                        next(exchange, rcontext);
+                        next(exchange);
                     } catch (Exception e) {
                         // nothing to do
                     }
@@ -710,19 +708,9 @@ public class RequestContextInjectorHandler extends PipedHttpHandler {
                 return; // an error occurred
             }
 
-            rcontext.setFilter(exchange.getQueryParameters().get(FILTER_QPARAM_KEY));
+            request.setFilter(exchange.getQueryParameters().get(FILTER_QPARAM_KEY));
         }
 
-        next(exchange, rcontext);
-    }
-
-    /**
-     *
-     * @param exchange
-     * @throws Exception
-     */
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        handleRequest(exchange, new RequestContext(exchange, requestUri, resourceUri));
+        next(exchange);
     }
 }

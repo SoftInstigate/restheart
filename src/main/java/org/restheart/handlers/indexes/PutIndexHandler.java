@@ -21,8 +21,10 @@ import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.db.DatabaseImpl;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -30,7 +32,8 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PutIndexHandler extends PipedHttpHandler {
+public class PutIndexHandler extends PipelinedHandler {
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     /**
      * Creates a new instance of PutIndexHandler
@@ -43,50 +46,48 @@ public class PutIndexHandler extends PipedHttpHandler {
      * Creates a new instance of PutIndexHandler
      * @param next
      */
-    public PutIndexHandler(PipedHttpHandler next) {
+    public PutIndexHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange, 
-            RequestContext context) 
+    public void handleRequest(HttpServerExchange exchange) 
             throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
         
-        final String db = context.getDBName();
-        final String co = context.getCollectionName();
-        final String id = context.getIndexId();
+        final String db = request.getDBName();
+        final String co = request.getCollectionName();
+        final String id = request.getIndexId();
 
         if (id.startsWith("_")) {
             ResponseHelper.endExchangeWithMessage(
                     exchange, 
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "index name cannot start with _");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
-        final BsonValue _content = context.getContent();
+        final BsonValue _content = request.getContent();
         
         // must be an object
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data cannot be an array");
-            next(exchange, context);
+            next(exchange);
             return;
         }
         
@@ -99,10 +100,9 @@ public class PutIndexHandler extends PipedHttpHandler {
         if (_keys == null || !_keys.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "keys must be a json object");
-            next(exchange, context);
+            next(exchange);
             return;
         }
         
@@ -110,10 +110,9 @@ public class PutIndexHandler extends PipedHttpHandler {
         if (_ops != null && !_ops.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "ops must be a json object");
-            next(exchange, context);
+            next(exchange);
             return;
         }
         
@@ -123,10 +122,9 @@ public class PutIndexHandler extends PipedHttpHandler {
         if (keys == null) {
             ResponseHelper.endExchangeWithMessage(
                     exchange, 
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, content must include 'keys' object", null);
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
@@ -137,22 +135,21 @@ public class PutIndexHandler extends PipedHttpHandler {
         ops.put("name", new BsonString(id));
 
         try {
-            getDatabase().createIndex(
-                    context.getClientSession(),
+            dbsDAO.createIndex(
+                    request.getClientSession(),
                     db, co, keys, ops);
         } catch (Throwable t) {
             ResponseHelper.endExchangeWithMessage(
                     exchange, 
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "error creating the index", 
                     t);
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
-        context.setResponseStatusCode(HttpStatus.SC_CREATED);
+        response.setStatusCode(HttpStatus.SC_CREATED);
         
-        next(exchange, context);
+        next(exchange);
     }
 }

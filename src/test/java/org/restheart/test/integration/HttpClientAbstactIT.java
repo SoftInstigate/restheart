@@ -719,6 +719,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
      *
      */
     @Before
+    @Override
     public void setUp() {
         createTestData();
     }

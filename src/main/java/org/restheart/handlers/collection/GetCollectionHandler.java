@@ -17,6 +17,7 @@
  */
 package org.restheart.handlers.collection;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
 import io.undertow.server.HttpServerExchange;
@@ -26,8 +27,9 @@ import org.bson.json.JsonParseException;
 import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.handlers.IllegalQueryParamenterException;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -38,7 +40,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetCollectionHandler extends PipedHttpHandler {
+public class GetCollectionHandler extends PipelinedHandler {
+    private Database dbsDAO = new DatabaseImpl();
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(GetCollectionHandler.class);
@@ -54,8 +57,8 @@ public class GetCollectionHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public GetCollectionHandler(PipedHttpHandler next) {
-        super(next, new DatabaseImpl());
+    public GetCollectionHandler(PipelinedHandler next) {
+        super(next);
     }
 
     /**
@@ -63,82 +66,81 @@ public class GetCollectionHandler extends PipedHttpHandler {
      * @param next
      * @param dbsDAO
      */
-    public GetCollectionHandler(PipedHttpHandler next, Database dbsDAO) {
-        super(next, dbsDAO);
+    @VisibleForTesting
+    public GetCollectionHandler(PipelinedHandler next, Database dbsDAO) {
+        super(next);
+        this.dbsDAO = dbsDAO;
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        MongoCollection<BsonDocument> coll = getDatabase()
+        MongoCollection<BsonDocument> coll = dbsDAO
                 .getCollection(
-                        context.getDBName(),
-                        context.getCollectionName());
+                        request.getDBName(),
+                        request.getCollectionName());
 
         long size = -1;
 
-        if (context.isCount()) {
-            size = getDatabase()
-                    .getCollectionSize(context.getClientSession(), 
-                            coll, context.getFiltersDocument());
+        if (request.isCount()) {
+            size = dbsDAO
+                    .getCollectionSize(request.getClientSession(), 
+                            coll, request.getFiltersDocument());
         }
 
         // ***** get data
         ArrayList<BsonDocument> data = null;
 
-        if (context.getPagesize() > 0) {
+        if (request.getPagesize() > 0) {
 
             try {
-                data = getDatabase().getCollectionData(
-                        context.getClientSession(), 
+                data = dbsDAO.getCollectionData(
+                        request.getClientSession(), 
                         coll,
-                        context.getPage(),
-                        context.getPagesize(),
-                        context.getSortByDocument(),
-                        context.getFiltersDocument(),
-                        context.getHintDocument(),
-                        context.getProjectionDocument(),
-                        context.getCursorAllocationPolicy());
+                        request.getPage(),
+                        request.getPagesize(),
+                        request.getSortByDocument(),
+                        request.getFiltersDocument(),
+                        request.getHintDocument(),
+                        request.getProjectionDocument(),
+                        request.getCursorAllocationPolicy());
             } catch (JsonParseException jpe) {
                 // the filter expression is not a valid json string
                 LOGGER.debug("invalid filter expression {}",
-                        context.getFilter(), jpe);
+                        request.getFilter(), jpe);
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_BAD_REQUEST,
                         "wrong request, filter expression is invalid",
                         jpe);
-                next(exchange, context);
+                next(exchange);
                 return;
             } catch (MongoException me) {
                 if (me.getMessage().matches(".*Can't canonicalize query.*")) {
                     // error with the filter expression during query execution
                     LOGGER.debug(
                             "invalid filter expression {}",
-                            context.getFilter(),
+                            request.getFilter(),
                             me);
 
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            context,
                             HttpStatus.SC_BAD_REQUEST,
                             "wrong request, filter expression is invalid",
                             me);
-                    next(exchange, context);
+                    next(exchange);
                     return;
                 } else {
                     throw me;
@@ -152,26 +154,25 @@ public class GetCollectionHandler extends PipedHttpHandler {
         }
 
         try {
-            context.setResponseContent(new CollectionRepresentationFactory()
-                    .getRepresentation(exchange, context, data, size)
+            response.setContent(new CollectionRepresentationFactory()
+                    .getRepresentation(exchange, data, size)
                     .asBsonDocument());
 
-            context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-            context.setResponseStatusCode(HttpStatus.SC_OK);
+            response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+            response.setStatusCode(HttpStatus.SC_OK);
 
             ResponseHelper
-                    .injectEtagHeader(exchange, context.getCollectionProps());
+                    .injectEtagHeader(exchange, request.getCollectionProps());
 
             // call the ResponseTransformerMetadataHandler if piped in
-            next(exchange, context);
+            next(exchange);
         } catch (IllegalQueryParamenterException ex) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_BAD_REQUEST,
                     ex.getMessage(),
                     ex);
-            next(exchange, context);
+            next(exchange);
         }
     }
 }

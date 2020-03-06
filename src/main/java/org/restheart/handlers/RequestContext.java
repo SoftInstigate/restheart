@@ -478,14 +478,14 @@ public class RequestContext {
      * @return the warnings
      */
     public List<String> getWarnings() {
-        return this.bsonRequest.getWarnings();
+        return this.bsonResponse.getWarnings();
     }
 
     /**
      * @param warning
      */
     public void addWarning(String warning) {
-        this.bsonRequest.addWarning(warning);
+        this.bsonResponse.addWarning(warning);
     }
 
     /**

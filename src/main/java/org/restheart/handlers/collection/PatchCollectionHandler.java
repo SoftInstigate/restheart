@@ -20,19 +20,23 @@ package org.restheart.handlers.collection;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PatchCollectionHandler extends PipedHttpHandler {
+public class PatchCollectionHandler extends PipelinedHandler {
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     /**
      * Creates a new instance of PatchCollectionHandler
@@ -46,55 +50,54 @@ public class PatchCollectionHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public PatchCollectionHandler(PipedHttpHandler next) {
+    public PatchCollectionHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        if (context.getDBName().isEmpty()) {
+        if (request.getDBName().isEmpty()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, db name cannot be empty");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
-        if (context.getCollectionName().isEmpty()
-                || (context.getCollectionName().startsWith("_")
-                && !context.getCollectionName().equals(_SCHEMAS))) {
+        if (request.getCollectionName().isEmpty()
+                || (request.getCollectionName().startsWith("_")
+                && !request.getCollectionName().equals(_SCHEMAS))) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, collection name cannot be "
                     + "empty or start with _");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
-        BsonValue _content = context.getContent();
+        BsonValue _content = request.getContent();
 
         if (_content == null) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
@@ -102,52 +105,52 @@ public class PatchCollectionHandler extends PipedHttpHandler {
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
         if (_content.asDocument().isEmpty()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
         final BsonDocument content = _content.asDocument();
 
-        if (isInvalidMetadata(content, exchange, context)) {
+        if (RequestHelper.isInvalidMetadata(content, exchange)) {
+            next(exchange);
             return;
         }
 
-        OperationResult result = getDatabase()
+        OperationResult result = dbsDAO
                 .upsertCollection(
-                        context.getClientSession(),
-                        context.getDBName(),
-                        context.getCollectionName(),
+                        request.getClientSession(),
+                        request.getDBName(),
+                        request.getCollectionName(),
                         content,
-                        context.getETag(),
+                        request.getETag(),
                         true,
                         true,
-                        context.isETagCheckRequired());
+                        request.isETagCheckRequired());
 
-        if (isResponseInConflict(context, result, exchange)) {
+        if (RequestHelper.isResponseInConflict(result, exchange)) {
+            next(exchange);
             return;
         }
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
         LocalCachesSingleton.getInstance()
                 .invalidateCollection(
-                        context.getDBName(),
-                        context.getCollectionName());
+                        request.getDBName(),
+                        request.getCollectionName());
 
-        next(exchange, context);
+        next(exchange);
     }
 
 }

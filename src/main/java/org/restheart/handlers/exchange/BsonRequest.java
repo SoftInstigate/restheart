@@ -26,11 +26,8 @@ import io.undertow.util.PathTemplateMatch;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Deque;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
@@ -69,8 +66,6 @@ public class BsonRequest extends Request<BsonValue> {
     private BsonValue content;
 
     private Path filePath;
-
-    private final List<String> warnings = new ArrayList<>();
 
     private int page = 1;
     private int pagesize = 100;
@@ -1006,20 +1001,6 @@ public class BsonRequest extends Request<BsonValue> {
     }
 
     /**
-     * @return the warnings
-     */
-    public List<String> getWarnings() {
-        return Collections.unmodifiableList(warnings);
-    }
-
-    /**
-     * @param warning
-     */
-    public void addWarning(String warning) {
-        warnings.add(warning);
-    }
-
-    /**
      *
      * The unmapped uri is the cononical uri of a mongodb resource (e.g.
      * /db/coll).
@@ -1486,6 +1467,7 @@ public class BsonRequest extends Request<BsonValue> {
     /**
      * @return the authenticatedAccount
      */
+    @Override
     public Account getAuthenticatedAccount() {
         return authenticatedAccount;
     }

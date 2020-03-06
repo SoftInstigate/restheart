@@ -20,8 +20,10 @@ package org.restheart.handlers.injectors;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.db.DatabaseImpl;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.utils.HttpStatus;
@@ -36,7 +38,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class CollectionPropsInjectorHandler extends PipedHttpHandler {
+public class CollectionPropsInjectorHandler extends PipelinedHandler {
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionPropsInjectorHandler.class);
 
@@ -47,16 +50,16 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
     /**
      *
-     * @param context
+     * @param request
      * @return
      */
-    public static boolean checkCollection(RequestContext context) {
-        return !(context.isCollection() && context.isPut())
-                && !(context.isFilesBucket() && context.isPut())
-                && !(context.isSchemaStore() && context.isPut())
-                && !context.isRoot()
-                && !context.isDb()
-                && !context.isDbSize();
+    public static boolean checkCollection(BsonRequest request) {
+        return !(request.isCollection() && request.isPut())
+                && !(request.isFilesBucket() && request.isPut())
+                && !(request.isSchemaStore() && request.isPut())
+                && !request.isRoot()
+                && !request.isDb()
+                && !request.isDbSize();
     }
 
     /**
@@ -64,36 +67,37 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public CollectionPropsInjectorHandler(PipedHttpHandler next) {
+    public CollectionPropsInjectorHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError() 
-                || context.isTxn()
-                || context.isTxns()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        
+        if (request.isInError() 
+                || request.isTxn()
+                || request.isTxns()) {
+            next(exchange);
             return;
         }
 
-        String dbName = context.getDBName();
-        String collName = context.getCollectionName();
+        String dbName = request.getDBName();
+        String collName = request.getCollectionName();
 
-        if (dbName != null && collName != null && !context.isDbMeta()) {
+        if (dbName != null && collName != null && !request.isDbMeta()) {
             BsonDocument collProps;
 
             if (!LocalCachesSingleton.isEnabled() 
-                    || context.getClientSession() != null) {
-                collProps = getDatabase().
+                    || request.getClientSession() != null) {
+                collProps = dbsDAO.
                         getCollectionProperties(
-                                context.getClientSession(),
+                                request.getClientSession(),
                                 dbName, 
                                 collName);
             } else {
@@ -103,49 +107,50 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
 
             // if collProps is null, the collection does not exist
             if (collProps == null
-                    && checkCollection(context)) {
-                doesNotExists(context, exchange);
+                    && checkCollection(request)) {
+                doesNotExists(exchange);
                 return;
             }
 
             if (collProps == null
-                    && context.isGet()) {
+                    && request.isGet()) {
                 collProps = new BsonDocument("_id", new BsonString(collName));
             }
 
-            context.setCollectionProps(collProps);
+            request.setCollectionProps(collProps);
         }
 
-        getNext()
-                .handleRequest(exchange, context);
+        next(exchange);
     }
 
     /**
      *
-     * @param context
      * @param exchange
      * @throws Exception
      */
-    protected void doesNotExists(RequestContext context, HttpServerExchange exchange) throws Exception {
+    protected void doesNotExists(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        
         final String errMsg;
-        final String resourceName = context.getCollectionName();
+        final String resourceName = request.getCollectionName();
 
         if (resourceName == null) {
             errMsg = RESOURCE_DOES_NOT_EXIST;
         } else if (resourceName.endsWith(FS_FILES_SUFFIX)) {
-            errMsg = String.format(FILE_BUCKET_DOES_NOT_EXIST, context.getCollectionName());
+            errMsg = String.format(FILE_BUCKET_DOES_NOT_EXIST, 
+                    request.getCollectionName());
         } else if (_SCHEMAS.equals(resourceName)) {
             errMsg = SCHEMA_STORE_DOES_NOT_EXIST;
         } else {
-            errMsg = String.format(COLLECTION_DOES_NOT_EXIST, context.getCollectionName());
+            errMsg = String.format(COLLECTION_DOES_NOT_EXIST, 
+                    request.getCollectionName());
         }
 
         LOGGER.debug(errMsg);
         ResponseHelper.endExchangeWithMessage(
                 exchange,
-                context,
                 HttpStatus.SC_NOT_FOUND,
                 errMsg);
-        next(exchange, context);
+        next(exchange);
     }
 }

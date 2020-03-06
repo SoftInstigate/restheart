@@ -22,8 +22,10 @@ import org.bson.BsonArray;
 import org.bson.BsonValue;
 import org.restheart.db.BulkOperationResult;
 import org.restheart.db.DocumentDAO;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -32,7 +34,7 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BulkPostCollectionHandler extends PipedHttpHandler {
+public class BulkPostCollectionHandler extends PipelinedHandler {
 
     private final DocumentDAO documentDAO;
 
@@ -57,7 +59,7 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public BulkPostCollectionHandler(PipedHttpHandler next) {
+    public BulkPostCollectionHandler(PipelinedHandler next) {
         this(next, new DocumentDAO());
     }
 
@@ -67,7 +69,7 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
      * @param next
      * @param documentDAO
      */
-    public BulkPostCollectionHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
+    public BulkPostCollectionHandler(PipelinedHandler next, DocumentDAO documentDAO) {
         super(next);
         this.documentDAO = documentDAO;
     }
@@ -75,17 +77,19 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
-        
-        BsonValue content = context.getContent();
+
+        BsonValue content = request.getContent();
 
         // expects an an array
         if (content == null || !content.isArray()) {
@@ -94,43 +98,43 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
 
         BsonArray documents = content.asArray();
 
-        if (!checkIds(exchange, context, documents)) {
+        if (!checkIds(exchange, documents)) {
             // if check fails, exchange has been closed
             return;
         }
 
         BulkOperationResult result = this.documentDAO
                 .bulkUpsertDocumentsPost(
-                        context.getClientSession(),
-                        context.getDBName(),
-                        context.getCollectionName(),
+                        request.getClientSession(),
+                        request.getDBName(),
+                        request.getCollectionName(),
                         documents,
-                        context.getFiltersDocument(),
-                        context.getShardKey());
+                        request.getFiltersDocument(),
+                        request.getShardKey());
 
-        context.setDbOperationResult(result);
+        response.setDbOperationResult(result);
 
         // inject the etag
         if (result.getEtag() != null) {
             ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
         BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
 
-        context.setResponseContent(bprf.getRepresentation(
-                exchange, context, result)
+        response.setContent(bprf.getRepresentation(
+                exchange, result)
                 .asBsonDocument());
 
-        next(exchange, context);
+        next(exchange);
     }
 
-    private boolean checkIds(HttpServerExchange exchange, RequestContext context, BsonArray documents) throws Exception {
+    private boolean checkIds(HttpServerExchange exchange, BsonArray documents) throws Exception {
         boolean ret = true;
 
         for (BsonValue document : documents) {
-            if (!checkId(exchange, context, document)) {
+            if (!checkId(exchange, document)) {
                 ret = false;
                 break;
             }
@@ -139,34 +143,34 @@ public class BulkPostCollectionHandler extends PipedHttpHandler {
         return ret;
     }
 
-    private boolean checkId(HttpServerExchange exchange, RequestContext context, BsonValue document) throws Exception {
+    private boolean checkId(HttpServerExchange exchange, BsonValue document) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        
         if (document.isDocument()
                 && document.asDocument().containsKey("_id")
                 && document.asDocument().get("_id").isString()
                 && RequestContext.isReservedResourceDocument(
-                        context.getType(),
+                        request.getType(),
                         document.asDocument()
                                 .get("_id").asString().getValue())) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_FORBIDDEN,
                     "id is reserved: " + document.asDocument()
                             .get("_id").asString().getValue());
-            next(exchange, context);
+            next(exchange);
             return false;
         }
 
         if (document.isDocument()
                 && document.asDocument().containsKey("_id")) {
-            if (!(context.getDocIdType() == DOC_ID_TYPE.OID
-                    || context.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
+            if (!(request.getDocIdType() == DOC_ID_TYPE.OID
+                    || request.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
-                        "_id in content body is mandatory for documents with id type " + context.getDocIdType().name());
-                next(exchange, context);
+                        "_id in content body is mandatory for documents with id type " + request.getDocIdType().name());
+                next(exchange);
                 return false;
             }
         }

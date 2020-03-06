@@ -41,7 +41,7 @@ public class ErrorHandler implements HttpHandler {
 
     private final HttpHandler next;
 
-    private final PipedHttpHandler sender = new TransformersListHandler(
+    private final PipelinedHandler sender = new TransformersListHandler(
             new ResponseSenderHandler(null),
             PHASE.RESPONSE,
             new RepresentationTransformer());
@@ -63,32 +63,24 @@ public class ErrorHandler implements HttpHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         try {
             next.handleRequest(exchange);
         } catch (MongoTimeoutException nte) {
-            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    errorContext,
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Timeout connecting to MongoDB, is it running?", nte);
 
-            sender.handleRequest(exchange, errorContext);
+            sender.handleRequest(exchange);
         } catch (MongoExecutionTimeoutException mete) {
-            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    errorContext,
                     HttpStatus.SC_REQUEST_TIMEOUT,
                     "Operation exceeded time limit"
             );
 
-            sender.handleRequest(exchange, errorContext);
+            sender.handleRequest(exchange);
         } catch (MongoBulkWriteException mce) {
             MongoBulkWriteException bmce = mce;
 
@@ -96,21 +88,16 @@ public class ErrorHandler implements HttpHandler {
 
             Resource rep = rf.getRepresentation(exchange, bmce);
 
-            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-
             ResponseHelper.endExchangeWithRepresentation(
                     exchange,
-                    errorContext,
                     HttpStatus.SC_MULTI_STATUS,
                     rep);
 
-            sender.handleRequest(exchange, errorContext);
+            sender.handleRequest(exchange);
         } catch (MongoException mce) {
             int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
 
             LOGGER.error("Error handling the request", mce);
-
-            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
 
             if (httpCode >= 500
                     && mce.getMessage() != null
@@ -118,30 +105,25 @@ public class ErrorHandler implements HttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        errorContext,
                         httpCode,
                         mce.getMessage());
 
             } else {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        errorContext,
                         httpCode,
                         ResponseHelper.getMessageFromErrorCode(mce.getCode()));
             }
 
-            sender.handleRequest(exchange, errorContext);
+            sender.handleRequest(exchange);
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
 
-            RequestContext errorContext = new RequestContext(exchange, "/", "_error");
-
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    errorContext,
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Error handling the request, see log for more information", t);
-            sender.handleRequest(exchange, errorContext);
+            sender.handleRequest(exchange);
         }
     }
 }

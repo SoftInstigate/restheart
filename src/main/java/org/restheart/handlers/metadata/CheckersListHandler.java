@@ -20,8 +20,9 @@ package org.restheart.handlers.metadata;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.List;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.plugins.Checker;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class CheckersListHandler extends PipedHttpHandler {
+public class CheckersListHandler extends PipelinedHandler {
 
     static final Logger LOGGER = LoggerFactory.getLogger(CheckersListHandler.class);
     
@@ -45,7 +46,7 @@ public class CheckersListHandler extends PipedHttpHandler {
      * @param next
      * @param checkers
      */
-    public CheckersListHandler(PipedHttpHandler next, Checker... checkers) {
+    public CheckersListHandler(PipelinedHandler next, Checker... checkers) {
         super(next);
 
         this.checkers = Arrays.asList(checkers);
@@ -54,32 +55,30 @@ public class CheckersListHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var context = RequestContext.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
         
         if (doesCheckerAppy()) {
             if (check(exchange, context)) {
-                next(exchange, context);
+                next(exchange);
             } else {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_BAD_REQUEST,
                         "request check failed");
-                next(exchange, context);
+                next(exchange);
             }
         } else {
-            next(exchange, context);
+            next(exchange);
         }
     }
 

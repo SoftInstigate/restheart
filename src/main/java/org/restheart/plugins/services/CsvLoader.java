@@ -37,7 +37,8 @@ import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.db.MongoDBClientSingleton;
 import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
@@ -127,31 +128,34 @@ public class CsvLoader extends Service {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+
         boolean respBodySet = false;
-        
-        if (context.isOptions()) {
-            handleOptions(exchange, context);
+
+        if (request.isOptions()) {
+            handleOptions(exchange);
         } else {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Resource.JSON_MEDIA_TYPE);
-            if (doesApply(context)) {
+            if (doesApply(request)) {
                 if (checkContentType(exchange)) {
                     try {
                         CsvRequestParams params = new CsvRequestParams(exchange);
 
                         if (params.update && params.idIdx < 0) {
-                            ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
+                            ResponseHelper.endExchangeWithMessage(exchange,
+                                    HttpStatus.SC_BAD_REQUEST,
                                     ERROR_NO_ID);
                             respBodySet = true;
                         } else {
                             try {
                                 final String content = ChannelReader.read(exchange.getRequestChannel());
-                                
-                                List<BsonDocument> documents = parseCsv(exchange, params, context, content);
+
+                                List<BsonDocument> documents = parseCsv(exchange, params, content);
 
                                 if (documents != null && documents.size() > 0) {
                                     MongoCollection<BsonDocument> mcoll = MongoDBClientSingleton.getInstance().getClient()
@@ -187,31 +191,35 @@ public class CsvLoader extends Service {
                                     } else {
                                         mcoll.insertMany(documents);
                                     }
-                                    context.setResponseStatusCode(HttpStatus.SC_OK);
+                                    response.setStatusCode(HttpStatus.SC_OK);
                                 } else {
-                                    context.setResponseStatusCode(HttpStatus.SC_NOT_MODIFIED);
+                                    response.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
                                 }
                             } catch (IOException ex) {
                                 LOGGER.debug("error parsing CSV data", ex);
-                                ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
+                                ResponseHelper.endExchangeWithMessage(exchange,
+                                        HttpStatus.SC_BAD_REQUEST,
                                         ERROR_PARSING_DATA);
                                 respBodySet = true;
 
                             }
                         }
                     } catch (IllegalArgumentException iae) {
-                        ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
+                        ResponseHelper.endExchangeWithMessage(exchange,
+                                HttpStatus.SC_BAD_REQUEST,
                                 ERROR_QPARAM);
                         respBodySet = true;
                     }
                 } else {
-                    ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_BAD_REQUEST,
+                    ResponseHelper.endExchangeWithMessage(exchange,
+                            HttpStatus.SC_BAD_REQUEST,
                             ERROR_CONTENT_TYPE);
                     respBodySet = true;
                 }
 
             } else {
-                ResponseHelper.endExchangeWithMessage(exchange, context, HttpStatus.SC_NOT_IMPLEMENTED,
+                ResponseHelper.endExchangeWithMessage(exchange,
+                        HttpStatus.SC_NOT_IMPLEMENTED,
                         ERROR_WRONG_METHOD);
                 respBodySet = true;
             }
@@ -220,13 +228,14 @@ public class CsvLoader extends Service {
         // this clean the error message about the wrong media type
         // added by BodyInjectorHandler
         if (!respBodySet) {
-            context.setResponseContent(null);
+            response.setContent(null);
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 
-    private List<BsonDocument> parseCsv(HttpServerExchange exchange, CsvRequestParams params, RequestContext context,
+    private List<BsonDocument> parseCsv(HttpServerExchange exchange,
+            CsvRequestParams params,
             String rawContent) throws IOException {
         List<BsonDocument> listOfBsonDocuments = new ArrayList<>();
 
@@ -234,7 +243,7 @@ public class CsvLoader extends Service {
 
         List<String> cols = null;
 
-        try ( Scanner scanner = new Scanner(rawContent)) {
+        try (Scanner scanner = new Scanner(rawContent)) {
             while (scanner.hasNext()) {
                 String line = scanner.nextLine();
 
@@ -271,7 +280,10 @@ public class CsvLoader extends Service {
 
                     // apply transformer if defined
                     if (params.transformer != null) {
-                        params.transformer.transform(exchange, context, doc, null);
+                        params.transformer.transform(exchange,
+                                RequestContext.wrap(exchange),
+                                doc,
+                                null);
                     }
 
                     listOfBsonDocuments.add(doc);
@@ -303,8 +315,8 @@ public class CsvLoader extends Service {
         }
     }
 
-    private boolean doesApply(RequestContext context) {
-        return context.isPost();
+    private boolean doesApply(BsonRequest request) {
+        return request.isPost();
     }
 
     private boolean checkContentType(HttpServerExchange exchange) {
@@ -379,9 +391,9 @@ class CsvRequestParams {
 
         update = _update != null && (_update.isEmpty() || "true".equalsIgnoreCase(_update.getFirst()));
 
-        upsert = _upsert == null 
-                || _update == null 
-                || _update.isEmpty() 
+        upsert = _upsert == null
+                || _update == null
+                || _update.isEmpty()
                 || "true".equalsIgnoreCase(_upsert.getFirst());
     }
 }

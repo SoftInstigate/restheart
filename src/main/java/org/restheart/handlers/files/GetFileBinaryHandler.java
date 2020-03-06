@@ -27,8 +27,9 @@ import java.io.IOException;
 import org.bson.BsonObjectId;
 import org.bson.types.ObjectId;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
@@ -39,7 +40,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class GetFileBinaryHandler extends PipedHttpHandler {
+public class GetFileBinaryHandler extends PipelinedHandler {
 
     /**
      *
@@ -73,49 +74,44 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public GetFileBinaryHandler(PipedHttpHandler next) {
+    public GetFileBinaryHandler(PipelinedHandler next) {
         super(next);
-    }
-
-    GetFileBinaryHandler(Object object, Object object0) {
-        super(null, null);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
         LOGGER.trace("GET " + exchange.getRequestURL());
-        final String bucket = extractBucketName(context.getCollectionName());
+        final String bucket = extractBucketName(request.getCollectionName());
 
         GridFSBucket gridFSBucket = GridFSBuckets.create(
                 MongoDBClientSingleton.getInstance().getClient()
-                        .getDatabase(context.getDBName()),
+                        .getDatabase(request.getDBName()),
                 bucket);
 
         GridFSFile dbsfile = gridFSBucket
-                .find(eq("_id", context.getDocumentId()))
+                .find(eq("_id", request.getDocumentId()))
                 .limit(1).iterator().tryNext();
 
         if (dbsfile == null) {
-            fileNotFound(context, exchange);
+            fileNotFound(request, exchange);
         } else if (!checkEtag(exchange, dbsfile)) {
-            sendBinaryContent(context, gridFSBucket, dbsfile, exchange);
+            sendBinaryContent(response, gridFSBucket, dbsfile, exchange);
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 
     private boolean checkEtag(HttpServerExchange exchange, GridFSFile dbsfile) {
@@ -148,21 +144,20 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
     }
 
     private void fileNotFound(
-            RequestContext context,
+            BsonRequest request,
             HttpServerExchange exchange) throws Exception {
         final String errMsg = String.format(
-                "File with ID <%s> not found", context.getDocumentId());
+                "File with ID <%s> not found", request.getDocumentId());
         LOGGER.trace(errMsg);
         ResponseHelper.endExchangeWithMessage(
                 exchange,
-                context,
                 HttpStatus.SC_NOT_FOUND,
                 errMsg);
-        next(exchange, context);
+        next(exchange);
     }
 
     private void sendBinaryContent(
-            final RequestContext context,
+            final BsonResponse request,
             final GridFSBucket gridFSBucket,
             final GridFSFile file,
             final HttpServerExchange exchange)
@@ -199,7 +194,7 @@ public class GetFileBinaryHandler extends PipedHttpHandler {
 
         ResponseHelper.injectEtagHeader(exchange, file.getMetadata());
 
-        context.setResponseStatusCode(HttpStatus.SC_OK);
+        request.setStatusCode(HttpStatus.SC_OK);
 
         gridFSBucket.downloadToStream(
                 file.getId(),

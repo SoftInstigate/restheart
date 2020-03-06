@@ -20,14 +20,15 @@ package org.restheart.handlers.bulk;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.db.BulkOperationResult;
 import org.restheart.db.DocumentDAO;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
+public class BulkDeleteDocumentsHandler extends PipelinedHandler {
 
     private final DocumentDAO documentDAO;
 
@@ -54,7 +55,7 @@ public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public BulkDeleteDocumentsHandler(PipedHttpHandler next) {
+    public BulkDeleteDocumentsHandler(PipelinedHandler next) {
         super(next);
         this.documentDAO = new DocumentDAO();
     }
@@ -62,34 +63,36 @@ public class BulkDeleteDocumentsHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
         
         BulkOperationResult result = this.documentDAO
                 .bulkDeleteDocuments(
-                        context.getClientSession(),
-                        context.getDBName(),
-                        context.getCollectionName(),
-                        context.getFiltersDocument(),
-                        context.getShardKey());
+                        request.getClientSession(),
+                        request.getDBName(),
+                        request.getCollectionName(),
+                        request.getFiltersDocument(),
+                        request.getShardKey());
 
-        context.setDbOperationResult(result);
+        response.setDbOperationResult(result);
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
         BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
 
-        context.setResponseContent(bprf.getRepresentation(
-                exchange, context, result)
+        response.setContent(bprf.getRepresentation(
+                exchange, result)
                 .asBsonDocument());
 
-        next(exchange, context);
+        next(exchange);
     }
 }

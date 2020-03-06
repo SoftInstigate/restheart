@@ -21,7 +21,8 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
@@ -60,21 +61,23 @@ public class PingService extends Service {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isOptions()) {
-            handleOptions(exchange, context);
-        } else if (context.isGet()) {
-            context.setResponseContent(new BsonDocument("msg",
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isOptions()) {
+            handleOptions(exchange);
+        } else if (request.isGet()) {
+            response.setContent(new BsonDocument("msg",
                     new BsonString(msg)));
-            context.setResponseStatusCode(HttpStatus.SC_OK);
+            response.setStatusCode(HttpStatus.SC_OK);
         } else {
-            context.setResponseStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
+            response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
         }
         
-        next(exchange, context);
+        next(exchange);
     }
 }

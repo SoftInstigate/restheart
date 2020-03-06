@@ -9,16 +9,15 @@ import org.restheart.Configuration;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.Configuration.METRICS_GATHERING_LEVEL.ROOT;
-import org.restheart.db.DatabaseImpl;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys._METRICS;
 
 /**
  * Handler to measure calls to restheart. Will only take actions if metrics
  * should be gathered (config option "metrics-gathering-level" > OFF)
  */
-public class MetricsInstrumentationHandler extends PipedHttpHandler {
+public class MetricsInstrumentationHandler extends PipelinedHandler {
 
     @VisibleForTesting
     static boolean isFilledAndNotMetrics(String dbOrCollectionName) {
@@ -38,64 +37,71 @@ public class MetricsInstrumentationHandler extends PipedHttpHandler {
 
     /**
      *
+     */
+    public MetricsInstrumentationHandler() {
+        this(null);
+    }
+    
+    /**
+     *
      * @param next
      */
-    public MetricsInstrumentationHandler(PipedHttpHandler next) {
+    public MetricsInstrumentationHandler(PipelinedHandler next) {
         super(next);
-    }
-
-    @VisibleForTesting
-    MetricsInstrumentationHandler(PipedHttpHandler next, DatabaseImpl dbsDAO) {
-        super(next, dbsDAO);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        final long requestStartTime = context.getRequestStartTime();
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        
+        final long requestStartTime = request.getRequestStartTime();
 
         if (!exchange.isComplete()) {
             exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
-                addMetrics(requestStartTime, httpServerExchange, context);
+                addMetrics(requestStartTime, httpServerExchange);
 
                 nextListener.proceed();
             });
         }
 
         if (!exchange.isResponseComplete() && getNext() != null) {
-            next(exchange, context);
+            next(exchange);
         }
     }
 
-    private void addDefaultMetrics(MetricRegistry registry, long duration, HttpServerExchange exchange, RequestContext context) {
-        registry.timer(context.getType().toString() + "." + context.getMethod().toString())
+    private void addDefaultMetrics(MetricRegistry registry, long duration, HttpServerExchange exchange) {
+        var request = BsonRequest.wrap(exchange);
+        
+        registry.timer(request.getType().toString() + "." + request.getMethod().toString())
                 .update(duration, TimeUnit.MILLISECONDS);
-        registry.timer(context.getType().toString() + "." + context.getMethod().toString() + "." + exchange.getStatusCode())
+        registry.timer(request.getType().toString() + "." + request.getMethod().toString() + "." + exchange.getStatusCode())
                 .update(duration, TimeUnit.MILLISECONDS);
-        registry.timer(context.getType().toString() + "." + context.getMethod().toString() + "." + (exchange.getStatusCode() / 100) + "xx")
+        registry.timer(request.getType().toString() + "." + request.getMethod().toString() + "." + (exchange.getStatusCode() / 100) + "xx")
                 .update(duration, TimeUnit.MILLISECONDS);
     }
 
     @VisibleForTesting
-    void addMetrics(long startTime, HttpServerExchange exchange, RequestContext context) {
+    void addMetrics(long startTime, HttpServerExchange exchange) {
         if (configuration.gatheringAboveOrEqualToLevel(ROOT)) {
+            var request = BsonRequest.wrap(exchange);
+            
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;
 
-            addDefaultMetrics(metrics.registry(), duration, exchange, context);
+            addDefaultMetrics(metrics.registry(), duration, exchange);
 
-            if (isFilledAndNotMetrics(context.getDBName()) && configuration.gatheringAboveOrEqualToLevel(DATABASE)) {
-                final MetricRegistry dbRegistry = metrics.registry(context.getDBName());
-                addDefaultMetrics(dbRegistry, duration, exchange, context);
+            if (isFilledAndNotMetrics(request.getDBName()) && configuration.gatheringAboveOrEqualToLevel(DATABASE)) {
+                final MetricRegistry dbRegistry = metrics.registry(request.getDBName());
+                addDefaultMetrics(dbRegistry, duration, exchange);
 
-                if (isFilledAndNotMetrics(context.getCollectionName()) && configuration.gatheringAboveOrEqualToLevel(COLLECTION)) {
-                    final MetricRegistry collectionRegistry = metrics.registry(context.getDBName(), context.getCollectionName());
-                    addDefaultMetrics(collectionRegistry, duration, exchange, context);
+                if (isFilledAndNotMetrics(request.getCollectionName()) && configuration.gatheringAboveOrEqualToLevel(COLLECTION)) {
+                    final MetricRegistry collectionRegistry = metrics.registry(request.getDBName(), request.getCollectionName());
+                    addDefaultMetrics(collectionRegistry, duration, exchange);
                 }
             }
         }

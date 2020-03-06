@@ -35,7 +35,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.representation.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,7 +131,7 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithDocId() {
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         String expResult = "/dbName/collName/documentId";
         String result;
         try {
@@ -147,7 +147,7 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithDocIdStringValidObjectId() {
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         String expResult = "/dbName/collName/54d13711c2e692941728e1d3?id_type=STRING";
         String result;
         try {
@@ -163,7 +163,7 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithLongDocId() {
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         String expResult = "/dbName/collName/123?id_type=NUMBER";
         String result;
         try {
@@ -184,7 +184,7 @@ public class URLUtilsTest {
             new BsonDouble(20.0d),
             new BsonString("id")};
 
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,\'id\']}}";
         String result;
         try {
@@ -204,7 +204,7 @@ public class URLUtilsTest {
             new BsonString("Three Imaginary Boys"),
             new BsonString("Seventeen Seconds")
         };
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[\'Three Imaginary Boys\','Seventeen Seconds\']}}";
         String result;
         try {
@@ -225,7 +225,7 @@ public class URLUtilsTest {
             new BsonDouble(20.0d),
             new BsonString("id")};
 
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,'id']}}";
         String result;
         try {
@@ -241,7 +241,7 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithFilterOne() {
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'referenceField':'id'}";
         String result;
         try {
@@ -257,7 +257,7 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithFilterOneInteger() {
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'referenceField':123}";
         String result;
         try {
@@ -274,7 +274,7 @@ public class URLUtilsTest {
     @Test
     public void testGetUriWithFilterOneObjectId() {
         BsonObjectId id = new BsonObjectId(new ObjectId());
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'referenceField':{'$oid':'" + id.getValue().toString() + "'}}";
         String result;
         try {
@@ -290,7 +290,7 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithFilterManyInverse() {
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':'ids'}}}";
         String result;
         try {
@@ -306,7 +306,7 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithFilterManyInverseLong() {
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':123}}}";
         String result;
         try {
@@ -322,7 +322,7 @@ public class URLUtilsTest {
      */
     @Test
     public void testGetUriWithFilterManyInverseObjectId() {
-        RequestContext context = prepareRequestContext();
+        var context = prepareRequest();
         BsonObjectId id = new BsonObjectId(new ObjectId());
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':{'$oid':'" + id.getValue().toString() + "'}}}}";
         String result;
@@ -347,12 +347,11 @@ public class URLUtilsTest {
         assertEquals(expResult, result);
     }
 
-    private RequestContext prepareRequestContext() {
+    private BsonRequest prepareRequest() {
         HttpServerExchange exchange = new HttpServerExchange();
         exchange.setRequestPath("");
         exchange.setRequestMethod(HttpString.EMPTY);
-        RequestContext context = new RequestContext(exchange, "", "");
-        return context;
+        return BsonRequest.init(exchange, "", "");
     }
 
 }

@@ -28,6 +28,7 @@ import org.bson.types.ObjectId;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
 import org.restheart.handlers.collection.CollectionRepresentationFactory;
+import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
@@ -80,7 +81,6 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     /**
      *
      * @param exchange
-     * @param context
      * @param embeddedData
      * @param size
      * @return
@@ -89,34 +89,35 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     @Override
     public Resource getRepresentation(
             HttpServerExchange exchange,
-            RequestContext context,
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
+        var request = BsonRequest.wrap(exchange);
+        
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;
 
-        if (context.isFullHalMode()) {
-            rep = createRepresentation(exchange, context, requestPath);
+        if (request.isFullHalMode()) {
+            rep = createRepresentation(exchange, requestPath);
         } else {
-            rep = createRepresentation(exchange, context, null);
+            rep = createRepresentation(exchange, null);
         }
 
-        if (!context.isNoProps()) {
-            addProperties(rep, context);
+        if (!request.isNoProps()) {
+            addProperties(rep, request);
         }
 
-        addSizeAndTotalPagesProperties(size, context, rep);
+        addSizeAndTotalPagesProperties(size, request, rep);
 
-        addEmbeddedData(embeddedData, context, rep, requestPath);
+        addEmbeddedData(embeddedData, request, rep, requestPath);
 
-        if (context.isFullHalMode()) {
+        if (request.isFullHalMode()) {
 
-            addPaginationLinks(exchange, context, size, rep);
+            addPaginationLinks(exchange, size, rep);
 
-            addSpecialProperties(rep, context.getType(), context.getDbProps());
+            addSpecialProperties(rep, request.getType(), request.getDbProps());
 
-            addLinkTemplates(context, rep, requestPath);
+            addLinkTemplates(request, rep, requestPath);
         }
 
         return rep;
@@ -124,22 +125,22 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
     private void addProperties(
             final Resource rep,
-            RequestContext context) {
-        final BsonDocument dbProps = context.getDbProps();
+            BsonRequest request) {
+        final BsonDocument dbProps = request.getDbProps();
 
         rep.addProperties(dbProps);
     }
 
     private void addEmbeddedData(
             final List<BsonDocument> embeddedData,
-            final RequestContext context,
+            final BsonRequest request,
             final Resource rep,
             final String requestPath) {
         if (embeddedData != null) {
             addReturnedProperty(embeddedData, rep);
 
             if (!embeddedData.isEmpty()) {
-                embeddedCollections(embeddedData, context, requestPath, rep);
+                embeddedCollections(embeddedData, request, requestPath, rep);
             }
         } else {
             rep.addProperty("_returned", new BsonInt32(0));
@@ -147,13 +148,13 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void addLinkTemplates(
-            final RequestContext context,
+            final BsonRequest request,
             final Resource rep,
             final String requestPath) {
         String parentPath = URLUtils.getParentPath(requestPath);
 
         // link templates and curies
-        if (context.isParentAccessible()) {
+        if (request.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
             rep.addLink(new Link("rh:root", parentPath));
         }
@@ -177,7 +178,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
     private void embeddedCollections(
             final List<BsonDocument> embeddedData,
-            final RequestContext context,
+            final BsonRequest request,
             final String requestPath,
             final Resource rep) {
         embeddedData.stream().forEach((d) -> {
@@ -192,7 +193,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
                 final Resource nrep;
 
-                if (context.isFullHalMode()) {
+                if (request.isFullHalMode()) {
                     nrep = new Resource(rp + "/" + id.getValue());
                 } else {
                     nrep = new Resource();
@@ -201,21 +202,21 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
                 nrep.addProperties(d);
 
                 if (id.getValue().endsWith(FS_FILES_SUFFIX)) {
-                    if (context.isFullHalMode()) {
+                    if (request.isFullHalMode()) {
                         CollectionRepresentationFactory.addSpecialProperties(
                                 nrep, TYPE.FILES_BUCKET, d);
                     }
 
                     rep.addChild("rh:bucket", nrep);
                 } else if (_SCHEMAS.equals(id.getValue())) {
-                    if (context.isFullHalMode()) {
+                    if (request.isFullHalMode()) {
                         CollectionRepresentationFactory.addSpecialProperties(
                                 nrep, TYPE.SCHEMA_STORE, d);
                     }
 
                     rep.addChild("rh:schema-store", nrep);
                 } else {
-                    if (context.isFullHalMode()) {
+                    if (request.isFullHalMode()) {
                         CollectionRepresentationFactory.addSpecialProperties(
                                 nrep, TYPE.COLLECTION, d);
                     }

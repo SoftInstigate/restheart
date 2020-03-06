@@ -22,16 +22,18 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.db.DocumentDAO;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PatchDocumentHandler extends PipedHttpHandler {
+public class PatchDocumentHandler extends PipelinedHandler {
 
     private final DocumentDAO documentDAO;
 
@@ -47,12 +49,12 @@ public class PatchDocumentHandler extends PipedHttpHandler {
         this.documentDAO = documentDAO;
     }
 
-    public PatchDocumentHandler(PipedHttpHandler next) {
+    public PatchDocumentHandler(PipelinedHandler next) {
         super(next);
         this.documentDAO = new DocumentDAO();
     }
 
-    public PatchDocumentHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
+    public PatchDocumentHandler(PipelinedHandler next, DocumentDAO documentDAO) {
         super(next);
         this.documentDAO = documentDAO;
     }
@@ -60,60 +62,60 @@ public class PatchDocumentHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        BsonValue _content = context.getContent();
+        BsonValue _content = request.getContent();
 
-        if (isNotAcceptableContent(_content, exchange, context)) {
+        if (RequestHelper.isNotAcceptableContent(_content, exchange)) {
+            next(exchange);
             return;
         }
 
         BsonDocument content = _content.asDocument();
 
-        BsonValue id = context.getDocumentId();
+        BsonValue id = request.getDocumentId();
 
         if (content.get("_id") == null) {
             content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "_id in json data cannot be different than id in URL");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
         OperationResult result = documentDAO.upsertDocument(
-                context.getClientSession(),
-                context.getDBName(),
-                context.getCollectionName(),
-                context.getDocumentId(),
-                context.getFiltersDocument(),
-                context.getShardKey(),
+                request.getClientSession(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getDocumentId(),
+                request.getFiltersDocument(),
+                request.getShardKey(),
                 content,
-                context.getETag(),
+                request.getETag(),
                 true,
-                context.isETagCheckRequired());
+                request.isETagCheckRequired());
 
-        if (isResponseInConflict(context, result, exchange)) {
+        if (RequestHelper.isResponseInConflict(result, exchange)) {
+            next(exchange);
             return;
         }
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
-        next(exchange, context);
+        next(exchange);
     }
 
 }

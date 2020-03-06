@@ -23,9 +23,15 @@ import org.bson.BsonValue;
 import org.restheart.db.FileMetadataDAO;
 import org.restheart.db.FileMetadataRepository;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
+import static org.restheart.handlers.exchange.ExchangeKeys.FILENAME;
+import static org.restheart.handlers.exchange.ExchangeKeys.FILE_METADATA;
+import static org.restheart.handlers.exchange.ExchangeKeys.PROPERTIES;
+import static org.restheart.handlers.exchange.ExchangeKeys._ID;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.RequestHelper;
 import org.restheart.utils.ResponseHelper;
 
 /**
@@ -37,7 +43,7 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Nath Papadacis {@literal <nath@thirststudios.co.uk>}
  */
-public class FileMetadataHandler extends PipedHttpHandler {
+public class FileMetadataHandler extends PipelinedHandler {
 
     private final FileMetadataRepository fileMetadataDAO;
 
@@ -61,7 +67,7 @@ public class FileMetadataHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public FileMetadataHandler(PipedHttpHandler next) {
+    public FileMetadataHandler(PipelinedHandler next) {
         super(next);
         this.fileMetadataDAO = new FileMetadataDAO();
     }
@@ -71,7 +77,7 @@ public class FileMetadataHandler extends PipedHttpHandler {
      * @param next
      * @param fileMetadataDAO
      */
-    public FileMetadataHandler(PipedHttpHandler next, FileMetadataRepository fileMetadataDAO) {
+    public FileMetadataHandler(PipelinedHandler next, FileMetadataRepository fileMetadataDAO) {
         super(next);
         this.fileMetadataDAO = fileMetadataDAO;
     }
@@ -79,35 +85,34 @@ public class FileMetadataHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        BsonValue _content = context.getContent();
+        BsonValue _content = request.getContent();
 
-        if (isNotAcceptableContent(_content, exchange, context)) {
+        if (RequestHelper.isNotAcceptableContent(_content, exchange)) {
+            next(exchange);
             return;
         }
 
-        if (context.getFilePath() != null) {
+        if (request.getFilePath() != null) {
             // PUT request with non null data will be dealt with by previous handler (PutFileHandler)
-            if (context.isPatch()) {
+            if (request.isPatch()) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "only metadata is allowed, not binary data");
             }
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
@@ -130,38 +135,38 @@ public class FileMetadataHandler extends PipedHttpHandler {
             content.put(FILENAME, filename);
         }
 
-        BsonValue id = context.getDocumentId();
+        BsonValue id = request.getDocumentId();
 
         if (content.get(_ID) == null) {
             content.put(_ID, id);
         } else if (!content.get(_ID).equals(id)) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "_id in json data cannot be different than id in URL");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
         OperationResult result = fileMetadataDAO.updateMetadata(
-                context.getClientSession(),
-                context.getDBName(),
-                context.getCollectionName(),
-                context.getDocumentId(),
-                context.getFiltersDocument(),
-                context.getShardKey(),
+                request.getClientSession(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getDocumentId(),
+                request.getFiltersDocument(),
+                request.getShardKey(),
                 content,
-                context.getETag(),
-                context.isPatch(),
-                context.isETagCheckRequired());
+                request.getETag(),
+                request.isPatch(),
+                request.isETagCheckRequired());
 
-        if (isResponseInConflict(context, result, exchange)) {
+        if (RequestHelper.isResponseInConflict(result, exchange)) {
+            next(exchange);
             return;
         }
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
-        next(exchange, context);
+        next(exchange);
     }
 }

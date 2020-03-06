@@ -1,5 +1,6 @@
 package org.restheart.handlers;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -73,6 +74,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
      * @param next
      * @param dbsDAO
      */
+    @VisibleForTesting
     public PipedHttpHandler(PipedHttpHandler next, Database dbsDAO) {
         this.next = next;
         this.dbsDAO = dbsDAO;
@@ -141,7 +143,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong relationships definition. "
                         + ex.getMessage(), ex);
@@ -156,7 +157,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong representation transformer definition. "
                         + ex.getMessage(), ex);
@@ -171,7 +171,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
             } catch (InvalidMetadataException ex) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong checker definition. "
                         + ex.getMessage(), ex);
@@ -195,7 +194,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
         if (_content == null) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             next(exchange, context);
@@ -205,7 +203,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
         if (!_content.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             next(exchange, context);
@@ -214,7 +211,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
         if (_content.asDocument().isEmpty()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             next(exchange, context);
@@ -240,7 +236,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_CONFLICT,
                     "The ETag must be provided using the '"
                     + Headers.IF_MATCH
@@ -252,7 +247,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_EXPECTATION_FAILED,
                     ResponseHelper.getMessageFromErrorCode(11000));
             next(exchange, context);

@@ -45,7 +45,6 @@ public class GlobalTransformer {
      * @param predicate the transformer is applied only to requests that resolve
      * the predicate
      * @param args
-     * @param bv1
      * @param confArgs
      */
     public GlobalTransformer(Transformer transformer,

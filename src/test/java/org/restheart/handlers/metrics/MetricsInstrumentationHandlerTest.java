@@ -8,7 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
 import org.restheart.Configuration;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 
 /**
  *
@@ -68,18 +68,22 @@ public class MetricsInstrumentationHandlerTest {
             }
         };
 
-        MetricsInstrumentationHandler mih = new MetricsInstrumentationHandler(null, null);
+        MetricsInstrumentationHandler mih = new MetricsInstrumentationHandler(null);
         mih.configuration = config;
         mih.metrics = proxy;
-
+        
         HttpServerExchange httpServerExchange = mock(HttpServerExchange.class);
         when(httpServerExchange.getStatusCode()).thenReturn(200);
         when(httpServerExchange.getRequestMethod()).thenReturn(Methods.GET);
         when(httpServerExchange.getRequestPath()).thenReturn("/foo/bar");
+        
+        var request = BsonRequest.init(httpServerExchange, "foo", "bar");
+        
+        when(httpServerExchange.getAttachment(anyObject())).thenReturn(request);
 
-        RequestContext requestContext = new RequestContext(httpServerExchange, "/foo", "/bar");
+        mih.addMetrics(0, httpServerExchange);
 
-        mih.addMetrics(0, httpServerExchange, requestContext);
+        mih.addMetrics(0, httpServerExchange);
 
         assertEquals(3, registry.getTimers().size());
         assertEquals(3, registryDb.getTimers().size());

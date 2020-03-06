@@ -21,7 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import java.util.List;
 import org.bson.BsonValue;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.TransformerMetadata;
 import org.restheart.plugins.Transformer;
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class TransformersListHandler extends PipedHttpHandler {
+public class TransformersListHandler extends PipelinedHandler {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(TransformersListHandler.class);
@@ -50,7 +50,7 @@ public class TransformersListHandler extends PipedHttpHandler {
      * @param transformers
      */
     public TransformersListHandler(
-            PipedHttpHandler next,
+            PipelinedHandler next,
             TransformerMetadata.PHASE phase,
             Transformer... transformers) {
         super(next);
@@ -62,21 +62,17 @@ public class TransformersListHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var context = RequestContext.wrap(exchange);
         
         if (doesTransformerAppy()) {
             transform(exchange, context);
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 
     private boolean doesTransformerAppy() {

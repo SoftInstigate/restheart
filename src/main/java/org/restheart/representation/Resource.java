@@ -23,6 +23,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.ExchangeKeys;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 
@@ -283,31 +284,31 @@ public class Resource {
     }
 
     /**
-     * @param context
+     * @param request
      * @return true if representationFormat == HAL
      */
-    public static boolean isHALRep(RequestContext context) {
-        return context.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL;
+    public static boolean isHALRep(BsonRequest request) {
+        return request.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL;
     }
 
     /**
-     * @param context
+     * @param request
      * @return true if representationFormat == SHAL or PLAIN_JSON or PJ
      */
-    public static boolean isSHALRep(RequestContext context) {
-        return context.getRepresentationFormat() == REPRESENTATION_FORMAT.SHAL
-                || context.getRepresentationFormat()
+    public static boolean isSHALRep(BsonRequest request) {
+        return request.getRepresentationFormat() == REPRESENTATION_FORMAT.SHAL
+                || request.getRepresentationFormat()
                 == REPRESENTATION_FORMAT.PLAIN_JSON
-                || context.getRepresentationFormat()
+                || request.getRepresentationFormat()
                 == REPRESENTATION_FORMAT.PJ;
     }
 
     /**
-     * @param context
+     * @param request
      * @return true if representationFormat == STSNDARD or S
      */
-    public static boolean isStandardRep(RequestContext context) {
-        return context.getRepresentationFormat() == REPRESENTATION_FORMAT.STANDARD
-                || context.getRepresentationFormat() == REPRESENTATION_FORMAT.S;
+    public static boolean isStandardRep(BsonRequest request) {
+        return request.getRepresentationFormat() == REPRESENTATION_FORMAT.STANDARD
+                || request.getRepresentationFormat() == REPRESENTATION_FORMAT.S;
     }
 }

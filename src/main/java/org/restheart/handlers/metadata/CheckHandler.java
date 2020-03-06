@@ -18,7 +18,7 @@
 package org.restheart.handlers.metadata;
 
 import java.util.List;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.GlobalChecker;
 import org.restheart.plugins.PluginsRegistry;
 
@@ -26,12 +26,12 @@ import org.restheart.plugins.PluginsRegistry;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public abstract class CheckHandler extends PipedHttpHandler {
+public abstract class CheckHandler extends PipelinedHandler {
     /**
      *
      * @param next
      */
-    public CheckHandler(PipedHttpHandler next) {
+    public CheckHandler(PipelinedHandler next) {
         super(next);
     }
 

@@ -34,13 +34,17 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys.FALSE_KEY_ID;
+import static org.restheart.handlers.exchange.ExchangeKeys.FILE_METADATA;
 import static org.restheart.handlers.exchange.ExchangeKeys.MAX_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.MIN_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.NULL_KEY_ID;
+import static org.restheart.handlers.exchange.ExchangeKeys.PROPERTIES;
 import static org.restheart.handlers.exchange.ExchangeKeys.TRUE_KEY_ID;
+import static org.restheart.handlers.exchange.ExchangeKeys._ID;
 import org.restheart.representation.Resource;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
@@ -56,7 +60,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BodyInjectorHandler extends PipedHttpHandler {
+public class BodyInjectorHandler extends PipelinedHandler {
 
     static final Logger LOGGER = LoggerFactory.getLogger(BodyInjectorHandler.class);
 
@@ -146,8 +150,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      */
     private static void filterJsonContent(
             final BsonDocument content,
-            final RequestContext ctx) {
-        filterOutReservedKeys(content, ctx);
+            final BsonResponse response) {
+        filterOutReservedKeys(content, response);
     }
 
     /**
@@ -157,11 +161,11 @@ public class BodyInjectorHandler extends PipedHttpHandler {
      * allowed)
      *
      * @param content
-     * @param context
+     * @param request
      */
     private static void filterOutReservedKeys(
             final BsonDocument content,
-            final RequestContext context) {
+            final BsonResponse response) {
         final HashSet<String> keysToRemove = new HashSet<>();
         content.keySet().stream()
                 .filter(key -> key.startsWith("_") && !key.equals(_ID))
@@ -173,7 +177,7 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             content.remove(keyToRemove);
             return keyToRemove;
         }).forEach(keyToRemove -> {
-            context.addWarning("Reserved field "
+            response.addWarning("Reserved field "
                     + keyToRemove
                     + " was filtered out from the request");
         });
@@ -253,9 +257,17 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     /**
      * Creates a new instance of BodyInjectorHandler
      *
+     */
+    public BodyInjectorHandler() {
+        this(null);
+    }
+    
+    /**
+     * Creates a new instance of BodyInjectorHandler
+     *
      * @param next
      */
-    public BodyInjectorHandler(PipedHttpHandler next) {
+    public BodyInjectorHandler(PipelinedHandler next) {
         super(next);
         this.formParserFactory = FormParserFactory.builder().build();
     }
@@ -263,23 +275,22 @@ public class BodyInjectorHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            final HttpServerExchange exchange,
-            final RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(final HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        if (context.isGet()
-                || context.isOptions()
-                || context.isDelete()) {
-            next(exchange, context);
+        if (request.isGet()
+                || request.isOptions()
+                || request.isDelete()) {
+            next(exchange);
             return;
         }
 
@@ -287,14 +298,13 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
         final HeaderValues contentType = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
         if (isFormOrMultipart(contentType)) {
-            if (!((context.isPost() && context.isFilesBucket())
-                    || (context.isPut() && context.isFile()))) {
+            if (!((request.isPost() && request.isFilesBucket())
+                    || (request.isPut() && request.isFile()))) {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
                         ERROR_INVALID_CONTENTTYPE_FILE);
-                next(exchange, context);
+                next(exchange);
                 return;
             }
             FormDataParser parser = this.formParserFactory.createParser(exchange);
@@ -305,10 +315,9 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
-                next(exchange, context);
+                next(exchange);
                 return;
             }
 
@@ -322,11 +331,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         ioe);
-                next(exchange, context);
+                next(exchange);
                 return;
             }
 
@@ -338,11 +346,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         ex);
-                next(exchange, context);
+                next(exchange);
                 return;
             }
 
@@ -353,16 +360,15 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
-                next(exchange, context);
+                next(exchange);
                 return;
             }
 
             final Path path = formData.getFirst(fileField).getFileItem().getFile();
 
-            context.setFilePath(path);
+            request.setFilePath(path);
 
             injectContentTypeFromFile(content.asDocument(), path.toFile());
         } else {
@@ -388,11 +394,10 @@ public class BodyInjectorHandler extends PipedHttpHandler {
                     } catch (JsonParseException | IllegalArgumentException ex) {
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
-                                context,
                                 HttpStatus.SC_NOT_ACCEPTABLE,
                                 "Invalid JSON. " + ex.getMessage(),
                                 ex);
-                        next(exchange, context);
+                        next(exchange);
                         return;
                     }
                 } else {
@@ -403,10 +408,9 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             } else {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
                         ERROR_INVALID_CONTENTTYPE);
-                next(exchange, context);
+                next(exchange);
                 return;
             }
         }
@@ -414,16 +418,15 @@ public class BodyInjectorHandler extends PipedHttpHandler {
         if (content == null) {
             content = new BsonDocument();
         } else if (content.isArray()) {
-            if (!context.isCollection() || !context.isPost()) {
+            if (!request.isCollection() || !request.isPost()) {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "request data can be an array only "
                         + "for POST to collection resources "
                         + "(bulk post)");
-                next(exchange, context);
+                next(exchange);
                 return;
             }
 
@@ -440,13 +443,12 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                         ResponseHelper.endExchangeWithMessage(
                                 exchange,
-                                context,
                                 HttpStatus.SC_NOT_ACCEPTABLE,
                                 errMsg);
 
                         return false;
                     }
-                    filterJsonContent(_doc.asDocument(), context);
+                    filterJsonContent(_doc.asDocument(), response);
                     return true;
                 } else {
                     String errMsg = "request data must be either "
@@ -454,14 +456,13 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                     ResponseHelper.endExchangeWithMessage(
                             exchange,
-                            context,
                             HttpStatus.SC_NOT_ACCEPTABLE,
                             errMsg);
                     return false;
                 }
             })) {
                 // an error occurred
-                next(exchange, context);
+                next(exchange);
                 return;
             }
         } else if (content.isDocument()) {
@@ -476,27 +477,25 @@ public class BodyInjectorHandler extends PipedHttpHandler {
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
-                next(exchange, context);
+                next(exchange);
                 return;
             }
 
-            filterJsonContent(_content, context);
+            filterJsonContent(_content, response);
         }
 
-        if (context.isPost() || context.isPut()) {
+        if (request.isPost() || request.isPut()) {
             if (JsonUtils.containsUpdateOperators(content, true)) {
                 // not acceptable
                 String errMsg = "update operators (but $currentDate) cannot be used on POST and PUT requests";
 
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_BAD_REQUEST,
                         errMsg);
-                next(exchange, context);
+                next(exchange);
                 return;
             }
 
@@ -504,8 +503,8 @@ public class BodyInjectorHandler extends PipedHttpHandler {
             content = JsonUtils.unflatten(content);
         }
 
-        context.setContent(content);
+        request.setContent(content);
 
-        next(exchange, context);
+        next(exchange);
     }
 }

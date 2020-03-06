@@ -24,6 +24,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.representation.Resource;
 import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.JsonUtils;
@@ -32,7 +34,7 @@ import org.restheart.utils.JsonUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseSenderHandler extends PipedHttpHandler {
+public class ResponseSenderHandler extends PipelinedHandler {
     /**
      */
     public ResponseSenderHandler() {
@@ -42,25 +44,23 @@ public class ResponseSenderHandler extends PipedHttpHandler {
     /**
      * @param next
      */
-    public ResponseSenderHandler(PipedHttpHandler next) {
+    public ResponseSenderHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        BsonValue responseContent = context.getResponseContent();
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        BsonValue responseContent = response.getContent();
 
-        if (context.getWarnings() != null
-                && !context.getWarnings().isEmpty()) {
+        if (response.getWarnings() != null
+                && !response.getWarnings().isEmpty()) {
             if (responseContent == null) {
                 responseContent = new BsonDocument();
             }
@@ -69,16 +69,16 @@ public class ResponseSenderHandler extends PipedHttpHandler {
 
             // add warnings, in hal o json format
             if (responseContent.isDocument()) {
-                if (Resource.isStandardRep(context)
-                        || Resource.isSHALRep(context)) {
-                    context.setResponseContentType(Resource.JSON_MEDIA_TYPE);
+                if (Resource.isStandardRep(request)
+                        || Resource.isSHALRep(request)) {
+                    response.setContentType(Resource.JSON_MEDIA_TYPE);
 
                     responseContent.asDocument().append("_warnings", warnings);
-                    context.getWarnings().forEach(
+                    response.getWarnings().forEach(
                             w -> warnings.add(new BsonString(w)));
 
                 } else {
-                    context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
+                    response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
 
                     BsonDocument _embedded;
                     if (responseContent.asDocument().get("_embedded") == null) {
@@ -95,16 +95,16 @@ public class ResponseSenderHandler extends PipedHttpHandler {
                     _embedded
                             .append("rh:warnings", warnings);
 
-                    context.getWarnings().forEach(
+                    response.getWarnings().forEach(
                             w -> warnings.add(getWarningDoc(w)));
                 }
             }
         }
 
-        if (context.getJsonMode() == JsonMode.SHELL) {
+        if (request.getJsonMode() == JsonMode.SHELL) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
                     Resource.JAVACRIPT_MEDIA_TYPE);
-        } else if (context.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL) {
+        } else if (request.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL) {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
                     Resource.HAL_JSON_MEDIA_TYPE);
         } else {
@@ -113,17 +113,17 @@ public class ResponseSenderHandler extends PipedHttpHandler {
         }
 
         if (!exchange.isResponseStarted()) {
-            exchange.setStatusCode(context.getResponseStatusCode());
+            exchange.setStatusCode(response.getStatusCode());
         }
 
         if (responseContent != null) {
             exchange.getResponseSender().send(
-                    JsonUtils.toJson(responseContent, context.getJsonMode()));
+                    JsonUtils.toJson(responseContent, request.getJsonMode()));
         }
 
         exchange.endExchange();
 
-        next(exchange, context);
+        next(exchange);
     }
 
     private BsonDocument getWarningDoc(String warning) {

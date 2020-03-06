@@ -19,6 +19,9 @@ package org.restheart.handlers.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.bson.BsonValue;
 import org.restheart.db.OperationResult;
 import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
@@ -35,6 +38,8 @@ public class BsonResponse extends Response<BsonValue> {
     private BsonValue content;
     
     private OperationResult dbOperationResult;
+    
+    private final List<String> warnings = new ArrayList<>();
     
     protected BsonResponse(HttpServerExchange exchange) {
         super(exchange);
@@ -80,5 +85,19 @@ public class BsonResponse extends Response<BsonValue> {
      */
     public void setDbOperationResult(OperationResult dbOperationResult) {
         this.dbOperationResult = dbOperationResult;
+    }
+    
+    /**
+     * @return the warnings
+     */
+    public List<String> getWarnings() {
+        return Collections.unmodifiableList(warnings);
+    }
+
+    /**
+     * @param warning
+     */
+    public void addWarning(String warning) {
+        warnings.add(warning);
     }
 }

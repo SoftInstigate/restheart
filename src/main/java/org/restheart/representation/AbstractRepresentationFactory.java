@@ -25,6 +25,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -36,7 +37,6 @@ public abstract class AbstractRepresentationFactory {
     /**
      *
      * @param exchange
-     * @param context
      * @param embeddedData
      * @param size
      * @return the resource HAL representation
@@ -44,7 +44,6 @@ public abstract class AbstractRepresentationFactory {
      */
     public abstract Resource getRepresentation(
             HttpServerExchange exchange,
-            RequestContext context,
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException;
@@ -52,28 +51,29 @@ public abstract class AbstractRepresentationFactory {
     /**
      *
      * @param size
-     * @param context
+     * @param request
      * @param rep
      */
     protected void addSizeAndTotalPagesProperties(
             final long size,
-            final RequestContext context,
+            BsonRequest request,
             final Resource rep) {
+
         if (size == 0) {
             rep.addProperty("_size", new BsonInt32(0));
 
-            if (context.getPagesize() > 0) {
+            if (request.getPagesize() > 0) {
                 rep.addProperty("_total_pages", new BsonInt32(0));
             }
         }
 
         if (size > 0) {
             float _size = size + 0f;
-            float _pagesize = context.getPagesize() + 0f;
+            float _pagesize = request.getPagesize() + 0f;
 
             rep.addProperty("_size", new BsonInt32(toIntExact(size)));
 
-            if (context.getPagesize() > 0) {
+            if (request.getPagesize() > 0) {
                 rep.addProperty("_total_pages", new BsonInt32(
                         toIntExact(
                                 Math.max(1,
@@ -100,14 +100,14 @@ public abstract class AbstractRepresentationFactory {
     /**
      *
      * @param exchange
-     * @param context
      * @param requestPath
      * @return
      */
     protected Resource createRepresentation(
             final HttpServerExchange exchange,
-            final RequestContext context,
             final String requestPath) {
+        var request = BsonRequest.wrap(exchange);
+
         String queryString
                 = exchange.getQueryString() == null
                 || exchange.getQueryString().isEmpty()
@@ -117,7 +117,7 @@ public abstract class AbstractRepresentationFactory {
 
         Resource rep;
 
-        if (requestPath != null || context.isFullHalMode()) {
+        if (requestPath != null || request.isFullHalMode()) {
             rep = new Resource(requestPath + queryString);
         } else {
             rep = new Resource();
@@ -140,20 +140,19 @@ public abstract class AbstractRepresentationFactory {
     /**
      *
      * @param exchange
-     * @param context
      * @param size
      * @param rep
      * @throws IllegalQueryParamenterException
      */
     protected void addPaginationLinks(
             HttpServerExchange exchange,
-            RequestContext context,
             long size,
             final Resource rep)
             throws IllegalQueryParamenterException {
-        if (context.getPagesize() > 0) {
+        var request = BsonRequest.wrap(exchange);
+        if (request.getPagesize() > 0) {
             TreeMap<String, String> links;
-            links = RepUtils.getPaginationLinks(exchange, context, size);
+            links = RepUtils.getPaginationLinks(exchange, size);
             if (links != null) {
                 links.keySet().stream().forEach((k) -> {
                     rep.addLink(new Link(k, links.get(k)));

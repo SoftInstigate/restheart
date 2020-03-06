@@ -20,7 +20,7 @@ package org.restheart.handlers.metadata;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.TransformerMetadata;
 import org.restheart.metadata.TransformerMetadata.PHASE;
@@ -56,7 +56,7 @@ public class ResponseTransformerHandler
      *
      * @param next
      */
-    public ResponseTransformerHandler(PipedHttpHandler next) {
+    public ResponseTransformerHandler(PipelinedHandler next) {
         super(next);
     }
 
@@ -109,7 +109,9 @@ public class ResponseTransformerHandler
     }
 
     @Override
-    void applyGlobalTransformers(HttpServerExchange exchange, RequestContext context) {
+    void applyGlobalTransformers(HttpServerExchange exchange) {
+        var context = RequestContext.wrap(exchange);
+        
         // execture global response tranformers
         PluginsRegistry.getInstance().getGlobalTransformers().stream()
                 .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
@@ -141,9 +143,10 @@ public class ResponseTransformerHandler
     @Override
     void applyTransformLogic(
             HttpServerExchange exchange,
-            RequestContext context,
             List<TransformerMetadata> rts)
             throws InvalidMetadataException {
+        var context = RequestContext.wrap(exchange);
+        
         // execute request transformers
         rts.stream()
                 .filter(rt -> rt.getPhase() == PHASE.RESPONSE)

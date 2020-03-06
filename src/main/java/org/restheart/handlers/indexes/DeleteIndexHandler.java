@@ -18,8 +18,10 @@
 package org.restheart.handlers.indexes;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.db.DatabaseImpl;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
 
@@ -27,8 +29,9 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DeleteIndexHandler extends PipedHttpHandler {
-
+public class DeleteIndexHandler extends PipelinedHandler {
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    
     /**
      * Creates a new instance of DeleteIndexHandler
      */
@@ -41,46 +44,47 @@ public class DeleteIndexHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public DeleteIndexHandler(PipedHttpHandler next) {
+    public DeleteIndexHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
         
-        String dbName = context.getDBName();
-        String collectionName = context.getCollectionName();
+        String dbName = request.getDBName();
+        String collectionName = request.getCollectionName();
 
-        String indexId = context.getIndexId();
+        String indexId = request.getIndexId();
 
         if (indexId.startsWith("_") || indexId.equals("_id_")) {
             ResponseHelper.endExchangeWithMessage(
                     exchange, 
-                    context,
                     HttpStatus.SC_UNAUTHORIZED, 
                     indexId + " is a default index and cannot be deleted");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
-        int httpCode = getDatabase().deleteIndex(
-                context.getClientSession(),
+        int httpCode = dbsDAO.deleteIndex(
+                request.getClientSession(),
                 dbName, 
                 collectionName, 
                 indexId);
         
-        context.setResponseStatusCode(httpCode);
+        response.setStatusCode(httpCode);
         
-        next(exchange, context);
+        next(exchange);
     }
 }

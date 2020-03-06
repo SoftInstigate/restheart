@@ -20,8 +20,10 @@ package org.restheart.handlers.metadata;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.metadata.HookMetadata;
 import org.restheart.plugins.GlobalHook;
 import org.restheart.plugins.PluginsRegistry;
@@ -34,7 +36,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class HookHandler extends PipedHttpHandler {
+public class HookHandler extends PipelinedHandler {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(HookHandler.class);
@@ -51,36 +53,35 @@ public class HookHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public HookHandler(PipedHttpHandler next) {
+    public HookHandler(PipelinedHandler next) {
         super(next);
     }
 
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        var context = RequestContext.wrap(exchange);
         
         // execute global hooks
-        executeGlobalHooks(exchange, context);
+        executeGlobalHooks(exchange);
         
-        if (context.getCollectionProps() != null
-                && context.getCollectionProps()
+        if (request.getCollectionProps() != null
+                && request.getCollectionProps()
                         .containsKey(HookMetadata.ROOT_KEY)) {
 
             List<HookMetadata> mdHooks = null;
 
             try {
                 mdHooks = HookMetadata.getFromJson(
-                        context.getCollectionProps());
+                        request.getCollectionProps());
             } catch (InvalidMetadataException ime) {
-                context.addWarning(ime.getMessage());
+                response.addWarning(ime.getMessage());
             }
 
             if (mdHooks != null) {
@@ -107,16 +108,18 @@ public class HookHandler extends PipedHttpHandler {
                                 + t.getMessage();
 
                         LOGGER.warn(err);
-                        context.addWarning(err);
+                        response.addWarning(err);
                     }
                 }
             }
         }
 
-        next(exchange, context);
+        next(exchange);
     }
     
-    private void executeGlobalHooks(HttpServerExchange exchange, RequestContext context) {
+    private void executeGlobalHooks(HttpServerExchange exchange) {
+        var context = RequestContext.wrap(exchange);
+        
         // execute global request tranformers
         getGlobalHooks().stream()
                 .forEachOrdered(gh -> gh.hook(exchange, context));

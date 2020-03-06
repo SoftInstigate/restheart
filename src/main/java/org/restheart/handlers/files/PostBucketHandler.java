@@ -22,11 +22,13 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.db.DatabaseImpl;
 import org.restheart.db.GridFsDAO;
 import org.restheart.db.GridFsRepository;
 import org.restheart.db.OperationResult;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.representation.RepUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.ResponseHelper;
@@ -38,10 +40,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class PostBucketHandler extends PipedHttpHandler {
+public class PostBucketHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostBucketHandler.class);
     private final GridFsRepository gridFsDAO;
+    private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     /**
      *
@@ -55,7 +58,7 @@ public class PostBucketHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public PostBucketHandler(PipedHttpHandler next) {
+    public PostBucketHandler(PipelinedHandler next) {
         super(next);
         this.gridFsDAO = new GridFsDAO();
     }
@@ -65,7 +68,7 @@ public class PostBucketHandler extends PipedHttpHandler {
      * @param next
      * @param gridFsDAO
      */
-    public PostBucketHandler(PipedHttpHandler next, GridFsDAO gridFsDAO) {
+    public PostBucketHandler(PipelinedHandler next, GridFsDAO gridFsDAO) {
         super(next);
         this.gridFsDAO = gridFsDAO;
     }
@@ -73,29 +76,27 @@ public class PostBucketHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
 
-        final BsonValue _metadata = context.getContent();
+        final BsonValue _metadata = request.getContent();
 
         // must be an object
         if (!_metadata.isDocument()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data cannot be an array");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
@@ -104,20 +105,19 @@ public class PostBucketHandler extends PipedHttpHandler {
         OperationResult result;
 
         try {
-            if (context.getFilePath() != null) {
+            if (request.getFilePath() != null) {
                 result = gridFsDAO
-                        .createFile(getDatabase(),
-                                context.getDBName(),
-                                context.getCollectionName(),
+                        .createFile(dbsDAO,
+                                request.getDBName(),
+                                request.getCollectionName(),
                                 metadata,
-                                context.getFilePath());
+                                request.getFilePath());
             } else {
                 ResponseHelper.endExchangeWithMessage(
                         exchange,
-                        context,
                         HttpStatus.SC_BAD_REQUEST,
                         "POST file request is in a bad format");
-                next(exchange, context);
+                next(exchange);
                 return;
             }
         } catch (DuplicateKeyException t) {
@@ -126,25 +126,23 @@ public class PostBucketHandler extends PipedHttpHandler {
             LOGGER.error(errMsg, t);
             ResponseHelper.endExchangeWithMessage(
                     exchange,
-                    context,
                     HttpStatus.SC_NOT_IMPLEMENTED,
                     errMsg);
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
-        context.setDbOperationResult(result);
+        response.setDbOperationResult(result);
 
         // insert the Location handler
         exchange.getResponseHeaders()
                 .add(HttpString.tryFromString("Location"),
                         RepUtils.getReferenceLink(
-                                context,
                                 URLUtils.getRemappedRequestURL(exchange),
                                 result.getNewId()));
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
-        next(exchange, context);
+        next(exchange);
     }
 }

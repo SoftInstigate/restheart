@@ -20,14 +20,15 @@ package org.restheart.handlers.bulk;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.db.BulkOperationResult;
 import org.restheart.db.DocumentDAO;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BulkPatchDocumentsHandler extends PipedHttpHandler {
+public class BulkPatchDocumentsHandler extends PipelinedHandler {
 
     private final DocumentDAO documentDAO;
 
@@ -51,7 +52,7 @@ public class BulkPatchDocumentsHandler extends PipedHttpHandler {
      *
      * @param next
      */
-    public BulkPatchDocumentsHandler(PipedHttpHandler next) {
+    public BulkPatchDocumentsHandler(PipelinedHandler next) {
         super(next);
         this.documentDAO = new DocumentDAO();
     }
@@ -61,7 +62,7 @@ public class BulkPatchDocumentsHandler extends PipedHttpHandler {
      * @param next
      * @param documentDAO
      */
-    public BulkPatchDocumentsHandler(PipedHttpHandler next, DocumentDAO documentDAO) {
+    public BulkPatchDocumentsHandler(PipelinedHandler next, DocumentDAO documentDAO) {
         super(next);
         this.documentDAO = documentDAO;
     }
@@ -69,36 +70,38 @@ public class BulkPatchDocumentsHandler extends PipedHttpHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
     @SuppressWarnings("unchecked")
-    public void handleRequest(HttpServerExchange exchange, RequestContext context) throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
+                
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
         
         BulkOperationResult result = this.documentDAO
                 .bulkPatchDocuments(
-                        context.getClientSession(),
-                        context.getDBName(), 
-                        context.getCollectionName(), 
-                        context.getFiltersDocument(),
-                        context.getShardKey(),
-                        context.getContent().asDocument());
+                        request.getClientSession(),
+                        request.getDBName(), 
+                        request.getCollectionName(), 
+                        request.getFiltersDocument(),
+                        request.getShardKey(),
+                        request.getContent().asDocument());
 
-        context.setDbOperationResult(result);
+        response.setDbOperationResult(result);
 
-        context.setResponseStatusCode(result.getHttpCode());
+        response.setStatusCode(result.getHttpCode());
 
         BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
 
-        context.setResponseContent(bprf.getRepresentation(
-                exchange, context, result)
+        response.setContent(bprf.getRepresentation(
+                exchange, result)
                 .asBsonDocument());
 
-        next(exchange, context);
+        next(exchange);
     }
 }

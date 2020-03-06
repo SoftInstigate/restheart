@@ -17,7 +17,7 @@
  */
 package org.restheart.handlers.files;
 
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.document.GetDocumentHandler;
 
 /**
@@ -30,7 +30,7 @@ public class GetFileHandler extends GetDocumentHandler {
      *
      * @param next
      */
-    public GetFileHandler(PipedHttpHandler next) {
+    public GetFileHandler(PipelinedHandler next) {
         super(next);
     }
 }

@@ -85,7 +85,7 @@ import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.GzipEncodingHandler;
 import org.restheart.handlers.OptionsHandler;
-import org.restheart.handlers.PipedHttpHandler;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.RequestDispatcherHandler;
 import org.restheart.handlers.RequestLoggerHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
@@ -184,7 +184,7 @@ public class Bootstrapper {
             String propFilePath = (parameters.envFile == null)
                     ? System.getenv("RESTHEART_ENVFILE")
                     : parameters.envFile;
-            
+
             PROPERTIES_FILE = FileUtils.getFileAbsolutePath(propFilePath);
         } catch (com.beust.jcommander.ParameterException ex) {
             LOGGER.error(ex.getMessage());
@@ -214,7 +214,7 @@ public class Bootstrapper {
                 p.load(reader);
             } catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
-            } catch(IOException ieo) {
+            } catch (IOException ieo) {
                 logErrorAndExit("Error reading properties file " + PROPERTIES_FILE, null, false, -1);
             }
 
@@ -225,7 +225,7 @@ public class Bootstrapper {
                 writer.flush();
             } catch (MustacheNotFoundException ex) {
                 logErrorAndExit("Configuration file not found: " + CONFIGURATION_FILE, ex, false, -1);
-            } catch(IOException ieo) {
+            } catch (IOException ieo) {
                 logErrorAndExit("Error reading configuration file " + CONFIGURATION_FILE, null, false, -1);
             }
 
@@ -329,7 +329,7 @@ public class Bootstrapper {
         if (OSChecker.isWindows()) {
             return false;
         }
-        
+
         // pid file name include the hash of the configuration file so that
         // for each configuration we can have just one instance running
         Path pidFilePath = FileUtils
@@ -705,7 +705,7 @@ public class Bootstrapper {
             LOGGER.info("Local cache for schema stores not enabled");
         }
 
-        shutdownHandler = getHandlersPipe();
+        shutdownHandler = getHandlersPipeline();
 
         builder = builder
                 .setIoThreads(configuration.getIoThreads())
@@ -771,12 +771,12 @@ public class Bootstrapper {
      *
      * @return a GracefulShutdownHandler
      */
-    private static GracefulShutdownHandler getHandlersPipe() {
+    private static GracefulShutdownHandler getHandlersPipeline() {
         ClientSessionInjectorHandler.build(new DbPropsInjectorHandler(
                 new CollectionPropsInjectorHandler(
                         RequestDispatcherHandler.getInstance())));
 
-        PipedHttpHandler coreHandlerChain
+        PipelinedHandler coreHandlerChain
                 = new AccountInjectorHandler(
                         ClientSessionInjectorHandler.getInstance());
 
@@ -793,7 +793,7 @@ public class Bootstrapper {
                 .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
                 .allMatch(url -> !isPathTemplate(url));
 
-        final PipedHttpHandler baseChain = new MetricsInstrumentationHandler(
+        final PipelinedHandler baseChain = new MetricsInstrumentationHandler(
                 new TracingInstrumentationHandler(
                         new RequestLoggerHandler(
                                 new CORSHandler(
@@ -810,9 +810,10 @@ public class Bootstrapper {
                 String url = (String) m.get(MONGO_MOUNT_WHERE_KEY);
                 String db = (String) m.get(MONGO_MOUNT_WHAT_KEY);
 
-                PipedHttpHandler pipe = new RequestContextInjectorHandler(
+                PipelinedHandler pipe = new RequestContextInjectorHandler(
                         url,
                         db,
+                        true,
                         configuration.getAggregationCheckOperators(),
                         baseChain);
 
@@ -830,8 +831,8 @@ public class Bootstrapper {
             }
         }
 
-        pipeStaticResourcesHandlers(configuration, getRootPathHandler());
-        pipeServices(configuration, getRootPathHandler());
+        plugStaticResourcesHandlers(configuration, getRootPathHandler());
+        plugServices(configuration, getRootPathHandler());
 
         return buildGracefulShutdownHandler(getRootPathHandler());
     }
@@ -875,7 +876,7 @@ public class Bootstrapper {
      * @param identityManager
      * @param accessManager
      */
-    private static void pipeStaticResourcesHandlers(
+    private static void plugStaticResourcesHandlers(
             final Configuration conf,
             final PathHandler pathHandler) {
         if (!conf.getStaticResourcesMounts().isEmpty()) {
@@ -947,7 +948,7 @@ public class Bootstrapper {
                                 .addWelcomeFiles(welcomeFile)
                                 .setDirectoryListingEnabled(false);
 
-                        PipedHttpHandler ph = new RequestLoggerHandler(handler);
+                        PipelinedHandler ph = new RequestLoggerHandler(handler);
 
                         pathHandler.addPrefixPath(where, ph);
 
@@ -972,7 +973,7 @@ public class Bootstrapper {
      * @param conf
      * @param pathHandler
      */
-    private static void pipeServices(
+    private static void plugServices(
             final Configuration conf,
             final PathHandler pathHandler) {
         PluginsRegistry.getInstance().getServices().stream().forEach(srv -> {
@@ -1013,18 +1014,26 @@ public class Bootstrapper {
                 return;
             }
 
-            PipedHttpHandler handler
-                    = new RequestContextInjectorHandler(
-                            "/",
-                            "*",
-                            conf.getAggregationCheckOperators(),
-                            new BodyInjectorHandler(srv.getInstance()));
+//            PipelinedHandler handler
+//                    = new RequestContextInjectorHandler(
+//                            "/",
+//                            "*",
+//                            conf.getAggregationCheckOperators(),
+//                            new BodyInjectorHandler(srv.getInstance()));
 
             pathHandler.addPrefixPath(uri,
-                    new TracingInstrumentationHandler(
-                            new RequestLoggerHandler(
-                                    new CORSHandler(handler))));
+                    PipelinedHandler.pipe(
+                            new RequestContextInjectorHandler(false, conf.getAggregationCheckOperators()),
+                            new TracingInstrumentationHandler(),
+                            new RequestLoggerHandler(),
+                            new CORSHandler(),
+                            //new RequestContextInjectorHandler(conf.getAggregationCheckOperators()),
+                            new BodyInjectorHandler(),
+                            srv.getInstance()));
 
+//            new TracingInstrumentationHandler(
+//                            new RequestLoggerHandler(
+//                                    new CORSHandler(handler))));
             LOGGER.info("Service {} bound to {}",
                     srv.getName(), uri);
         });
