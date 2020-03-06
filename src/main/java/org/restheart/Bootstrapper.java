@@ -86,8 +86,10 @@ import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.GzipEncodingHandler;
 import org.restheart.handlers.OptionsHandler;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.PipelinedWrappingHandler;
 import org.restheart.handlers.RequestDispatcherHandler;
 import org.restheart.handlers.RequestLoggerHandler;
+import org.restheart.handlers.ResponseSenderHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.injectors.AccountInjectorHandler;
 import org.restheart.handlers.injectors.BodyInjectorHandler;
@@ -102,6 +104,7 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
+import org.restheart.utils.PluginUtils;
 import org.restheart.utils.RHDaemon;
 import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
@@ -496,7 +499,7 @@ public class Bootstrapper {
                 .stream()
                 .forEachOrdered(record -> {
                     try {
-                        record.getInstance().init(record.getConfArgs());
+                        record.getInstance().init();
                     } catch (Throwable t) {
                         LOGGER.error("Error executing initializer {}",
                                 record.getName(),
@@ -984,7 +987,7 @@ public class Bootstrapper {
             if (srvConfArgs == null
                     || !srvConfArgs.containsKey("uri")
                     || srvConfArgs.get("uri") == null) {
-                uri = srv.getInstance().defaultUri();
+                uri = PluginUtils.defaultURI(srv.getInstance());
             } else {
                 if (!(srvConfArgs.get("uri") instanceof String)) {
                     LOGGER.error("Cannot start service {}:"
@@ -1020,9 +1023,9 @@ public class Bootstrapper {
                             new TracingInstrumentationHandler(),
                             new RequestLoggerHandler(),
                             new CORSHandler(),
-                            //new RequestContextInjectorHandler(conf.getAggregationCheckOperators()),
                             new BodyInjectorHandler(),
-                            srv.getInstance()));
+                            PipelinedWrappingHandler.wrap(srv.getInstance()),
+                            new ResponseSenderHandler()));
 
             LOGGER.info("Service {} bound to {}",
                     srv.getName(), uri);

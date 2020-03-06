@@ -45,6 +45,7 @@ import org.restheart.plugins.Transformer;
 @RegisterPlugin(name = "stringsToOids",
         description = "Replaces strings that are valid ObjectIds"
         + " with ObjectIds.")
+@SuppressWarnings("deprecation")
 public class ValidOidsStringsAsOidsTransformer implements Transformer {
 
     /**

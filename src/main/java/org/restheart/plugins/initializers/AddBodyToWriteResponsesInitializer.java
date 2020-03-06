@@ -44,10 +44,9 @@ public class AddBodyToWriteResponsesInitializer implements Initializer {
 
     /**
      *
-     * @param confArgs
      */
     @Override
-    public void init(Map<String, Object> confArgs) {
+    public void init() {
         PluginsRegistry.getInstance().getGlobalTransformers().add(
                 new GlobalTransformer(
                         new WriteResultTransformer(), (HttpServerExchange hse,

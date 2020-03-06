@@ -19,7 +19,6 @@ package org.restheart.plugins.services;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
-import java.util.Map;
 import org.restheart.Bootstrapper;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
@@ -34,16 +33,10 @@ import org.restheart.utils.ResponseHelper;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "cacheInvalidator",
-        description = "Invalidates the db and collection metadata cache")
-public class CacheInvalidator extends Service {
-
-    /**
-     *
-     * @param confArgs arguments optionally specified in the configuration file
-     */
-    public CacheInvalidator(Map<String, Object> confArgs) {
-        super(confArgs);
-    }
+        description = "Invalidates the db and collection metadata cache",
+        defaultURI = "/ic"
+)
+public class CacheInvalidator implements Service {
 
     /**
      *
@@ -51,7 +44,7 @@ public class CacheInvalidator extends Service {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handle(HttpServerExchange exchange) throws Exception {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
 
@@ -60,7 +53,6 @@ public class CacheInvalidator extends Service {
                     exchange,
                     HttpStatus.SC_NOT_MODIFIED,
                     "caching is off");
-            next(exchange);
             return;
         }
 
@@ -92,16 +84,5 @@ public class CacheInvalidator extends Service {
         } else {
             response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
-
-        next(exchange);
-    }
-
-    /**
-     *
-     * @return
-     */
-    @Override
-    public String defaultUri() {
-        return "/ic";
     }
 }

@@ -67,6 +67,7 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(name = "addRequestProperties",
         description = "Adds properties to the request body")
+@SuppressWarnings("deprecation")
 public class RequestPropsInjecterTransformer implements Transformer {
     static final Logger LOGGER
             = LoggerFactory.getLogger(RequestPropsInjecterTransformer.class);

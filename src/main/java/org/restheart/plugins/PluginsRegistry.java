@@ -258,7 +258,7 @@ public class PluginsRegistry {
             var registeredPlugins = scanResult
                     .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
 
-            var listOfType = scanResult.getSubclasses(Service.class.getName());
+            var listOfType = scanResult.getClassesImplementing(Service.class.getName());
 
             var registeredServices = registeredPlugins.intersect(listOfType);
 
@@ -274,8 +274,8 @@ public class PluginsRegistry {
                             "enabledByDefault");
 
                     srv = registeredService.loadClass(false)
-                            .getConstructor(Map.class)
-                            .newInstance(confs.get(name));
+                            .getConstructor()
+                            .newInstance();
 
                     var pr = new PluginRecord(
                             name,

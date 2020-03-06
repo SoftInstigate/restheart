@@ -32,31 +32,11 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "pingService",
-        description = "Ping service")
-public class PingService extends Service {
+        description = "Ping service",
+        defaultURI = "/ping")
+public class PingService implements Service {
 
-    private final String msg;
-
-    /**
-     *
-     * @param confArgs arguments optionally specified in the configuration file
-     */
-    public PingService(Map<String, Object> confArgs) {
-        super(confArgs);
-
-        this.msg =  confArgs != null  && confArgs.containsKey("msg") 
-                ? (String) confArgs.get("msg") 
-                : "ping";
-    }
-    
-    /**
-     *
-     * @return
-     */
-    @Override
-    public String defaultUri() {
-        return "/ping";
-    }
+    private final String msg = "ping";
 
     /**
      *
@@ -64,7 +44,7 @@ public class PingService extends Service {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handle(HttpServerExchange exchange) throws Exception {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
         
@@ -77,7 +57,5 @@ public class PingService extends Service {
         } else {
             response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
         }
-        
-        next(exchange);
     }
 }

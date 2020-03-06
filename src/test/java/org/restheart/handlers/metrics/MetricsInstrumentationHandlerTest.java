@@ -42,6 +42,7 @@ public class MetricsInstrumentationHandlerTest {
      * @throws Exception
      */
     @Test
+    @SuppressWarnings("deprecation")
     public void testAddMetrics() throws Exception {
         Configuration config = mock(Configuration.class);
         when(config.gatheringAboveOrEqualToLevel(Configuration.METRICS_GATHERING_LEVEL.ROOT)).thenReturn(true);
