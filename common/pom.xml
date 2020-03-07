@@ -1,193 +1,112 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  
-  <groupId>org.restheart</groupId>
-  <artifactId>restheart-common</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
-  <name>restheart-common</name>
-  
-  <description>
-    RESTHeart Common - Common classes for RESTHeart.
-  </description>
-  <url>https://restheart.org</url>
-  <inceptionYear>2019</inceptionYear>
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
-  </properties>
-    
-  <!-- Project Information -->
-  <organization>
-    <name>SoftInstigate</name>
-    <url>https://softinstigate.com</url>
-  </organization>
+    <modelVersion>4.0.0</modelVersion>
 
-  <licenses>
-    <license>
-      <name>GNU AFFERO GENERAL PUBLIC LICENSE</name>
-      <url>http://www.gnu.org/licenses/agpl-3.0.html</url>
-      <distribution>repo</distribution>
-      <comments>A business-friendly OSS license</comments>
-    </license>
-  </licenses>
-    
-  <developers>
-    <developer>
-      <id>ujibang</id>
-      <name>Andrea</name>
-      <email>andrea@softinstigate.com</email>
-      <url>https://www.linkedin.com/in/adicesare</url>
-      <organization>SoftInstigate</organization>
-      <organizationUrl>http://www.softinstigate.com</organizationUrl>
-      <roles>
-        <role>architect</role>
-        <role>developer</role>
-      </roles>
-      <timezone>+1</timezone>
-      <properties>
-        <picUrl>https://pbs.twimg.com/profile_images/491316822101479424/dfngbj7q.jpeg</picUrl>
-      </properties>
-    </developer>
-    <developer>
-      <id>mkj6</id>
-      <name>Maurizio</name>
-      <email>maurizio@softinstigate.com</email>
-      <url>http://www.maurizioturatti.com</url>
-      <organization>SoftInstigate</organization>
-      <organizationUrl>http://www.softinstigate.com</organizationUrl>
-      <roles>
-        <role>developer</role>
-      </roles>
-      <timezone>+1</timezone>
-      <properties>
-        <picUrl>https://pbs.twimg.com/profile_images/510140480999272448/Ht9Rn6gz.jpeg</picUrl>
-      </properties>
-    </developer>
-  </developers>
+    <parent>
+        <groupId>org.restheart</groupId>
+        <artifactId>restheart-parent</artifactId>
+        <version>5.0.0-SNAPSHOT</version>
+    </parent>
 
-  <issueManagement>
-    <url>https://github.com/SoftInstigate/restheart-common/issues</url>
-    <system>GitHub Issues</system>
-  </issueManagement>
-    
-  <distributionManagement>
-    <repository>
-      <id>github</id>
-      <name>GitHub SoftInstigate Apache Maven Packages</name>
-      <url>https://maven.pkg.github.com/SoftInstigate/restheart-common</url>
-    </repository>
-  </distributionManagement>
+    <groupId>org.restheart</groupId>
+    <artifactId>restheart-common</artifactId>
+    <packaging>jar</packaging>
 
-  <repositories>
-    <repository>
-      <id>jitpack.io</id>
-      <url>https://jitpack.io</url>
-    </repository>
-  </repositories>
+    <description>
+        RESTHeart Common - Common classes for RESTHeart.
+    </description>
+    <url>https://restheart.org</url>
+    <inceptionYear>2019</inceptionYear>
 
-  <scm>
-    <url>https://github.com/SoftInstigate/restheart-common</url>
-    <connection>scm:git:git@github.com:SoftInstigate/restheart-common.git</connection>
-    <developerConnection>scm:git:git@github.com:SoftInstigate/restheart-common</developerConnection>
-  </scm>
-    
-  <dependencies>
-    <!-- update undertow dependency to avoid warning log message:
-    WARNING: An illegal reflective access operation has occurred -->
-    <dependency>
-      <groupId>org.jboss.xnio</groupId>
-      <artifactId>xnio-nio</artifactId>
-      <version>3.7.6.Final</version>
-      <scope>compile</scope>
-    </dependency>
+    <!-- Project Information -->
+    <issueManagement>
+        <url>https://github.com/SoftInstigate/restheart-common/issues</url>
+        <system>GitHub Issues</system>
+    </issueManagement>
 
-    <!-- update undertow dependency to avoid warning log message:
-    WARNING: An illegal reflective access operation has occurred -->
-    <dependency>
-      <groupId>org.jboss.threads</groupId>
-      <artifactId>jboss-threads</artifactId>
-      <version>3.0.0.Final</version>
-      <scope>compile</scope>
-    </dependency>
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub SoftInstigate Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/SoftInstigate/restheart-common</url>
+        </repository>
+    </distributionManagement>
 
-    <dependency>
-      <groupId>io.undertow</groupId>
-      <artifactId>undertow-core</artifactId>
-      <version>2.0.27.Final</version>
-      <scope>compile</scope>
-    </dependency>
-    
-    <dependency>
-      <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver</artifactId>
-      <version>3.11.2</version>
-      <scope>compile</scope>
-    </dependency>
-    
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <!-- WARNING: v 27.0.1-jre fails integration tests, don't upgrade! -->
-      <version>27.0-jre</version>
-    </dependency>
-    
-    <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-      <version>1.25</version>
-    </dependency>
-    
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>2.8.6</version>
-    </dependency>
-    
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.2.3</version>
-      <scope>compile</scope>
-    </dependency>
-      
-    <dependency>
-      <groupId>org.fusesource.jansi</groupId>
-      <artifactId>jansi</artifactId>
-      <version>1.18</version>
-      <scope>compile</scope>
-    </dependency>
-    
-    <!-- BEGIN Test dependencies -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
-    <!-- END Test dependencies -->
-  </dependencies>
-  
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version>
-        <configuration>
-          <source>11</source>
-          <target>11</target>
-          <showDeprecation>true</showDeprecation>
-          <!--<compilerArgument>-Xlint:unchecked</compilerArgument>-->
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <version>2.8.2</version>
-      </plugin>
-    </plugins>
-  </build>
+    <scm>
+        <url>https://github.com/SoftInstigate/restheart-common</url>
+        <connection>scm:git:git@github.com:SoftInstigate/restheart-common.git</connection>
+        <developerConnection>scm:git:git@github.com:SoftInstigate/restheart-common</developerConnection>
+    </scm>
+
+    <dependencies>
+        <!-- update undertow dependency to avoid warning log message:
+        WARNING: An illegal reflective access operation has occurred -->
+        <dependency>
+            <groupId>org.jboss.xnio</groupId>
+            <artifactId>xnio-nio</artifactId>
+        </dependency>
+        <!-- update undertow dependency to avoid warning log message:
+        WARNING: An illegal reflective access operation has occurred -->
+        <dependency>
+            <groupId>org.jboss.threads</groupId>
+            <artifactId>jboss-threads</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.undertow</groupId>
+            <artifactId>undertow-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+        </dependency>
+        <!-- BEGIN Test dependencies -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- END Test dependencies -->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>11</source>
+                    <target>11</target>
+                    <showDeprecation>true</showDeprecation>
+                    <!--<compilerArgument>-Xlint:unchecked</compilerArgument>-->
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

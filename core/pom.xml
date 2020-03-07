@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -10,40 +9,22 @@
     </parent>
 
     <groupId>org.restheart</groupId>
-    <artifactId>restheart-security</artifactId>
+    <artifactId>restheart</artifactId>
     <packaging>jar</packaging>
     <description>
-        RESTHeart Security - IAM microservice for RESTHeart.
+        RESTHeart - API microservice for MongoDB.
     </description>
-    <url>https://restheart.org</url>
-    <inceptionYear>2018</inceptionYear>
-
-    <properties>
-        <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
-        <skipITs>true</skipITs>
-    </properties>
-
-    <!-- Project Information -->
-    <organization>
-        <name>SoftInstigate</name>
-        <url>https://softinstigate.com</url>
-    </organization>
-
-    <issueManagement>
-        <url>https://github.com/SoftInstigate/restheart-security/issues</url>
-        <system>GitHub Issues</system>
-    </issueManagement>
-
-    <scm>
-        <url>https://github.com/SoftInstigate/restheart-security</url>
-        <connection>scm:git:git@github.com:SoftInstigate/restheart-security.git</connection>
-        <developerConnection>scm:git:git@github.com:SoftInstigate/restheart-security</developerConnection>
-    </scm>
+    <url>http://www.restheart.org</url>
+    <inceptionYear>2014</inceptionYear>
 
     <dependencies>
         <dependency>
             <groupId>org.restheart</groupId>
             <artifactId>restheart-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver</artifactId>
         </dependency>
         <!-- update undertow dependency to avoid warning log message:
         WARNING: An illegal reflective access operation has occurred -->
@@ -51,7 +32,7 @@
             <groupId>org.jboss.xnio</groupId>
             <artifactId>xnio-nio</artifactId>
         </dependency>
-        <!--  update undertow dependency to avoid warning log message:
+        <!-- update undertow dependency to avoid warning log message:
         WARNING: An illegal reflective access operation has occurred -->
         <dependency>
             <groupId>org.jboss.threads</groupId>
@@ -66,16 +47,8 @@
             <artifactId>guava</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jayway.jsonpath</groupId>
-            <artifactId>json-path</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -90,12 +63,16 @@
             <artifactId>jansi</artifactId>
         </dependency>
         <dependency>
-            <groupId>de.svenkubiak</groupId>
-            <artifactId>jBCrypt</artifactId>
+            <groupId>com.github.everit-org.json-schema</groupId>
+            <artifactId>org.everit.json.schema</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.github.classgraph</groupId>
-            <artifactId>classgraph</artifactId>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.beust</groupId>
@@ -104,8 +81,18 @@
         <dependency>
             <groupId>com.github.spullara.mustache.java</groupId>
             <artifactId>compiler</artifactId>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
         </dependency>
         <!-- BEGIN Test dependencies -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>com.intuit.karate</groupId>
             <artifactId>karate-apache</artifactId>
@@ -116,16 +103,31 @@
             <artifactId>karate-junit4</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>fluent-hc</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.mashape.unirest</groupId>
+            <artifactId>unirest-java</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.eclipsesource.minimal-json</groupId>
+            <artifactId>minimal-json</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- END Test dependencies -->
     </dependencies>
 
     <build>
-        <extensions>
-            <extension>
-                <groupId>org.springframework.build</groupId>
-                <artifactId>aws-maven</artifactId>
-            </extension>
-        </extensions>
+        <finalName>${finalName}</finalName>
         <testResources>
             <testResource>
                 <directory>src/test/java</directory>
@@ -133,8 +135,10 @@
                     <exclude>**/*.java</exclude>
                 </excludes>
             </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
         </testResources>
-        <finalName>${project.artifactId}-${project.version}-nodeps</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -153,6 +157,7 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
+                                <exclude>META-INF/*.txt</exclude>
                             </excludes>
                         </filter>
                         <filter>
@@ -173,8 +178,21 @@
                         </goals>
                         <configuration>
                             <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                                    <addHeader>false</addHeader>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                                    <resource>META-INF/LICENSE.txt</resource>
+                                    <file>LICENSE.txt</file>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                                    <resource>META-INF/COMM-LICENSE.txt</resource>
+                                    <file>COMM-LICENSE.txt</file>
+                                </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.restheart.security.Bootstrapper</mainClass>
+                                    <mainClass>org.restheart.Bootstrapper</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -194,7 +212,7 @@
                         <configuration>
                             <id>bin</id>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <finalName>${project.artifactId}-${project.version}</finalName>
+                            <finalName>${finalName}</finalName>
                             <descriptors>
                                 <descriptor>assembly.xml</descriptor>
                             </descriptors>
@@ -211,7 +229,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>org.restheart.security.Bootstrapper</mainClass>
+                            <mainClass>org.restheart.Bootstrapper</mainClass>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
@@ -226,7 +244,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <debug>true</debug>
-                    <!--<compilerArgument>-Xlint</compilerArgument>-->
+                    <compilerArgument>-Xlint:unchecked</compilerArgument>
                     <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
@@ -248,14 +266,20 @@
                 <executions>
                     <execution>
                         <id>start-server</id>
+                        <!--
+                        NOTE: in order to execute the integration test suite you need to be on
+                        Linux, OSX or Solaris and have MongoDB started on default port without authentication.
+                        Simpler alternative:
+                            1) Start Docker
+                            2) Execute the bash script ./bin/integration-tests.sh
+                        -->
                         <phase>pre-integration-test</phase>
                         <configuration>
                             <skip>${skipITs}</skip>
                             <target>
-                                <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
-                                <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
+                                <echo>Running integration tests against a forked RESTHeart's instance...</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
-                                    <arg value="${basedir}/etc/restheart-security-test.yml"/>
+                                    <arg value="${basedir}/etc/test/restheart.yml"/>
                                     <arg value="--fork"/>
                                 </exec>
                             </target>
@@ -270,8 +294,9 @@
                         <configuration>
                             <skip>${skipITs}</skip>
                             <target>
+                                <echo>Stopping forked RESTHeart's instance...</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
-                                    <arg value="${basedir}/etc/restheart-security-test.yml"/>
+                                    <arg value="${basedir}/etc/test/restheart.yml"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -280,6 +305,16 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -320,7 +355,7 @@
                             <dependency>
                                 <groupId>com.puppycrawl.tools</groupId>
                                 <artifactId>checkstyle</artifactId>
-                                <version>8.29</version>
+                                <version>8.30</version>
                             </dependency>
                         </dependencies>
                         <configuration>
@@ -388,20 +423,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-enforcer-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>enforce-versions-release</id>
-                                <goals>
-                                    <goal>enforce</goal>
-                                </goals>
-                                <configuration>
-                                    <rules>
-                                        <dependencyConvergence/>
-                                    </rules>
-                                    <fail>false</fail>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
@@ -415,6 +436,10 @@
                                 </goals>
                                 <configuration>
                                     <keyname>SoftInstigate</keyname>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
                                 </configuration>
                             </execution>
                         </executions>
@@ -436,6 +461,7 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <configuration>
                             <additionalparam>-Xdoclint:none</additionalparam>
+                            <failOnError>false</failOnError>
                         </configuration>
                         <executions>
                             <execution>
@@ -450,16 +476,4 @@
             </build>
         </profile>
     </profiles>
-
-    <reporting>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <configuration>
-                    <configLocation>config/sun_checks.xml</configLocation>
-                </configuration>
-            </plugin>
-        </plugins>
-    </reporting>
 </project>

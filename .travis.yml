@@ -22,17 +22,16 @@ services:
   - docker
 
 before_install:
-  - ./bin/run-mongo-container.sh
-  - ./bin/before-deploy.sh
+  - ./core/bin/run-mongo-container.sh
+  - ./core/bin/before-deploy.sh
 
 install: true
 
-before_script:
-  - git submodule update --init --recursive
+before_script: true
 
 script:
   - docker ps
-  - ./bin/maven-deploy.sh
+  - cd core && ./bin/maven-deploy.sh
 
 # Deploy to Github
 deploy:
