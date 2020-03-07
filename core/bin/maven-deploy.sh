@@ -2,7 +2,7 @@
 set -e
 
 if [[ "$MAVEN_DEPLOY" == "true" && "$TRAVIS_PULL_REQUEST" == "false" ]]; then
-    RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null)
+    RESTHEART_VERSION=$(./core/bin/project-version.sh 2>/dev/null)
     export RESTHEART_VERSION
     if [[ "$RESTHEART_VERSION" ]]; then
         mvn clean verify -DskipITs=false -Dkarate.options="$KARATE_OPS"

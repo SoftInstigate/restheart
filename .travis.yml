@@ -31,7 +31,7 @@ before_script: true
 
 script:
   - docker ps
-  - cd core && ./bin/maven-deploy.sh
+  - ./core/bin/maven-deploy.sh
 
 # Deploy to Github
 deploy:
