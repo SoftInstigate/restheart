@@ -18,7 +18,6 @@
 package org.restheart.plugins.initializers;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.Map;
 import org.restheart.handlers.RequestContext;
 import org.restheart.metadata.TransformerMetadata;
 import org.restheart.plugins.GlobalTransformer;

@@ -18,7 +18,6 @@
 package org.restheart.plugins.services;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.Map;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.handlers.exchange.BsonRequest;
