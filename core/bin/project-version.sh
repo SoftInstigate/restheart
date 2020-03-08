@@ -3,6 +3,7 @@ set -e
 
 PRESENT_DIR="$PWD";
 cd "$(dirname ${BASH_SOURCE[0]})"/.. || exit 2
+echo "$PWD"
 MVN_VERSION=$(mvn --quiet \
     -Dexec.executable="echo" \
     -Dexec.args='${project.version}' \
