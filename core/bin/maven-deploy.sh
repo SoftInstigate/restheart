@@ -1,10 +1,11 @@
 #!/bin/bash
 set -e
 
+RESTHEART_VERSION=$(./core/bin/project-version.sh 2>/dev/null)
+export RESTHEART_VERSION
+echo "RESTHEART_VERSION=${RESTHEART_VERSION}"
+
 if [[ "$MAVEN_DEPLOY" == "true" && "$TRAVIS_PULL_REQUEST" == "false" ]]; then
-    RESTHEART_VERSION=$(./core/bin/project-version.sh 2>/dev/null)
-    export RESTHEART_VERSION
-    echo "RESTHEART_VERSION=${RESTHEART_VERSION}"
     if [[ "$RESTHEART_VERSION" ]]; then
         mvn clean verify -DskipITs=false -Dkarate.options="$KARATE_OPS"
         echo "###### Branch is '$TRAVIS_BRANCH', Tag is '$TRAVIS_TAG', Version is '$RESTHEART_VERSION'"
