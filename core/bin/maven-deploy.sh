@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-RESTHEART_VERSION=$(./core/bin/project-version.sh 2>/dev/null)
+RESTHEART_VERSION=$(./bin/project-version.sh 2>/dev/null)
 export RESTHEART_VERSION
 echo "RESTHEART_VERSION=${RESTHEART_VERSION}"
 
