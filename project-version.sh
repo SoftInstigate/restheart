@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-echo "$PWD"
 MVN_VERSION=$(mvn --quiet \
     -Dexec.executable="echo" \
     -Dexec.args='${project.version}' \
