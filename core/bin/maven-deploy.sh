@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 RESTHEART_VERSION=$(./core/bin/project-version.sh 2>/dev/null)
 export RESTHEART_VERSION
