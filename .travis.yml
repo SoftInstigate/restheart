@@ -28,7 +28,7 @@ before_install:
 install: true
 
 before_script:
-  - RESTHEART_VERSION=$(.project-version.sh 2>/dev/null)
+  - RESTHEART_VERSION=$(./project-version.sh 2>/dev/null)
   - export RESTHEART_VERSION
   - echo "RESTHEART_VERSION=${RESTHEART_VERSION}"
 
