@@ -144,7 +144,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
             </plugin>
-            <plugin>
+<!--            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <configuration>
@@ -161,7 +161,7 @@
                             </excludes>
                         </filter>
                         <filter>
-                            <!-- removing overlapping classes, defined also in guava -->
+                             removing overlapping classes, defined also in guava 
                             <artifact>com.google.guava:failureaccess</artifact>
                             <excludes>
                                 <exclude>com/google/common/util/concurrent/internal/InternalFutureFailureAccess.class</exclude>
@@ -198,7 +198,7 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>

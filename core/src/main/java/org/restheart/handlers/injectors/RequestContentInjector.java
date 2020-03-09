@@ -27,7 +27,7 @@ import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ALW
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.security.plugins.PluginsRegistryImpl;
+import org.restheart.plugins.PluginsRegistryImpl;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;

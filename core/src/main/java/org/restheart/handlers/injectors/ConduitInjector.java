@@ -26,7 +26,7 @@ import org.restheart.handlers.ModifiableContentSinkConduit;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.ResponseInterceptorsStreamSinkConduit;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.security.plugins.PluginsRegistryImpl;
+import org.restheart.plugins.PluginsRegistryImpl;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;

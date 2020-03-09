@@ -55,7 +55,6 @@ import static org.restheart.ConfigurationKeys.ENABLE_LOG_CONSOLE_KEY;
 import static org.restheart.ConfigurationKeys.ENABLE_LOG_FILE_KEY;
 import static org.restheart.ConfigurationKeys.FORCE_GZIP_ENCODING_KEY;
 import static org.restheart.ConfigurationKeys.HTTPS_HOST_KEY;
-import static org.restheart.ConfigurationKeys.HTTPS_LISTENER;
 import static org.restheart.ConfigurationKeys.HTTPS_PORT_KEY;
 import static org.restheart.ConfigurationKeys.HTTP_HOST_KEY;
 import static org.restheart.ConfigurationKeys.HTTP_LISTENER_KEY;
@@ -73,13 +72,14 @@ import static org.restheart.ConfigurationKeys.PROXY_KEY;
 import static org.restheart.ConfigurationKeys.REQUESTS_LIMIT_KEY;
 import static org.restheart.ConfigurationKeys.REQUESTS_LOG_TRACE_HEADERS_KEY;
 import static org.restheart.ConfigurationKeys.SERVICES_KEY;
-import static org.restheart.ConfigurationKeys.TOKEN_MANAGER;
 import static org.restheart.ConfigurationKeys.USE_EMBEDDED_KEYSTORE_KEY;
 import static org.restheart.ConfigurationKeys.WORKER_THREADS_KEY;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
+import static org.restheart.ConfigurationKeys.HTTPS_LISTENER_KEY;
+import static org.restheart.ConfigurationKeys.TOKEN_MANAGER_KEY;
 
 /**
  * Utility class to help dealing with the configuration file.
@@ -135,56 +135,80 @@ public class Configuration {
     private final Integer logExchangeDump;
     private final boolean ansiConsole;
     private final boolean allowUnescapedCharactersInUrl;
-
+    
+    private Map<String, Object> conf;
+    
     /**
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
-        ansiConsole = true;
+        this(getDefaultConf(), true);
+        this.conf = getDefaultConf();
+    }
+    
+    private static Map<String, Object> getDefaultConf() {
+        var defaultConf = new HashMap<String, Object>();
+        
+        defaultConf.put(ANSI_CONSOLE_KEY, true);
+        
+        defaultConf.put(HTTPS_LISTENER_KEY, DEFAULT_HTTPS_LISTENER);
+        defaultConf.put(HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
+        defaultConf.put(HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
+        
+        defaultConf.put(HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER);
+        defaultConf.put(HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
+        defaultConf.put(HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
+        
+        defaultConf.put(INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
+        
+        defaultConf.put(USE_EMBEDDED_KEYSTORE_KEY, true);
+        
+        defaultConf.put(KEYSTORE_FILE_KEY, null);
+        defaultConf.put(KEYSTORE_PASSWORD_KEY, null);
+        defaultConf.put(CERT_PASSWORD_KEY, null);
+        
+        defaultConf.put(ANSI_CONSOLE_KEY, new ArrayList<>());
+        
+        var proxies = new HashMap();
 
-        httpsListener = DEFAULT_HTTPS_LISTENER;
-        httpsPort = DEFAULT_HTTPS_PORT;
-        httpsHost = DEFAULT_HTTPS_HOST;
+        LOGGER.warn("No proxies defined via configuration, "
+                + "assuming default proxy: / -> ajp://localhost:8009");
 
-        httpListener = DEFAULT_HTTP_LISTENER;
-        httpPort = DEFAULT_HTTP_PORT;
-        httpHost = DEFAULT_HTTP_HOST;
-
-        instanceName = DEFAULT_INSTANCE_NAME;
-
-        useEmbeddedKeystore = true;
-        keystoreFile = null;
-        keystorePassword = null;
-        certPassword = null;
-
-        proxies = new ArrayList<>();
-        initDefaultProxy();
-
-        pluginsDirectory = "plugins";
-
-        pluginsArgs = new LinkedHashMap<>();
-        authMechanisms = new LinkedHashMap<>();
-        authenticators = new LinkedHashMap<>();
-        authorizers = null;
-        tokenManagers = new HashMap<>();
-
-        logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
-                .concat(File.separator + "restheart-security.log");
-        logToConsole = true;
-        logToFile = true;
-        logLevel = Level.INFO;
-
-        traceHeaders = Collections.emptyList();
-
-        requestsLimit = 100;
-        ioThreads = 2;
-        workerThreads = 32;
-        bufferSize = 16384;
-        directBuffers = true;
-        forceGzipEncoding = false;
-        logExchangeDump = 0;
-        connectionOptions = Maps.newHashMap();
-        allowUnescapedCharactersInUrl = true;
+        proxies.put(ConfigurationKeys.PROXY_LOCATION_KEY, "/");
+        proxies.put(ConfigurationKeys.PROXY_PASS_KEY, "ajp://localhost:8009");
+        proxies.put(ConfigurationKeys.PROXY_NAME, "restheart");
+        
+        defaultConf.put(PROXY_KEY, proxies);
+        
+        defaultConf.put(PLUGINS_DIRECTORY_PATH_KEY, "plugins");
+        
+        defaultConf.put(PLUGINS_ARGS_KEY, new LinkedHashMap<>());
+        
+        defaultConf.put(AUTH_MECHANISMS_KEY, new LinkedHashMap<>());
+        defaultConf.put(AUTHENTICATORS_KEY, new LinkedHashMap<>());
+        defaultConf.put(AUTHORIZERS_KEY, null);
+        defaultConf.put(TOKEN_MANAGER_KEY, URLUtils.removeTrailingSlashes(
+                System.getProperty("java.io.tmpdir"))
+                .concat(File.separator + "restheart-security.log"));
+        
+        defaultConf.put(LOG_FILE_PATH_KEY, proxies);
+        defaultConf.put(ENABLE_LOG_CONSOLE_KEY, true);
+        defaultConf.put(ENABLE_LOG_FILE_KEY, true);
+        defaultConf.put(LOG_LEVEL_KEY, Level.INFO);
+        defaultConf.put(ConfigurationKeys.REQUESTS_LOG_LEVEL_KEY, 0);
+        
+        defaultConf.put(REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
+        
+        defaultConf.put(REQUESTS_LIMIT_KEY, 100);
+        defaultConf.put(IO_THREADS_KEY, 2);
+        defaultConf.put(WORKER_THREADS_KEY, 32);
+        defaultConf.put(BUFFER_SIZE_KEY, 16384);
+        defaultConf.put(DIRECT_BUFFERS_KEY, true);
+        defaultConf.put(FORCE_GZIP_ENCODING_KEY, false);
+        defaultConf.put(CONNECTION_OPTIONS_KEY, Maps.newHashMap());
+        defaultConf.put(ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
+        
+        return defaultConf;
     }
 
     /**
@@ -220,6 +244,8 @@ public class Configuration {
      */
     @SuppressWarnings("deprecation")
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
+        this.conf = conf;
+        
         this.silent = silent;
 
         // check if service configuration follows old (<2.0)format
@@ -230,7 +256,7 @@ public class Configuration {
 
         ansiConsole = getAsBoolean(conf, ANSI_CONSOLE_KEY, true);
 
-        httpsListener = getAsBoolean(conf, HTTPS_LISTENER, true);
+        httpsListener = getAsBoolean(conf, HTTPS_LISTENER_KEY, true);
         httpsPort = getAsInteger(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
         httpsHost = getAsString(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
 
@@ -299,7 +325,7 @@ public class Configuration {
             }
         }
 
-        tokenManagers = getAsMapOfMaps(conf, TOKEN_MANAGER, new LinkedHashMap<>());
+        tokenManagers = getAsMapOfMaps(conf, TOKEN_MANAGER_KEY, new LinkedHashMap<>());
 
         // check if configuration follows old (<2.0)format
         if (checkPre20Confs(tokenManagers)) {
@@ -440,6 +466,10 @@ public class Configuration {
                 + ", ansiConsole=" + ansiConsole
                 + ", allowUnescapedCharactersInUrl="
                 + allowUnescapedCharactersInUrl + '}';
+    }
+    
+    public Map<String, Object> toMap() {
+        return this.conf;
     }
 
     /**

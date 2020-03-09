@@ -30,29 +30,39 @@ public class PluginUtils {
     public static InterceptPoint interceptPoint(Interceptor interceptor) {
         var a = interceptor.getClass()
                 .getDeclaredAnnotation(RegisterPlugin.class);
-        
+
         if (a == null) {
             return null;
         } else {
             return a.interceptPoint();
         }
     }
-    
+
     public static boolean requiresContent(Interceptor interceptor) {
         var a = interceptor.getClass()
                 .getDeclaredAnnotation(RegisterPlugin.class);
-        
+
         if (a == null) {
             return false;
         } else {
             return a.requiresContent();
         }
     }
-    
+
+    /**
+     *
+     * @param service
+     * @return the service default URI. If not explicitly set via defaulUri
+     * attribute, it is /[service-name]
+     */
     public static String defaultURI(Service service) {
         var a = service.getClass()
                 .getDeclaredAnnotation(RegisterPlugin.class);
-        
-        return a == null ? null : a.defaultURI();
+
+        return a == null 
+                ? null
+                : a.defaultURI() == null || "".equals(a.defaultURI())
+                    ? "/".concat(a.name())
+                    : a.defaultURI();
     }
 }

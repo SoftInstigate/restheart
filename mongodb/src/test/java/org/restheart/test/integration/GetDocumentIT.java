@@ -29,7 +29,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.*;
 import org.junit.Test;
-import org.restheart.representation.Resource;
+import org.restheart.mongodb.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**

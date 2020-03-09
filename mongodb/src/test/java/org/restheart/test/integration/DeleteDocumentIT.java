@@ -23,7 +23,7 @@ import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.junit.Test;
-import org.restheart.representation.Resource;
+import org.restheart.mongodb.representation.Resource;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 

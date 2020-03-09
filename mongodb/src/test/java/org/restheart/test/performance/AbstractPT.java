@@ -26,8 +26,8 @@ import java.util.logging.Logger;
 import org.apache.http.HttpHost;
 import org.apache.http.client.fluent.Executor;
 import org.restheart.ConfigurationException;
-import static org.restheart.ConfigurationKeys.MONGO_URI_KEY;
-import org.restheart.db.MongoDBClientSingleton;
+import static org.restheart.mongodb.ConfigurationKeys.MONGO_URI_KEY;
+import org.restheart.mongodb.db.MongoDBClientSingleton;
 import static org.restheart.test.integration.AbstactIT.MONGO_URI;
 
 /**
