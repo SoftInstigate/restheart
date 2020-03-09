@@ -17,10 +17,10 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.handlers.CORSHandler;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.utils.HttpStatus;
 

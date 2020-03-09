@@ -19,7 +19,6 @@ package org.restheart;
 
 import com.sun.akuma.CLibrary;
 import java.nio.file.Path;
-import org.restheart.ConfigurationException;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.OSChecker;
 import org.slf4j.Logger;

@@ -17,8 +17,6 @@
  */
 package org.restheart.handlers;
 
-import org.restheart.handlers.PipelinedHandler;
-
 /**
  * @deprecated use PipelinedHandler
  * @author Andrea Di Cesare <andrea@softinstigate.com>

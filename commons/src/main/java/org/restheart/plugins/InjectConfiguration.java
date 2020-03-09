@@ -24,15 +24,14 @@ import java.lang.annotation.Target;
 import static org.restheart.plugins.ConfigurationScope.OWN;
 
 /**
- * A Plugin lifecycle annotation that sets a method (or constructor) to handle
- * initialization tasks passing the configuration's properties to it as a
- * Map<String, Object>
+ * A Plugin annotation that sets a method (or constructor) to get the the
+ * configuration's properties as a Map<String, Object>
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.CONSTRUCTOR, ElementType.METHOD})
-public @interface OnInit {
+public @interface InjectConfiguration {
 
     /**
      * Describes the plugin
@@ -40,4 +39,11 @@ public @interface OnInit {
      * @return the description of the plugin
      */
     ConfigurationScope scope() default OWN;
+
+    /**
+     * Describes the plugin
+     *
+     * @return the description of the plugin
+     */
+    boolean requiresPluginRegistry() default false;
 }

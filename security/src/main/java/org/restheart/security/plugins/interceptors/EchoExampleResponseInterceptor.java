@@ -23,9 +23,9 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Map;
 import org.restheart.handlers.exchange.JsonResponse;
+import org.restheart.plugins.InjectConfiguration;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import org.restheart.plugins.Interceptor;
-import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public class EchoExampleResponseInterceptor implements Interceptor {
      * shows how to inject configuration via @OnInit
      * @param args
      */
-    @OnInit
+    @InjectConfiguration
     public void init(Map<String, Object> args) {
         LOGGER.trace("got args {}", args);
     }

@@ -21,11 +21,11 @@ import io.undertow.security.api.AuthenticationMode;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.injectors.TokenInjector;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
-import org.restheart.handlers.injectors.TokenInjector;
 
 /**
  *

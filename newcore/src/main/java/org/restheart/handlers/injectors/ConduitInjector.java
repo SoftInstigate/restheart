@@ -22,11 +22,11 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
-import org.restheart.handlers.PipelinedHandler;
-import org.restheart.plugins.InterceptPoint;
 import org.restheart.handlers.ModifiableContentSinkConduit;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.ResponseInterceptorsStreamSinkConduit;
-import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.security.plugins.PluginsRegistryImpl;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;
@@ -79,7 +79,7 @@ public class ConduitInjector extends PipelinedHandler {
         // and requires the content from the backend
         exchange.addResponseWrapper((ConduitFactory<StreamSinkConduit> factory,
                 HttpServerExchange cexchange) -> {
-            if (PluginsRegistry.getInstance()
+            if (PluginsRegistryImpl.getInstance()
                     .getInterceptors()
                     .stream()
                     .filter(ri -> ri.isEnabled())
@@ -111,7 +111,7 @@ public class ConduitInjector extends PipelinedHandler {
      */
     private static void forceIdentityEncodingForInterceptors(
             HttpServerExchange exchange) {
-        if (PluginsRegistry.getInstance()
+        if (PluginsRegistryImpl.getInstance()
                 .getInterceptors()
                 .stream()
                 .filter(ri -> ri.isEnabled())

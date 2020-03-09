@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
-import org.restheart.ConfigurationException;
 import static org.restheart.ConfigurationKeys.ALLOW_UNESCAPED_CHARACTERS_IN_URL;
 import static org.restheart.ConfigurationKeys.ANSI_CONSOLE_KEY;
 import static org.restheart.ConfigurationKeys.AUTHENTICATORS_KEY;

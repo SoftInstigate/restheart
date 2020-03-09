@@ -20,7 +20,6 @@ package org.restheart.handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.StatusCodes;
-import org.restheart.handlers.PipelinedHandler;
 
 /**
  *

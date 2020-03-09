@@ -22,7 +22,7 @@ import java.util.Map;
 import org.restheart.ConfigurationException;
 import org.restheart.handlers.exchange.JsonRequest;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import org.restheart.plugins.OnInit;
+import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
@@ -45,7 +45,7 @@ public class PingService implements Service {
      * @param args
      * @throws org.restheart.ConfigurationException
      */
-    @OnInit
+    @InjectConfiguration
     public PingService(Map<String, Object> args) throws ConfigurationException {
         this.msg = argValue(args, "msg");
     }

@@ -119,7 +119,7 @@
         <dependencies>
             <dependency>
                 <groupId>org.restheart</groupId>
-                <artifactId>restheart-common</artifactId>
+                <artifactId>restheart-commons</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

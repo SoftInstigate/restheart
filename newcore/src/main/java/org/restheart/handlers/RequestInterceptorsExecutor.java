@@ -18,13 +18,12 @@
 package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.security.plugins.PluginsRegistry;
-import org.restheart.utils.LambdaUtils;
+import org.restheart.security.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.LambdaUtils;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +67,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        PluginsRegistry
+        PluginsRegistryImpl
                 .getInstance()
                 .getInterceptors()
                 .stream()
