@@ -29,6 +29,10 @@ import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.bson.BsonDocument;
 import org.bson.types.ObjectId;
@@ -41,7 +45,6 @@ import org.restheart.db.Database;
 import org.restheart.db.DatabaseImpl;
 import org.restheart.db.DocumentDAO;
 import org.restheart.representation.Resource;
-
 
 /**
  *
@@ -177,7 +180,11 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
 
         final HttpHost host = new HttpHost(HTTP_HOST.getHostName());
 
-        adminExecutor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "admin", "changeit");
+        HttpClientBuilder clientBuilder = HttpClients.custom();
+        clientBuilder.setRetryHandler(new DefaultHttpRequestRetryHandler(5, false));
+        CloseableHttpClient httpClient = clientBuilder.build();
+
+        adminExecutor = Executor.newInstance(httpClient).authPreemptive(HTTP_HOST).auth(host, "admin", "changeit");
         user1Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user1", "changeit");
         user2Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user2", "changeit");
         unauthExecutor = Executor.newInstance();
