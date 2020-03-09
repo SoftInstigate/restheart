@@ -25,9 +25,10 @@
     </properties>
 
     <modules>
-        <module>common</module>
         <module>security</module>
         <module>core</module>
+        <module>commons</module>
+        <module>newcore</module>
     </modules>
 
     <!-- Project Information -->
@@ -129,6 +130,11 @@
             <dependency>
                 <groupId>org.restheart</groupId>
                 <artifactId>restheart-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.restheart</groupId>
+                <artifactId>restheart-newcore</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
