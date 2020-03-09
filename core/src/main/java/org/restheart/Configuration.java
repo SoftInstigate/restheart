@@ -1,68 +1,105 @@
 /*
- * RESTHeart - the Web API for MongoDB
+ * RESTHeart Security
+ *
  * Copyright (C) SoftInstigate Srl
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.restheart;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import com.google.common.collect.Maps;
-import com.mongodb.MongoClientURI;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
-import static org.restheart.ConfigurationKeys.*;
-import org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
-import org.restheart.representation.Resource.REPRESENTATION_FORMAT;
+import static org.restheart.ConfigurationKeys.ALLOW_UNESCAPED_CHARACTERS_IN_URL;
+import static org.restheart.ConfigurationKeys.ANSI_CONSOLE_KEY;
+import static org.restheart.ConfigurationKeys.AUTHENTICATORS_KEY;
+import static org.restheart.ConfigurationKeys.AUTHORIZERS_KEY;
+import static org.restheart.ConfigurationKeys.AUTH_MECHANISMS_KEY;
+import static org.restheart.ConfigurationKeys.BUFFER_SIZE_KEY;
+import static org.restheart.ConfigurationKeys.CERT_PASSWORD_KEY;
+import static org.restheart.ConfigurationKeys.CONNECTION_OPTIONS_KEY;
+import static org.restheart.ConfigurationKeys.DEFAULT_HTTPS_HOST;
+import static org.restheart.ConfigurationKeys.DEFAULT_HTTPS_LISTENER;
+import static org.restheart.ConfigurationKeys.DEFAULT_HTTPS_PORT;
+import static org.restheart.ConfigurationKeys.DEFAULT_HTTP_HOST;
+import static org.restheart.ConfigurationKeys.DEFAULT_HTTP_LISTENER;
+import static org.restheart.ConfigurationKeys.DEFAULT_HTTP_PORT;
+import static org.restheart.ConfigurationKeys.DEFAULT_INSTANCE_NAME;
+import static org.restheart.ConfigurationKeys.DIRECT_BUFFERS_KEY;
+import static org.restheart.ConfigurationKeys.ENABLE_LOG_CONSOLE_KEY;
+import static org.restheart.ConfigurationKeys.ENABLE_LOG_FILE_KEY;
+import static org.restheart.ConfigurationKeys.FORCE_GZIP_ENCODING_KEY;
+import static org.restheart.ConfigurationKeys.HTTPS_HOST_KEY;
+import static org.restheart.ConfigurationKeys.HTTPS_LISTENER;
+import static org.restheart.ConfigurationKeys.HTTPS_PORT_KEY;
+import static org.restheart.ConfigurationKeys.HTTP_HOST_KEY;
+import static org.restheart.ConfigurationKeys.HTTP_LISTENER_KEY;
+import static org.restheart.ConfigurationKeys.HTTP_PORT_KEY;
+import static org.restheart.ConfigurationKeys.INSTANCE_NAME_KEY;
+import static org.restheart.ConfigurationKeys.IO_THREADS_KEY;
+import static org.restheart.ConfigurationKeys.KEYSTORE_FILE_KEY;
+import static org.restheart.ConfigurationKeys.KEYSTORE_PASSWORD_KEY;
+import static org.restheart.ConfigurationKeys.LOG_FILE_PATH_KEY;
+import static org.restheart.ConfigurationKeys.LOG_LEVEL_KEY;
+import static org.restheart.ConfigurationKeys.LOG_REQUESTS_LEVEL_KEY;
+import static org.restheart.ConfigurationKeys.PLUGINS_ARGS_KEY;
+import static org.restheart.ConfigurationKeys.PLUGINS_DIRECTORY_PATH_KEY;
+import static org.restheart.ConfigurationKeys.PROXY_KEY;
+import static org.restheart.ConfigurationKeys.REQUESTS_LIMIT_KEY;
+import static org.restheart.ConfigurationKeys.REQUESTS_LOG_TRACE_HEADERS_KEY;
+import static org.restheart.ConfigurationKeys.SERVICES_KEY;
+import static org.restheart.ConfigurationKeys.TOKEN_MANAGER;
+import static org.restheart.ConfigurationKeys.USE_EMBEDDED_KEYSTORE_KEY;
+import static org.restheart.ConfigurationKeys.WORKER_THREADS_KEY;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * Utility class to help dealing with the restheart configuration file.
+ * Utility class to help dealing with the configuration file.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Configuration {
+
     /**
-     * undertow connetction options
-     *
-     * @see
-     * http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
+     * the version is read from the JAR's MANIFEST.MF file, which is
+     * automatically generated by the Maven build process
      */
-    public static final String CONNECTION_OPTIONS_KEY = "connection-options";
-    
-    /**
-     *
-     */
-    public final static Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
+    public static final String VERSION = Configuration.class.getPackage()
+            .getImplementationVersion() == null
+                    ? "unknown, not packaged"
+                    : Configuration.class.getPackage().getImplementationVersion();
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
+
+    public static final String DEFAULT_ROUTE = "0.0.0.0";
 
     private boolean silent = false;
     private final boolean httpsListener;
@@ -71,115 +108,83 @@ public class Configuration {
     private final boolean httpListener;
     private final int httpPort;
     private final String httpHost;
-    private final boolean ajpListener;
-    private final int ajpPort;
-    private final String ajpHost;
     private final String instanceName;
-    private final String instanceBaseURL;
     private final String pluginsDirectory;
-    private final REPRESENTATION_FORMAT defaultRepresentationFormat;
     private final boolean useEmbeddedKeystore;
     private final String keystoreFile;
     private final String keystorePassword;
     private final String certPassword;
-    private final MongoClientURI mongoUri;
-    private final List<Map<String, Object>> mongoMounts;
-    private final List<Map<String, Object>> staticResourcesMounts;
+    private final List<Map<String, Object>> proxies;
     private final Map<String, Map<String, Object>> pluginsArgs;
+    private final Map<String, Map<String, Object>> authMechanisms;
+    private final Map<String, Map<String, Object>> authenticators;
+    private final Map<String, Map<String, Object>> authorizers;
+    private final Map<String, Map<String, Object>> tokenManagers;
     private final String logFilePath;
     private final Level logLevel;
     private final boolean logToConsole;
     private final boolean logToFile;
     private final List<String> traceHeaders;
-    private final boolean localCacheEnabled;
-    private final long localCacheTtl;
-    private final boolean schemaCacheEnabled;
-    private final long schemaCacheTtl;
     private final int requestsLimit;
     private final int ioThreads;
     private final int workerThreads;
     private final int bufferSize;
     private final boolean directBuffers;
     private final boolean forceGzipEncoding;
-    private final int eagerPoolSize;
-    private final int eagerLinearSliceWidht;
-    private final int eagerLinearSliceDelta;
-    private final int[] eagerLinearSliceHeights;
-    private final int eagerRndSliceMinWidht;
-    private final int eagerRndMaxCursors;
-    private final boolean authTokenEnabled;
-    private final int authTokenTtl;
-    private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
-    private final ETAG_CHECK_POLICY collEtagCheckPolicy;
-    private final ETAG_CHECK_POLICY docEtagCheckPolicy;
     private final Map<String, Object> connectionOptions;
     private final Integer logExchangeDump;
-    private final METRICS_GATHERING_LEVEL metricsGatheringLevel;
-    private final long queryTimeLimit;
-    private final long aggregationTimeLimit;
-    private final boolean aggregationCheckOperators;
     private final boolean ansiConsole;
-    private final int cursorBatchSize;
-    private final int defaultPagesize;
-    private final int maxPagesize;
     private final boolean allowUnescapedCharactersInUrl;
-
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
-        Yaml yaml = new Yaml();
-
-        Map<String, Object> conf = null;
-
-        try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
-            conf = (Map<String, Object>) yaml.load(fis);
-        } catch (FileNotFoundException fne) {
-            throw new ConfigurationException("Configuration file not found", fne);
-        } catch (Throwable t) {
-            throw new ConfigurationException("Error parsing the configuration file", t);
-        }
-
-        return conf;
-    }
-
-    static boolean isParametric(final Path confFilePath) throws IOException {
-        Scanner sc = new Scanner(confFilePath, "UTF-8");
-
-        return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}"))
-                .limit(1)
-                .count() > 0;
-    }
-
-    /**
-     *
-     * @param integers
-     * @return
-     */
-    public static int[] convertListToIntArray(List<Object> integers) {
-        int[] ret = new int[integers.size()];
-        Iterator<Object> iterator = integers.iterator();
-        for (int i = 0; i < ret.length; i++) {
-            Object o = iterator.next();
-
-            if (o instanceof Integer) {
-                ret[i] = (Integer) o;
-            } else {
-                return new int[0];
-            }
-        }
-
-        return ret;
-    }
-
-    /**
-     * the configuration map
-     */
-    private final Map<String, Object> configurationFileMap;
 
     /**
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
-        this(new HashMap<>(), false);
+        ansiConsole = true;
+
+        httpsListener = DEFAULT_HTTPS_LISTENER;
+        httpsPort = DEFAULT_HTTPS_PORT;
+        httpsHost = DEFAULT_HTTPS_HOST;
+
+        httpListener = DEFAULT_HTTP_LISTENER;
+        httpPort = DEFAULT_HTTP_PORT;
+        httpHost = DEFAULT_HTTP_HOST;
+
+        instanceName = DEFAULT_INSTANCE_NAME;
+
+        useEmbeddedKeystore = true;
+        keystoreFile = null;
+        keystorePassword = null;
+        certPassword = null;
+
+        proxies = new ArrayList<>();
+        initDefaultProxy();
+
+        pluginsDirectory = "plugins";
+
+        pluginsArgs = new LinkedHashMap<>();
+        authMechanisms = new LinkedHashMap<>();
+        authenticators = new LinkedHashMap<>();
+        authorizers = null;
+        tokenManagers = new HashMap<>();
+
+        logFilePath = URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
+                .concat(File.separator + "restheart-security.log");
+        logToConsole = true;
+        logToFile = true;
+        logLevel = Level.INFO;
+
+        traceHeaders = Collections.emptyList();
+
+        requestsLimit = 100;
+        ioThreads = 2;
+        workerThreads = 32;
+        bufferSize = 16384;
+        directBuffers = true;
+        forceGzipEncoding = false;
+        logExchangeDump = 0;
+        connectionOptions = Maps.newHashMap();
+        allowUnescapedCharactersInUrl = true;
     }
 
     /**
@@ -213,204 +218,188 @@ public class Configuration {
      * @param silent
      * @throws org.restheart.ConfigurationException
      */
+    @SuppressWarnings("deprecation")
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
-        this.configurationFileMap = conf;
         this.silent = silent;
 
-        ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE_KEY, true);
-
-        httpsListener = getAsBooleanOrDefault(conf, HTTPS_LISTENER, DEFAULT_HTTPS_LISTENER);
-        httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
-        httpsHost = getAsStringOrDefault(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
-
-        httpListener = getAsBooleanOrDefault(conf, HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER);
-        httpPort = getAsIntegerOrDefault(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
-        httpHost = getAsStringOrDefault(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
-
-        ajpListener = getAsBooleanOrDefault(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
-        ajpPort = getAsIntegerOrDefault(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
-        ajpHost = getAsStringOrDefault(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
-
-        instanceName = getAsStringOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-
-        instanceBaseURL = getAsStringOrDefault(conf, INSTANCE_BASE_URL_KEY, null);
-
-        String _representationFormat = getAsStringOrDefault(conf,
-                REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name());
-
-        REPRESENTATION_FORMAT rf = REPRESENTATION_FORMAT.STANDARD;
-
-        try {
-            rf = REPRESENTATION_FORMAT.valueOf(_representationFormat);
-        } catch (IllegalArgumentException iar) {
-            LOGGER.warn("wrong value for {}. allowed values are {}; "
-                    + "setting it to {}",
-                    REPRESENTATION_FORMAT_KEY,
-                    REPRESENTATION_FORMAT.values(),
-                    REPRESENTATION_FORMAT.STANDARD);
-        } finally {
-            defaultRepresentationFormat = rf;
+        // check if service configuration follows old (<2.0)format
+        if (conf.get(SERVICES_KEY) != null) {
+            LOGGER.error("The services configuration section is obsolete. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+            throw new ConfigurationException("Wrong Services configuration");
         }
 
-        useEmbeddedKeystore = getAsBooleanOrDefault(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
-        keystoreFile = getAsStringOrDefault(conf, KEYSTORE_FILE_KEY, null);
-        keystorePassword = getAsStringOrDefault(conf, KEYSTORE_PASSWORD_KEY, null);
-        certPassword = getAsStringOrDefault(conf, CERT_PASSWORD_KEY, null);
+        ansiConsole = getAsBoolean(conf, ANSI_CONSOLE_KEY, true);
 
-        try {
-            mongoUri = new MongoClientURI(getAsStringOrDefault(conf, MONGO_URI_KEY, DEFAULT_MONGO_URI));
-        } catch (IllegalArgumentException iae) {
-            throw new ConfigurationException("wrong parameter " + MONGO_URI_KEY, iae);
+        httpsListener = getAsBoolean(conf, HTTPS_LISTENER, true);
+        httpsPort = getAsInteger(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
+        httpsHost = getAsString(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
+
+        httpListener = getAsBoolean(conf, HTTP_LISTENER_KEY, false);
+        httpPort = getAsInteger(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
+        httpHost = getAsString(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
+
+        instanceName = getAsString(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
+        useEmbeddedKeystore = getAsBoolean(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
+        keystoreFile = getAsString(conf, KEYSTORE_FILE_KEY, null);
+        keystorePassword = getAsString(conf, KEYSTORE_PASSWORD_KEY, null);
+        certPassword = getAsString(conf, CERT_PASSWORD_KEY, null);
+
+        proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
+
+        if (proxies.isEmpty()) {
+            initDefaultProxy();
         }
 
-        List<Map<String, Object>> mongoMountsDefault = new ArrayList<>();
-        Map<String, Object> defaultMongoMounts = new HashMap<>();
-        defaultMongoMounts.put(MONGO_MOUNT_WHAT_KEY, DEFAULT_MONGO_MOUNT_WHAT);
-        defaultMongoMounts.put(MONGO_MOUNT_WHERE_KEY, DEFAULT_MONGO_MOUNT_WHERE);
-        mongoMountsDefault.add(defaultMongoMounts);
+        pluginsDirectory = getAsString(conf, PLUGINS_DIRECTORY_PATH_KEY, "plugins");
 
-        mongoMounts = getAsListOfMaps(conf, MONGO_MOUNTS_KEY, mongoMountsDefault);
-
-        ArrayList<Map<String, Object>> defaultStaticResourcesMounts = new ArrayList<>();
-
-        staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
-        
-        pluginsDirectory =  getAsStringOrDefault(conf, PLUGINS_DIRECTORY_PATH_KEY, "plugins");
-        
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
 
-        logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
-                URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
-                        .concat(File.separator + "restheart.log"));
-        String _logLevel = getAsStringOrDefault(conf, LOG_LEVEL_KEY, "INFO");
-        logToConsole = getAsBooleanOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
-        logToFile = getAsBooleanOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
-        traceHeaders = getAsListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
+        authMechanisms = getAsMapOfMaps(conf, AUTH_MECHANISMS_KEY, new LinkedHashMap<>());
+
+        // check if configuration follows old (<2.0)format
+        if (authMechanisms.isEmpty()) {
+            // check if exception is due to old configuration format
+            var old = conf.get(AUTH_MECHANISMS_KEY);
+
+            if (old != null
+                    && old instanceof List
+                    && checkPre20Confs((List) old)) {
+                LOGGER.error("The auth-mechanisms configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+                throw new ConfigurationException("Wrong Authentication Mechanisms configuration");
+            }
+        }
+
+        authenticators = getAsMapOfMaps(conf, AUTHENTICATORS_KEY, new LinkedHashMap<>());
+
+        // check if configuration follows old (<2.0)format
+        if (authenticators.isEmpty()) {
+            // check if exception is due to old configuration format
+            var old = conf.get(AUTHENTICATORS_KEY);
+
+            if (old != null
+                    && old instanceof List
+                    && checkPre20Confs((List) old)) {
+                LOGGER.error("The authenticator configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+                throw new ConfigurationException("Wrong Authenticators configuration");
+            }
+        }
+
+        authorizers = getAsMapOfMaps(conf, AUTHORIZERS_KEY, new LinkedHashMap<>());
+        
+        // check if configuration follows old (<2.0)format
+        if (authorizers.isEmpty()) {
+            // check if exception is due to old configuration format
+            var old = conf.get(AUTHORIZERS_KEY);
+
+            if (old != null
+                    && old instanceof List
+                    && checkPre20Confs((List) old)) {
+                LOGGER.error("The authorizers configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+                throw new ConfigurationException("Wrong Authorizers configuration");
+            }
+        }
+
+        tokenManagers = getAsMapOfMaps(conf, TOKEN_MANAGER, new LinkedHashMap<>());
+
+        // check if configuration follows old (<2.0)format
+        if (checkPre20Confs(tokenManagers)) {
+            // check if exception is due to old configuration format
+            LOGGER.error("The token-manager configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+            throw new ConfigurationException("Wrong Token Manager configuration");
+        }
+
+        logFilePath = getAsString(conf, LOG_FILE_PATH_KEY, URLUtils
+                .removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
+                .concat(File.separator + "restheart-security.log"));
+        String _logLevel = getAsString(conf, LOG_LEVEL_KEY, "INFO");
+        logToConsole = getAsBoolean(conf, ENABLE_LOG_CONSOLE_KEY, true);
+        logToFile = getAsBoolean(conf, ENABLE_LOG_FILE_KEY, true);
 
         Level level;
-
         try {
             level = Level.valueOf(_logLevel);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             if (!silent) {
-                LOGGER.info("wrong value for parameter {}: {}. "
-                        + "Using its default value {}", "log-level", _logLevel, "INFO");
+                LOGGER.info("wrong value for parameter {}: {}. using its default value {}",
+                        "log-level", _logLevel, "INFO");
             }
             level = Level.INFO;
         }
 
         logLevel = level;
 
-        requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
+        traceHeaders = getAsListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
 
-        queryTimeLimit = getAsLongOrDefault(conf, QUERY_TIME_LIMIT_KEY, (long) 0);
-        aggregationTimeLimit = getAsLongOrDefault(conf, AGGREGATION_TIME_LIMIT_KEY, (long) 0);
-        aggregationCheckOperators = getAsBooleanOrDefault(conf, AGGREGATION_CHECK_OPERATORS, true);
+        requestsLimit = getAsInteger(conf, REQUESTS_LIMIT_KEY, 100);
+        ioThreads = getAsInteger(conf, IO_THREADS_KEY, 2);
+        workerThreads = getAsInteger(conf, WORKER_THREADS_KEY, 32);
+        bufferSize = getAsInteger(conf, BUFFER_SIZE_KEY, 16384);
+        directBuffers = getAsBoolean(conf, DIRECT_BUFFERS_KEY, true);
+        forceGzipEncoding = getAsBoolean(conf, FORCE_GZIP_ENCODING_KEY, false);
+        logExchangeDump = getAsInteger(conf, LOG_REQUESTS_LEVEL_KEY, 0);
+        connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
+        allowUnescapedCharactersInUrl = getAsBoolean(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
+    }
 
-        localCacheEnabled = getAsBooleanOrDefault(conf, LOCAL_CACHE_ENABLED_KEY, true);
-        localCacheTtl = getAsLongOrDefault(conf, LOCAL_CACHE_TTL_KEY, (long) 1000);
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
+        Yaml yaml = new Yaml();
+        Map<String, Object> conf = null;
 
-        schemaCacheEnabled = getAsBooleanOrDefault(conf, SCHEMA_CACHE_ENABLED_KEY, true);
-        schemaCacheTtl = getAsLongOrDefault(conf, SCHEMA_CACHE_TTL_KEY, (long) 1000);
-
-        ioThreads = getAsIntegerOrDefault(conf, IO_THREADS_KEY, 2);
-        workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS_KEY, 32);
-        bufferSize = getAsIntegerOrDefault(conf, BUFFER_SIZE_KEY, 16384);
-        directBuffers = getAsBooleanOrDefault(conf, DIRECT_BUFFERS_KEY, true);
-
-        forceGzipEncoding = getAsBooleanOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
-
-        eagerPoolSize = getAsIntegerOrDefault(conf, EAGER_POOL_SIZE, 100);
-        eagerLinearSliceWidht = getAsIntegerOrDefault(conf, EAGER_LINEAR_SLICE_WIDHT, 1000);
-        eagerLinearSliceDelta = getAsIntegerOrDefault(conf, EAGER_LINEAR_SLICE_DELTA, 100);
-        eagerLinearSliceHeights = getAsArrayOfInts(conf, EAGER_LINEAR_HEIGHTS, new int[]{4, 2, 1});
-        eagerRndSliceMinWidht = getAsIntegerOrDefault(conf, EAGER_RND_SLICE_MIN_WIDHT, 1000);
-        eagerRndMaxCursors = getAsIntegerOrDefault(conf, EAGER_RND_MAX_CURSORS, 50);
-
-        authTokenEnabled = getAsBooleanOrDefault(conf, AUTH_TOKEN_ENABLED, true);
-        authTokenTtl = getAsIntegerOrDefault(conf, AUTH_TOKEN_TTL, 15);
-
-        Map<String, Object> etagCheckPolicies = getAsMap(conf, ETAG_CHECK_POLICY_KEY, null);
-
-        if (etagCheckPolicies != null) {
-            String _dbEtagCheckPolicy
-                    = getAsStringOrDefault(etagCheckPolicies,
-                            ETAG_CHECK_POLICY_DB_KEY,
-                            DEFAULT_DB_ETAG_CHECK_POLICY.name());
-
-            String _collEtagCheckPolicy
-                    = getAsStringOrDefault(etagCheckPolicies,
-                            ETAG_CHECK_POLICY_COLL_KEY,
-                            DEFAULT_COLL_ETAG_CHECK_POLICY.name());
-
-            String _docEtagCheckPolicy
-                    = getAsStringOrDefault(etagCheckPolicies,
-                            ETAG_CHECK_POLICY_DOC_KEY,
-                            DEFAULT_DOC_ETAG_CHECK_POLICY.name());
-
-            ETAG_CHECK_POLICY validDbValue;
-            ETAG_CHECK_POLICY validCollValue;
-            ETAG_CHECK_POLICY validDocValue;
-
-            try {
-                validDbValue = ETAG_CHECK_POLICY.valueOf(_dbEtagCheckPolicy);
-            } catch (IllegalArgumentException iae) {
-                LOGGER.warn("wrong value for parameter {} setting it to default value {}",
-                        ETAG_CHECK_POLICY_DB_KEY, DEFAULT_DB_ETAG_CHECK_POLICY);
-                validDbValue = DEFAULT_DB_ETAG_CHECK_POLICY;
-            }
-
-            dbEtagCheckPolicy = validDbValue;
-
-            try {
-                validCollValue = ETAG_CHECK_POLICY.valueOf(_collEtagCheckPolicy);
-            } catch (IllegalArgumentException iae) {
-                LOGGER.warn("wrong value for parameter {} setting it to default value {}",
-                        ETAG_CHECK_POLICY_COLL_KEY, DEFAULT_COLL_ETAG_CHECK_POLICY);
-                validCollValue = DEFAULT_COLL_ETAG_CHECK_POLICY;
-            }
-
-            collEtagCheckPolicy = validCollValue;
-
-            try {
-                validDocValue = ETAG_CHECK_POLICY.valueOf(_docEtagCheckPolicy);
-            } catch (IllegalArgumentException iae) {
-                LOGGER.warn("wrong value for parameter {} setting it to default value {}",
-                        ETAG_CHECK_POLICY_COLL_KEY, DEFAULT_COLL_ETAG_CHECK_POLICY);
-                validDocValue = DEFAULT_DOC_ETAG_CHECK_POLICY;
-            }
-
-            docEtagCheckPolicy = validDocValue;
-        } else {
-            dbEtagCheckPolicy = DEFAULT_DB_ETAG_CHECK_POLICY;
-            collEtagCheckPolicy = DEFAULT_COLL_ETAG_CHECK_POLICY;
-            docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
+        try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
+            conf = (Map<String, Object>) yaml.load(fis);
+        }
+        catch (FileNotFoundException fne) {
+            throw new ConfigurationException("Configuration file not found", fne);
+        }
+        catch (Throwable t) {
+            throw new ConfigurationException("Error parsing the configuration file", t);
         }
 
-        logExchangeDump = getAsIntegerOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 1);
-        {
-            METRICS_GATHERING_LEVEL mglevel;
-            try {
-                String value = getAsStringOrDefault(conf, METRICS_GATHERING_LEVEL_KEY, "ROOT");
-                mglevel = METRICS_GATHERING_LEVEL.valueOf(value.toUpperCase(Locale.getDefault()));
-            } catch (IllegalArgumentException iae) {
-                mglevel = METRICS_GATHERING_LEVEL.ROOT;
+        return conf;
+    }
+
+    static boolean isParametric(final Path confFilePath) throws IOException {
+        Scanner sc = new Scanner(confFilePath, "UTF-8");
+
+        return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}"))
+                .limit(1)
+                .count() > 0;
+    }
+
+    private void initDefaultProxy() {
+        var entry = new HashMap();
+
+        LOGGER.warn("No proxies defined via configuration, "
+                + "assuming default proxy: / -> ajp://localhost:8009");
+
+        entry.put(ConfigurationKeys.PROXY_LOCATION_KEY, "/");
+        entry.put(ConfigurationKeys.PROXY_PASS_KEY, "ajp://localhost:8009");
+        entry.put(ConfigurationKeys.PROXY_NAME, "restheart");
+
+        this.proxies.add(entry);
+    }
+
+    /**
+     *
+     * @param integers
+     * @return
+     */
+    public static int[] convertListToIntArray(List<Object> integers) {
+        int[] ret = new int[integers.size()];
+        Iterator<Object> iterator = integers.iterator();
+        for (int i = 0; i < ret.length; i++) {
+            Object o = iterator.next();
+
+            if (o instanceof Integer) {
+                ret[i] = (Integer) o;
+            } else {
+                return new int[0];
             }
-            metricsGatheringLevel = mglevel;
         }
 
-        connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY, Maps.newHashMap());
-
-        cursorBatchSize = getAsIntegerOrDefault(conf, CURSOR_BATCH_SIZE_KEY,
-                DEFAULT_CURSOR_BATCH_SIZE);
-
-        defaultPagesize = getAsIntegerOrDefault(conf, DEFAULT_PAGESIZE_KEY,
-                DEFAULT_DEFAULT_PAGESIZE);
-
-        maxPagesize = getAsIntegerOrDefault(conf, MAX_PAGESIZE_KEY,
-                DEFAULT_MAX_PAGESIZE);
-
-        allowUnescapedCharactersInUrl = getAsBooleanOrDefault(conf, ALLOW_UNESCAPED_CHARS_IN_URL, true);
+        return ret;
     }
 
     @Override
@@ -423,60 +412,41 @@ public class Configuration {
                 + ", httpListener=" + httpListener
                 + ", httpPort=" + httpPort
                 + ", httpHost=" + httpHost
-                + ", ajpListener=" + ajpListener
-                + ", ajpPort=" + ajpPort
-                + ", ajpHost=" + ajpHost
                 + ", instanceName=" + instanceName
-                + ", instanceBaseURL=" + instanceBaseURL
                 + ", pluginsDirectory=" + pluginsDirectory
-                + ", defaultRepresentationFromat=" + defaultRepresentationFormat
                 + ", useEmbeddedKeystore=" + useEmbeddedKeystore
                 + ", keystoreFile=" + keystoreFile
                 + ", keystorePassword=" + keystorePassword
                 + ", certPassword=" + certPassword
-                + ", mongoUri=" + mongoUri
-                + ", mongoMounts=" + mongoMounts
-                + ", staticResourcesMounts=" + staticResourcesMounts
-                + ", plugins-args=" + pluginsArgs
+                + ", proxies=" + proxies
+                + ", pluginsArgs=" + pluginsArgs
+                + ", authMechanisms=" + authMechanisms
+                + ", authenticators=" + authenticators
+                + ", authorizers=" + authorizers
+                + ", tokenManager=" + tokenManagers
                 + ", logFilePath=" + logFilePath
                 + ", logLevel=" + logLevel
                 + ", logToConsole=" + logToConsole
                 + ", logToFile=" + logToFile
                 + ", traceHeaders=" + traceHeaders
-                + ", localCacheEnabled=" + localCacheEnabled
-                + ", localCacheTtl=" + localCacheTtl
-                + ", schemaCacheEnabled=" + schemaCacheEnabled
-                + ", schemaCacheTtl=" + schemaCacheTtl
                 + ", requestsLimit=" + requestsLimit
                 + ", ioThreads=" + ioThreads
                 + ", workerThreads=" + workerThreads
                 + ", bufferSize=" + bufferSize
                 + ", directBuffers=" + directBuffers
                 + ", forceGzipEncoding=" + forceGzipEncoding
-                + ", eagerPoolSize=" + eagerPoolSize
-                + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht
-                + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta
-                + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights)
-                + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht
-                + ", eagerRndMaxCursors=" + eagerRndMaxCursors
-                + ", authTokenEnabled=" + authTokenEnabled
-                + ", authTokenTtl=" + authTokenTtl
-                + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy
-                + ", collEtagCheckPolicy=" + collEtagCheckPolicy
-                + ", docEtagCheckPolicy=" + docEtagCheckPolicy
                 + ", connectionOptions=" + connectionOptions
                 + ", logExchangeDump=" + logExchangeDump
-                + ", metricsGatheringLevel=" + metricsGatheringLevel
-                + ", queryTimeLimit=" + queryTimeLimit
-                + ", aggregationTimeLimit=" + aggregationTimeLimit
-                + ", aggregationCheckOperators=" + aggregationCheckOperators
                 + ", ansiConsole=" + ansiConsole
-                + ", cursorBatchSize=" + cursorBatchSize
-                + ", defaultPagesize=" + defaultPagesize
-                + ", maxPagesize=" + maxPagesize
-                + ", allowUnescapedCharactersInUrl=" + allowUnescapedCharactersInUrl
-                + ", configurationFileMap=" + configurationFileMap
-                + '}';
+                + ", allowUnescapedCharactersInUrl="
+                + allowUnescapedCharactersInUrl + '}';
+    }
+
+    /**
+     * @return the proxies
+     */
+    public List<Map<String, Object>> getProxies() {
+        return proxies;
     }
 
     /**
@@ -494,341 +464,8 @@ public class Configuration {
      * @param defaultValue
      * @return
      */
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
-        if (conf == null) {
-            if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
-            }
-
-            return defaultValue;
-        }
-
-        Object o = conf.get(key);
-
-        if (o instanceof List) {
-            return (List<Map<String, Object>>) o;
-        } else {
-            if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key, final Map<String, Object> defaultVal) {
-        if (conf == null) {
-            if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file.", key);
-            }
-            return defaultVal;
-        }
-
-        Object o = conf.get(key);
-
-        if (o instanceof Map) {
-            return (Map<String, Object>) o;
-        } else {
-            if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file.", key);
-            }
-            return defaultVal;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Map<String, Object>> getAsMapOfMaps(
-            final Map<String, Object> conf,
-            final String key,
-            final Map<String, Map<String, Object>> defaultVal) {
-        if (conf == null) {
-            if (!silent) {
-                LOGGER.debug("parameters {} not specified in the configuration file.", key);
-            }
-            return defaultVal;
-        }
-
-        Object o = conf.get(key);
-
-        if (o instanceof Map) {
-            try {
-                return (Map<String, Map<String, Object>>) o;
-            } catch (Throwable t) {
-                LOGGER.warn("Invalid configuration parameter {}", key);
-                return defaultVal;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.debug("parameters {} not specified in the configuration file.", key);
-            }
-            return defaultVal;
-        }
-    }
-
-    /**
-     *
-     * @param key
-     * @return the environment or java property variable, if found
-     */
-    private String overriddenValueFromEnv(final String key) {
-        String shellKey = key.toUpperCase().replaceAll("-", "_");
-        String envValue = System.getProperty(key);
-
-        if (envValue == null) {
-            envValue = System.getProperty(shellKey);
-        }
-
-        if (envValue == null) {
-            envValue = System.getenv(shellKey);
-        }
-        if (null != envValue) {
-            LOGGER.debug(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
-                    shellKey, key, envValue);
-        }
-        return envValue;
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
-    private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
-        if (envValue != null) {
-            return Boolean.valueOf(envValue);
-        }
-
-        if (conf == null) {
-            if (!silent) {
-                LOGGER.debug("tried to get paramenter {} from a null configuration map."
-                        + " Using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        }
-
-        Object o = conf.get(key);
-
-        if (o == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        } else if (o instanceof Boolean) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, o);
-            }
-            return (Boolean) o;
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}."
-                        + " Using its default value {}", key, o, defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
-    private String getAsStringOrDefault(final Map<String, Object> conf, final String key, final String defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
-        if (envValue != null) {
-            return envValue;
-        }
-
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof String) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
-            return (String) conf.get(key);
-        } else {
-            if (!silent) {
-                throw new IllegalArgumentException(String.format("Wrong value for parameter %s: %s.}", key, conf.get(key)));
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
-    private Integer getAsIntegerOrDefault(final Map<String, Object> conf, final String key, final Integer defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
-        if (envValue != null) {
-            return Integer.valueOf(envValue);
-        }
-
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof Integer) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
-            return (Integer) conf.get(key);
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}."
-                        + " Using its default value {}", key, conf.get(key), defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
-    private Long getAsLongOrDefault(final Map<String, Object> conf, final String key, final Long defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
-        if (envValue != null) {
-            return Long.valueOf(envValue);
-        }
-
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof Number) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
-            try {
-                return Long.parseLong(conf.get(key).toString());
-            } catch (NumberFormatException nfe) {
-                if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}. Using its default value {}",
-                            key, conf.get(key), defaultValue);
-                }
-                return defaultValue;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}."
-                        + " Using its default value {}", key, conf.get(key), defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    private int[] getAsArrayOfInts(final Map<String, Object> conf, final String key, final int[] defaultValue) {
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof List) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
-
-            int ret[] = convertListToIntArray((List<Object>) conf.get(key));
-
-            if (ret.length == 0) {
-                if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}."
-                            + " Using its default value {}", key, conf.get(key), defaultValue);
-                }
-                return defaultValue;
-            } else {
-                return ret;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}."
-                        + " Using its default value {}", key, conf.get(key), defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key, final List<String> defaultValue) {
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof List) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
-
-            List<String> ret = ((List<String>) conf.get(key));
-
-            if (ret.isEmpty()) {
-                if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}."
-                            + " Using its default value {}", key, conf.get(key), defaultValue);
-                }
-                return defaultValue;
-            } else {
-                return ret;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}."
-                        + " Using its default value {}", key, conf.get(key), defaultValue);
-            }
-            return defaultValue;
-        }
+    private <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key, final V defaultValue) {
+        return getOrDefault(conf, key, defaultValue, this.silent);
     }
 
     /**
@@ -874,24 +511,10 @@ public class Configuration {
     }
 
     /**
-     * @return the ajpListener
+     * @return the pluginsDirectory
      */
-    public boolean isAjpListener() {
-        return ajpListener;
-    }
-
-    /**
-     * @return the ajpPort
-     */
-    public int getAjpPort() {
-        return ajpPort;
-    }
-
-    /**
-     * @return the ajpHost
-     */
-    public String getAjpHost() {
-        return ajpHost;
+    public String getPluginsDirectory() {
+        return this.pluginsDirectory;
     }
 
     /**
@@ -937,7 +560,7 @@ public class Configuration {
         String logbackConfigurationFile = System.getProperty("logback.configurationFile");
         if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
             LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-            ch.qos.logback.classic.Logger logger = loggerContext.getLogger("org.restheart");
+            ch.qos.logback.classic.Logger logger = loggerContext.getLogger("org.restheart.security");
             return logger.getLevel();
         }
 
@@ -958,10 +581,6 @@ public class Configuration {
         return logToFile;
     }
 
-    /**
-     *
-     * @return
-     */
     public List<String> getTraceHeaders() {
         return Collections.unmodifiableList(traceHeaders);
     }
@@ -1002,31 +621,31 @@ public class Configuration {
     }
 
     /**
-     * @return the requestsLimit
+     * @return the pluginsArgs
      */
-    public int getRequestLimit() {
-        return getRequestsLimit();
+    public Map<String, Map<String, Object>> getPluginsArgs() {
+        return Collections.unmodifiableMap(pluginsArgs);
     }
 
     /**
-     * @return the mongoMounts
+     * @return the authMechanisms
      */
-    public List<Map<String, Object>> getMongoMounts() {
-        return Collections.unmodifiableList(mongoMounts);
+    public Map<String, Map<String, Object>> getAuthMechanisms() {
+        return authMechanisms;
     }
 
     /**
-     * @return the localCacheEnabled
+     * @return the authenticators
      */
-    public boolean isLocalCacheEnabled() {
-        return localCacheEnabled;
+    public Map<String, Map<String, Object>> getAuthenticators() {
+        return authenticators;
     }
 
     /**
-     * @return the localCacheTtl
+     * @return the authorizers
      */
-    public long getLocalCacheTtl() {
-        return localCacheTtl;
+    public Map<String, Map<String, Object>> getAuthorizers() {
+        return authorizers;
     }
 
     /**
@@ -1037,136 +656,10 @@ public class Configuration {
     }
 
     /**
-     * @return the queryTimeLimit
+     * @return the tokenManagers
      */
-    public long getQueryTimeLimit() {
-        return queryTimeLimit;
-    }
-
-    /**
-     * @return the aggregationTimeLimit
-     */
-    public long getAggregationTimeLimit() {
-        return aggregationTimeLimit;
-    }
-
-    /**
-     * @return the aggregationCheckOperators
-     */
-    public boolean getAggregationCheckOperators() {
-        return aggregationCheckOperators;
-    }
-
-    /**
-     * @return the staticResourcesMounts
-     */
-    public List<Map<String, Object>> getStaticResourcesMounts() {
-        return Collections.unmodifiableList(staticResourcesMounts);
-    }
-
-    /**
-     * @return the pluginsArgs
-     */
-    public Map<String, Map<String, Object>> getPluginsArgs() {
-        return Collections.unmodifiableMap(pluginsArgs);
-    }
-
-    /**
-     * @return the eagerLinearSliceWidht
-     */
-    public int getEagerLinearSliceWidht() {
-        return eagerLinearSliceWidht;
-    }
-
-    /**
-     * @return the eagerLinearSliceDelta
-     */
-    public int getEagerLinearSliceDelta() {
-        return eagerLinearSliceDelta;
-    }
-
-    /**
-     * @return the eagerLinearSliceHeights
-     */
-    public int[] getEagerLinearSliceHeights() {
-        return eagerLinearSliceHeights;
-    }
-
-    /**
-     * @return the eagerRndSliceMinWidht
-     */
-    public int getEagerRndSliceMinWidht() {
-        return eagerRndSliceMinWidht;
-    }
-
-    /**
-     * @return the eagerRndMaxCursors
-     */
-    public int getEagerRndMaxCursors() {
-        return eagerRndMaxCursors;
-    }
-
-    /**
-     * @return the eagerPoolSize
-     */
-    public int getEagerPoolSize() {
-        return eagerPoolSize;
-    }
-
-    /**
-     * @return the authTokenEnabled
-     */
-    public boolean isAuthTokenEnabled() {
-        return authTokenEnabled;
-    }
-
-    /**
-     * @return the authTokenTtl
-     */
-    public int getAuthTokenTtl() {
-        return authTokenTtl;
-    }
-
-    /**
-     * @return the mongoUri
-     */
-    public MongoClientURI getMongoUri() {
-        return mongoUri;
-    }
-
-    /**
-     * @return the schemaCacheEnabled
-     */
-    public boolean isSchemaCacheEnabled() {
-        return schemaCacheEnabled;
-    }
-
-    /**
-     * @return the schemaCacheTtl
-     */
-    public long getSchemaCacheTtl() {
-        return schemaCacheTtl;
-    }
-
-    /**
-     * @return the dbEtagCheckPolicy
-     */
-    public ETAG_CHECK_POLICY getDbEtagCheckPolicy() {
-        return dbEtagCheckPolicy;
-    }
-
-    /**
-     * @return the collEtagCheckPolicy
-     */
-    public ETAG_CHECK_POLICY getCollEtagCheckPolicy() {
-        return collEtagCheckPolicy;
-    }
-
-    /**
-     * @return the docEtagCheckPolicy
-     */
-    public ETAG_CHECK_POLICY getDocEtagCheckPolicy() {
-        return docEtagCheckPolicy;
+    public Map<String, Map<String, Object>> getTokenManagers() {
+        return tokenManagers;
     }
 
     /**
@@ -1191,101 +684,390 @@ public class Configuration {
         return instanceName;
     }
 
-    /**
-     * @return the instanceBaseURL
-     */
-    public String getInstanceBaseURL() {
-        return instanceBaseURL;
-    }
-
-    /**
-     * @return the defaultRepresentationFromat
-     */
-    public REPRESENTATION_FORMAT getDefaultRepresentationFormat() {
-        return defaultRepresentationFormat;
-    }
-
-    /**
-     * @return the configurationFileMap
-     */
-    public Map<String, Object> getConfigurationFileMap() {
-        return Collections.unmodifiableMap(configurationFileMap);
-    }
-
-    /**
-     * @return the level of metrics that will be collected (and above)
-     */
-    public METRICS_GATHERING_LEVEL getMetricsGatheringLevel() {
-        return metricsGatheringLevel;
-    }
-
-    /**
-     * decides whether metrics are gathered at the given log level or not
-     *
-     * @param level Metrics Gathering Level
-     * @return true if gathering Above Or Equal To Level
-     */
-    public boolean gatheringAboveOrEqualToLevel(METRICS_GATHERING_LEVEL level) {
-        return getMetricsGatheringLevel().compareTo(level) >= 0;
-    }
-
-    /**
-     * @return the cursorBatchSize
-     */
-    public int getCursorBatchSize() {
-        return cursorBatchSize;
-    }
-
-    /**
-     * @return the maxPagesize
-     */
-    public int getMaxPagesize() {
-        return maxPagesize;
-    }
-
-    /**
-     * @return the defaultPagesize
-     */
-    public int getDefaultPagesize() {
-        return defaultPagesize;
-    }
-
-    /**
-     *
-     * @return
-     */
     public boolean isAllowUnescapedCharactersInUrl() {
         return allowUnescapedCharactersInUrl;
     }
-    
+
     /**
-     * @return the pluginsDirectory
+     *
+     * @return the base URL of restheart proxy identified by proxy configuration
+     * property name="restheart"
+     * @throws ConfigurationException
      */
-    public String getPluginsDirectory() {
-        return pluginsDirectory;
+    public URI getRestheartBaseUrl() throws ConfigurationException {
+        var __proxyPass = Bootstrapper.getConfiguration().getProxies().stream()
+                .filter(e -> e.containsKey(ConfigurationKeys.PROXY_NAME))
+                .filter(e -> "restheart".equals(e.get(ConfigurationKeys.PROXY_NAME)))
+                .map(e -> e.get(ConfigurationKeys.PROXY_PASS_KEY))
+                .findFirst();
+
+        if (__proxyPass.isEmpty()) {
+            throw new ConfigurationException("No proxy pass defined "
+                    + "for proxy 'restheart'");
+        }
+
+        var _proxyPass = __proxyPass.get();
+
+        String proxyPass;
+
+        if (_proxyPass instanceof String) {
+            proxyPass = (String) _proxyPass;
+        } else if (_proxyPass instanceof List) {
+            var listOfProxyPass = (List) _proxyPass;
+
+            if (listOfProxyPass.isEmpty()
+                    || !(listOfProxyPass.get(0) instanceof String)) {
+                throw new ConfigurationException("Wrong proxy pass for proxy 'restheart' "
+                        + _proxyPass);
+            } else {
+                proxyPass = (String) listOfProxyPass.get(0);
+            }
+        } else {
+            throw new ConfigurationException("Wrong proxy pass for proxy 'restheart' "
+                    + _proxyPass);
+        }
+
+        try {
+            return URI.create(proxyPass);
+        }
+        catch (IllegalArgumentException ex) {
+            throw new ConfigurationException("Wrong proxy pass ULR "
+                    + proxyPass, ex);
+        }
     }
 
     /**
      *
+     * @return the location of restheart proxy identified by proxy configuration
+     * property name="restheart"
+     * @throws ConfigurationException
      */
-    public enum METRICS_GATHERING_LEVEL {
-        /**
-         * do not gather any metrics
-         */
-        OFF,
-        /**
-         * gather basic metrics (for all databases, but not specific per
-         * database)
-         */
-        ROOT,
-        /**
-         * gather basic metrics, and also specific per database (but not
-         * collection-specific)
-         */
-        DATABASE,
-        /**
-         * gather basic, database, and collection-specific metrics
-         */
-        COLLECTION
+    public URI getRestheartLocation() throws ConfigurationException {
+        var __proxyLocation = Bootstrapper.getConfiguration().getProxies().stream()
+                .filter(e -> e.containsKey(ConfigurationKeys.PROXY_NAME))
+                .filter(e -> "restheart".equals(e.get(ConfigurationKeys.PROXY_NAME)))
+                .map(e -> e.get(ConfigurationKeys.PROXY_LOCATION_KEY))
+                .findFirst();
+
+        if (__proxyLocation.isEmpty()) {
+            throw new ConfigurationException("No proxy pass defined "
+                    + "for proxy 'restheart'");
+        }
+
+        var _proxyLocation = __proxyLocation.get();
+
+        String proxyLocation;
+
+        if (_proxyLocation instanceof String) {
+            proxyLocation = (String) _proxyLocation;
+        } else {
+            throw new ConfigurationException("Wrong proxy location for proxy 'restheart' "
+                    + _proxyLocation);
+        }
+
+        try {
+            return URI.create(proxyLocation);
+        }
+        catch (IllegalArgumentException ex) {
+            throw new ConfigurationException("Wrong proxy location URI "
+                    + proxyLocation, ex);
+        }
+    }
+
+    /**
+     *
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key,
+            final List<Map<String, Object>> defaultValue) {
+        if (conf == null) {
+            if (!silent) {
+                LOGGER.trace("parameter {} not specified in the "
+                        + "configuration file. using its default value {}",
+                        key, defaultValue);
+            }
+
+            return defaultValue;
+        }
+
+        Object o = conf.get(key);
+
+        if (o == null) {
+            if (!silent) {
+                LOGGER.trace("configuration parameter {} not specified in the "
+                        + "configuration file, using its default value {}",
+                        key, defaultValue);
+            }
+            return defaultValue;
+        } else if (o instanceof List) {
+            try {
+                return (List<Map<String, Object>>) o;
+            }
+            catch (Throwable t) {
+                LOGGER.warn("wrong configuration parameter {}", key);
+                return defaultValue;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.warn("wrong configuration parameter {}, expecting an array of objects",
+                        key, defaultValue);
+            }
+            return defaultValue;
+        }
+    }
+
+    /**
+     *
+     * @param conf
+     * @param key
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, Object>> getAsMapOfMaps(
+            final Map<String, Object> conf,
+            final String key,
+            final Map<String, Map<String, Object>> defaultValue) {
+        if (conf == null) {
+            if (!silent) {
+                LOGGER.trace("parameter {} not specified in the "
+                        + "configuration file. using its default value {}",
+                        key, defaultValue);
+            }
+
+            return defaultValue;
+        }
+
+        Object o = conf.get(key);
+
+        if (o == null) {
+            if (!silent) {
+                LOGGER.trace("configuration parameter {} not specified in the "
+                        + "configuration file, using its default value {}",
+                        key, defaultValue);
+            }
+            return defaultValue;
+        } else if (o instanceof Map) {
+            try {
+                return (Map<String, Map<String, Object>>) o;
+            }
+            catch (Throwable t) {
+                LOGGER.warn("wrong configuration parameter {}", key);
+                return defaultValue;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.warn("wrong configuration parameter {}, expecting a map of maps",
+                        key, defaultValue);
+            }
+            return defaultValue;
+        }
+    }
+
+    /**
+     *
+     * @param conf
+     * @param key
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
+        if (conf == null) {
+            if (!silent) {
+                LOGGER.trace("parameter {} not specified in the "
+                        + "configuration file. using its default value {}",
+                        key, null);
+            }
+
+            return null;
+        }
+
+        Object o = conf.get(key);
+
+        if (o instanceof Map) {
+            try {
+                return (Map<String, Object>) o;
+            }
+            catch (Throwable t) {
+                LOGGER.warn("wrong configuration parameter {}", key);
+                return null;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.trace("configuration parameter {} not specified in the configuration file.", key);
+            }
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key, final List<String> defaultValue) {
+        if (conf == null || conf.get(key) == null) {
+            // if default value is null there is no default value actually
+            if (defaultValue != null && !silent) {
+                LOGGER.trace("parameter {} not specified in the configuration file."
+                        + " Using its default value {}", key, defaultValue);
+            }
+            return defaultValue;
+        } else if (conf.get(key) instanceof List) {
+            if (!silent) {
+                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
+            }
+
+            List<String> ret = ((List<String>) conf.get(key));
+
+            if (ret.isEmpty()) {
+                if (!silent) {
+                    LOGGER.warn("wrong value for parameter {}: {}."
+                            + " Using its default value {}", key, conf.get(key), defaultValue);
+                }
+                return defaultValue;
+            } else {
+                return ret;
+            }
+        } else {
+            if (!silent) {
+                LOGGER.warn("wrong value for parameter {}: {}."
+                        + " Using its default value {}", key, conf.get(key), defaultValue);
+            }
+            return defaultValue;
+        }
+    }
+
+    /**
+     *
+     * @param <V>
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @param silent
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public static <V extends Object> V getOrDefault(
+            final Map<String, Object> conf,
+            final String key,
+            final V defaultValue,
+            boolean silent) {
+
+        if (conf == null || conf.get(key) == null) {
+            // if default value is null there is no default value actually
+            if (defaultValue != null && !silent) {
+                LOGGER.warn("Parameter \"{}\" not specified in the configuration file. "
+                        + "using its default value \"{}\"", key, defaultValue);
+            }
+            return defaultValue;
+        }
+
+        try {
+            if (!silent) {
+                LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", key, conf.get(key));
+            }
+            return (V) conf.get(key);
+        }
+        catch (Throwable t) {
+            if (!silent) {
+                LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\". using its default value \"{}\"",
+                        key, conf.get(key), defaultValue);
+            }
+            return defaultValue;
+        }
+    }
+
+    /**
+     *
+     * @param key
+     * @return the environment or java property variable, if found
+     */
+    private static String overriddenValueFromEnv(final String key) {
+        String shellKey = "RESTHEART_SECURITY_" + key.toUpperCase().replaceAll("-", "_");
+        String envValue = System.getProperty(key);
+
+        if (envValue == null) {
+            envValue = System.getProperty(shellKey);
+        }
+
+        if (envValue == null) {
+            envValue = System.getenv(shellKey);
+        }
+        if (null != envValue) {
+            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
+                    shellKey, key, envValue);
+        }
+        return envValue;
+    }
+
+    private Boolean getAsBoolean(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Boolean.valueOf(envValue);
+        }
+        return getOrDefault(conf, key, defaultValue);
+    }
+
+    private String getAsString(final Map<String, Object> conf, final String key, final String defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return envValue;
+        }
+        return getOrDefault(conf, key, defaultValue);
+    }
+
+    private Integer getAsInteger(final Map<String, Object> conf, final String key, final Integer defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Integer.valueOf(envValue);
+        }
+        return getOrDefault(conf, key, defaultValue);
+    }
+
+    private Long getAsLong(final Map<String, Object> conf, final String key, final Long defaultValue) {
+        String envValue = overriddenValueFromEnv(key);
+        if (envValue != null) {
+            return Long.valueOf(envValue);
+        }
+        return getOrDefault(conf, key, defaultValue);
+    }
+
+    /**
+     * this checks if an old (< 2.0) configuration is found
+     *
+     * old format:
+     *
+     * <pre>
+     * auth-mechanisms:
+     *  - name: basicAuthMechanism
+     *    class: org.restheart.security.plugins.mechanisms.BasicAuthMechanism
+     *    args:
+     *      argParam1: value
+     *      argParam2: value
+     * </pre>
+     *
+     * new format
+     *
+     * <pre>
+     * auth-mechanisms:
+     *  - basicAuthMechanism:
+     *      argParam1: value
+     *      argParam2: value
+     * </pre>
+     *
+     * @param conf
+     * @return true if an old (< 2.0) configuration is found
+     */
+    private static boolean checkPre20Confs(List<Map<String, Object>> conf) {
+        return conf != null && conf.stream()
+                .anyMatch(e -> e.containsKey("name")
+                || e.containsKey("class")
+                || e.containsKey("args"));
+    }
+
+    private static boolean checkPre20Confs(Map<String, Map<String, Object>> conf) {
+        return conf != null && (conf.containsKey("name")
+                || conf.containsKey("class")
+                || conf.containsKey("args"));
     }
 }

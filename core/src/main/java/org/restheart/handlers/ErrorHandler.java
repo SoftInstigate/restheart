@@ -1,33 +1,26 @@
 /*
- * RESTHeart - the Web API for MongoDB
+ * RESTHeart Security
+ * 
  * Copyright (C) SoftInstigate Srl
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.restheart.handlers;
 
-import com.mongodb.MongoBulkWriteException;
-import com.mongodb.MongoException;
-import com.mongodb.MongoExecutionTimeoutException;
-import com.mongodb.MongoTimeoutException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.bulk.BulkResultRepresentationFactory;
-import org.restheart.handlers.transformers.RepresentationTransformer;
-import org.restheart.representation.Resource;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,25 +32,10 @@ public class ErrorHandler implements HttpHandler {
 
     private final HttpHandler next;
 
-    private final PipelinedHandler sender = PipelinedHandler.pipe(
-    new RepresentationTransformer(),
-    new ResponseSenderHandler());
-            
-//            new TransformersListHandler(
-//            new ResponseSenderHandler(null),
-//            PHASE.RESPONSE,
-//            new RepresentationTransformer());
+    private final PipelinedHandler sender = new ResponseSender(null);
 
     private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 
-    /**
-     * Creates a new instance of ErrorHandler
-     *
-     */
-    public ErrorHandler() {
-        this(null);
-    }
-    
     /**
      * Creates a new instance of ErrorHandler
      *
@@ -76,63 +54,13 @@ public class ErrorHandler implements HttpHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         try {
             next.handleRequest(exchange);
-        } catch (MongoTimeoutException nte) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Timeout connecting to MongoDB, is it running?", nte);
-
-            sender.handleRequest(exchange);
-        } catch (MongoExecutionTimeoutException mete) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    HttpStatus.SC_REQUEST_TIMEOUT,
-                    "Operation exceeded time limit"
-            );
-
-            sender.handleRequest(exchange);
-        } catch (MongoBulkWriteException mce) {
-            MongoBulkWriteException bmce = mce;
-
-            BulkResultRepresentationFactory rf = new BulkResultRepresentationFactory();
-
-            Resource rep = rf.getRepresentation(exchange, bmce);
-
-            ResponseHelper.endExchangeWithRepresentation(
-                    exchange,
-                    HttpStatus.SC_MULTI_STATUS,
-                    rep);
-
-            sender.handleRequest(exchange);
-        } catch (MongoException mce) {
-            int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
-
-            LOGGER.error("Error handling the request", mce);
-
-            if (httpCode >= 500
-                    && mce.getMessage() != null
-                    && !mce.getMessage().trim().isEmpty()) {
-
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        httpCode,
-                        mce.getMessage());
-
-            } else {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
-                        httpCode,
-                        ResponseHelper.getMessageFromErrorCode(mce.getCode()));
-            }
-
-            sender.handleRequest(exchange);
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
 
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            ByteArrayResponse.wrap(exchange).endExchangeWithMessage(
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Error handling the request, see log for more information", t);
+
             sender.handleRequest(exchange);
         }
     }

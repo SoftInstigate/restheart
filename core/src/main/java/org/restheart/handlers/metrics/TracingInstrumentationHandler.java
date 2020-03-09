@@ -12,26 +12,13 @@ import org.slf4j.MDC;
  * default way with "%X{name}", e.g. "%X{x-b3-traceid}".
  */
 public class TracingInstrumentationHandler extends PipelinedHandler {
-    /**
-     *
-     */
     public TracingInstrumentationHandler() {
-        this(null);
     }
     
-    /**
-     *
-     * @param next
-     */
-    public TracingInstrumentationHandler(PipelinedHandler next) {
+    public TracingInstrumentationHandler(final PipelinedHandler next) {
         super(next);
     }
 
-    /**
-     *
-     * @param exchange
-     * @throws Exception
-     */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         Bootstrapper.getConfiguration().getTraceHeaders()

@@ -1,62 +1,37 @@
 /*
- * RESTHeart - the Web API for MongoDB
+ * RESTHeart Security
+ * 
  * Copyright (C) SoftInstigate Srl
  * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * http://www.apache.org/licenses/LICENSE-2.0
  * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.restheart;
 
-import org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
-import org.restheart.representation.Resource;
+import static org.restheart.Configuration.DEFAULT_ROUTE;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface ConfigurationKeys {
-    /**
-     * default mongo uri mongodb://127.0.0.1
-     */
-    public static final String DEFAULT_MONGO_URI = "mongodb://127.0.0.1";
-
-    /**
-     *
-     */
-    public static final String DEFAULT_ROUTE = "127.0.0.1";
-
+    
     /**
      * default http listener.
      */
-    public static final boolean DEFAULT_AJP_LISTENER = true;
+    public static final boolean DEFAULT_HTTP_LISTENER = true;
     
     /**
-     * default ajp host 127.0.0.1.
-     */
-    public static final String DEFAULT_AJP_HOST = DEFAULT_ROUTE;
-
-    /**
-     * default ajp port 8009.
-     */
-    public static final int DEFAULT_AJP_PORT = 8009;
-
-    /**
-     * default http listener.
-     */
-    public static final boolean DEFAULT_HTTP_LISTENER = false;
-    
-    /**
-     * default http host 127.0.0.1.
+     * default http host 0.0.0.0.
      */
     public static final String DEFAULT_HTTP_HOST = DEFAULT_ROUTE;
 
@@ -68,10 +43,10 @@ public interface ConfigurationKeys {
     /**
      * default https listener.
      */
-    public static final boolean DEFAULT_HTTPS_LISTENER = false;
+    public static final boolean DEFAULT_HTTPS_LISTENER = true;
     
     /**
-     * default https host 127.0.0.1.
+     * default https host 0.0.0.0.
      */
     public static final String DEFAULT_HTTPS_HOST = DEFAULT_ROUTE;
 
@@ -81,88 +56,51 @@ public interface ConfigurationKeys {
     public static final int DEFAULT_HTTPS_PORT = 4443;
 
     /**
-     * default restheart instance name default
+     * default instance name
      */
     public static final String DEFAULT_INSTANCE_NAME = "default";
-    
+
     /**
      * the key for the log-file-path property.
      */
     public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
-
-    /**
-     * default represetation format
-     */
-    public static final Resource.REPRESENTATION_FORMAT DEFAULT_REPRESENTATION_FORMAT
-            = Resource.REPRESENTATION_FORMAT.STANDARD;
-
-    /**
-     * the key for the pluging-args property.
-     */
-    public static final String PLUGINS_ARGS_KEY = "plugins-args";
     
     /**
-     * the key for the plugin enabled property.
+     * the key for the services property.
+     * @deprecated services are now configured in plugins-args section
      */
-    public static final String PLUGIN_ENABLED_KEY = "enabled";
-    
-    /**
-     * default db etag check policy
-     */
-    public static final ETAG_CHECK_POLICY DEFAULT_DB_ETAG_CHECK_POLICY
-            = ETAG_CHECK_POLICY.REQUIRED_FOR_DELETE;
+    @Deprecated
+    public static final String SERVICES_KEY = "services";
 
     /**
-     * default coll etag check policy
+     * the key for the args property.
      */
-    public static final ETAG_CHECK_POLICY DEFAULT_COLL_ETAG_CHECK_POLICY
-            = ETAG_CHECK_POLICY.REQUIRED_FOR_DELETE;
+    public static final String ARGS_KEY = "args";
 
     /**
-     * default doc etag check policy
+     * the key for the name property.
      */
-    public static final ETAG_CHECK_POLICY DEFAULT_DOC_ETAG_CHECK_POLICY
-            = ETAG_CHECK_POLICY.OPTIONAL;
+    public static final String NAME_KEY = "name";
 
     /**
-     * default doc etag check policy
+     * the key for the uri property.
      */
-    public static final int DEFAULT_MAX_DOC_ETAG_CHECK_POLICY = 1000;
+    public static final String SERVICE_URI_KEY = "uri";
 
     /**
-     * default value for max-pagesize
+     * the key for the secured property.
      */
-    public static final int DEFAULT_MAX_PAGESIZE = 1000;
-
-    /**
-     * default value for max-pagesize
-     */
-    public static final int DEFAULT_DEFAULT_PAGESIZE = 100;
-
-    /**
-     * default value for cursor batch size
-     */
-    public static final int DEFAULT_CURSOR_BATCH_SIZE = 1000;
+    public static final String SERVICE_SECURED_KEY = "secured";
 
     /**
      * the key for the local-cache-enabled property.
      */
     public static final String LOCAL_CACHE_ENABLED_KEY = "local-cache-enabled";
-
+    
     /**
-     * the key for the local-cache-ttl property.
+     * the key for the requests-log-tracing-headers property.
      */
-    public static final String LOCAL_CACHE_TTL_KEY = "local-cache-ttl";
-
-    /**
-     * the key for the schema-cache-enabled property.
-     */
-    public static final String SCHEMA_CACHE_ENABLED_KEY = "schema-cache-enabled";
-
-    /**
-     * the key for the schema-cache-ttl property.
-     */
-    public static final String SCHEMA_CACHE_TTL_KEY = "schema-cache-ttl";
+    public static final String REQUESTS_LOG_TRACE_HEADERS_KEY = "requests-log-trace-headers";
 
     /**
      * the key for the force-gzip-encoding property.
@@ -195,21 +133,6 @@ public interface ConfigurationKeys {
     public static final String REQUESTS_LIMIT_KEY = "requests-limit";
 
     /**
-     * the key for the query-time-limit property.
-     */
-    public static final String QUERY_TIME_LIMIT_KEY = "query-time-limit";
-
-    /**
-     * the key for the aggregation-time-limit property
-     */
-    public static final String AGGREGATION_TIME_LIMIT_KEY = "aggregation-time-limit";
-
-    /**
-     * The key for enabling check that aggregation variables contains operators.
-     */
-    public static final String AGGREGATION_CHECK_OPERATORS = "aggregation-check-operators";
-
-    /**
      * the key for the enable-log-file property.
      */
     public static final String ENABLE_LOG_FILE_KEY = "enable-log-file";
@@ -230,89 +153,84 @@ public interface ConfigurationKeys {
     public static final String LOG_FILE_PATH_KEY = "log-file-path";
 
     /**
-     * the key for the requests-log-tracing-headers property.
+     * the key for the class property.
      */
-    public static final String REQUESTS_LOG_TRACE_HEADERS_KEY = "requests-log-trace-headers";
+    public static final String CLASS_KEY = "class";
 
     /**
-     * the key for the implementation-class property.
+     * the key for the authorizers property.
      */
-    public static final String IMPLEMENTATION_CLASS_KEY = "implementation-class";
+    public static final String AUTHORIZERS_KEY = "authorizers";
 
     /**
-     * the key for the idm property.
+     * the key for the authenticators property.
      */
-    public static final String IDM_KEY = "idm";
+    public static final String AUTHENTICATORS_KEY = "authenticators";
 
     /**
-     * the key for the mongo-uri property.
+     * the key for the auth Mechanism.
      */
-    public static final String MONGO_URI_KEY = "mongo-uri";
+    public static final String AUTH_MECHANISMS_KEY = "auth-mechanisms";
 
     /**
-     * the key for the mongo-mounts property.
+     * the key for the proxies property.
      */
-    public static final String MONGO_MOUNTS_KEY = "mongo-mounts";
-
-    /**
-     * the key for the what property.
-     */
-    public static final String MONGO_MOUNT_WHAT_KEY = "what";
-
-    /**
-     * the key for the where property.
-     */
-    public static final String MONGO_MOUNT_WHERE_KEY = "where";
+    public static final String PROXY_KEY = "proxies";
     
     /**
-     * the default value for the where mongo-mount property.
+     * the key for the location property.
      */
-    public static final String  DEFAULT_MONGO_MOUNT_WHERE = "/";
+    public static final String PROXY_LOCATION_KEY = "location";
+
+    /**
+     * the key for the proxy-pass property.
+     */
+    public static final String PROXY_PASS_KEY = "proxy-pass";
     
     /**
-     * the default value for the waht mongo-mount property.
+     * the key for the proxy name property.
      */
-    public static final String  DEFAULT_MONGO_MOUNT_WHAT = "/restheart";
+    public static final String PROXY_NAME = "name";
 
+    /**
+     * the key for the rewrite-host-header.
+     */
+    public static final String PROXY_REWRITE_HOST_HEADER = "rewrite-host-header";
+
+    /**
+     * the key for the connections-per-thread property.
+     */
+    public static final String PROXY_CONNECTIONS_PER_THREAD = "connections-per-thread";
+
+    /**
+     * the key for the max-queue-size property.
+     */
+    public static final String PROXY_MAX_QUEUE_SIZE = "max-queue-size";
+
+    /**
+     * the key for the soft-max-connections-per-thread property.
+     */
+    public static final String PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD = "soft-max-connections-per-thread";
+
+    /**
+     * the key for the connections-ttl property.
+     */
+    public static final String PROXY_TTL = "connections-ttl";
+
+    /**
+     * the key for the problem-server-retry property.
+     */
+    public static final String PROXY_PROBLEM_SERVER_RETRY = "problem-server-retry";
+
+    /**
+     * the key for the pluging-args property.
+     */
+    public static final String PLUGINS_ARGS_KEY = "plugins-args";
+    
     /**
      * the key for the auth-db property.
      */
     public static final String MONGO_AUTH_DB_KEY = "auth-db";
-
-    /**
-     * the key for the password property.
-     */
-    public static final String MONGO_PASSWORD_KEY = "password";
-
-    /**
-     * the key for the user property.
-     */
-    public static final String MONGO_USER_KEY = "user";
-
-    /**
-     * the key for the static-resources-mounts property.
-     */
-    public static final String STATIC_RESOURCES_MOUNTS_KEY = "static-resources-mounts";
-
-    /**
-     * the key for the what property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_WHAT_KEY = "what";
-
-    /**
-     * the key for the where property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_WHERE_KEY = "where";
-
-    /**
-     * the key for the welcome-file property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY = "welcome-file";
-
-    /**
-     * the key for the embedded property.
-     */
-    public static final String STATIC_RESOURCES_MOUNT_EMBEDDED_KEY = "embedded";
 
     /**
      * the key for the certpassword property.
@@ -333,21 +251,6 @@ public interface ConfigurationKeys {
      * the key for the use-embedded-keystore property.
      */
     public static final String USE_EMBEDDED_KEYSTORE_KEY = "use-embedded-keystore";
-
-    /**
-     * the key for the ajp-host property.
-     */
-    public static final String AJP_HOST_KEY = "ajp-host";
-
-    /**
-     * the key for the ajp-port property.
-     */
-    public static final String AJP_PORT_KEY = "ajp-port";
-
-    /**
-     * the key for the ajp-listener property.
-     */
-    public static final String AJP_LISTENER_KEY = "ajp-listener";
 
     /**
      * the key for the http-host property.
@@ -385,75 +288,9 @@ public interface ConfigurationKeys {
     public static final String INSTANCE_NAME_KEY = "instance-name";
 
     /**
-     * the key for the instance-base-url property.
+     * the key for the tokenManager property.
      */
-    public static final String INSTANCE_BASE_URL_KEY = "instance-base-url";
-
-    /**
-     * the key for the instance-name property.
-     */
-    public static final String REPRESENTATION_FORMAT_KEY = "default-representation-format";
-
-    /**
-     * the key for the eager-cursor-allocation-pool-size property.
-     */
-    public static final String EAGER_POOL_SIZE = "eager-cursor-allocation-pool-size";
-
-    /**
-     * the key for the eager-cursor-allocation-linear-slice-width property.
-     */
-    public static final String EAGER_LINEAR_SLICE_WIDHT = "eager-cursor-allocation-linear-slice-width";
-
-    /**
-     * the key for the eager-cursor-allocation-linear-slice-delta property.
-     */
-    public static final String EAGER_LINEAR_SLICE_DELTA = "eager-cursor-allocation-linear-slice-delta";
-
-    /**
-     * the key for the eager-cursor-allocation-linear-slice-heights property.
-     */
-    public static final String EAGER_LINEAR_HEIGHTS = "eager-cursor-allocation-linear-slice-heights";
-
-    /**
-     * the key for the eager-cursor-allocation-random-slice-min-width property.
-     */
-    public static final String EAGER_RND_SLICE_MIN_WIDHT = "eager-cursor-allocation-random-slice-min-width";
-
-    /**
-     * the key for the eager-cursor-allocation-random-slice-max-cursors
-     * property.
-     */
-    public static final String EAGER_RND_MAX_CURSORS = "eager-cursor-allocation-random-max-cursors";
-
-    /**
-     * the key for the auth-token-enabled property.
-     */
-    public static final String AUTH_TOKEN_ENABLED = "auth-token-enabled";
-
-    /**
-     * the key for the auth-token-ttl property.
-     */
-    public static final String AUTH_TOKEN_TTL = "auth-token-ttl";
-
-    /**
-     * the key for the etag-check-policy property.
-     */
-    public static final String ETAG_CHECK_POLICY_KEY = "etag-check-policy";
-
-    /**
-     * the key for the etag-check-policy.db property.
-     */
-    public static final String ETAG_CHECK_POLICY_DB_KEY = "db";
-
-    /**
-     * the key for the etag-check-policy.coll property.
-     */
-    public static final String ETAG_CHECK_POLICY_COLL_KEY = "coll";
-
-    /**
-     * the key for the etag-check-policy.doc property.
-     */
-    public static final String ETAG_CHECK_POLICY_DOC_KEY = "doc";
+    public static final String TOKEN_MANAGER = "token-manager";
 
     /**
      * Force http requests logging even if DEBUG is not set
@@ -461,34 +298,25 @@ public interface ConfigurationKeys {
     public static final String LOG_REQUESTS_LEVEL_KEY = "requests-log-level";
 
     /**
-     * Set metrics gathering level (can be ALL, COLLECTION, DATABASE, ROOT,
-     * OFF), gradually gathering less specific metrics. Every level contain the
-     * upper level as well.
-     */
-    public static final String METRICS_GATHERING_LEVEL_KEY = "metrics-gathering-level";
-
-    /**
      * The key for enabling the Ansi console (for logging with colors)
      */
     public static final String ANSI_CONSOLE_KEY = "ansi-console";
 
     /**
-     * The key for specifying the max pagesize
-     */
-    public static final String MAX_PAGESIZE_KEY = "max-pagesize";
-
-    /**
-     * The key for specifying the default pagesize
-     */
-    public static final String DEFAULT_PAGESIZE_KEY = "default-pagesize";
-
-    /**
-     * The key for specifying the cursor batch size
-     */
-    public static final String CURSOR_BATCH_SIZE_KEY = "cursor-batch-size";
-
-    /**
      * The key to allow unescaped chars in URL
      */
-    public static final String ALLOW_UNESCAPED_CHARS_IN_URL = "allow-unescaped-characters-in-url";
+    public static final String ALLOW_UNESCAPED_CHARACTERS_IN_URL = "allow-unescaped-characters-in-url";
+
+    /**
+     * The key to enable plugins
+     */
+    public static final String PLUGIN_ENABLED_KEY = "enabled";
+    
+    /**
+     * undertow connetction options
+     *
+     * @see
+     * http://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#common-listener-optionshttp://undertow.io/undertow-docs/undertow-docs-1.3.0/index.html#common-listener-options
+     */
+    public static final String CONNECTION_OPTIONS_KEY = "connection-options";
 }

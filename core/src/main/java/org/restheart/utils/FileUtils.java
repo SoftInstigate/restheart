@@ -1,19 +1,19 @@
 /*
- * RESTHeart - the Web API for MongoDB
+ * RESTHeart Security
+ *
  * Copyright (C) SoftInstigate Srl
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.restheart.utils;
 
@@ -61,11 +61,6 @@ public class FileUtils {
     private static final Path DEFAULT_PID_DIR = new File("/var/run").toPath();
     private static final Path TMP_DIR = new File(System.getProperty("java.io.tmpdir")).toPath();
 
-    /**
-     *
-     * @param path
-     * @return
-     */
     public static Path getFileAbsolutePath(String path) {
         if (path == null) {
             return null;
@@ -74,12 +69,6 @@ public class FileUtils {
         return FileSystems.getDefault().getPath(path).toAbsolutePath();
     }
 
-    /**
-     *
-     * @param confFilePath
-     * @param propFilePath
-     * @return
-     */
     public static int getFileAbsolutePathHash(Path confFilePath, Path propFilePath) {
         if (confFilePath == null) {
             return 0;
@@ -88,25 +77,12 @@ public class FileUtils {
         return Objects.hash(confFilePath, propFilePath);
     }
 
-    /**
-     *
-     * @param args
-     * @return
-     * @throws ConfigurationException
-     */
     public static Configuration getConfiguration(String[] args) throws ConfigurationException {
         return getConfiguration(getConfigurationFilePath(args),
                 getPropertiesFilePath(args),
                 false);
     }
 
-    /**
-     *
-     * @param args
-     * @param silent
-     * @return
-     * @throws ConfigurationException
-     */
     public static Configuration getConfiguration(String[] args, boolean silent) throws ConfigurationException {
         return getConfiguration(
                 getConfigurationFilePath(args),
@@ -114,14 +90,6 @@ public class FileUtils {
                 silent);
     }
 
-    /**
-     *
-     * @param configurationFilePath
-     * @param propsFilePath
-     * @param silent
-     * @return
-     * @throws ConfigurationException
-     */
     public static Configuration getConfiguration(Path configurationFilePath, Path propsFilePath, boolean silent) throws ConfigurationException {
         if (configurationFilePath != null) {
             if (propsFilePath != null) {
@@ -158,11 +126,6 @@ public class FileUtils {
         }
     }
 
-    /**
-     *
-     * @param args
-     * @return
-     */
     public static Path getConfigurationFilePath(String[] args) {
         if (args != null) {
             for (String arg : args) {
@@ -174,57 +137,39 @@ public class FileUtils {
 
         return null;
     }
-
-    /**
-     *
-     * @param args
-     * @return
-     */
+    
     public static Path getPropertiesFilePath(String[] args) {
         if (args != null) {
             var _args = Arrays.asList(args);
-
+            
             var opt = _args.indexOf("-e");
-
+            
             return opt < 0
                     ? null
-                    : _args.size() <= opt + 1
+                    : _args.size() <= opt+1 
                     ? null
-                    : getFileAbsolutePath(_args.get(opt + 1));
+                    : getFileAbsolutePath(_args.get(opt+1));
         }
 
         return null;
     }
 
-    /**
-     *
-     * @return
-     */
     public static Path getTmpDirPath() {
         return TMP_DIR;
     }
 
-    /**
-     *
-     * @param configurationFileHash
-     * @return
-     */
     public static Path getPidFilePath(int configurationFileHash) {
         if (OSChecker.isWindows()) {
             return null;
         }
 
         if (Files.isWritable(DEFAULT_PID_DIR)) {
-            return DEFAULT_PID_DIR.resolve("restheart-" + configurationFileHash + ".pid");
+            return DEFAULT_PID_DIR.resolve("restheart-security-" + configurationFileHash + ".pid");
         } else {
-            return TMP_DIR.resolve("restheart-" + configurationFileHash + ".pid");
+            return TMP_DIR.resolve("restheart-security-" + configurationFileHash + ".pid");
         }
     }
 
-    /**
-     *
-     * @param pidFile
-     */
     public static void createPidFile(Path pidFile) {
         if (OSChecker.isWindows()) {
             LOGGER.warn("this method is not supported on Windows.");
@@ -237,11 +182,6 @@ public class FileUtils {
         }
     }
 
-    /**
-     *
-     * @param pidFile
-     * @return
-     */
     public static int getPidFromFile(Path pidFile) {
         try {
             try (BufferedReader br = new BufferedReader(new FileReader(pidFile.toFile()))) {
@@ -261,10 +201,6 @@ public class FileUtils {
         }
     }
 
-    /**
-     *
-     * @return
-     */
     public static Set<Entry<Object, Object>> findManifestInfo() {
         Set<Entry<Object, Object>> result = null;
         try {
@@ -275,7 +211,7 @@ public class FileUtils {
                 Manifest manifest = new Manifest(manifestUrl.openStream());
                 Attributes mainAttributes = manifest.getMainAttributes();
                 String implementationTitle = mainAttributes.getValue("Implementation-Title");
-                if (implementationTitle != null && implementationTitle.equalsIgnoreCase("Restheart")) {
+                if (implementationTitle != null && implementationTitle.toLowerCase().startsWith("restheart")) {
                     result = mainAttributes.entrySet();
                     break;
                 }
