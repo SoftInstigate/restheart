@@ -1,5 +1,5 @@
 /*
- * RESTHeart Security
+ * RESTHeart
  *
  * Copyright (C) SoftInstigate Srl
  *
@@ -46,19 +46,19 @@ public class Shutdowner {
         try {
             shutdown(args);
         } catch (IllegalStateException ise) {
-            LOGGER.error("RESTHeart Security instance pid file not found.");
+            LOGGER.error("RESTHeart instance pid file not found.");
             printHelp();
         }
     }
 
     protected static void shutdown(final String[] args) {
         if (FileUtils.getConfigurationFilePath(args) == null) {
-            LOGGER.info("Shutting down RESTHeart Security instance run without configuration file");
+            LOGGER.info("Shutting down RESTHeart instance run without configuration file");
         } else if (FileUtils.getPropertiesFilePath(args) == null) {
-            LOGGER.info("Shutting down RESTHeart Security instance run with configuration file {}", 
+            LOGGER.info("Shutting down RESTHeart instance run with configuration file {}", 
                     FileUtils.getConfigurationFilePath(args));
         } else {
-            LOGGER.info("Shutting down RESTHeart Security instance run with configuration file {} and property file {}", 
+            LOGGER.info("Shutting down RESTHeart instance run with configuration file {} and property file {}", 
                     FileUtils.getConfigurationFilePath(args),
                     FileUtils.getPropertiesFilePath(args));
         }
@@ -100,10 +100,10 @@ public class Shutdowner {
     }
 
     static void printHelp() {
-        LOGGER.info("usage: java -cp restheart-security.jar org.restheart.security.Shutdowner [configuration file] [-e properties file].");
-        LOGGER.info("java -cp restheart-security.jar org.restheart.security.Shutdowner --help \u2192 prints this help message and exits.");
-        LOGGER.info("java -cp restheart-security.jar org.restheart.security.Shutdowner \u2192 shutdown RESTHeart Security instance run without specifying the configuration file.");
-        LOGGER.info(" java -cp restheart-security.jar org.restheart.security.Shutdowner restheart-security.yml -e default.properties \u2192 shutdown RESTHeart Security instance run with configuration and properties files.");
+        LOGGER.info("usage: java -cp restheart.jar org.restheart.Shutdowner [configuration file] [-e properties file].");
+        LOGGER.info("java -cp restheart.jar org.restheart.Shutdowner --help \u2192 prints this help message and exits.");
+        LOGGER.info("java -cp restheart.jar org.restheart.Shutdowner \u2192 shutdown RESTHeart instance run without specifying the configuration file.");
+        LOGGER.info(" java -cp restheart.jar org.restheart.Shutdowner restheart.yml -e default.properties \u2192 shutdown RESTHeart instance run with configuration and properties files.");
         LOGGER.info("NOTE: shutdown is not supported on windows.");
     }
 
