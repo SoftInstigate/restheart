@@ -17,7 +17,7 @@
             <passphrase>${GPG_PASSPHRASE}</passphrase>
         </server>
     </servers>
-    
+
     <profiles>
         <profile>
             <id>ossrh</id>
@@ -29,7 +29,6 @@
                 <gpg.keyname>${GPG_KEY_NAME}</gpg.keyname>
                 <gpg.passphrase>${GPG_PASSPHRASE}</gpg.passphrase>
             </properties>
-
         </profile>
     </profiles>
 </settings>
