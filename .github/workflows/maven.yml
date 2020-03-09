@@ -36,7 +36,7 @@ jobs:
       run: mvn -B package --file pom.xml
 
     - name: Initialize MongoDB replica set
-      run: docker run -it --rm --net=mongo-cluster mongo:4.2 mongo --host mongo1 --eval "rs.initiate()"
+      run: docker run --rm --net=mongo-cluster mongo:4.2 mongo --host mongo1 --eval "rs.initiate()"
 
     - name: Integration Tests
       run: mvn -B verify -DskipITs=false -Dkarate.options=""
