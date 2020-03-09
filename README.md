@@ -6,7 +6,7 @@
 
 # RESTHeart - REST API Microservice for MongoDB. #
 
-[![Build Status](https://travis-ci.org/SoftInstigate/restheart.svg?branch=master)](https://travis-ci.org/SoftInstigate/restheart)
+[![Build Status](https://github.com/SoftInstigate/restheart/workflows/Java%20CI%20with%20Maven/badge.svg)
 [![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.restheart%22%20AND%20a:%22restheart%22)
 [![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
@@ -47,12 +47,12 @@ For these reasons, RESTHeart is widely used by freelancers, Web agencies and Sys
 
 For more ideas have a look at the collection of common [use cases](https://restheart.org/use-cases/).
 
-Starting from RESTHeart v4, security is handled by [restheart-security](https://github.com/SoftInstigate/restheart-security), which is a __reverse proxy microservice__ for HTTP resources, providing __Authentication__ and __Authorization__ services. 
+Starting from RESTHeart v4, security is handled by [restheart-security](https://github.com/SoftInstigate/restheart-security), which is a __reverse proxy microservice__ for HTTP resources, providing __Authentication__ and __Authorization__ services.
 
 > The commercial **RESTHeart Platform** provides a simpler and more powerful setup and configuration process. It also comes with support plans and enterprise-level additional features, such as:
 >
 > - [Transactions](https://restheart.org/docs/transactions/)
-> - [Change Streams](https://restheart.org/docs/change-streams) 
+> - [Change Streams](https://restheart.org/docs/change-streams)
 > - [JWT Authentication](https://restheart.org/docs/security/authentication/#jwt-authentication)
 > - [RESTHeart Authenticator](https://restheart.org/docs/security/authentication/#restheart-authenticator) with users defined in the database
 > - [RESTHeart Authorizer](https://restheart.org/docs/security/authorization/#restheart-authorizer) with ACL defined in the database and role-based data filter capabilities
@@ -105,8 +105,8 @@ $ curl --user admin:secret -I -X PUT :8080/collection
 HTTP/1.1 201 OK
 
 # create a couple of documents
-$ curl --user admin:secret -X POST :8080/collection -d '{"a":1}' -H "Content-Type: application/json" 
-$ curl --user admin:secret -X POST :8080/collection -d '{"a":2}' -H "Content-Type: application/json" 
+$ curl --user admin:secret -X POST :8080/collection -d '{"a":1}' -H "Content-Type: application/json"
+$ curl --user admin:secret -X POST :8080/collection -d '{"a":2}' -H "Content-Type: application/json"
 
 # get documents
 $ curl --user admin:secret :8080/collection
@@ -127,7 +127,7 @@ The following configuration files can be overwritten, by uncommenting the volume
 For instance, in order to overwrite the `users.yml` file, create the file `etc/users.yml` and uncomment the the volumes property of the restheart-security service:
 
 ```properties
-    # uncomment to overwrite the configuration files   
+    # uncomment to overwrite the configuration files
     volumes:
     #    - ./etc/restheart-security.yml:/opt/restheart/etc/restheart-security.yml:ro
     #    - ./etc/default-security.properties:/opt/restheart/etc/default-security.properties:ro
@@ -152,7 +152,7 @@ Download the latest releases of *restheart* and *restheart-security* from the fo
 - [download restheart](https://github.com/SoftInstigate/restheart/releases/latest)
 - [download restheart-security](https://github.com/SoftInstigate/restheart-security/releases/latest)
 
-Depending on the packages you downloaded, unzip or untar them: 
+Depending on the packages you downloaded, unzip or untar them:
 
 ```bash
 $ unzip restheart-<version>.zip
@@ -181,7 +181,7 @@ $ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
 By default RESTHeart only mounts the database `restheart`. This is controlled by the `root-mongo-resource` in the `restheart/etc/default.properties` file
 
 ```properties
-# The MongoDb resource to bind to the root URI / 
+# The MongoDb resource to bind to the root URI /
 # The format is /db[/coll[/docid]] or '*' to expose all dbs
 root-mongo-resource = /restheart
 ```
@@ -195,7 +195,7 @@ $ cd restheart-security-<version>
 
 $ java -jar restheart-security.jar etc/restheart-security.yml -e etc/default.properties
 ```
- 
+
 __NOTE__: for security reasons RESTHeart Security by default only binds on `localhost`, so it won't be reachable from external systems unless you edit the configuration. To accept connections from everywhere, you must set the http listener in the `restheart-security/etc/default.properties` file to bind to `0.0.0.0` like this:
 
 ```properties
@@ -210,7 +210,7 @@ $ cd restheart
 $ java -jar restheart.jar etc/restheart.yml -e etc/standalone.properties
 ```
 
-`restheart` will start bound on HTTP port `8080`. 
+`restheart` will start bound on HTTP port `8080`.
 
 ### Configuration
 
@@ -248,9 +248,9 @@ $ mvn verify -DskipITs=false
 Alternatively, if you have Docker, execute the following script:
 
 ```bash
-$ ./bin/integration-tests.sh 
+$ ./bin/integration-tests.sh
 ```
-    
+
 The script starts a Docker container running MongoDB and then execute the integration tests with Maven. It will clean-up the container at the end.
 
 ## Maven Dependencies
