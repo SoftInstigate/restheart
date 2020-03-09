@@ -66,7 +66,7 @@ Scenario: Get document with jsonMode=relaxed
     And param jsonMode = "relaxed"
     When method GET
     Then assert responseStatus == 200
-    And match response.int. == 1
+    And match response.int == 1
     And match response.double == 1.0
     And match response.long == 1000000000
     And match response.timestamp.$date == "2019-09-12T13:42:49.26Z"
