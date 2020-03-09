@@ -6,7 +6,7 @@
 
 # RESTHeart - REST API Microservice for MongoDB. #
 
-[![Build Status](https://github.com/SoftInstigate/restheart/workflows/Java%20CI%20with%20Maven/badge.svg)]
+![Java CI with Maven](https://github.com/SoftInstigate/restheart/workflows/Java%20CI%20with%20Maven/badge.svg)
 [![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.restheart%22%20AND%20a:%22restheart%22)
 [![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
