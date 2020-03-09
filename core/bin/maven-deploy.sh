@@ -19,6 +19,8 @@ if [[ "$MAVEN_DEPLOY" == "true" && "$TRAVIS_PULL_REQUEST" == "false" ]]; then
             #mvn site --settings deploy-settings.xml -P report -Dmaven.test.skip=true
         fi
         echo "###### Deploy to Maven Central"
+        GPG_TTY=$(tty)
+        export GPG_TTY
         mvn deploy -s settings.xml -P release -Dmaven.test.skip=true
     else
         echo "###### ERROR! Variable RESTHEART_VERSION is undefined"
