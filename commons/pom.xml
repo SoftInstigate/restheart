@@ -9,34 +9,14 @@
     </parent>
 
     <groupId>org.restheart</groupId>
-    <artifactId>restheart-common</artifactId>
+    <artifactId>restheart-commons</artifactId>
     <packaging>jar</packaging>
 
     <description>
-        RESTHeart Common - Common classes for RESTHeart.
+        RESTHeart Commons - Common classes for RESTHeart.
     </description>
     <url>https://restheart.org</url>
     <inceptionYear>2019</inceptionYear>
-
-    <!-- Project Information -->
-    <issueManagement>
-        <url>https://github.com/SoftInstigate/restheart-common/issues</url>
-        <system>GitHub Issues</system>
-    </issueManagement>
-
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub SoftInstigate Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/SoftInstigate/restheart-common</url>
-        </repository>
-    </distributionManagement>
-
-    <scm>
-        <url>https://github.com/SoftInstigate/restheart-common</url>
-        <connection>scm:git:git@github.com:SoftInstigate/restheart-common.git</connection>
-        <developerConnection>scm:git:git@github.com:SoftInstigate/restheart-common</developerConnection>
-    </scm>
 
     <dependencies>
         <!-- update undertow dependency to avoid warning log message:
