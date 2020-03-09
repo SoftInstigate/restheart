@@ -9,7 +9,7 @@
     </parent>
 
     <groupId>org.restheart</groupId>
-    <artifactId>restheart-common</artifactId>
+    <artifactId>restheart-commons</artifactId>
     <packaging>jar</packaging>
 
     <description>
@@ -109,4 +109,5 @@
             </plugin>
         </plugins>
     </build>
+    <name>restheart-commons</name>
 </project>
