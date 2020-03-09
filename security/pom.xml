@@ -29,17 +29,6 @@
         <url>https://softinstigate.com</url>
     </organization>
 
-    <issueManagement>
-        <url>https://github.com/SoftInstigate/restheart-security/issues</url>
-        <system>GitHub Issues</system>
-    </issueManagement>
-
-    <scm>
-        <url>https://github.com/SoftInstigate/restheart-security</url>
-        <connection>scm:git:git@github.com:SoftInstigate/restheart-security.git</connection>
-        <developerConnection>scm:git:git@github.com:SoftInstigate/restheart-security</developerConnection>
-    </scm>
-
     <dependencies>
         <dependency>
             <groupId>org.restheart</groupId>
