@@ -17,7 +17,6 @@
  */
 package org.restheart.security.utils;
 
-import org.restheart.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -29,6 +28,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

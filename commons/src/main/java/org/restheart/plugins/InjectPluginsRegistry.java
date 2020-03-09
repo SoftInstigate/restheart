@@ -1,5 +1,5 @@
 /*
- * RESTHeart Security
+ * RESTHeart Common
  * 
  * Copyright (C) SoftInstigate Srl
  * 
@@ -15,9 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.restheart.plugins;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
- * Handlers for HTTP requests
- * 
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ * A Plugin annotation that sets a method (or constructor) to get
+ * the PluginRegistry
+ *
+ * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-package org.restheart.security.handlers;
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.CONSTRUCTOR, ElementType.METHOD})
+public @interface InjectPluginsRegistry {
+
+}

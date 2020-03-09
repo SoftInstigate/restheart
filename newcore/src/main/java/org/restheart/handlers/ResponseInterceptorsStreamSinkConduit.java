@@ -24,7 +24,7 @@ import java.nio.channels.FileChannel;
 import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.security.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
@@ -69,7 +69,7 @@ public class ResponseInterceptorsStreamSinkConduit
 
     private void executeResponseInterceptor(HttpServerExchange exchange) {
         AbstractExchange.setResponseInterceptorsExecuted(exchange);
-        PluginsRegistry.getInstance()
+        PluginsRegistryImpl.getInstance()
                 .getInterceptors()
                 .stream()
                 .filter(i -> interceptPoint(
@@ -108,7 +108,7 @@ public class ResponseInterceptorsStreamSinkConduit
 
     private void executeAsyncResponseInterceptor(HttpServerExchange exchange) {
         AbstractExchange.setResponseInterceptorsExecuted(exchange);
-        PluginsRegistry.getInstance()
+        PluginsRegistryImpl.getInstance()
                 .getInterceptors()
                 .stream()
                 .filter(i -> interceptPoint(

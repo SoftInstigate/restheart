@@ -34,16 +34,17 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.ConfigurablePlugin;
-import org.restheart.plugins.OnInit;
+import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.TokenManager;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
-import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.authenticators.PwdCredentialAccount;
 import org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor;
-import org.restheart.security.utils.URLUtils;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,13 +64,17 @@ public class RndTokenManager implements TokenManager {
     private final int ttl;
     private final String srvURI;
 
-    @OnInit
-    public RndTokenManager(Map<String, Object> confArgs)
+    @InjectConfiguration
+    @InjectPluginsRegistry
+    public RndTokenManager(Map<String, Object> confArgs,
+            PluginsRegistry pluginsRegistry)
             throws ConfigurationException {
-        this("rndTokenManager", confArgs);
+        this("rndTokenManager", confArgs, pluginsRegistry);
     }
-
-    public RndTokenManager(String name, Map<String, Object> confArgs)
+    
+    private RndTokenManager(String name, 
+            Map<String, Object> confArgs, 
+            PluginsRegistry pluginsRegistry)
             throws ConfigurationException {
         this.ttl = ConfigurablePlugin.argValue(confArgs, "ttl");
 
@@ -85,7 +90,7 @@ public class RndTokenManager implements TokenManager {
             AUTH_TOKEN_VALID_HEADER.toString(),
             AUTH_TOKEN_LOCATION_HEADER.toString()};
 
-        var ti = PluginsRegistry.getInstance().getInterceptors()
+        var ti = pluginsRegistry.getInterceptors()
                 .stream().filter(i -> 
                         "tokenCORSResponseInterceptor".equals(i.getName()))
                 .findFirst();

@@ -17,14 +17,14 @@
  */
 package org.restheart.security.handlers;
 
-import org.restheart.handlers.CORSHandler;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
+import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.Authorizer;
-import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.security.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -95,7 +95,7 @@ public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
      * @return true if all global security predicates resolve the request
      */
     private boolean checkGlobalPredicates(HttpServerExchange exchange) {
-        return PluginsRegistry.getInstance()
+        return PluginsRegistryImpl.getInstance()
                 .getGlobalSecurityPredicates()
                 .stream()
                 .allMatch(predicate -> predicate.resolve(exchange));
@@ -111,7 +111,7 @@ public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
      */
     @Deprecated
     public static Set<Predicate> getGlobalSecurityPredicates() {
-        return PluginsRegistry.getInstance()
+        return PluginsRegistryImpl.getInstance()
                 .getGlobalSecurityPredicates();
     }
 }

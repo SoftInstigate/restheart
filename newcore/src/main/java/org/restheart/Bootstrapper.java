@@ -106,7 +106,7 @@ import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.handlers.SecurityHandler;
-import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.security.plugins.PluginsRegistryImpl;
 import org.restheart.security.plugins.authorizers.FullAuthorizer;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
@@ -497,7 +497,7 @@ public class Bootstrapper {
         }
 
         // run pre startup initializers
-        PluginsRegistry.getInstance()
+        PluginsRegistryImpl.getInstance()
                 .getPreStartupInitializers()
                 .stream()
                 .forEach(i -> {
@@ -537,7 +537,7 @@ public class Bootstrapper {
         }
 
         // run initializers
-        PluginsRegistry.getInstance()
+        PluginsRegistryImpl.getInstance()
                 .getInitializers()
                 .stream()
                 .forEach(i -> {
@@ -650,10 +650,10 @@ public class Bootstrapper {
             logErrorAndExit("No listener specified. exiting..", null, false, -1);
         }
 
-        final var tokenManager = PluginsRegistry.getInstance()
+        final var tokenManager = PluginsRegistryImpl.getInstance()
                 .getTokenManager();
 
-        final var authMechanisms = PluginsRegistry
+        final var authMechanisms = PluginsRegistryImpl
                 .getInstance()
                 .getAuthMechanisms();
 
@@ -663,7 +663,7 @@ public class Bootstrapper {
                     .reset().toString());
         }
 
-        final var authorizers = PluginsRegistry
+        final var authorizers = PluginsRegistryImpl
                 .getInstance()
                 .getAuthorizers();
 
@@ -903,7 +903,7 @@ public class Bootstrapper {
             final Set<PluginRecord<AuthMechanism>> mechanisms,
             final Set<PluginRecord<Authorizer>> authorizers,
             final PluginRecord<TokenManager> tokenManager) {
-        PluginsRegistry.getInstance().getServices().stream().forEach(srv -> {
+        PluginsRegistryImpl.getInstance().getServices().stream().forEach(srv -> {
             var srvConfArgs = srv.getConfArgs();
 
             String uri;

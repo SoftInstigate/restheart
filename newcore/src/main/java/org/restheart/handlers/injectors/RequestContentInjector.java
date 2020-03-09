@@ -23,11 +23,11 @@ import io.undertow.server.handlers.RequestBufferingHandler;
 import io.undertow.util.AttachmentKey;
 import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
-import org.restheart.plugins.InterceptPoint;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
-import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.security.plugins.PluginsRegistryImpl;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;
@@ -117,7 +117,7 @@ public class RequestContentInjector extends PipelinedHandler {
 
     private boolean isContentRequired(HttpServerExchange exchange, 
             InterceptPoint interceptPoint) {
-        return PluginsRegistry
+        return PluginsRegistryImpl
                 .getInstance()
                 .getInterceptors().stream()
                 .filter(ri -> ri.isEnabled())

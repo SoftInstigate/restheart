@@ -22,7 +22,7 @@ import java.util.Map;
 import org.restheart.ConfigurationException;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import org.restheart.plugins.OnInit;
+import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 
@@ -53,7 +53,7 @@ public class FullAuthorizer implements Authorizer {
      * @param confArgs
      * @throws org.restheart.ConfigurationException
      */
-    @OnInit
+    @InjectConfiguration
     public FullAuthorizer(Map<String, Object> confArgs) throws ConfigurationException {
         this((boolean) argValue(confArgs, "authentication-required"));
     }

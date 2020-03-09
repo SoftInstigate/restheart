@@ -19,7 +19,6 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import java.nio.ByteBuffer;
-import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 
 /**

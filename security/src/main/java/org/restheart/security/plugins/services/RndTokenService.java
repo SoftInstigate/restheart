@@ -29,13 +29,14 @@ import io.undertow.util.Methods;
 import java.util.Map;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.ConfigurablePlugin;
-import org.restheart.plugins.OnInit;
+import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
-import org.restheart.security.plugins.PluginsRegistry;
 import org.restheart.security.plugins.authenticators.BaseAccount;
 import org.restheart.utils.HttpStatus;
 
@@ -57,12 +58,19 @@ public class RndTokenService implements Service {
 
     private Map<String, Object> confArgs = null;
     
+    private PluginsRegistry pluginRegistry;
+    
+    @InjectPluginsRegistry
+    public void setPluginRegistry(PluginsRegistry pluginRegistry) {
+        this.pluginRegistry = pluginRegistry;
+    }
+    
     /**
      * init the service
      * @param confArgs
      * @throws org.restheart.ConfigurationException
      */
-    @OnInit
+    @InjectConfiguration
     public void init(Map<String, Object> confArgs)
             throws ConfigurationException {
         this.confArgs = confArgs;
@@ -142,8 +150,7 @@ public class RndTokenService implements Service {
     }
 
     private void invalidate(Account account) {
-        var tokenManager = PluginsRegistry
-                .getInstance()
+        var tokenManager = this.pluginRegistry
                 .getTokenManager();
 
         if (tokenManager == null) {

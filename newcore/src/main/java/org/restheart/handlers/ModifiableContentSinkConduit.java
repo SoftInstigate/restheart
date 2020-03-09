@@ -30,7 +30,7 @@ import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.handlers.exchange.ProxableResponse;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.security.plugins.PluginsRegistryImpl;
 import org.restheart.utils.BuffersUtils;
 import org.restheart.utils.HttpStatus;
 import static org.restheart.utils.PluginUtils.interceptPoint;
@@ -148,7 +148,7 @@ public class ModifiableContentSinkConduit
     private void executeResponseInterceptor(HttpServerExchange exchange) {
         var resp = ByteArrayResponse.wrap(exchange);
 
-        PluginsRegistry.getInstance()
+        PluginsRegistryImpl.getInstance()
                 .getInterceptors()
                 .stream()
                 .filter(ri -> ri.isEnabled())
@@ -190,7 +190,7 @@ public class ModifiableContentSinkConduit
     private void executeResponseAsyncInterceptor(HttpServerExchange exchange) {
         var resp = ByteArrayResponse.wrap(exchange);
 
-        PluginsRegistry.getInstance()
+        PluginsRegistryImpl.getInstance()
                 .getInterceptors()
                 .stream()
                 .filter(ri -> ri.isEnabled())

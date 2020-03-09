@@ -24,13 +24,12 @@ import io.undertow.util.Headers;
 import static io.undertow.util.Headers.LOCATION_STRING;
 import static io.undertow.util.Headers.ORIGIN;
 import io.undertow.util.HttpString;
-import org.restheart.handlers.PipelinedHandler;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
 import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_CREDENTIAL;
 import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_ALLOW_ORIGIN;
 import static org.restheart.handlers.CORSHandler.CORSHeaders.ACCESS_CONTROL_EXPOSE_HEADERS;
+import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
+import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
+import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
 
 /**
  *

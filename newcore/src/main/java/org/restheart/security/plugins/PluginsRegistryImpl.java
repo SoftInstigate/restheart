@@ -24,6 +24,7 @@ import org.restheart.ConfigurationException;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginRecord;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PreStartupInitializer;
 import org.restheart.plugins.Service;
 import org.restheart.plugins.security.AuthMechanism;
@@ -35,7 +36,7 @@ import org.restheart.plugins.security.TokenManager;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PluginsRegistry {
+public class PluginsRegistryImpl implements PluginsRegistry {
     private Set<PluginRecord<AuthMechanism>> authMechanisms;
 
     private Set<PluginRecord<Authenticator>> authenticators;
@@ -55,22 +56,23 @@ public class PluginsRegistry {
     private final Set<Predicate> globalSecurityPredicates
             = new LinkedHashSet<>();
 
-    private static PluginsRegistry HOLDER;
+    private static PluginsRegistryImpl HOLDER;
 
-    public static synchronized PluginsRegistry getInstance() {
+    public static synchronized PluginsRegistryImpl getInstance() {
         if (HOLDER == null) {
-            HOLDER = new PluginsRegistry();
+            HOLDER = new PluginsRegistryImpl();
         }
 
         return HOLDER;
     }
 
-    private PluginsRegistry() {
+    private PluginsRegistryImpl() {
     }
 
     /**
      * @return the authMechanisms
      */
+    @Override
     public Set<PluginRecord<AuthMechanism>> getAuthMechanisms() {
         if (this.authMechanisms == null) {
             this.authMechanisms = new LinkedHashSet<>();
@@ -83,6 +85,7 @@ public class PluginsRegistry {
     /**
      * @return the authenticators
      */
+    @Override
     public Set<PluginRecord<Authenticator>> getAuthenticators() {
         if (this.authenticators == null) {
             this.authenticators = new LinkedHashSet<>();
@@ -98,6 +101,7 @@ public class PluginsRegistry {
      * @return the authenticator
      * @throws org.restheart.ConfigurationException
      */
+    @Override
     public PluginRecord<Authenticator> getAuthenticator(String name) throws
             ConfigurationException {
 
@@ -119,6 +123,7 @@ public class PluginsRegistry {
     /**
      * @return the authenticators
      */
+    @Override
     public PluginRecord<TokenManager> getTokenManager() {
         if (this.tokenManager == null) {
             this.tokenManager = PluginsFactory.tokenManager();
@@ -130,6 +135,7 @@ public class PluginsRegistry {
     /**
      * @return the authenticators
      */
+    @Override
     public Set<PluginRecord<Authorizer>> getAuthorizers() {
         if (this.authorizers == null) {
             this.authorizers = PluginsFactory.authorizers();
@@ -141,6 +147,7 @@ public class PluginsRegistry {
     /**
      * @return the initializers
      */
+    @Override
     public Set<PluginRecord<Initializer>> getInitializers() {
         if (this.initializers == null) {
             this.initializers = new LinkedHashSet<>();
@@ -153,6 +160,7 @@ public class PluginsRegistry {
     /**
      * @return the preStartupInitializers
      */
+    @Override
     public Set<PluginRecord<PreStartupInitializer>> getPreStartupInitializers() {
         if (this.preStartupInitializers == null) {
             this.preStartupInitializers = new LinkedHashSet<>();
@@ -163,6 +171,7 @@ public class PluginsRegistry {
         return this.preStartupInitializers;
     }
 
+    @Override
     public Set<PluginRecord<Interceptor>> getInterceptors() {
         if (this.interceptors == null) {
             this.interceptors = new LinkedHashSet<>();
@@ -176,6 +185,7 @@ public class PluginsRegistry {
     /**
      * @return the services
      */
+    @Override
     public Set<PluginRecord<Service>> getServices() {
         if (this.services == null) {
             this.services = new LinkedHashSet<>();
@@ -191,6 +201,7 @@ public class PluginsRegistry {
      * @return the globalSecurityPredicates allow to get and set the global
      * security predicates to apply to all requests
      */
+    @Override
     public Set<Predicate> getGlobalSecurityPredicates() {
         return globalSecurityPredicates;
     }
