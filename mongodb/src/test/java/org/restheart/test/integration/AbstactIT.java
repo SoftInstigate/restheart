@@ -38,7 +38,7 @@ import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.restheart.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoDBClientSingleton;
 import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

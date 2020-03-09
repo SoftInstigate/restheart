@@ -17,23 +17,16 @@
  */
 package org.restheart;
 
-import static org.restheart.Configuration.DEFAULT_ROUTE;
-
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface ConfigurationKeys {
-    
+
     /**
      * default http listener.
      */
     public static final boolean DEFAULT_HTTP_LISTENER = true;
-    
-    /**
-     * default http host 0.0.0.0.
-     */
-    public static final String DEFAULT_HTTP_HOST = DEFAULT_ROUTE;
 
     /**
      * default http port 8080.
@@ -41,19 +34,39 @@ public interface ConfigurationKeys {
     public static final int DEFAULT_HTTP_PORT = 8080;
 
     /**
+     * default http host 127.0.0.1.
+     */
+    public static final String DEFAULT_HTTP_HOST = "0.0.0.0";
+
+    /**
      * default https listener.
      */
     public static final boolean DEFAULT_HTTPS_LISTENER = true;
-    
-    /**
-     * default https host 0.0.0.0.
-     */
-    public static final String DEFAULT_HTTPS_HOST = DEFAULT_ROUTE;
 
     /**
      * default https port 4443.
      */
     public static final int DEFAULT_HTTPS_PORT = 4443;
+
+    /**
+     * default https host 0.0.0.0.
+     */
+    public static final String DEFAULT_HTTPS_HOST = "0.0.0.0";
+
+    /**
+     * default http listener.
+     */
+    public static final boolean DEFAULT_AJP_LISTENER = true;
+
+    /**
+     * default ajp host 0.0.0.0.
+     */
+    public static final String DEFAULT_AJP_HOST = "0.0.0.0";
+
+    /**
+     * default ajp port 8009.
+     */
+    public static final int DEFAULT_AJP_PORT = 8009;
 
     /**
      * default instance name
@@ -64,9 +77,10 @@ public interface ConfigurationKeys {
      * the key for the log-file-path property.
      */
     public static final String PLUGINS_DIRECTORY_PATH_KEY = "plugins-directory";
-    
+
     /**
      * the key for the services property.
+     *
      * @deprecated services are now configured in plugins-args section
      */
     @Deprecated
@@ -96,7 +110,12 @@ public interface ConfigurationKeys {
      * the key for the local-cache-enabled property.
      */
     public static final String LOCAL_CACHE_ENABLED_KEY = "local-cache-enabled";
-    
+
+    /**
+     * the key for the requests-log-level property.
+     */
+    public static final String REQUESTS_LOG_LEVEL_KEY = "requests-log-level";
+
     /**
      * the key for the requests-log-tracing-headers property.
      */
@@ -176,7 +195,7 @@ public interface ConfigurationKeys {
      * the key for the proxies property.
      */
     public static final String PROXY_KEY = "proxies";
-    
+
     /**
      * the key for the location property.
      */
@@ -186,7 +205,7 @@ public interface ConfigurationKeys {
      * the key for the proxy-pass property.
      */
     public static final String PROXY_PASS_KEY = "proxy-pass";
-    
+
     /**
      * the key for the proxy name property.
      */
@@ -226,7 +245,7 @@ public interface ConfigurationKeys {
      * the key for the pluging-args property.
      */
     public static final String PLUGINS_ARGS_KEY = "plugins-args";
-    
+
     /**
      * the key for the auth-db property.
      */
@@ -280,7 +299,22 @@ public interface ConfigurationKeys {
     /**
      * the key for the https-listener property.
      */
-    public static final String HTTPS_LISTENER = "https-listener";
+    public static final String HTTPS_LISTENER_KEY = "https-listener";
+
+    /**
+     * the key for the ajp-host property.
+     */
+    public static final String AJP_HOST_KEY = "ajp-host";
+
+    /**
+     * the key for the ajp-port property.
+     */
+    public static final String AJP_PORT_KEY = "ajp-port";
+
+    /**
+     * the key for the ajp-listener property.
+     */
+    public static final String AJP_LISTENER_KEY = "ajp-listener";
 
     /**
      * the key for the instance-name property.
@@ -290,7 +324,7 @@ public interface ConfigurationKeys {
     /**
      * the key for the tokenManager property.
      */
-    public static final String TOKEN_MANAGER = "token-manager";
+    public static final String TOKEN_MANAGER_KEY = "token-manager";
 
     /**
      * Force http requests logging even if DEBUG is not set
@@ -311,7 +345,7 @@ public interface ConfigurationKeys {
      * The key to enable plugins
      */
     public static final String PLUGIN_ENABLED_KEY = "enabled";
-    
+
     /**
      * undertow connetction options
      *

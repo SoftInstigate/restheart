@@ -8,7 +8,7 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
-import org.restheart.handlers.metrics.MetricsJsonGenerator;
+import org.restheart.mongodb.handlers.metrics.MetricsJsonGenerator;
 
 /**
  *

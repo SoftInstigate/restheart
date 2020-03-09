@@ -41,7 +41,7 @@ import org.bson.BsonDouble;
 import org.bson.types.ObjectId;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import org.restheart.db.DocumentDAO;
+import org.restheart.mongodb.db.DocumentDAO;
 import org.restheart.utils.HttpStatus;
 
 /**

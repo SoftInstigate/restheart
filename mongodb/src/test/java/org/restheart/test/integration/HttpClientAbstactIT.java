@@ -37,10 +37,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.restheart.db.Database;
-import org.restheart.db.DatabaseImpl;
-import org.restheart.db.DocumentDAO;
-import org.restheart.representation.Resource;
+import org.restheart.mongodb.db.Database;
+import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.representation.Resource;
 
 
 /**

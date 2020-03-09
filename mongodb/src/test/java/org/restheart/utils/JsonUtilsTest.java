@@ -17,6 +17,7 @@
  */
 package org.restheart.utils;
 
+import org.restheart.mongodb.utils.JsonUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

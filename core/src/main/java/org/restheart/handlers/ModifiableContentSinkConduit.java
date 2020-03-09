@@ -30,7 +30,7 @@ import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.handlers.exchange.ProxableResponse;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.security.plugins.PluginsRegistryImpl;
+import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.BuffersUtils;
 import org.restheart.utils.HttpStatus;
 import static org.restheart.utils.PluginUtils.interceptPoint;

@@ -52,9 +52,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import org.restheart.db.CursorPool;
-import org.restheart.db.Database;
-import org.restheart.db.DatabaseImpl;
+import org.restheart.mongodb.db.CursorPool;
+import org.restheart.mongodb.db.Database;
+import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.utils.HttpStatus;
 
 /**

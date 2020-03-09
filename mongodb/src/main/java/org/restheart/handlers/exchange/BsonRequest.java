@@ -37,17 +37,18 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
-import org.restheart.Bootstrapper;
-import org.restheart.db.CursorPool;
-import org.restheart.db.sessions.ClientSessionImpl;
+import org.restheart.mongodb.Bootstrapper;
+import org.restheart.mongodb.db.CursorPool;
+import org.restheart.mongodb.db.sessions.ClientSessionImpl;
 import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
 import static org.restheart.handlers.exchange.ExchangeKeys.*;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.handlers.exchange.ExchangeKeys.HAL_MODE;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
-import org.restheart.representation.Resource;
-import org.restheart.utils.URLUtils;
+import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.representation.Resource;
+import org.restheart.mongodb.utils.URLUtils;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -1379,13 +1380,13 @@ public class BsonRequest extends Request<BsonValue> {
         }
 
         // apply the default policy from configuration
-        ETAG_CHECK_POLICY dbP = Bootstrapper.getConfiguration()
+        ETAG_CHECK_POLICY dbP = Configuration.get()
                 .getDbEtagCheckPolicy();
 
-        ETAG_CHECK_POLICY collP = Bootstrapper.getConfiguration()
+        ETAG_CHECK_POLICY collP = Configuration.get()
                 .getCollEtagCheckPolicy();
 
-        ETAG_CHECK_POLICY docP = Bootstrapper.getConfiguration()
+        ETAG_CHECK_POLICY docP = Configuration.get()
                 .getDocEtagCheckPolicy();
 
         if (LOGGER.isTraceEnabled()) {

@@ -11,10 +11,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import static org.restheart.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
-import org.restheart.db.Database;
-import org.restheart.db.DatabaseImpl;
-import org.restheart.db.MongoDBClientSingleton;
+import static org.restheart.mongodb.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
+import org.restheart.mongodb.db.Database;
+import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.MongoDBClientSingleton;
 import static org.restheart.test.integration.AbstactIT.MONGO_URI;
 import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 

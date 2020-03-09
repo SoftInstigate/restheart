@@ -24,7 +24,7 @@ import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.Authorizer;
-import org.restheart.security.plugins.PluginsRegistryImpl;
+import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
 
 /**
