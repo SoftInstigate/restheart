@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 /**
- * Main classes to bootstrap RESTHeart Security
+ * Main classes to bootstrap RESTHeart
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */

@@ -28,7 +28,7 @@
         <module>security</module>
         <module>core</module>
         <module>commons</module>
-        <module>newcore</module>
+        <module>mongodb</module>
     </modules>
 
     <!-- Project Information -->
@@ -134,7 +134,7 @@
             </dependency>
             <dependency>
                 <groupId>org.restheart</groupId>
-                <artifactId>restheart-newcore</artifactId>
+                <artifactId>restheart-mongodb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

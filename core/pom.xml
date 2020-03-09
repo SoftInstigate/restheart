@@ -10,7 +10,7 @@
     </parent>
 
     <groupId>org.restheart</groupId>
-    <artifactId>restheart-newcore</artifactId>
+    <artifactId>restheart</artifactId>
     <packaging>jar</packaging>
     <description>
         RESTHeart - Web API for MongoDB.
