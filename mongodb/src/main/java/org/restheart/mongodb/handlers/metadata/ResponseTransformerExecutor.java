@@ -20,12 +20,15 @@ package org.restheart.mongodb.handlers.metadata;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
-import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.restheart.plugins.GlobalTransformer;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Service;
 import org.restheart.plugins.Transformer.PHASE;
 import org.restheart.plugins.Transformer.SCOPE;
 import org.slf4j.Logger;
@@ -38,27 +41,23 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseTransformerHandler
-        extends TransformerHandler {
+@RegisterPlugin(name = "responseTransformerExecutor",
+        description = "executes the response transformers",
+        interceptPoint = InterceptPoint.RESPONSE)
+public class ResponseTransformerExecutor
+        extends AbstractTransformersExecutor implements Service {
 
     static final Logger LOGGER
-            = LoggerFactory.getLogger(ResponseTransformerHandler.class);
+            = LoggerFactory.getLogger(ResponseTransformerExecutor.class);
 
     /**
      * Creates a new instance of ResponseTransformerMetadataHandler
      *
+     * @param pluginsRegistry
      */
-    public ResponseTransformerHandler() {
-        super(null);
-    }
-
-    /**
-     * Creates a new instance of ResponseTransformerMetadataHandler
-     *
-     * @param next
-     */
-    public ResponseTransformerHandler(PipelinedHandler next) {
-        super(next);
+    @InjectPluginsRegistry
+    public ResponseTransformerExecutor(PluginsRegistry pluginsRegistry) {
+        super(pluginsRegistry);
     }
 
     @Override
@@ -112,9 +111,9 @@ public class ResponseTransformerHandler
     @Override
     void applyGlobalTransformers(HttpServerExchange exchange) {
         var context = RequestContext.wrap(exchange);
-        
+
         // execture global response tranformers
-        MongoServicePluginsRegistry.getInstance().getGlobalTransformers().stream()
+        pluginsRegistry.getGlobalTransformers().stream()
                 .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
                 .forEachOrdered(gt -> {
                     if (gt.getScope() == SCOPE.THIS) {
@@ -147,49 +146,59 @@ public class ResponseTransformerHandler
             List<TransformerMetadata> rts)
             throws InvalidMetadataException {
         var context = RequestContext.wrap(exchange);
-        
+
         // execute request transformers
         rts.stream()
                 .filter(rt -> rt.getPhase() == PHASE.RESPONSE)
                 .forEachOrdered(rt -> {
                     try {
-                        var tr = MongoServicePluginsRegistry.getInstance()
-                                .getTransformer(rt.getName());
-                        var t = tr.getInstance();
-                        var confArgs = JsonUtils.toBsonDocument(tr.getConfArgs());
+                        var _tr = pluginsRegistry
+                                .getTransformers()
+                                .stream()
+                                .filter(t -> rt.getName().equals(t.getName()))
+                                .findFirst();
 
-                        if (rt.getScope() == SCOPE.THIS) {
-                            t.transform(
-                                    exchange,
-                                    context,
-                                    context.getResponseContent(),
-                                    rt.getArgs(),
-                                    confArgs);
-                        } else if (context.getResponseContent() != null
-                                && context.getResponseContent().isDocument()
-                                && context.getResponseContent()
-                                        .asDocument()
-                                        .containsKey("_embedded")) {
-                            applyChildrenTransformLogic(exchange,
-                                    context,
-                                    t,
-                                    rt.getArgs(),
-                                    confArgs);
-                        } else if (context.isDocument()) {
-                            t.transform(
-                                    exchange,
-                                    context,
-                                    context.getResponseContent(),
-                                    rt.getArgs(),
-                                    confArgs);
+                        if (_tr.isPresent()) {
+                            var tr = _tr.get();
+                            var t = tr.getInstance();
+                            var confArgs = JsonUtils.toBsonDocument(tr.getConfArgs());
+
+                            if (rt.getScope() == SCOPE.THIS) {
+                                t.transform(
+                                        exchange,
+                                        context,
+                                        context.getResponseContent(),
+                                        rt.getArgs(),
+                                        confArgs);
+                            } else if (context.getResponseContent() != null
+                                    && context.getResponseContent().isDocument()
+                                    && context.getResponseContent()
+                                            .asDocument()
+                                            .containsKey("_embedded")) {
+                                applyChildrenTransformLogic(exchange,
+                                        context,
+                                        t,
+                                        rt.getArgs(),
+                                        confArgs);
+                            } else if (context.isDocument()) {
+                                t.transform(
+                                        exchange,
+                                        context,
+                                        context.getResponseContent(),
+                                        rt.getArgs(),
+                                        confArgs);
+                            }
+                        } else {
+                            LOGGER.warn("Response Transformer set to apply "
+                                    + "but not registered: {}", rt.getName());
                         }
                     } catch (NoSuchElementException iae) {
                         LOGGER.warn(iae.getMessage());
                         context.addWarning(iae.getMessage());
                     } catch (Throwable t) {
                         String err = "Error executing transformer '"
-                                + rt.getName() 
-                                + "': " 
+                                + rt.getName()
+                                + "': "
                                 + t.getMessage();
                         LOGGER.warn(err);
                         context.addWarning(err);

@@ -22,26 +22,27 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
 import org.restheart.plugins.GlobalTransformer;
-import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.Transformer;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public abstract class TransformerHandler extends PipelinedHandler {
+public abstract class AbstractTransformersExecutor {
+    protected final PluginsRegistry pluginsRegistry;
+    
     /**
      * Creates a new instance of TransformerHandler
      *
-     * @param next
+     * @param pluginsRegistry
      */
-    public TransformerHandler(PipelinedHandler next) {
-        super(next);
+    public AbstractTransformersExecutor(PluginsRegistry pluginsRegistry) {
+        this.pluginsRegistry = pluginsRegistry;
     }
 
     /**
@@ -49,8 +50,7 @@ public abstract class TransformerHandler extends PipelinedHandler {
      * @param exchange
      * @throws Exception
      */
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handle(HttpServerExchange exchange) throws Exception {
         var context = RequestContext.wrap(exchange);
         
         applyGlobalTransformers(exchange);
@@ -70,17 +70,6 @@ public abstract class TransformerHandler extends PipelinedHandler {
                 context.addWarning("Error applying transformer: " + e.getMessage());
             }
         }
-
-        next(exchange);
-    }
-
-    /**
-     * @deprecated use PluginsRegistry.getInstance().getGlobalTransformers() instead
-     * @return the GLOBAL_TRANSFORMERS
-     */
-    @Deprecated
-    public static synchronized List<GlobalTransformer> getGlobalTransformers() {
-        return MongoServicePluginsRegistry.getInstance().getGlobalTransformers();
     }
 
     abstract boolean doesGlobalTransformerAppy(GlobalTransformer gt,

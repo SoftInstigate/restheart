@@ -19,11 +19,12 @@ package org.restheart.mongodb.plugins.initializers;
 
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.exchange.RequestContext;
+import org.restheart.mongodb.plugins.transformers.WriteResultTransformer;
 import org.restheart.plugins.GlobalTransformer;
 import org.restheart.plugins.Initializer;
-import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.mongodb.plugins.transformers.WriteResultTransformer;
 import org.restheart.plugins.Transformer.PHASE;
 import org.restheart.plugins.Transformer.SCOPE;
 import org.slf4j.Logger;
@@ -42,12 +43,19 @@ public class AddBodyToWriteResponsesInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(AddBodyToWriteResponsesInitializer.class);
 
+    private final PluginsRegistry pluginsRegistry;
+    
+    @InjectPluginsRegistry
+    public AddBodyToWriteResponsesInitializer(PluginsRegistry pluginRegistry) {
+        this.pluginsRegistry = pluginRegistry;
+    }
+    
     /**
      *
      */
     @Override
     public void init() {
-        MongoServicePluginsRegistry.getInstance().getGlobalTransformers().add(
+        pluginsRegistry.getGlobalTransformers().add(
                 new GlobalTransformer(
                         new WriteResultTransformer(), (HttpServerExchange hse,
                                 RequestContext context)

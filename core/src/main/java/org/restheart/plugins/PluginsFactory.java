@@ -278,15 +278,15 @@ public class PluginsFactory {
                 .findFirst();
 
         // check if a Constructor with @InjectPluginsRegistry exists
-        var contructorWihtPluginsRegistry = cil.stream()
+        var contructorWihtInjectPluginsRegistry = cil.stream()
                 .filter(ci -> ci.hasAnnotation(InjectPluginsRegistry.class.getName()))
                 .findFirst();
 
         if (contructorWihtInjectConfiguration.isPresent()
-                && contructorWihtPluginsRegistry.isPresent()) {
+                && contructorWihtInjectPluginsRegistry.isPresent()) {
             // check if it is the same constructor, otherwise error
             var cc = contructorWihtInjectConfiguration.get();
-            var cpr = contructorWihtPluginsRegistry.get();
+            var cpr = contructorWihtInjectPluginsRegistry.get();
 
             if (!cc.equals(cpr)) {
                 LOGGER.error("{} {} defines two different constructors with "
@@ -400,7 +400,7 @@ public class PluginsFactory {
                         + pluginClassInfo.getSimpleName()
                         + "(Map<String, Object> configuration)");
             }
-        } else if (contructorWihtInjectConfiguration.isPresent()) {
+        } else if (contructorWihtInjectPluginsRegistry.isPresent()) {
             // try to instanitate the constructor 
             try {
                 ret = (Plugin) pluginClassInfo.loadClass(false)

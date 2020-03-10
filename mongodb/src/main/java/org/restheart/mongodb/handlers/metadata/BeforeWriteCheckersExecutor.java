@@ -24,19 +24,22 @@ import java.util.Objects;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.CheckerMetadata;
+import org.restheart.mongodb.plugins.checkers.CheckersUtils;
+import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.Checker;
 import org.restheart.plugins.Checker.PHASE;
 import org.restheart.plugins.GlobalChecker;
-import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
-import org.restheart.mongodb.plugins.checkers.CheckersUtils;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
-import org.restheart.mongodb.utils.JsonUtils;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,11 +47,14 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@RegisterPlugin(name = "beforeWriteCheckerExecutor",
+        description = "executes before write checkers",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 @SuppressWarnings("deprecation")
-public class BeforeWriteCheckHandler extends CheckHandler {
+public class BeforeWriteCheckersExecutor extends AbstractCheckersExecutor implements Service {
 
     static final Logger LOGGER
-            = LoggerFactory.getLogger(BeforeWriteCheckHandler.class);
+            = LoggerFactory.getLogger(BeforeWriteCheckersExecutor.class);
 
     /**
      *
@@ -65,29 +71,20 @@ public class BeforeWriteCheckHandler extends CheckHandler {
      *
      * handler that applies the checkers defined in the collection properties
      *
+     * @param pluginsRegistry
      */
-    public BeforeWriteCheckHandler() {
-        this(null);
+    @InjectPluginsRegistry
+    public BeforeWriteCheckersExecutor(PluginsRegistry pluginsRegistry) {
+        super(pluginsRegistry);
     }
     
-    /**
-     * Creates a new instance of CheckMetBeforeWriteCheckHandleradataHandler
-     *
-     * handler that applies the checkers defined in the collection properties
-     *
-     * @param next
-     */
-    public BeforeWriteCheckHandler(PipelinedHandler next) {
-        super(next);
-    }
-
     /**
      *
      * @param exchange
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange)
+    public void handle(HttpServerExchange exchange)
             throws Exception {
         if ((doesCheckersApply(exchange)
                 && !applyCheckers(exchange))
@@ -98,8 +95,6 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                     HttpStatus.SC_BAD_REQUEST,
                     "request check failed");
         }
-
-        next(exchange);
     }
 
     /**
@@ -119,8 +114,16 @@ public class BeforeWriteCheckHandler extends CheckHandler {
         return requestCheckers != null
                 && requestCheckers.stream().allMatch(checkerMetadata -> {
                     try {
-                        var checkerRecord = MongoServicePluginsRegistry.getInstance().
-                                getChecker(checkerMetadata.getName());
+                        var _checkerRecord = pluginsRegistry
+                                .getCheckers()
+                                .stream()
+                                .filter(t -> checkerMetadata
+                                        .getName().equals(t.getName()))
+                                .findFirst();
+                        
+                        if (_checkerRecord.isPresent()) {
+                        var checkerRecord = _checkerRecord.get();
+                        
                         var checker = checkerRecord.getInstance();
 
                         BsonDocument confArgs = JsonUtils.toBsonDocument(
@@ -131,6 +134,12 @@ public class BeforeWriteCheckHandler extends CheckHandler {
                                 checker,
                                 checkerMetadata.getArgs(),
                                 confArgs);
+                        } else {
+                            LOGGER.warn("Before Write Checker set to apply "
+                                    + "but not registered: {}", 
+                                    checkerMetadata.getName());
+                            return false;
+                        }
                     } catch (NoSuchElementException ex) {
                         LOGGER.warn(ex.getMessage());
                         response.addWarning(ex.getMessage());
@@ -259,7 +268,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
         var context = RequestContext.wrap(exchange);
         
         // execture global request tranformers
-        return MongoServicePluginsRegistry.getInstance().getGlobalCheckers().stream()
+        return pluginsRegistry.getGlobalCheckers().stream()
                 .filter(gc -> doesGlobalCheckerApply(gc, exchange, context))
                 .allMatch(gc
                         -> applyChecker(exchange,
@@ -278,7 +287,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
     }
 
     boolean doesGlobalCheckersApply() {
-        return !MongoServicePluginsRegistry.getInstance().getGlobalCheckers().isEmpty();
+        return !pluginsRegistry.getGlobalCheckers().isEmpty();
     }
 
     /**

@@ -109,7 +109,7 @@ import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.handlers.injectors.XForwardedHeadersInjector;
 import org.restheart.handlers.injectors.XPoweredByInjector;
-import org.restheart.handlers.metrics.TracingInstrumentationHandler;
+import org.restheart.handlers.TracingInstrumentationHandler;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
 import org.restheart.plugins.PluginRecord;
