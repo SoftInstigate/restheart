@@ -87,6 +87,7 @@ import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_EMBEDDED_KE
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
+import org.restheart.handlers.BsonRequestServiceInitializer;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
@@ -98,6 +99,7 @@ import org.restheart.handlers.RequestInterceptorsExecutor;
 import org.restheart.handlers.RequestLogger;
 import org.restheart.handlers.RequestNotManagedHandler;
 import org.restheart.handlers.ResponseSender;
+import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
 import org.restheart.handlers.exchange.AbstractExchange.METHOD;
@@ -109,7 +111,6 @@ import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.handlers.injectors.XForwardedHeadersInjector;
 import org.restheart.handlers.injectors.XPoweredByInjector;
-import org.restheart.handlers.TracingInstrumentationHandler;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
 import org.restheart.plugins.PluginRecord;
@@ -997,6 +998,7 @@ public class Bootstrapper {
 
             var _srv = pipe(new TracingInstrumentationHandler(),
                     new RequestLogger(),
+                    new BsonRequestServiceInitializer(),
                     new CORSHandler(),
                     new XPoweredByInjector(),
                     new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
