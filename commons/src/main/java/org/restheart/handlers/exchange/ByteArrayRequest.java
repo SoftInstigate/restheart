@@ -72,7 +72,7 @@ public class ByteArrayRequest extends ProxableRequest<byte[]> {
             // updated request content length
             // this is not needed in Response.writeContent() since done
             // by ModificableContentSinkConduit.updateContentLenght();
-            getWrapped().getRequestHeaders().put(Headers.CONTENT_LENGTH, copied);
+            getWrappedExchange().getRequestHeaders().put(Headers.CONTENT_LENGTH, copied);
         }
     }
 }

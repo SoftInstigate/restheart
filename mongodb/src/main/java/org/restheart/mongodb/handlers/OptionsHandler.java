@@ -41,6 +41,25 @@ public class OptionsHandler extends PipelinedHandler {
      * response to a preflight request, which methods can be used during the
      * actual request.
      *
+     */
+    public OptionsHandler() {
+        super(null);
+    }
+    
+    
+    /**
+     * Creates a new instance of OptionsHandler
+     *
+     * OPTIONS is used in CORS preflight phase and needs to be outside the
+     * security zone (i.e. not Authorization header required) It is important
+     * that OPTIONS responds to any resource URL, regardless its existance: This
+     * is because OPTIONS http://restheart.org/employees/tofire/andrea shall not
+     * give any information
+     *
+     * The Access-Control-Allow-Methods header indicates, as part of the
+     * response to a preflight request, which methods can be used during the
+     * actual request.
+     *
      * @param next
      */
     public OptionsHandler(PipelinedHandler next) {

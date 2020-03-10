@@ -45,8 +45,8 @@ public abstract class Response<T> extends AbstractExchange<T> {
      */
     @Override
     public String getContentType() {
-        if (getWrapped().getResponseHeaders().get(Headers.CONTENT_TYPE) != null) {
-            return getWrapped().getResponseHeaders().get(Headers.CONTENT_TYPE)
+        if (getWrappedExchange().getResponseHeaders().get(Headers.CONTENT_TYPE) != null) {
+            return getWrappedExchange().getResponseHeaders().get(Headers.CONTENT_TYPE)
                     .getFirst();
         } else {
             return null;
@@ -57,7 +57,7 @@ public abstract class Response<T> extends AbstractExchange<T> {
      * @param responseContentType the responseContentType to set
      */
     public void setContentType(String responseContentType) {
-        getWrapped().getResponseHeaders().put(Headers.CONTENT_TYPE,
+        getWrappedExchange().getResponseHeaders().put(Headers.CONTENT_TYPE,
                 responseContentType);
     }
 
@@ -72,25 +72,29 @@ public abstract class Response<T> extends AbstractExchange<T> {
      * @return the responseStatusCode of -1 if not set
      */
     public int getStatusCode() {
-        return getWrapped() == null
-                && getWrapped().getAttachment(STATUS_CODE) == null
-                ? -1
-                : getWrapped().getAttachment(STATUS_CODE);
+        var wrappedExchange = getWrappedExchange();
+        
+        if (wrappedExchange == null 
+                || wrappedExchange.getAttachment(STATUS_CODE) == null) {
+            return -1;
+        } else {
+            return wrappedExchange.getAttachment(STATUS_CODE);
+        }
     }
 
     /**
      * @param responseStatusCode the responseStatusCode to set
      */
     public void setStatusCode(int responseStatusCode) {
-        getWrapped().putAttachment(STATUS_CODE, responseStatusCode);
+        getWrappedExchange().putAttachment(STATUS_CODE, responseStatusCode);
     }
 
     /**
      * @return the inError
      */
     public boolean isInError() {
-        return getWrapped().getAttachment(IN_ERROR_KEY) != null
-                && getWrapped().getAttachment(IN_ERROR_KEY);
+        return getWrappedExchange().getAttachment(IN_ERROR_KEY) != null
+                && getWrappedExchange().getAttachment(IN_ERROR_KEY);
 
     }
 
@@ -98,6 +102,6 @@ public abstract class Response<T> extends AbstractExchange<T> {
      * @param inError the inError to set
      */
     public void setInError(boolean inError) {
-        getWrapped().putAttachment(IN_ERROR_KEY, inError);
+        getWrappedExchange().putAttachment(IN_ERROR_KEY, inError);
     }
 }

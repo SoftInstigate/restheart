@@ -49,7 +49,7 @@ public abstract class ProxableRequest<T> extends Request<T> {
         }
 
         try {
-            return (AttachmentKey<PooledByteBuffer[]>) f.get(getWrapped());
+            return (AttachmentKey<PooledByteBuffer[]>) f.get(getWrappedExchange());
         } catch (IllegalArgumentException | IllegalAccessException ex) {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
@@ -57,7 +57,7 @@ public abstract class ProxableRequest<T> extends Request<T> {
     
     
     public void setRawContent(PooledByteBuffer[] raw) {
-        getWrapped().putAttachment(getRawContentKey(), raw);
+        getWrappedExchange().putAttachment(getRawContentKey(), raw);
     }
     
     public PooledByteBuffer[] getRawContent() {
@@ -68,10 +68,10 @@ public abstract class ProxableRequest<T> extends Request<T> {
                     + "the content available.");
         }
 
-        return getWrapped().getAttachment(getRawContentKey());
+        return getWrappedExchange().getAttachment(getRawContentKey());
     }
     
     public boolean isContentAvailable() {
-        return null != getWrapped().getAttachment(getRawContentKey());
+        return null != getWrappedExchange().getAttachment(getRawContentKey());
     }
 }
