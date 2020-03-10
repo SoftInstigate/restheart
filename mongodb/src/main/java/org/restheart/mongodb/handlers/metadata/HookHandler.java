@@ -20,14 +20,16 @@ package org.restheart.mongodb.handlers.metadata;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.metadata.HookMetadata;
-import org.restheart.plugins.GlobalHook;
-import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
 import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,25 +39,24 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class HookHandler extends PipelinedHandler {
+@RegisterPlugin(name = "hooksTransformerExecutor",
+        description = "executes the hooks",
+        interceptPoint = InterceptPoint.RESPONSE_ASYNC)
+public class HookHandler implements Service {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(HookHandler.class);
-    
-    /**
-     * Creates a new instance of HookMetadataHandler
-     */
-    public HookHandler() {
-        super(null);
-    }
+
+    private final PluginsRegistry pluginsRegistry;
 
     /**
      * Creates a new instance of HookMetadataHandler
      *
-     * @param next
+     * @param pluginsRegistry
      */
-    public HookHandler(PipelinedHandler next) {
-        super(next);
+    @InjectPluginsRegistry
+    public HookHandler(PluginsRegistry pluginsRegistry) {
+        this.pluginsRegistry = pluginsRegistry;
     }
 
     /**
@@ -64,14 +65,14 @@ public class HookHandler extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handle(HttpServerExchange exchange) throws Exception {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
         var context = RequestContext.wrap(exchange);
-        
+
         // execute global hooks
         executeGlobalHooks(exchange);
-        
+
         if (request.getCollectionProps() != null
                 && request.getCollectionProps()
                         .containsKey(HookMetadata.ROOT_KEY)) {
@@ -88,18 +89,28 @@ public class HookHandler extends PipelinedHandler {
             if (mdHooks != null) {
                 for (HookMetadata mdHook : mdHooks) {
                     try {
-                        var hookRecord = MongoServicePluginsRegistry.getInstance()
-                                .getHook(mdHook.getName());
-                        var hook = hookRecord.getInstance();
+                        var _hookRecord = pluginsRegistry
+                                .getHooks()
+                                .stream()
+                                .filter(t -> mdHook.getName().equals(t.getName()))
+                                .findFirst();
 
-                        var confArgs = JsonUtils.toBsonDocument(
-                                hookRecord.getConfArgs());
+                        if (_hookRecord.isPresent()) {
+                            var hookRecord = _hookRecord.get();
+                            var hook = hookRecord.getInstance();
 
-                        if (hook.doesSupportRequests(context)) {
-                            hook.hook(exchange,
-                                    context,
-                                    mdHook.getArgs(),
-                                    confArgs);
+                            var confArgs = JsonUtils.toBsonDocument(
+                                    hookRecord.getConfArgs());
+
+                            if (hook.doesSupportRequests(context)) {
+                                hook.hook(exchange,
+                                        context,
+                                        mdHook.getArgs(),
+                                        confArgs);
+                            }
+                        } else {
+                            LOGGER.warn("Hook set to apply "
+                                    + "but not registered: {}", mdHook.getName());
                         }
                     } catch (NoSuchElementException ex) {
                         LOGGER.warn(ex.getMessage());
@@ -115,24 +126,13 @@ public class HookHandler extends PipelinedHandler {
                 }
             }
         }
-
-        next(exchange);
     }
-    
+
     private void executeGlobalHooks(HttpServerExchange exchange) {
         var context = RequestContext.wrap(exchange);
-        
+
         // execute global request tranformers
-        getGlobalHooks().stream()
+        pluginsRegistry.getGlobalHooks().stream()
                 .forEachOrdered(gh -> gh.hook(exchange, context));
-    }
-    
-    /**
-     * @deprecated use PluginsRegistry.getInstance().getGlobalHooks() instead
-     * @return the GLOBAL_HOOKS
-     */
-    @Deprecated
-    public static synchronized List<GlobalHook> getGlobalHooks() {
-        return MongoServicePluginsRegistry.getInstance().getGlobalHooks();
     }
 }

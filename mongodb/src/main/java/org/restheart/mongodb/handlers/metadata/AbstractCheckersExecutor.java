@@ -17,31 +17,21 @@
  */
 package org.restheart.mongodb.handlers.metadata;
 
-import java.util.List;
-import org.restheart.handlers.PipelinedHandler;
-import org.restheart.plugins.GlobalChecker;
-import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
+import org.restheart.plugins.PluginsRegistry;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public abstract class CheckHandler extends PipelinedHandler {
+public abstract class AbstractCheckersExecutor {
+    protected final PluginsRegistry pluginsRegistry;
+    
     /**
+     * Creates a new instance of CheckHandler
      *
-     * @param next
+     * @param pluginsRegistry
      */
-    public CheckHandler(PipelinedHandler next) {
-        super(next);
-    }
-
-    /**
-     *
-     * @deprecated use PluginsRegistry.getInstance().getGlobalCheckers() instead
-     * @return the globalCheckers
-     */
-    @Deprecated
-    public static List<GlobalChecker> getGlobalCheckers() {
-        return MongoServicePluginsRegistry.getInstance().getGlobalCheckers();
+    public AbstractCheckersExecutor(PluginsRegistry pluginsRegistry) {
+        this.pluginsRegistry = pluginsRegistry;
     }
 }

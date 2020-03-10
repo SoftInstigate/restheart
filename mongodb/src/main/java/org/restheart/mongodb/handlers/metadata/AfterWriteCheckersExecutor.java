@@ -25,38 +25,39 @@ import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.BsonDocument;
-import org.restheart.mongodb.db.DAOUtils;
-import org.restheart.mongodb.db.MongoDBClientSingleton;
-import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.RequestContext;
+import org.restheart.mongodb.db.DAOUtils;
+import org.restheart.mongodb.db.MongoDBClientSingleton;
 import org.restheart.mongodb.metadata.CheckerMetadata;
+import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.Checker;
 import org.restheart.plugins.GlobalChecker;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
-import org.restheart.mongodb.utils.ResponseHelper;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AfterWriteCheckHandler
-        extends BeforeWriteCheckHandler {
+@RegisterPlugin(name = "afterWriteCheckerExecutor",
+        description = "executes before write checkers",
+        interceptPoint = InterceptPoint.RESPONSE)
+public class AfterWriteCheckersExecutor
+        extends BeforeWriteCheckersExecutor implements Service {
 
     /**
      *
+     * @param pluginsRegistry
      */
-    public AfterWriteCheckHandler() {
-        super(null);
-    }
-
-    /**
-     *
-     * @param next
-     */
-    public AfterWriteCheckHandler(PipelinedHandler next) {
-        super(next);
+    @InjectPluginsRegistry
+    public AfterWriteCheckersExecutor(PluginsRegistry pluginsRegistry) {
+        super(pluginsRegistry);
     }
 
     /**
@@ -65,7 +66,7 @@ public class AfterWriteCheckHandler
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange)
+    public void handle(HttpServerExchange exchange)
             throws Exception {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
@@ -135,8 +136,6 @@ public class AfterWriteCheckHandler
                     HttpStatus.SC_BAD_REQUEST,
                     "request check failed");
         }
-
-        next(exchange);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package org.restheart.handlers.metrics;
+package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;

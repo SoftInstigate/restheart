@@ -21,14 +21,17 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
-import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.restheart.plugins.GlobalTransformer;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Service;
 import org.restheart.plugins.Transformer.PHASE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,27 +42,23 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestTransformerHandler
-        extends TransformerHandler {
+@RegisterPlugin(name = "requestTransformerExecutor",
+        description = "executes the request transformers",
+        interceptPoint = InterceptPoint.RESPONSE)
+public class RequestTransformersExecutor
+        extends AbstractTransformersExecutor implements Service {
 
     static final Logger LOGGER
-            = LoggerFactory.getLogger(RequestTransformerHandler.class);
+            = LoggerFactory.getLogger(RequestTransformersExecutor.class);
 
     /**
      * Creates a new instance of RequestTransformerMetadataHandler
      *
+     * @param pluginsRegistry
      */
-    public RequestTransformerHandler() {
-        super(null);
-    }
-    
-    /**
-     * Creates a new instance of RequestTransformerMetadataHandler
-     *
-     * @param next
-     */
-    public RequestTransformerHandler(PipelinedHandler next) {
-        super(next);
+    @InjectPluginsRegistry
+    public RequestTransformersExecutor(PluginsRegistry pluginsRegistry) {
+        super(pluginsRegistry);
     }
 
     @Override
@@ -118,9 +117,9 @@ public class RequestTransformerHandler
     void applyGlobalTransformers(HttpServerExchange exchange) {
         var request = BsonRequest.wrap(exchange);
         var context = RequestContext.wrap(exchange);
-        
+
         // execute global request tranformers
-        MongoServicePluginsRegistry.getInstance().getGlobalTransformers().stream()
+        pluginsRegistry.getGlobalTransformers().stream()
                 .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
                 .forEachOrdered(gt -> {
                     if (request.getContent() == null
@@ -154,33 +153,43 @@ public class RequestTransformerHandler
                 -> (rt.getPhase() == PHASE.REQUEST))
                 .forEachOrdered((TransformerMetadata rt) -> {
                     try {
-                        var tr = MongoServicePluginsRegistry.getInstance()
-                                .getTransformer(rt.getName());
-                        var t = tr.getInstance();
-                        var confArgs = JsonUtils.toBsonDocument(tr.getConfArgs());
+                        var _tr = pluginsRegistry
+                                .getTransformers()
+                                .stream()
+                                .filter(t -> rt.getName().equals(t.getName()))
+                                .findFirst();
 
-                        BsonValue requestContent = request.getContent() == null
-                                ? new BsonDocument()
-                                : request.getContent();
+                        if (_tr.isPresent()) {
+                            var tr = _tr.get();
+                            var t = tr.getInstance();
+                            var confArgs = JsonUtils.toBsonDocument(tr.getConfArgs());
 
-                        if (requestContent.isDocument()) {
-                            t.transform(
-                                    exchange,
-                                    context,
-                                    requestContent,
-                                    rt.getArgs(),
-                                    confArgs);
-                        } else if (request.isPost()
-                                && requestContent.isArray()) {
-                            requestContent.asArray().stream().forEachOrdered(
-                                    (doc) -> {
-                                        t.transform(
-                                                exchange,
-                                                context,
-                                                doc,
-                                                rt.getArgs(),
-                                                confArgs);
-                                    });
+                            BsonValue requestContent = request.getContent() == null
+                                    ? new BsonDocument()
+                                    : request.getContent();
+
+                            if (requestContent.isDocument()) {
+                                t.transform(
+                                        exchange,
+                                        context,
+                                        requestContent,
+                                        rt.getArgs(),
+                                        confArgs);
+                            } else if (request.isPost()
+                                    && requestContent.isArray()) {
+                                requestContent.asArray().stream().forEachOrdered(
+                                        (doc) -> {
+                                            t.transform(
+                                                    exchange,
+                                                    context,
+                                                    doc,
+                                                    rt.getArgs(),
+                                                    confArgs);
+                                        });
+                            }
+                        } else {
+                            LOGGER.warn("Request Transformer set to apply "
+                                    + "but not registered: {}", rt.getName());
                         }
                     } catch (IllegalArgumentException iae) {
                         String err = "Cannot find '"
@@ -190,8 +199,8 @@ public class RequestTransformerHandler
                         response.addWarning(err);
                     } catch (Throwable t) {
                         String err = "Error executing transformer '"
-                                + rt.getName() 
-                                + "': " 
+                                + rt.getName()
+                                + "': "
                                 + t.getMessage();
                         LOGGER.warn(err);
                         response.addWarning(err);
