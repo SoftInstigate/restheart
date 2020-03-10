@@ -17,7 +17,7 @@
  */
 package org.restheart;
 
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
@@ -50,9 +50,9 @@ public class ConfigurationTest {
     public void testConfigurationTemplate() throws IOException, ConfigurationException {
         Map<String, Object> obj = LoadConfiguration("env.properties");
 
-        Configuration.init(obj);
+        MongoServiceConfiguration.init(obj);
         
-        Configuration conf = Configuration.get();
+        MongoServiceConfiguration conf = MongoServiceConfiguration.get();
 
         assertEquals("/", conf.getMongoMounts().get(0).get("what"));
         assertEquals("mongodb://restheart:R3ste4rt!@mongodb-test/?readPreference=primary&authSource=admin",

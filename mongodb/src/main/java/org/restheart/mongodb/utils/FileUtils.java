@@ -44,7 +44,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,7 +94,7 @@ public class FileUtils {
      * @return
      * @throws ConfigurationException
      */
-    public static Configuration getConfiguration(String[] args) throws ConfigurationException {
+    public static MongoServiceConfiguration getConfiguration(String[] args) throws ConfigurationException {
         return getConfiguration(getConfigurationFilePath(args),
                 getPropertiesFilePath(args),
                 false);
@@ -107,7 +107,7 @@ public class FileUtils {
      * @return
      * @throws ConfigurationException
      */
-    public static Configuration getConfiguration(String[] args, boolean silent) throws ConfigurationException {
+    public static MongoServiceConfiguration getConfiguration(String[] args, boolean silent) throws ConfigurationException {
         return getConfiguration(
                 getConfigurationFilePath(args),
                 getPropertiesFilePath(args),
@@ -122,7 +122,7 @@ public class FileUtils {
      * @return
      * @throws ConfigurationException
      */
-    public static Configuration getConfiguration(Path configurationFilePath, Path propsFilePath, boolean silent) throws ConfigurationException {
+    public static MongoServiceConfiguration getConfiguration(Path configurationFilePath, Path propsFilePath, boolean silent) throws ConfigurationException {
         if (configurationFilePath != null) {
             if (propsFilePath != null) {
                 final Properties p = new Properties();
@@ -151,12 +151,12 @@ public class FileUtils {
                 Map<String, Object> obj = new Yaml().load(writer.toString());
                 
                 
-                return Configuration.init(obj, silent);
+                return MongoServiceConfiguration.init(obj, silent);
             } else {
-                return Configuration.initFromFile(configurationFilePath, silent);
+                return MongoServiceConfiguration.initFromFile(configurationFilePath, silent);
             }
         } else {
-            return new Configuration();
+            return new MongoServiceConfiguration();
         }
     }
 

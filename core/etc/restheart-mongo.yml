@@ -9,15 +9,15 @@
  # WARNING: Using the http listener is not secure with basic authentication:
  # credentials can be sniffed by a man-in-the-middle attack.
 
-https-listener: {{{https-listener}}}
+https-listener: false
 https-host: {{{https-host}}}
 https-port: {{{https-port}}}
 
-http-listener: {{{http-listener}}}
+http-listener: false
 http-host: {{{http-host}}}
 http-port: {{{http-port}}}
 
-ajp-listener: {{{ajp-listener}}}
+ajp-listener: true
 ajp-host: {{{ajp-host}}}
 ajp-port: {{{ajp-port}}}
 
@@ -41,7 +41,7 @@ instance-name: {{{instance-name}}}
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
 # proxies:
 #   - location: /
-#     proxy-pass: ajp://127.0.0.1:8089
+#     proxy-pass: ajp://127.0.0.1:8009
 #     rewrite-host-header: true
 #     connections-per-thread: 20
 #     name: restheart
@@ -162,25 +162,25 @@ use-embedded-keystore: true
 
  # See README.md for the list of available Authentication Mechanisms
 
-auth-mechanisms:
-  tokenBasicAuthMechanism:
-    enabled: true
-    realm: RESTHeart Realm
-  basicAuthMechanism:
-    enabled: true
-    realm: RESTHeart Realm
-    authenticator: simpleFileAuthenticator
-  digestAuthMechanism:
-    enabled: true
-    realm: RESTHeart Realm
-    domain: localhost
-    authenticator: simpleFileAuthenticator
-  identityAuthMechanism:
-    enabled: false
-    username: admin
-    roles:
-      - admin
-      - user
+# auth-mechanisms:
+#   tokenBasicAuthMechanism:
+#     enabled: true
+#     realm: RESTHeart Realm
+#   basicAuthMechanism:
+#     enabled: true
+#     realm: RESTHeart Realm
+#     authenticator: simpleFileAuthenticator
+#   digestAuthMechanism:
+#     enabled: true
+#     realm: RESTHeart Realm
+#     domain: localhost
+#     authenticator: simpleFileAuthenticator
+#   identityAuthMechanism:
+#     enabled: false
+#     username: admin
+#     roles:
+#       - admin
+#       - user
 
 ## Authenticators
 
@@ -189,10 +189,10 @@ auth-mechanisms:
 
  # See README.md for the list of available Authenticators
 
-authenticators:
-  simpleFileAuthenticator:
-    enabled: true
-    conf-file: {{{users-conf-file}}}
+# authenticators:
+#   simpleFileAuthenticator:
+#     enabled: true
+#     conf-file: {{{users-conf-file}}}
 
 ## Authorizers
 
@@ -205,13 +205,13 @@ authenticators:
 
  # See README.md for the list of available Authorizers
 
-authorizers:
-  requestPredicatesAuthorizer:
-    enabled: true
-    conf-file: {{{acl-conf-file}}}
-  fullAuthorizer:
-    enabled: false
-    authentication-required: true
+# authorizers:
+#   requestPredicatesAuthorizer:
+#     enabled: true
+#     conf-file: {{{acl-conf-file}}}
+#   fullAuthorizer:
+#     enabled: false
+#     authentication-required: true
 
 ## Token Manager
 
@@ -223,11 +223,11 @@ authorizers:
 
  # See README.md for the list of available Token Managers.
 
-token-manager:
-  rndTokenManager:
-    enabled: true
-    ttl: 15
-    srv-uri: /tokens
+# token-manager:
+#   rndTokenManager:
+#     enabled: true
+#     ttl: 15
+#     srv-uri: /tokens
 
 ## Aggregations variables
 
@@ -272,15 +272,19 @@ plugins-args:
   rndTokenService:
     uri: /tokens
     secured: false
+    enabled: false
   ping:
     secured: false
     msg: Greetings from RESTHeart!
+    enabled: false
   roles:
     uri: /roles
     secured: true
+    enabled: false
   echo:
     uri: /echo
     secured: false
+    enabled: false
   mongo:
     uri: /
     secured: true

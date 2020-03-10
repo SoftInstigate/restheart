@@ -164,6 +164,8 @@ plugins-directory: ../plugins
 # i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false) 
 
 plugins-args:
+  mongo:
+    enabled: false
   testInitializer:
     enabled: true 
   rndTokenService:
@@ -193,9 +195,7 @@ plugins-args:
   echoExampleAsyncResponseInterceptor:
     enabled: true
   secretHider:
-    enabled: true
-  mongo:
-    enabled: false
+    enabled: true 
       
 #### Logging
 

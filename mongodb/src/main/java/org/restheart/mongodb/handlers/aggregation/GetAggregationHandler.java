@@ -33,7 +33,7 @@ import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.utils.HttpStatus;
@@ -131,7 +131,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                                         mapReduce.getResolvedReduce(avars))
                                 .filter(
                                         mapReduce.getResolvedQuery(avars))
-                                .maxTime(Configuration.get()
+                                .maxTime(MongoServiceConfiguration.get()
                                         .getAggregationTimeLimit(), 
                                         TimeUnit.MILLISECONDS);
                     } catch (MongoCommandException | InvalidMetadataException ex) {
@@ -165,7 +165,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                                         request.getCollectionName())
                                 .aggregate(
                                         pipeline.getResolvedStagesAsList(avars))
-                                .maxTime(Configuration.get()
+                                .maxTime(MongoServiceConfiguration.get()
                                         .getAggregationTimeLimit(),
                                         TimeUnit.MILLISECONDS)
                                 .allowDiskUse(pipeline

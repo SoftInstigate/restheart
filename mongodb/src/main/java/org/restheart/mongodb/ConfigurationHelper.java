@@ -32,7 +32,7 @@ import org.xnio.Option;
  */
 public class ConfigurationHelper {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoServiceConfiguration.class);
 
     private static final Set<Option> UNDERTOW_OPTIONS;
 
@@ -88,7 +88,7 @@ public class ConfigurationHelper {
     @SuppressWarnings("unchecked")
     public static void setConnectionOptions(
             Builder builder,
-            Configuration configuration) {
+            MongoServiceConfiguration configuration) {
 
         Map<String, Object> options = configuration.getConnectionOptions();
 

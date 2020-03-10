@@ -20,7 +20,7 @@ package org.restheart.mongodb.handlers.injectors;
 import com.mongodb.MongoException;
 import java.util.Optional;
 import org.bson.BsonDocument;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
@@ -44,7 +44,7 @@ public class LocalCachesSingleton {
      *
      * @param conf
      */
-    public static void init(Configuration conf) {
+    public static void init(MongoServiceConfiguration conf) {
         ttl = conf.getLocalCacheTtl();
         enabled = conf.isLocalCacheEnabled();
         initialized = true;

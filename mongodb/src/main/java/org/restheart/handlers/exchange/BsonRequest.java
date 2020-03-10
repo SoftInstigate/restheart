@@ -46,7 +46,7 @@ import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
 import org.restheart.handlers.exchange.ExchangeKeys.HAL_MODE;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.URLUtils;
 import org.slf4j.LoggerFactory;
@@ -1380,13 +1380,13 @@ public class BsonRequest extends Request<BsonValue> {
         }
 
         // apply the default policy from configuration
-        ETAG_CHECK_POLICY dbP = Configuration.get()
+        ETAG_CHECK_POLICY dbP = MongoServiceConfiguration.get()
                 .getDbEtagCheckPolicy();
 
-        ETAG_CHECK_POLICY collP = Configuration.get()
+        ETAG_CHECK_POLICY collP = MongoServiceConfiguration.get()
                 .getCollEtagCheckPolicy();
 
-        ETAG_CHECK_POLICY docP = Configuration.get()
+        ETAG_CHECK_POLICY docP = MongoServiceConfiguration.get()
                 .getDocEtagCheckPolicy();
 
         if (LOGGER.isTraceEnabled()) {

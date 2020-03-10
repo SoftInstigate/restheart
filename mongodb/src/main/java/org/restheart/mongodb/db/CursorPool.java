@@ -39,7 +39,7 @@ import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +65,7 @@ public class CursorPool {
     // MUST BE < 10 since this 10 the TTL of the default cursor in mongodb
     private static final long TTL = 8 * 60 * 1000;
     private static final long POOL_SIZE
-            = Configuration.get().getEagerPoolSize();
+            = MongoServiceConfiguration.get().getEagerPoolSize();
     private static final ThreadPoolExecutor POOL_POPULATOR
             = new ThreadPoolExecutor(
                     1, 2,
@@ -89,19 +89,19 @@ public class CursorPool {
     private final DatabaseImpl dbsDAO;
 
     private final int SKIP_SLICE_LINEAR_DELTA
-            = Configuration.get().getEagerLinearSliceDelta();
+            = MongoServiceConfiguration.get().getEagerLinearSliceDelta();
 
     private final int SKIP_SLICE_LINEAR_WIDTH
-            = Configuration.get().getEagerLinearSliceWidht();
+            = MongoServiceConfiguration.get().getEagerLinearSliceWidht();
 
     private final int[] SKIP_SLICES_HEIGHTS
-            = Configuration.get().getEagerLinearSliceHeights();
+            = MongoServiceConfiguration.get().getEagerLinearSliceHeights();
 
     private final int SKIP_SLICE_RND_MIN_WIDTH
-            = Configuration.get().getEagerRndSliceMinWidht();
+            = MongoServiceConfiguration.get().getEagerRndSliceMinWidht();
 
     private final int SKIP_SLICE_RND_MAX_CURSORS
-            = Configuration.get().getEagerRndMaxCursors();
+            = MongoServiceConfiguration.get().getEagerRndMaxCursors();
 
     private final Cache<CursorPoolEntryKey, FindIterable<BsonDocument>> cache;
     private final LoadingCache<CursorPoolEntryKey, Long> collSizes;

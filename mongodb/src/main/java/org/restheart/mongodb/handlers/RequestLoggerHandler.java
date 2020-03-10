@@ -34,7 +34,7 @@ import java.util.Map;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ public class RequestLoggerHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestLoggerHandler.class);
 
-    private final Configuration configuration = Configuration.get();
+    private final MongoServiceConfiguration configuration = MongoServiceConfiguration.get();
 
     private final HttpHandler handler;
     

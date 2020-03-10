@@ -22,7 +22,7 @@ import java.util.Deque;
 import org.restheart.mongodb.Bootstrapper;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
@@ -49,7 +49,7 @@ public class CacheInvalidator implements Service {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
 
-        if (!Configuration.get().isLocalCacheEnabled()) {
+        if (!MongoServiceConfiguration.get().isLocalCacheEnabled()) {
             ResponseHelper.endExchangeWithMessage(
                     exchange,
                     HttpStatus.SC_NOT_MODIFIED,

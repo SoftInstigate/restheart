@@ -5,7 +5,7 @@ import io.undertow.util.HttpString;
 import java.util.Optional;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.Bootstrapper;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.slf4j.MDC;
 
 /**
@@ -35,7 +35,7 @@ public class TracingInstrumentationHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        Configuration.get().getTraceHeaders()
+        MongoServiceConfiguration.get().getTraceHeaders()
                 .forEach((traceIdHeader) -> {
                     Optional.ofNullable(exchange.getRequestHeaders()
                             .get(traceIdHeader))
@@ -53,7 +53,7 @@ public class TracingInstrumentationHandler extends PipelinedHandler {
             next(exchange);
         }
 
-        Configuration.get()
+        MongoServiceConfiguration.get()
                 .getTraceHeaders().forEach((traceIdHeader) -> {
                     MDC.remove(traceIdHeader);
                 });

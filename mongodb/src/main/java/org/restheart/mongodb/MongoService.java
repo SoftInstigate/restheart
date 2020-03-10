@@ -69,7 +69,7 @@ public class MongoService implements Service {
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public MongoService(Map<String, Object> confArgs) {
-        Configuration.init(confArgs);
+        MongoServiceConfiguration.init(confArgs);
         this.myURI = myURI();
         this.handlerPipeline = getHandlersPipeline();
     }
@@ -94,7 +94,7 @@ public class MongoService implements Service {
         var rootHandler = path();
 
         try {
-            MongoDBClientSingleton.init(Configuration.get().getMongoUri());
+            MongoDBClientSingleton.init(MongoServiceConfiguration.get().getMongoUri());
 
             LOGGER.info("MongoDB connection pool initialized");
             LOGGER.info("MongoDB version {}",
@@ -126,12 +126,12 @@ public class MongoService implements Service {
         PathTemplateHandler pathsTemplates = pathTemplate(false);
 
         // check that all mounts are either all paths or all path templates
-        boolean allPathTemplates = Configuration.get().getMongoMounts()
+        boolean allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
                 .stream()
                 .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
                 .allMatch(url -> isPathTemplate(url));
 
-        boolean allPaths = Configuration.get().getMongoMounts()
+        boolean allPaths = MongoServiceConfiguration.get().getMongoMounts()
                 .stream()
                 .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
                 .allMatch(url -> !isPathTemplate(url));
@@ -149,7 +149,7 @@ public class MongoService implements Service {
                     + " where url must be either all absolute paths"
                     + " or all path templates");
         } else {
-            Configuration.get().getMongoMounts().stream().forEach(m -> {
+            MongoServiceConfiguration.get().getMongoMounts().stream().forEach(m -> {
                 var uri = resolveURI((String) m.get(MONGO_MOUNT_WHERE_KEY));
                 var db = (String) m.get(MONGO_MOUNT_WHAT_KEY);
 
@@ -157,7 +157,7 @@ public class MongoService implements Service {
                         uri,
                         db,
                         true,
-                        Configuration.get().getAggregationCheckOperators(),
+                        MongoServiceConfiguration.get().getAggregationCheckOperators(),
                         basePipeline);
 
                 if (allPathTemplates) {
@@ -201,8 +201,8 @@ public class MongoService implements Service {
     private String myURI() {
         Object uri;
 
-        if (Configuration.get().getPluginsArgs() != null) {
-            var myconf = Configuration.get().getPluginsArgs().get("mongo");
+        if (MongoServiceConfiguration.get().getPluginsArgs() != null) {
+            var myconf = MongoServiceConfiguration.get().getPluginsArgs().get("mongo");
 
             if (myconf != null
                     && myconf.containsKey("uri")

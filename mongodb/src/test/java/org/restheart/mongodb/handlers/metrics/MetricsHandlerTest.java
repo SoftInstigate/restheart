@@ -12,11 +12,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.restheart.mongodb.Configuration;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.OFF;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.ROOT;
+import org.restheart.mongodb.MongoServiceConfiguration;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.DATABASE;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.OFF;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.handlers.exchange.BsonRequest;
 
 /**
@@ -93,9 +93,9 @@ public class MetricsHandlerTest {
         assertMetricsLevelForRequest(URI_METRICS_COLLECTION, OFF, OFF, OFF, COLLECTION);
     }
 
-    private void assertMetricsLevelForRequest(String resourceUri, Configuration.METRICS_GATHERING_LEVEL expectedLevelForConfigOff,
-            Configuration.METRICS_GATHERING_LEVEL expectedLevelForConfigRoot, Configuration.METRICS_GATHERING_LEVEL expectedLevelForConfigDatabase,
-            Configuration.METRICS_GATHERING_LEVEL expectedLevelForConfigCollection) {
+    private void assertMetricsLevelForRequest(String resourceUri, MongoServiceConfiguration.METRICS_GATHERING_LEVEL expectedLevelForConfigOff,
+            MongoServiceConfiguration.METRICS_GATHERING_LEVEL expectedLevelForConfigRoot, MongoServiceConfiguration.METRICS_GATHERING_LEVEL expectedLevelForConfigDatabase,
+            MongoServiceConfiguration.METRICS_GATHERING_LEVEL expectedLevelForConfigCollection) {
 
         var request = createRequest(resourceUri);
 
@@ -112,8 +112,8 @@ public class MetricsHandlerTest {
         assertEquals(expectedLevelForConfigCollection, handler.getMetricsLevelForRequest(request));
     }
 
-    private Configuration configWith(Configuration.METRICS_GATHERING_LEVEL mgl) {
-        return new Configuration() {
+    private MongoServiceConfiguration configWith(MongoServiceConfiguration.METRICS_GATHERING_LEVEL mgl) {
+        return new MongoServiceConfiguration() {
 
             @Override
             public METRICS_GATHERING_LEVEL getMetricsGatheringLevel() {

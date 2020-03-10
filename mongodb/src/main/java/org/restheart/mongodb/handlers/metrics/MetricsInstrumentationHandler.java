@@ -5,10 +5,10 @@ import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import java.util.concurrent.TimeUnit;
 import org.restheart.mongodb.Bootstrapper;
-import org.restheart.mongodb.Configuration;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.ROOT;
+import org.restheart.mongodb.MongoServiceConfiguration;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.DATABASE;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys._METRICS;
@@ -30,7 +30,7 @@ public class MetricsInstrumentationHandler extends PipelinedHandler {
      * Writable in unit tests to make testing easier
      */
     @VisibleForTesting
-    Configuration configuration = Configuration.get();
+    MongoServiceConfiguration configuration = MongoServiceConfiguration.get();
 
     @VisibleForTesting
     SharedMetricRegistryProxy metrics = new SharedMetricRegistryProxy();

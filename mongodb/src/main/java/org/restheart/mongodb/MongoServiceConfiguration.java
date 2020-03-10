@@ -51,8 +51,8 @@ import org.yaml.snakeyaml.Yaml;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class Configuration {
-    private static Configuration INSTANCE = null;
+public class MongoServiceConfiguration {
+    private static MongoServiceConfiguration INSTANCE = null;
     
     /**
      * undertow connetction options
@@ -65,7 +65,7 @@ public class Configuration {
     /**
      *
      */
-    public final static Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
+    public final static Logger LOGGER = LoggerFactory.getLogger(MongoServiceConfiguration.class);
 
     private boolean silent = false;
     private final boolean httpsListener;
@@ -127,22 +127,22 @@ public class Configuration {
     private final int maxPagesize;
     private final boolean allowUnescapedCharactersInUrl;
     
-    public static Configuration get() {
+    public static MongoServiceConfiguration get() {
         return INSTANCE;
     }
     
-    public static Configuration init(Map<String, Object> confs) {
+    public static MongoServiceConfiguration init(Map<String, Object> confs) {
         return init(confs, true);
     }
     
-    public static Configuration init(Map<String, Object> confs, boolean silent) {
-        INSTANCE = new Configuration(confs, silent);
+    public static MongoServiceConfiguration init(Map<String, Object> confs, boolean silent) {
+        INSTANCE = new MongoServiceConfiguration(confs, silent);
         
         return INSTANCE;
     }
     
-    public static Configuration initFromFile(Path confFile, boolean silent) {
-        INSTANCE = new Configuration(confFile, silent);
+    public static MongoServiceConfiguration initFromFile(Path confFile, boolean silent) {
+        INSTANCE = new MongoServiceConfiguration(confFile, silent);
         
         return INSTANCE;
     }
@@ -201,7 +201,7 @@ public class Configuration {
     /**
      * Creates a new instance of Configuration with defaults values.
      */
-    public Configuration() {
+    public MongoServiceConfiguration() {
         this(new HashMap<>(), false);
     }
 
@@ -212,7 +212,7 @@ public class Configuration {
      * @param confFilePath the path of the configuration file
      * @throws org.restheart.ConfigurationException
      */
-    private Configuration(final Path confFilePath) throws ConfigurationException {
+    private MongoServiceConfiguration(final Path confFilePath) throws ConfigurationException {
         this(confFilePath, false);
     }
 
@@ -224,7 +224,7 @@ public class Configuration {
      * @param silent
      * @throws org.restheart.ConfigurationException
      */
-    private Configuration(final Path confFilePath, boolean silent) throws ConfigurationException {
+    private MongoServiceConfiguration(final Path confFilePath, boolean silent) throws ConfigurationException {
         this(getConfigurationFromFile(confFilePath), silent);
     }
 
@@ -236,7 +236,7 @@ public class Configuration {
      * @param silent
      * @throws org.restheart.ConfigurationException
      */
-    private Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
+    private MongoServiceConfiguration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.configurationFileMap = conf;
         this.silent = silent;
 

@@ -88,7 +88,7 @@ public class Shutdowner {
 
         LOGGER.info("SIGTERM signal sent to RESTHeart instance with pid {} ", pid);
 
-        Configuration conf;
+        MongoServiceConfiguration conf;
 
         try {
             conf = FileUtils.getConfiguration(args, true);

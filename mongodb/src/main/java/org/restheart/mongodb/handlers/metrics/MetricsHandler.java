@@ -36,12 +36,12 @@ import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.restheart.mongodb.Bootstrapper;
-import org.restheart.mongodb.Configuration;
-import org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.OFF;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.ROOT;
+import org.restheart.mongodb.MongoServiceConfiguration;
+import org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.DATABASE;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.OFF;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
@@ -60,7 +60,7 @@ import org.restheart.mongodb.utils.ResponseHelper;
 public class MetricsHandler extends PipelinedHandler {
 
     @VisibleForTesting
-    Configuration configuration = Configuration.get();
+    MongoServiceConfiguration configuration = MongoServiceConfiguration.get();
 
     @VisibleForTesting
     SharedMetricRegistryProxy metrics = new SharedMetricRegistryProxy();
