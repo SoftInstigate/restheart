@@ -269,25 +269,18 @@ plugins-directory: {{{plugins-directory}}}
 # i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false)
 
 plugins-args:
-  rndTokenService:
-    uri: /tokens
-    secured: false
-    enabled: false
-  ping:
-    secured: false
-    msg: Greetings from RESTHeart!
-    enabled: false
-  roles:
-    uri: /roles
-    secured: true
-    enabled: false
-  echo:
-    uri: /echo
-    secured: false
-    enabled: false
   mongo:
     uri: /
     secured: true
+  # disabled plugins
+  rndTokenService:
+    enabled: false
+  ping:
+    enabled: false
+  roles:
+    enabled: false
+  echo:
+    enabled: false
 
 #### Logging
 
