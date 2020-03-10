@@ -129,7 +129,7 @@ public class Bootstrapper {
     private static GracefulShutdownHandler shutdownHandler = null;
     private static final PathHandler ROOT_HANDLER = path();
 
-    private static Configuration configuration;
+    private static MongoServiceConfiguration configuration;
     private static Undertow undertowServer;
 
     private static final String RESTHEART = "RESTHeart";
@@ -197,20 +197,20 @@ public class Bootstrapper {
         }
     }
 
-    private static Configuration loadConfiguration() throws UnsupportedEncodingException {
+    private static MongoServiceConfiguration loadConfiguration() throws UnsupportedEncodingException {
         if (CONFIGURATION_FILE == null) {
             LOGGER.warn("No configuration file provided, starting with default values!");
-            return new Configuration();
+            return new MongoServiceConfiguration();
         } else if (PROPERTIES_FILE == null) {
             try {
-                if (Configuration.isParametric(CONFIGURATION_FILE)) {
+                if (MongoServiceConfiguration.isParametric(CONFIGURATION_FILE)) {
                     logErrorAndExit("Configuration is parametric but no properties file has been specified. You can use -e option to specify the properties file. For more information check https://restheart.org/docs/configuration", null, false, -1);
                 }
             } catch (IOException ioe) {
                 logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
             }
 
-            return Configuration.initFromFile(CONFIGURATION_FILE,false);
+            return MongoServiceConfiguration.initFromFile(CONFIGURATION_FILE,false);
         } else {
             final Properties p = new Properties();
             try (InputStreamReader reader = new InputStreamReader(
@@ -234,7 +234,7 @@ public class Bootstrapper {
             }
 
             Map<String, Object> obj = new Yaml().load(writer.toString());
-            return Configuration.init(obj, false);
+            return MongoServiceConfiguration.init(obj, false);
         }
     }
 
@@ -618,7 +618,7 @@ public class Bootstrapper {
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
 
-            if (Configuration.get().isUseEmbeddedKeystore()) {
+            if (MongoServiceConfiguration.get().isUseEmbeddedKeystore()) {
                 char[] storepass = "restheart".toCharArray();
                 char[] keypass = "restheart".toCharArray();
                 String storename = "rakeystore.jks";
@@ -881,7 +881,7 @@ public class Bootstrapper {
      * @param accessManager
      */
     private static void plugStaticResourcesHandlers(
-            final Configuration conf,
+            final MongoServiceConfiguration conf,
             final PathHandler pathHandler) {
         if (!conf.getStaticResourcesMounts().isEmpty()) {
             conf.getStaticResourcesMounts().stream().forEach(sr -> {
@@ -978,7 +978,7 @@ public class Bootstrapper {
      * @param pathHandler
      */
     private static void plugServices(
-            final Configuration conf,
+            final MongoServiceConfiguration conf,
             final PathHandler pathHandler) {
         PluginsRegistry.getInstance().getServices().stream().forEach(srv -> {
             var srvConfArgs = srv.getConfArgs();

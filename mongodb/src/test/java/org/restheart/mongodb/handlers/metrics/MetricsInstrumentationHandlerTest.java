@@ -9,7 +9,7 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.handlers.exchange.BsonRequest;
 
 /**
@@ -46,10 +46,10 @@ public class MetricsInstrumentationHandlerTest {
     @Test
     @SuppressWarnings("deprecation")
     public void testAddMetrics() throws Exception {
-        Configuration config = mock(Configuration.class);
-        when(config.gatheringAboveOrEqualToLevel(Configuration.METRICS_GATHERING_LEVEL.ROOT)).thenReturn(true);
-        when(config.gatheringAboveOrEqualToLevel(Configuration.METRICS_GATHERING_LEVEL.DATABASE)).thenReturn(true);
-        when(config.gatheringAboveOrEqualToLevel(Configuration.METRICS_GATHERING_LEVEL.COLLECTION)).thenReturn(true);
+        MongoServiceConfiguration config = mock(MongoServiceConfiguration.class);
+        when(config.gatheringAboveOrEqualToLevel(MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT)).thenReturn(true);
+        when(config.gatheringAboveOrEqualToLevel(MongoServiceConfiguration.METRICS_GATHERING_LEVEL.DATABASE)).thenReturn(true);
+        when(config.gatheringAboveOrEqualToLevel(MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION)).thenReturn(true);
 
         MetricRegistry registry = new MetricRegistry();
         MetricRegistry registryDb = new MetricRegistry();

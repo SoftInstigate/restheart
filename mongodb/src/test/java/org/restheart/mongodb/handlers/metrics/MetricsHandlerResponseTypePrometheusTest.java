@@ -10,9 +10,9 @@ import java.util.regex.Pattern;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.COLLECTION;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.DATABASE;
-import static org.restheart.mongodb.Configuration.METRICS_GATHERING_LEVEL.ROOT;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.DATABASE;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT;
 
 /**
  *

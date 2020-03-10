@@ -41,7 +41,7 @@ import org.restheart.mongodb.Bootstrapper;
 import static org.restheart.mongodb.ConfigurationKeys.DEFAULT_CURSOR_BATCH_SIZE;
 import static org.restheart.handlers.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
 import static org.restheart.handlers.exchange.ExchangeKeys.META_COLLNAME;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,9 +55,9 @@ import org.slf4j.LoggerFactory;
  */
 class CollectionDAO {
 
-    private static final int BATCH_SIZE = Configuration
+    private static final int BATCH_SIZE = MongoServiceConfiguration
             .get() != null
-                    ? Configuration
+                    ? MongoServiceConfiguration
                             .get()
                             .getCursorBatchSize()
                     : DEFAULT_CURSOR_BATCH_SIZE;
@@ -175,7 +175,7 @@ class CollectionDAO {
                 .sort(sortBy)
                 .batchSize(BATCH_SIZE)
                 .hint(hint)
-                .maxTime(Configuration.get()
+                .maxTime(MongoServiceConfiguration.get()
                         .getQueryTimeLimit(), TimeUnit.MILLISECONDS);
     }
 

@@ -45,7 +45,7 @@ import static org.restheart.handlers.exchange.ExchangeKeys.SORT_BY_QPARAM_KEY;
 import static org.restheart.handlers.exchange.ExchangeKeys.SORT_QPARAM_KEY;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.Bootstrapper;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.mongodb.handlers.aggregation.AggregationPipeline;
 import org.restheart.mongodb.representation.Resource.REPRESENTATION_FORMAT;
@@ -62,11 +62,11 @@ import org.restheart.utils.HttpStatus;
 public class RequestContextInjectorHandler extends PipelinedHandler {
     private static final Logger LOGGER = Logger.getLogger(RequestContextInjectorHandler.class.getName());
 
-    private static final int DEFAULT_PAGESIZE = Configuration
+    private static final int DEFAULT_PAGESIZE = MongoServiceConfiguration
             .get()
             .getDefaultPagesize();
 
-    private static final int MAX_PAGESIZE = Configuration
+    private static final int MAX_PAGESIZE = MongoServiceConfiguration
             .get()
             .getMaxPagesize();
 
@@ -157,7 +157,7 @@ public class RequestContextInjectorHandler extends PipelinedHandler {
                 .get(REPRESENTATION_FORMAT_KEY);
 
         // default value
-        REPRESENTATION_FORMAT rep = Configuration
+        REPRESENTATION_FORMAT rep = MongoServiceConfiguration
                 .get()
                 .getDefaultRepresentationFormat();
 

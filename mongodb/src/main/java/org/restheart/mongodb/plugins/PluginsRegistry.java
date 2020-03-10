@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import org.restheart.mongodb.Bootstrapper;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.RegisterPlugin;
@@ -165,7 +165,7 @@ public class PluginsRegistry {
 
     @SuppressWarnings("unchecked")
     private Map<String, Map<String, Object>> consumeConfiguration() {
-        Map<String, Map<String, Object>> pluginsArgs = Configuration
+        Map<String, Map<String, Object>> pluginsArgs = MongoServiceConfiguration
                 .get()
                 .getPluginsArgs();
 
@@ -538,7 +538,7 @@ public class PluginsRegistry {
             }
         } catch (IOException ex) {
             LOGGER.error("Cannot read jars in plugins directory {}",
-                    Configuration.get().getPluginsDirectory(),
+                    MongoServiceConfiguration.get().getPluginsDirectory(),
                     ex.getMessage());
         }
 
@@ -546,7 +546,7 @@ public class PluginsRegistry {
     }
 
     private Path getPluginsDirectory() {
-        var pluginsDir = Configuration.get().getPluginsDirectory();
+        var pluginsDir = MongoServiceConfiguration.get().getPluginsDirectory();
 
         if (pluginsDir == null) {
             return null;

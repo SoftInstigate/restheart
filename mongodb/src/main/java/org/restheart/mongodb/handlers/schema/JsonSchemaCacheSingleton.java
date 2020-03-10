@@ -12,7 +12,7 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.mongodb.Bootstrapper;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -45,14 +45,14 @@ public class JsonSchemaCacheSingleton {
     JsonSchemaCacheSingleton() {
         dbsDAO = new DatabaseImpl();
 
-        if (Configuration.get().isSchemaCacheEnabled()) {
+        if (MongoServiceConfiguration.get().isSchemaCacheEnabled()) {
             this.schemaCache = CacheFactory.createLocalCache(MAX_CACHE_SIZE,
                     Cache.EXPIRE_POLICY.AFTER_WRITE,
-                    Configuration.get().getSchemaCacheTtl());
+                    MongoServiceConfiguration.get().getSchemaCacheTtl());
 
             this.rawSchemaCache = CacheFactory.createLocalCache(MAX_CACHE_SIZE,
                     Cache.EXPIRE_POLICY.AFTER_WRITE,
-                    Configuration.get().getSchemaCacheTtl());
+                    MongoServiceConfiguration.get().getSchemaCacheTtl());
         }
     }
 
@@ -67,7 +67,7 @@ public class JsonSchemaCacheSingleton {
             String schemaStoreDb,
             BsonValue schemaId)
             throws JsonSchemaNotFoundException {
-        if (Configuration.get().isSchemaCacheEnabled()) {
+        if (MongoServiceConfiguration.get().isSchemaCacheEnabled()) {
             Optional<Schema> _schema = schemaCache.get(
                     schemaStoreDb
                     + SEPARATOR
@@ -99,7 +99,7 @@ public class JsonSchemaCacheSingleton {
             String schemaStoreDb,
             BsonValue schemaId)
             throws JsonSchemaNotFoundException {
-        if (Configuration.get().isSchemaCacheEnabled()) {
+        if (MongoServiceConfiguration.get().isSchemaCacheEnabled()) {
             Optional<BsonDocument> _schema
                     = rawSchemaCache.get(schemaStoreDb + SEPARATOR + schemaId);
 

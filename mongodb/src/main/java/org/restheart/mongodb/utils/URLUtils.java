@@ -48,7 +48,7 @@ import static org.restheart.handlers.exchange.ExchangeKeys.MAX_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.MIN_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.NULL_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.TRUE_KEY_ID;
-import org.restheart.mongodb.Configuration;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.representation.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -239,7 +239,7 @@ public class URLUtils {
      * @return
      */
     static public String getRemappedRequestURL(HttpServerExchange exchange) {
-        String ibu = Configuration.get().getInstanceBaseURL();
+        String ibu = MongoServiceConfiguration.get().getInstanceBaseURL();
 
         if (ibu == null) {
             return exchange.getRequestURL();

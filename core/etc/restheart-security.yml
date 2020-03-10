@@ -9,15 +9,15 @@
  # WARNING: Using the http listener is not secure with basic authentication:
  # credentials can be sniffed by a man-in-the-middle attack.
 
-https-listener: false
-https-host: 0.0.0.0
-https-port: 4443
+https-listener: {{{https-listener}}}
+https-host: {{{https-host}}}
+https-port: {{{https-port}}}
 
-http-listener: true
+http-listener: {{{http-listener}}}
 http-host: {{{http-host}}}
 http-port: {{{http-port}}}
 
-ajp-listener: {{{ajp-listener}}}
+ajp-listener: false
 ajp-host: {{{ajp-host}}}
 ajp-port: {{{ajp-port}}}
 
@@ -39,12 +39,12 @@ instance-name: {{{instance-name}}}
  # max-queue-size (optional, default 0) Controls the number of connections to create per thread.
  # connections-ttl (optional, default -1) Connections Time to Live in seconds.
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
-# proxies:
-#   - location: /
-#     proxy-pass: {{{restheart-proxy-pass}}}
-#     rewrite-host-header: true
-#     connections-per-thread: 20
-#     name: restheart
+proxies:
+  - location: /
+    proxy-pass: ajp://127.0.0.1:8009
+    rewrite-host-header: true
+    connections-per-thread: 20
+    name: restheart
 
 #### MongoDB
 
@@ -274,7 +274,7 @@ plugins-args:
     secured: false
   ping:
     secured: false
-    msg: {{{ping-hello-message}}}
+    msg: Greetings from RESTHeart!
   roles:
     uri: /roles
     secured: true
@@ -283,7 +283,7 @@ plugins-args:
     secured: false
   mongo:
     uri: /
-    secured: true
+    secured: false
 
 #### Logging
 
@@ -384,10 +384,10 @@ force-gzip-encoding: false
 requests-limit: 1000
 
  # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
-io-threads: 4
+io-threads: {{{io-threads}}}
 
  # Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
-worker-threads: 16
+worker-threads: {{{worker-threads}}}
 
  # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
 buffer-size: 16384

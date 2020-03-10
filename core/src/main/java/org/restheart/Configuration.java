@@ -35,6 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
+import static org.restheart.ConfigurationKeys.AJP_HOST_KEY;
+import static org.restheart.ConfigurationKeys.AJP_LISTENER_KEY;
+import static org.restheart.ConfigurationKeys.AJP_PORT_KEY;
 import static org.restheart.ConfigurationKeys.ALLOW_UNESCAPED_CHARACTERS_IN_URL;
 import static org.restheart.ConfigurationKeys.ANSI_CONSOLE_KEY;
 import static org.restheart.ConfigurationKeys.AUTHENTICATORS_KEY;
@@ -43,6 +46,9 @@ import static org.restheart.ConfigurationKeys.AUTH_MECHANISMS_KEY;
 import static org.restheart.ConfigurationKeys.BUFFER_SIZE_KEY;
 import static org.restheart.ConfigurationKeys.CERT_PASSWORD_KEY;
 import static org.restheart.ConfigurationKeys.CONNECTION_OPTIONS_KEY;
+import static org.restheart.ConfigurationKeys.DEFAULT_AJP_HOST;
+import static org.restheart.ConfigurationKeys.DEFAULT_AJP_LISTENER;
+import static org.restheart.ConfigurationKeys.DEFAULT_AJP_PORT;
 import static org.restheart.ConfigurationKeys.DEFAULT_HTTPS_HOST;
 import static org.restheart.ConfigurationKeys.DEFAULT_HTTPS_LISTENER;
 import static org.restheart.ConfigurationKeys.DEFAULT_HTTPS_PORT;
@@ -55,6 +61,7 @@ import static org.restheart.ConfigurationKeys.ENABLE_LOG_CONSOLE_KEY;
 import static org.restheart.ConfigurationKeys.ENABLE_LOG_FILE_KEY;
 import static org.restheart.ConfigurationKeys.FORCE_GZIP_ENCODING_KEY;
 import static org.restheart.ConfigurationKeys.HTTPS_HOST_KEY;
+import static org.restheart.ConfigurationKeys.HTTPS_LISTENER_KEY;
 import static org.restheart.ConfigurationKeys.HTTPS_PORT_KEY;
 import static org.restheart.ConfigurationKeys.HTTP_HOST_KEY;
 import static org.restheart.ConfigurationKeys.HTTP_LISTENER_KEY;
@@ -72,14 +79,13 @@ import static org.restheart.ConfigurationKeys.PROXY_KEY;
 import static org.restheart.ConfigurationKeys.REQUESTS_LIMIT_KEY;
 import static org.restheart.ConfigurationKeys.REQUESTS_LOG_TRACE_HEADERS_KEY;
 import static org.restheart.ConfigurationKeys.SERVICES_KEY;
+import static org.restheart.ConfigurationKeys.TOKEN_MANAGER_KEY;
 import static org.restheart.ConfigurationKeys.USE_EMBEDDED_KEYSTORE_KEY;
 import static org.restheart.ConfigurationKeys.WORKER_THREADS_KEY;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
-import static org.restheart.ConfigurationKeys.HTTPS_LISTENER_KEY;
-import static org.restheart.ConfigurationKeys.TOKEN_MANAGER_KEY;
 
 /**
  * Utility class to help dealing with the configuration file.
@@ -108,6 +114,9 @@ public class Configuration {
     private final boolean httpListener;
     private final int httpPort;
     private final String httpHost;
+    private final boolean ajpListener;
+    private final int ajpPort;
+    private final String ajpHost;
     private final String instanceName;
     private final String pluginsDirectory;
     private final boolean useEmbeddedKeystore;
@@ -158,6 +167,10 @@ public class Configuration {
         defaultConf.put(HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER);
         defaultConf.put(HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
         defaultConf.put(HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
+        
+        defaultConf.put(AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
+        defaultConf.put(AJP_PORT_KEY, DEFAULT_AJP_PORT);
+        defaultConf.put(AJP_HOST_KEY, DEFAULT_AJP_HOST);
         
         defaultConf.put(INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
         
@@ -254,6 +267,10 @@ public class Configuration {
         httpListener = getAsBoolean(conf, HTTP_LISTENER_KEY, false);
         httpPort = getAsInteger(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
         httpHost = getAsString(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
+        
+        ajpListener = getAsBoolean(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
+        ajpPort = getAsInteger(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
+        ajpHost = getAsString(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
 
         instanceName = getAsString(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
         useEmbeddedKeystore = getAsBoolean(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
@@ -405,14 +422,17 @@ public class Configuration {
     @Override
     public String toString() {
         return "Configuration{"
-                + "silent=" + silent
+                + "instanceName=" + instanceName
+                + ", silent=" + silent
                 + ", httpsListener=" + httpsListener
                 + ", httpsPort=" + httpsPort
                 + ", httpsHost=" + httpsHost
                 + ", httpListener=" + httpListener
                 + ", httpPort=" + httpPort
                 + ", httpHost=" + httpHost
-                + ", instanceName=" + instanceName
+                + ", ajpListener=" + ajpListener
+                + ", ajpPort=" + ajpPort
+                + ", ajpHost=" + ajpHost
                 + ", pluginsDirectory=" + pluginsDirectory
                 + ", useEmbeddedKeystore=" + useEmbeddedKeystore
                 + ", keystoreFile=" + keystoreFile
@@ -512,6 +532,27 @@ public class Configuration {
      */
     public String getHttpHost() {
         return httpHost;
+    }
+    
+    /**
+     * @return the ajpListener
+     */
+    public boolean isAjpListener() {
+        return ajpListener;
+    }
+
+    /**
+     * @return the ajpPort
+     */
+    public int getAjpPort() {
+        return ajpPort;
+    }
+
+    /**
+     * @return the ajpHost
+     */
+    public String getAjpHost() {
+        return ajpHost;
     }
 
     /**
