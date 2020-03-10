@@ -39,12 +39,12 @@ instance-name: {{{instance-name}}}
  # max-queue-size (optional, default 0) Controls the number of connections to create per thread.
  # connections-ttl (optional, default -1) Connections Time to Live in seconds.
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
-proxies:
-  - location: /proxy
-    proxy-pass: {{{restheart-proxy-pass}}}
-    rewrite-host-header: true
-    connections-per-thread: 20
-    name: restheart
+# proxies:
+#   - location: /
+#     proxy-pass: {{{restheart-proxy-pass}}}
+#     rewrite-host-header: true
+#     connections-per-thread: 20
+#     name: restheart
 
 #### MongoDB
 

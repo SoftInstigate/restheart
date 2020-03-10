@@ -169,16 +169,7 @@ public class Configuration {
         
         defaultConf.put(ANSI_CONSOLE_KEY, new ArrayList<>());
         
-        var proxies = new HashMap();
-
-        LOGGER.warn("No proxies defined via configuration, "
-                + "assuming default proxy: / -> ajp://localhost:8009");
-
-        proxies.put(ConfigurationKeys.PROXY_LOCATION_KEY, "/");
-        proxies.put(ConfigurationKeys.PROXY_PASS_KEY, "ajp://localhost:8009");
-        proxies.put(ConfigurationKeys.PROXY_NAME, "restheart");
-        
-        defaultConf.put(PROXY_KEY, proxies);
+        defaultConf.put(PROXY_KEY, new HashMap());
         
         defaultConf.put(PLUGINS_DIRECTORY_PATH_KEY, "plugins");
         
@@ -191,7 +182,7 @@ public class Configuration {
                 System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "restheart-security.log"));
         
-        defaultConf.put(LOG_FILE_PATH_KEY, proxies);
+        defaultConf.put(LOG_FILE_PATH_KEY, new LinkedHashMap<>());
         defaultConf.put(ENABLE_LOG_CONSOLE_KEY, true);
         defaultConf.put(ENABLE_LOG_FILE_KEY, true);
         defaultConf.put(LOG_LEVEL_KEY, Level.INFO);
@@ -271,10 +262,6 @@ public class Configuration {
         certPassword = getAsString(conf, CERT_PASSWORD_KEY, null);
 
         proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
-
-        if (proxies.isEmpty()) {
-            initDefaultProxy();
-        }
 
         pluginsDirectory = getAsString(conf, PLUGINS_DIRECTORY_PATH_KEY, "plugins");
 
@@ -392,19 +379,6 @@ public class Configuration {
         return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}"))
                 .limit(1)
                 .count() > 0;
-    }
-
-    private void initDefaultProxy() {
-        var entry = new HashMap();
-
-        LOGGER.warn("No proxies defined via configuration, "
-                + "assuming default proxy: / -> ajp://localhost:8009");
-
-        entry.put(ConfigurationKeys.PROXY_LOCATION_KEY, "/");
-        entry.put(ConfigurationKeys.PROXY_PASS_KEY, "ajp://localhost:8009");
-        entry.put(ConfigurationKeys.PROXY_NAME, "restheart");
-
-        this.proxies.add(entry);
     }
 
     /**
