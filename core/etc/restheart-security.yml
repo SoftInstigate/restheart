@@ -281,9 +281,13 @@ plugins-args:
   echo:
     uri: /echo
     secured: false
+  # disabled plugins
   mongo:
-    uri: /
-    secured: false
+    enabled: false
+  csvLoader:
+    enabled: false
+  cacheInvalidator:
+    enabled: false
 
 #### Logging
 
