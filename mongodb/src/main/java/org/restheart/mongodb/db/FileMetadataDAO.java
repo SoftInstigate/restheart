@@ -17,6 +17,7 @@
  */
 package org.restheart.mongodb.db;
 
+import org.restheart.handlers.exchange.OperationResult;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;

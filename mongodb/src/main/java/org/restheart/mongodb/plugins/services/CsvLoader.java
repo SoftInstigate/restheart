@@ -35,18 +35,19 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.mongodb.db.MongoDBClientSingleton;
-import org.restheart.mongodb.handlers.RequestContext;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.mongodb.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
-import org.restheart.mongodb.plugins.Transformer;
+import org.restheart.plugins.Transformer;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.PluginsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,10 +70,17 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @SuppressWarnings("unchecked")
-@RegisterPlugin(name = "csvLoader", 
+@RegisterPlugin(name = "csvLoader",
         description = "Uploads a csv file in a collection",
         defaultURI = "/csv")
 public class CsvLoader implements Service {
+
+    private final PluginsRegistry pluginsRegistry;
+
+    @InjectPluginsRegistry
+    public CsvLoader(PluginsRegistry pluginsRegistry) {
+        this.pluginsRegistry = pluginsRegistry;
+    }
 
     /**
      *
@@ -127,7 +135,8 @@ public class CsvLoader implements Service {
             if (doesApply(request)) {
                 if (checkContentType(exchange)) {
                     try {
-                        CsvRequestParams params = new CsvRequestParams(exchange);
+                        CsvRequestParams params = new CsvRequestParams(exchange,
+                                pluginsRegistry);
 
                         if (params.update && params.idIdx < 0) {
                             ResponseHelper.endExchangeWithMessage(exchange,
@@ -330,7 +339,7 @@ class CsvRequestParams {
     public final Deque<String> props;
     public final Deque<String> values;
 
-    CsvRequestParams(HttpServerExchange exchange) {
+    CsvRequestParams(HttpServerExchange exchange, PluginsRegistry pluginsRegistry) {
         Deque<String> _db = exchange.getQueryParameters().get(DB_QPARAM_NAME);
         Deque<String> _coll = exchange.getQueryParameters().get(COLL_QPARAM_NAME);
         Deque<String> _sep = exchange.getQueryParameters().get(SEPARATOR_QPARAM_NAME);
@@ -365,7 +374,18 @@ class CsvRequestParams {
         String transformerName = _tranformer != null ? _tranformer.size() > 0 ? _tranformer.getFirst() : null : null;
 
         if (transformerName != null) {
-            transformer = PluginsRegistry.getInstance().getTransformer(transformerName).getInstance();
+            var _transformer = pluginsRegistry
+                    .getTransformers()
+                    .stream()
+                    .filter(t -> transformerName.equals(t.getName()))
+                    .findFirst();
+
+            if (_transformer.isPresent()) {
+                transformer = _transformer.get().getInstance();
+            } else {
+                transformer = null;
+            }
+
         } else {
             transformer = null;
         }

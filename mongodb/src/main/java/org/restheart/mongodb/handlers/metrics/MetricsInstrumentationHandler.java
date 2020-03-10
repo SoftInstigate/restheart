@@ -4,14 +4,13 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import java.util.concurrent.TimeUnit;
-import org.restheart.mongodb.Bootstrapper;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import static org.restheart.handlers.exchange.ExchangeKeys._METRICS;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT;
-import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.BsonRequest;
-import static org.restheart.handlers.exchange.ExchangeKeys._METRICS;
 
 /**
  * Handler to measure calls to restheart. Will only take actions if metrics

@@ -22,14 +22,14 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.handlers.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
-import org.restheart.mongodb.metadata.TransformerMetadata.PHASE;
-import org.restheart.mongodb.plugins.GlobalTransformer;
-import org.restheart.mongodb.plugins.PluginsRegistry;
+import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
 import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.plugins.GlobalTransformer;
+import org.restheart.plugins.Transformer.PHASE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,7 +120,7 @@ public class RequestTransformerHandler
         var context = RequestContext.wrap(exchange);
         
         // execute global request tranformers
-        PluginsRegistry.getInstance().getGlobalTransformers().stream()
+        MongoServicePluginsRegistry.getInstance().getGlobalTransformers().stream()
                 .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
                 .forEachOrdered(gt -> {
                     if (request.getContent() == null
@@ -151,10 +151,10 @@ public class RequestTransformerHandler
 
         // execute request tranformers
         rts.stream().filter((rt)
-                -> (rt.getPhase() == TransformerMetadata.PHASE.REQUEST))
+                -> (rt.getPhase() == PHASE.REQUEST))
                 .forEachOrdered((TransformerMetadata rt) -> {
                     try {
-                        var tr = PluginsRegistry.getInstance()
+                        var tr = MongoServicePluginsRegistry.getInstance()
                                 .getTransformer(rt.getName());
                         var t = tr.getInstance();
                         var confArgs = JsonUtils.toBsonDocument(tr.getConfArgs());

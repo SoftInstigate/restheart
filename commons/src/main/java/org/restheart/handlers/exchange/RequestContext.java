@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.mongodb.handlers;
+package org.restheart.handlers.exchange;
 
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
@@ -29,16 +29,12 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
-import org.restheart.mongodb.db.CursorPool.EAGER_CURSOR_ALLOCATION_POLICY;
-import org.restheart.mongodb.db.OperationResult;
-import org.restheart.mongodb.db.sessions.ClientSessionImpl;
 import org.restheart.handlers.exchange.AbstractExchange.METHOD;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
+import org.restheart.handlers.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.handlers.exchange.ExchangeKeys.HAL_MODE;
+import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
-import org.restheart.mongodb.representation.Resource.REPRESENTATION_FORMAT;
 
 /**
  *

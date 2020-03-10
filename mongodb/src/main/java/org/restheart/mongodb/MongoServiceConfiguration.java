@@ -17,11 +17,8 @@
  */
 package org.restheart.mongodb;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
 import com.google.common.collect.Maps;
 import com.mongodb.MongoClientURI;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -38,10 +35,9 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import org.restheart.ConfigurationException;
-import static org.restheart.mongodb.ConfigurationKeys.*;
 import org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
-import org.restheart.mongodb.representation.Resource.REPRESENTATION_FORMAT;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
@@ -53,7 +49,7 @@ import org.yaml.snakeyaml.Yaml;
  */
 public class MongoServiceConfiguration {
     private static MongoServiceConfiguration INSTANCE = null;
-    
+
     /**
      * undertow connetction options
      *
@@ -61,89 +57,58 @@ public class MongoServiceConfiguration {
      * http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
      */
     public static final String CONNECTION_OPTIONS_KEY = "connection-options";
-    
+
     /**
      *
      */
     public final static Logger LOGGER = LoggerFactory.getLogger(MongoServiceConfiguration.class);
 
     private boolean silent = false;
-    private final boolean httpsListener;
-    private final int httpsPort;
-    private final String httpsHost;
-    private final boolean httpListener;
-    private final int httpPort;
-    private final String httpHost;
-    private final boolean ajpListener;
-    private final int ajpPort;
-    private final String ajpHost;
-    private final String instanceName;
     private final String instanceBaseURL;
-    private final String pluginsDirectory;
     private final REPRESENTATION_FORMAT defaultRepresentationFormat;
-    private final boolean useEmbeddedKeystore;
-    private final String keystoreFile;
-    private final String keystorePassword;
-    private final String certPassword;
     private final MongoClientURI mongoUri;
     private final List<Map<String, Object>> mongoMounts;
-    private final List<Map<String, Object>> staticResourcesMounts;
     private final Map<String, Map<String, Object>> pluginsArgs;
-    private final String logFilePath;
-    private final Level logLevel;
-    private final boolean logToConsole;
-    private final boolean logToFile;
-    private final List<String> traceHeaders;
     private final boolean localCacheEnabled;
     private final long localCacheTtl;
     private final boolean schemaCacheEnabled;
     private final long schemaCacheTtl;
     private final int requestsLimit;
-    private final int ioThreads;
-    private final int workerThreads;
-    private final int bufferSize;
-    private final boolean directBuffers;
-    private final boolean forceGzipEncoding;
     private final int eagerPoolSize;
     private final int eagerLinearSliceWidht;
     private final int eagerLinearSliceDelta;
     private final int[] eagerLinearSliceHeights;
     private final int eagerRndSliceMinWidht;
     private final int eagerRndMaxCursors;
-    private final boolean authTokenEnabled;
-    private final int authTokenTtl;
     private final ETAG_CHECK_POLICY dbEtagCheckPolicy;
     private final ETAG_CHECK_POLICY collEtagCheckPolicy;
     private final ETAG_CHECK_POLICY docEtagCheckPolicy;
     private final Map<String, Object> connectionOptions;
-    private final Integer logExchangeDump;
-    private final METRICS_GATHERING_LEVEL metricsGatheringLevel;
     private final long queryTimeLimit;
     private final long aggregationTimeLimit;
     private final boolean aggregationCheckOperators;
-    private final boolean ansiConsole;
     private final int cursorBatchSize;
     private final int defaultPagesize;
     private final int maxPagesize;
-    private final boolean allowUnescapedCharactersInUrl;
-    
+    private final METRICS_GATHERING_LEVEL metricsGatheringLevel;
+
     public static MongoServiceConfiguration get() {
         return INSTANCE;
     }
-    
+
     public static MongoServiceConfiguration init(Map<String, Object> confs) {
         return init(confs, true);
     }
-    
+
     public static MongoServiceConfiguration init(Map<String, Object> confs, boolean silent) {
         INSTANCE = new MongoServiceConfiguration(confs, silent);
-        
+
         return INSTANCE;
     }
-    
+
     public static MongoServiceConfiguration initFromFile(Path confFile, boolean silent) {
         INSTANCE = new MongoServiceConfiguration(confFile, silent);
-        
+
         return INSTANCE;
     }
 
@@ -240,22 +205,6 @@ public class MongoServiceConfiguration {
         this.configurationFileMap = conf;
         this.silent = silent;
 
-        ansiConsole = getAsBooleanOrDefault(conf, ANSI_CONSOLE_KEY, true);
-
-        httpsListener = getAsBooleanOrDefault(conf, HTTPS_LISTENER, DEFAULT_HTTPS_LISTENER);
-        httpsPort = getAsIntegerOrDefault(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
-        httpsHost = getAsStringOrDefault(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
-
-        httpListener = getAsBooleanOrDefault(conf, HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER);
-        httpPort = getAsIntegerOrDefault(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
-        httpHost = getAsStringOrDefault(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
-
-        ajpListener = getAsBooleanOrDefault(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
-        ajpPort = getAsIntegerOrDefault(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
-        ajpHost = getAsStringOrDefault(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
-
-        instanceName = getAsStringOrDefault(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-
         instanceBaseURL = getAsStringOrDefault(conf, INSTANCE_BASE_URL_KEY, null);
 
         String _representationFormat = getAsStringOrDefault(conf,
@@ -275,11 +224,6 @@ public class MongoServiceConfiguration {
             defaultRepresentationFormat = rf;
         }
 
-        useEmbeddedKeystore = getAsBooleanOrDefault(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
-        keystoreFile = getAsStringOrDefault(conf, KEYSTORE_FILE_KEY, null);
-        keystorePassword = getAsStringOrDefault(conf, KEYSTORE_PASSWORD_KEY, null);
-        certPassword = getAsStringOrDefault(conf, CERT_PASSWORD_KEY, null);
-
         try {
             mongoUri = new MongoClientURI(getAsStringOrDefault(conf, MONGO_URI_KEY, DEFAULT_MONGO_URI));
         } catch (IllegalArgumentException iae) {
@@ -294,36 +238,8 @@ public class MongoServiceConfiguration {
 
         mongoMounts = getAsListOfMaps(conf, MONGO_MOUNTS_KEY, mongoMountsDefault);
 
-        ArrayList<Map<String, Object>> defaultStaticResourcesMounts = new ArrayList<>();
-
-        staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, defaultStaticResourcesMounts);
-        
-        pluginsDirectory =  getAsStringOrDefault(conf, PLUGINS_DIRECTORY_PATH_KEY, "plugins");
-        
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
-
-        logFilePath = getAsStringOrDefault(conf, LOG_FILE_PATH_KEY,
-                URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
-                        .concat(File.separator + "restheart.log"));
-        String _logLevel = getAsStringOrDefault(conf, LOG_LEVEL_KEY, "INFO");
-        logToConsole = getAsBooleanOrDefault(conf, ENABLE_LOG_CONSOLE_KEY, true);
-        logToFile = getAsBooleanOrDefault(conf, ENABLE_LOG_FILE_KEY, true);
-        traceHeaders = getAsListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
-
-        Level level;
-
-        try {
-            level = Level.valueOf(_logLevel);
-        } catch (Exception e) {
-            if (!silent) {
-                LOGGER.info("wrong value for parameter {}: {}. "
-                        + "Using its default value {}", "log-level", _logLevel, "INFO");
-            }
-            level = Level.INFO;
-        }
-
-        logLevel = level;
-
+        
         requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
 
         queryTimeLimit = getAsLongOrDefault(conf, QUERY_TIME_LIMIT_KEY, (long) 0);
@@ -336,22 +252,12 @@ public class MongoServiceConfiguration {
         schemaCacheEnabled = getAsBooleanOrDefault(conf, SCHEMA_CACHE_ENABLED_KEY, true);
         schemaCacheTtl = getAsLongOrDefault(conf, SCHEMA_CACHE_TTL_KEY, (long) 1000);
 
-        ioThreads = getAsIntegerOrDefault(conf, IO_THREADS_KEY, 2);
-        workerThreads = getAsIntegerOrDefault(conf, WORKER_THREADS_KEY, 32);
-        bufferSize = getAsIntegerOrDefault(conf, BUFFER_SIZE_KEY, 16384);
-        directBuffers = getAsBooleanOrDefault(conf, DIRECT_BUFFERS_KEY, true);
-
-        forceGzipEncoding = getAsBooleanOrDefault(conf, FORCE_GZIP_ENCODING_KEY, false);
-
         eagerPoolSize = getAsIntegerOrDefault(conf, EAGER_POOL_SIZE, 100);
         eagerLinearSliceWidht = getAsIntegerOrDefault(conf, EAGER_LINEAR_SLICE_WIDHT, 1000);
         eagerLinearSliceDelta = getAsIntegerOrDefault(conf, EAGER_LINEAR_SLICE_DELTA, 100);
         eagerLinearSliceHeights = getAsArrayOfInts(conf, EAGER_LINEAR_HEIGHTS, new int[]{4, 2, 1});
         eagerRndSliceMinWidht = getAsIntegerOrDefault(conf, EAGER_RND_SLICE_MIN_WIDHT, 1000);
         eagerRndMaxCursors = getAsIntegerOrDefault(conf, EAGER_RND_MAX_CURSORS, 50);
-
-        authTokenEnabled = getAsBooleanOrDefault(conf, AUTH_TOKEN_ENABLED, true);
-        authTokenTtl = getAsIntegerOrDefault(conf, AUTH_TOKEN_TTL, 15);
 
         Map<String, Object> etagCheckPolicies = getAsMap(conf, ETAG_CHECK_POLICY_KEY, null);
 
@@ -410,18 +316,6 @@ public class MongoServiceConfiguration {
             docEtagCheckPolicy = DEFAULT_DOC_ETAG_CHECK_POLICY;
         }
 
-        logExchangeDump = getAsIntegerOrDefault(conf, LOG_REQUESTS_LEVEL_KEY, 1);
-        {
-            METRICS_GATHERING_LEVEL mglevel;
-            try {
-                String value = getAsStringOrDefault(conf, METRICS_GATHERING_LEVEL_KEY, "ROOT");
-                mglevel = METRICS_GATHERING_LEVEL.valueOf(value.toUpperCase(Locale.getDefault()));
-            } catch (IllegalArgumentException iae) {
-                mglevel = METRICS_GATHERING_LEVEL.ROOT;
-            }
-            metricsGatheringLevel = mglevel;
-        }
-
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY, Maps.newHashMap());
 
         cursorBatchSize = getAsIntegerOrDefault(conf, CURSOR_BATCH_SIZE_KEY,
@@ -433,81 +327,53 @@ public class MongoServiceConfiguration {
         maxPagesize = getAsIntegerOrDefault(conf, MAX_PAGESIZE_KEY,
                 DEFAULT_MAX_PAGESIZE);
 
-        allowUnescapedCharactersInUrl = getAsBooleanOrDefault(conf, ALLOW_UNESCAPED_CHARS_IN_URL, true);
+        {
+            METRICS_GATHERING_LEVEL mglevel;
+            try {
+                String value = getAsStringOrDefault(conf, 
+                        METRICS_GATHERING_LEVEL_KEY, "ROOT");
+                mglevel = METRICS_GATHERING_LEVEL.valueOf(value
+                        .toUpperCase(Locale.getDefault()));
+            } catch (IllegalArgumentException iae) {
+                mglevel = METRICS_GATHERING_LEVEL.ROOT;
+            }
+            metricsGatheringLevel = mglevel;
+        }
     }
 
     @Override
     public String toString() {
         return "Configuration{"
                 + "silent=" + silent
-                + ", httpsListener=" + httpsListener
-                + ", httpsPort=" + httpsPort
-                + ", httpsHost=" + httpsHost
-                + ", httpListener=" + httpListener
-                + ", httpPort=" + httpPort
-                + ", httpHost=" + httpHost
-                + ", ajpListener=" + ajpListener
-                + ", ajpPort=" + ajpPort
-                + ", ajpHost=" + ajpHost
-                + ", instanceName=" + instanceName
                 + ", instanceBaseURL=" + instanceBaseURL
-                + ", pluginsDirectory=" + pluginsDirectory
                 + ", defaultRepresentationFromat=" + defaultRepresentationFormat
-                + ", useEmbeddedKeystore=" + useEmbeddedKeystore
-                + ", keystoreFile=" + keystoreFile
-                + ", keystorePassword=" + keystorePassword
-                + ", certPassword=" + certPassword
                 + ", mongoUri=" + mongoUri
                 + ", mongoMounts=" + mongoMounts
-                + ", staticResourcesMounts=" + staticResourcesMounts
-                + ", plugins-args=" + pluginsArgs
-                + ", logFilePath=" + logFilePath
-                + ", logLevel=" + logLevel
-                + ", logToConsole=" + logToConsole
-                + ", logToFile=" + logToFile
-                + ", traceHeaders=" + traceHeaders
+                + ", pluginsArgs=" + getPluginsArgs()
                 + ", localCacheEnabled=" + localCacheEnabled
                 + ", localCacheTtl=" + localCacheTtl
                 + ", schemaCacheEnabled=" + schemaCacheEnabled
                 + ", schemaCacheTtl=" + schemaCacheTtl
                 + ", requestsLimit=" + requestsLimit
-                + ", ioThreads=" + ioThreads
-                + ", workerThreads=" + workerThreads
-                + ", bufferSize=" + bufferSize
-                + ", directBuffers=" + directBuffers
-                + ", forceGzipEncoding=" + forceGzipEncoding
+                + ", metricsGatheringLevel=" + metricsGatheringLevel
                 + ", eagerPoolSize=" + eagerPoolSize
                 + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht
                 + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta
                 + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights)
                 + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht
                 + ", eagerRndMaxCursors=" + eagerRndMaxCursors
-                + ", authTokenEnabled=" + authTokenEnabled
-                + ", authTokenTtl=" + authTokenTtl
                 + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy
                 + ", collEtagCheckPolicy=" + collEtagCheckPolicy
                 + ", docEtagCheckPolicy=" + docEtagCheckPolicy
                 + ", connectionOptions=" + connectionOptions
-                + ", logExchangeDump=" + logExchangeDump
-                + ", metricsGatheringLevel=" + metricsGatheringLevel
                 + ", queryTimeLimit=" + queryTimeLimit
                 + ", aggregationTimeLimit=" + aggregationTimeLimit
                 + ", aggregationCheckOperators=" + aggregationCheckOperators
-                + ", ansiConsole=" + ansiConsole
                 + ", cursorBatchSize=" + cursorBatchSize
                 + ", defaultPagesize=" + defaultPagesize
                 + ", maxPagesize=" + maxPagesize
-                + ", allowUnescapedCharactersInUrl=" + allowUnescapedCharactersInUrl
                 + ", configurationFileMap=" + configurationFileMap
                 + '}';
-    }
-
-    /**
-     *
-     * @return true if the Ansi console is enabled
-     */
-    public boolean isAnsiConsole() {
-        return ansiConsole;
     }
 
     /**
@@ -518,7 +384,8 @@ public class MongoServiceConfiguration {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue) {
+    private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue
+    ) {
         if (conf == null) {
             if (!silent) {
                 LOGGER.debug("parameters group {} not specified in the configuration file."
@@ -548,7 +415,8 @@ public class MongoServiceConfiguration {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key, final Map<String, Object> defaultVal) {
+    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key, final Map<String, Object> defaultVal
+    ) {
         if (conf == null) {
             if (!silent) {
                 LOGGER.debug("parameters group {} not specified in the configuration file.", key);
@@ -578,7 +446,8 @@ public class MongoServiceConfiguration {
     private Map<String, Map<String, Object>> getAsMapOfMaps(
             final Map<String, Object> conf,
             final String key,
-            final Map<String, Map<String, Object>> defaultVal) {
+            final Map<String, Map<String, Object>> defaultVal
+    ) {
         if (conf == null) {
             if (!silent) {
                 LOGGER.debug("parameters {} not specified in the configuration file.", key);
@@ -855,183 +724,6 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * @return the httpsListener
-     */
-    public boolean isHttpsListener() {
-        return httpsListener;
-    }
-
-    /**
-     * @return the httpsPort
-     */
-    public int getHttpsPort() {
-        return httpsPort;
-    }
-
-    /**
-     * @return the httpsHost
-     */
-    public String getHttpsHost() {
-        return httpsHost;
-    }
-
-    /**
-     * @return the httpListener
-     */
-    public boolean isHttpListener() {
-        return httpListener;
-    }
-
-    /**
-     * @return the httpPort
-     */
-    public int getHttpPort() {
-        return httpPort;
-    }
-
-    /**
-     * @return the httpHost
-     */
-    public String getHttpHost() {
-        return httpHost;
-    }
-
-    /**
-     * @return the ajpListener
-     */
-    public boolean isAjpListener() {
-        return ajpListener;
-    }
-
-    /**
-     * @return the ajpPort
-     */
-    public int getAjpPort() {
-        return ajpPort;
-    }
-
-    /**
-     * @return the ajpHost
-     */
-    public String getAjpHost() {
-        return ajpHost;
-    }
-
-    /**
-     * @return the useEmbeddedKeystore
-     */
-    public boolean isUseEmbeddedKeystore() {
-        return useEmbeddedKeystore;
-    }
-
-    /**
-     * @return the keystoreFile
-     */
-    public String getKeystoreFile() {
-        return keystoreFile;
-    }
-
-    /**
-     * @return the keystorePassword
-     */
-    public String getKeystorePassword() {
-        return keystorePassword;
-    }
-
-    /**
-     * @return the certPassword
-     */
-    public String getCertPassword() {
-        return certPassword;
-    }
-
-    /**
-     * @return the logFilePath
-     */
-    public String getLogFilePath() {
-        return logFilePath;
-    }
-
-    /**
-     * @return the logLevel
-     */
-    public Level getLogLevel() {
-
-        String logbackConfigurationFile = System.getProperty("logback.configurationFile");
-        if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
-            LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-            ch.qos.logback.classic.Logger logger = loggerContext.getLogger("org.restheart");
-            return logger.getLevel();
-        }
-
-        return logLevel;
-    }
-
-    /**
-     * @return the logToConsole
-     */
-    public boolean isLogToConsole() {
-        return logToConsole;
-    }
-
-    /**
-     * @return the logToFile
-     */
-    public boolean isLogToFile() {
-        return logToFile;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public List<String> getTraceHeaders() {
-        return Collections.unmodifiableList(traceHeaders);
-    }
-
-    /**
-     * @return the ioThreads
-     */
-    public int getIoThreads() {
-        return ioThreads;
-    }
-
-    /**
-     * @return the workerThreads
-     */
-    public int getWorkerThreads() {
-        return workerThreads;
-    }
-
-    /**
-     * @return the bufferSize
-     */
-    public int getBufferSize() {
-        return bufferSize;
-    }
-
-    /**
-     * @return the directBuffers
-     */
-    public boolean isDirectBuffers() {
-        return directBuffers;
-    }
-
-    /**
-     * @return the forceGzipEncoding
-     */
-    public boolean isForceGzipEncoding() {
-        return forceGzipEncoding;
-    }
-
-    /**
-     * @return the requestsLimit
-     */
-    public int getRequestLimit() {
-        return getRequestsLimit();
-    }
-
-    /**
      * @return the mongoMounts
      */
     public List<Map<String, Object>> getMongoMounts() {
@@ -1081,20 +773,6 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * @return the staticResourcesMounts
-     */
-    public List<Map<String, Object>> getStaticResourcesMounts() {
-        return Collections.unmodifiableList(staticResourcesMounts);
-    }
-
-    /**
-     * @return the pluginsArgs
-     */
-    public Map<String, Map<String, Object>> getPluginsArgs() {
-        return Collections.unmodifiableMap(pluginsArgs);
-    }
-
-    /**
      * @return the eagerLinearSliceWidht
      */
     public int getEagerLinearSliceWidht() {
@@ -1137,24 +815,17 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * @return the authTokenEnabled
-     */
-    public boolean isAuthTokenEnabled() {
-        return authTokenEnabled;
-    }
-
-    /**
-     * @return the authTokenTtl
-     */
-    public int getAuthTokenTtl() {
-        return authTokenTtl;
-    }
-
-    /**
      * @return the mongoUri
      */
     public MongoClientURI getMongoUri() {
         return mongoUri;
+    }
+    
+     /**
+     * @return the pluginsArgs
+     */
+    public Map<String, Map<String, Object>> getPluginsArgs() {
+        return pluginsArgs;
     }
 
     /**
@@ -1193,25 +864,10 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     *
-     * @return the logExchangeDump Boolean
-     */
-    public Integer logExchangeDump() {
-        return logExchangeDump;
-    }
-
-    /**
      * @return the connectionOptions
      */
     public Map<String, Object> getConnectionOptions() {
         return Collections.unmodifiableMap(connectionOptions);
-    }
-
-    /**
-     * @return the instanceName
-     */
-    public String getInstanceName() {
-        return instanceName;
     }
 
     /**
@@ -1236,23 +892,6 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * @return the level of metrics that will be collected (and above)
-     */
-    public METRICS_GATHERING_LEVEL getMetricsGatheringLevel() {
-        return metricsGatheringLevel;
-    }
-
-    /**
-     * decides whether metrics are gathered at the given log level or not
-     *
-     * @param level Metrics Gathering Level
-     * @return true if gathering Above Or Equal To Level
-     */
-    public boolean gatheringAboveOrEqualToLevel(METRICS_GATHERING_LEVEL level) {
-        return getMetricsGatheringLevel().compareTo(level) >= 0;
-    }
-
-    /**
      * @return the cursorBatchSize
      */
     public int getCursorBatchSize() {
@@ -1272,20 +911,23 @@ public class MongoServiceConfiguration {
     public int getDefaultPagesize() {
         return defaultPagesize;
     }
-
+    
     /**
      *
      * @return
      */
-    public boolean isAllowUnescapedCharactersInUrl() {
-        return allowUnescapedCharactersInUrl;
+    public METRICS_GATHERING_LEVEL getMetricsGatheringLevel() {
+        return metricsGatheringLevel;
     }
-    
+
     /**
-     * @return the pluginsDirectory
+     * decides whether metrics are gathered at the given log level or not
+     *
+     * @param level Metrics Gathering Level
+     * @return true if gathering Above Or Equal To Level
      */
-    public String getPluginsDirectory() {
-        return pluginsDirectory;
+    public boolean gatheringAboveOrEqualToLevel(METRICS_GATHERING_LEVEL level) {
+        return getMetricsGatheringLevel().compareTo(level) >= 0;
     }
 
     /**
@@ -1310,7 +952,5 @@ public class MongoServiceConfiguration {
          * gather basic, database, and collection-specific metrics
          */
         COLLECTION
-    }    
+    }
 }
-
-

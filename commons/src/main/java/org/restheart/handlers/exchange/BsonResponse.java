@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.bson.BsonValue;
-import org.restheart.mongodb.db.OperationResult;
-import org.restheart.handlers.exchange.Response;
 import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
 import org.slf4j.LoggerFactory;
 

@@ -23,12 +23,12 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.handlers.RequestContext;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.mongodb.metadata.TransformerMetadata;
-import org.restheart.mongodb.plugins.GlobalTransformer;
-import org.restheart.mongodb.plugins.PluginsRegistry;
-import org.restheart.mongodb.plugins.Transformer;
+import org.restheart.plugins.GlobalTransformer;
+import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
+import org.restheart.plugins.Transformer;
 
 /**
  *
@@ -80,7 +80,7 @@ public abstract class TransformerHandler extends PipelinedHandler {
      */
     @Deprecated
     public static synchronized List<GlobalTransformer> getGlobalTransformers() {
-        return PluginsRegistry.getInstance().getGlobalTransformers();
+        return MongoServicePluginsRegistry.getInstance().getGlobalTransformers();
     }
 
     abstract boolean doesGlobalTransformerAppy(GlobalTransformer gt,

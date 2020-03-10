@@ -24,7 +24,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.mongodb.db.OperationResult;
+import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
 import org.restheart.mongodb.metadata.CheckerMetadata;

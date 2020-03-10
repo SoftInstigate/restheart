@@ -17,6 +17,7 @@
  */
 package org.restheart.mongodb.db.sessions;
 
+import org.restheart.handlers.exchange.ClientSessionImpl;
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.MongoClient;
 import com.mongodb.ReadConcern;

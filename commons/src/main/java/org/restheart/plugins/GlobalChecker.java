@@ -15,13 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.mongodb.plugins;
+package org.restheart.plugins;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.mongodb.handlers.RequestContext;
-import org.restheart.mongodb.handlers.RequestContextPredicate;
+import org.restheart.handlers.exchange.RequestContext;
+import org.restheart.handlers.exchange.RequestContextPredicate;
 
 /**
  *

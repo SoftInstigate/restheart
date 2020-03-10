@@ -28,12 +28,12 @@ import org.bson.BsonDocument;
 import org.restheart.mongodb.db.DAOUtils;
 import org.restheart.mongodb.db.MongoDBClientSingleton;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.handlers.RequestContext;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.metadata.CheckerMetadata;
-import org.restheart.mongodb.plugins.Checker;
-import org.restheart.mongodb.plugins.GlobalChecker;
+import org.restheart.plugins.Checker;
+import org.restheart.plugins.GlobalChecker;
 import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.utils.ResponseHelper;
 

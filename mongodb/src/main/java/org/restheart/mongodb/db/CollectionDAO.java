@@ -37,11 +37,12 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
-import org.restheart.mongodb.Bootstrapper;
-import static org.restheart.mongodb.ConfigurationKeys.DEFAULT_CURSOR_BATCH_SIZE;
 import static org.restheart.handlers.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
+import org.restheart.handlers.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import static org.restheart.handlers.exchange.ExchangeKeys.META_COLLNAME;
+import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.mongodb.MongoServiceConfiguration;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_CURSOR_BATCH_SIZE;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,7 +189,7 @@ class CollectionDAO {
             final BsonDocument filters,
             final BsonDocument hint,
             final BsonDocument keys,
-            final CursorPool.EAGER_CURSOR_ALLOCATION_POLICY eager)
+            final EAGER_CURSOR_ALLOCATION_POLICY eager)
             throws JsonParseException {
 
         ArrayList<BsonDocument> ret = new ArrayList<>();
@@ -197,7 +198,7 @@ class CollectionDAO {
 
         SkippedFindIterable _cursor = null;
 
-        if (eager != CursorPool.EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
+        if (eager != EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
 
             _cursor = CursorPool.getInstance().get(
                     new CursorPoolEntryKey(

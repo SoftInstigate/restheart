@@ -22,7 +22,6 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.mongodb.Version;
 import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.mongodb.handlers.database.DBRepresentationFactory;
 import org.restheart.handlers.exchange.BsonRequest;
@@ -91,14 +90,6 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     private void addSpecialProperties(
             final Resource rep,
             BsonRequest request) {
-        if (Version.getInstance().getVersion() == null) {
-            rep.addProperty("_restheart_version",
-                    new BsonString("unknown, not packaged"));
-        } else {
-            rep.addProperty("_restheart_version",
-                    new BsonString(Version.getInstance().getVersion()));
-        }
-
         rep.addProperty("_type", new BsonString(request.getType().name()));
     }
 

@@ -79,6 +79,7 @@ import static org.restheart.ConfigurationKeys.PROXY_KEY;
 import static org.restheart.ConfigurationKeys.REQUESTS_LIMIT_KEY;
 import static org.restheart.ConfigurationKeys.REQUESTS_LOG_TRACE_HEADERS_KEY;
 import static org.restheart.ConfigurationKeys.SERVICES_KEY;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNTS_KEY;
 import static org.restheart.ConfigurationKeys.TOKEN_MANAGER_KEY;
 import static org.restheart.ConfigurationKeys.USE_EMBEDDED_KEYSTORE_KEY;
 import static org.restheart.ConfigurationKeys.WORKER_THREADS_KEY;
@@ -124,6 +125,7 @@ public class Configuration {
     private final String keystorePassword;
     private final String certPassword;
     private final List<Map<String, Object>> proxies;
+    private final List<Map<String, Object>> staticResourcesMounts;
     private final Map<String, Map<String, Object>> pluginsArgs;
     private final Map<String, Map<String, Object>> authMechanisms;
     private final Map<String, Map<String, Object>> authenticators;
@@ -144,9 +146,9 @@ public class Configuration {
     private final Integer logExchangeDump;
     private final boolean ansiConsole;
     private final boolean allowUnescapedCharactersInUrl;
-    
+
     private Map<String, Object> conf;
-    
+
     /**
      * Creates a new instance of Configuration with defaults values.
      */
@@ -154,55 +156,55 @@ public class Configuration {
         this(getDefaultConf(), true);
         this.conf = getDefaultConf();
     }
-    
+
     private static Map<String, Object> getDefaultConf() {
         var defaultConf = new HashMap<String, Object>();
-        
+
         defaultConf.put(ANSI_CONSOLE_KEY, true);
-        
+
         defaultConf.put(HTTPS_LISTENER_KEY, DEFAULT_HTTPS_LISTENER);
         defaultConf.put(HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
         defaultConf.put(HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
-        
+
         defaultConf.put(HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER);
         defaultConf.put(HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
         defaultConf.put(HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
-        
+
         defaultConf.put(AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
         defaultConf.put(AJP_PORT_KEY, DEFAULT_AJP_PORT);
         defaultConf.put(AJP_HOST_KEY, DEFAULT_AJP_HOST);
-        
+
         defaultConf.put(INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-        
+
         defaultConf.put(USE_EMBEDDED_KEYSTORE_KEY, true);
-        
+
         defaultConf.put(KEYSTORE_FILE_KEY, null);
         defaultConf.put(KEYSTORE_PASSWORD_KEY, null);
         defaultConf.put(CERT_PASSWORD_KEY, null);
-        
+
         defaultConf.put(ANSI_CONSOLE_KEY, new ArrayList<>());
-        
+
         defaultConf.put(PROXY_KEY, new HashMap());
-        
+
         defaultConf.put(PLUGINS_DIRECTORY_PATH_KEY, "plugins");
-        
+
         defaultConf.put(PLUGINS_ARGS_KEY, new LinkedHashMap<>());
-        
+
         defaultConf.put(AUTH_MECHANISMS_KEY, new LinkedHashMap<>());
         defaultConf.put(AUTHENTICATORS_KEY, new LinkedHashMap<>());
         defaultConf.put(AUTHORIZERS_KEY, null);
         defaultConf.put(TOKEN_MANAGER_KEY, URLUtils.removeTrailingSlashes(
                 System.getProperty("java.io.tmpdir"))
                 .concat(File.separator + "restheart-security.log"));
-        
+
         defaultConf.put(LOG_FILE_PATH_KEY, new LinkedHashMap<>());
         defaultConf.put(ENABLE_LOG_CONSOLE_KEY, true);
         defaultConf.put(ENABLE_LOG_FILE_KEY, true);
         defaultConf.put(LOG_LEVEL_KEY, Level.INFO);
         defaultConf.put(ConfigurationKeys.REQUESTS_LOG_LEVEL_KEY, 0);
-        
+
         defaultConf.put(REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
-        
+
         defaultConf.put(REQUESTS_LIMIT_KEY, 100);
         defaultConf.put(IO_THREADS_KEY, 2);
         defaultConf.put(WORKER_THREADS_KEY, 32);
@@ -211,7 +213,7 @@ public class Configuration {
         defaultConf.put(FORCE_GZIP_ENCODING_KEY, false);
         defaultConf.put(CONNECTION_OPTIONS_KEY, Maps.newHashMap());
         defaultConf.put(ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
-        
+
         return defaultConf;
     }
 
@@ -249,7 +251,7 @@ public class Configuration {
     @SuppressWarnings("deprecation")
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.conf = conf;
-        
+
         this.silent = silent;
 
         // check if service configuration follows old (<2.0)format
@@ -267,7 +269,7 @@ public class Configuration {
         httpListener = getAsBoolean(conf, HTTP_LISTENER_KEY, false);
         httpPort = getAsInteger(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
         httpHost = getAsString(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
-        
+
         ajpListener = getAsBoolean(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
         ajpPort = getAsInteger(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
         ajpHost = getAsString(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
@@ -279,6 +281,8 @@ public class Configuration {
         certPassword = getAsString(conf, CERT_PASSWORD_KEY, null);
 
         proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
+
+        staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, new ArrayList<>());
 
         pluginsDirectory = getAsString(conf, PLUGINS_DIRECTORY_PATH_KEY, "plugins");
 
@@ -315,7 +319,7 @@ public class Configuration {
         }
 
         authorizers = getAsMapOfMaps(conf, AUTHORIZERS_KEY, new LinkedHashMap<>());
-        
+
         // check if configuration follows old (<2.0)format
         if (authorizers.isEmpty()) {
             // check if exception is due to old configuration format
@@ -348,8 +352,7 @@ public class Configuration {
         Level level;
         try {
             level = Level.valueOf(_logLevel);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             if (!silent) {
                 LOGGER.info("wrong value for parameter {}: {}. using its default value {}",
                         "log-level", _logLevel, "INFO");
@@ -379,11 +382,9 @@ public class Configuration {
 
         try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
             conf = (Map<String, Object>) yaml.load(fis);
-        }
-        catch (FileNotFoundException fne) {
+        } catch (FileNotFoundException fne) {
             throw new ConfigurationException("Configuration file not found", fne);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             throw new ConfigurationException("Error parsing the configuration file", t);
         }
 
@@ -461,7 +462,7 @@ public class Configuration {
                 + ", allowUnescapedCharactersInUrl="
                 + allowUnescapedCharactersInUrl + '}';
     }
-    
+
     public Map<String, Object> toMap() {
         return this.conf;
     }
@@ -471,6 +472,13 @@ public class Configuration {
      */
     public List<Map<String, Object>> getProxies() {
         return proxies;
+    }
+
+    /**
+     * @return the staticResourcesMounts
+     */
+    public List<Map<String, Object>> getStaticResourcesMounts() {
+        return Collections.unmodifiableList(staticResourcesMounts);
     }
 
     /**
@@ -533,7 +541,7 @@ public class Configuration {
     public String getHttpHost() {
         return httpHost;
     }
-    
+
     /**
      * @return the ajpListener
      */
@@ -774,8 +782,7 @@ public class Configuration {
 
         try {
             return URI.create(proxyPass);
-        }
-        catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException ex) {
             throw new ConfigurationException("Wrong proxy pass ULR "
                     + proxyPass, ex);
         }
@@ -812,8 +819,7 @@ public class Configuration {
 
         try {
             return URI.create(proxyLocation);
-        }
-        catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException ex) {
             throw new ConfigurationException("Wrong proxy location URI "
                     + proxyLocation, ex);
         }
@@ -851,8 +857,7 @@ public class Configuration {
         } else if (o instanceof List) {
             try {
                 return (List<Map<String, Object>>) o;
-            }
-            catch (Throwable t) {
+            } catch (Throwable t) {
                 LOGGER.warn("wrong configuration parameter {}", key);
                 return defaultValue;
             }
@@ -898,8 +903,7 @@ public class Configuration {
         } else if (o instanceof Map) {
             try {
                 return (Map<String, Map<String, Object>>) o;
-            }
-            catch (Throwable t) {
+            } catch (Throwable t) {
                 LOGGER.warn("wrong configuration parameter {}", key);
                 return defaultValue;
             }
@@ -935,8 +939,7 @@ public class Configuration {
         if (o instanceof Map) {
             try {
                 return (Map<String, Object>) o;
-            }
-            catch (Throwable t) {
+            } catch (Throwable t) {
                 LOGGER.warn("wrong configuration parameter {}", key);
                 return null;
             }
@@ -1012,8 +1015,7 @@ public class Configuration {
                 LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", key, conf.get(key));
             }
             return (V) conf.get(key);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             if (!silent) {
                 LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\". using its default value \"{}\"",
                         key, conf.get(key), defaultValue);

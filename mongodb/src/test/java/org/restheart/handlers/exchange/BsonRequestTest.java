@@ -31,7 +31,6 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import org.restheart.mongodb.handlers.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

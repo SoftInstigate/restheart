@@ -15,12 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.mongodb;
+package org.restheart;
 
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
-import org.restheart.mongodb.utils.FileUtils;
+import org.restheart.utils.FileUtils;
 
 /**
  *

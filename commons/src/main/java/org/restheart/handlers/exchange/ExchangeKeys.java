@@ -593,4 +593,65 @@ public interface ExchangeKeys {
          */
         OPTIONAL
     }
+    
+    /**
+     *
+     */
+    public enum REPRESENTATION_FORMAT {
+
+        /**
+         *
+         */
+        HAL, // Hypertext Application Language
+
+        /**
+         *
+         */
+        SHAL, // Simplified HAL with children as direct elements of _embedded array
+        
+        // root and dbs represeted as an array of children's ids,
+        // collection as arrays of document objects
+        // documents as objects
+
+        /**
+         *
+         */
+        STANDARD, 
+
+        /**
+         *
+         */
+        S, // Alias for STANDARD
+
+        /**
+         *
+         */
+        PLAIN_JSON, 
+
+        /**
+         *
+         */
+        PJ, // Aliases for SHAL
+    }
+    
+    /**
+     *
+     */
+    public enum EAGER_CURSOR_ALLOCATION_POLICY {
+
+        /**
+         *
+         */
+        LINEAR,
+
+        /**
+         *
+         */
+        RANDOM,
+
+        /**
+         *
+         */
+        NONE
+    }
 }

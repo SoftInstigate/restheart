@@ -24,9 +24,9 @@ import org.bson.BsonValue;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.representation.Resource;
-import org.restheart.mongodb.representation.Resource.REPRESENTATION_FORMAT;
 import org.restheart.utils.HttpStatus;
 
 /**

@@ -242,6 +242,31 @@ public interface ConfigurationKeys {
     public static final String PROXY_PROBLEM_SERVER_RETRY = "problem-server-retry";
 
     /**
+     * the key for the static-resources-mounts property.
+     */
+    public static final String STATIC_RESOURCES_MOUNTS_KEY = "static-resources-mounts";
+
+    /**
+     * the key for the what property.
+     */
+    public static final String STATIC_RESOURCES_MOUNT_WHAT_KEY = "what";
+
+    /**
+     * the key for the where property.
+     */
+    public static final String STATIC_RESOURCES_MOUNT_WHERE_KEY = "where";
+
+    /**
+     * the key for the welcome-file property.
+     */
+    public static final String STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY = "welcome-file";
+
+    /**
+     * the key for the embedded property.
+     */
+    public static final String STATIC_RESOURCES_MOUNT_EMBEDDED_KEY = "embedded";
+    
+    /**
      * the key for the pluging-args property.
      */
     public static final String PLUGINS_ARGS_KEY = "plugins-args";

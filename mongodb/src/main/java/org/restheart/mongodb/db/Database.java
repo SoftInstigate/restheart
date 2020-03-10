@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
+import org.restheart.handlers.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 
 /**
@@ -118,7 +120,7 @@ public interface Database {
             final BsonDocument filter,
             final BsonDocument hint,
             final BsonDocument keys,
-            final CursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy);
+            final EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy);
 
     /**
      *

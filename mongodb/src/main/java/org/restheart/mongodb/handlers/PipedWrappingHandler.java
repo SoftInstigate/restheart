@@ -17,6 +17,7 @@
  */
 package org.restheart.mongodb.handlers;
 
+import org.restheart.handlers.exchange.RequestContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 

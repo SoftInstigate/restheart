@@ -21,12 +21,12 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.handlers.RequestContext;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.metadata.HookMetadata;
-import org.restheart.mongodb.plugins.GlobalHook;
-import org.restheart.mongodb.plugins.PluginsRegistry;
+import org.restheart.plugins.GlobalHook;
+import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +88,7 @@ public class HookHandler extends PipelinedHandler {
             if (mdHooks != null) {
                 for (HookMetadata mdHook : mdHooks) {
                     try {
-                        var hookRecord = PluginsRegistry.getInstance()
+                        var hookRecord = MongoServicePluginsRegistry.getInstance()
                                 .getHook(mdHook.getName());
                         var hook = hookRecord.getInstance();
 
@@ -133,6 +133,6 @@ public class HookHandler extends PipelinedHandler {
      */
     @Deprecated
     public static synchronized List<GlobalHook> getGlobalHooks() {
-        return PluginsRegistry.getInstance().getGlobalHooks();
+        return MongoServicePluginsRegistry.getInstance().getGlobalHooks();
     }
 }

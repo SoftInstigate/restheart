@@ -19,8 +19,8 @@ package org.restheart.mongodb.handlers.metadata;
 
 import java.util.List;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.plugins.GlobalChecker;
-import org.restheart.mongodb.plugins.PluginsRegistry;
+import org.restheart.plugins.GlobalChecker;
+import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
 
 /**
  *
@@ -42,6 +42,6 @@ public abstract class CheckHandler extends PipelinedHandler {
      */
     @Deprecated
     public static List<GlobalChecker> getGlobalCheckers() {
-        return PluginsRegistry.getInstance().getGlobalCheckers();
+        return MongoServicePluginsRegistry.getInstance().getGlobalCheckers();
     }
 }

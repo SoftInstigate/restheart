@@ -25,14 +25,14 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.handlers.RequestContext;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.metadata.CheckerMetadata;
-import org.restheart.mongodb.plugins.Checker;
-import org.restheart.mongodb.plugins.Checker.PHASE;
-import org.restheart.mongodb.plugins.GlobalChecker;
-import org.restheart.mongodb.plugins.PluginsRegistry;
+import org.restheart.plugins.Checker;
+import org.restheart.plugins.Checker.PHASE;
+import org.restheart.plugins.GlobalChecker;
+import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
 import org.restheart.mongodb.plugins.checkers.CheckersUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.utils.JsonUtils;
@@ -119,7 +119,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
         return requestCheckers != null
                 && requestCheckers.stream().allMatch(checkerMetadata -> {
                     try {
-                        var checkerRecord = PluginsRegistry.getInstance().
+                        var checkerRecord = MongoServicePluginsRegistry.getInstance().
                                 getChecker(checkerMetadata.getName());
                         var checker = checkerRecord.getInstance();
 
@@ -259,7 +259,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
         var context = RequestContext.wrap(exchange);
         
         // execture global request tranformers
-        return PluginsRegistry.getInstance().getGlobalCheckers().stream()
+        return MongoServicePluginsRegistry.getInstance().getGlobalCheckers().stream()
                 .filter(gc -> doesGlobalCheckerApply(gc, exchange, context))
                 .allMatch(gc
                         -> applyChecker(exchange,
@@ -278,7 +278,7 @@ public class BeforeWriteCheckHandler extends CheckHandler {
     }
 
     boolean doesGlobalCheckersApply() {
-        return !PluginsRegistry.getInstance().getGlobalCheckers().isEmpty();
+        return !MongoServicePluginsRegistry.getInstance().getGlobalCheckers().isEmpty();
     }
 
     /**

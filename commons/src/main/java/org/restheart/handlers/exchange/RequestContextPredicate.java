@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.mongodb.handlers;
+package org.restheart.handlers.exchange;
 
+import org.restheart.handlers.exchange.RequestContext;
 import io.undertow.server.HttpServerExchange;
 
 /**
