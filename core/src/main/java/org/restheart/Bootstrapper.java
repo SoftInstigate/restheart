@@ -861,7 +861,7 @@ public class Bootstrapper {
         plugServices(getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
 
-        plugResources(configuration, getRootPathHandler(),
+        plugProxies(configuration, getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
 
         return buildGracefulShutdownHandler(getRootPathHandler());
@@ -1004,7 +1004,7 @@ public class Bootstrapper {
     }
 
     /**
-     * plugResources
+     * plugProxies
      *
      * @param conf
      * @param paths
@@ -1012,7 +1012,7 @@ public class Bootstrapper {
      * @param identityManager
      * @param authorizers
      */
-    private static void plugResources(final Configuration conf,
+    private static void plugProxies(final Configuration conf,
             final PathHandler paths,
             final Set<PluginRecord<AuthMechanism>> authMechanisms,
             final Set<PluginRecord<Authorizer>> authorizers,
