@@ -136,6 +136,30 @@ public class PluginsFactory {
     static Set<PluginRecord<Service>> services() {
         return createPlugins(Service.class, PLUGINS_CONFS);
     }
+    
+    /**
+     * creates the services
+     */
+    @SuppressWarnings("unchecked")
+    static Set<PluginRecord<Transformer>> transformers() {
+        return createPlugins(Transformer.class, PLUGINS_CONFS);
+    }
+    
+    /**
+     * creates the services
+     */
+    @SuppressWarnings("unchecked")
+    static Set<PluginRecord<Checker>> checkers() {
+        return createPlugins(Checker.class, PLUGINS_CONFS);
+    }
+    
+    /**
+     * creates the services
+     */
+    @SuppressWarnings("unchecked")
+    static Set<PluginRecord<Hook>> hooks() {
+        return createPlugins(Hook.class, PLUGINS_CONFS);
+    }
 
     /**
      * @param type the class of the plugin , e.g. Initializer.class

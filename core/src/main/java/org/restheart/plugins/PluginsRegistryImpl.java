@@ -49,6 +49,23 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private final Set<Predicate> globalSecurityPredicates
             = new LinkedHashSet<>();
+    
+    // depecated plugins
+    
+    private Set<PluginRecord<Checker>> checkers;
+    
+    private Set<PluginRecord<Transformer>> transformers;
+
+    private Set<PluginRecord<Hook>> hooks;
+
+    private final Set<GlobalChecker> globalCheckers
+            = new LinkedHashSet<>();
+    
+    private final Set<GlobalTransformer> globalTransformers
+            = new LinkedHashSet<>();
+
+    private final Set<GlobalHook> globalHooks
+            = new LinkedHashSet<>();
 
     private static PluginsRegistryImpl HOLDER;
 
@@ -198,5 +215,73 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public Set<Predicate> getGlobalSecurityPredicates() {
         return globalSecurityPredicates;
+    }
+    
+    /**
+     *
+     * @return the globalCheckers
+     */
+    @Override
+    public Set<PluginRecord<Checker>> getCheckers() {
+        if (this.checkers == null) {
+            this.checkers = new LinkedHashSet<>();
+            this.checkers.addAll(PluginsFactory.checkers());
+        }
+
+        return this.checkers;
+    }
+    
+    /**
+     *
+     * @return the globalCheckers
+     */
+    @Override
+    public Set<PluginRecord<Transformer>> getTransformers() {
+        if (this.transformers == null) {
+            this.transformers = new LinkedHashSet<>();
+            this.transformers.addAll(PluginsFactory.transformers());
+        }
+
+        return this.transformers;
+    }
+    
+    /**
+     *
+     * @return the globalCheckers
+     */
+    @Override
+    public Set<PluginRecord<Hook>> getHooks() {
+        if (this.hooks == null) {
+            this.hooks = new LinkedHashSet<>();
+            this.hooks.addAll(PluginsFactory.hooks());
+        }
+
+        return this.hooks;
+    }
+    
+    
+    /**
+     *
+     * @return the globalCheckers
+     */
+    @Override
+    public Set<GlobalChecker> getGlobalCheckers() {
+        return globalCheckers;
+    }
+
+    /**
+     * @return the globalTransformers
+     */
+    @Override
+    public Set<GlobalTransformer> getGlobalTransformers() {
+        return globalTransformers;
+    }
+
+    /**
+     * @return the globalHooks
+     */
+    @Override
+    public synchronized Set<GlobalHook> getGlobalHooks() {
+        return globalHooks;
     }
 }

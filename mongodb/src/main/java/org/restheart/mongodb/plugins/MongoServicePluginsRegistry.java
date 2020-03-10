@@ -37,12 +37,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import org.restheart.mongodb.Bootstrapper;
 import org.restheart.mongodb.MongoServiceConfiguration;
+import org.restheart.plugins.Checker;
+import org.restheart.plugins.GlobalChecker;
+import org.restheart.plugins.GlobalHook;
+import org.restheart.plugins.GlobalTransformer;
+import org.restheart.plugins.Hook;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
+import org.restheart.plugins.Transformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,9 +55,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class PluginsRegistry {
+public class MongoServicePluginsRegistry {
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(PluginsRegistry.class);
+            .getLogger(MongoServicePluginsRegistry.class);
 
     private static final String REGISTER_PLUGIN_CLASS_NAME = RegisterPlugin.class
             .getName();
@@ -83,7 +88,7 @@ public class PluginsRegistry {
 
     private final Map<String, Map<String, Object>> confs = consumeConfiguration();
 
-    private PluginsRegistry() {
+    private MongoServicePluginsRegistry() {
         findInitializers();
         findServices();
         findTransformers();
@@ -95,12 +100,12 @@ public class PluginsRegistry {
      *
      * @return
      */
-    public static PluginsRegistry getInstance() {
+    public static MongoServicePluginsRegistry getInstance() {
         return ExtensionsRegistryHolder.INSTANCE;
     }
 
     private static class ExtensionsRegistryHolder {
-        private static final PluginsRegistry INSTANCE = new PluginsRegistry();
+        private static final MongoServicePluginsRegistry INSTANCE = new MongoServicePluginsRegistry();
     }
 
     /**
@@ -538,7 +543,7 @@ public class PluginsRegistry {
             }
         } catch (IOException ex) {
             LOGGER.error("Cannot read jars in plugins directory {}",
-                    MongoServiceConfiguration.get().getPluginsDirectory(),
+                    "../plugins",
                     ex.getMessage());
         }
 
@@ -546,11 +551,7 @@ public class PluginsRegistry {
     }
 
     private Path getPluginsDirectory() {
-        var pluginsDir = MongoServiceConfiguration.get().getPluginsDirectory();
-
-        if (pluginsDir == null) {
-            return null;
-        }
+        var pluginsDir = "../plugins";
 
         if (pluginsDir.startsWith("/")) {
             return Paths.get(pluginsDir);

@@ -29,6 +29,7 @@ import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.path;
+import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
@@ -41,6 +42,8 @@ import io.undertow.server.handlers.RequestLimit;
 import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
+import io.undertow.server.handlers.resource.FileResourceManager;
+import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.util.HttpString;
 import java.io.BufferedReader;
 import java.io.File;
@@ -53,9 +56,11 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -74,12 +79,18 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.MAGENTA;
 import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.fusesource.jansi.AnsiConsole;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
+import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.handlers.PipelinedHandler.pipe;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import org.restheart.handlers.QueryStringRebuilder;
@@ -147,7 +158,7 @@ public class Bootstrapper {
     private static final String INSTANCE = " instance ";
     private static final String STARTING = "Starting ";
     private static final String UNDEFINED = "undefined";
-    private static final String RESTHEART_CORE = "RESTHeart";
+    private static final String RESTHEART = "RESTHeart";
     private static final String VERSION = "Version {}";
 
     /**
@@ -194,8 +205,7 @@ public class Bootstrapper {
                     : parameters.envFile;
 
             PROPERTIES_FILE = FileUtils.getFileAbsolutePath(propFilePath);
-        }
-        catch (com.beust.jcommander.ParameterException ex) {
+        } catch (com.beust.jcommander.ParameterException ex) {
             LOGGER.error(ex.getMessage());
             cmd.usage();
             System.exit(1);
@@ -268,33 +278,53 @@ public class Bootstrapper {
                     d.init();
                     LOGGER.info("Forked process: {}", LIBC.getpid());
                     initLogging(d);
-                }
-                catch (Exception t) {
+                } catch (Exception t) {
                     logErrorAndExit("Error staring forked process", t, false, false, -1);
                 }
                 startServer(true);
             } else {
                 initLogging(d);
                 try {
-                    String instanceName = getInstanceName();
-
-                    LOGGER.info(STARTING
-                            + ansi().fg(RED).bold().a(RESTHEART_CORE).reset().toString()
-                            + INSTANCE
-                            + ansi().fg(RED).bold().a(instanceName).reset()
-                                    .toString());
-
-                    if (Configuration.VERSION != null) {
-                        LOGGER.info(VERSION, Configuration.VERSION);
-                    }
-
+                    logWindowsStart();
                     logLoggingConfiguration(true);
-
+                    logManifestInfo();
                     d.daemonize();
-                }
-                catch (Throwable t) {
+                } catch (Throwable t) {
                     logErrorAndExit("Error forking", t, false, false, -1);
                 }
+            }
+        }
+    }
+
+    private static void logWindowsStart() {
+        String version = Version.getInstance().getVersion() == null
+                ? "Unknown, not packaged"
+                : Version.getInstance().getVersion();
+
+        String info = String.format("  {%n"
+                + "    \"Version\": \"%s\",%n"
+                + "    \"Instance-Name\": \"%s\",%n"
+                + "    \"Configuration\": \"%s\",%n"
+                + "    \"Environment\": \"%s\",%n"
+                + "    \"Build-Time\": \"%s\"%n"
+                + "  }",
+                ansi().fg(MAGENTA).a(version).reset().toString(),
+                ansi().fg(MAGENTA).a(getInstanceName()).reset().toString(),
+                ansi().fg(MAGENTA).a(CONFIGURATION_FILE).reset().toString(),
+                ansi().fg(MAGENTA).a(PROPERTIES_FILE).reset().toString(),
+                ansi().fg(MAGENTA).a(Version.getInstance().getBuildTime()).reset().toString());
+
+        LOGGER.info("Starting {}\n{}", ansi().fg(RED).a(RESTHEART).reset().toString(), info);
+    }
+
+    private static void logManifestInfo() {
+        if (LOGGER.isDebugEnabled()) {
+            final Set<Map.Entry<Object, Object>> MANIFEST_ENTRIES = FileUtils.findManifestInfo();
+
+            if (MANIFEST_ENTRIES != null) {
+                LOGGER.debug("Build Information: {}", MANIFEST_ENTRIES.toString());
+            } else {
+                LOGGER.debug("Build Information: {}", "Unknown, not packaged");
             }
         }
     }
@@ -311,8 +341,7 @@ public class Bootstrapper {
                             + "For more information check https://restheart.org/docs/configuration",
                             null, false, -1);
                 }
-            }
-            catch (IOException ioe) {
+            } catch (IOException ioe) {
                 logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
             }
 
@@ -322,11 +351,9 @@ public class Bootstrapper {
             try (InputStreamReader reader = new InputStreamReader(
                     new FileInputStream(PROPERTIES_FILE.toFile()), "UTF-8")) {
                 p.load(reader);
-            }
-            catch (FileNotFoundException fnfe) {
+            } catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
-            }
-            catch (IOException ieo) {
+            } catch (IOException ieo) {
                 logErrorAndExit("Error reading properties file " + PROPERTIES_FILE, null, false, -1);
             }
 
@@ -335,14 +362,11 @@ public class Bootstrapper {
                 Mustache m = new DefaultMustacheFactory().compile(reader, "configuration-file");
                 m.execute(writer, p);
                 writer.flush();
-            }
-            catch (MustacheNotFoundException ex) {
+            } catch (MustacheNotFoundException ex) {
                 logErrorAndExit("Configuration file not found: " + CONFIGURATION_FILE, ex, false, -1);
-            }
-            catch (FileNotFoundException fnfe) {
+            } catch (FileNotFoundException fnfe) {
                 logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
-            }
-            catch (IOException ieo) {
+            } catch (IOException ieo) {
                 logErrorAndExit("Error reading configuration file " + CONFIGURATION_FILE, null, false, -1);
             }
 
@@ -353,22 +377,11 @@ public class Bootstrapper {
 
     private static void logStartMessages() {
         String instanceName = getInstanceName();
-        LOGGER.info(STARTING + ansi().fg(RED).bold().a(RESTHEART_CORE).reset().toString()
+        LOGGER.info(STARTING + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
                 + INSTANCE
                 + ansi().fg(RED).bold().a(instanceName).reset().toString());
         LOGGER.info(VERSION, Configuration.VERSION);
         LOGGER.debug("Configuration = " + configuration.toString());
-    }
-
-    private static void logManifestInfo() {
-        if (LOGGER.isDebugEnabled()) {
-            final Set<Map.Entry<Object, Object>> MANIFEST_ENTRIES = FileUtils.findManifestInfo();
-            if (MANIFEST_ENTRIES != null) {
-                LOGGER.debug("Build Information: {}", MANIFEST_ENTRIES.toString());
-            } else {
-                LOGGER.debug("Build Information: {}", "Unknown, not packaged");
-            }
-        }
     }
 
     /**
@@ -491,8 +504,7 @@ public class Bootstrapper {
         // re-read configuration file, to log errors new that logger is initialized
         try {
             loadConfiguration();
-        }
-        catch (ConfigurationException | IOException ex) {
+        } catch (ConfigurationException | IOException ex) {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
@@ -503,16 +515,14 @@ public class Bootstrapper {
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
-                    }
-                    catch (Throwable t) {
+                    } catch (Throwable t) {
                         LOGGER.error("Error executing initializer {}", i.getName());
                     }
                 });
 
         try {
             startCoreSystem();
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             logErrorAndExit("Error starting RESTHeart. Exiting...",
                     t,
                     false,
@@ -543,8 +553,7 @@ public class Bootstrapper {
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
-                    }
-                    catch (Throwable t) {
+                    } catch (Throwable t) {
                         LOGGER.error("Error executing initializer {}", i.getName());
                     }
                 });
@@ -587,8 +596,7 @@ public class Bootstrapper {
             try {
                 HANDLERS.shutdown();
                 HANDLERS.awaitShutdown(60 * 1000); // up to 1 minute
-            }
-            catch (InterruptedException ie) {
+            } catch (InterruptedException ie) {
                 LOGGER.error("Error while waiting for pending request "
                         + "to complete", ie);
                 Thread.currentThread().interrupt();
@@ -605,8 +613,7 @@ public class Bootstrapper {
             }
             try {
                 Files.deleteIfExists(pidFilePath);
-            }
-            catch (IOException ex) {
+            } catch (IOException ex) {
                 LOGGER.error("Can't delete pid file {}",
                         pidFilePath.toString(), ex);
             }
@@ -618,8 +625,7 @@ public class Bootstrapper {
         TMP_EXTRACTED_FILES.keySet().forEach(k -> {
             try {
                 ResourcesExtractor.deleteTempDir(k, TMP_EXTRACTED_FILES.get(k));
-            }
-            catch (URISyntaxException | IOException ex) {
+            } catch (URISyntaxException | IOException ex) {
                 LOGGER.error("Error cleaning up temporary directory {}",
                         TMP_EXTRACTED_FILES.get(k).toString(), ex);
             }
@@ -713,8 +719,7 @@ public class Bootstrapper {
             tmf.init(ks);
 
             sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        }
-        catch (KeyManagementException
+        } catch (KeyManagementException
                 | NoSuchAlgorithmException
                 | KeyStoreException
                 | CertificateException
@@ -724,15 +729,13 @@ public class Bootstrapper {
                     + "Check the keystore-file, "
                     + "keystore-password and certpassword options. Exiting..",
                     ex, false, -1);
-        }
-        catch (FileNotFoundException ex) {
+        } catch (FileNotFoundException ex) {
             logErrorAndExit(
                     "Couldn't start RESTHeart, keystore file not found. "
                     + "Check the keystore-file, "
                     + "keystore-password and certpassword options. Exiting..",
                     ex, false, -1);
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             logErrorAndExit(
                     "Couldn't start RESTHeart, error reading the keystore file. "
                     + "Check the keystore-file, "
@@ -772,7 +775,7 @@ public class Bootstrapper {
                         configuration.getHttpHost(), configuration.getHttpPort());
             }
         }
-        
+
         if (configuration.isAjpListener()) {
             builder.addAjpListener(configuration.getAjpPort(),
                     configuration.getAjpHost());
@@ -879,6 +882,8 @@ public class Bootstrapper {
 
         plugProxies(configuration, getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
+
+        plugStaticResourcesHandlers(configuration, getRootPathHandler());
 
         return buildGracefulShutdownHandler(getRootPathHandler());
     }
@@ -1090,8 +1095,7 @@ public class Bootstrapper {
 
             try {
                 sslProvider = xnio.getSslProvider(optionMap);
-            }
-            catch (GeneralSecurityException ex) {
+            } catch (GeneralSecurityException ex) {
                 logErrorAndExit("error configuring ssl", ex, false, -13);
             }
 
@@ -1150,13 +1154,115 @@ public class Bootstrapper {
                 paths.addPrefixPath(location, proxy);
 
                 LOGGER.info("URI {} bound to resource {}", location, _proxyPass);
-            }
-            catch (URISyntaxException ex) {
+            } catch (URISyntaxException ex) {
                 LOGGER.warn("Invalid location URI {}, resource {} not bound ",
                         location,
                         _proxyPass);
             }
         });
+    }
+
+    /**
+     * plugStaticResourcesHandlers
+     *
+     * plug the static resources specified in the configuration file
+     *
+     * @param conf
+     * @param pathHandler
+     * @param authenticationMechanism
+     * @param identityManager
+     * @param accessManager
+     */
+    private static void plugStaticResourcesHandlers(
+            final Configuration conf,
+            final PathHandler pathHandler) {
+        if (!conf.getStaticResourcesMounts().isEmpty()) {
+            conf.getStaticResourcesMounts().stream().forEach(sr -> {
+                try {
+                    String path = (String) sr.get(STATIC_RESOURCES_MOUNT_WHAT_KEY);
+                    String where = (String) sr.get(STATIC_RESOURCES_MOUNT_WHERE_KEY);
+                    String welcomeFile = (String) sr.get(STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY);
+
+                    Boolean embedded = (Boolean) sr.get(STATIC_RESOURCES_MOUNT_EMBEDDED_KEY);
+                    if (embedded == null) {
+                        embedded = false;
+                    }
+
+                    if (where == null || !where.startsWith("/")) {
+                        LOGGER.error("Cannot bind static resources to {}. "
+                                + "parameter 'where' must start with /", where);
+                        return;
+                    }
+
+                    if (welcomeFile == null) {
+                        welcomeFile = "index.html";
+                    }
+
+                    File file;
+
+                    if (embedded) {
+                        if (path.startsWith("/")) {
+                            LOGGER.error("Cannot bind embedded static resources to {}. parameter 'where'"
+                                    + "cannot start with /. the path is relative to the jar root dir"
+                                    + " or classpath directory", where);
+                            return;
+                        }
+
+                        try {
+                            file = ResourcesExtractor.extract(path);
+
+                            if (ResourcesExtractor.isResourceInJar(path)) {
+                                TMP_EXTRACTED_FILES.put(path, file);
+                                LOGGER.info("Embedded static resources {} extracted in {}", path, file.toString());
+                            }
+                        } catch (URISyntaxException | IOException | IllegalStateException ex) {
+                            LOGGER.error("Error extracting embedded static resource {}", path, ex);
+                            return;
+                        }
+                    } else if (!path.startsWith("/")) {
+                        // this is to allow specifying the configuration file path relative
+                        // to the jar (also working when running from classes)
+                        URL location = Bootstrapper.class
+                                .getProtectionDomain()
+                                .getCodeSource()
+                                .getLocation();
+
+                        File locationFile = new File(location.getPath());
+
+                        Path _path = Paths.get(
+                                locationFile.getParent()
+                                        .concat(File.separator)
+                                        .concat(path));
+
+                        // normalize addresses https://issues.jboss.org/browse/UNDERTOW-742
+                        file = _path.normalize().toFile();
+                    } else {
+                        file = new File(path);
+                    }
+
+                    if (file.exists()) {
+                        ResourceHandler handler = resource(new FileResourceManager(file, 3))
+                                .addWelcomeFiles(welcomeFile)
+                                .setDirectoryListingEnabled(false);
+
+                        PipelinedHandler ph = new RequestLogger(
+                                PipelinedWrappingHandler.wrap(handler));
+
+                        pathHandler.addPrefixPath(where, ph);
+
+                        LOGGER.info("URI {} bound to static resources {}.",
+                                where, file.getAbsolutePath());
+                    } else {
+                        LOGGER.error("Failed to bind URL {} to static resources {}."
+                                + " Directory does not exist.", where, path);
+                    }
+
+                } catch (Throwable t) {
+                    LOGGER.error("Cannot bind static resources to {}",
+                            sr.get(STATIC_RESOURCES_MOUNT_WHERE_KEY), t);
+                }
+            });
+        }
     }
 
     private Bootstrapper() {

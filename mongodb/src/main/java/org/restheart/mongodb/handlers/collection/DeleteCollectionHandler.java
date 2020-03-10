@@ -19,7 +19,7 @@ package org.restheart.mongodb.handlers.collection;
 
 import io.undertow.server.HttpServerExchange;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.OperationResult;
+import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;

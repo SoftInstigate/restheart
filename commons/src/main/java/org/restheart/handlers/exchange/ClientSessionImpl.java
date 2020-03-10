@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.mongodb.db.sessions;
+package org.restheart.handlers.exchange;
 
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.TransactionOptions;

@@ -37,18 +37,14 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
-import org.restheart.mongodb.Bootstrapper;
-import org.restheart.mongodb.db.CursorPool;
-import org.restheart.mongodb.db.sessions.ClientSessionImpl;
 import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
 import static org.restheart.handlers.exchange.ExchangeKeys.*;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
-import org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
+import org.restheart.handlers.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.handlers.exchange.ExchangeKeys.HAL_MODE;
+import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
-import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.representation.Resource;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.utils.URLUtils;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -71,7 +67,8 @@ public class BsonRequest extends Request<BsonValue> {
     private int page = 1;
     private int pagesize = 100;
     private boolean count = false;
-    private CursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
+    private boolean etagCheckRequired = false;
+    private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
     private BsonDocument aggregationVars = null; // aggregation vars
     private Deque<String> keys = null;
@@ -79,7 +76,7 @@ public class BsonRequest extends Request<BsonValue> {
     private Deque<String> hint = null;
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
 
-    private Resource.REPRESENTATION_FORMAT representationFormat;
+    private REPRESENTATION_FORMAT representationFormat;
 
     private BsonValue documentId;
 
@@ -771,7 +768,7 @@ public class BsonRequest extends Request<BsonValue> {
     /**
      * @return the representationFormat
      */
-    public Resource.REPRESENTATION_FORMAT getRepresentationFormat() {
+    public REPRESENTATION_FORMAT getRepresentationFormat() {
         return representationFormat;
     }
 
@@ -781,7 +778,7 @@ public class BsonRequest extends Request<BsonValue> {
      * @param representationFormat
      */
     public void setRepresentationFormat(
-            Resource.REPRESENTATION_FORMAT representationFormat) {
+            REPRESENTATION_FORMAT representationFormat) {
         this.representationFormat = representationFormat;
     }
 
@@ -1049,7 +1046,7 @@ public class BsonRequest extends Request<BsonValue> {
      *
      * @return the cursorAllocationPolicy
      */
-    public CursorPool.EAGER_CURSOR_ALLOCATION_POLICY getCursorAllocationPolicy() {
+    public EAGER_CURSOR_ALLOCATION_POLICY getCursorAllocationPolicy() {
         return cursorAllocationPolicy;
     }
 
@@ -1057,7 +1054,7 @@ public class BsonRequest extends Request<BsonValue> {
      * @param cursorAllocationPolicy the cursorAllocationPolicy to set
      */
     public void setCursorAllocationPolicy(
-            CursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+            EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
         this.cursorAllocationPolicy = cursorAllocationPolicy;
     }
 
@@ -1252,175 +1249,6 @@ public class BsonRequest extends Request<BsonValue> {
      */
     public String getETag() {
         return etag;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public boolean isETagCheckRequired() {
-        // if client specifies the If-Match header, than check it
-        if (getETag() != null) {
-            return true;
-        }
-
-        // if client requires the check via qparam return true
-        if (forceEtagCheck) {
-            return true;
-        }
-
-        // for documents consider db and coll etagDocPolicy metadata
-        if (getType() == TYPE.DOCUMENT
-                || getType() == TYPE.FILE) {
-            // check the coll metadata
-            BsonValue _policy = collectionProps != null
-                    ? collectionProps.get(ETAG_DOC_POLICY_METADATA_KEY)
-                    : null;
-
-            LOGGER.trace(
-                    "collection etag policy (from coll properties) {}",
-                    _policy);
-
-            if (_policy == null) {
-                // check the db metadata
-                _policy = dbProps != null ? dbProps.get(ETAG_DOC_POLICY_METADATA_KEY)
-                        : null;
-                LOGGER.trace(
-                        "collection etag policy (from db properties) {}",
-                        _policy);
-            }
-
-            ETAG_CHECK_POLICY policy = null;
-
-            if (_policy != null && _policy.isString()) {
-                try {
-                    policy = ETAG_CHECK_POLICY
-                            .valueOf(_policy.asString().getValue()
-                                    .toUpperCase());
-                } catch (IllegalArgumentException iae) {
-                    policy = null;
-                }
-            }
-
-            if (null != policy) {
-                if (getMethod() == METHOD.DELETE) {
-                    return policy != ETAG_CHECK_POLICY.OPTIONAL;
-                } else {
-                    return policy == ETAG_CHECK_POLICY.REQUIRED;
-                }
-            }
-        }
-
-        // for db consider db etagPolicy metadata
-        if (getType() == TYPE.DB && dbProps != null) {
-            // check the coll  metadata
-            BsonValue _policy = dbProps.get(ETAG_POLICY_METADATA_KEY);
-
-            LOGGER.trace("db etag policy (from db properties) {}", _policy);
-
-            ETAG_CHECK_POLICY policy = null;
-
-            if (_policy != null && _policy.isString()) {
-                try {
-                    policy = ETAG_CHECK_POLICY.valueOf(
-                            _policy.asString().getValue()
-                                    .toUpperCase());
-                } catch (IllegalArgumentException iae) {
-                    policy = null;
-                }
-            }
-
-            if (null != policy) {
-                if (getMethod() == METHOD.DELETE) {
-                    return policy != ETAG_CHECK_POLICY.OPTIONAL;
-                } else {
-                    return policy == ETAG_CHECK_POLICY.REQUIRED;
-                }
-            }
-        }
-
-        // for collection consider coll and db etagPolicy metadata
-        if (getType() == TYPE.COLLECTION && collectionProps != null) {
-            // check the coll  metadata
-            BsonValue _policy = collectionProps.get(ETAG_POLICY_METADATA_KEY);
-
-            LOGGER.trace(
-                    "coll etag policy (from coll properties) {}",
-                    _policy);
-
-            if (_policy == null) {
-                // check the db metadata
-                _policy = dbProps != null ? dbProps.get(ETAG_POLICY_METADATA_KEY)
-                        : null;
-
-                LOGGER.trace(
-                        "coll etag policy (from db properties) {}",
-                        _policy);
-            }
-
-            ETAG_CHECK_POLICY policy = null;
-
-            if (_policy != null && _policy.isString()) {
-                try {
-                    policy = ETAG_CHECK_POLICY.valueOf(
-                            _policy.asString().getValue()
-                                    .toUpperCase());
-                } catch (IllegalArgumentException iae) {
-                    policy = null;
-                }
-            }
-
-            if (null != policy) {
-                if (getMethod() == METHOD.DELETE) {
-                    return policy != ETAG_CHECK_POLICY.OPTIONAL;
-                } else {
-                    return policy == ETAG_CHECK_POLICY.REQUIRED;
-                }
-            }
-        }
-
-        // apply the default policy from configuration
-        ETAG_CHECK_POLICY dbP = MongoServiceConfiguration.get()
-                .getDbEtagCheckPolicy();
-
-        ETAG_CHECK_POLICY collP = MongoServiceConfiguration.get()
-                .getCollEtagCheckPolicy();
-
-        ETAG_CHECK_POLICY docP = MongoServiceConfiguration.get()
-                .getDocEtagCheckPolicy();
-
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("default etag db check (from conf) {}", dbP);
-            LOGGER.trace("default etag coll check (from conf) {}", collP);
-            LOGGER.trace("default etag doc check (from conf) {}", docP);
-        }
-
-        ETAG_CHECK_POLICY policy = null;
-
-        if (null != getType()) {
-            switch (getType()) {
-                case DB:
-                    policy = dbP;
-                    break;
-                case COLLECTION:
-                case FILES_BUCKET:
-                case SCHEMA_STORE:
-                    policy = collP;
-                    break;
-                default:
-                    policy = docP;
-            }
-        }
-
-        if (null != policy) {
-            if (getMethod() == METHOD.DELETE) {
-                return policy != ETAG_CHECK_POLICY.OPTIONAL;
-            } else {
-                return policy == ETAG_CHECK_POLICY.REQUIRED;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -1712,5 +1540,26 @@ public class BsonRequest extends Request<BsonValue> {
      */
     public boolean isMetrics() {
         return getType() == TYPE.METRICS;
+    }
+
+    /**
+     * @return the isETagCheckRequired
+     */
+    public boolean isETagCheckRequired() {
+        return etagCheckRequired;
+    }
+
+    /**
+     * @param etagCheckRequired
+     */
+    public void setETagCheckRequired(boolean etagCheckRequired) {
+        this.etagCheckRequired = etagCheckRequired;
+    }
+
+    /**
+     * @return the forceEtagCheck
+     */
+    public boolean isForceEtagCheck() {
+        return forceEtagCheck;
     }
 }

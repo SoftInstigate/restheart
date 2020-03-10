@@ -19,15 +19,14 @@ package org.restheart.mongodb.plugins.services;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
-import org.restheart.mongodb.Bootstrapper;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
+import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
-import org.restheart.mongodb.utils.ResponseHelper;
 
 /**
  *

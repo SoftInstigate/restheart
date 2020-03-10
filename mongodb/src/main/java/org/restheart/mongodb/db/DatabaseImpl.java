@@ -35,9 +35,11 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
-import org.restheart.mongodb.handlers.RequestContext;
+import org.restheart.handlers.exchange.RequestContext;
 import static org.restheart.handlers.exchange.ExchangeKeys.DB_META_DOCID;
+import org.restheart.handlers.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import static org.restheart.handlers.exchange.ExchangeKeys.META_COLLNAME;
+import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
 import org.restheart.utils.HttpStatus;
 
@@ -599,7 +601,7 @@ public class DatabaseImpl implements Database {
             final BsonDocument filter,
             final BsonDocument hint,
             final BsonDocument keys,
-            final CursorPool.EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+            final EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
         return collectionDAO.getCollectionData(
                 cs,
                 coll,

@@ -22,7 +22,7 @@ import com.mongodb.client.MongoCollection;
 import java.util.Formatter;
 import java.util.Objects;
 import org.bson.BsonDocument;
-import org.restheart.mongodb.db.sessions.ClientSessionImpl;
+import org.restheart.handlers.exchange.ClientSessionImpl;
 
 /**
  *

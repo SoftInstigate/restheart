@@ -24,6 +24,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.ExchangeKeys;
+import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 
 /**
@@ -31,46 +32,6 @@ import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Resource {
-
-    /**
-     *
-     */
-    public enum REPRESENTATION_FORMAT {
-
-        /**
-         *
-         */
-        HAL, // Hypertext Application Language
-
-        /**
-         *
-         */
-        SHAL, // Simplified HAL with children as direct elements of _embedded array
-        
-        // root and dbs represeted as an array of children's ids,
-        // collection as arrays of document objects
-        // documents as objects
-
-        /**
-         *
-         */
-        STANDARD, 
-
-        /**
-         *
-         */
-        S, // Alias for STANDARD
-
-        /**
-         *
-         */
-        PLAIN_JSON, 
-
-        /**
-         *
-         */
-        PJ, // Aliases for SHAL
-    }
 
     /**
      * Supported content types

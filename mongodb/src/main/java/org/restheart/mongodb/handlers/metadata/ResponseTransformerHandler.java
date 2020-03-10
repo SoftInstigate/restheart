@@ -21,13 +21,13 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.handlers.RequestContext;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
-import org.restheart.mongodb.metadata.TransformerMetadata.PHASE;
-import org.restheart.mongodb.metadata.TransformerMetadata.SCOPE;
-import org.restheart.mongodb.plugins.GlobalTransformer;
-import org.restheart.mongodb.plugins.PluginsRegistry;
+import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
 import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.plugins.GlobalTransformer;
+import org.restheart.plugins.Transformer.PHASE;
+import org.restheart.plugins.Transformer.SCOPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,10 +114,10 @@ public class ResponseTransformerHandler
         var context = RequestContext.wrap(exchange);
         
         // execture global response tranformers
-        PluginsRegistry.getInstance().getGlobalTransformers().stream()
+        MongoServicePluginsRegistry.getInstance().getGlobalTransformers().stream()
                 .filter(gt -> doesGlobalTransformerAppy(gt, exchange, context))
                 .forEachOrdered(gt -> {
-                    if (gt.getScope() == TransformerMetadata.SCOPE.THIS) {
+                    if (gt.getScope() == SCOPE.THIS) {
                         gt.transform(
                                 exchange,
                                 context,
@@ -153,7 +153,7 @@ public class ResponseTransformerHandler
                 .filter(rt -> rt.getPhase() == PHASE.RESPONSE)
                 .forEachOrdered(rt -> {
                     try {
-                        var tr = PluginsRegistry.getInstance()
+                        var tr = MongoServicePluginsRegistry.getInstance()
                                 .getTransformer(rt.getName());
                         var t = tr.getInstance();
                         var confArgs = JsonUtils.toBsonDocument(tr.getConfArgs());

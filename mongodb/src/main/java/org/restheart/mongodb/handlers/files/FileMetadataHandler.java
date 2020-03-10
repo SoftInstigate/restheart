@@ -22,7 +22,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.mongodb.db.FileMetadataDAO;
 import org.restheart.mongodb.db.FileMetadataRepository;
-import org.restheart.mongodb.db.OperationResult;
+import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;

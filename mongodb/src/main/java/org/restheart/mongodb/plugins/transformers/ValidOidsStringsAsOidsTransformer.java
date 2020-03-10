@@ -26,9 +26,9 @@ import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.mongodb.handlers.RequestContext;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.mongodb.plugins.Transformer;
+import org.restheart.plugins.Transformer;
 
 /**
  *

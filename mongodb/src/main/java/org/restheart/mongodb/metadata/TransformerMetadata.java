@@ -24,6 +24,8 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
+import org.restheart.plugins.Transformer.PHASE;
+import org.restheart.plugins.Transformer.SCOPE;
 
 /**
  *
@@ -167,37 +169,5 @@ public class TransformerMetadata {
      */
     public BsonValue getArgs() {
         return args;
-    }
-
-    /**
-     *
-     */
-    public enum PHASE {
-
-        /**
-         *
-         */
-        REQUEST, 
-
-        /**
-         *
-         */
-        RESPONSE
-    }
-
-    /**
-     *
-     */
-    public enum SCOPE {
-
-        /**
-         *
-         */
-        THIS, 
-
-        /**
-         *
-         */
-        CHILDREN
     }
 }

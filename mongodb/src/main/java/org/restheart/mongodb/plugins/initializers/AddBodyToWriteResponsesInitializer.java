@@ -18,13 +18,14 @@
 package org.restheart.mongodb.plugins.initializers;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.mongodb.handlers.RequestContext;
-import org.restheart.mongodb.metadata.TransformerMetadata;
-import org.restheart.mongodb.plugins.GlobalTransformer;
+import org.restheart.handlers.exchange.RequestContext;
+import org.restheart.plugins.GlobalTransformer;
 import org.restheart.plugins.Initializer;
-import org.restheart.mongodb.plugins.PluginsRegistry;
+import org.restheart.mongodb.plugins.MongoServicePluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.mongodb.plugins.transformers.WriteResultTransformer;
+import org.restheart.plugins.Transformer.PHASE;
+import org.restheart.plugins.Transformer.SCOPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,15 +47,15 @@ public class AddBodyToWriteResponsesInitializer implements Initializer {
      */
     @Override
     public void init() {
-        PluginsRegistry.getInstance().getGlobalTransformers().add(
+        MongoServicePluginsRegistry.getInstance().getGlobalTransformers().add(
                 new GlobalTransformer(
                         new WriteResultTransformer(), (HttpServerExchange hse,
                                 RequestContext context)
                         -> (context.isPost() && context.isCollection())
                         || (context.isPatch() && context.isDocument())
                         || (context.isPut() && context.isDocument()),
-                        TransformerMetadata.PHASE.RESPONSE,
-                        TransformerMetadata.SCOPE.THIS,
+                        PHASE.RESPONSE,
+                        SCOPE.THIS,
                         null, null)
         );
 

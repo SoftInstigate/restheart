@@ -27,7 +27,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
-import org.restheart.mongodb.handlers.RequestContext;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.mongodb.handlers.document.DocumentRepresentationFactory;
 import org.restheart.handlers.exchange.BsonRequest;

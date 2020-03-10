@@ -5,9 +5,9 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonValue;
-import org.restheart.mongodb.handlers.RequestContext;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.mongodb.plugins.Transformer;
+import org.restheart.plugins.Transformer;
 
 /**
  *

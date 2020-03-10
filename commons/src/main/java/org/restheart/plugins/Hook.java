@@ -15,20 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.mongodb.plugins;
+package org.restheart.plugins;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.mongodb.handlers.RequestContext;
-import org.restheart.plugins.Plugin;
+import org.restheart.handlers.exchange.RequestContext;
+
 
 /**
- * A Checker performs validation on write requests. If the check fails, request
- * fails with status code BAD_REQUEST
- * <p>
- * Note: data to be checked is the argument contentToCheck. this can differ from
- * context.getContent() on bulk requests where it is an array of objects
+ * An Hook is executed after requests completes.
  * <p>
  * Some useful info that can be retrived from arguments request content:
  * <ul>
@@ -59,78 +54,47 @@ import org.restheart.plugins.Plugin;
  * <li>Location header:
  * ExchangeAttributes.responseHeader(HttpString.tryFromString(HttpHeaders.LOCATION)).readAttribute(exchange)
  * </ul>
- *
  * @deprecated use org.restheart.plugins.Interceptor instead
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ *
  */
 @Deprecated
-public interface Checker extends Plugin {
-
+public interface Hook extends Plugin {
     /**
      *
+     * @param exchange the server exchange
+     * @param context the request context
+     * @param args the args specified in the collection metadata via args property
+     * @return true if completed successfully
      */
-    enum PHASE {
-
-        /**
-         *
-         */
-        BEFORE_WRITE,
-
-        /**
-         *
-         */
-        AFTER_WRITE // for optimistic checks, i.e. document is inserted and in case rolled back
-    };
+    default boolean hook(
+            HttpServerExchange exchange,
+            RequestContext context,
+            BsonValue args) {
+        return hook(exchange, context, args, null);
+    }
+        
 
     /**
      *
      * @param exchange the server exchange
      * @param context the request context
-     * @param contentToCheck the contet to check
-     * @param args the args sepcified in the collection metadata via args
-     * @return true if check completes successfully
+     * @param args the args specified in the collection metadata via args property
+     * @param confArgs args specified in the configuration file via args property
+     * @return true if completed successfully
      */
-    boolean check(
+    default boolean hook(
             HttpServerExchange exchange,
             RequestContext context,
-            BsonDocument contentToCheck,
-            BsonValue args);
-
-    /**
-     *
-     * @param exchange the server exchange
-     * @param context the request context
-     * @param contentToCheck
-     * @param args the args sepcified in the collection metadata via args property
-     * @param confArgs the args specified in the configuration file via args property
-     * @return true if check completes successfully
-     */
-    default boolean check(
-            HttpServerExchange exchange,
-            RequestContext context,
-            BsonDocument contentToCheck,
             BsonValue args,
             BsonValue confArgs) {
-        return check(exchange, context, contentToCheck, args);
+        return hook(exchange, context, args);
     }
 
     /**
-     * Specify when the checker should be performed: with BEFORE_WRITE the
-     * checkers gets the request data (that may use the dot notation and update
-     * operators); with AFTER_WRITE the data is optimistically written to the db
-     * and rolled back eventually. Note that AFTER_WRITE helps checking data
-     * with dot notation and update operators since the data to check is
-     * retrieved normalized from the db.
      *
      * @param context
-     * @return BEFORE_WRITE or AFTER_WRITE
-     */
-    PHASE getPhase(RequestContext context);
-
-    /**
-     *
-     * @param context
-     * @return true if the checker supports the requests
+     * @return true if the hook supports the requests
      */
     boolean doesSupportRequests(RequestContext context);
 }

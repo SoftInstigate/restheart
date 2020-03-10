@@ -15,12 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.mongodb.plugins;
+package org.restheart.plugins;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
-import org.restheart.mongodb.handlers.RequestContext;
-import org.restheart.plugins.Plugin;
+import org.restheart.handlers.exchange.RequestContext;
 
 /**
  * A Transformer applies a transformation on requests. It can apply both to
@@ -33,6 +32,38 @@ import org.restheart.plugins.Plugin;
  */
 @Deprecated
 public interface Transformer extends Plugin {
+    /**
+     *
+     */
+    public enum PHASE {
+
+        /**
+         *
+         */
+        REQUEST, 
+
+        /**
+         *
+         */
+        RESPONSE
+    }
+
+    /**
+     *
+     */
+    public enum SCOPE {
+
+        /**
+         *
+         */
+        THIS, 
+
+        /**
+         *
+         */
+        CHILDREN
+    }
+    
     /**
      * contentToTransform can be directly manipulated or
      * RequestContext.setResponseContent(BsonValue value) for response phase and

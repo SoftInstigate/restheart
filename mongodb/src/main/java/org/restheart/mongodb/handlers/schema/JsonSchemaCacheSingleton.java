@@ -11,7 +11,6 @@ import org.json.JSONObject;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
-import org.restheart.mongodb.Bootstrapper;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.utils.JsonUtils;

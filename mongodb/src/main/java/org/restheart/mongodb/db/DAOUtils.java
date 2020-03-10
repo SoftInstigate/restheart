@@ -17,6 +17,7 @@
  */
 package org.restheart.mongodb.db;
 
+import org.restheart.handlers.exchange.OperationResult;
 import com.mongodb.MongoCommandException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.ClientSession;

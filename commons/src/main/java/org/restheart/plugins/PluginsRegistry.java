@@ -84,4 +84,38 @@ public interface PluginsRegistry {
      * security predicates to apply to all requests
      */
     public Set<Predicate> getGlobalSecurityPredicates();
+    
+    /**
+     *
+     * @return the globalCheckers
+     */
+    public Set<PluginRecord<Checker>> getCheckers();
+    
+    /**
+     *
+     * @return the transformers
+     */
+    public Set<PluginRecord<Transformer>> getTransformers();
+    
+    /**
+     *
+     * @return the hooks
+     */
+    public Set<PluginRecord<Hook>> getHooks();
+    
+    /**
+     *
+     * @return the globalCheckers
+     */
+    public Set<GlobalChecker> getGlobalCheckers();
+    
+    /**
+     * @return the globalTransformers
+     */
+    public Set<GlobalTransformer> getGlobalTransformers();
+
+    /**
+     * @return the globalHooks
+     */
+    public Set<GlobalHook> getGlobalHooks();
 }

@@ -28,8 +28,8 @@ import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.ConfigurationException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
-import static org.restheart.mongodb.ConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
-import static org.restheart.mongodb.ConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 import org.restheart.mongodb.db.MongoDBClientSingleton;
 import org.restheart.mongodb.handlers.CORSHandler;
 import org.restheart.mongodb.handlers.OptionsHandler;
@@ -41,7 +41,6 @@ import org.restheart.mongodb.handlers.injectors.CollectionPropsInjectorHandler;
 import org.restheart.mongodb.handlers.injectors.DbPropsInjectorHandler;
 import org.restheart.mongodb.handlers.injectors.RequestContextInjectorHandler;
 import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
-import org.restheart.mongodb.handlers.metrics.TracingInstrumentationHandler;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.InjectConfiguration;
@@ -71,7 +70,7 @@ public class MongoService implements Service {
     public MongoService(Map<String, Object> confArgs) {
         MongoServiceConfiguration.init(confArgs);
         this.myURI = myURI();
-        this.handlerPipeline = getHandlersPipeline();
+        this.handlerPipeline = getBasePipeline();
     }
 
     @Override
@@ -89,7 +88,7 @@ public class MongoService implements Service {
      *
      * @return a GracefulShutdownHandler
      */
-    private PipelinedHandler getHandlersPipeline()
+    private PipelinedHandler getBasePipeline()
             throws ConfigurationException {
         var rootHandler = path();
 
@@ -138,7 +137,6 @@ public class MongoService implements Service {
 
         final PipelinedHandler basePipeline = PipelinedHandler.pipe(
                 new MetricsInstrumentationHandler(),
-                new TracingInstrumentationHandler(),
                 new CORSHandler(),
                 new OptionsHandler(),
                 new BodyInjectorHandler(),

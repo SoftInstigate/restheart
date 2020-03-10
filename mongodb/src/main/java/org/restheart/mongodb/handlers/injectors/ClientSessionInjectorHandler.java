@@ -18,12 +18,12 @@
 package org.restheart.mongodb.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.mongodb.db.sessions.ClientSessionFactory;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
-import org.restheart.utils.HttpStatus;
+import org.restheart.mongodb.db.sessions.ClientSessionFactory;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

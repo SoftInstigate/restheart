@@ -35,7 +35,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
-import org.restheart.mongodb.Bootstrapper;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION;
@@ -44,9 +43,9 @@ import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import static org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
 import static org.restheart.handlers.exchange.ExchangeKeys._METRICS;
-import org.restheart.mongodb.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.utils.ResponseHelper;
 
@@ -478,10 +477,10 @@ public class MetricsHandler extends PipelinedHandler {
         }
 
         public static ResponseType forQueryParameter(String rep) {
-            if (Resource.REPRESENTATION_FORMAT.STANDARD.name().equalsIgnoreCase(rep) 
-                    || Resource.REPRESENTATION_FORMAT.SHAL.name().equalsIgnoreCase(rep)
-                    || Resource.REPRESENTATION_FORMAT.PLAIN_JSON.name().equalsIgnoreCase(rep)
-                    || Resource.REPRESENTATION_FORMAT.PJ.name().equalsIgnoreCase(rep)) {
+            if (REPRESENTATION_FORMAT.STANDARD.name().equalsIgnoreCase(rep) 
+                    || REPRESENTATION_FORMAT.SHAL.name().equalsIgnoreCase(rep)
+                    || REPRESENTATION_FORMAT.PLAIN_JSON.name().equalsIgnoreCase(rep)
+                    || REPRESENTATION_FORMAT.PJ.name().equalsIgnoreCase(rep)) {
                 return ResponseType.JSON;
             } else {
                 return null;

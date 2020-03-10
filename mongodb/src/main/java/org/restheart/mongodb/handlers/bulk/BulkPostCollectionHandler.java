@@ -20,15 +20,15 @@ package org.restheart.mongodb.handlers.bulk;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
 import org.bson.BsonValue;
-import org.restheart.mongodb.db.BulkOperationResult;
-import org.restheart.mongodb.db.DocumentDAO;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.handlers.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
-import org.restheart.utils.HttpStatus;
+import org.restheart.handlers.exchange.RequestContext;
+import org.restheart.mongodb.db.BulkOperationResult;
+import org.restheart.mongodb.db.DocumentDAO;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 
 /**
  *

@@ -20,13 +20,13 @@ package org.restheart.mongodb.handlers.injectors;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
-import org.restheart.utils.HttpStatus;
+import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
