@@ -39,6 +39,7 @@ import org.restheart.mongodb.handlers.injectors.BodyInjectorHandler;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjectorHandler;
 import org.restheart.mongodb.handlers.injectors.CollectionPropsInjectorHandler;
 import org.restheart.mongodb.handlers.injectors.DbPropsInjectorHandler;
+import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
 import org.restheart.mongodb.handlers.injectors.RequestContextInjectorHandler;
 import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.mongodb.utils.URLUtils;
@@ -110,6 +111,9 @@ public class MongoService implements Service {
         } catch (Throwable t) {
             throw new ConfigurationException("\"Error connecting to MongoDB.");
         }
+        
+        // initialize LocalCachesSingleton
+        LocalCachesSingleton.init(MongoServiceConfiguration.get());
 
         ClientSessionInjectorHandler.build(
                 PipelinedHandler.pipe(
