@@ -20,10 +20,10 @@ package org.restheart.mongodb.handlers.injectors;
 import com.mongodb.MongoException;
 import java.util.Optional;
 import org.bson.BsonDocument;
-import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
 
