@@ -263,7 +263,7 @@
                                 <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
                                 <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
                                 <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
-                                    <arg value="${basedir}/etc/restheart-test.yml"/>
+                                    <arg value="${basedir}/etc/restheart-security-test.yml"/>
                                     <arg value="--fork"/>
                                 </exec>
                             </target>
@@ -279,7 +279,7 @@
                             <skip>${skipITs}</skip>
                             <target>
                                 <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
-                                    <arg value="${basedir}/etc/restheart-test.yml"/>
+                                    <arg value="${basedir}/etc/restheart-security-test.yml"/>
                                 </exec>
                             </target>
                         </configuration>

@@ -289,7 +289,7 @@ plugins-args:
 
  # enable-log-console: true => log messages to the console (default value: true)
  # enable-log-file: true => log messages to a file (default value: true)
- # log-file-path: to specify the log file path (default value: restheart-security.log in system temporary directory)
+ # log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
  # log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
  # requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
  # ansi-console: use Ansi console for logging.
