@@ -40,7 +40,7 @@ instance-name: {{{instance-name}}}
  # connections-ttl (optional, default -1) Connections Time to Live in seconds.
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
 proxies:
-  - location: /
+  - location: /proxy
     proxy-pass: {{{restheart-proxy-pass}}}
     rewrite-host-header: true
     connections-per-thread: 20
@@ -282,7 +282,7 @@ plugins-args:
     uri: /echo
     secured: false
   mongo:
-    uri: /coll
+    uri: /
     secured: true
 
 #### Logging

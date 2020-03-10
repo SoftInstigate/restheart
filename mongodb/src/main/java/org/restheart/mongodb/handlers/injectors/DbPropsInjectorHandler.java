@@ -40,6 +40,14 @@ public class DbPropsInjectorHandler extends PipelinedHandler {
     /**
      * Creates a new instance of DbPropsInjectorHandler
      *
+     */
+    public DbPropsInjectorHandler() {
+        super(null);
+    }
+    
+    /**
+     * Creates a new instance of DbPropsInjectorHandler
+     *
      * @param next
      */
     public DbPropsInjectorHandler(PipelinedHandler next) {

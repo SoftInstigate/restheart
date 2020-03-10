@@ -20,6 +20,7 @@ package org.restheart.utils;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.Service;
 
 /**
@@ -59,10 +60,31 @@ public class PluginUtils {
         var a = service.getClass()
                 .getDeclaredAnnotation(RegisterPlugin.class);
 
-        return a == null 
+        return a == null
                 ? null
                 : a.defaultURI() == null || "".equals(a.defaultURI())
-                    ? "/".concat(a.name())
-                    : a.defaultURI();
+                ? "/".concat(a.name())
+                : a.defaultURI();
+    }
+
+    /**
+     *
+     * @param registry the PluginsRegistry
+     * @param serviceName
+     * @return the service default URI. If not explicitly set via defaulUri
+     * attribute, it is /[service-name]
+     */
+    public static String defaultURI(PluginsRegistry registry,
+            String serviceName) {
+        var service = registry.getServices().stream()
+                .filter(s -> serviceName.equals(s.getName()))
+                .findFirst();
+
+        if (service != null && service.isPresent()) {
+
+            return defaultURI(service.get().getInstance());
+        } else {
+            return null;
+        }
     }
 }

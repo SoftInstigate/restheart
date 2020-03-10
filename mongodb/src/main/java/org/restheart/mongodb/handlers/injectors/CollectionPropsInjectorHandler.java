@@ -64,6 +64,14 @@ public class CollectionPropsInjectorHandler extends PipelinedHandler {
     /**
      * Creates a new instance of MetadataInjecterHandler
      *
+     */
+    public CollectionPropsInjectorHandler() {
+        super(null);
+    }
+    
+    /**
+     * Creates a new instance of MetadataInjecterHandler
+     *
      * @param next
      */
     public CollectionPropsInjectorHandler(PipelinedHandler next) {

@@ -31,6 +31,14 @@ public class AccountInjectorHandler extends PipelinedHandler {
     /**
      * Creates a new instance of AccountInjectorHandler
      *
+     */
+    public AccountInjectorHandler() {
+        super(null);
+    }
+    
+    /**
+     * Creates a new instance of AccountInjectorHandler
+     *
      * @param next
      */
     public AccountInjectorHandler(PipelinedHandler next) {

@@ -57,7 +57,7 @@ public class JsonRequest extends ProxableRequest<JsonElement> {
             return null;
         }
 
-        if (getWrapped().getAttachment(getRawContentKey()) == null) {
+        if (getWrappedExchange().getAttachment(getRawContentKey()) == null) {
             return JsonNull.INSTANCE;
         } else {
             try {
@@ -77,7 +77,7 @@ public class JsonRequest extends ProxableRequest<JsonElement> {
         setContentTypeAsJson();
         if (content == null) {
             setRawContent(null);
-            getWrapped().getRequestHeaders().remove(Headers.CONTENT_LENGTH);
+            getWrappedExchange().getRequestHeaders().remove(Headers.CONTENT_LENGTH);
         } else {
             PooledByteBuffer[] dest;
             if (isContentAvailable()) {
@@ -95,7 +95,7 @@ public class JsonRequest extends ProxableRequest<JsonElement> {
             // updated request content length
             // this is not needed in Response.writeContent() since done
             // by ModificableContentSinkConduit.updateContentLenght();
-            getWrapped().getRequestHeaders().put(Headers.CONTENT_LENGTH, copied);
+            getWrappedExchange().getRequestHeaders().put(Headers.CONTENT_LENGTH, copied);
         }
     }
 }
