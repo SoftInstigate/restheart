@@ -22,37 +22,34 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
-import org.restheart.plugins.mongodb.GlobalTransformer;
 import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.mongodb.GlobalTransformer;
 import org.restheart.plugins.mongodb.Transformer;
 
-/**
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- */
-public abstract class AbstractTransformersExecutor {
-    protected final PluginsRegistry pluginsRegistry;
+public abstract class AbstractTransformersExecutor extends PipelinedHandler {
+    protected static PluginsRegistry pluginsRegistry;
     
     /**
      * Creates a new instance of TransformerHandler
      *
-     * @param pluginsRegistry
      */
-    public AbstractTransformersExecutor(PluginsRegistry pluginsRegistry) {
-        this.pluginsRegistry = pluginsRegistry;
+    public AbstractTransformersExecutor() {
+        super(null);
     }
-
+    
     /**
      *
      * @param exchange
      * @throws Exception
      */
-    public void handle(HttpServerExchange exchange) throws Exception {
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         var context = RequestContext.wrap(exchange);
-        
+
         applyGlobalTransformers(exchange);
 
         if (doesCollTransformerAppy(context)) {
@@ -70,6 +67,8 @@ public abstract class AbstractTransformersExecutor {
                 context.addWarning("Error applying transformer: " + e.getMessage());
             }
         }
+        
+        next(exchange);
     }
 
     abstract boolean doesGlobalTransformerAppy(GlobalTransformer gt,
@@ -87,7 +86,7 @@ public abstract class AbstractTransformersExecutor {
     void applyDbTransformer(HttpServerExchange exchange)
             throws InvalidMetadataException {
         var context = RequestContext.wrap(exchange);
-        
+
         List<TransformerMetadata> dbRts
                 = TransformerMetadata
                         .getFromJson(context.getDbProps());
@@ -95,10 +94,10 @@ public abstract class AbstractTransformersExecutor {
         applyTransformLogic(exchange, dbRts);
     }
 
-    void applyCollRTransformer(HttpServerExchange exchange) 
+    void applyCollRTransformer(HttpServerExchange exchange)
             throws InvalidMetadataException {
         var request = BsonRequest.wrap(exchange);
-        
+
         List<TransformerMetadata> collRts
                 = TransformerMetadata
                         .getFromJson(request.getCollectionProps());

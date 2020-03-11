@@ -23,42 +23,28 @@ import java.util.NoSuchElementException;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
 import org.restheart.mongodb.utils.JsonUtils;
-import org.restheart.plugins.mongodb.GlobalTransformer;
-import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
-import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.mongodb.GlobalTransformer;
 import org.restheart.plugins.mongodb.Transformer.PHASE;
 import org.restheart.plugins.mongodb.Transformer.SCOPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Applies the response transformers defined in the collection properties to the
+ * request; it also applies the global tranformers
  *
- * handler that applies the transformers defined in the collection properties to
- * the response
+ * It is added to the pipeline by RequestDispatcherHandler
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "responseTransformerExecutor",
-        description = "executes the response transformers",
-        interceptPoint = InterceptPoint.RESPONSE)
-public class ResponseTransformerExecutor
-        extends AbstractTransformersExecutor implements Interceptor {
+@RegisterPlugin(name = "responseTransformersExecutor",
+        description = "executes the response transformers")
+public class ResponseTransformersExecutor
+        extends AbstractTransformersExecutor {
 
     static final Logger LOGGER
-            = LoggerFactory.getLogger(ResponseTransformerExecutor.class);
-
-    /**
-     * Creates a new instance of ResponseTransformerMetadataHandler
-     *
-     * @param pluginsRegistry
-     */
-    @InjectPluginsRegistry
-    public ResponseTransformerExecutor(PluginsRegistry pluginsRegistry) {
-        super(pluginsRegistry);
-    }
+            = LoggerFactory.getLogger(ResponseTransformersExecutor.class);
 
     @Override
     boolean doesGlobalTransformerAppy(GlobalTransformer gt,
@@ -204,10 +190,5 @@ public class ResponseTransformerExecutor
                         context.addWarning(err);
                     }
                 });
-    }
-
-    @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        return true;
     }
 }
