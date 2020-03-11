@@ -77,9 +77,6 @@ public class AfterWriteCheckersExecutor
                 && !applyGlobalCheckers(exchange))) {
             // restore old data
             
-            var a = 1;
-            
-
             MongoClient client = MongoDBClientSingleton
                     .getInstance()
                     .getClient();

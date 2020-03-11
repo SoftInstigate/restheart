@@ -791,11 +791,11 @@ public class Bootstrapper {
                         configuration.getAjpHost(), configuration.getAjpPort());
             }
         }
-
+        
         HANDLERS = getHandlersPipe(authMechanisms,
                 authorizers,
                 tokenManager);
-
+        
         // update buffer size in 
         AbstractExchange.updateBufferSize(configuration.getBufferSize());
 
@@ -877,10 +877,13 @@ public class Bootstrapper {
         LOGGER.info("Content buffers maximun size "
                 + "is {} bytes",
                 MAX_CONTENT_SIZE);
+        
+        // force initialization of interceptors
+        PluginsRegistryImpl.getInstance().getInterceptors();
 
         plugServices(getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
-
+        
         plugProxies(configuration, getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
 
