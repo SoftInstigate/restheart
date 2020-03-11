@@ -27,12 +27,12 @@ import org.restheart.handlers.exchange.BsonRequest;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AccountInjectorHandler extends PipelinedHandler {
+public class AccountInjector extends PipelinedHandler {
     /**
      * Creates a new instance of AccountInjectorHandler
      *
      */
-    public AccountInjectorHandler() {
+    public AccountInjector() {
         super(null);
     }
     
@@ -41,7 +41,7 @@ public class AccountInjectorHandler extends PipelinedHandler {
      *
      * @param next
      */
-    public AccountInjectorHandler(PipelinedHandler next) {
+    public AccountInjector(PipelinedHandler next) {
         super(next);
     }
 

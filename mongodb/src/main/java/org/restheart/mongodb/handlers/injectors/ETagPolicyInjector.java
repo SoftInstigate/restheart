@@ -18,8 +18,16 @@
 package org.restheart.mongodb.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonValue;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.ExchangeKeys;
+import static org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY.OPTIONAL;
+import static org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY.REQUIRED;
+import static org.restheart.handlers.exchange.ExchangeKeys.ETAG_DOC_POLICY_METADATA_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys.ETAG_POLICY_METADATA_KEY;
+import org.restheart.mongodb.MongoServiceConfiguration;
+import static org.restheart.mongodb.handlers.injectors.RequestContextInjector.LOGGER;
 
 /**
  *
@@ -27,12 +35,12 @@ import org.restheart.handlers.exchange.BsonRequest;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AccountInjectorHandler extends PipelinedHandler {
+public class ETagPolicyInjector extends PipelinedHandler {
     /**
      * Creates a new instance of AccountInjectorHandler
      *
      */
-    public AccountInjectorHandler() {
+    public ETagPolicyInjector() {
         super(null);
     }
     
@@ -41,7 +49,7 @@ public class AccountInjectorHandler extends PipelinedHandler {
      *
      * @param next
      */
-    public AccountInjectorHandler(PipelinedHandler next) {
+    public ETagPolicyInjector(PipelinedHandler next) {
         super(next);
     }
 
@@ -54,12 +62,180 @@ public class AccountInjectorHandler extends PipelinedHandler {
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         var request = BsonRequest.wrap(exchange);
         
-        // inject authenticatedAccount
-        if (exchange.getSecurityContext() != null) {
-            request.setAuthenticatedAccount(exchange.getSecurityContext()
-                    .getAuthenticatedAccount());
-        }
+        request.setETagCheckRequired(isETagCheckRequired(request));
         
         next(exchange);
+    }
+    
+    /**
+     *
+     * @param request
+     * @return
+     */
+    public boolean isETagCheckRequired(BsonRequest request) {
+        var collectionProps = request.getCollectionProps();
+        var dbProps = request.getDbProps();
+
+        // if client specifies the If-Match header, than check it
+        if (request.getETag() != null) {
+            return true;
+        }
+
+        // if client requires the check via qparam return true
+        if (request.isForceEtagCheck()) {
+            return true;
+        }
+
+        // for documents consider db and coll etagDocPolicy metadata
+        if (request.isDocument() || request.isFile()) {
+            // check the coll metadata
+            BsonValue _policy = collectionProps != null
+                    ? collectionProps.get(ETAG_DOC_POLICY_METADATA_KEY)
+                    : null;
+
+            LOGGER.trace(
+                    "collection etag policy (from coll properties) {}",
+                    _policy);
+
+            if (_policy == null) {
+                // check the db metadata
+                _policy = dbProps != null ? dbProps.get(ETAG_DOC_POLICY_METADATA_KEY)
+                        : null;
+                LOGGER.trace(
+                        "collection etag policy (from db properties) {}",
+                        _policy);
+            }
+
+            ExchangeKeys.ETAG_CHECK_POLICY policy = null;
+
+            if (_policy != null && _policy.isString()) {
+                try {
+                    policy = ExchangeKeys.ETAG_CHECK_POLICY
+                            .valueOf(_policy.asString().getValue()
+                                    .toUpperCase());
+                } catch (IllegalArgumentException iae) {
+                    policy = null;
+                }
+            }
+
+            if (null != policy) {
+                if (request.isDelete()) {
+                    return policy != OPTIONAL;
+                } else {
+                    return policy == REQUIRED;
+                }
+            }
+        }
+
+        // for db consider db etagPolicy metadata
+        if (request.isDb() && dbProps != null) {
+            // check the coll  metadata
+            BsonValue _policy = dbProps.get(ETAG_POLICY_METADATA_KEY);
+
+            LOGGER.trace("db etag policy (from db properties) {}", _policy);
+
+            ExchangeKeys.ETAG_CHECK_POLICY policy = null;
+
+            if (_policy != null && _policy.isString()) {
+                try {
+                    policy = ExchangeKeys.ETAG_CHECK_POLICY.valueOf(
+                            _policy.asString().getValue()
+                                    .toUpperCase());
+                } catch (IllegalArgumentException iae) {
+                    policy = null;
+                }
+            }
+
+            if (null != policy) {
+                if (request.isDelete()) {
+                    return policy != OPTIONAL;
+                } else {
+                    return policy == REQUIRED;
+                }
+            }
+        }
+
+        // for collection consider coll and db etagPolicy metadata
+        if (request.isCollection() && collectionProps != null) {
+            // check the coll  metadata
+            BsonValue _policy = collectionProps.get(ETAG_POLICY_METADATA_KEY);
+
+            LOGGER.trace(
+                    "coll etag policy (from coll properties) {}",
+                    _policy);
+
+            if (_policy == null) {
+                // check the db metadata
+                _policy = dbProps != null ? dbProps.get(ETAG_POLICY_METADATA_KEY)
+                        : null;
+
+                LOGGER.trace(
+                        "coll etag policy (from db properties) {}",
+                        _policy);
+            }
+
+            ExchangeKeys.ETAG_CHECK_POLICY policy = null;
+
+            if (_policy != null && _policy.isString()) {
+                try {
+                    policy = ExchangeKeys.ETAG_CHECK_POLICY.valueOf(
+                            _policy.asString().getValue()
+                                    .toUpperCase());
+                } catch (IllegalArgumentException iae) {
+                    policy = null;
+                }
+            }
+
+            if (null != policy) {
+                if (request.isDelete()) {
+                    return policy != OPTIONAL;
+                } else {
+                    return policy == REQUIRED;
+                }
+            }
+        }
+
+        // apply the default policy from configuration
+        var dbP = MongoServiceConfiguration.get()
+                .getDbEtagCheckPolicy();
+
+        var collP = MongoServiceConfiguration.get()
+                .getCollEtagCheckPolicy();
+
+        var docP = MongoServiceConfiguration.get()
+                .getDocEtagCheckPolicy();
+
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("default etag db check (from conf) {}", dbP);
+            LOGGER.trace("default etag coll check (from conf) {}", collP);
+            LOGGER.trace("default etag doc check (from conf) {}", docP);
+        }
+
+        ExchangeKeys.ETAG_CHECK_POLICY policy = null;
+
+        if (null != request.getType()) {
+            switch (request.getType()) {
+                case DB:
+                    policy = dbP;
+                    break;
+                case COLLECTION:
+                case FILES_BUCKET:
+                case SCHEMA_STORE:
+                    policy = collP;
+                    break;
+                default:
+                    policy = docP;
+            }
+        }
+
+        if (null != policy) {
+            if (request.isDelete()) {
+                return policy != OPTIONAL;
+            } else {
+                return policy == REQUIRED;
+            }
+        }
+
+        return false;
     }
 }

@@ -17,7 +17,7 @@
  */
 package org.restheart.mongodb.handlers.injectors;
 
-import org.restheart.mongodb.handlers.injectors.CollectionPropsInjectorHandler;
+import org.restheart.mongodb.handlers.injectors.CollectionPropsInjector;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.junit.After;
@@ -98,7 +98,7 @@ public class CollectionPropsInjectorHandlerTest {
 
         assertEquals(TYPE.COLLECTION, context.getType());
         assertEquals(AbstractExchange.METHOD.PUT, context.getMethod());
-        assertEquals(false, CollectionPropsInjectorHandler.checkCollection(context));
+        assertEquals(false, CollectionPropsInjector.checkCollection(context));
     }
 
     /**
@@ -110,7 +110,7 @@ public class CollectionPropsInjectorHandlerTest {
 
         assertEquals(TYPE.FILES_BUCKET, context.getType());
         assertEquals(AbstractExchange.METHOD.POST, context.getMethod());
-        assertEquals(true, CollectionPropsInjectorHandler.checkCollection(context));
+        assertEquals(true, CollectionPropsInjector.checkCollection(context));
     }
 
     /**
@@ -122,7 +122,7 @@ public class CollectionPropsInjectorHandlerTest {
 
         assertEquals(TYPE.ROOT, context.getType());
         assertEquals(AbstractExchange.METHOD.PUT, context.getMethod());
-        assertEquals(false, CollectionPropsInjectorHandler.checkCollection(context));
+        assertEquals(false, CollectionPropsInjector.checkCollection(context));
     }
 
     private BsonRequest createRequest(String requestPath, String httpMethod) {
