@@ -791,11 +791,11 @@ public class Bootstrapper {
                         configuration.getAjpHost(), configuration.getAjpPort());
             }
         }
-        
+
         HANDLERS = getHandlersPipe(authMechanisms,
                 authorizers,
                 tokenManager);
-        
+
         // update buffer size in 
         AbstractExchange.updateBufferSize(configuration.getBufferSize());
 
@@ -877,13 +877,13 @@ public class Bootstrapper {
         LOGGER.info("Content buffers maximun size "
                 + "is {} bytes",
                 MAX_CONTENT_SIZE);
-        
+
         plugServices(getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
-        
+
         // force initialization of interceptors
         PluginsRegistryImpl.getInstance().getInterceptors();
-        
+
         plugProxies(configuration, getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
 
@@ -1022,10 +1022,9 @@ public class Bootstrapper {
 
             paths.addPrefixPath(uri, _srv);
 
-            LOGGER.info("URI {} bound to service {}, secured: {}",
-                    uri,
-                    srv.getName(),
-                    secured);
+            LOGGER.info(ansi().fg(GREEN)
+                    .a("URI {} bound to service, secured: {}")
+                    .reset().toString(), uri, srv.getName(), secured);
         });
     }
 
@@ -1158,7 +1157,9 @@ public class Bootstrapper {
 
                 paths.addPrefixPath(location, proxy);
 
-                LOGGER.info("URI {} bound to resource {}", location, _proxyPass);
+                LOGGER.info(ansi().fg(GREEN)
+                        .a("URI {} bound to proxy resource {}")
+                        .reset().toString(), location, _proxyPass);
             } catch (URISyntaxException ex) {
                 LOGGER.warn("Invalid location URI {}, resource {} not bound ",
                         location,
@@ -1255,8 +1256,10 @@ public class Bootstrapper {
 
                         pathHandler.addPrefixPath(where, ph);
 
-                        LOGGER.info("URI {} bound to static resources {}.",
-                                where, file.getAbsolutePath());
+                        LOGGER.info(ansi().fg(GREEN)
+                                .a("URI {} bound to static resource {}")
+                                .reset().toString(), where, file.getAbsolutePath());
+
                     } else {
                         LOGGER.error("Failed to bind URL {} to static resources {}."
                                 + " Directory does not exist.", where, path);
