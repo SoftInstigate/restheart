@@ -7,7 +7,7 @@
     <version>5.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>
-        RESTHeart - API microservice for MongoDB.
+        RESTHeart - The REST API microservice for MongoDB.
     </description>
     <url>http://www.restheart.org</url>
     <inceptionYear>2014</inceptionYear>
@@ -39,8 +39,14 @@
 
     <licenses>
         <license>
-            <name>GNU AFFERO GENERAL PUBLIC LICENSE</name>
+            <name>GNU Affero General Public License (AGPL) version 3.0</name>
             <url>http://www.gnu.org/licenses/agpl-3.0.html</url>
+            <distribution>repo</distribution>
+            <comments>Core components license</comments>
+        </license>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
             <comments>A business-friendly OSS license</comments>
         </license>

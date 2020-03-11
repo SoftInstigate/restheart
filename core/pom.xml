@@ -13,34 +13,10 @@
     <artifactId>restheart</artifactId>
     <packaging>jar</packaging>
     <description>
-        RESTHeart - Web API for MongoDB.
+        RESTHeart Core - Core services for RESTHeart
     </description>
     <url>https://restheart.org</url>
     <inceptionYear>2014</inceptionYear>
-
-    <properties>
-        <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
-        <skipITs>true</skipITs>
-        <maven.compiler.source>13</maven.compiler.source>
-        <maven.compiler.target>13</maven.compiler.target>
-    </properties>
-
-    <!-- Project Information -->
-    <organization>
-        <name>SoftInstigate</name>
-        <url>https://softinstigate.com</url>
-    </organization>
-
-    <issueManagement>
-        <url>https://github.com/SoftInstigate/restheart/issues</url>
-        <system>GitHub Issues</system>
-    </issueManagement>
-
-    <scm>
-        <url>https://github.com/SoftInstigate/restheart</url>
-        <connection>scm:git:git@github.com:SoftInstigate/restheart.git</connection>
-        <developerConnection>scm:git:git@github.com:SoftInstigate/restheart</developerConnection>
-    </scm>
 
     <dependencies>
         <dependency>

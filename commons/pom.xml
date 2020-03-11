@@ -13,30 +13,19 @@
     <packaging>jar</packaging>
 
     <description>
-        RESTHeart Common - Common classes for RESTHeart.
+        RESTHeart Commons - Common classes for core components and plugins.
     </description>
     <url>https://restheart.org</url>
     <inceptionYear>2019</inceptionYear>
 
-    <!-- Project Information -->
-    <issueManagement>
-        <url>https://github.com/SoftInstigate/restheart-common/issues</url>
-        <system>GitHub Issues</system>
-    </issueManagement>
-
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub SoftInstigate Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/SoftInstigate/restheart-common</url>
-        </repository>
-    </distributionManagement>
-
-    <scm>
-        <url>https://github.com/SoftInstigate/restheart-common</url>
-        <connection>scm:git:git@github.com:SoftInstigate/restheart-common.git</connection>
-        <developerConnection>scm:git:git@github.com:SoftInstigate/restheart-common</developerConnection>
-    </scm>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
 
     <dependencies>
         <!-- update undertow dependency to avoid warning log message:
@@ -109,5 +98,4 @@
             </plugin>
         </plugins>
     </build>
-    <name>restheart-commons</name>
 </project>
