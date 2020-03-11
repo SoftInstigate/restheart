@@ -21,11 +21,12 @@ import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.Initializer;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.plugins.PluginsRegistry;
-import org.restheart.security.utils.URLUtils;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.plugins.InjectPluginsRegistry;
 
 /**
  * Just an example initializer. It is not enabledByDefault; to enable it add to
@@ -47,6 +48,13 @@ public class TestInitializer implements Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInitializer.class);
 
+    private PluginsRegistry pluginRegistry;
+    
+    @InjectPluginsRegistry
+    public void setPluginRegistry(PluginsRegistry pluginRegistry) {
+        this.pluginRegistry = pluginRegistry;
+    }
+    
     @Override
     public void init() {
         LOGGER.info("Testing initializer");
@@ -54,7 +62,7 @@ public class TestInitializer implements Initializer {
         LOGGER.info("\tadds a request and a response interceptors for /iecho and /siecho");
 
         // add a global security predicate
-        PluginsRegistry.getInstance().getGlobalSecurityPredicates()
+        this.pluginRegistry.getGlobalSecurityPredicates()
                 .add((Predicate) (HttpServerExchange exchange) -> {
                     var request = JsonRequest.wrap(exchange);
                     return !(request.isGet()

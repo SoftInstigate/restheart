@@ -34,10 +34,11 @@ import java.util.List;
 import java.util.Map;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import org.restheart.plugins.OnInit;
+import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
-import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.plugins.InjectPluginsRegistry;
 
 /**
  *
@@ -78,35 +79,40 @@ public class TokenBasicAuthMechanism
     /**
      *
      * @param args
+     * @param pluginsRegistry
      * @throws org.restheart.ConfigurationException
      */
-    @OnInit
-    public TokenBasicAuthMechanism(final Map<String, Object> args)
+    @InjectConfiguration
+    @InjectPluginsRegistry
+    public TokenBasicAuthMechanism(final Map<String, Object> args,
+            PluginsRegistry pluginsRegistry)
             throws ConfigurationException {
-        this("tokenBasicAuthMechanism", args);
+        this("tokenBasicAuthMechanism", args, pluginsRegistry);
     }
 
     /**
      *
      * @param mechanismName
      * @param args
+     * @param pluginsRegistry
      * @throws org.restheart.ConfigurationException
      */
     public TokenBasicAuthMechanism(final String mechanismName,
-            final Map<String, Object> args)
+            final Map<String, Object> args,
+            PluginsRegistry pluginsRegistry)
             throws ConfigurationException {
 
         super(argValue(args, "realm"),
                 mechanismName,
                 true,
-                PluginsRegistry.getInstance().getTokenManager() != null
-                ? PluginsRegistry.getInstance().getTokenManager().getInstance()
+                pluginsRegistry.getTokenManager() != null
+                ? pluginsRegistry.getTokenManager().getInstance()
                 : null);
 
         this.mechanismName = mechanismName;
 
-        this.identityManager = PluginsRegistry.getInstance().getTokenManager() != null
-                ? PluginsRegistry.getInstance().getTokenManager().getInstance()
+        this.identityManager = pluginsRegistry.getTokenManager() != null
+                ? pluginsRegistry.getTokenManager().getInstance()
                 : null;
     }
 

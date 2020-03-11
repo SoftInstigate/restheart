@@ -81,7 +81,7 @@ public abstract class Request<T> extends AbstractExchange<T> {
      * @return the request method
      */
     public METHOD getMethod() {
-        return selectMethod(getWrapped().getRequestMethod());
+        return selectMethod(getWrappedExchange().getRequestMethod());
     }
 
     /**
@@ -89,14 +89,14 @@ public abstract class Request<T> extends AbstractExchange<T> {
      */
     @Override
     public String getContentType() {
-        return getContentType(getWrapped());
+        return getContentType(getWrappedExchange());
     }
 
     /**
      * @param responseContentType the responseContentType to set
      */
     public void setContentType(String responseContentType) {
-        getWrapped().getRequestHeaders().put(Headers.CONTENT_TYPE,
+        getWrappedExchange().getRequestHeaders().put(Headers.CONTENT_TYPE,
                 responseContentType);
     }
 
@@ -115,21 +115,21 @@ public abstract class Request<T> extends AbstractExchange<T> {
      * @return the requestStartTime
      */
     public Long getStartTime() {
-        return getWrapped().getAttachment(START_TIME_KEY);
+        return getWrappedExchange().getAttachment(START_TIME_KEY);
     }
 
     /**
      * @param requestStartTime the requestStartTime to set
      */
     public void setStartTime(Long requestStartTime) {
-        getWrapped().putAttachment(START_TIME_KEY, requestStartTime);
+        getWrappedExchange().putAttachment(START_TIME_KEY, requestStartTime);
     }
 
     /**
      * @return the authenticatedAccount
      */
     public Account getAuthenticatedAccount() {
-        return getWrapped().getSecurityContext().getAuthenticatedAccount();
+        return getWrappedExchange().getSecurityContext().getAuthenticatedAccount();
     }
 
     /**
@@ -156,7 +156,7 @@ public abstract class Request<T> extends AbstractExchange<T> {
     }
 
     public Map<String, List<String>> getXForwardedHeaders() {
-        return getWrapped().getAttachment(XFORWARDED_HEADERS);
+        return getWrappedExchange().getAttachment(XFORWARDED_HEADERS);
     }
 
     /**
