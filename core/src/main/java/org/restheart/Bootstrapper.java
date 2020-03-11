@@ -878,11 +878,11 @@ public class Bootstrapper {
                 + "is {} bytes",
                 MAX_CONTENT_SIZE);
         
-        // force initialization of interceptors
-        PluginsRegistryImpl.getInstance().getInterceptors();
-
         plugServices(getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
+        
+        // force initialization of interceptors
+        PluginsRegistryImpl.getInstance().getInterceptors();
         
         plugProxies(configuration, getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
@@ -1044,7 +1044,7 @@ public class Bootstrapper {
             final Set<PluginRecord<Authorizer>> authorizers,
             final PluginRecord<TokenManager> tokenManager) {
         if (conf.getProxies() == null || conf.getProxies().isEmpty()) {
-            LOGGER.info("No {} specified", ConfigurationKeys.PROXY_KEY);
+            LOGGER.debug("No {} specified", ConfigurationKeys.PROXY_KEY);
             return;
         }
 
