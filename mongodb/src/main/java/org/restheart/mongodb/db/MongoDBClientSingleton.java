@@ -35,8 +35,8 @@ public class MongoDBClientSingleton {
 
     private static boolean initialized = false;
     private static MongoClientURI mongoUri;
-    private static String serverVersion = null;
-    private static boolean replicaSet = false;
+    private String serverVersion = null;
+    private boolean replicaSet = false;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoDBClientSingleton.class);
 
@@ -47,6 +47,13 @@ public class MongoDBClientSingleton {
     public static void init(MongoClientURI uri) {
         mongoUri = uri;
         initialized = true;
+    }
+    
+    /**
+     * @return the initialized
+     */
+    public static boolean isInitialized() {
+        return initialized;
     }
 
     /**
@@ -60,21 +67,14 @@ public class MongoDBClientSingleton {
     /**
      * @return the initialized
      */
-    public static boolean isInitialized() {
-        return initialized;
-    }
-
-    /**
-     * @return the initialized
-     */
-    public static Boolean isReplicaSet() {
+    public Boolean isReplicaSet() {
         return replicaSet;
     }
 
     /**
      * @return the serverVersion
      */
-    public static String getServerVersion() {
+    public String getServerVersion() {
         return serverVersion;
     }
 
@@ -100,6 +100,7 @@ public class MongoDBClientSingleton {
         }
 
         // get the db version
+        // this also is the first time we check the connection
         try {
             Document res = mongoClient.getDatabase("admin")
                     .runCommand(
@@ -115,7 +116,10 @@ public class MongoDBClientSingleton {
                 serverVersion = "3.x?";
             }
         } catch (Throwable t) {
-            LOGGER.warn("Cannot get the MongoDb version.");
+            LOGGER.warn("Cannot connect to MongoDb. "
+                    + "Check that MongoDB is running and "
+                    + "the configuration property 'mongo-uri' "
+                    + "is set properly");
             serverVersion = "?";
         }
 
