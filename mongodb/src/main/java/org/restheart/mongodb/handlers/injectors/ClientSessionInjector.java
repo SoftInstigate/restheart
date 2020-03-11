@@ -33,15 +33,15 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ClientSessionInjectorHandler extends PipelinedHandler {
+public class ClientSessionInjector extends PipelinedHandler {
     private static final Logger LOGGER
-            = LoggerFactory.getLogger(ClientSessionInjectorHandler.class);
+            = LoggerFactory.getLogger(ClientSessionInjector.class);
     
     /**
      *
      * @return
      */
-    public static ClientSessionInjectorHandler getInstance() {
+    public static ClientSessionInjector getInstance() {
         if (ClientSessionInjectorHandlerHolder.INSTANCE == null) {
             throw new IllegalStateException("Singleton not initialized");
         }
@@ -50,7 +50,7 @@ public class ClientSessionInjectorHandler extends PipelinedHandler {
     }
 
     private static class ClientSessionInjectorHandlerHolder {
-        private static ClientSessionInjectorHandler INSTANCE = null;
+        private static ClientSessionInjector INSTANCE = null;
     }
     
     /**
@@ -63,7 +63,7 @@ public class ClientSessionInjectorHandler extends PipelinedHandler {
         }
         
         ClientSessionInjectorHandlerHolder.INSTANCE 
-                = new ClientSessionInjectorHandler(next);
+                = new ClientSessionInjector(next);
     }
     
     private ClientSessionFactory clientSessionFactory 
@@ -74,7 +74,7 @@ public class ClientSessionInjectorHandler extends PipelinedHandler {
      *
      * @param next
      */
-    private ClientSessionInjectorHandler(PipelinedHandler next) {
+    private ClientSessionInjector(PipelinedHandler next) {
         super(next);
     }
 

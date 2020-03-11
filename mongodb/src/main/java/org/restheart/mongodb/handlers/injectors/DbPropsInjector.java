@@ -34,14 +34,14 @@ import org.restheart.mongodb.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DbPropsInjectorHandler extends PipelinedHandler {
+public class DbPropsInjector extends PipelinedHandler {
     private final DatabaseImpl dbsDAO = new DatabaseImpl();
     
     /**
      * Creates a new instance of DbPropsInjectorHandler
      *
      */
-    public DbPropsInjectorHandler() {
+    public DbPropsInjector() {
         super(null);
     }
     
@@ -50,7 +50,7 @@ public class DbPropsInjectorHandler extends PipelinedHandler {
      *
      * @param next
      */
-    public DbPropsInjectorHandler(PipelinedHandler next) {
+    public DbPropsInjector(PipelinedHandler next) {
         super(next);
     }
 

@@ -34,13 +34,14 @@ import org.restheart.mongodb.db.MongoDBClientSingleton;
 import org.restheart.mongodb.handlers.CORSHandler;
 import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
-import org.restheart.mongodb.handlers.injectors.AccountInjectorHandler;
-import org.restheart.mongodb.handlers.injectors.BodyInjectorHandler;
-import org.restheart.mongodb.handlers.injectors.ClientSessionInjectorHandler;
-import org.restheart.mongodb.handlers.injectors.CollectionPropsInjectorHandler;
-import org.restheart.mongodb.handlers.injectors.DbPropsInjectorHandler;
+import org.restheart.mongodb.handlers.injectors.AccountInjector;
+import org.restheart.mongodb.handlers.injectors.BodyInjector;
+import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
+import org.restheart.mongodb.handlers.injectors.CollectionPropsInjector;
+import org.restheart.mongodb.handlers.injectors.DbPropsInjector;
+import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
-import org.restheart.mongodb.handlers.injectors.RequestContextInjectorHandler;
+import org.restheart.mongodb.handlers.injectors.RequestContextInjector;
 import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.ConfigurationScope;
@@ -115,16 +116,15 @@ public class MongoService implements Service {
         // initialize LocalCachesSingleton
         LocalCachesSingleton.init(MongoServiceConfiguration.get());
 
-        ClientSessionInjectorHandler.build(
-                PipelinedHandler.pipe(
-                        new DbPropsInjectorHandler(),
-                        new CollectionPropsInjectorHandler(),
+        ClientSessionInjector.build(PipelinedHandler.pipe(
+                new DbPropsInjector(),
+                        new CollectionPropsInjector(),
+                        new ETagPolicyInjector(),
                         RequestDispatcherHandler.getInstance()));
 
         PipelinedHandler corePipeline
-                = PipelinedHandler.pipe(
-                        new AccountInjectorHandler(),
-                        ClientSessionInjectorHandler.getInstance());
+                = PipelinedHandler.pipe(new AccountInjector(),
+                        ClientSessionInjector.getInstance());
 
         PathTemplateHandler pathsTemplates = pathTemplate(false);
 
@@ -139,11 +139,10 @@ public class MongoService implements Service {
                 .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
                 .allMatch(url -> !isPathTemplate(url));
 
-        final PipelinedHandler basePipeline = PipelinedHandler.pipe(
-                new MetricsInstrumentationHandler(),
+        final PipelinedHandler basePipeline = PipelinedHandler.pipe(new MetricsInstrumentationHandler(),
                 new CORSHandler(),
                 new OptionsHandler(),
-                new BodyInjectorHandler(),
+                new BodyInjector(),
                 corePipeline);
 
         if (!allPathTemplates && !allPaths) {
@@ -155,7 +154,7 @@ public class MongoService implements Service {
                 var uri = resolveURI((String) m.get(MONGO_MOUNT_WHERE_KEY));
                 var db = (String) m.get(MONGO_MOUNT_WHAT_KEY);
 
-                PipelinedHandler pipeline = new RequestContextInjectorHandler(
+                PipelinedHandler pipeline = new RequestContextInjector(
                         uri,
                         db,
                         true,

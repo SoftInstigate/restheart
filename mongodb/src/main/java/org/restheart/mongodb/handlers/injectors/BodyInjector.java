@@ -60,9 +60,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BodyInjectorHandler extends PipelinedHandler {
+public class BodyInjector extends PipelinedHandler {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(BodyInjectorHandler.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(BodyInjector.class);
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
             + Resource.HAL_JSON_MEDIA_TYPE
@@ -258,7 +258,7 @@ public class BodyInjectorHandler extends PipelinedHandler {
      * Creates a new instance of BodyInjectorHandler
      *
      */
-    public BodyInjectorHandler() {
+    public BodyInjector() {
         this(null);
     }
     
@@ -267,7 +267,7 @@ public class BodyInjectorHandler extends PipelinedHandler {
      *
      * @param next
      */
-    public BodyInjectorHandler(PipelinedHandler next) {
+    public BodyInjector(PipelinedHandler next) {
         super(next);
         this.formParserFactory = FormParserFactory.builder().build();
     }
