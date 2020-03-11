@@ -40,7 +40,7 @@ import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
-import org.restheart.plugins.Transformer;
+import org.restheart.plugins.mongodb.Transformer;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;

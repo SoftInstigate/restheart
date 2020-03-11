@@ -69,7 +69,7 @@ import org.restheart.mongodb.handlers.transformers.MetaRequestTransformer;
 import org.restheart.mongodb.handlers.transformers.RepresentationTransformer;
 import org.restheart.mongodb.handlers.transformers.SizeRequestTransformer;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.plugins.Transformer.PHASE;
+import org.restheart.plugins.mongodb.Transformer.PHASE;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

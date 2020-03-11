@@ -23,14 +23,14 @@ import java.util.NoSuchElementException;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
 import org.restheart.mongodb.utils.JsonUtils;
-import org.restheart.plugins.GlobalTransformer;
+import org.restheart.plugins.mongodb.GlobalTransformer;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
-import org.restheart.plugins.Transformer.PHASE;
-import org.restheart.plugins.Transformer.SCOPE;
+import org.restheart.plugins.mongodb.Transformer.PHASE;
+import org.restheart.plugins.mongodb.Transformer.SCOPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
         description = "executes the response transformers",
         interceptPoint = InterceptPoint.RESPONSE)
 public class ResponseTransformerExecutor
-        extends AbstractTransformersExecutor implements Service {
+        extends AbstractTransformersExecutor implements Interceptor {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(ResponseTransformerExecutor.class);
@@ -204,5 +204,10 @@ public class ResponseTransformerExecutor
                         context.addWarning(err);
                     }
                 });
+    }
+
+    @Override
+    public boolean resolve(HttpServerExchange exchange) {
+        return true;
     }
 }

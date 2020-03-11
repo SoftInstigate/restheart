@@ -24,8 +24,8 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
-import org.restheart.plugins.Transformer.PHASE;
-import org.restheart.plugins.Transformer.SCOPE;
+import org.restheart.plugins.mongodb.Transformer.PHASE;
+import org.restheart.plugins.mongodb.Transformer.SCOPE;
 
 /**
  *

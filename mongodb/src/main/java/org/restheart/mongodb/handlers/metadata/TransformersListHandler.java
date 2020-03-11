@@ -23,8 +23,8 @@ import java.util.List;
 import org.bson.BsonValue;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.RequestContext;
-import org.restheart.plugins.Transformer;
-import org.restheart.plugins.Transformer.PHASE;
+import org.restheart.plugins.mongodb.Transformer;
+import org.restheart.plugins.mongodb.Transformer.PHASE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

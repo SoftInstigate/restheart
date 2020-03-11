@@ -21,7 +21,7 @@ import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.exchange.RequestContext;
-import org.restheart.plugins.Hook;
+import org.restheart.plugins.mongodb.Hook;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.slf4j.Logger;

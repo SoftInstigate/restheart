@@ -17,6 +17,12 @@
  */
 package org.restheart.plugins;
 
+import org.restheart.plugins.mongodb.Transformer;
+import org.restheart.plugins.mongodb.Hook;
+import org.restheart.plugins.mongodb.GlobalHook;
+import org.restheart.plugins.mongodb.GlobalTransformer;
+import org.restheart.plugins.mongodb.GlobalChecker;
+import org.restheart.plugins.mongodb.Checker;
 import io.undertow.predicate.Predicate;
 import java.util.Set;
 import org.restheart.ConfigurationException;

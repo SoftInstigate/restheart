@@ -15,9 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins;
+package org.restheart.plugins.mongodb;
 
+import org.restheart.plugins.mongodb.Checker;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.RequestContextPredicate;
@@ -29,26 +31,31 @@ import org.restheart.handlers.exchange.RequestContextPredicate;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @Deprecated
-public class GlobalHook {
-    private final Hook hook;
+public class GlobalChecker {
+    private final Checker checker;
     private final RequestContextPredicate predicate;
+    private final boolean skipNotSupported;
     private final BsonValue args;
     private final BsonValue confArgs;
 
     /**
      * 
-     * @param hook
-     * @param predicate hook is applied only to requests that resolve
+     * @param checker
+     * @param predicate checker is applied only to requests that resolve
      * the predicate
+     * @param skipNotSupported
      * @param args
+     * @param bv1
      * @param confArgs 
      */
-    public GlobalHook(Hook hook,
+    public GlobalChecker(Checker checker,
             RequestContextPredicate predicate,
+            boolean skipNotSupported,
             BsonValue args,
             BsonValue confArgs) {
-        this.hook = hook;
+        this.checker = checker;
         this.predicate = predicate;
+        this.skipNotSupported = skipNotSupported;
         this.args = args;
         this.confArgs = confArgs;
     }
@@ -57,15 +64,18 @@ public class GlobalHook {
      *
      * @param exchange
      * @param context
+     * @param contentToCheck
      * @return
      */
-    public boolean hook(
+    public boolean check(
             HttpServerExchange exchange,
-            RequestContext context) {
+            RequestContext context,
+            BsonDocument contentToCheck) {
 
         return resolve(exchange, context)
-                && this.getHook().hook(exchange,
+                && this.getChecker().check(exchange,
                         context,
+                        contentToCheck, 
                         this.getArgs(), 
                         this.getConfArgs());
     }
@@ -82,10 +92,28 @@ public class GlobalHook {
     }
 
     /**
+     *
+     * @param context
+     * @return
+     */
+    public Checker.PHASE getPhase(RequestContext context) {
+        return this.getChecker().getPhase(context);
+    }
+
+    /**
+     *
+     * @param context
+     * @return
+     */
+    public boolean doesSupportRequests(RequestContext context) {
+        return this.getChecker().doesSupportRequests(context);
+    }
+
+    /**
      * @return the checker
      */
-    public Hook getHook() {
-        return hook;
+    public Checker getChecker() {
+        return checker;
     }
 
     /**
@@ -100,6 +128,13 @@ public class GlobalHook {
      */
     public BsonValue getConfArgs() {
         return confArgs;
+    }
+
+    /**
+     * @return the skipNotSupported
+     */
+    public boolean isSkipNotSupported() {
+        return skipNotSupported;
     }
 
     /**

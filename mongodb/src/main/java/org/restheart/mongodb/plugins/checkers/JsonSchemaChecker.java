@@ -29,7 +29,7 @@ import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
-import org.restheart.plugins.Checker;
+import org.restheart.plugins.mongodb.Checker;
 import org.restheart.mongodb.representation.UnsupportedDocumentIdException;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
