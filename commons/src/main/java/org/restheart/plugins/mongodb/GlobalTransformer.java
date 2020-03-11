@@ -15,46 +15,50 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins;
+package org.restheart.plugins.mongodb;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.RequestContextPredicate;
+import org.restheart.plugins.mongodb.Transformer.PHASE;
+import org.restheart.plugins.mongodb.Transformer.SCOPE;
 
 /**
- *
- * wraps a checker with args and confArgs to be added as a global checker
+ * wraps a transformer with args and confArgs to be added as a global
+ * transformer
  * @deprecated use org.restheart.plugins.Interceptor instead
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @Deprecated
-public class GlobalChecker {
-    private final Checker checker;
+public class GlobalTransformer {
+    private final Transformer transformer;
     private final RequestContextPredicate predicate;
-    private final boolean skipNotSupported;
+    private final PHASE phase;
+    private final SCOPE scope;
     private final BsonValue args;
     private final BsonValue confArgs;
 
     /**
-     * 
-     * @param checker
-     * @param predicate checker is applied only to requests that resolve
+     *
+     * @param transformer
+     * @param phase
+     * @param scope
+     * @param predicate the transformer is applied only to requests that resolve
      * the predicate
-     * @param skipNotSupported
      * @param args
-     * @param bv1
-     * @param confArgs 
+     * @param confArgs
      */
-    public GlobalChecker(Checker checker,
+    public GlobalTransformer(Transformer transformer,
             RequestContextPredicate predicate,
-            boolean skipNotSupported,
+            PHASE phase,
+            SCOPE scope,
             BsonValue args,
             BsonValue confArgs) {
-        this.checker = checker;
+        this.transformer = transformer;
         this.predicate = predicate;
-        this.skipNotSupported = skipNotSupported;
+        this.phase = phase;
+        this.scope = scope;
         this.args = args;
         this.confArgs = confArgs;
     }
@@ -63,20 +67,18 @@ public class GlobalChecker {
      *
      * @param exchange
      * @param context
-     * @param contentToCheck
-     * @return
+     * @param contentToTransform
      */
-    public boolean check(
+    public void transform(
             HttpServerExchange exchange,
             RequestContext context,
-            BsonDocument contentToCheck) {
-
-        return resolve(exchange, context)
-                && this.getChecker().check(exchange,
-                        context,
-                        contentToCheck, 
-                        this.getArgs(), 
-                        this.getConfArgs());
+            BsonValue contentToTransform) {
+        if (resolve(exchange, context)) {
+            this.getTransformer().
+                    transform(exchange,
+                            context,
+                            contentToTransform, this.getArgs(), this.getConfArgs());
+        }
     }
 
     /**
@@ -91,28 +93,24 @@ public class GlobalChecker {
     }
 
     /**
-     *
-     * @param context
-     * @return
+     * @return the phase
      */
-    public Checker.PHASE getPhase(RequestContext context) {
-        return this.getChecker().getPhase(context);
+    public PHASE getPhase() {
+        return phase;
     }
 
     /**
-     *
-     * @param context
-     * @return
+     * @return the scope
      */
-    public boolean doesSupportRequests(RequestContext context) {
-        return this.getChecker().doesSupportRequests(context);
+    public SCOPE getScope() {
+        return scope;
     }
 
     /**
-     * @return the checker
+     * @return the transformer
      */
-    public Checker getChecker() {
-        return checker;
+    public Transformer getTransformer() {
+        return transformer;
     }
 
     /**
@@ -127,13 +125,6 @@ public class GlobalChecker {
      */
     public BsonValue getConfArgs() {
         return confArgs;
-    }
-
-    /**
-     * @return the skipNotSupported
-     */
-    public boolean isSkipNotSupported() {
-        return skipNotSupported;
     }
 
     /**

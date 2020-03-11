@@ -20,13 +20,14 @@ package org.restheart.mongodb.handlers.metadata;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.HookMetadata;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
@@ -39,10 +40,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "hooksTransformerExecutor",
+@RegisterPlugin(name = "hooksExecutor",
         description = "executes the hooks",
         interceptPoint = InterceptPoint.RESPONSE_ASYNC)
-public class HookHandler implements Service {
+public class HookHandler implements Interceptor {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(HookHandler.class);
@@ -134,5 +135,10 @@ public class HookHandler implements Service {
         // execute global request tranformers
         pluginsRegistry.getGlobalHooks().stream()
                 .forEachOrdered(gh -> gh.hook(exchange, context));
+    }
+
+    @Override
+    public boolean resolve(HttpServerExchange exchange) {
+        return true;
     }
 }

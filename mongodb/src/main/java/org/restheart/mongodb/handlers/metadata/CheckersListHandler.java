@@ -24,7 +24,7 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.plugins.Checker;
+import org.restheart.plugins.mongodb.Checker;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

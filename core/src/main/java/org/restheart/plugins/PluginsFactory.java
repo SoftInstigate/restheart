@@ -17,6 +17,9 @@
  */
 package org.restheart.plugins;
 
+import org.restheart.plugins.mongodb.Transformer;
+import org.restheart.plugins.mongodb.Hook;
+import org.restheart.plugins.mongodb.Checker;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;

@@ -20,13 +20,13 @@ package org.restheart.mongodb.plugins.initializers;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.plugins.transformers.WriteResultTransformer;
-import org.restheart.plugins.GlobalTransformer;
+import org.restheart.plugins.mongodb.GlobalTransformer;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Transformer.PHASE;
-import org.restheart.plugins.Transformer.SCOPE;
+import org.restheart.plugins.mongodb.Transformer.PHASE;
+import org.restheart.plugins.mongodb.Transformer.SCOPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -25,9 +25,9 @@ import org.bson.BsonValue;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
-import org.restheart.plugins.GlobalTransformer;
+import org.restheart.plugins.mongodb.GlobalTransformer;
 import org.restheart.plugins.PluginsRegistry;
-import org.restheart.plugins.Transformer;
+import org.restheart.plugins.mongodb.Transformer;
 
 /**
  *

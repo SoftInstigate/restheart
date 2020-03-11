@@ -15,50 +15,40 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.plugins;
+package org.restheart.plugins.mongodb;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.RequestContextPredicate;
-import org.restheart.plugins.Transformer.PHASE;
-import org.restheart.plugins.Transformer.SCOPE;
 
 /**
- * wraps a transformer with args and confArgs to be added as a global
- * transformer
+ *
+ * wraps a checker with args and confArgs to be added as a global checker
  * @deprecated use org.restheart.plugins.Interceptor instead
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @Deprecated
-public class GlobalTransformer {
-    private final Transformer transformer;
+public class GlobalHook {
+    private final Hook hook;
     private final RequestContextPredicate predicate;
-    private final PHASE phase;
-    private final SCOPE scope;
     private final BsonValue args;
     private final BsonValue confArgs;
 
     /**
-     *
-     * @param transformer
-     * @param phase
-     * @param scope
-     * @param predicate the transformer is applied only to requests that resolve
+     * 
+     * @param hook
+     * @param predicate hook is applied only to requests that resolve
      * the predicate
      * @param args
-     * @param confArgs
+     * @param confArgs 
      */
-    public GlobalTransformer(Transformer transformer,
+    public GlobalHook(Hook hook,
             RequestContextPredicate predicate,
-            PHASE phase,
-            SCOPE scope,
             BsonValue args,
             BsonValue confArgs) {
-        this.transformer = transformer;
+        this.hook = hook;
         this.predicate = predicate;
-        this.phase = phase;
-        this.scope = scope;
         this.args = args;
         this.confArgs = confArgs;
     }
@@ -67,18 +57,17 @@ public class GlobalTransformer {
      *
      * @param exchange
      * @param context
-     * @param contentToTransform
+     * @return
      */
-    public void transform(
+    public boolean hook(
             HttpServerExchange exchange,
-            RequestContext context,
-            BsonValue contentToTransform) {
-        if (resolve(exchange, context)) {
-            this.getTransformer().
-                    transform(exchange,
-                            context,
-                            contentToTransform, this.getArgs(), this.getConfArgs());
-        }
+            RequestContext context) {
+
+        return resolve(exchange, context)
+                && this.getHook().hook(exchange,
+                        context,
+                        this.getArgs(), 
+                        this.getConfArgs());
     }
 
     /**
@@ -93,24 +82,10 @@ public class GlobalTransformer {
     }
 
     /**
-     * @return the phase
+     * @return the checker
      */
-    public PHASE getPhase() {
-        return phase;
-    }
-
-    /**
-     * @return the scope
-     */
-    public SCOPE getScope() {
-        return scope;
-    }
-
-    /**
-     * @return the transformer
-     */
-    public Transformer getTransformer() {
-        return transformer;
+    public Hook getHook() {
+        return hook;
     }
 
     /**

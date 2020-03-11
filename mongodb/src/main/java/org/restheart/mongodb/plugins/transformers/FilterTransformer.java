@@ -23,7 +23,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Transformer;
+import org.restheart.plugins.mongodb.Transformer;
 
 /**
  *

@@ -32,13 +32,13 @@ import org.restheart.mongodb.db.DAOUtils;
 import org.restheart.mongodb.db.MongoDBClientSingleton;
 import org.restheart.mongodb.metadata.CheckerMetadata;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.plugins.Checker;
-import org.restheart.plugins.GlobalChecker;
+import org.restheart.plugins.mongodb.Checker;
+import org.restheart.plugins.mongodb.GlobalChecker;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -46,10 +46,10 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "afterWriteCheckerExecutor",
-        description = "executes before write checkers",
+        description = "executes after-write checkers",
         interceptPoint = InterceptPoint.RESPONSE)
 public class AfterWriteCheckersExecutor
-        extends BeforeWriteCheckersExecutor implements Service {
+        extends BeforeWriteCheckersExecutor implements Interceptor {
 
     /**
      *
@@ -76,6 +76,9 @@ public class AfterWriteCheckersExecutor
                 || (doesGlobalCheckersApply()
                 && !applyGlobalCheckers(exchange))) {
             // restore old data
+            
+            var a = 1;
+            
 
             MongoClient client = MongoDBClientSingleton
                     .getInstance()
@@ -179,5 +182,10 @@ public class AfterWriteCheckersExecutor
             RequestContext context) {
         return gc.getPhase(context) == Checker.PHASE.AFTER_WRITE
                 && gc.resolve(exchange, context);
+    }
+
+    @Override
+    public boolean resolve(HttpServerExchange exchange) {
+        return true;
     }
 }
