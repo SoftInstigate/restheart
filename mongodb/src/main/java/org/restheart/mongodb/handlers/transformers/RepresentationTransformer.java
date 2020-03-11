@@ -218,6 +218,7 @@ public class RepresentationTransformer extends PipelinedHandler {
                 addItems(__embedded, embedded, "rh:index");
                 addItems(__embedded, embedded, "rh:result");
                 addItems(__embedded, embedded, "rh:schema");
+                addItems(__embedded, embedded, "rh:schema-store");
 
                 // add _items if not in error
                 if (response.getStatusCode()
