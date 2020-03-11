@@ -22,7 +22,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import org.restheart.utils.HttpStatus;
 
 /**

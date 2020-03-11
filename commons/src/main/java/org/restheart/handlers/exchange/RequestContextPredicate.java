@@ -17,7 +17,6 @@
  */
 package org.restheart.handlers.exchange;
 
-import org.restheart.handlers.exchange.RequestContext;
 import io.undertow.server.HttpServerExchange;
 
 /**
