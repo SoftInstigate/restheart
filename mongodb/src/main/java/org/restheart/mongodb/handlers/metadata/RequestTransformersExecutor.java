@@ -27,9 +27,9 @@ import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 import org.restheart.plugins.mongodb.GlobalTransformer;
 import org.restheart.plugins.mongodb.Transformer.PHASE;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * Applies the request transformers defined in the collection properties to the
  * request; it also applies the global tranformers
  *
- * It implements Service only to be able get pluginsRegistry via
+ * It implements Interceptor only to be able get pluginsRegistry via
  * InjectPluginsRegistry annotation
  *
  * It is added to the pipeline by RequestDispatcherHandler
@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(name = "requestTransformersExecutor",
         description = "executes the request transformers")
 public class RequestTransformersExecutor
-        extends AbstractTransformersExecutor implements Service {
+        extends AbstractTransformersExecutor implements Interceptor {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(RequestTransformersExecutor.class);

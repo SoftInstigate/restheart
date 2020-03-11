@@ -33,10 +33,9 @@ import org.restheart.mongodb.plugins.checkers.CheckersUtils;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.plugins.mongodb.Checker.PHASE;
 import org.restheart.plugins.mongodb.GlobalChecker;
@@ -47,7 +46,7 @@ import org.slf4j.LoggerFactory;
 /**
  * PipelinedHandler that executes the before-write checkers.
  *
- * It implements Service only to be able get pluginsRegistry via
+ * It implements Interceptor only to be able get pluginsRegistry via
  * InjectPluginsRegistry annotation
  *
  * It is added to the pipeline by RequestDispatcherHandler
@@ -58,7 +57,7 @@ import org.slf4j.LoggerFactory;
         description = "executes before-write checkers")
 @SuppressWarnings("deprecation")
 public class BeforeWriteCheckersExecutor extends PipelinedHandler
-        implements Service {
+        implements Interceptor {
 
     public BeforeWriteCheckersExecutor() {
         super(null);

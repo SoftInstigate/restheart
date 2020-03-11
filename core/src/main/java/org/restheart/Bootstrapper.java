@@ -924,6 +924,7 @@ public class Bootstrapper {
      * @param authorizers
      * @param tokenManager
      */
+    @SuppressWarnings("unchecked")
     private static void plugServices(final PathHandler paths,
             final Set<PluginRecord<AuthMechanism>> mechanisms,
             final Set<PluginRecord<Authorizer>> authorizers,
@@ -1023,7 +1024,7 @@ public class Bootstrapper {
             paths.addPrefixPath(uri, _srv);
 
             LOGGER.info(ansi().fg(GREEN)
-                    .a("URI {} bound to service, secured: {}")
+                    .a("URI {} bound to service {}, secured: {}")
                     .reset().toString(), uri, srv.getName(), secured);
         });
     }

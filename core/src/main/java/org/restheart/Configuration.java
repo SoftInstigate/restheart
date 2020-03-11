@@ -248,7 +248,7 @@ public class Configuration {
      * @param silent
      * @throws org.restheart.ConfigurationException
      */
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation", "unchecked"})
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.conf = conf;
 
@@ -327,7 +327,7 @@ public class Configuration {
 
             if (old != null
                     && old instanceof List
-                    && checkPre20Confs((List) old)) {
+                    && checkPre20Confs((List<Map<String, Object>>) old)) {
                 LOGGER.error("The authorizers configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
                 throw new ConfigurationException("Wrong Authorizers configuration");
             }
