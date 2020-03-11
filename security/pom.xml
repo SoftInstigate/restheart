@@ -13,32 +13,10 @@
     <artifactId>restheart-security</artifactId>
     <packaging>jar</packaging>
     <description>
-        RESTHeart Security - IAM microservice for RESTHeart.
+        RESTHeart Security - IAM plugin for RESTHeart.
     </description>
     <url>https://restheart.org</url>
     <inceptionYear>2018</inceptionYear>
-
-    <properties>
-        <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
-        <skipITs>true</skipITs>
-    </properties>
-
-    <!-- Project Information -->
-    <organization>
-        <name>SoftInstigate</name>
-        <url>https://softinstigate.com</url>
-    </organization>
-
-    <issueManagement>
-        <url>https://github.com/SoftInstigate/restheart-security/issues</url>
-        <system>GitHub Issues</system>
-    </issueManagement>
-
-    <scm>
-        <url>https://github.com/SoftInstigate/restheart-security</url>
-        <connection>scm:git:git@github.com:SoftInstigate/restheart-security.git</connection>
-        <developerConnection>scm:git:git@github.com:SoftInstigate/restheart-security</developerConnection>
-    </scm>
 
     <dependencies>
         <dependency>
@@ -140,47 +118,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
             </plugin>
-<!--            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <configuration>
-                    <finalName>${project.artifactId}</finalName>
-                    <createDependencyReducedPom>true</createDependencyReducedPom>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/*.SF</exclude>
-                                <exclude>META-INF/*.DSA</exclude>
-                                <exclude>META-INF/*.RSA</exclude>
-                            </excludes>
-                        </filter>
-                        <filter>
-                             removing overlapping classes, defined also in guava 
-                            <artifact>com.google.guava:failureaccess</artifact>
-                            <excludes>
-                                <exclude>com/google/common/util/concurrent/internal/InternalFutureFailureAccess.class</exclude>
-                                <exclude>com/google/common/util/concurrent/internal/InternalFutures.class</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.restheart.security.Bootstrapper</mainClass>
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
