@@ -59,7 +59,7 @@ public class JsonResponse extends ProxableResponse<JsonElement> {
             return null;
         }
 
-        if (getWrapped().getAttachment(getRawContentKey()) == null) {
+        if (getWrappedExchange().getAttachment(getRawContentKey()) == null) {
             return JsonNull.INSTANCE;
         } else {
             try {

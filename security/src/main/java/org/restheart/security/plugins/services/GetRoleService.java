@@ -28,14 +28,14 @@ import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.ConfigurablePlugin;
-import org.restheart.plugins.OnInit;
+import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
-import org.restheart.security.utils.URLUtils;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.URLUtils;
 
 /**
  *
@@ -54,7 +54,7 @@ public class GetRoleService implements Service {
      *
      * @param confArgs
      */
-    @OnInit
+    @InjectConfiguration
     public void init (Map<String, Object> confArgs) {
         this.confArgs = confArgs;
     }

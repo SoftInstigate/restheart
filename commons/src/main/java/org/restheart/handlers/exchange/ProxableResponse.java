@@ -53,15 +53,15 @@ public abstract class ProxableResponse<T> extends Response<T> {
                     + "the content available.");
         }
 
-        return getWrapped().getAttachment(getRawContentKey());
+        return getWrappedExchange().getAttachment(getRawContentKey());
     }
     
     public void setRawContent(PooledByteBuffer[] raw) {
-        getWrapped().putAttachment(getRawContentKey(), raw);
+        getWrappedExchange().putAttachment(getRawContentKey(), raw);
     }
     
     public boolean isContentAvailable() {
-        return null != getWrapped().getAttachment(getRawContentKey());
+        return null != getWrappedExchange().getAttachment(getRawContentKey());
     }
     
     protected void setContentLength(int length) {

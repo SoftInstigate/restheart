@@ -35,10 +35,10 @@ import org.restheart.ConfigurationException;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.FileConfigurablePlugin;
-import org.restheart.plugins.OnInit;
+import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
-import org.restheart.security.utils.LambdaUtils;
+import org.restheart.utils.LambdaUtils;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -58,7 +58,7 @@ public class RequestPredicatesAuthorizer
      * @throws java.io.FileNotFoundException
      * @throws ConfigurationException
      */
-    @OnInit
+    @InjectConfiguration
     public RequestPredicatesAuthorizer(Map<String, Object> confArgs)
             throws FileNotFoundException, ConfigurationException {
         this("requestPredicatesAuthorizer", confArgs);

@@ -51,14 +51,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.restheart.ConfigurationException;
+import org.restheart.handlers.QueryStringRebuilder;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import org.restheart.plugins.OnInit;
+import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
-import org.restheart.security.handlers.QueryStringRebuilder;
-import org.restheart.security.plugins.PluginsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.restheart.plugins.InjectPluginsRegistry;
 
 /**
  * {@link io.undertow.server.HttpHandler} to handle HTTP Digest authentication,
@@ -79,19 +80,22 @@ public class DigestAuthMechanism implements AuthMechanism {
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
-    @OnInit
-    public DigestAuthMechanism(Map<String, Object> args)
+    @InjectConfiguration
+    @InjectPluginsRegistry
+    public DigestAuthMechanism(Map<String, Object> args, 
+            PluginsRegistry pluginsRegistry)
             throws ConfigurationException {
-        this("digestAuthMechanism", args);
+        this("digestAuthMechanism", args, pluginsRegistry);
     }
 
-    public DigestAuthMechanism(final String mechanismName,
-            Map<String, Object> args) throws ConfigurationException {
+    private DigestAuthMechanism(final String mechanismName,
+            Map<String, Object> args,
+            PluginsRegistry pluginsRegistry) throws ConfigurationException {
         this(argValue(args, "realm"),
                 argValue(args, "domain"),
                 mechanismName,
                 // the authenticator specified in auth mechanism configuration
-                PluginsRegistry.getInstance()
+                pluginsRegistry
                         .getAuthenticator(argValue(args, "authenticator"))
                         .getInstance());
     }

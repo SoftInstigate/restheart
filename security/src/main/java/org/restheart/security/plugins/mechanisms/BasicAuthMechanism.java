@@ -23,10 +23,11 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 import java.util.Map;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import org.restheart.plugins.OnInit;
+import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
-import org.restheart.security.plugins.PluginsRegistry;
+import org.restheart.plugins.InjectPluginsRegistry;
 
 /**
  *
@@ -42,19 +43,23 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
-    @OnInit
-    public BasicAuthMechanism(final Map<String, Object> args)
+    @InjectConfiguration
+    @InjectPluginsRegistry
+    public BasicAuthMechanism(final Map<String, Object> args,
+            PluginsRegistry pluginRegistry)
             throws ConfigurationException {
-        this("basicAuthMechanism", args);
+        this("basicAuthMechanism", args, pluginRegistry);
     }
 
-    public BasicAuthMechanism(final String mechanismName, final Map<String, Object> args)
+    private BasicAuthMechanism(final String mechanismName,
+            final Map<String, Object> args,
+            PluginsRegistry pluginRegistry)
             throws ConfigurationException {
         super(argValue(args, "realm"),
                 mechanismName,
                 false,
                 // the authenticator specified in auth mechanism configuration
-                PluginsRegistry.getInstance()
+                pluginRegistry
                         .getAuthenticator(argValue(args, "authenticator"))
                         .getInstance());
     }

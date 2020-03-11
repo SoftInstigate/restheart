@@ -55,9 +55,9 @@ public abstract class AbstractExchange<T> {
     }
 
     /**
-     * @return the wrapped
+     * @return the wrapped HttpServerExchange
      */
-    protected HttpServerExchange getWrapped() {
+    protected HttpServerExchange getWrappedExchange() {
         return wrapped;
     }
 
@@ -130,8 +130,8 @@ public abstract class AbstractExchange<T> {
      * @return true if request is authenticated
      */
     public boolean isAuthenticated() {
-        return getWrapped().getSecurityContext() != null
-                && getWrapped().getSecurityContext().getAuthenticatedAccount() != null;
+        return getWrappedExchange().getSecurityContext() != null
+                && getWrappedExchange().getSecurityContext().getAuthenticatedAccount() != null;
     }
 
     /**
@@ -143,12 +143,12 @@ public abstract class AbstractExchange<T> {
     public boolean isAccountInRole(String role) {
         if (!isAuthenticated()) {
             return false;
-        } else if (getWrapped().getSecurityContext()
+        } else if (getWrappedExchange().getSecurityContext()
                 .getAuthenticatedAccount()
                 .getRoles() == null) {
             return false;
         } else {
-            return getWrapped().getSecurityContext()
+            return getWrappedExchange().getSecurityContext()
                     .getAuthenticatedAccount()
                     .getRoles().contains(role);
         }

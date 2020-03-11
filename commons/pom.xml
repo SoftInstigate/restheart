@@ -12,11 +12,18 @@
     <artifactId>restheart-commons</artifactId>
     <packaging>jar</packaging>
 
-    <description>
-        RESTHeart Commons - Common classes for RESTHeart.
-    </description>
+    <description>RESTHeart Commons - Common classes for core components and plugins.</description>
     <url>https://restheart.org</url>
     <inceptionYear>2019</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
 
     <dependencies>
         <!-- update undertow dependency to avoid warning log message:
