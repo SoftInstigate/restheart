@@ -17,8 +17,6 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.plugins.HandlingPlugin;
-
 /**
  * Interface for Interceptors
  * 
