@@ -17,9 +17,6 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.plugins.mongodb.Transformer;
-import org.restheart.plugins.mongodb.Hook;
-import org.restheart.plugins.mongodb.Checker;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
@@ -40,6 +37,9 @@ import java.util.Map;
 import java.util.Set;
 import org.restheart.Bootstrapper;
 import org.restheart.ConfigurationException;
+import org.restheart.plugins.mongodb.Checker;
+import org.restheart.plugins.mongodb.Hook;
+import org.restheart.plugins.mongodb.Transformer;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
@@ -236,7 +236,7 @@ public class PluginsFactory {
 
                         if (pr.isEnabled()) {
                             ret.add(pr);
-                            LOGGER.info("Registered {} {}: {}",
+                            LOGGER.debug("Registered {} {}: {}",
                                     _type,
                                     name,
                                     description);
