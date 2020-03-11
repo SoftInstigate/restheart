@@ -609,14 +609,20 @@ public class PluginsFactory {
         }
     }
 
-    private static URL[] PLUGINS_JARS_CACHE = null;
+    private static URLClassLoader PLUGINS_CL_CACHE = null;
 
+    /**
+     * 
+     * @return the URLClassLoader that resolve plugins classes
+     */
     private static URLClassLoader getPluginsClassloader() {
-        if (PLUGINS_JARS_CACHE == null) {
-            PLUGINS_JARS_CACHE = findPluginsJars(getPluginsDirectory());
+        if (PLUGINS_CL_CACHE == null) {
+            PLUGINS_CL_CACHE = new URLClassLoader(
+                    findPluginsJars(
+                            getPluginsDirectory()));
         }
 
-        return new URLClassLoader(PLUGINS_JARS_CACHE);
+        return PLUGINS_CL_CACHE;
     }
 
     private static Map<String, Map<String, Object>> consumePluginsConfiguration() {
