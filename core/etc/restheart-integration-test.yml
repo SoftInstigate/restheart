@@ -145,7 +145,7 @@ plugins-args:
     log-level: INFO
   addBodyToWriteResponsesInitializer:
     enabled: false
-  pingService:
+  ping:
     #uri: "/hello"
     msg: Hello World!
 
