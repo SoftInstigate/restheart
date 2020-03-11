@@ -555,6 +555,7 @@ public class PluginsFactory {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static <T extends Object> T annotationParam(ClassInfo ci,
             String param) {
         var annotationInfo = ci.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME);
@@ -625,6 +626,7 @@ public class PluginsFactory {
         return PLUGINS_CL_CACHE;
     }
 
+    @SuppressWarnings("unchecked")
     private static Map<String, Map<String, Object>> consumePluginsConfiguration() {
         Map<String, Map<String, Object>> pluginsArgs = Bootstrapper
                 .getConfiguration()
