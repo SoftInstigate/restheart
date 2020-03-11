@@ -17,7 +17,6 @@
  */
 package org.restheart.plugins.mongodb;
 
-import org.restheart.plugins.mongodb.Checker;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
@@ -30,7 +29,6 @@ import org.restheart.handlers.exchange.RequestContextPredicate;
  * @deprecated use org.restheart.plugins.Interceptor instead
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@Deprecated
 public class GlobalChecker {
     private final Checker checker;
     private final RequestContextPredicate predicate;
@@ -45,7 +43,6 @@ public class GlobalChecker {
      * the predicate
      * @param skipNotSupported
      * @param args
-     * @param bv1
      * @param confArgs 
      */
     public GlobalChecker(Checker checker,
