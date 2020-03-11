@@ -34,31 +34,14 @@ import org.restheart.mongodb.metadata.CheckerMetadata;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.plugins.mongodb.GlobalChecker;
-import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
-import org.restheart.plugins.PluginsRegistry;
-import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
 /**
+ * Interceptor that executes after-write checkers
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "afterWriteCheckerExecutor",
-        description = "executes after-write checkers",
-        interceptPoint = InterceptPoint.RESPONSE)
-public class AfterWriteCheckersExecutor
-        extends BeforeWriteCheckersExecutor implements Interceptor {
-
-    /**
-     *
-     * @param pluginsRegistry
-     */
-    @InjectPluginsRegistry
-    public AfterWriteCheckersExecutor(PluginsRegistry pluginsRegistry) {
-        super(pluginsRegistry);
-    }
+public class AfterWriteCheckersExecutor extends BeforeWriteCheckersExecutor {
 
     /**
      *
@@ -66,17 +49,17 @@ public class AfterWriteCheckersExecutor
      * @throws Exception
      */
     @Override
-    public void handle(HttpServerExchange exchange)
+    public void handleRequest(HttpServerExchange exchange)
             throws Exception {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
-        
+
         if ((doesCheckersApply(exchange)
                 && !applyCheckers(exchange))
                 || (doesGlobalCheckersApply()
                 && !applyGlobalCheckers(exchange))) {
             // restore old data
-            
+
             MongoClient client = MongoDBClientSingleton
                     .getInstance()
                     .getClient();
@@ -136,13 +119,15 @@ public class AfterWriteCheckersExecutor
                     HttpStatus.SC_BAD_REQUEST,
                     "request check failed");
         }
+        
+        next(exchange);
     }
 
     @Override
     boolean doesCheckersApply(HttpServerExchange exchange) {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
-        
+
         return request.getCollectionProps() != null
                 && (((request.isPut()
                 || request.isPatch())

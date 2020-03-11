@@ -24,6 +24,7 @@ import java.util.Objects;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.RequestContext;
@@ -33,9 +34,9 @@ import org.restheart.mongodb.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Service;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.plugins.mongodb.Checker.PHASE;
 import org.restheart.plugins.mongodb.GlobalChecker;
@@ -44,15 +45,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * PipelinedHandler that executes the before-write checkers.
+ *
+ * It implements Service only to be able get pluginsRegistry via
+ * InjectPluginsRegistry annotation
+ *
+ * It is added to the pipeline by RequestDispatcherHandler
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "beforeWriteCheckerExecutor",
-        description = "executes before-write checkers",
-        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
+        description = "executes before-write checkers")
 @SuppressWarnings("deprecation")
-public class BeforeWriteCheckersExecutor extends AbstractCheckersExecutor 
-        implements Interceptor {
+public class BeforeWriteCheckersExecutor extends PipelinedHandler
+        implements Service {
+
+    public BeforeWriteCheckersExecutor() {
+        super(null);
+    }
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(BeforeWriteCheckersExecutor.class);
@@ -67,6 +77,8 @@ public class BeforeWriteCheckersExecutor extends AbstractCheckersExecutor
      */
     public static final String ROOT_KEY = "checkers";
 
+    private static PluginsRegistry pluginsRegistry;
+
     /**
      * Creates a new instance of CheckMetBeforeWriteCheckHandleradataHandler
      *
@@ -75,17 +87,17 @@ public class BeforeWriteCheckersExecutor extends AbstractCheckersExecutor
      * @param pluginsRegistry
      */
     @InjectPluginsRegistry
-    public BeforeWriteCheckersExecutor(PluginsRegistry pluginsRegistry) {
-        super(pluginsRegistry);
+    public void setPluginsRegistry(PluginsRegistry pluginsRegistry) {
+        BeforeWriteCheckersExecutor.pluginsRegistry = pluginsRegistry;
     }
-    
+
     /**
      *
      * @param exchange
      * @throws Exception
      */
     @Override
-    public void handle(HttpServerExchange exchange)
+    public void handleRequest(HttpServerExchange exchange)
             throws Exception {
         if ((doesCheckersApply(exchange)
                 && !applyCheckers(exchange))
@@ -96,6 +108,8 @@ public class BeforeWriteCheckersExecutor extends AbstractCheckersExecutor
                     HttpStatus.SC_BAD_REQUEST,
                     "request check failed");
         }
+        
+        next(exchange);
     }
 
     /**
@@ -108,7 +122,7 @@ public class BeforeWriteCheckersExecutor extends AbstractCheckersExecutor
             throws InvalidMetadataException {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
-        
+
         List<CheckerMetadata> requestCheckers = CheckerMetadata.getFromJson(
                 request.getCollectionProps());
 
@@ -119,25 +133,25 @@ public class BeforeWriteCheckersExecutor extends AbstractCheckersExecutor
                                 .getCheckers()
                                 .stream()
                                 .filter(t -> checkerMetadata
-                                        .getName().equals(t.getName()))
+                                .getName().equals(t.getName()))
                                 .findFirst();
-                        
+
                         if (_checkerRecord.isPresent()) {
-                        var checkerRecord = _checkerRecord.get();
-                        
-                        var checker = checkerRecord.getInstance();
+                            var checkerRecord = _checkerRecord.get();
 
-                        BsonDocument confArgs = JsonUtils.toBsonDocument(
-                                checkerRecord.getConfArgs());
+                            var checker = checkerRecord.getInstance();
 
-                        return applyChecker(exchange,
-                                checkerMetadata.skipNotSupported(),
-                                checker,
-                                checkerMetadata.getArgs(),
-                                confArgs);
+                            BsonDocument confArgs = JsonUtils.toBsonDocument(
+                                    checkerRecord.getConfArgs());
+
+                            return applyChecker(exchange,
+                                    checkerMetadata.skipNotSupported(),
+                                    checker,
+                                    checkerMetadata.getArgs(),
+                                    confArgs);
                         } else {
-                            LOGGER.warn("Before Write Checker set to apply "
-                                    + "but not registered: {}", 
+                            LOGGER.warn("Checker set to apply "
+                                    + "but not registered: {}",
                                     checkerMetadata.getName());
                             return false;
                         }
@@ -165,7 +179,7 @@ public class BeforeWriteCheckersExecutor extends AbstractCheckersExecutor
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
         var context = RequestContext.wrap(exchange);
-        
+
         // all checkers (both BEFORE_WRITE and AFTER_WRITE) are checked
         // to support the request; if any checker does not support the
         // request and it is configured to fail in this case,
@@ -267,7 +281,7 @@ public class BeforeWriteCheckersExecutor extends AbstractCheckersExecutor
 
     boolean applyGlobalCheckers(HttpServerExchange exchange) {
         var context = RequestContext.wrap(exchange);
-        
+
         // execture global request tranformers
         return pluginsRegistry.getGlobalCheckers().stream()
                 .filter(gc -> doesGlobalCheckerApply(gc, exchange, context))
@@ -282,7 +296,7 @@ public class BeforeWriteCheckersExecutor extends AbstractCheckersExecutor
 
     boolean doesCheckersApply(HttpServerExchange exchange) {
         var request = BsonRequest.wrap(exchange);
-        
+
         return request.getCollectionProps() != null
                 && request.getCollectionProps().containsKey(ROOT_KEY);
     }
@@ -311,8 +325,18 @@ public class BeforeWriteCheckersExecutor extends AbstractCheckersExecutor
                 && doesCheckersApply(context, gc.getChecker());
     }
 
+    /**
+     *
+     * @param exchange
+     * @return false. implements Service only to get pluginsRegistry
+     */
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        return true;
+        return false;
+    }
+
+    @Override
+    public void handle(HttpServerExchange exchange) throws Exception {
+        throw new UnsupportedOperationException();
     }
 }

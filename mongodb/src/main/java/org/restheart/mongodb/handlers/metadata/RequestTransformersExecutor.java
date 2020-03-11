@@ -26,39 +26,37 @@ import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
 import org.restheart.mongodb.utils.JsonUtils;
-import org.restheart.plugins.mongodb.GlobalTransformer;
 import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.Service;
+import org.restheart.plugins.mongodb.GlobalTransformer;
 import org.restheart.plugins.mongodb.Transformer.PHASE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * handler that applies the transformers defined in the collection properties to
- * the request
+ * Applies the request transformers defined in the collection properties to the
+ * request; it also applies the global tranformers
+ *
+ * It implements Service only to be able get pluginsRegistry via
+ * InjectPluginsRegistry annotation
+ *
+ * It is added to the pipeline by RequestDispatcherHandler
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "requestTransformerExecutor",
-        description = "executes the request transformers",
-        interceptPoint = InterceptPoint.RESPONSE)
+@RegisterPlugin(name = "requestTransformersExecutor",
+        description = "executes the request transformers")
 public class RequestTransformersExecutor
-        extends AbstractTransformersExecutor implements Interceptor {
+        extends AbstractTransformersExecutor implements Service {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(RequestTransformersExecutor.class);
 
-    /**
-     * Creates a new instance of RequestTransformerMetadataHandler
-     *
-     * @param pluginsRegistry
-     */
     @InjectPluginsRegistry
-    public RequestTransformersExecutor(PluginsRegistry pluginsRegistry) {
-        super(pluginsRegistry);
+    public void setPluginsRegistry(PluginsRegistry pluginsRegistry) {
+        AbstractTransformersExecutor.pluginsRegistry = pluginsRegistry;
     }
 
     @Override
@@ -208,8 +206,17 @@ public class RequestTransformersExecutor
                 });
     }
 
+    /*
+     * @param exchange
+     * @return false. implements Service only to get pluginsRegistry
+     */
+    @Override
+    public void handle(HttpServerExchange exchange) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        return true;
+        return false;
     }
 }
