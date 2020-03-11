@@ -45,8 +45,8 @@ public class LoggingInitializer {
      */
     public static void setLogLevel(Level level) {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        Logger orgLogger = loggerContext.getLogger("org.restheart.security");
-        Logger comLogger = loggerContext.getLogger("com.restheart.security");
+        Logger orgLogger = loggerContext.getLogger("org.restheart");
+        Logger comLogger = loggerContext.getLogger("com.restheart");
 
         String logbackConfigurationFile = System.getProperty("logback.configurationFile");
         if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
