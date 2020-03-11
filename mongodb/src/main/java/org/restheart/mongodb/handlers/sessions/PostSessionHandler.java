@@ -98,7 +98,7 @@ public class PostSessionHandler extends PipelinedHandler {
                     mce.getMessage());
 
             // TODO check if server supports sessions
-            if (!MongoDBClientSingleton.isReplicaSet()) {
+            if (!MongoDBClientSingleton.getInstance().isReplicaSet()) {
                 ResponseHelper.endExchangeWithMessage(exchange,
                         HttpStatus.SC_BAD_GATEWAY,
                         mce.getMessage());

@@ -94,16 +94,23 @@ public class MongoService implements Service {
             throws ConfigurationException {
         var rootHandler = path();
 
+        // initialize MongoDBClientSingleton
         try {
             MongoDBClientSingleton.init(MongoServiceConfiguration.get().getMongoUri());
 
-            LOGGER.info("MongoDB connection pool initialized");
-            LOGGER.info("MongoDB version {}",
-                    ansi().fg(MAGENTA).a(MongoDBClientSingleton
-                            .getServerVersion())
-                            .reset().toString());
+            LOGGER.info("Connecting to MongoDB...");
 
-            if (MongoDBClientSingleton.isReplicaSet()) {
+            // force connection to MongoDB
+             var mclient = MongoDBClientSingleton.getInstance();
+
+            LOGGER.info("MongoDB version {}",
+                    ansi()
+                            .fg(MAGENTA)
+                            .a(mclient.getServerVersion())
+                            .reset()
+                            .toString());
+
+            if (mclient.isReplicaSet()) {
                 LOGGER.info("MongoDB is a replica set");
             } else {
                 LOGGER.warn("MongoDB is a standalone instance, use a replica set in production");
@@ -112,15 +119,15 @@ public class MongoService implements Service {
         } catch (Throwable t) {
             throw new ConfigurationException("\"Error connecting to MongoDB.");
         }
-        
+
         // initialize LocalCachesSingleton
         LocalCachesSingleton.init(MongoServiceConfiguration.get());
 
         ClientSessionInjector.build(PipelinedHandler.pipe(
                 new DbPropsInjector(),
-                        new CollectionPropsInjector(),
-                        new ETagPolicyInjector(),
-                        RequestDispatcherHandler.getInstance()));
+                new CollectionPropsInjector(),
+                new ETagPolicyInjector(),
+                RequestDispatcherHandler.getInstance()));
 
         PipelinedHandler corePipeline
                 = PipelinedHandler.pipe(new AccountInjector(),
