@@ -285,10 +285,10 @@ public class MetricsHandler extends PipelinedHandler {
                                     sb.append("http_response_").append(groupKey).append("_").append(metricType);
                                     sb.append("{");
                                     if(databaseName != null) {
-                                        sb.append("database=\"").append(databaseName).append("\",");
+                                        sb.append("database=\"").append(escapePrometheusLabelValue(databaseName)).append("\",");
                                     }
                                     if(collectionName != null) {
-                                        sb.append("collection=\"").append(collectionName).append("\",");
+                                        sb.append("collection=\"").append(escapePrometheusLabelValue(collectionName)).append("\",");
                                     }
                                     sb.append("type=\"").append(type).append("\",");
                                     sb.append("method=\"").append(method).append("\"");
@@ -309,6 +309,12 @@ public class MetricsHandler extends PipelinedHandler {
 
                 // return result
                 return sb.toString();
+            }
+
+            // see description for 'label_value' at https://prometheus.io/docs/instrumenting/exposition_formats/#comments-help-text-and-type-information
+            // quote and backslash get escaped and line feed gets converted to text '\n'
+            private String escapePrometheusLabelValue(String input) {
+                return input.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
             }
         };
 
