@@ -151,6 +151,38 @@ public class MetricsHandlerResponseTypePrometheusTest {
         assertMetrics(expectedMetrics, MetricsHandler.ResponseType.PROMETHEUS.generateResponse(COLLECTION, collectionRegistry));
     }
 
+    @Test
+    public void testDatabaseAndCollectionNamesEscapedCorrectly() throws IOException {
+
+        // we need to clear the metrics before each run, because they are kept static and thus would alter with each test, but we want static sample data!
+        SharedMetricRegistries.clear();
+
+        // create a new handler
+        handler = new MetricsHandler(null);
+
+        // provide sample metrics data (MetricsInstrumentationHandler uses timers only, so we create sample data for timers only)
+        // containing special characters: \, \n and "
+        collectionRegistry = handler.metrics.registry("my-\"project\"", "collection containing\n\"data\\values\"");
+        updateTimer(collectionRegistry, 10);
+
+        String expectedMetrics = "http_response_timers_count{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 1 $TIMESTAMP$\n" +
+                "http_response_timers_max{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_mean{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_min{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p50{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p75{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p95{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p98{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p99{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p999{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_stddev{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
+                "http_response_timers_m15_rate{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
+                "http_response_timers_m1_rate{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
+                "http_response_timers_m5_rate{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
+                "http_response_timers_mean_rate{database=\"my-\\\"project\\\"\",collection=\"collection containing\\n\\\"data\\\\values\\\"\",type=\"requests\",method=\"GET\",code=\"2xx\"} $MEAN_RATE$ $TIMESTAMP$";
+        assertMetrics(expectedMetrics, MetricsHandler.ResponseType.PROMETHEUS.generateResponse(ROOT, collectionRegistry));
+    }
+
     private void assertMetrics(String expectedMetrics, String metrics) {
         assertEquals(expectedMetrics, replaceDynamicValues(metrics));
     }
