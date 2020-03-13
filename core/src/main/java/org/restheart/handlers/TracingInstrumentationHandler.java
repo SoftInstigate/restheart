@@ -4,7 +4,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Optional;
 import org.restheart.Bootstrapper;
-import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.slf4j.MDC;
 
 /**
@@ -27,6 +27,10 @@ public class TracingInstrumentationHandler extends PipelinedHandler {
                             .get(traceIdHeader))
                             .flatMap(x -> Optional.ofNullable(x.peekFirst()))
                             .ifPresent(value -> {
+                                // saves the MDC Context
+                                // @see Response.getMDCContext() javadoc
+                                ByteArrayResponse.wrap(exchange)
+                                        .setMDCContext(MDC.getCopyOfContextMap());
                                 MDC.put(traceIdHeader, value);
                                 exchange.getResponseHeaders()
                                         .put(HttpString
