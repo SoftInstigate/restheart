@@ -175,7 +175,7 @@ public class MetricsHandlerResponseTypePrometheusTest {
         SharedMetricRegistries.clear();
 
         // create a new handler
-        handler = new MetricsHandler(null, null);
+        handler = new MetricsHandler(null);
 
         // provide sample metrics data (MetricsInstrumentationHandler uses timers only, so we create sample data for timers only)
         // containing special characters: \, \n and "
