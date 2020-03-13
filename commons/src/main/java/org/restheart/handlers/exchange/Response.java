@@ -20,6 +20,7 @@ package org.restheart.handlers.exchange;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
+import java.util.Map;
 
 /**
  *
@@ -30,6 +31,9 @@ public abstract class Response<T> extends AbstractExchange<T> {
 
     private static final AttachmentKey<Integer> STATUS_CODE
             = AttachmentKey.create(Integer.class);
+
+    private static final AttachmentKey<Map<String, String>> MDC_CONTEXT_KEY
+            = AttachmentKey.create(Map.class);
 
     protected Response(HttpServerExchange exchange) {
         super(exchange);
@@ -73,8 +77,8 @@ public abstract class Response<T> extends AbstractExchange<T> {
      */
     public int getStatusCode() {
         var wrappedExchange = getWrappedExchange();
-        
-        if (wrappedExchange == null 
+
+        if (wrappedExchange == null
                 || wrappedExchange.getAttachment(STATUS_CODE) == null) {
             return -1;
         } else {
@@ -94,8 +98,23 @@ public abstract class Response<T> extends AbstractExchange<T> {
      */
     public boolean isInError() {
         return getWrappedExchange().getAttachment(IN_ERROR_KEY) != null
-                && getWrappedExchange().getAttachment(IN_ERROR_KEY);
+                && (boolean) getWrappedExchange().getAttachment(IN_ERROR_KEY);
 
+    }
+
+    /**
+     * Logging MDC Context is bind to the thread context. In case of a thread
+     * switch it must be restored from this exchange attachment using
+     * MDC.setContextMap()
+     *
+     * @return the MDC Context
+     */
+    public Map<String, String> getMDCContext() {
+        return getWrappedExchange().getAttachment(MDC_CONTEXT_KEY);
+    }
+
+    public void setMDCContext(Map<String, String> mdcCtx) {
+        getWrappedExchange().putAttachment(MDC_CONTEXT_KEY, mdcCtx);
     }
 
     /**
