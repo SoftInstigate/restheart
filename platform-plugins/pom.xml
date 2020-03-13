@@ -5,7 +5,7 @@
 
     <groupId>com.softinstigate.restheart</groupId>
     <artifactId>restheart-platform</artifactId>
-    <version>4.1.16-SNAPSHOT</version>
+    <version>4.1.16</version>
     <packaging>pom</packaging>
     <name>restheart-platform</name>
     <description>RESTHeart Platform</description>
