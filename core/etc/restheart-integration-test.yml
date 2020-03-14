@@ -30,24 +30,130 @@ proxies:
     - location: /anything
       proxy-pass: https://httpbin.org/anything
 
+### Proxied resources
+
+ # location (required) The location URI to bound to the HTTP proxied server.
+ # proxy-pass (required) The URL of the HTTP proxied server. It can be an array of URLs for load balancing.
+ # name (optional) The name of the proxy. It is required to identify 'restheart'.
+ # rewrite-host-header (optional, default true) should the HOST header be rewritten to use the target host of the call.
+ # connections-per-thread (optional, default 10) Controls the number of connections to create per thread.
+ # soft-max-connections-per-thread (optional, default 5) Controls the number of connections to create per thread.
+ # max-queue-size (optional, default 0) Controls the number of connections to create per thread.
+ # connections-ttl (optional, default -1) Connections Time to Live in seconds.
+ # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
+proxies:
+  - location: /pecho
+    proxy-pass: http://127.0.0.1:8080/echo
+  - location: /piecho
+    proxy-pass: http://127.0.0.1:8080/iecho
+  - location: /rh
+    proxy-pass: ajp://127.0.0.1:8009
+    name: restheart
+  - location: /anything
+    proxy-pass: https://httpbin.org/anything
+
+
+#### SSL Configuration
+
+ # Configure the keystore to enable the https listener.
+
+ # RESTHeart Security comes with a self-signed certificate that makes
+ # straightforward enabling https.
+ # Specify use-embedded-keystore: true to use it (this is the default setting).
+ # Using the self-signed certificate leads to issues with some clients;
+ # for instance, with curl you need to specify the "--insecure" option or you'll get an error message.
+
+use-embedded-keystore: true
+
+ # To use your own certificate you need to import it (and eventually the CA certificates chain) into a java keystore
+ # and specify use-embedded-keystore: false and the keystore-file,keystore-password and certpassword configuration properties.
+ # Refer to the java keystore documentation for that.
+
+#keystore-file: /path/to/keystore/file
+#keystore-password: password
+#certpassword: password
+
+### Security
+
+ # RESTHeart Security security is pluggable, you can provide you own
+ # implementations of Authenticator Mechanisms, Authenticator, Authorizer
+ # and Token Manager
+
+## Authentication Mechanisms
+
+ # As an in-bound request is received the authenticate method is called on each
+ # mechanism in turn until one of the following occurs: A mechanism
+ # successfully authenticates the incoming request or the list of mechanisms is
+ # exhausted.
+
+ # See README.md for the list of available Authentication Mechanisms
+
+auth-mechanisms:
+  tokenBasicAuthMechanism:
+    enabled: true
+    realm: RESTHeart Realm
+  basicAuthMechanism:
+    enabled: true
+    realm: RESTHeart Realm
+    authenticator: simpleFileAuthenticator
+  digestAuthMechanism:
+    enabled: true
+    realm: RESTHeart Realm
+    domain: localhost
+    authenticator: simpleFileAuthenticator
+  identityAuthMechanism:
+    enabled: false
+    username: admin
+    roles:
+      - admin
+      - user
+
+## Authenticators
+
+ # An Authenticator verify user credential and are used by one or more
+ # AuthMachanisms
+
+ # See README.md for the list of available Authenticators
+
 authenticators:
-    simpleFileAuthenticator:
-        enabled: true
-        conf-file: ../etc/users.yml
+  simpleFileAuthenticator:
+    enabled: true
+    conf-file: ../../etc/users.yml
+
+## Authorizers
+
+ # Authorizers verify if a request is allowed.
+
+ # As an in-bound request is received and authenticated the isAllowed() method is
+ # called on each authenticator in turn until one of the following occurs:
+ # an authenticator allows the incoming request or the list of authenticators is
+ # exhausted. In the latter case, the request ends and 403 Forbidden is returned.
+
+ # See README.md for the list of available Authorizers
 
 authorizers:
-    requestPredicatesAuthorizer:
-        enabled: true
-        conf-file: ../etc/acl.yml
-    fullAuthorizer:
-        enabled: false
-        authentication-required: true
+  requestPredicatesAuthorizer:
+    enabled: true
+    conf-file: ../../etc/acl.yml
+  fullAuthorizer:
+    enabled: false
+    authentication-required: true
+
+## Token Manager
+
+ # If a token-manager is configured, RESTHeart Security will use it to generate
+ # and verify auth tokens.
+ # If more than one token-manager are defined, the first one will be used
+ # The token is returned to the caller via auth-token header when the user
+ # autheticates succesfully. The token can be used by Authentication Mechanisms.
+
+ # See README.md for the list of available Token Managers.
 
 token-manager:
-    rndTokenManager:
-        enabled: true
-        ttl: 15
-        srv-uri: /tokens
+  rndTokenManager:
+    enabled: true
+    ttl: 15
+    srv-uri: /tokens
 
 ## restheart-mongodb configuration
 
@@ -86,7 +192,7 @@ default-representation-format: HAL
 # Static web resources to bind to the URL specified by the 'where' property.
 # The 'what' property is the path of the directory containing the resources.
 # The path is either absolute (starts with /) or relative to the restheart.jar file
-# If embedded is true, the resources are either included in the restheart.jar or 
+# If embedded is true, the resources are either included in the restheart.jar or
 
 static-resources-mounts:
 #  - what: /path/to/resources
@@ -101,7 +207,7 @@ static-resources-mounts:
 # Just add the plugins jar to plugins-directory and they will be automatically
 # added to the classpath and registered.
 
-plugins-directory: ../plugins
+plugins-directory: plugins
 
 # All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).
