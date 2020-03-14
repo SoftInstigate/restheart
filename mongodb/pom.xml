@@ -141,61 +141,6 @@
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
             </plugin>
-            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>dist</id>
-                        <phase>package</phase>
-                        <configuration>
-                            <skip>${skip.integration.tests}</skip>
-                            <target>
-                                <!-- Copy plugins in the plugins folder before running integration tests -->
-                                <mkdir dir="./target/plugins"/>
-                                <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true"/>
-                                <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true"/>
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>start-server</id>
-                        <phase>pre-integration-test</phase>
-                        <configuration>
-                            <skip>${skip.integration.tests}</skip>
-                            <target>
-                                <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
-                                <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
-                                <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
-                                    <arg value="${basedir}/etc/restheart-integration-test.yml"/>
-                                    <arg value="--fork"/>
-                                </exec>
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>stop-server</id>
-                        <phase>post-integration-test</phase>
-                        <configuration>
-                            <skip>${skip.integration.tests}</skip>
-                            <target>
-                                <echo>***** Stopping RESTHeart process...</echo>
-                                <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
-                                    <arg value="${basedir}/etc/restheart-integration-test.yml"/>
-                                </exec>
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 </project>
