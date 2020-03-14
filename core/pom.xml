@@ -219,6 +219,44 @@
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
             <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <configuration>
+                    <showLogs>true</showLogs>
+                    <images>
+                        <image>
+                            <name>mongo:4.2</name>
+                            <run>
+                                <cmd>--bind_ip_all --replSet rs0</cmd>
+                                <ports>
+                                    <port>27017:27017</port>
+                                </ports>
+                                <wait>
+                                    <log>waiting for connections on port</log>
+                                    <time>10000</time>
+                                </wait>
+                            </run>
+                        </image>
+                    </images>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>start</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
@@ -243,10 +281,22 @@
                         <configuration>
                             <skip>${skip.integration.tests}</skip>
                             <target>
+                                <echo>***** Initiliazing MongoDB cluster...</echo>
+                                <exec executable="docker">
+                                    <arg value="run"/>
+                                    <arg value="--rm"/>
+                                    <arg value="--net"/>
+                                    <arg value="host"/>
+                                    <arg value="mongo:4.2"/>
+                                    <arg value="mongo"/>
+                                    <arg value="--eval"/>
+                                    <arg value="rs.initiate()"/>
+                                </exec>
+                                <exec dir="${basedir}" executable="bin/initiate-cluster.sh"/>
                                 <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
                                 <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
-                                <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
-                                    <arg value="${basedir}/etc/restheart-integration-test.yml"/>
+                                <exec dir="${basedir}" executable="bin/start.sh">
+                                    <arg value="etc/restheart-integration-test.yml"/>
                                     <arg value="--fork"/>
                                 </exec>
                             </target>
@@ -262,8 +312,8 @@
                             <skip>${skip.integration.tests}</skip>
                             <target>
                                 <echo>***** Stopping RESTHeart process...</echo>
-                                <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
-                                    <arg value="${basedir}/etc/restheart-integration-test.yml"/>
+                                <exec dir="${basedir}" executable="bin/stop.sh">
+                                    <arg value="etc/restheart-integration-test.yml"/>
                                 </exec>
                             </target>
                         </configuration>
