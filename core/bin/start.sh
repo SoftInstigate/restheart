@@ -1,7 +1,10 @@
 #!/bin/bash
 
+SLEEP_TIME=${1:-3}
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 java -Dfile.encoding=UTF-8 -server -jar "$DIR/../target/restheart.jar" $@
-echo 'Sleeping few seconds...'
-sleep 3
+
+echo "Sleeping ${SLEEP_TIME} seconds..."
+sleep ${SLEEP_TIME}
