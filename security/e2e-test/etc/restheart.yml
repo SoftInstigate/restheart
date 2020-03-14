@@ -10,12 +10,12 @@ instance-name: integration-test
 # Optional base URL for the instance. When RESTHeart is exposed via a reverse-proxy
 # or an API gateway it allows mapping the Location header correctly.
 
-instance-base-url: http://127.0.0.1:18080/
+instance-base-url: http://127.0.0.1:8080/
 
 #### Listeners
 
 # Listeners allow to specify the protocol, ip, port and to use.
-# The supported protocols are: http, https and ajp. 
+# The supported protocols are: http, https and ajp.
 
 https-listener: false
 https-host: 0.0.0.0
@@ -53,13 +53,13 @@ mongo-uri: mongodb://mongodb
 # The format is /db[/coll[/docid]]
 # Use the wildcard '*' to expose all dbs.
 #
-# The parameter 'where' defines the URI to bind the resource to. 
+# The parameter 'where' defines the URI to bind the resource to.
 # It can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*).
 # The values of the path templates properties are available:
 # - in the 'what' property (e.g. what: /{foo}_db/coll)
 # - programmatically from RequestContext.getPathTemplateParamenters() method.
 #
-# It is not possible to mix absolute paths and path templates: 'where' URIs 
+# It is not possible to mix absolute paths and path templates: 'where' URIs
 # need to be either all absolute paths or all path templates.
 #
 # Examples:
@@ -114,7 +114,7 @@ default-representation-format: HAL
 # Static web resources to bind to the URL specified by the 'where' property.
 # The 'what' property is the path of the directory containing the resources.
 # The path is either absolute (starts with /) or relative to the restheart.jar file
-# If embedded is true, the resources are either included in the restheart.jar or 
+# If embedded is true, the resources are either included in the restheart.jar or
 
 static-resources-mounts:
 #  - what: /path/to/resources
@@ -124,10 +124,10 @@ static-resources-mounts:
 
 #### Plugins configuration
 
-# All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object 
+# All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).
 # The property 'enabled' allows enabling plugins that are not enabled by default,
-# i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false) 
+# i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false)
 # The property 'uri' optionally sets the uri of Service plugins overwriting its
 # default value if specified with the Service.defaultUri() method.
 
@@ -148,15 +148,15 @@ plugins-args:
 
 # Configure the keystore to enable the https listener.
 
-# RESTHeart comes with an embedded self-signed certificate that makes 
+# RESTHeart comes with an embedded self-signed certificate that makes
 # straightforward enabling https for testing purposes.
 # Specify use-embedded-keystore: true (default value) to use it, however take
-# into account that it is insercure. DON'T USE IT IN PRODUCTION! 
+# into account that it is insercure. DON'T USE IT IN PRODUCTION!
 
 use-embedded-keystore: true
 
-# To use your own certificate you need to import it (and eventually the CA 
-# certificates chain) into a java keystore and specify use-embedded-keystore: false 
+# To use your own certificate you need to import it (and eventually the CA
+# certificates chain) into a java keystore and specify use-embedded-keystore: false
 # and the keystore-file,keystore-password and certpassword configuration properties.
 # See https://restheart.org/docs/security/tls/
 
@@ -166,7 +166,7 @@ use-embedded-keystore: true
 
 ## Aggregations variables
 
-# Check if aggregation variables use operators. allowing operators in aggregation variables 
+# Check if aggregation variables use operators. allowing operators in aggregation variables
 # is risky. requester can inject operators modifying the query
 
 aggregation-check-operators: true
@@ -243,11 +243,11 @@ cursor-batch-size: 1000
 
 ## Caches
 
-# local-cache allows to cache the db and collection properties to drammatically 
-# improve performaces. Without caching, a GET on a document would requires 
+# local-cache allows to cache the db and collection properties to drammatically
+# improve performaces. Without caching, a GET on a document would requires
 # two additional queries to retrieve the db and the collection properties.
 # Pay attention to local caching only in case of multi-node deployments (horizontal scalability).
-# In this case a change in a db or collection properties would reflect on other 
+# In this case a change in a db or collection properties would reflect on other
 # nodes at worst after TTL milliseconds (cache entries time to live).
 # In most of the cases Dbs and collections properties only change at development time.
 

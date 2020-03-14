@@ -101,6 +101,26 @@
             <artifactId>karate-junit4</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>fluent-hc</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.mashape.unirest</groupId>
+            <artifactId>unirest-java</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.eclipsesource.minimal-json</groupId>
+            <artifactId>minimal-json</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-mongodb</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- END Test dependencies -->
     </dependencies>
 
@@ -222,7 +242,7 @@
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
                 <configuration>
-                    <showLogs>true</showLogs>
+                    <showLogs>false</showLogs>
                     <images>
                         <image>
                             <name>mongo:4.2</name>
@@ -292,7 +312,6 @@
                                     <arg value="--eval"/>
                                     <arg value="rs.initiate()"/>
                                 </exec>
-                                <exec dir="${basedir}" executable="bin/initiate-cluster.sh"/>
                                 <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
                                 <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
                                 <exec dir="${basedir}" executable="bin/start.sh">

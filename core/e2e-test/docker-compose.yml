@@ -6,7 +6,7 @@ version: '2'
 # See: https://docs.docker.com/engine/reference/commandline/network_create/
 networks:
    backend:
-       
+
 ### Create a permanent, named data volume
 # This makes much easier to identify where the mongodb data is stored on host
 # See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
@@ -22,7 +22,7 @@ services:
       networks:
          - backend
       ports:
-         - "18080:8080"
+         - "8080:8080"
       volumes:
          - ./etc/restheart-security.yml:/opt/restheart/etc/restheart-security.yml:ro
          - ./etc/users.yml:/opt/restheart/etc/users.yml:ro

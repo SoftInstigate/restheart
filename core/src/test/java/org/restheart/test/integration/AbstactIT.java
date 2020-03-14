@@ -73,7 +73,7 @@ public abstract class AbstactIT {
     /**
      *
      */
-    protected static final HttpHost HTTP_HOST = new HttpHost("127.0.0.1", 18080, HTTP);
+    protected static final HttpHost HTTP_HOST = new HttpHost("127.0.0.1", 8080, HTTP);
 
     /**
      *
@@ -82,7 +82,7 @@ public abstract class AbstactIT {
 
     static {
         LOG.info("BASE_URL={}", HTTP_HOST.toURI());
-        LOG.info("mongo-uri={}",MONGO_URI.toString());
+        LOG.info("mongo-uri={}", MONGO_URI.toString());
         MongoDBClientSingleton.init(MONGO_URI);
     }
 
@@ -155,7 +155,7 @@ public abstract class AbstactIT {
 
         return sb.toString();
     }
-    
+
     /**
      *
      */

@@ -1,7 +1,7 @@
 Feature: Test jsonMode query parameter
 
 Background:
-* url 'http://localhost:18080'
+* url 'http://localhost:8080'
 * def db = '/test-jsonMode'
 * def coll = '/test-jsonMode/coll'
 * def doc = '/test-jsonMode/coll/doc'
