@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SLEEP_TIME=${1:-3}
+SLEEP_TIME=6
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
