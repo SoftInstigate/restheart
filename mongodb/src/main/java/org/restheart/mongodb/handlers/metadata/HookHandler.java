@@ -139,6 +139,11 @@ public class HookHandler implements Interceptor {
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        return true;
+        // Skip handling if BsonRequest and BsonResponse are not initialized.
+        // This happens when the request has not been processed by the mongo
+        // service pipeline
+
+        return BsonRequest.isInitialized(exchange)
+                && BsonResponse.isInitialized(exchange);
     }
 }
