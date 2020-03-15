@@ -90,6 +90,10 @@
             <groupId>com.github.spullara.mustache.java</groupId>
             <artifactId>compiler</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+        </dependency>
         <!-- BEGIN Test dependencies -->
         <dependency>
             <groupId>com.intuit.karate</groupId>
@@ -137,6 +141,9 @@
                 <excludes>
                     <exclude>**/*.java</exclude>
                 </excludes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
             </testResource>
         </testResources>
         <finalName>${project.artifactId}-${project.version}-nodeps</finalName>
