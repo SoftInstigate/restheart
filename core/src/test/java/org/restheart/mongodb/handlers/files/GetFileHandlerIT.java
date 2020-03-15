@@ -186,7 +186,7 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
         HttpEntity entity = buildMultipartResource();
         Response resp = adminExecutor.execute(Request.Post(bucketUrl)
                 .body(entity));
-        HttpResponse httpResp = this.check("Response is 200 OK", resp, SC_CREATED);
+        HttpResponse httpResp = this.check("Response is 201 CREATED", resp, SC_CREATED);
 
         Header[] hs = httpResp.getHeaders("Location");
 
@@ -204,7 +204,7 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
         HttpEntity entity = buildMultipartResource();
         Response resp = adminExecutor.execute(Request.Put(bucketUrl)
                 .body(entity));
-        this.check("Response is 200 OK", resp, HttpStatus.SC_CREATED);
+        this.check("Response is 201 CREATED", resp, HttpStatus.SC_CREATED);
     }
 
     private void checkReturnedAndEmbedded(JsonObject json) {
