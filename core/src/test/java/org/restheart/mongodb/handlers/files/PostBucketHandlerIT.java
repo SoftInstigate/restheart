@@ -57,7 +57,7 @@ public class PostBucketHandlerIT extends FileHandlerAbstractIT {
         Response response = adminExecutor.execute(Request.Post(bucketUrl)
                 .body(buildMultipartResource()));
 
-        this.check("Should return 200 OK", response, HttpStatus.SC_CREATED);
+        this.check("Should return 201 CREATED", response, HttpStatus.SC_CREATED);
     }
 
     /**
