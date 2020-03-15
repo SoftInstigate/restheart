@@ -58,6 +58,10 @@ public class BsonResponse extends Response<BsonValue> {
         }
     }
     
+    public static boolean isInitialized(HttpServerExchange exchange) {
+        return (exchange.getAttachment(BSON_RESPONSE_ATTACHMENT_KEY) != null);
+    }
+    
     /**
      * @return the content
      */

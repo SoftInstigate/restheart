@@ -221,6 +221,10 @@ public class BsonRequest extends Request<BsonValue> {
             return cached;
         }
     }
+    
+    public static boolean isInitialized(HttpServerExchange exchange) {
+        return (exchange.getAttachment(BSON_REQUEST_ATTACHMENT_KEY) != null);
+    }
 
     /**
      *
