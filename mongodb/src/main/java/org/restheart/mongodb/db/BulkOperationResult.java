@@ -17,8 +17,8 @@
  */
 package org.restheart.mongodb.db;
 
-import org.restheart.handlers.exchange.OperationResult;
 import com.mongodb.bulk.BulkWriteResult;
+import org.restheart.handlers.exchange.OperationResult;
 
 /**
  *

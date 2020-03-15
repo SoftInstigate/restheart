@@ -17,7 +17,6 @@
  */
 package org.restheart.mongodb.db.sessions;
 
-import org.restheart.handlers.exchange.ClientSessionImpl;
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.MongoClient;
 import com.mongodb.ReadConcern;
@@ -33,8 +32,9 @@ import org.bson.UuidRepresentation;
 import static org.bson.assertions.Assertions.notNull;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.UuidCodec;
-import org.restheart.mongodb.db.MongoDBClientSingleton;
+import org.restheart.handlers.exchange.ClientSessionImpl;
 import static org.restheart.handlers.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
+import org.restheart.mongodb.db.MongoDBClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

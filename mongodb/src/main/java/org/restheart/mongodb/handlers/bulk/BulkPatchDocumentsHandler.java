@@ -18,11 +18,11 @@
 package org.restheart.mongodb.handlers.bulk;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.mongodb.db.BulkOperationResult;
-import org.restheart.mongodb.db.DocumentDAO;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.mongodb.db.BulkOperationResult;
+import org.restheart.mongodb.db.DocumentDAO;
 
 /**
  *

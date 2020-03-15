@@ -20,10 +20,10 @@ package org.restheart.mongodb.handlers.indexes;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
-import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.utils.HttpStatus;
 

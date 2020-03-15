@@ -25,8 +25,8 @@ import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
-import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 
 /**
  *

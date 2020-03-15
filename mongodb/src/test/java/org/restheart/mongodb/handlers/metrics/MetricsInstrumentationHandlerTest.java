@@ -1,7 +1,5 @@
 package org.restheart.mongodb.handlers.metrics;
 
-import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
-import org.restheart.mongodb.handlers.metrics.SharedMetricRegistryProxy;
 import com.codahale.metrics.MetricRegistry;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Methods;
@@ -9,8 +7,8 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
-import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.mongodb.MongoServiceConfiguration;
 
 /**
  *

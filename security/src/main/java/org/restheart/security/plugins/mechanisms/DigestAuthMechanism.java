@@ -54,12 +54,12 @@ import org.restheart.ConfigurationException;
 import org.restheart.handlers.QueryStringRebuilder;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.restheart.plugins.InjectPluginsRegistry;
 
 /**
  * {@link io.undertow.server.HttpHandler} to handle HTTP Digest authentication,

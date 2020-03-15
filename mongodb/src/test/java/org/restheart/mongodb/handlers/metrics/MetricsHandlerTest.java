@@ -1,7 +1,5 @@
 package org.restheart.mongodb.handlers.metrics;
 
-import org.restheart.mongodb.handlers.metrics.MetricsHandler;
-import org.restheart.mongodb.handlers.metrics.SharedMetricRegistryProxy;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Methods;
 import static org.junit.Assert.*;
@@ -12,12 +10,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.OFF;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT;
-import org.restheart.handlers.exchange.BsonRequest;
 
 /**
  *

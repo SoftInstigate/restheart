@@ -17,7 +17,6 @@
  */
 package org.restheart.mongodb.db;
 
-import org.restheart.handlers.exchange.OperationResult;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
@@ -29,6 +28,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
+import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.utils.HttpStatus;
 
 /**

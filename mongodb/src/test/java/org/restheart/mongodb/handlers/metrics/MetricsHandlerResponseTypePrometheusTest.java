@@ -1,6 +1,5 @@
 package org.restheart.mongodb.handlers.metrics;
 
-import org.restheart.mongodb.handlers.metrics.MetricsHandler;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import java.io.IOException;

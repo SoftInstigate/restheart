@@ -17,7 +17,6 @@
  */
 package org.restheart.utils;
 
-import org.restheart.mongodb.utils.URLUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.bson.BsonDouble;
@@ -38,6 +37,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.mongodb.representation.UnsupportedDocumentIdException;
+import org.restheart.mongodb.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

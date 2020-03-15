@@ -27,8 +27,8 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;
 import org.restheart.mongodb.handlers.transformers.RepresentationTransformer;
 import org.restheart.mongodb.representation.Resource;
-import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

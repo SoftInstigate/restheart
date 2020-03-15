@@ -20,9 +20,6 @@ package org.restheart.mongodb.handlers.files;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.mongodb.db.FileMetadataDAO;
-import org.restheart.mongodb.db.FileMetadataRepository;
-import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
@@ -30,9 +27,12 @@ import static org.restheart.handlers.exchange.ExchangeKeys.FILENAME;
 import static org.restheart.handlers.exchange.ExchangeKeys.FILE_METADATA;
 import static org.restheart.handlers.exchange.ExchangeKeys.PROPERTIES;
 import static org.restheart.handlers.exchange.ExchangeKeys._ID;
-import org.restheart.utils.HttpStatus;
+import org.restheart.handlers.exchange.OperationResult;
+import org.restheart.mongodb.db.FileMetadataDAO;
+import org.restheart.mongodb.db.FileMetadataRepository;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 
 /**
  * A customised and cut down version of the

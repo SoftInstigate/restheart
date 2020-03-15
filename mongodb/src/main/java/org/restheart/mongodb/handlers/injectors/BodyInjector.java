@@ -47,9 +47,9 @@ import static org.restheart.handlers.exchange.ExchangeKeys.TRUE_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys._ID;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ChannelReader;
-import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

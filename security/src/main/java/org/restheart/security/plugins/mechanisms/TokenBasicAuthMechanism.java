@@ -35,10 +35,10 @@ import java.util.Map;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
-import org.restheart.plugins.InjectPluginsRegistry;
 
 /**
  *

@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.TreeMap;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.mongodb.utils.URLUtils;
 
 /**

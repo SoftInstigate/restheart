@@ -17,12 +17,12 @@
  */
 package org.restheart.mongodb.db;
 
-import org.restheart.handlers.exchange.OperationResult;
 import com.mongodb.DuplicateKeyException;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.handlers.exchange.OperationResult;
 
 /**
  *

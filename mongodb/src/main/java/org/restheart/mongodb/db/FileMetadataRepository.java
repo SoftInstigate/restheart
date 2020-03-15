@@ -1,8 +1,8 @@
 package org.restheart.mongodb.db;
 
-import org.restheart.handlers.exchange.OperationResult;
 import com.mongodb.client.ClientSession;
 import org.bson.BsonDocument;
+import org.restheart.handlers.exchange.OperationResult;
 
 /**
  *

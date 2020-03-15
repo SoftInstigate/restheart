@@ -21,14 +21,14 @@ import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
-import org.restheart.mongodb.db.Database;
-import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.mongodb.db.Database;
+import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.representation.Resource;
-import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
