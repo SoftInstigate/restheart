@@ -30,7 +30,6 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

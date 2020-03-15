@@ -17,7 +17,6 @@
  */
 package org.restheart;
 
-import org.restheart.mongodb.MongoServiceConfiguration;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheFactory;
@@ -26,6 +25,7 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.Properties;
 import static org.junit.Assert.*;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.yaml.snakeyaml.Yaml;
 
 /**

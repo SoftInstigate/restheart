@@ -21,16 +21,16 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.OperationResult;
+import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
 import org.restheart.mongodb.metadata.TransformerMetadata;
-import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 
 /**
  *

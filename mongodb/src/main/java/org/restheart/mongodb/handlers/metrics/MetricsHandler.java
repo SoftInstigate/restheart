@@ -35,19 +35,19 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
+import static org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
+import static org.restheart.handlers.exchange.ExchangeKeys._METRICS;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.OFF;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT;
-import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
-import static org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
-import static org.restheart.handlers.exchange.ExchangeKeys._METRICS;
-import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 
 /**
  * A handler for dropwizard.io metrics that can return both default metrics JSON

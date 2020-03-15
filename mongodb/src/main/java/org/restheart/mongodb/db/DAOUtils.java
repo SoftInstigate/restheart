@@ -17,7 +17,6 @@
  */
 package org.restheart.mongodb.db;
 
-import org.restheart.handlers.exchange.OperationResult;
 import com.mongodb.MongoCommandException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.ClientSession;
@@ -48,9 +47,10 @@ import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import org.restheart.utils.HttpStatus;
+import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -35,12 +35,12 @@ import org.bson.BsonValue;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
-import static org.restheart.mongodb.db.DAOUtils.LOGGER;
-import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
+import static org.restheart.mongodb.db.DAOUtils.LOGGER;
+import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.mongodb.utils.URLUtils;
 
 /**

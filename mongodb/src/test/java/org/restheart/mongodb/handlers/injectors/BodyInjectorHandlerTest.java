@@ -17,7 +17,6 @@
  */
 package org.restheart.mongodb.handlers.injectors;
 
-import org.restheart.mongodb.handlers.injectors.BodyInjector;
 import io.undertow.server.handlers.form.FormData;
 import java.lang.reflect.Field;
 import org.bson.BsonDocument;

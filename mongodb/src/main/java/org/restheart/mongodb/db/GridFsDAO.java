@@ -17,7 +17,6 @@ package org.restheart.mongodb.db;
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import org.restheart.handlers.exchange.OperationResult;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoGridFSException;
@@ -38,6 +37,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.types.ObjectId;
+import org.restheart.handlers.exchange.OperationResult;
 import static org.restheart.utils.HttpStatus.*;
 import org.slf4j.LoggerFactory;
 

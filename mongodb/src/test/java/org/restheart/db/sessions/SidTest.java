@@ -17,10 +17,10 @@
  */
 package org.restheart.db.sessions;
 
-import org.restheart.mongodb.db.sessions.SessionOptions;
-import org.restheart.mongodb.db.sessions.Sid;
 import org.junit.Assert;
 import org.junit.Test;
+import org.restheart.mongodb.db.sessions.SessionOptions;
+import org.restheart.mongodb.db.sessions.Sid;
 
 /**
  *

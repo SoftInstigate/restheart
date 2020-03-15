@@ -22,17 +22,17 @@ import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.mongodb.db.DocumentDAO;
-import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
+import org.restheart.handlers.exchange.OperationResult;
+import org.restheart.handlers.exchange.RequestContext;
+import org.restheart.mongodb.db.DocumentDAO;
 import org.restheart.mongodb.representation.RepUtils;
-import org.restheart.utils.HttpStatus;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.utils.HttpStatus;
 
 /**
  *

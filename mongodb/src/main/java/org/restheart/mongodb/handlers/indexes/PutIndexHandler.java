@@ -21,12 +21,12 @@ import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.utils.HttpStatus;
+import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.utils.HttpStatus;
 
 /**
  *

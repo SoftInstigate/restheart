@@ -17,7 +17,6 @@
  */
 package org.restheart.mongodb.handlers.injectors;
 
-import org.restheart.mongodb.handlers.injectors.CollectionPropsInjector;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.junit.After;

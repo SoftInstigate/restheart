@@ -5,7 +5,6 @@
  */
 package org.restheart.mongodb.db;
 
-import org.restheart.mongodb.db.DAOUtils;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import static org.junit.Assert.*;
