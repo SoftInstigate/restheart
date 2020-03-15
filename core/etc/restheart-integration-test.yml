@@ -3,7 +3,7 @@
 
 instance-name: integration-test
 
-instance-base-url: http://localhost
+#instance-base-url: http://localhost
 
 https-listener: false
 https-host: 0.0.0.0
