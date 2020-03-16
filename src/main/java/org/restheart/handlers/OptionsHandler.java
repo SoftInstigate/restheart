@@ -145,6 +145,25 @@ public class OptionsHandler extends PipedHttpHandler {
                             .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
                             .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
                     break;
+                
+                case SESSIONS:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "POST")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                    
+                case TRANSACTIONS:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, POST")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                    
+                case TRANSACTION:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "PATCH, DELETE")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                
                 default:
                     break;
             }
