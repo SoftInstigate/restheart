@@ -229,7 +229,7 @@ services:
       uri: /echo
       secured: false
 
-  #### Plugins configuration
+#### Plugins configuration
 
 # All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).

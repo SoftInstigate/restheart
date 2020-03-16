@@ -13,7 +13,7 @@
     <inceptionYear>2019</inceptionYear>
 
     <properties>
-        <restheart.core.oss.version>4.1.9</restheart.core.oss.version>
+        <restheart.core.oss.version>4.1.10</restheart.core.oss.version>
         <restheart.security.oss.version>1.3.4</restheart.security.oss.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
