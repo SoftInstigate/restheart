@@ -45,8 +45,7 @@ public class OptionsHandler extends PipelinedHandler {
     public OptionsHandler() {
         super(null);
     }
-    
-    
+
     /**
      * Creates a new instance of OptionsHandler
      *
@@ -74,7 +73,7 @@ public class OptionsHandler extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = BsonRequest.wrap(exchange);
-        
+
         if (!(request.isOptions())) {
             next(exchange);
             return;
@@ -167,6 +166,25 @@ public class OptionsHandler extends PipelinedHandler {
                             .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
                             .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
                     break;
+
+                case SESSIONS:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "POST")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+
+                case TRANSACTIONS:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, POST")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+
+                case TRANSACTION:
+                    exchange.getResponseHeaders()
+                            .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "PATCH, DELETE")
+                            .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                    break;
+                    
                 default:
                     break;
             }
