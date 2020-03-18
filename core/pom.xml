@@ -246,9 +246,6 @@
                             <goal>integration-test</goal>
                             <goal>verify</goal>
                         </goals>
-                        <configuration>
-                            <skipTests>${skip.integration.tests}</skipTests>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -256,7 +253,7 @@
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
                 <configuration>
-                    <skip>${skip.integration.tests}</skip>
+                    <skip>${skipITs}</skip>
                     <showLogs>false</showLogs>
                     <images>
                         <image>
@@ -313,7 +310,7 @@
                         <id>start-server</id>
                         <phase>pre-integration-test</phase>
                         <configuration>
-                            <skip>${skip.integration.tests}</skip>
+                            <skip>${skipITs}</skip>
                             <target>
                                 <echo>***** Initiliazing MongoDB cluster...</echo>
                                 <exec executable="docker">
@@ -342,7 +339,7 @@
                         <id>stop-server</id>
                         <phase>post-integration-test</phase>
                         <configuration>
-                            <skip>${skip.integration.tests}</skip>
+                            <skip>${skipITs}</skip>
                             <target>
                                 <echo>***** Stopping RESTHeart process...</echo>
                                 <exec dir="${basedir}" executable="bin/stop.sh">
