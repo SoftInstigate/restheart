@@ -1,29 +1,34 @@
 {
-  "_id": "schemaWithDollarAsObjectPropertyPrefix.json",
-        "_id": "mongo",
-        "$schema": "http://json-schema.org/draft-04/schema#",
-        "definitions": {
-            "date": {
-                "type": "object",
-                "properties": {
-                    "$date": {
-                        "type": "number"
-                    }
-                },
-                "additionalProperties": false
-            },
-            "_id": {
-                "type": "object",
-                "properties": {
-                    "$oid": {
-                        "type": "string"
-                    }
-                },
-                "additionalProperties": false
-            }
-        },
-        "id": "http://schema-store/test/mongo#",
-        "_etag": {
-            "$oid": "5c7e4da82d174c1bdf73209b"
+  "_id": "SchemaWithDollarAsObjectPropertyPrefix",
+  "id": "http://schema-store/test/mongo#",
+  "_$schema": "http://json-schema.org/draft-04/schema#",
+  "definitions": {
+    "date": {
+      "type": "object",
+      "properties": {
+        "_$date": {
+          "type": "number"
         }
- }
+      },
+      "additionalProperties": false
+    },
+    "_id": {
+      "type": "object",
+      "properties": {
+        "_$oid": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "foo": {
+      "type": "object",
+      "properties": {
+        "$foo": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

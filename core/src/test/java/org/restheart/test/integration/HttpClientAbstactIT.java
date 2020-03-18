@@ -485,9 +485,9 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         clientBuilder.setRetryHandler(new DefaultHttpRequestRetryHandler(5, false));
         CloseableHttpClient httpClient = clientBuilder.build();
 
-        adminExecutor = Executor.newInstance(httpClient).authPreemptive(HTTP_HOST).auth(host, "admin", "changeit");
-        user1Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user1", "changeit");
-        user2Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user2", "changeit");
+        adminExecutor = Executor.newInstance(httpClient).authPreemptive(HTTP_HOST).auth(host, "admin", "secret");
+        user1Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user1", "secret");
+        user2Executor = Executor.newInstance().authPreemptive(HTTP_HOST).auth(host, "user2", "secret");
         unauthExecutor = Executor.newInstance();
     }
 

@@ -53,8 +53,10 @@ public class ContentEncodingIT extends HttpClientAbstactIT {
      */
     @BeforeClass
     public static void init() throws Exception {
-        notDecompressingExecutor = Executor.newInstance(HttpClients.custom().disableContentCompression().build())
-                .authPreemptive(HTTP_HOST).auth(new HttpHost(HTTP_HOST.getHostName()), "admin", "changeit");
+        notDecompressingExecutor = Executor.newInstance(HttpClients.custom()
+                .disableContentCompression().build())
+                .authPreemptive(HTTP_HOST)
+                .auth(new HttpHost(HTTP_HOST.getHostName()), "admin", "secret");
     }
 
     /**
@@ -69,7 +71,9 @@ public class ContentEncodingIT extends HttpClientAbstactIT {
      */
     @Test
     public void testGzipAcceptEncoding() throws Exception {
-        Response resp = notDecompressingExecutor.execute(Request.Get(rootUri).addHeader(Headers.ACCEPT_ENCODING_STRING, Headers.GZIP.toString()));
+        Response resp = notDecompressingExecutor.execute(
+                Request.Get(rootUri).addHeader(
+                        Headers.ACCEPT_ENCODING_STRING, Headers.GZIP.toString()));
 
         HttpResponse httpResp = resp.returnResponse();
         assertNotNull(httpResp);
@@ -83,12 +87,16 @@ public class ContentEncodingIT extends HttpClientAbstactIT {
         Header h = httpResp.getFirstHeader("Content-Encoding");
 
         assertNotNull("check accept encoding header not null", h);
-        assertEquals("check accept encoding header value", Headers.GZIP.toString(), h.getValue());
+        assertEquals("check accept encoding header value", 
+                Headers.GZIP.toString(), h.getValue());
 
-        assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
+        assertEquals("check status code", HttpStatus.SC_OK, 
+                statusLine.getStatusCode());
 
         try {
-            GZIPInputStream gzipis = new GZIPInputStream(new ByteArrayInputStream(content.getBytes(StandardCharsets.ISO_8859_1)));
+            GZIPInputStream gzipis = new GZIPInputStream(
+                    new ByteArrayInputStream(
+                            content.getBytes(StandardCharsets.ISO_8859_1)));
 
             while (gzipis.read() > 0) {
 

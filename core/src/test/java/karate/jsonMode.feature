@@ -5,7 +5,7 @@ Background:
 * def db = '/test-jsonMode'
 * def coll = '/test-jsonMode/coll'
 * def doc = '/test-jsonMode/coll/doc'
-* def authHeader = 'Basic YWRtaW46Y2hhbmdlaXQ='
+* def authHeader = 'Basic YWRtaW46c2VjcmV0'
 
 # CREATE TEST DATA
 

@@ -167,13 +167,15 @@ public class JsonSchemaCheckerIT extends AbstactIT {
 
         Assert.assertEquals("test create schema with dollar prefixed field", HttpStatus.SC_CREATED, resp.getStatus());
     }
-    
+
     /**
+     * warning: properties such as $oid or $date must be _ prefixed anyway
+     * because otherwise the bson parser will fail interpreting it as strict
+     * mode representation of the bson type
      *
      * @throws Exception
      */
     @Test
-    @Ignore
     public void testPutSchemaWithDollarAsObjectPropertyPrefix() throws Exception {
         resp = Unirest.put(url(DB, SCHEMA_STORE, "SchemaWithDollarAsObjectPropertyPrefix"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
@@ -181,7 +183,6 @@ public class JsonSchemaCheckerIT extends AbstactIT {
                 .body(getResourceFile("schemas/schemaWithDollarAsObjectPropertyPrefix.json"))
                 .asString();
 
-        
         Assert.assertEquals("test create schema with dollar prefixed object property", HttpStatus.SC_CREATED, resp.getStatus());
     }
 
