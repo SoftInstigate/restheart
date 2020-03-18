@@ -299,7 +299,6 @@
                         <id>dist</id>
                         <phase>package</phase>
                         <configuration>
-                            <skip>${skip.integration.tests}</skip>
                             <target>
                                 <mkdir dir="./target/plugins"/>
                                 <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true"/>
