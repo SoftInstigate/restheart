@@ -32,6 +32,7 @@ public class LambdaUtils {
         sneakyThrow(ex);
     }
 
+    @SuppressWarnings("unchecked")
     private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
         throw (E) e;
     }
