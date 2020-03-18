@@ -43,6 +43,9 @@ public abstract class Request<T> extends AbstractExchange<T> {
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
 
+    private static final AttachmentKey<PipelineBranchInfo> PIPELINE_BRANCH_INFO_KEY
+            = AttachmentKey.create(PipelineBranchInfo.class);
+
     private static final AttachmentKey<Long> START_TIME_KEY
             = AttachmentKey.create(Long.class);
 
@@ -106,7 +109,7 @@ public abstract class Request<T> extends AbstractExchange<T> {
     public void setContentTypeAsJson() {
         setContentType("application/json");
     }
-    
+
     protected void setContentLength(int length) {
         wrapped.getRequestHeaders().put(Headers.CONTENT_LENGTH, length);
     }
@@ -157,6 +160,22 @@ public abstract class Request<T> extends AbstractExchange<T> {
 
     public Map<String, List<String>> getXForwardedHeaders() {
         return getWrappedExchange().getAttachment(XFORWARDED_HEADERS);
+    }
+
+    /**
+     *
+     * @return the PipelineBranchInfo that allows to know which pipeline branch
+     * (service, proxy or static resource) is handling the exchange
+     */
+    public PipelineBranchInfo getPipelineBranchInfo() {
+        return getWrappedExchange().getAttachment(PIPELINE_BRANCH_INFO_KEY);
+    }
+
+    /**
+     * @param pipelineBranchInfo the requestStartTime to set
+     */
+    public void setPipelineBranchInfo(PipelineBranchInfo pipelineBranchInfo) {
+        getWrappedExchange().putAttachment(PIPELINE_BRANCH_INFO_KEY, pipelineBranchInfo);
     }
 
     /**

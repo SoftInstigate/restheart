@@ -86,7 +86,8 @@ public class ModifiableContentSinkConduit
     @Override
     public int write(ByteBuffer src) throws IOException {
         return BuffersUtils.append(src,
-                exchange.getAttachment(ProxableResponse.BUFFERED_RESPONSE_DATA),
+                (PooledByteBuffer[]) exchange
+                        .getAttachment(ProxableResponse.BUFFERED_RESPONSE_DATA),
                 exchange);
     }
 
