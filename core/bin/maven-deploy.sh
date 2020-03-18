@@ -3,7 +3,7 @@ set -e
 
 if [[ "$MAVEN_DEPLOY" == "true" && "$TRAVIS_PULL_REQUEST" == "false" ]]; then
     if [[ "$RESTHEART_VERSION" ]]; then
-        mvn clean verify -DskipITs=false -Dkarate.options="$KARATE_OPS"
+        mvn clean verify -Dmongodb.version=${MONGO} -Dkarate.options="$KARATE_OPS"
         echo "###### Branch is '$TRAVIS_BRANCH', Tag is '$TRAVIS_TAG', Version is '$RESTHEART_VERSION'"
         if [[ "$TRAVIS_TAG" && "$RESTHEART_VERSION" != *-SNAPSHOT ]]; then
             echo "###### Building Docker image for RESTHeart $RESTHEART_VERSION"
@@ -21,11 +21,11 @@ if [[ "$MAVEN_DEPLOY" == "true" && "$TRAVIS_PULL_REQUEST" == "false" ]]; then
         echo "###### Deploy to Maven Central"
         GPG_TTY=$(tty)
         export GPG_TTY
-        mvn deploy -s settings.xml -P release -Dmaven.test.skip=true
+        mvn deploy -s settings.xml -P release -Dmongodb.version=${MONGO} -DskipTests -Dmaven.test.skip=true
     else
         echo "###### ERROR! Variable RESTHEART_VERSION is undefined"
         exit 1
     fi
 else
-    mvn verify -DskipITs=false
+    mvn verify -Dmongodb.version=${MONGO}
 fi
