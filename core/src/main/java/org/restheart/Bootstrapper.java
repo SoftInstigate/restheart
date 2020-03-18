@@ -103,8 +103,11 @@ import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
 import org.restheart.handlers.exchange.AbstractExchange.METHOD;
+import org.restheart.handlers.exchange.PipelineBranchInfo;
+import org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH;
 import org.restheart.handlers.injectors.AuthHeadersRemover;
 import org.restheart.handlers.injectors.ConduitInjector;
+import org.restheart.handlers.injectors.PipelineBranchInfoInjector;
 import org.restheart.handlers.injectors.RequestContentInjector;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
@@ -349,7 +352,7 @@ public class Bootstrapper {
             return new Configuration(CONFIGURATION_FILE, false);
         } else {
             final Properties p = new Properties();
-            try (InputStreamReader reader = new InputStreamReader(
+            try ( InputStreamReader reader = new InputStreamReader(
                     new FileInputStream(PROPERTIES_FILE.toFile()), "UTF-8")) {
                 p.load(reader);
             } catch (FileNotFoundException fnfe) {
@@ -359,7 +362,7 @@ public class Bootstrapper {
             }
 
             final StringWriter writer = new StringWriter();
-            try (BufferedReader reader = new BufferedReader(new FileReader(CONFIGURATION_FILE.toFile()))) {
+            try ( BufferedReader reader = new BufferedReader(new FileReader(CONFIGURATION_FILE.toFile()))) {
                 Mustache m = new DefaultMustacheFactory().compile(reader, "configuration-file");
                 m.execute(writer, p);
                 writer.flush();
@@ -705,7 +708,7 @@ public class Bootstrapper {
             } else if (configuration.getKeystoreFile() != null
                     && configuration.getKeystorePassword() != null
                     && configuration.getCertPassword() != null) {
-                try (FileInputStream fis = new FileInputStream(
+                try ( FileInputStream fis = new FileInputStream(
                         new File(configuration.getKeystoreFile()))) {
                     ks.load(fis, configuration.getKeystorePassword().toCharArray());
                     kmf.init(ks, configuration.getCertPassword().toCharArray());
@@ -1000,7 +1003,12 @@ public class Bootstrapper {
                         tokenManager);
             }
 
-            var _srv = pipe(new TracingInstrumentationHandler(),
+            var _srv = pipe(
+                    new PipelineBranchInfoInjector(new PipelineBranchInfo(
+                            PIPELINE_BRANCH.SERVICE,
+                            srv.getName(),
+                            uri)),
+                    new TracingInstrumentationHandler(),
                     new RequestLogger(),
                     new BsonRequestServiceInitializer(),
                     new CORSHandler(),
@@ -1088,6 +1096,10 @@ public class Bootstrapper {
                     ConfigurationKeys.PROXY_PROBLEM_SERVER_RETRY, 10,
                     true);
 
+            String name = Configuration.getOrDefault(m,
+                    ConfigurationKeys.PROXY_NAME, null,
+                    true);
+
             final Xnio xnio = Xnio.getInstance();
 
             final OptionMap optionMap = OptionMap.create(
@@ -1136,7 +1148,12 @@ public class Bootstrapper {
                         .setProxyClient(proxyClient)
                         .build();
 
-                var proxy = pipe(new TracingInstrumentationHandler(),
+                var proxy = pipe(
+                        new PipelineBranchInfoInjector(new PipelineBranchInfo(
+                                PIPELINE_BRANCH.PROXY,
+                                name,
+                                location)),
+                        new TracingInstrumentationHandler(),
                         new RequestLogger(),
                         new XPoweredByInjector(),
                         new RequestContentInjector(ALWAYS),
@@ -1252,8 +1269,14 @@ public class Bootstrapper {
                                 .addWelcomeFiles(welcomeFile)
                                 .setDirectoryListingEnabled(false);
 
-                        PipelinedHandler ph = new RequestLogger(
-                                PipelinedWrappingHandler.wrap(handler));
+                        PipelinedHandler ph = PipelinedHandler.pipe(
+                                new PipelineBranchInfoInjector(new PipelineBranchInfo(
+                                        PIPELINE_BRANCH.STATIC_RESOURCE,
+                                        null,
+                                        where)),
+                                new RequestLogger(),
+                                PipelinedWrappingHandler.wrap(handler)
+                        );
 
                         pathHandler.addPrefixPath(where, ph);
 

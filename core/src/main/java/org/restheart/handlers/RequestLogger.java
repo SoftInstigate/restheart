@@ -50,7 +50,6 @@ public class RequestLogger extends PipelinedHandler {
 
     private final Configuration configuration = Bootstrapper.getConfiguration();
 
-    
     /**
      * Creates a new instance of RequestLoggerHandler
      *
@@ -58,7 +57,7 @@ public class RequestLogger extends PipelinedHandler {
     public RequestLogger() {
         super();
     }
-    
+
     /**
      * Creates a new instance of RequestLoggerHandler
      *
@@ -98,8 +97,8 @@ public class RequestLogger extends PipelinedHandler {
         var request = JsonRequest.wrap(exchange);
 
         final StringBuilder sb = new StringBuilder();
-        final long start = request != null && request.getStartTime() != null 
-                ? request.getStartTime() 
+        final long start = request != null && request.getStartTime() != null
+                ? request.getStartTime()
                 : System.currentTimeMillis();
 
         if (logLevel == 1) {
@@ -119,7 +118,26 @@ public class RequestLogger extends PipelinedHandler {
             sb.append(" from ").append(exchange.getSourceAddress());
         } else if (logLevel >= 2) {
             sb.append("\n----------------------------REQUEST---------------------------\n");
+
             sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
+            
+            var pb = request.getPipelineBranchInfo();
+            sb.append("          servedBy=")
+                    .append(pb.getBranch().name().toLowerCase())
+                    .append(" ");
+
+            if (pb.getName() != null) {
+                sb
+                        .append("'")
+                        .append(pb.getName())
+                        .append("' ");
+            }
+
+            sb
+                    .append("bound to '")
+                    .append(pb.getUri())
+                    .append("'\n");
+            
             sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING))
                     .append("\n");
             sb.append("     contentLength=").append(exchange.getRequestContentLength()).append("\n");

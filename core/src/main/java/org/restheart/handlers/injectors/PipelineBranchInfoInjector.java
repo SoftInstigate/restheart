@@ -21,6 +21,8 @@ import com.google.common.net.HttpHeaders;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.PipelineBranchInfo;
 
 /**
  *
@@ -28,22 +30,27 @@ import org.restheart.handlers.PipelinedHandler;
  *
  * It injects the X-Powered-By response header
  */
-public class XPoweredByInjector extends PipelinedHandler {
+public class PipelineBranchInfoInjector extends PipelinedHandler {
+    private final PipelineBranchInfo pbi;
+    
     /**
      * Creates a new instance of XPoweredByInjector
      *
      * @param next
+     * @param pbi
      */
-    public XPoweredByInjector(PipelinedHandler next) {
+    public PipelineBranchInfoInjector(PipelinedHandler next, PipelineBranchInfo pbi) {
         super(next);
+        this.pbi = pbi;
     }
 
     /**
      * Creates a new instance of XPoweredByInjector
      *
+     * @param pbi
      */
-    public XPoweredByInjector() {
-        super(null);
+    public PipelineBranchInfoInjector(PipelineBranchInfo pbi) {
+        this(null, pbi);
     }
 
     /**
@@ -56,6 +63,8 @@ public class XPoweredByInjector extends PipelinedHandler {
         exchange.getResponseHeaders().add(HttpString.tryFromString(
                 HttpHeaders.X_POWERED_BY), "restheart.org");
 
+        ByteArrayRequest.wrap(exchange).setPipelineBranchInfo(this.pbi);
+        
         next(exchange);
     }
 }
