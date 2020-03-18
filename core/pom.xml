@@ -257,7 +257,7 @@
                     <showLogs>false</showLogs>
                     <images>
                         <image>
-                            <name>mongo:4.2</name>
+                            <name>mongo:${mongodb.version}</name>
                             <run>
                                 <cmd>--bind_ip_all --replSet rs0</cmd>
                                 <ports>
@@ -318,7 +318,7 @@
                                     <arg value="--rm"/>
                                     <arg value="--net"/>
                                     <arg value="host"/>
-                                    <arg value="mongo:4.2"/>
+                                    <arg value="mongo:${mongodb.version}"/>
                                     <arg value="mongo"/>
                                     <arg value="--eval"/>
                                     <arg value="rs.initiate()"/>

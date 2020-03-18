@@ -26,6 +26,11 @@
         <skipTests>false</skipTests>
         <skipITs>${skipTests}</skipITs>
         <skipUTs>${skipTests}</skipUTs>
+        <!--
+            MongoDB default version to test with
+            mvn install -Dmongodb.version=3.8   : Test with mongo:3.8 container
+        -->
+        <mongodb.version>4.2</mongodb.version>
     </properties>
 
     <modules>
