@@ -28,4 +28,4 @@ jobs:
         java-version: 11
 
     - name: Integration Tests
-      run: mvn -B verify -Dkarate.options="" -P integration
+      run: mvn -B verify -Dkarate.options=""
