@@ -112,9 +112,6 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-            </plugin>
         </plugins>
     </build>
 </project>
