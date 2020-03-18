@@ -3,9 +3,9 @@ FROM gcr.io/distroless/java:11
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
 WORKDIR /opt/restheart
-COPY Docker/etc/*.yml Docker/etc/*.properties etc/users.yml etc/acl.yml /opt/restheart/etc/
-COPY target/restheart-security.jar plugins /opt/restheart/
+COPY etc/restheart.yml Docker/etc/standalone.properties Docker/etc/default.properties etc/
+COPY target/restheart.jar plugins /opt/restheart/
 
-ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart-security.jar", "etc/restheart-security.yml"]
-CMD ["--envFile", "etc/default-security.properties"]
-EXPOSE 8080
+ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart.jar", "etc/restheart.yml"]
+CMD ["--envFile", "etc/standalone.properties"]
+EXPOSE 8009 8080 4443
