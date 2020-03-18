@@ -68,9 +68,7 @@ public class MongoService implements Service {
 
     private final String myURI;
 
-    @InjectConfiguration(scope = ConfigurationScope.ALL)
-    public MongoService(Map<String, Object> confArgs) {
-        MongoServiceConfiguration.init(confArgs);
+    public MongoService() {
         this.myURI = myURI();
         this.handlerPipeline = getBasePipeline();
     }
@@ -93,35 +91,6 @@ public class MongoService implements Service {
     private PipelinedHandler getBasePipeline()
             throws ConfigurationException {
         var rootHandler = path();
-
-        // initialize MongoDBClientSingleton
-        try {
-            MongoDBClientSingleton.init(MongoServiceConfiguration.get().getMongoUri());
-
-            LOGGER.info("Connecting to MongoDB...");
-
-            // force connection to MongoDB
-             var mclient = MongoDBClientSingleton.getInstance();
-
-            LOGGER.info("MongoDB version {}",
-                    ansi()
-                            .fg(MAGENTA)
-                            .a(mclient.getServerVersion())
-                            .reset()
-                            .toString());
-
-            if (mclient.isReplicaSet()) {
-                LOGGER.info("MongoDB is a replica set");
-            } else {
-                LOGGER.warn("MongoDB is a standalone instance, use a replica set in production");
-            }
-
-        } catch (Throwable t) {
-            throw new ConfigurationException("\"Error connecting to MongoDB.");
-        }
-
-        // initialize LocalCachesSingleton
-        LocalCachesSingleton.init(MongoServiceConfiguration.get());
 
         ClientSessionInjector.build(PipelinedHandler.pipe(
                 new DbPropsInjector(),
