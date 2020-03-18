@@ -56,12 +56,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * initialize the BsonRequest
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestContextInjector extends PipelinedHandler {
+public class BsonRequestInitializer extends PipelinedHandler {
     static final Logger LOGGER
-            = LoggerFactory.getLogger(RequestContextInjector.class);
+            = LoggerFactory.getLogger(BsonRequestInitializer.class);
 
     private static final int DEFAULT_PAGESIZE = MongoServiceConfiguration
             .get()
@@ -83,7 +83,7 @@ public class RequestContextInjector extends PipelinedHandler {
      * handlers pipeline
      * @param checkAggregationOperators
      */
-    public RequestContextInjector(boolean mongoPipeline,
+    public BsonRequestInitializer(boolean mongoPipeline,
             boolean checkAggregationOperators) {
         this("/", "*", mongoPipeline, checkAggregationOperators, null);
     }
@@ -96,7 +96,7 @@ public class RequestContextInjector extends PipelinedHandler {
      * @param checkAggregationOperators
      * @param next
      */
-    public RequestContextInjector(String requestUri,
+    public BsonRequestInitializer(String requestUri,
             String resourceUri,
             boolean mongoPipeline,
             boolean checkAggregationOperators,
