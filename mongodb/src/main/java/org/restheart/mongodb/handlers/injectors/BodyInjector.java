@@ -25,6 +25,7 @@ import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,6 +38,7 @@ import org.bson.json.JsonParseException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.ByteArrayRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.FALSE_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.FILE_METADATA;
 import static org.restheart.handlers.exchange.ExchangeKeys.MAX_KEY_ID;
@@ -45,6 +47,7 @@ import static org.restheart.handlers.exchange.ExchangeKeys.NULL_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.PROPERTIES;
 import static org.restheart.handlers.exchange.ExchangeKeys.TRUE_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys._ID;
+import org.restheart.handlers.exchange.ProxableRequest;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ChannelReader;
 import org.restheart.mongodb.utils.JsonUtils;
@@ -373,9 +376,22 @@ public class BodyInjector extends PipelinedHandler {
             injectContentTypeFromFile(content.asDocument(), path.toFile());
         } else {
             if (isHalOrJson(contentType)) {
-                // get the raw content
-                final String contentString = ChannelReader.read(exchange.getRequestChannel());
-
+                final String contentString;
+                
+                var bar = ByteArrayRequest.wrap(exchange);
+                
+                if (bar.isContentAvailable()) {
+                    // if content has been already injected by core's 
+                    // RequestContentInjector
+                    // get it from BsonRequest.readContent()
+                    contentString = new String(bar.readContent(), 
+                            StandardCharsets.UTF_8);
+                } else {
+                    // otherwise use ChannelReader
+                    contentString = ChannelReader
+                            .read(exchange.getRequestChannel());
+                }
+               
                 // parse the json content
                 if (contentString != null
                         && !contentString.isEmpty()) { // check content type
