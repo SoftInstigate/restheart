@@ -17,9 +17,7 @@
  */
 package org.restheart.handlers.injectors;
 
-import com.google.common.net.HttpHeaders;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.PipelineBranchInfo;
@@ -28,13 +26,15 @@ import org.restheart.handlers.exchange.PipelineBranchInfo;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * It injects the X-Powered-By response header
+ * It injects the PipelineBranchInfo. It allows to programmatically understand
+ * which pipeline branch (service, proxy or static resource) is handling the
+ * request via BsonRequest.getPipelineBranchInfo()
  */
 public class PipelineBranchInfoInjector extends PipelinedHandler {
     private final PipelineBranchInfo pbi;
-    
+
     /**
-     * Creates a new instance of XPoweredByInjector
+     * Creates a new instance of PipelineBranchInfoInjector
      *
      * @param next
      * @param pbi
@@ -45,7 +45,7 @@ public class PipelineBranchInfoInjector extends PipelinedHandler {
     }
 
     /**
-     * Creates a new instance of XPoweredByInjector
+     * Creates a new instance of PipelineBranchInfoInjector
      *
      * @param pbi
      */
@@ -60,11 +60,8 @@ public class PipelineBranchInfoInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        exchange.getResponseHeaders().add(HttpString.tryFromString(
-                HttpHeaders.X_POWERED_BY), "restheart.org");
-
         ByteArrayRequest.wrap(exchange).setPipelineBranchInfo(this.pbi);
-        
+
         next(exchange);
     }
 }
