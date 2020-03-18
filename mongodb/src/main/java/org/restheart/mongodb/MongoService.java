@@ -37,7 +37,7 @@ import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.CollectionPropsInjector;
 import org.restheart.mongodb.handlers.injectors.DbPropsInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
-import org.restheart.mongodb.handlers.injectors.RequestContextInjector;
+import org.restheart.mongodb.handlers.injectors.BsonRequestInitializer;
 import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.RegisterPlugin;
@@ -86,15 +86,16 @@ public class MongoService implements Service {
             throws ConfigurationException {
         var rootHandler = path();
 
-        ClientSessionInjector.build(PipelinedHandler.pipe(
-                new DbPropsInjector(),
-                new CollectionPropsInjector(),
-                new ETagPolicyInjector(),
-                RequestDispatcherHandler.getInstance()));
+        ClientSessionInjector.build(
+                PipelinedHandler.pipe(
+                        new DbPropsInjector(),
+                        new CollectionPropsInjector(),
+                        new ETagPolicyInjector(),
+                        RequestDispatcherHandler.getInstance()));
 
-        PipelinedHandler corePipeline
-                = PipelinedHandler.pipe(new AccountInjector(),
-                        ClientSessionInjector.getInstance());
+        PipelinedHandler corePipeline = PipelinedHandler.pipe(
+                new AccountInjector(),
+                ClientSessionInjector.getInstance());
 
         PathTemplateHandler pathsTemplates = pathTemplate(false);
 
@@ -109,7 +110,8 @@ public class MongoService implements Service {
                 .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
                 .allMatch(url -> !isPathTemplate(url));
 
-        final PipelinedHandler basePipeline = PipelinedHandler.pipe(new MetricsInstrumentationHandler(),
+        final PipelinedHandler basePipeline = PipelinedHandler.pipe(
+                new MetricsInstrumentationHandler(),
                 new CORSHandler(),
                 new OptionsHandler(),
                 new BodyInjector(),
@@ -124,7 +126,7 @@ public class MongoService implements Service {
                 var uri = resolveURI((String) m.get(MONGO_MOUNT_WHERE_KEY));
                 var db = (String) m.get(MONGO_MOUNT_WHAT_KEY);
 
-                PipelinedHandler pipeline = new RequestContextInjector(
+                PipelinedHandler pipeline = new BsonRequestInitializer(
                         uri,
                         db,
                         true,
