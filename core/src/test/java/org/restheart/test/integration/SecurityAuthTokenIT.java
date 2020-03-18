@@ -41,13 +41,12 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@Ignore
 public class SecurityAuthTokenIT extends HttpClientAbstactIT {
 
     static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
     static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
     static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");
-    
+
     /**
      *
      */
@@ -86,17 +85,10 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
         assertTrue("check not empty array auth token valid value not null or empty", _authTokenValid[0] != null && _authTokenValid[0].getValue() != null && !_authTokenValid[0].getValue().isEmpty());
         assertTrue("check not empty array auth token location  not null or empty", _authTokenLocation[0] != null && _authTokenLocation[0].getValue() != null && !_authTokenLocation[0].getValue().isEmpty());
 
-        Response resp2 = unauthExecutor.auth(new Credentials() {
-            @Override
-            public Principal getUserPrincipal() {
-                return new BasicUserPrincipal("admin");
-            }
-
-            @Override
-            public String getPassword() {
-                return _authToken[0].getValue();
-            }
-        }).execute(Request.Get(rootUri));
+        Response resp2 = unauthExecutor
+                .authPreemptive(HTTP_HOST)
+                .auth("admin", _authToken[0].getValue())
+                .execute(Request.Get(rootUri));
 
         HttpResponse httpResp2 = resp2.returnResponse();
         assertNotNull(httpResp2);

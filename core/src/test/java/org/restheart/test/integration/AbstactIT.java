@@ -62,7 +62,7 @@ public abstract class AbstactIT {
     /**
      *
      */
-    protected static final String ADMIN_PWD = "changeit";
+    protected static final String ADMIN_PWD = "secret";
 
     /**
      * dbs starting with this prefix will be automatically deleted after test

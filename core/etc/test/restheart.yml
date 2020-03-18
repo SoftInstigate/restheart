@@ -101,7 +101,7 @@ auth-mechanisms:
 authenticators:
   simpleFileAuthenticator:
     enabled: true
-    conf-file: ../../etc/users.yml
+    conf-file: ../../etc/test/users.yml
 
 ## Authorizers
 
@@ -117,7 +117,7 @@ authenticators:
 authorizers:
   requestPredicatesAuthorizer:
     enabled: true
-    conf-file: ../../etc/acl.yml
+    conf-file: ../../etc/test/acl.yml
   fullAuthorizer:
     enabled: false
     authentication-required: true
@@ -202,6 +202,7 @@ plugins-directory: plugins
 plugins-args:
     mongo:
         enabled: true
+        secured: true
     testInitializer:
         enabled: true
     rndTokenService:

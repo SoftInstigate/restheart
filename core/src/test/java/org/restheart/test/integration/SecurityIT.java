@@ -17,16 +17,12 @@
  */
 package org.restheart.test.integration;
 
-import com.mashape.unirest.http.Unirest;
 import io.undertow.util.Headers;
-import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
-import org.junit.Assert;
 import static org.junit.Assert.*;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.utils.HttpStatus;
@@ -35,7 +31,6 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@Ignore
 public class SecurityIT extends HttpClientAbstactIT {
 
     /**
@@ -371,64 +366,5 @@ public class SecurityIT extends HttpClientAbstactIT {
         // *** create user collection
         resp = user2Executor.execute(Request.Put(collectionTmpUserUri3).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
         check("check regex predicate creating user collection " + collectionTmpUserUri3 + " as user2", resp, HttpStatus.SC_CREATED);
-    }
-
-    /**
-     *
-     * @throws Exception
-     */
-    @Test
-    @Ignore
-    public void testJwtAuthentication() throws Exception {
-        com.mashape.unirest.http.HttpResponse<String> resp;
-        
-        // JWT tokens signedsigned with HS256 and key secret
-        
-        /**
-         * {
-         * "iss": "myIssuer", "iat": 1519201622, "exp": 2529044822, "aud":
-         * "myAudience", "sub": "theAdmin", "roles": "admins" }
-         */
-        String JWT_ADMIN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJteUlzc3VlciIsImlhdCI6MTUxOTIwMTYyMiwiZXhwIjoyNTI5MDQ0ODIyLCJhdWQiOiJteUF1ZGllbmNlIiwic3ViIjoidGhlQWRtaW4iLCJyb2xlcyI6ImFkbWlucyJ9.oQS55i_cg-cX-fqGCu-G8S-dF8KNOQo77WIy2LrJvKU";
-
-        /**
-         * {
-         * "iss": "myIssuer", "iat": 1519201622, "exp": 2526366422, "aud":
-         * "myAudience", "sub": "theAdmin" }
-         */
-        String JWT_NO_ROLES = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJteUlzc3VlciIsImlhdCI6MTUxOTIwMTYyMiwiZXhwIjoyNTI2MzY2NDIyLCJhdWQiOiJteUF1ZGllbmNlIiwic3ViIjoidGhlQWRtaW4ifQ.1K35oCjo9Jx1KD_6XC38didmbgjh4TWgq8F7B-5gVTk";
-
-        /**
-         * {
-         * "iss": "myIssuer", "iat": 1519201622, "exp": 2526366422, "aud":
-         * "wrongAudience", "sub": "theAdmin", "roles": "admins" }
-         */
-        String JWT_WRONG_AUDIENCE = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJteUlzc3VlciIsImlhdCI6MTUxOTIwMTYyMiwiZXhwIjoyNTI2MzY2NDIyLCJhdWQiOiJ3cm9uZ0F1ZGllbmNlIiwic3ViIjoidGhlQWRtaW4iLCJyb2xlcyI6ImFkbWlucyJ9.hXjTQl3X6lWSJklZxG1EnlZifxVrqLRHa_YzkdZ5gBw";
-
-        String JWT_EXPIRED = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJteUlzc3VlciIsImlhdCI6MTUxNjUyMzIyMiwiZXhwIjoxNTE2NTIzMjIyLCJhdWQiOiJteUF1ZGllbmNlIiwic3ViIjoidGhlQWRtaW4iLCJyb2xlcyI6ImFkbWlucyJ9.jzPLp9apzo3gn0U6kWIuvJBpxTUwkmYTBYstfboJkL8";
-
-        resp = Unirest.get(rootUri.toString())
-                .header(HttpHeaders.AUTHORIZATION, JWT_AUTH_HEADER_PREFIX + JWT_ADMIN)
-                .asString();
-
-        Assert.assertEquals("get / with valid JWT", HttpStatus.SC_OK, resp.getStatus());
-
-        resp = Unirest.get(rootUri.toString())
-                .header(HttpHeaders.AUTHORIZATION, JWT_AUTH_HEADER_PREFIX + JWT_WRONG_AUDIENCE)
-                .asString();
-
-        Assert.assertEquals("get / with wrong JWT (wrong audience)", HttpStatus.SC_UNAUTHORIZED, resp.getStatus());
-
-        resp = Unirest.get(rootUri.toString())
-                .header(HttpHeaders.AUTHORIZATION, JWT_AUTH_HEADER_PREFIX + JWT_EXPIRED)
-                .asString();
-
-        Assert.assertEquals("get / with wrong JWT (expired)", HttpStatus.SC_UNAUTHORIZED, resp.getStatus());
-        
-        resp = Unirest.get(rootUri.toString())
-                .header(HttpHeaders.AUTHORIZATION, JWT_AUTH_HEADER_PREFIX + JWT_NO_ROLES)
-                .asString();
-
-        Assert.assertEquals("get / with valid JWT but no roles", HttpStatus.SC_FORBIDDEN, resp.getStatus());
     }
 }

@@ -1,4 +1,4 @@
-Feature: test basic authentication mechanism
+Feature: test CORS headers
 
 Background:
 * url 'http://localhost:8080'
