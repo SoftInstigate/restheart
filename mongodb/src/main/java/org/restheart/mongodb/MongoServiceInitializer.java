@@ -21,6 +21,7 @@ import java.util.Map;
 import static org.fusesource.jansi.Ansi.Color.MAGENTA;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.ConfigurationException;
+import static org.restheart.mongodb.MongoServiceConfigurationKeys.PLUGINS_ARGS_KEY;
 import org.restheart.mongodb.db.MongoDBClientSingleton;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
 import org.restheart.plugins.ConfigurationScope;
@@ -35,24 +36,33 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@RegisterPlugin(name="mongoDbInitializer",
+@RegisterPlugin(name = "mongoInitializer",
         description = "",
         initPoint = InitPoint.BEFORE_STARTUP,
-        priority = 10)
+        priority = -10)
 public class MongoServiceInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(MongoService.class);
-    
+
+    private final boolean mongoSrvEnabled;
+
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public MongoServiceInitializer(Map<String, Object> confArgs) {
         MongoServiceConfiguration.init(confArgs);
+
+        this.mongoSrvEnabled = isMongoEnabled(confArgs);
     }
-    
+
+
     @Override
     public void init() {
+        if (!this.mongoSrvEnabled) {
+            return;
+        }
+
         // initialize LocalCachesSingleton
         LocalCachesSingleton.init(MongoServiceConfiguration.get());
-        
+
         // initialize MongoDBClientSingleton
         try {
             MongoDBClientSingleton.init(MongoServiceConfiguration.get().getMongoUri());
@@ -60,7 +70,7 @@ public class MongoServiceInitializer implements Initializer {
             LOGGER.info("Connecting to MongoDB...");
 
             // force connection to MongoDB
-             var mclient = MongoDBClientSingleton.getInstance();
+            var mclient = MongoDBClientSingleton.getInstance();
 
             LOGGER.info("MongoDB version {}",
                     ansi()
@@ -80,4 +90,22 @@ public class MongoServiceInitializer implements Initializer {
         }
     }
     
+    private boolean isMongoEnabled(Map<String, Object> confArgs) {
+        if (confArgs.get(PLUGINS_ARGS_KEY) != null
+                && confArgs.get(PLUGINS_ARGS_KEY) instanceof Map) {
+            var pa = (Map) confArgs.get(PLUGINS_ARGS_KEY);
+
+            if (pa.get("mongo") != null
+                    && pa.get("mongo") instanceof Map) {
+                var mc = (Map) pa.get("mongo");
+
+                if (mc.get("enabled") != null
+                        && mc.get("enabled") instanceof Boolean) {
+                    return (Boolean) mc.get("enabled");
+                }
+            }
+        }
+
+        return true;
+    }
 }

@@ -273,18 +273,25 @@ plugins-directory: {{{plugins-directory}}}
 
 plugins-args:
   rndTokenService:
+    enabled: true
     uri: /tokens
     secured: false
   ping:
+    enabled: true
     secured: false
     msg: Greetings from RESTHeart!
   roles:
+    enabled: true
     uri: /roles
     secured: true
+    enabled: true
   echo:
+    enabled: false
     uri: /echo
     secured: false
+    
   mongo:
+    enabled: true
     uri: /
     secured: true
 

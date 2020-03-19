@@ -21,13 +21,17 @@ import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.pathTemplate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
+import org.bson.codecs.ByteArrayCodec;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.ConfigurationException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
+import org.restheart.mongodb.db.MongoDBClientSingleton;
 import org.restheart.mongodb.handlers.CORSHandler;
 import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
@@ -53,7 +57,8 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(name = "mongo",
         description = "handles request to mongodb resources",
         enabledByDefault = true,
-        defaultURI = "/")
+        defaultURI = "/",
+        priority = Integer.MIN_VALUE)
 public class MongoService implements Service {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(MongoService.class);
@@ -62,9 +67,21 @@ public class MongoService implements Service {
 
     private final String myURI;
 
+    private final boolean mongoDbInitialized;
+
     public MongoService() {
-        this.myURI = myURI();
-        this.handlerPipeline = getBasePipeline();
+        if (!MongoDBClientSingleton.isInitialized()) {
+            LOGGER.error("Service mongo is not initialized. "
+                    + "Make sure that mongoInitializer is enabled "
+                    + "and executed successfully");
+            this.mongoDbInitialized = false;
+            this.myURI = null;
+            this.handlerPipeline = null;
+        } else {
+            this.mongoDbInitialized = true;
+            this.myURI = myURI();
+            this.handlerPipeline = getBasePipeline();
+        }
     }
 
     @Override
@@ -74,7 +91,13 @@ public class MongoService implements Service {
 
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        this.handlerPipeline.handleRequest(exchange);
+        if (mongoDbInitialized) {
+            this.handlerPipeline.handleRequest(exchange);
+        } else {
+           LOGGER.error("Service mongo is unavailabe");
+           ByteArrayResponse.wrap(exchange).setInError(true);
+            ByteArrayResponse.wrap(exchange).setStatusCode(500);
+        }
     }
 
     /**

@@ -23,8 +23,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * A Plugin annotation that sets a method (or constructor) to get
- * the PluginRegistry
+ * Plugin annotation that sets a method (or constructor) to get the
+ * PluginRegistry
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
