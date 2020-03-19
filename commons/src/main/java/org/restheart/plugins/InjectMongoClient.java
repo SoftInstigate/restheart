@@ -23,12 +23,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * A Plugin annotation that sets a method to get the MongoClient connected to
- * MongoDb by the Mongo Service
- * 
- * It applies to PreStartupInitializers, Initializers, Interceptors and Services
- * 
- * For Pre
+ * Plugin annotation that sets a method to get the initialized MongoClient from
+ * mongo service. The method is only invoked if the mongo service is enabled.
+ *
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */

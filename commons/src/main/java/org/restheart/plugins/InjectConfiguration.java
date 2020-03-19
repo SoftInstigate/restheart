@@ -24,7 +24,7 @@ import java.lang.annotation.Target;
 import static org.restheart.plugins.ConfigurationScope.OWN;
 
 /**
- * A Plugin annotation that sets a method (or constructor) to get the the
+ * Plugin annotation that sets a method (or constructor) to get the
  * configuration's properties as a Map<String, Object>
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
