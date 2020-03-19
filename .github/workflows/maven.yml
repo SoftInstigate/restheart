@@ -27,5 +27,5 @@ jobs:
       with:
         java-version: 11
 
-    - name: Integration Tests
-      run: mvn -B deploy -s settings.xml
+    - name: Build and test
+      run: mvn -B clean install
