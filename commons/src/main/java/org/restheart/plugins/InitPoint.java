@@ -18,9 +18,18 @@
 package org.restheart.plugins;
 
 /**
- * @see https://restheart.org/docs/develop/security-plugins/#initializers
+ * Defines the execution time point of an Initializer
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface PreStartupInitializer extends ConfigurablePlugin {
-    public void init();
+public enum InitPoint {
+    /**
+     * execute the Inizializer before starting the server
+     */
+    BEFORE_STARTUP, 
+    
+    /**
+     * execute the Inizializer right after the server has been started
+     */
+    AFTER_STARTUP
 }

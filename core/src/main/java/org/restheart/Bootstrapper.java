@@ -114,6 +114,8 @@ import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.handlers.injectors.XForwardedHeadersInjector;
 import org.restheart.handlers.injectors.XPoweredByInjector;
+import static org.restheart.plugins.InitPoint.AFTER_STARTUP;
+import static org.restheart.plugins.InitPoint.BEFORE_STARTUP;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
 import org.restheart.plugins.PluginRecord;
@@ -127,6 +129,7 @@ import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
 import static org.restheart.utils.PluginUtils.defaultURI;
+import static org.restheart.utils.PluginUtils.initPoint;
 import org.restheart.utils.RESTHeartDaemon;
 import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
@@ -352,7 +355,7 @@ public class Bootstrapper {
             return new Configuration(CONFIGURATION_FILE, false);
         } else {
             final Properties p = new Properties();
-            try ( InputStreamReader reader = new InputStreamReader(
+            try (InputStreamReader reader = new InputStreamReader(
                     new FileInputStream(PROPERTIES_FILE.toFile()), "UTF-8")) {
                 p.load(reader);
             } catch (FileNotFoundException fnfe) {
@@ -362,7 +365,7 @@ public class Bootstrapper {
             }
 
             final StringWriter writer = new StringWriter();
-            try ( BufferedReader reader = new BufferedReader(new FileReader(CONFIGURATION_FILE.toFile()))) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(CONFIGURATION_FILE.toFile()))) {
                 Mustache m = new DefaultMustacheFactory().compile(reader, "configuration-file");
                 m.execute(writer, p);
                 writer.flush();
@@ -514,8 +517,9 @@ public class Bootstrapper {
 
         // run pre startup initializers
         PluginsRegistryImpl.getInstance()
-                .getPreStartupInitializers()
+                .getInitializers()
                 .stream()
+                .filter(i -> initPoint(i.getInstance()) == BEFORE_STARTUP)
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
@@ -554,6 +558,7 @@ public class Bootstrapper {
         PluginsRegistryImpl.getInstance()
                 .getInitializers()
                 .stream()
+                .filter(i -> initPoint(i.getInstance()) == AFTER_STARTUP)
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
@@ -708,7 +713,7 @@ public class Bootstrapper {
             } else if (configuration.getKeystoreFile() != null
                     && configuration.getKeystorePassword() != null
                     && configuration.getCertPassword() != null) {
-                try ( FileInputStream fis = new FileInputStream(
+                try (FileInputStream fis = new FileInputStream(
                         new File(configuration.getKeystoreFile()))) {
                     ks.load(fis, configuration.getKeystorePassword().toCharArray());
                     kmf.init(ks, configuration.getCertPassword().toCharArray());

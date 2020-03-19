@@ -68,10 +68,18 @@ public @interface RegisterPlugin {
     String defaultURI() default "";
 
     /**
+     * Only used by Interceptors
      *
-     * @return the intercept point of the Int
+     * @return the intercept point of the Interceptor
      */
     InterceptPoint interceptPoint() default InterceptPoint.REQUEST_AFTER_AUTH;
+
+    /**
+     * Only used by Initializers
+     *
+     * @return the init point of the Intitialier
+     */
+    InitPoint initPoint() default InitPoint.AFTER_STARTUP;
 
     /**
      * Only used by Interceptors of proxied resources (the content is always

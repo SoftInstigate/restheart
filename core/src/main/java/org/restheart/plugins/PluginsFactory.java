@@ -118,13 +118,6 @@ public class PluginsFactory {
     }
 
     /**
-     * create the pre statup initializers
-     */
-    static Set<PluginRecord<PreStartupInitializer>> preStartupInitializers() {
-        return createPlugins(PreStartupInitializer.class, PLUGINS_CONFS);
-    }
-
-    /**
      * creates the interceptors
      */
     @SuppressWarnings("unchecked")

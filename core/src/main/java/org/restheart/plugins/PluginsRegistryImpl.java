@@ -49,8 +49,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private Set<PluginRecord<Initializer>> initializers;
 
-    private Set<PluginRecord<PreStartupInitializer>> preStartupInitializers;
-
     private Set<PluginRecord<Interceptor>> interceptors;
 
     private final Set<Predicate> globalSecurityPredicates
@@ -172,20 +170,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         }
 
         return this.initializers;
-    }
-
-    /**
-     * @return the preStartupInitializers
-     */
-    @Override
-    public Set<PluginRecord<PreStartupInitializer>> getPreStartupInitializers() {
-        if (this.preStartupInitializers == null) {
-            this.preStartupInitializers = new LinkedHashSet<>();
-            this.preStartupInitializers.addAll(
-                    PluginsFactory.preStartupInitializers());
-        }
-
-        return this.preStartupInitializers;
     }
 
     @Override
