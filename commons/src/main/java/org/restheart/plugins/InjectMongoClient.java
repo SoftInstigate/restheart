@@ -17,28 +17,23 @@
  */
 package org.restheart.plugins;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
- * Defines the intercept point of an Interceptor
+ * A Plugin annotation that sets a method to get the MongoClient connected to
+ * MongoDb by the Mongo Service
+ * 
+ * It applies to PreStartupInitializers, Initializers, Interceptors and Services
+ * 
+ * For Pre
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public enum InterceptPoint {
-    /**
-     * intercept the request before authentication occurs
-     */
-    REQUEST_BEFORE_AUTH, 
-    
-    /**
-     * intercept the request after authentication occurs 
-     */
-    REQUEST_AFTER_AUTH, 
-    
-    /**
-     * intercept the response and executes blocking the response
-     */
-    RESPONSE, 
-    
-    /**
-     * intercept the response and executes asynchronously with the response
-     */
-    RESPONSE_ASYNC
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface InjectMongoClient {
+
 }

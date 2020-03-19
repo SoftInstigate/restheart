@@ -70,11 +70,6 @@ public interface PluginsRegistry {
      * @return the initializers
      */
     public Set<PluginRecord<Initializer>> getInitializers();
-
-    /**
-     * @return the preStartupInitializers
-     */
-    public Set<PluginRecord<PreStartupInitializer>> getPreStartupInitializers();
     
     /**
      * @return the services

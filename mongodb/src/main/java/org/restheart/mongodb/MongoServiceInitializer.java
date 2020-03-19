@@ -24,8 +24,9 @@ import org.restheart.ConfigurationException;
 import org.restheart.mongodb.db.MongoDBClientSingleton;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
 import org.restheart.plugins.ConfigurationScope;
+import org.restheart.plugins.InitPoint;
+import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.PreStartupInitializer;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +37,9 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(name="mongoDbInitializer",
         description = "",
+        initPoint = InitPoint.BEFORE_STARTUP,
         priority = 10)
-public class MongoServiceInitializer implements PreStartupInitializer {
+public class MongoServiceInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(MongoService.class);
     

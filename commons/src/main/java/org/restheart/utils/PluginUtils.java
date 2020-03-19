@@ -17,6 +17,8 @@
  */
 package org.restheart.utils;
 
+import org.restheart.plugins.InitPoint;
+import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
@@ -36,6 +38,17 @@ public class PluginUtils {
             return null;
         } else {
             return a.interceptPoint();
+        }
+    }
+
+    public static InitPoint initPoint(Initializer initializer) {
+        var a = initializer.getClass()
+                .getDeclaredAnnotation(RegisterPlugin.class);
+
+        if (a == null) {
+            return null;
+        } else {
+            return a.initPoint();
         }
     }
 
