@@ -36,9 +36,7 @@ jobs:
 
     - name: Build and test
       run: |
-        GPG_TTY=$(tty)
-        export GPG_TTY
-        mvn -B clean deploy -Pdeploy
+        mvn -B -e clean deploy -Pdeploy
       env:
         OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
