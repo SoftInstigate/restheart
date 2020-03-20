@@ -29,15 +29,16 @@ jobs:
 
     - name: Import private key
       run: |
-        GPG_TTY=$(tty)
-        export GPG_TTY
         printf "%s" "$GPG_PRIVATE_KEY" > private.key
         gpg --pinentry-mode=loopback --batch --yes --fast-import private.key
       env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
     - name: Build and test
-      run: mvn -B clean deploy -Pdeploy
+      run: |
+        GPG_TTY=$(tty)
+        export GPG_TTY
+        mvn -B clean deploy -Pdeploy
       env:
         OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
