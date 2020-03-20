@@ -27,5 +27,16 @@ jobs:
       with:
         java-version: 11
 
+    - name: Import private key
+      run: echo -n $GPG_PRIVATE_KEY | gpg --pinentry-mode=loopback --batch --yes --fast-import
+      env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
     - name: Build and test
-      run: mvn -B clean install
+      run: mvn -B clean deploy -Pdeploy
+      env:
+        OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+        OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+        GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
