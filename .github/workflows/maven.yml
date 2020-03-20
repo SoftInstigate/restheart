@@ -36,7 +36,7 @@ jobs:
 
     - name: Build and test
       run: |
-        mvn -B -e clean deploy -Pdeploy
+        mvn -B clean deploy -Pdeploy -s settings.xml
       env:
         OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
         OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
