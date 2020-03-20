@@ -28,7 +28,9 @@ jobs:
         java-version: 11
 
     - name: Import private key
-      run: echo -n $GPG_PRIVATE_KEY | gpg --pinentry-mode=loopback --batch --yes --fast-import
+      run: |
+        printf "%s" "$GPG_PRIVATE_KEY" > private.key
+        gpg --pinentry-mode=loopback --batch --yes --fast-import private.key
       env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
