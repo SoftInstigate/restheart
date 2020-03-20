@@ -79,6 +79,10 @@
             <artifactId>compiler</artifactId>
             <type>jar</type>
         </dependency>
+        <dependency>
+            <groupId>io.github.classgraph</groupId>
+            <artifactId>classgraph</artifactId>
+        </dependency>
         <!-- BEGIN Test dependencies -->
         <dependency>
             <groupId>junit</groupId>

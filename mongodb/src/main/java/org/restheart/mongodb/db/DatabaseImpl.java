@@ -74,7 +74,7 @@ public class DatabaseImpl implements Database {
      *
      */
     public DatabaseImpl() {
-        client = MongoDBClientSingleton.getInstance().getClient();
+        client = MongoClientSingleton.getInstance().getClient();
         this.collectionDAO = new CollectionDAO(client);
         this.indexDAO = new IndexDAO(client);
     }

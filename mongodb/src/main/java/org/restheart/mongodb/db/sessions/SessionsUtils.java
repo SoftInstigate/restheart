@@ -28,7 +28,7 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import static java.util.Collections.singletonList;
 import java.util.List;
-import org.restheart.mongodb.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ public class SessionsUtils {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(SessionsUtils.class);
 
-    private static final MongoClient MCLIENT = MongoDBClientSingleton
+    private static final MongoClient MCLIENT = MongoClientSingleton
             .getInstance().getClient();
 
     private static final MongoClientDelegate DELEGATE;

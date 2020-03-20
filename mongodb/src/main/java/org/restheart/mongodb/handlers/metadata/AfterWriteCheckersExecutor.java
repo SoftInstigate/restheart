@@ -29,7 +29,7 @@ import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.DAOUtils;
-import org.restheart.mongodb.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.metadata.CheckerMetadata;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.mongodb.Checker;
@@ -60,7 +60,7 @@ public class AfterWriteCheckersExecutor extends BeforeWriteCheckersExecutor {
                 && !applyGlobalCheckers(exchange))) {
             // restore old data
 
-            MongoClient client = MongoDBClientSingleton
+            MongoClient client = MongoClientSingleton
                     .getInstance()
                     .getClient();
 

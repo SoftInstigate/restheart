@@ -59,7 +59,7 @@ public class DocumentDAO implements DocumentRepository {
      *
      */
     public DocumentDAO() {
-        client = MongoDBClientSingleton.getInstance().getClient();
+        client = MongoClientSingleton.getInstance().getClient();
     }
 
     /**

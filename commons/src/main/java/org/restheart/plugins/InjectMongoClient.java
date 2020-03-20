@@ -26,6 +26,8 @@ import java.lang.annotation.Target;
  * Plugin annotation that sets a method to get the initialized MongoClient from
  * mongo service. The method is only invoked if the mongo service is enabled.
  *
+ * Plugins in package org.restheart.plugins.mongodb can also use
+ * MongoDBClientSingleton.getInstance().getClient()
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */

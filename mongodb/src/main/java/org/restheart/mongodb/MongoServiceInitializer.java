@@ -18,16 +18,15 @@
 package org.restheart.mongodb;
 
 import java.util.Map;
-import static org.fusesource.jansi.Ansi.Color.MAGENTA;
-import static org.fusesource.jansi.Ansi.ansi;
-import org.restheart.ConfigurationException;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.PLUGINS_ARGS_KEY;
-import org.restheart.mongodb.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
 import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(name = "mongoInitializer",
-        description = "",
+        description = "executes mongo service init tasks",
         initPoint = InitPoint.BEFORE_STARTUP,
         priority = -10)
 public class MongoServiceInitializer implements Initializer {
@@ -53,7 +52,6 @@ public class MongoServiceInitializer implements Initializer {
         this.mongoSrvEnabled = isMongoEnabled(confArgs);
     }
 
-
     @Override
     public void init() {
         if (!this.mongoSrvEnabled) {
@@ -62,34 +60,21 @@ public class MongoServiceInitializer implements Initializer {
 
         // initialize LocalCachesSingleton
         LocalCachesSingleton.init(MongoServiceConfiguration.get());
-
-        // initialize MongoDBClientSingleton
-        try {
-            MongoDBClientSingleton.init(MongoServiceConfiguration.get().getMongoUri());
-
-            LOGGER.info("Connecting to MongoDB...");
-
-            // force connection to MongoDB
-            var mclient = MongoDBClientSingleton.getInstance();
-
-            LOGGER.info("MongoDB version {}",
-                    ansi()
-                            .fg(MAGENTA)
-                            .a(mclient.getServerVersion())
-                            .reset()
-                            .toString());
-
-            if (mclient.isReplicaSet()) {
-                LOGGER.info("MongoDB is a replica set");
-            } else {
-                LOGGER.warn("MongoDB is a standalone instance, use a replica set in production");
-            }
-
-        } catch (Throwable t) {
-            throw new ConfigurationException("\"Error connecting to MongoDB.");
-        }
     }
-    
+
+    @InjectPluginsRegistry
+    public void injectMongoClient(PluginsRegistry pluginsRegistry) {
+        if (!this.mongoSrvEnabled) {
+            return;
+        }
+        
+        MongoClientSingleton.init(MongoServiceConfiguration.get().getMongoUri(),
+                pluginsRegistry);
+        
+        // force first connection to MongoDb
+        MongoClientSingleton.getInstance();
+    }
+
     private boolean isMongoEnabled(Map<String, Object> confArgs) {
         if (confArgs.get(PLUGINS_ARGS_KEY) != null
                 && confArgs.get(PLUGINS_ARGS_KEY) instanceof Map) {

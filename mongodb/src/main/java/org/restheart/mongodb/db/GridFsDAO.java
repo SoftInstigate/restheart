@@ -63,7 +63,7 @@ public class GridFsDAO implements GridFsRepository {
      *
      */
     public GridFsDAO() {
-        client = MongoDBClientSingleton.getInstance().getClient();
+        client = MongoClientSingleton.getInstance().getClient();
     }
 
     /**

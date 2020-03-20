@@ -125,6 +125,11 @@
             <artifactId>restheart-mongodb</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-security</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- END Test dependencies -->
     </dependencies>
 
