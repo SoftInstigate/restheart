@@ -14,7 +14,7 @@ import org.junit.Test;
 import static org.restheart.mongodb.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoClientSingleton;
 import static org.restheart.test.integration.AbstactIT.MONGO_URI;
 import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 
@@ -39,7 +39,7 @@ public class SkipTimeTest {
      */
     @BeforeClass
     public static void setUpClass() throws Exception {
-        MongoDBClientSingleton.init(MONGO_URI);
+        MongoClientSingleton.init(MONGO_URI, null);
     }
 
     /**

@@ -515,6 +515,9 @@ public class Bootstrapper {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
+        // force instantiation of all plugins singletons
+        PluginsRegistryImpl.getInstance().instantiateAll();
+        
         // run pre startup initializers
         PluginsRegistryImpl.getInstance()
                 .getInitializers()

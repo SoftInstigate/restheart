@@ -83,6 +83,24 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private PluginsRegistryImpl() {
     }
+    
+    /**
+     * force plugin objects instantiation
+     */
+    public void instantiateAll() {
+        getAuthMechanisms();
+        getAuthorizers();
+        getTokenManager();
+        getAuthenticators();
+        
+        getInitializers();
+        getInterceptors();
+        getServices();
+        
+        getTransformers();
+        getCheckers();
+        getHooks();
+    }
 
     /**
      * @return the authMechanisms

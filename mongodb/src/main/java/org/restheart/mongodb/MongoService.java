@@ -31,7 +31,7 @@ import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
-import org.restheart.mongodb.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.handlers.CORSHandler;
 import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
@@ -70,7 +70,7 @@ public class MongoService implements Service {
     private final boolean mongoDbInitialized;
 
     public MongoService() {
-        if (!MongoDBClientSingleton.isInitialized()) {
+        if (!MongoClientSingleton.isInitialized()) {
             LOGGER.error("Service mongo is not initialized. "
                     + "Make sure that mongoInitializer is enabled "
                     + "and executed successfully");

@@ -34,7 +34,7 @@ import org.bson.codecs.EncoderContext;
 import org.bson.codecs.UuidCodec;
 import org.restheart.handlers.exchange.ClientSessionImpl;
 import static org.restheart.handlers.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
-import org.restheart.mongodb.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +68,7 @@ public class ClientSessionFactory {
     /**
      *
      */
-    protected MongoClient mClient = MongoDBClientSingleton
+    protected MongoClient mClient = MongoClientSingleton
             .getInstance()
             .getClient();
 

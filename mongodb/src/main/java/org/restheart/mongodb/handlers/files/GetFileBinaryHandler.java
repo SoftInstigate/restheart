@@ -29,7 +29,7 @@ import org.bson.types.ObjectId;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.mongodb.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -96,8 +96,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         LOGGER.trace("GET " + exchange.getRequestURL());
         final String bucket = extractBucketName(request.getCollectionName());
 
-        GridFSBucket gridFSBucket = GridFSBuckets.create(
-                MongoDBClientSingleton.getInstance().getClient()
+        GridFSBucket gridFSBucket = GridFSBuckets.create(MongoClientSingleton.getInstance().getClient()
                         .getDatabase(request.getDBName()),
                 bucket);
 

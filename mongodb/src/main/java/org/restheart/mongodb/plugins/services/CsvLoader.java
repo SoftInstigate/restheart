@@ -37,7 +37,7 @@ import org.bson.json.JsonParseException;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.RequestContext;
-import org.restheart.mongodb.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ChannelReader;
 import org.restheart.mongodb.utils.JsonUtils;
@@ -150,7 +150,7 @@ public class CsvLoader implements Service {
                                 List<BsonDocument> documents = parseCsv(exchange, params, content);
 
                                 if (documents != null && documents.size() > 0) {
-                                    MongoCollection<BsonDocument> mcoll = MongoDBClientSingleton.getInstance().getClient()
+                                    MongoCollection<BsonDocument> mcoll = MongoClientSingleton.getInstance().getClient()
                                             .getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
 
                                     if (params.update && !params.upsert) {

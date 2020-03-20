@@ -28,7 +28,7 @@ import org.bson.BsonValue;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.mongodb.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.db.sessions.SessionOptions;
 import org.restheart.mongodb.db.sessions.Sid;
 import org.restheart.mongodb.representation.RepUtils;
@@ -49,7 +49,7 @@ public class PostSessionHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(PostSessionHandler.class);
 
-    private static MongoClient MCLIENT = MongoDBClientSingleton
+    private static MongoClient MCLIENT = MongoClientSingleton
             .getInstance().getClient();
 
     /**
@@ -98,7 +98,7 @@ public class PostSessionHandler extends PipelinedHandler {
                     mce.getMessage());
 
             // TODO check if server supports sessions
-            if (!MongoDBClientSingleton.getInstance().isReplicaSet()) {
+            if (!MongoClientSingleton.getInstance().isReplicaSet()) {
                 ResponseHelper.endExchangeWithMessage(exchange,
                         HttpStatus.SC_BAD_GATEWAY,
                         mce.getMessage());
