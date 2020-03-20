@@ -9,7 +9,7 @@
         </server>
         <server>
             <id>ossrh</id>
-            <username>softinstigate</username>
+            <username>${OSSRH_USERNAME}</username>
             <password>${OSSRH_PASSWORD}</password>
         </server>
         <server>
