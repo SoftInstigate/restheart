@@ -5,56 +5,37 @@ version: "3"
 # See: https://docs.docker.com/engine/userguide/networking/dockernetworks/
 # See: https://docs.docker.com/engine/reference/commandline/network_create/
 networks:
-   backend:
+   restheart-backend:
 
 ### Create a permanent, named data volume
 # This makes much easier to identify where the mongodb data is stored on host
 # See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
 volumes:
-   restheart-db:
+   restheart-mongo-volume:
 
 services:
-   restheart-security:
-      image: softinstigate/restheart-security
-      container_name: restheart-security
-      depends_on:
-         - restheart
-      networks:
-         - backend
-      ports:
-         - "8080:8080"
-      # uncomment to overwrite the configuration files
-      # volumes:
-      #    - ./etc/restheart-security.yml:/opt/restheart/etc/restheart-security.yml:ro
-      #    - ./etc/default-security.properties:/opt/restheart/etc/default-security.properties:ro
-      #    - ./etc/users.yml:/opt/restheart/etc/users.yml:ro
-      #    - ./etc/acl.yml:/opt/restheart/etc/acl.yml:ro
+    restheart:
+        build: ./core
+        image: softinstigate/restheart
+        container_name: restheart
+        environment:
+            MONGO_URI: mongodb://restheart:R3ste4rt!@mongodb
+        command: ["--envFile", "/opt/restheart/etc/default.properties"]
+        depends_on:
+            - mongodb
+        networks:
+            - restheart-backend
+        ports:
+            - "8080:8080"
 
-   restheart:
-      image: softinstigate/restheart
-      container_name: restheart
-      command: ["--envFile", "etc/default.properties"]
-      environment:
-         MONGO_URI: mongodb://restheart:R3ste4rt!@mongodb
-      depends_on:
-         - mongodb
-      networks:
-         - backend
-      # uncomment to overwrite the configuration files
-      # volumes:
-      #    - ./etc/restheart.yml:/opt/restheart/etc/restheart.yml:ro
-      #    - ./etc/default.properties:/opt/restheart/etc/default.properties:ro
-
-   mongodb:
-      # TODO update this!
-      image: mongo:4.0
-      container_name: restheart-mongo
-      environment:
-         # must match with MONGO_URI env variable of restheart service
-         MONGO_INITDB_ROOT_USERNAME: restheart
-         MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
-      command: --bind_ip_all --auth
-      volumes:
-         - restheart-db:/data/db
-      networks:
-         - backend
+    mongodb:
+        image: mongo:4.2
+        container_name: restheart-mongo
+        command: --bind_ip_all --auth
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: restheart
+            MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
+        volumes:
+            - restheart-mongo-volume:/data/db
+        networks:
+            - restheart-backend
