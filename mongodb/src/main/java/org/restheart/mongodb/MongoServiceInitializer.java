@@ -71,7 +71,7 @@ public class MongoServiceInitializer implements Initializer {
         MongoClientSingleton.init(MongoServiceConfiguration.get().getMongoUri(),
                 pluginsRegistry);
         
-        // force first connection to MongoDb
+        // force first connection to MongoDB
         MongoClientSingleton.getInstance();
     }
 

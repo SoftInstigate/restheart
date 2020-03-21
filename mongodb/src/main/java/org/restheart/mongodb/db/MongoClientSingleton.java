@@ -139,7 +139,7 @@ public class MongoClientSingleton {
             if (_version != null && _version instanceof String) {
                 serverVersion = (String) _version;
             } else {
-                LOGGER.warn("Cannot get the MongoDb version.");
+                LOGGER.warn("Cannot get the MongoDB version.");
                 serverVersion = "?";
             }
 
@@ -151,8 +151,8 @@ public class MongoClientSingleton {
                                 new BsonInt32(1)));
                 replicaSet = true;
             } catch (MongoCommandException mce) {
-                if (mce.getCode() == 13) { // Unauthorized 
-                    LOGGER.warn("Unable to check if MongoDb is configured as replica set. "
+                if (mce.getCode() == 13) { // Unauthorized
+                    LOGGER.warn("Unable to check if MongoDB is configured as replica set. "
                             + "The MongoDB user cannot execute replSetGetStatus() command. "
                             + "Tip: add to the MongoDB user the built-in role 'clusterMonitor' that provides this action.");
                 }
@@ -170,12 +170,12 @@ public class MongoClientSingleton {
                             .toString());
 
             if (isReplicaSet()) {
-                LOGGER.info("MongoDB is a replica set");
+                LOGGER.info("MongoDB is a replica set.");
             } else {
-                LOGGER.warn("MongoDB is a standalone instance, use a replica set in production");
+                LOGGER.warn("MongoDB is a standalone instance.");
             }
         } catch (Throwable t) {
-            LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDb. ").reset().toString()
+            LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDB. ").reset().toString()
                     + "Check that MongoDB is running and "
                     + "the configuration property 'mongo-uri' "
                     + "is set properly");
@@ -185,12 +185,12 @@ public class MongoClientSingleton {
     }
 
     private <P extends Plugin> void injectMongoClient(Set<PluginRecord<P>> plugins) {
-        var mongoClient = MongoClientSingleton.getInstance().getClient();
+        var client = MongoClientSingleton.getInstance().getClient();
 
         plugins.stream()
                 .forEach(p -> {
                     try {
-                        injectMongoClient(p, mongoClient);
+                        injectMongoClient(p, client);
                     } catch (Throwable t) {
 
                     }
