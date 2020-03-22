@@ -4,7 +4,7 @@
 
     <groupId>org.restheart</groupId>
     <artifactId>restheart-parent</artifactId>
-    <version>5.0.0-RC2-SNAPSHOT</version>
+    <version>5.0.0-RC1</version>
     <packaging>pom</packaging>
     <description>RESTHeart - The REST API microservice for MongoDB.</description>
     <url>http://www.restheart.org</url>
