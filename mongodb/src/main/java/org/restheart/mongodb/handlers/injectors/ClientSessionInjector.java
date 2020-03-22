@@ -55,19 +55,31 @@ public class ClientSessionInjector extends PipelinedHandler {
     
     /**
      *
-     * @param next
+     * @return 
      */
-    public static void build(PipelinedHandler next) {
+    public static ClientSessionInjector build() {
         if (ClientSessionInjectorHandlerHolder.INSTANCE != null) {
             throw new IllegalStateException("Singleton already initialized");
         }
         
         ClientSessionInjectorHandlerHolder.INSTANCE 
-                = new ClientSessionInjector(next);
+                = new ClientSessionInjector();
+        
+        return ClientSessionInjectorHandlerHolder.INSTANCE;
     }
     
     private ClientSessionFactory clientSessionFactory 
             = ClientSessionFactory.getInstance();
+    
+    /**
+     * Creates a new instance of DbPropsInjectorHandler
+     *
+     * @param next
+     */
+    private ClientSessionInjector() {
+        this(null);
+    }
+    
     
     /**
      * Creates a new instance of DbPropsInjectorHandler

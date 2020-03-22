@@ -892,9 +892,6 @@ public class Bootstrapper {
         plugServices(getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
 
-        // force initialization of interceptors
-        PluginsRegistryImpl.getInstance().getInterceptors();
-
         plugProxies(configuration, getRootPathHandler(),
                 authMechanisms, authorizers, tokenManager);
 
@@ -1021,12 +1018,10 @@ public class Bootstrapper {
                     new BsonRequestServiceInitializer(),
                     new CORSHandler(),
                     new XPoweredByInjector(),
-                    //new RequestContentInjector(ON_REQUIRES_CONTENT_BEFORE_AUTH),
                     new RequestContentInjector(ALWAYS),
                     new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
                     new QueryStringRebuilder(),
                     securityHandler,
-                    //new RequestContentInjector(ON_REQUIRES_CONTENT_AFTER_AUTH),
                     new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
                     new QueryStringRebuilder(),
                     new ConduitInjector(),

@@ -55,7 +55,7 @@ public class RequestContentInjector extends PipelinedHandler {
 
     private final Policy policy;
 
-    private HttpHandler bufferingHandler = null; 
+    private HttpHandler bufferingHandler = null;
 
     /**
      * @param next
@@ -81,7 +81,7 @@ public class RequestContentInjector extends PipelinedHandler {
         super.setNext(next);
         this.bufferingHandler = new RequestBufferingHandler(next, MAX_BUFFERS);
     }
-    
+
     /**
      *
      * @param exchange
@@ -93,13 +93,13 @@ public class RequestContentInjector extends PipelinedHandler {
             throw new IllegalStateException("Cannot invoke handleRequest next "
                     + "if not set via setNext()");
         }
-        
+
         if (shallInject(exchange, this.policy)) {
 
             LOGGER.trace("Request content available for Request.getContent()");
 
             markInjected(exchange);
-            
+
             bufferingHandler.handleRequest(exchange);
         } else {
             LOGGER.trace("Request content is not available for Request.getContent()");
@@ -115,7 +115,7 @@ public class RequestContentInjector extends PipelinedHandler {
                 && isContentRequired(exchange, InterceptPoint.REQUEST_BEFORE_AUTH)));
     }
 
-    private boolean isContentRequired(HttpServerExchange exchange, 
+    private boolean isContentRequired(HttpServerExchange exchange,
             InterceptPoint interceptPoint) {
         return PluginsRegistryImpl
                 .getInstance()
@@ -126,18 +126,18 @@ public class RequestContentInjector extends PipelinedHandler {
                 .filter(ri -> ri.resolve(exchange))
                 .anyMatch(ri -> requiresContent(ri));
     }
-    
+
     private static final AttachmentKey<Boolean> INJECTED_KEY
             = AttachmentKey.create(Boolean.class);
-    
+
     private void markInjected(HttpServerExchange exchange) {
         exchange
                 .putAttachment(INJECTED_KEY, true);
     }
-    
+
     private boolean isAlreadyInjected(HttpServerExchange exchange) {
         return exchange.getAttachment(INJECTED_KEY) != null
                 && exchange.getAttachment(INJECTED_KEY);
     }
-  
+
 }

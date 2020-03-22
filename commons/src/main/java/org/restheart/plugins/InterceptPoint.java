@@ -25,17 +25,17 @@ public enum InterceptPoint {
     /**
      * intercept the request before authentication occurs
      */
-    REQUEST_BEFORE_AUTH, 
+    REQUEST_BEFORE_AUTH,
     
     /**
      * intercept the request after authentication occurs 
      */
-    REQUEST_AFTER_AUTH, 
-    
+    REQUEST_AFTER_AUTH,
+        
     /**
      * intercept the response and executes blocking the response
      */
-    RESPONSE, 
+    RESPONSE,
     
     /**
      * intercept the response and executes asynchronously with the response
