@@ -18,8 +18,10 @@
 package org.restheart.plugins;
 
 import io.undertow.predicate.Predicate;
+import io.undertow.server.handlers.PathHandler;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import org.restheart.Bootstrapper;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.plugins.mongodb.GlobalChecker;
@@ -291,5 +293,10 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public synchronized Set<GlobalHook> getGlobalHooks() {
         return globalHooks;
+    }
+
+    @Override
+    public PathHandler getRootPathHandler() {
+       return Bootstrapper.getRootPathHandler();
     }
 }

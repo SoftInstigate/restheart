@@ -18,6 +18,7 @@
 package org.restheart.plugins;
 
 import io.undertow.predicate.Predicate;
+import io.undertow.server.handlers.PathHandler;
 import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.mongodb.Checker;
@@ -40,7 +41,7 @@ public interface PluginsRegistry {
      * @return the authMechanisms
      */
     public Set<PluginRecord<AuthMechanism>> getAuthMechanisms();
-    
+
     /**
      * @return the authenticators
      */
@@ -54,7 +55,6 @@ public interface PluginsRegistry {
      */
     public PluginRecord<Authenticator> getAuthenticator(String name) throws
             ConfigurationException;
-
 
     /**
      * @return the authenticators
@@ -70,14 +70,14 @@ public interface PluginsRegistry {
      * @return the initializers
      */
     public Set<PluginRecord<Initializer>> getInitializers();
-    
+
     /**
      * @return the services
      */
     public Set<PluginRecord<Service>> getServices();
-    
+
     public Set<PluginRecord<Interceptor>> getInterceptors();
-    
+
     /**
      * global security predicates must all resolve to true to allow the request
      *
@@ -85,31 +85,31 @@ public interface PluginsRegistry {
      * security predicates to apply to all requests
      */
     public Set<Predicate> getGlobalSecurityPredicates();
-    
+
     /**
      *
      * @return the globalCheckers
      */
     public Set<PluginRecord<Checker>> getCheckers();
-    
+
     /**
      *
      * @return the transformers
      */
     public Set<PluginRecord<Transformer>> getTransformers();
-    
+
     /**
      *
      * @return the hooks
      */
     public Set<PluginRecord<Hook>> getHooks();
-    
+
     /**
      *
      * @return the globalCheckers
      */
     public Set<GlobalChecker> getGlobalCheckers();
-    
+
     /**
      * @return the globalTransformers
      */
@@ -119,4 +119,11 @@ public interface PluginsRegistry {
      * @return the globalHooks
      */
     public Set<GlobalHook> getGlobalHooks();
+
+    /**
+     * Allows to programmatically add handlers to the root path handler
+     * 
+     * @return the root PathHandler of the pipeline
+     */
+    public PathHandler getRootPathHandler();
 }

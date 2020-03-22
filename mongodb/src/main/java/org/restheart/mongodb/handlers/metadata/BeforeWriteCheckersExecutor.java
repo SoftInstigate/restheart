@@ -33,6 +33,7 @@ import org.restheart.mongodb.plugins.checkers.CheckersUtils;
 import org.restheart.mongodb.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
@@ -54,7 +55,8 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "beforeWriteCheckerExecutor",
-        description = "executes before-write checkers")
+        description = "executes before-write checkers",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 @SuppressWarnings("deprecation")
 public class BeforeWriteCheckersExecutor extends PipelinedHandler
         implements Interceptor {

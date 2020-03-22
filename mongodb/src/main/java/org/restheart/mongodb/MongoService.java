@@ -21,13 +21,11 @@ import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.pathTemplate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
-import org.bson.codecs.ByteArrayCodec;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.ConfigurationException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
-import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
@@ -37,11 +35,11 @@ import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.AccountInjector;
 import org.restheart.mongodb.handlers.injectors.BodyInjector;
+import org.restheart.mongodb.handlers.injectors.BsonRequestInitializer;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.CollectionPropsInjector;
 import org.restheart.mongodb.handlers.injectors.DbPropsInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
-import org.restheart.mongodb.handlers.injectors.BsonRequestInitializer;
 import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.RegisterPlugin;
@@ -94,8 +92,8 @@ public class MongoService implements Service {
         if (mongoDbInitialized) {
             this.handlerPipeline.handleRequest(exchange);
         } else {
-           LOGGER.error("Service mongo is unavailabe");
-           ByteArrayResponse.wrap(exchange).setInError(true);
+            LOGGER.error("Service mongo is unavailabe");
+            ByteArrayResponse.wrap(exchange).setInError(true);
             ByteArrayResponse.wrap(exchange).setStatusCode(500);
         }
     }
@@ -108,20 +106,19 @@ public class MongoService implements Service {
     private PipelinedHandler getBasePipeline()
             throws ConfigurationException {
         var rootHandler = path();
-
-        ClientSessionInjector.build(
-                PipelinedHandler.pipe(
-                        new DbPropsInjector(),
-                        new CollectionPropsInjector(),
-                        new ETagPolicyInjector(),
-                        RequestDispatcherHandler.getInstance()));
-
-        PipelinedHandler corePipeline = PipelinedHandler.pipe(
+        
+        var basePipeline = PipelinedHandler.pipe(
+                new MetricsInstrumentationHandler(),
+                new CORSHandler(),
+                new OptionsHandler(),
+                new BodyInjector(),
                 new AccountInjector(),
-                ClientSessionInjector.getInstance());
-
-        PathTemplateHandler pathsTemplates = pathTemplate(false);
-
+                ClientSessionInjector.build(),
+                new DbPropsInjector(),
+                new CollectionPropsInjector(),
+                new ETagPolicyInjector(),
+                RequestDispatcherHandler.getInstance());
+        
         // check that all mounts are either all paths or all path templates
         boolean allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
                 .stream()
@@ -133,12 +130,7 @@ public class MongoService implements Service {
                 .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
                 .allMatch(url -> !isPathTemplate(url));
 
-        final PipelinedHandler basePipeline = PipelinedHandler.pipe(
-                new MetricsInstrumentationHandler(),
-                new CORSHandler(),
-                new OptionsHandler(),
-                new BodyInjector(),
-                corePipeline);
+        PathTemplateHandler pathsTemplates = pathTemplate(false);
 
         if (!allPathTemplates && !allPaths) {
             LOGGER.error("No mongo resource mounted! Check your mongo-mounts."
