@@ -36,26 +36,29 @@ import org.restheart.plugins.security.Authorizer;
         enabledByDefault = false)
 public class FullAuthorizer implements Authorizer {
 
-    private final boolean authenticationRequired;
+    private Boolean authenticationRequired;
 
     /**
      * this Authorizer allows any operation to any user
      *
      * @param authenticationRequired
      */
-    public FullAuthorizer(boolean authenticationRequired) {
+    public FullAuthorizer(Boolean authenticationRequired) {
         this.authenticationRequired = authenticationRequired;
     }
-    
+
     /**
      * this Authorizer allows any operation to any user
      *
-     * @param confArgs
      * @throws org.restheart.ConfigurationException
      */
+    public FullAuthorizer() throws ConfigurationException {
+        this(null);
+    }
+
     @InjectConfiguration
-    public FullAuthorizer(Map<String, Object> confArgs) throws ConfigurationException {
-        this((boolean) argValue(confArgs, "authentication-required"));
+    public void init(Map<String, Object> confArgs) {
+        this.authenticationRequired = argValue(confArgs, "authentication-required");
     }
 
     @Override
@@ -66,6 +69,8 @@ public class FullAuthorizer implements Authorizer {
     @Override
     public boolean isAuthenticationRequired(HttpServerExchange exchange) {
         return !ByteArrayRequest.wrap(exchange).isOptions()
-                && authenticationRequired;
+                && (authenticationRequired == null
+                        ? true
+                        : authenticationRequired);
     }
 }

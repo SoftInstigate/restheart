@@ -43,10 +43,10 @@ public class MongoServiceInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(MongoService.class);
 
-    private final boolean mongoSrvEnabled;
+    private boolean mongoSrvEnabled = false;
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
-    public MongoServiceInitializer(Map<String, Object> confArgs) {
+    public void init(Map<String, Object> confArgs) {
         MongoServiceConfiguration.init(confArgs);
 
         this.mongoSrvEnabled = isMongoEnabled(confArgs);
@@ -67,11 +67,11 @@ public class MongoServiceInitializer implements Initializer {
         if (!this.mongoSrvEnabled) {
             return;
         }
-        
+
         MongoClientSingleton.init(MongoServiceConfiguration.get().getMongoUri(),
                 pluginsRegistry);
-        
-        // force first connection to MongoDB
+
+        // force first connection to MongoDb
         MongoClientSingleton.getInstance();
     }
 

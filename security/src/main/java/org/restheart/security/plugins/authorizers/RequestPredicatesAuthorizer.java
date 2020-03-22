@@ -53,29 +53,12 @@ public class RequestPredicatesAuthorizer
 
     private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
 
-    /**
-     * @param confArgs
-     * @throws java.io.FileNotFoundException
-     * @throws ConfigurationException
-     */
     @InjectConfiguration
-    public RequestPredicatesAuthorizer(Map<String, Object> confArgs)
-            throws FileNotFoundException, ConfigurationException {
-        this("requestPredicatesAuthorizer", confArgs);
-    }
-            
-    /**
-     * @param name
-     * @param confArgs
-     * @throws java.io.FileNotFoundException
-     * @throws ConfigurationException
-     */
-    public RequestPredicatesAuthorizer(String name,
-            Map<String, Object> confArgs)
+    public void init(Map<String, Object> confArgs)
             throws FileNotFoundException, ConfigurationException {
         init(confArgs, "permissions");
     }
-    
+
     @Override
     public Consumer<? super Map<String, Object>> consumeConfiguration() {
         return u -> {

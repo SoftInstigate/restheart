@@ -75,10 +75,11 @@ import org.slf4j.LoggerFactory;
         defaultURI = "/csv")
 public class CsvLoader implements Service {
 
-    private final PluginsRegistry pluginsRegistry;
+    private PluginsRegistry pluginsRegistry;
 
+    
     @InjectPluginsRegistry
-    public CsvLoader(PluginsRegistry pluginsRegistry) {
+    public void init(PluginsRegistry pluginsRegistry) {
         this.pluginsRegistry = pluginsRegistry;
     }
 

@@ -80,24 +80,25 @@ public class DigestAuthMechanism implements AuthMechanism {
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
-    @InjectConfiguration
-    @InjectPluginsRegistry
-    public DigestAuthMechanism(Map<String, Object> args, 
-            PluginsRegistry pluginsRegistry)
-            throws ConfigurationException {
-        this("digestAuthMechanism", args, pluginsRegistry);
+    public DigestAuthMechanism() throws ConfigurationException {
+        this("RESTHeart Realm",
+                "localhost",
+                "digestAuthMechanism",
+                null);
     }
 
-    private DigestAuthMechanism(final String mechanismName,
-            Map<String, Object> args,
-            PluginsRegistry pluginsRegistry) throws ConfigurationException {
-        this(argValue(args, "realm"),
-                argValue(args, "domain"),
-                mechanismName,
-                // the authenticator specified in auth mechanism configuration
-                pluginsRegistry
-                        .getAuthenticator(argValue(args, "authenticator"))
-                        .getInstance());
+    @InjectConfiguration
+    @InjectPluginsRegistry
+    public void init(final Map<String, Object> args,
+            PluginsRegistry pluginsRegistry)
+            throws ConfigurationException {
+        this.realmName = argValue(args, "realm");
+        this.domain = argValue(args, "domain");
+
+        // the authenticator specified in auth mechanism configuration
+        this.identityManager = pluginsRegistry
+                .getAuthenticator(argValue(args, "authenticator"))
+                .getInstance();
     }
 
     @Override
@@ -118,7 +119,7 @@ public class DigestAuthMechanism implements AuthMechanism {
     private static final byte COLON = ':';
 
     private final String mechanismName;
-    private final IdentityManager identityManager;
+    private IdentityManager identityManager;
 
     private static final Set<DigestAuthorizationToken> MANDATORY_REQUEST_TOKENS;
 
@@ -140,8 +141,8 @@ public class DigestAuthMechanism implements AuthMechanism {
     private final List<DigestAlgorithm> supportedAlgorithms;
     private final List<DigestQop> supportedQops;
     private final String qopString;
-    private final String realmName; // TODO - Will offer choice once backing store API/SPI is in.
-    private final String domain;
+    private String realmName; // TODO - Will offer choice once backing store API/SPI is in.
+    private String domain;
     private final NonceManager nonceManager;
 
     // Where do session keys fit? Do we just hang onto a session key or keep visiting the user store to check if the password

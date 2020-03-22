@@ -38,18 +38,13 @@ import org.restheart.utils.HttpStatus;
         defaultURI = "/ping")
 public class PingService implements Service {
 
-    private final String msg;
+    private String msg = null;
 
-    /**
-     *
-     * @param args
-     * @throws org.restheart.ConfigurationException
-     */
     @InjectConfiguration
-    public PingService(Map<String, Object> args) throws ConfigurationException {
+    public void init(Map<String, Object> args) throws ConfigurationException {
         this.msg = argValue(args, "msg");
     }
-    
+
     /**
      *
      * @param exchange

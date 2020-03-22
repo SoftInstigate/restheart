@@ -66,8 +66,6 @@ public class TokenBasicAuthMechanism
     private static final int PREFIX_LENGTH = BASIC_PREFIX.length();
     private static final String COLON = ":";
 
-    private final String mechanismName;
-
     private IdentityManager identityManager = null;
 
     private static void clear(final char[] array) {
@@ -78,39 +76,18 @@ public class TokenBasicAuthMechanism
 
     /**
      *
-     * @param args
-     * @param pluginsRegistry
      * @throws org.restheart.ConfigurationException
      */
-    @InjectConfiguration
-    @InjectPluginsRegistry
-    public TokenBasicAuthMechanism(final Map<String, Object> args,
-            PluginsRegistry pluginsRegistry)
+    public TokenBasicAuthMechanism()
             throws ConfigurationException {
-        this("tokenBasicAuthMechanism", args, pluginsRegistry);
+        super("RESTHeart Realm", "tokenBasicAuthMechanism", true);
     }
 
-    /**
-     *
-     * @param mechanismName
-     * @param args
-     * @param pluginsRegistry
-     * @throws org.restheart.ConfigurationException
-     */
-    public TokenBasicAuthMechanism(final String mechanismName,
-            final Map<String, Object> args,
+    @InjectConfiguration
+    @InjectPluginsRegistry
+    public void init(final Map<String, Object> args,
             PluginsRegistry pluginsRegistry)
             throws ConfigurationException {
-
-        super(argValue(args, "realm"),
-                mechanismName,
-                true,
-                pluginsRegistry.getTokenManager() != null
-                ? pluginsRegistry.getTokenManager().getInstance()
-                : null);
-
-        this.mechanismName = mechanismName;
-
         this.identityManager = pluginsRegistry.getTokenManager() != null
                 ? pluginsRegistry.getTokenManager().getInstance()
                 : null;
@@ -129,8 +106,7 @@ public class TokenBasicAuthMechanism
                     try {
                         ByteBuffer decode = FlexBase64.decode(base64Challenge);
                         plainChallenge = new String(decode.array(), decode.arrayOffset(), decode.limit(), UTF_8);
-                    }
-                    catch (IOException e) {
+                    } catch (IOException e) {
                     }
                     int colonPos;
                     if (plainChallenge != null && (colonPos = plainChallenge.indexOf(COLON)) > -1) {
@@ -149,8 +125,7 @@ public class TokenBasicAuthMechanism
                                 result = AuthenticationMechanismOutcome.NOT_ATTEMPTED;
                             }
                             return result;
-                        }
-                        finally {
+                        } finally {
                             clear(password);
                         }
                     }
@@ -179,6 +154,6 @@ public class TokenBasicAuthMechanism
      */
     @Override
     public String getMechanismName() {
-        return mechanismName;
+        return "tokenBasicAuthMechanism";
     }
 }

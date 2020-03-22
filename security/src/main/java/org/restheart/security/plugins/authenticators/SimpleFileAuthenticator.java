@@ -41,6 +41,7 @@ import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.utils.LambdaUtils;
+
 /**
  *
  * Authenticator with permission defined in a yml configuration file
@@ -59,25 +60,8 @@ public class SimpleFileAuthenticator
 
     private final Map<String, PwdCredentialAccount> accounts = new HashMap<>();
 
-    /**
-     *
-     * @param confArgs
-     * @throws java.io.FileNotFoundException
-     * @throws org.restheart.ConfigurationException
-     */
     @InjectConfiguration
-    public SimpleFileAuthenticator(Map<String, Object> confArgs)
-            throws FileNotFoundException, ConfigurationException {
-        this("simpleFileAuthenticator", confArgs);
-    }
-    
-    /**
-     *
-     * @param name
-     * @param confArgs
-     * @throws java.io.FileNotFoundException
-     */
-    public SimpleFileAuthenticator(String name, Map<String, Object> confArgs)
+    public void init(Map<String, Object> confArgs)
             throws FileNotFoundException, ConfigurationException {
         init(confArgs, "users");
     }
