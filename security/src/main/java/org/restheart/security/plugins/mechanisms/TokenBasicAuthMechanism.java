@@ -36,7 +36,6 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import org.restheart.ConfigurationException;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;

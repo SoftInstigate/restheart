@@ -20,12 +20,10 @@
  */
 package org.restheart.security.plugins.mechanisms;
 
-import com.mongodb.connection.Cluster;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
@@ -68,7 +66,7 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
                 .getInstance());
     }
 
-    public void setIdentityManager(IdentityManager idm) {
+    private void setIdentityManager(IdentityManager idm) {
         try {
             var clazz = Class.forName("io.undertow.security.impl.BasicAuthenticationMechanism");
             var idmF = clazz.getDeclaredField("identityManager");
