@@ -54,7 +54,7 @@ abstract public class FileConfigurablePlugin implements ConfigurablePlugin {
      * @param arguments
      * @param type
      * @throws java.io.FileNotFoundException
-     * @throws org.restheart.security.ConfigurationException
+     * @throws org.restheart.ConfigurationException
      */
     @SuppressWarnings("unchecked")
     public void init(Map<String, Object> arguments, String type)

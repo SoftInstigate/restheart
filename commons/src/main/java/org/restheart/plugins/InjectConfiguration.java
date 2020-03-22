@@ -24,13 +24,13 @@ import java.lang.annotation.Target;
 import static org.restheart.plugins.ConfigurationScope.OWN;
 
 /**
- * Plugin annotation that sets a method (or constructor) to get the
- * configuration's properties as a Map<String, Object>
+ * Plugin annotation that sets a method to get the configuration's properties as
+ * a Map<String, Object>
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.CONSTRUCTOR, ElementType.METHOD})
+@Target(ElementType.METHOD)
 public @interface InjectConfiguration {
 
     /**

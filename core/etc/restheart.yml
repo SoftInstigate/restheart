@@ -168,10 +168,8 @@ use-embedded-keystore: true
 auth-mechanisms:
   tokenBasicAuthMechanism:
     enabled: true
-    realm: RESTHeart Realm
   basicAuthMechanism:
     enabled: true
-    realm: RESTHeart Realm
     authenticator: simpleFileAuthenticator
   digestAuthMechanism:
     enabled: true

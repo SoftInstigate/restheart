@@ -132,7 +132,7 @@ public class PluginsFactory {
     static Set<PluginRecord<Service>> services() {
         return createPlugins(Service.class, PLUGINS_CONFS);
     }
-    
+
     /**
      * creates the services
      */
@@ -140,7 +140,7 @@ public class PluginsFactory {
     static Set<PluginRecord<Transformer>> transformers() {
         return createPlugins(Transformer.class, PLUGINS_CONFS);
     }
-    
+
     /**
      * creates the services
      */
@@ -148,7 +148,7 @@ public class PluginsFactory {
     static Set<PluginRecord<Checker>> checkers() {
         return createPlugins(Checker.class, PLUGINS_CONFS);
     }
-    
+
     /**
      * creates the services
      */
@@ -254,7 +254,7 @@ public class PluginsFactory {
 
         return ret;
     }
-    
+
     private static Plugin instantiatePlugin(
             ClassInfo pluginClassInfo,
             String pluginType,
@@ -264,191 +264,54 @@ public class PluginsFactory {
             InstantiationException,
             IllegalAccessException,
             InvocationTargetException {
-        var cil = pluginClassInfo.getDeclaredConstructorInfo();
-
         final Plugin ret;
 
-        // check if a Constructor with @InjectConfiguration exists
-        var contructorWihtInjectConfiguration = cil.stream()
-                .filter(ci -> ci.hasAnnotation(InjectConfiguration.class.getName()))
-                .findFirst();
+        try {
+            ret = (Plugin) pluginClassInfo.loadClass(false)
+                    .getDeclaredConstructor()
+                    .newInstance();
 
-        // check if a Constructor with @InjectPluginsRegistry exists
-        var contructorWihtInjectPluginsRegistry = cil.stream()
-                .filter(ci -> ci.hasAnnotation(InjectPluginsRegistry.class.getName()))
-                .findFirst();
-
-        if (contructorWihtInjectConfiguration.isPresent()
-                && contructorWihtInjectPluginsRegistry.isPresent()) {
-            // check if it is the same constructor, otherwise error
-            var cc = contructorWihtInjectConfiguration.get();
-            var cpr = contructorWihtInjectPluginsRegistry.get();
-
-            if (!cc.equals(cpr)) {
-                LOGGER.error("{} {} defines two different constructors with "
-                        + "@InjectConfiguration and @InjectPluginsRegistry. "
-                        + "Define one constructor with both annotations "
-                        + "to fix this.",
-                        pluginType,
-                        pluginName);
-                throw new ConfigurationException("Invalid " 
-                        + pluginType 
-                        + " constructors for " 
-                        + pluginName);
-            }
-
-            var ai = cc.getAnnotationInfo(InjectConfiguration.class.getName());
-
-            // check configuration scope
-            var allConfScope = ai.getParameterValues().stream()
-                    .anyMatch(p -> "scope".equals(p.getName())
-                    && (ConfigurationScope.class.getName()
-                            + "." + ConfigurationScope.ALL.name()).equals(
-                            p.getValue().toString()));
-
-            var scopedConf = (Map) (allConfScope
-                    ? Bootstrapper.getConfiguration().toMap()
-                    : confs != null
-                            ? confs.get(pluginName)
-                            : null);
-
-            if (scopedConf == null) {
-                LOGGER.warn("{} {} defines constructor with @InjectConfiguration "
-                        + "but no configuration found for it",
-                        pluginType,
-                        pluginName);
-            }
-
-            // try to instanitate the constructor 
-            try {
-                ret = (Plugin) pluginClassInfo.loadClass(false)
-                        .getDeclaredConstructor(Map.class, 
-                                PluginsRegistry.class)
-                        .newInstance(scopedConf, PluginsRegistryImpl.getInstance());
-
-                invokeInjectConfigurationMethods(pluginName,
-                        pluginType,
-                        pluginClassInfo,
-                        ret,
-                        confs);
-
-                invokeInjectPluginsRegistryMethods(pluginName,
-                        pluginType,
-                        pluginClassInfo,
-                        ret);
-            } catch (NoSuchMethodException nme) {
-                throw new ConfigurationException(
-                        pluginType
-                        + " " + pluginName
-                        + " has an invalid constructor with @InjectConfiguration "
-                        + "and @InjectPluginsRegistry. Constructor signature "
-                        + "must be "
-                        + pluginClassInfo.getSimpleName()
-                        + "(Map<String, Object> configuration, "
-                        + "PluginsRegistry pluginsRegistry)");
-            }
-        } else if (contructorWihtInjectConfiguration.isPresent()) {
-            var ai = contructorWihtInjectConfiguration.get()
-                    .getAnnotationInfo(InjectConfiguration.class.getName());
-
-            // check configuration scope
-            var allConfScope = ai.getParameterValues().stream()
-                    .anyMatch(p -> "scope".equals(p.getName())
-                    && (ConfigurationScope.class.getName()
-                            + "." + ConfigurationScope.ALL.name()).equals(
-                            p.getValue().toString()));
-
-            var scopedConf = (Map) (allConfScope
-                    ? Bootstrapper.getConfiguration().toMap()
-                    : confs != null
-                            ? confs.get(pluginName)
-                            : null);
-
-            if (scopedConf == null) {
-                LOGGER.warn("{} {} defines constructor with @InjectConfiguration "
-                        + "but no configuration found for it",
-                        pluginType,
-                        pluginName);
-            }
-
-            // try to instanitate the constructor 
-            try {
-                ret = (Plugin) pluginClassInfo.loadClass(false)
-                        .getDeclaredConstructor(Map.class)
-                        .newInstance(scopedConf);
-
-                invokeInjectConfigurationMethods(pluginName,
-                        pluginType,
-                        pluginClassInfo,
-                        ret,
-                        confs);
-
-                invokeInjectPluginsRegistryMethods(pluginName,
-                        pluginType,
-                        pluginClassInfo,
-                        ret);
-            } catch (NoSuchMethodException nme) {
-                throw new ConfigurationException(
-                        pluginType
-                        + " " + pluginName
-                        + " has an invalid constructor with @InjectConfiguration. "
-                        + "Constructor signature must be "
-                        + pluginClassInfo.getSimpleName()
-                        + "(Map<String, Object> configuration)");
-            }
-        } else if (contructorWihtInjectPluginsRegistry.isPresent()) {
-            // try to instanitate the constructor 
-            try {
-                ret = (Plugin) pluginClassInfo.loadClass(false)
-                        .getDeclaredConstructor(PluginsRegistry.class)
-                        .newInstance(PluginsRegistryImpl.getInstance());
-
-                invokeInjectConfigurationMethods(pluginName,
-                        pluginType,
-                        pluginClassInfo,
-                        ret,
-                        confs);
-
-                invokeInjectPluginsRegistryMethods(pluginName,
-                        pluginType,
-                        pluginClassInfo,
-                        ret);
-            } catch (NoSuchMethodException nme) {
-                throw new ConfigurationException(
-                        pluginType
-                        + " " + pluginName
-                        + " has an invalid constructor with @InjectConfiguration. "
-                        + "Constructor signature must be "
-                        + pluginClassInfo.getSimpleName()
-                        + "(Map<String, Object> configuration)");
-            }
-        } else {
-            try {
-                ret = (Plugin) pluginClassInfo.loadClass(false)
-                        .getDeclaredConstructor()
-                        .newInstance();
-
-                invokeInjectConfigurationMethods(pluginName,
-                        pluginType,
-                        pluginClassInfo,
-                        ret,
-                        confs);
-
-                invokeInjectPluginsRegistryMethods(pluginName,
-                        pluginType,
-                        pluginClassInfo,
-                        ret);
-            } catch (NoSuchMethodException nme) {
-                throw new ConfigurationException(
-                        pluginType
-                        + " " + pluginName
-                        + " does not have default constructor "
-                        + pluginClassInfo.getSimpleName()
-                        + "()");
-            }
+            invokeInjectMethods(pluginName,
+                    pluginType,
+                    pluginClassInfo,
+                    ret,
+                    confs);
+        } catch (NoSuchMethodException nme) {
+            throw new ConfigurationException(
+                    pluginType
+                    + " " + pluginName
+                    + " does not have default constructor "
+                    + pluginClassInfo.getSimpleName()
+                    + "()");
         }
 
         return ret;
+    }
+
+    private static void invokeInjectMethods(String pluginName,
+            String pluginType,
+            ClassInfo pluginClassInfo,
+            Object pluingInstance,
+            Map confs) throws ConfigurationException,
+            InstantiationException,
+            IllegalAccessException,
+            InvocationTargetException {
+        invokeInjectConfigurationMethods(pluginName,
+                pluginType,
+                pluginClassInfo,
+                pluingInstance,
+                confs);
+
+        invokeInjectPluginsRegistryMethods(pluginName,
+                pluginType,
+                pluginClassInfo,
+                pluingInstance);
+
+        invokeInjectConfigurationAndPluginsRegistryMethods(pluginName,
+                pluginType,
+                pluginClassInfo,
+                pluingInstance,
+                confs);
     }
 
     private static void invokeInjectConfigurationMethods(String pluginName,
@@ -464,7 +327,8 @@ public class PluginsFactory {
         var mil = pluginClassInfo.getDeclaredMethodInfo();
 
         for (var mi : mil) {
-            if (mi.hasAnnotation(InjectConfiguration.class.getName())) {
+            if (mi.hasAnnotation(InjectConfiguration.class.getName())
+                    && !mi.hasAnnotation(InjectPluginsRegistry.class.getName())) {
                 var ai = mi.getAnnotationInfo(InjectConfiguration.class.getName());
 
                 // check configuration scope
@@ -491,7 +355,7 @@ public class PluginsFactory {
                 // try to inovke @InjectConfiguration method
                 try {
                     pluginClassInfo.loadClass(false)
-                            .getDeclaredMethod(mi.getName(), 
+                            .getDeclaredMethod(mi.getName(),
                                     Map.class)
                             .invoke(pluingInstance, scopedConf);
                 } catch (NoSuchMethodException nme) {
@@ -519,11 +383,12 @@ public class PluginsFactory {
         var mil = pluginClassInfo.getDeclaredMethodInfo();
 
         for (var mi : mil) {
-            if (mi.hasAnnotation(InjectPluginsRegistry.class.getName())) {
+            if (mi.hasAnnotation(InjectPluginsRegistry.class.getName())
+                    && !mi.hasAnnotation(InjectConfiguration.class.getName())) {
                 // try to inovke @InjectPluginRegistry method
                 try {
                     pluginClassInfo.loadClass(false)
-                            .getDeclaredMethod(mi.getName(), 
+                            .getDeclaredMethod(mi.getName(),
                                     PluginsRegistry.class)
                             .invoke(pluingInstance,
                                     PluginsRegistryImpl.getInstance());
@@ -535,6 +400,66 @@ public class PluginsFactory {
                             + "Method signature must be "
                             + mi.getName()
                             + "(PluginsRegistry pluginsRegistry)");
+                }
+            }
+        }
+    }
+
+    private static void invokeInjectConfigurationAndPluginsRegistryMethods(String pluginName,
+            String pluginType,
+            ClassInfo pluginClassInfo,
+            Object pluingInstance,
+            Map confs) throws ConfigurationException,
+            InstantiationException,
+            IllegalAccessException,
+            InvocationTargetException {
+
+        // finds @InjectConfiguration methods
+        var mil = pluginClassInfo.getDeclaredMethodInfo();
+
+        for (var mi : mil) {
+            if (mi.hasAnnotation(InjectConfiguration.class.getName())
+                    && mi.hasAnnotation(InjectPluginsRegistry.class.getName())) {
+                var ai = mi.getAnnotationInfo(InjectConfiguration.class.getName());
+
+                // check configuration scope
+                var allConfScope = ai.getParameterValues().stream()
+                        .anyMatch(p -> "scope".equals(p.getName())
+                        && (ConfigurationScope.class.getName()
+                                + "." + ConfigurationScope.ALL.name()).equals(
+                                p.getValue().toString()));
+
+                var scopedConf = (Map) (allConfScope
+                        ? Bootstrapper.getConfiguration().toMap()
+                        : confs != null
+                                ? confs.get(pluginName)
+                                : null);
+
+                if (scopedConf == null) {
+                    LOGGER.warn("{} {} defines method {} with @InjectConfiguration "
+                            + "but no configuration found for it",
+                            pluginType,
+                            pluginName,
+                            mi.getName());
+                }
+
+                // try to inovke @InjectConfiguration method
+                try {
+                    pluginClassInfo.loadClass(false)
+                            .getDeclaredMethod(mi.getName(),
+                                    Map.class, PluginsRegistry.class)
+                            .invoke(pluingInstance, scopedConf,
+                                    PluginsRegistryImpl.getInstance());
+                } catch (NoSuchMethodException nme) {
+                    throw new ConfigurationException(
+                            pluginType
+                            + " " + pluginName
+                            + " has an invalid method with @InjectConfiguration"
+                            + " and @InjectPluginsRegistry."
+                            + " Method signature must be "
+                            + mi.getName()
+                            + "(Map<String, Object> configuration,"
+                            + " PluginsRegistry pluginsRegistry)");
                 }
             }
         }
@@ -606,7 +531,7 @@ public class PluginsFactory {
     private static URLClassLoader PLUGINS_CL_CACHE = null;
 
     /**
-     * 
+     *
      * @return the URLClassLoader that resolve plugins classes
      */
     private static URLClassLoader getPluginsClassloader() {

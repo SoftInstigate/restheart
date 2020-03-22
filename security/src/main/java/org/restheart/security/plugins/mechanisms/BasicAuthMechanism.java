@@ -17,9 +17,12 @@
  */
 package org.restheart.security.plugins.mechanisms;
 
+import com.mongodb.connection.Cluster;
 import io.undertow.security.api.SecurityContext;
+import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import org.restheart.ConfigurationException;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
@@ -43,25 +46,37 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
-    @InjectConfiguration
-    @InjectPluginsRegistry
-    public BasicAuthMechanism(final Map<String, Object> args,
-            PluginsRegistry pluginRegistry)
+    private IdentityManager identityManager;
+
+    public BasicAuthMechanism()
             throws ConfigurationException {
-        this("basicAuthMechanism", args, pluginRegistry);
+        super("RESTHeart Realm", "basicAuthMechanism", false);
     }
 
-    private BasicAuthMechanism(final String mechanismName,
-            final Map<String, Object> args,
-            PluginsRegistry pluginRegistry)
+    @InjectConfiguration
+    @InjectPluginsRegistry
+    public void init(final Map<String, Object> args,
+            PluginsRegistry pluginsRegistry)
             throws ConfigurationException {
-        super(argValue(args, "realm"),
-                mechanismName,
-                false,
-                // the authenticator specified in auth mechanism configuration
-                pluginRegistry
-                        .getAuthenticator(argValue(args, "authenticator"))
-                        .getInstance());
+
+        // the authenticator specified in auth mechanism configuration
+        setIdentityManager(pluginsRegistry
+                .getAuthenticator(argValue(args, "authenticator"))
+                .getInstance());
+    }
+
+    public void setIdentityManager(IdentityManager idm) {
+        try {
+            var clazz = Class.forName("io.undertow.security.impl.BasicAuthenticationMechanism");
+            var idmF = clazz.getDeclaredField("identityManager");
+            idmF.setAccessible(true);
+
+            idmF.set(this, idm);
+        } catch (ClassNotFoundException
+                | SecurityException
+                | NoSuchFieldException
+                | IllegalAccessException ex) {
+        }
     }
 
     @Override

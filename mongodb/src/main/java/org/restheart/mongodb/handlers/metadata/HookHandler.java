@@ -47,15 +47,10 @@ public class HookHandler implements Interceptor {
     static final Logger LOGGER
             = LoggerFactory.getLogger(HookHandler.class);
 
-    private final PluginsRegistry pluginsRegistry;
+    private PluginsRegistry pluginsRegistry;
 
-    /**
-     * Creates a new instance of HookMetadataHandler
-     *
-     * @param pluginsRegistry
-     */
     @InjectPluginsRegistry
-    public HookHandler(PluginsRegistry pluginsRegistry) {
+    public void init(PluginsRegistry pluginsRegistry) {
         this.pluginsRegistry = pluginsRegistry;
     }
 

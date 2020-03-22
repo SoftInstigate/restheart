@@ -53,33 +53,25 @@ import org.slf4j.LoggerFactory;
         description = "generates random auth tokens",
         enabledByDefault = false)
 public class RndTokenManager implements TokenManager {
-    
+
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RndTokenManager.class);
 
-    private static SecureRandom RND_GENERATOR = new SecureRandom();
+    private static final SecureRandom RND_GENERATOR = new SecureRandom();
 
-    private static Cache<String, PwdCredentialAccount> CACHE;
+    private static Cache<String, PwdCredentialAccount> CACHE = null;
 
-    private final int ttl;
-    private final String srvURI;
+    private int ttl = -1;
+    private String srvURI = null;
 
     @InjectConfiguration
     @InjectPluginsRegistry
-    public RndTokenManager(Map<String, Object> confArgs,
-            PluginsRegistry pluginsRegistry)
-            throws ConfigurationException {
-        this("rndTokenManager", confArgs, pluginsRegistry);
-    }
-    
-    private RndTokenManager(String name, 
-            Map<String, Object> confArgs, 
-            PluginsRegistry pluginsRegistry)
-            throws ConfigurationException {
+    public void init(Map<String, Object> confArgs,
+            PluginsRegistry pluginsRegistry) throws ConfigurationException {
         this.ttl = ConfigurablePlugin.argValue(confArgs, "ttl");
 
         this.srvURI = ConfigurablePlugin.argValue(confArgs, "srv-uri");
-
+        
         CACHE = CacheFactory.createLocalCache(Long.MAX_VALUE,
                 Cache.EXPIRE_POLICY.AFTER_READ,
                 ttl * 60 * 1_000);
@@ -91,12 +83,12 @@ public class RndTokenManager implements TokenManager {
             AUTH_TOKEN_LOCATION_HEADER.toString()};
 
         var ti = pluginsRegistry.getInterceptors()
-                .stream().filter(i -> 
-                        "tokenCORSResponseInterceptor".equals(i.getName()))
+                .stream().filter(i
+                        -> "tokenCORSResponseInterceptor".equals(i.getName()))
                 .findFirst();
-        
+
         if (ti.isPresent()) {
-            ((TokenCORSResponseInterceptor)ti.get().getInstance())
+            ((TokenCORSResponseInterceptor) ti.get().getInstance())
                     .setHeaders(headers);
         } else {
             LOGGER.warn("Cound not find tokenCORSResponseInterceptor. "

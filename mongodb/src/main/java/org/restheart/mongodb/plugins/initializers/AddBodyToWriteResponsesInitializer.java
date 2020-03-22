@@ -43,13 +43,13 @@ public class AddBodyToWriteResponsesInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(AddBodyToWriteResponsesInitializer.class);
 
-    private final PluginsRegistry pluginsRegistry;
-    
+    private PluginsRegistry pluginsRegistry;
+
     @InjectPluginsRegistry
-    public AddBodyToWriteResponsesInitializer(PluginsRegistry pluginRegistry) {
-        this.pluginsRegistry = pluginRegistry;
+    public void init(PluginsRegistry pluginsRegistry) {
+        this.pluginsRegistry = pluginsRegistry;
     }
-    
+
     /**
      *
      */

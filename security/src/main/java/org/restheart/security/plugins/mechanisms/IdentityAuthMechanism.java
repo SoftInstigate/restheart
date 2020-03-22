@@ -47,22 +47,14 @@ import org.restheart.security.plugins.authenticators.BaseAccount;
                 + "in the configuration file",
         enabledByDefault = false)
 public class IdentityAuthMechanism implements AuthMechanism {
-    private final String mechanismName;
-    private final String username;
-    private final List<String> roles;
+    private String username;
+    private List<String> roles;
 
     @InjectConfiguration
-    public IdentityAuthMechanism(Map<String, Object> args)
+    public void init(Map<String, Object> confArgs)
             throws ConfigurationException {
-        this("identityAuthMechanism", args);
-    }
-    
-    public IdentityAuthMechanism(String mechanismName, Map<String, Object> args)
-            throws ConfigurationException {
-        this.mechanismName = mechanismName;
-        this.username = argValue(args, "username");
-        this.roles = argValue(args, "roles");
-
+        this.username = argValue(confArgs, "username");
+        this.roles = argValue(confArgs, "roles");
     }
 
     @Override
@@ -85,6 +77,6 @@ public class IdentityAuthMechanism implements AuthMechanism {
      */
     @Override
     public String getMechanismName() {
-        return mechanismName;
+        return "identityAuthMechanism";
     }
 }
