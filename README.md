@@ -302,7 +302,7 @@ If you want to embed RESTHeart in your project, to compile new plugins, just add
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart-commons</artifactId>
-        <version>5.0.0</version>
+        <version>5.0.0-RC1</version>
     </dependency>
 </dependencies>
 ```
@@ -332,7 +332,7 @@ Then include the SNAPSHOT dependency in your POM:
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart-commons</artifactId>
-        <version>5.0.0-SNAPSHOT</version>
+        <version>5.0.0-RC1</version>
     </dependency>
 </dependencies>
 ```
