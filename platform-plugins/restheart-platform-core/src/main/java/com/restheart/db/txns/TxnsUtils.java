@@ -90,7 +90,7 @@ public class TxnsUtils {
      */
     public static void propagateSession(ClientSessionImpl cs)
             throws MongoQueryException {
-        LOGGER.debug("*********** round trip to server to propagate session");
+        LOGGER.trace("*********** round trip to server to propagate session");
         MCLIENT
                 .getDatabase("foo")
                 .getCollection("bar")
@@ -161,7 +161,7 @@ public class TxnsUtils {
             }
         }
 
-        LOGGER.debug("***** query error not handled {}: {}",
+        LOGGER.trace("***** query error not handled {}: {}",
                 mqe.getErrorCode(),
                 mqe.getErrorMessage());
 
@@ -190,7 +190,7 @@ public class TxnsUtils {
             }
         }
 
-        LOGGER.debug("***** query error not handled {}: {}",
+        LOGGER.trace("***** query error not handled {}: {}",
                 mqe.getErrorCode(),
                 mqe.getErrorMessage());
 
