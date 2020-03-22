@@ -34,9 +34,9 @@
     </properties>
 
     <modules>
-        <module>security</module>
-        <module>core</module>
         <module>commons</module>
+        <module>core</module>
+        <module>security</module>
         <module>mongodb</module>
     </modules>
 
@@ -144,7 +144,7 @@
             </dependency>
             <dependency>
                 <groupId>org.restheart</groupId>
-                <artifactId>restheart-core</artifactId>
+                <artifactId>restheart</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
