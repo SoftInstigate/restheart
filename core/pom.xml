@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -11,7 +11,7 @@
     <groupId>org.restheart</groupId>
     <artifactId>restheart</artifactId>
     <packaging>jar</packaging>
-    
+
     <name>restheart-core</name>
     <description>RESTHeart Core - Core services for RESTHeart</description>
     <url>https://restheart.org</url>
@@ -293,9 +293,9 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <mkdir dir="./target/plugins"/>
-                                <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true"/>
-                                <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true"/>
+                                <mkdir dir="./target/plugins" />
+                                <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
+                                <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
                             </target>
                         </configuration>
                         <goals>
@@ -310,20 +310,20 @@
                             <target>
                                 <echo>***** Initiliazing MongoDB cluster...</echo>
                                 <exec executable="docker">
-                                    <arg value="run"/>
-                                    <arg value="--rm"/>
-                                    <arg value="--net"/>
-                                    <arg value="host"/>
-                                    <arg value="mongo:${mongodb.version}"/>
-                                    <arg value="mongo"/>
-                                    <arg value="--eval"/>
-                                    <arg value="rs.initiate()"/>
+                                    <arg value="run" />
+                                    <arg value="--rm" />
+                                    <arg value="--net" />
+                                    <arg value="host" />
+                                    <arg value="mongo:${mongodb.version}" />
+                                    <arg value="mongo" />
+                                    <arg value="--eval" />
+                                    <arg value="rs.initiate()" />
                                 </exec>
                                 <echo>***** NOTE: in order to execute the integration test suite you need:</echo>
                                 <echo>1 - Linux, OSX or Solaris (server is started with --fork option via bash script)</echo>
                                 <exec dir="${basedir}" executable="bin/start.sh">
-                                    <arg value="etc/test/restheart.yml"/>
-                                    <arg value="--fork"/>
+                                    <arg value="etc/test/restheart.yml" />
+                                    <arg value="--fork" />
                                 </exec>
                             </target>
                         </configuration>
@@ -339,7 +339,7 @@
                             <target>
                                 <echo>***** Stopping RESTHeart process...</echo>
                                 <exec dir="${basedir}" executable="bin/stop.sh">
-                                    <arg value="etc/test/restheart.yml"/>
+                                    <arg value="etc/test/restheart.yml" />
                                 </exec>
                             </target>
                         </configuration>
@@ -348,6 +348,10 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
