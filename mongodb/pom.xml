@@ -120,6 +120,35 @@
         <finalName>${project.artifactId}</finalName>
         <plugins>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <verbose>true</verbose>
+                    <includes>
+                        <includes>**/*.java</includes>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-license-headers</id>
+                        <goals>
+                            <goal>update-file-header</goal>
+                        </goals>
+                        <phase>process-sources</phase>
+                        <configuration>
+                            <licenseName>agpl_v3</licenseName>
+                            <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
+                            <processStartTag>========================LICENSE_START=================================</processStartTag>
+                            <processEndTag>=========================LICENSE_END==================================</processEndTag>
+                            <roots>
+                                <root>src/main/java</root>
+                                <root>src/test</root>
+                            </roots>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>
             </plugin>
