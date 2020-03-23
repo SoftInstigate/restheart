@@ -206,7 +206,6 @@
                         <configuration>
                             <id>bin</id>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <finalName>${project.artifactId}-${project.version}</finalName>
                             <descriptors>
                                 <descriptor>assembly.xml</descriptor>
                             </descriptors>
