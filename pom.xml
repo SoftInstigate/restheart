@@ -56,7 +56,7 @@
             <comments>Core components license</comments>
         </license>
         <license>
-            <name>Apache License, Version 2.0</name>
+            <name>Apache License version 2.0</name>
             <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
             <distribution>repo</distribution>
             <comments>A business-friendly OSS license</comments>
