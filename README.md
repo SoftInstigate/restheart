@@ -4,9 +4,10 @@
     </a>
 </p>
 
-# RESTHeart - REST API Microservice for MongoDB. #
+# RESTHeart - REST API Microservice for MongoDB.
 
-[![Java CI with Maven](https://github.com/SoftInstigate/restheart/workflows/Java%20CI%20with%20Maven/badge.svg)](https://travis-ci.org/github/SoftInstigate/restheart)
+[![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
+[![Java CI with Maven](https://github.com/SoftInstigate/restheart/workflows/Java%20CI%20with%20Maven/badge.svg)](https://github.com/SoftInstigate/restheart/actions?query=workflow%3A%22Java+CI+with+Maven%22)
 [![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.restheart%22%20AND%20a:%22restheart%22)
 [![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
@@ -14,20 +15,20 @@
 
 ## Table of Contents
 
-- [Summary](#summary)
-- [Run with Docker](#run-with-docker)
-- [Run manually](#run-manually)
-- [How to Build](#how-to-Build)
-    - [Integration Tests](#integration-tests)
-- [Maven Dependencies](#maven-dependencies)
-    - [Snapshot Builds](#snapshot-builds)
-    - [Maven Site](#maven-Site)
-- [Continuous Integration](#continuous-integration)
-- [Project structure](#project-structure)
-- [Plugins](#plugins)
-- [Full documentation](#full-documentation)
-- [Book a chat](#book-a-chat)
-- [Commercial Editions](#commercial-editions)
+-   [Summary](#summary)
+-   [Run with Docker](#run-with-docker)
+-   [Run manually](#run-manually)
+-   [How to Build](#how-to-Build)
+    -   [Integration Tests](#integration-tests)
+-   [Maven Dependencies](#maven-dependencies)
+    -   [Snapshot Builds](#snapshot-builds)
+    -   [Maven Site](#maven-Site)
+-   [Continuous Integration](#continuous-integration)
+-   [Project structure](#project-structure)
+-   [Plugins](#plugins)
+-   [Full documentation](#full-documentation)
+-   [Book a chat](#book-a-chat)
+-   [Commercial Editions](#commercial-editions)
 
 <p align="center">
    <a href="https://restheart.org">
@@ -39,14 +40,14 @@
 
 RESTHeart is a REST API Microservice for MongoDB.
 
-RESTHeart connects to __MongoDB__ and opens data to the Web. Clients, such as mobile and JavaScript apps, can access the database via a simple __API__ based on __JSON__ messages and plain __HTTP__.
+RESTHeart connects to **MongoDB** and opens data to the Web. Clients, such as mobile and JavaScript apps, can access the database via a simple **API** based on **JSON** messages and plain **HTTP**.
 
-The word "microservice" here is due to the fact that RESTHeart is 
+The word "microservice" here is due to the fact that RESTHeart is
 
-  1. Fully stateless;
-  1. Natively designed to be deployed in a Docker container.
+1. Fully stateless;
+1. Natively designed to be deployed in a Docker container.
 
-With RESTHeart teams can focus on building Angular, React, Vue, iOS or Android applications, because most of the server-side logic usually necessary for database operations is automatically handled, __without the need to write any server-side code__ except for the client logic.
+With RESTHeart teams can focus on building Angular, React, Vue, iOS or Android applications, because most of the server-side logic usually necessary for database operations is automatically handled, **without the need to write any server-side code** except for the client logic.
 
 For example, to insert data in MongoDB a developer models client-side JSON documents and then execute POST operations via HTTP to RESTHeart: no more need to deal with complicated server-side code and database drivers in Java, JavaScript, PHP, Ruby, Python, etc.
 
@@ -76,15 +77,15 @@ $ docker-compose up -d --no-build
 
 The default `users.yml` defines the following users:
 
-- id: 'admin', password: 'secret', role: 'admin'
-- id: 'user', password: 'secret', role: 'user'
+-   id: 'admin', password: 'secret', role: 'admin'
+-   id: 'user', password: 'secret', role: 'user'
 
 The default `acl.yml` defines the following permission:
 
-- *admin* role can execute any request
-- *user* role can execute any request on collection `/{username}`
+-   _admin_ role can execute any request
+-   _user_ role can execute any request on collection `/{username}`
 
-> __WARNING__ You must update the passwords in production! See [Configuration](#configuration) for more information on how to override the default `users.yml` configuration file.
+> **WARNING** You must update the passwords in production! See [Configuration](#configuration) for more information on how to override the default `users.yml` configuration file.
 
 ### Check that everything works
 
@@ -111,8 +112,9 @@ $ curl --user admin:secret :8080/collection
 ### Prerequisites
 
 You need:
-- Java v11+;
-- MongoDB running on `localhost` on port `27017`. Both MongoDB 3.x and 4.x work.
+
+-   Java v11+;
+-   MongoDB running on `localhost` on port `27017`. Both MongoDB 3.x and 4.x work.
 
 For more information on how to install and run MongoDB check [install tutorial](https://docs.mongodb.com/manual/installation/#mongodb-community-edition-installation-tutorials) and [manage mongodb](https://docs.mongodb.com/manual/tutorial/manage-mongodb-processes/) on MongoDB documentation.
 
@@ -188,10 +190,10 @@ You can edit the YAML configuration file or create distinct properties file. Usu
 
 Is is possible to override any primitive type parameter in `restheart.yml` with an environment variable. Primitive types are:
 
- - String
- - Integer
- - Long
- - Boolean
+-   String
+-   Integer
+-   Long
+-   Boolean
 
 For example, the parameter `mongo-uri` in the YAML file can be overridden by exporting a `MONGO_URI` environment variable:
 
@@ -207,7 +209,7 @@ The following log entry appears at the very beginning of logs during the startup
 [main] WARN  org.restheart.Configuration - >>> Overriding parameter 'mongo-uri' with environment value 'MONGO_URI=mongodb://127.0.0.1'
 ```
 
-A shell environment variable is equivalent to a YAML parameter in `restheart.yml`, but it’s all uppercase and '-' (dash) are replaced with '_' (underscore).
+A shell environment variable is equivalent to a YAML parameter in `restheart.yml`, but it’s all uppercase and '-' (dash) are replaced with '\_' (underscore).
 
 > Environment variables replacement works only with primitive types: it doesn’t work with YAML structured data in configuration files, like arrays or maps. It's mandatory to use properties files and mustache syntax for that.
 
@@ -216,7 +218,7 @@ To know the available CLI parameters, run RESTHeart with `--help`:
 ```bash
 $ java -jar restheart.jar --help
 
-Usage: java -Dfile.encoding=UTF-8 -jar -server restheart.jar [options] 
+Usage: java -Dfile.encoding=UTF-8 -jar -server restheart.jar [options]
       <Configuration file>
   Options:
     --envFile, --envfile, -e
@@ -230,7 +232,7 @@ Usage: java -Dfile.encoding=UTF-8 -jar -server restheart.jar [options]
 
 ## How to Build
 
-Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and __Java 11__ or later.
+Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and **Java 11** or later.
 
 ```bash
 $ mvn clean package
@@ -246,7 +248,7 @@ After building `cd core/target` where, among other files, you'll have the struct
     └── restheart-security.jar
 ```
 
-You can copy these files somewhere else and the [run the executable restheart.jar](#run-restheart) passing to it the path of the YAML configuration file. 
+You can copy these files somewhere else and the [run the executable restheart.jar](#run-restheart) passing to it the path of the YAML configuration file.
 
 Have a look at [`core/etc/restheart.yml`](core/etc/restheart.yml) and [`core/etc/default.properties`](core/etc/default.properties) for more.
 
@@ -278,12 +280,11 @@ To compile new plugins, add the `restheart-commons` dependency to your POM file:
 </dependencies>
 ```
 
-__IMPORTANT__: The `restheart-commons` artifact in the `commons` module has been released using the Apache v2 license instead of the AGPL v3. This is much like MongoDB is doing with the Java driver. It implies __your projects does not incur in the AGPL restrictions when extending RESTHeart with plugins__.
+**IMPORTANT**: The `restheart-commons` artifact in the `commons` module has been released using the Apache v2 license instead of the AGPL v3. This is much like MongoDB is doing with the Java driver. It implies **your projects does not incur in the AGPL restrictions when extending RESTHeart with plugins**.
 
 ### Snapshot Builds
 
 Snapshot builds are available at [Sonatype](https://oss.sonatype.org/content/repositories/snapshots/org/restheart/restheart/). If you want to build your project against a development release, first add the SNAPSHOT repository:
-
 
 ```xml
 <repositories>
@@ -296,7 +297,7 @@ Snapshot builds are available at [Sonatype](https://oss.sonatype.org/content/rep
         </snapshots>
     </repository>
 </repositories>
- ```
+```
 
 Then include the desired SNAPSHOT dependency version in your POM, for example:
 
@@ -314,15 +315,15 @@ However, as you should know how Maven works, the recommended way do deal with de
 
 ## Continuous Integration
 
-We continuously integrate and deploy development releases to Maven Central. RESTHeart's public Docker images are automatically built and pushed to [Docker Hub](https://hub.docker.com/r/softinstigate/restheart/). The `latest` tag for Docker images refers to the most recent stable release on the `master` branch, __we don't publish SNAPSHOTs as Docker images__.
+We continuously integrate and deploy development releases to Maven Central. RESTHeart's public Docker images are automatically built and pushed to [Docker Hub](https://hub.docker.com/r/softinstigate/restheart/). The `latest` tag for Docker images refers to the most recent stable release on the `master` branch, **we don't publish SNAPSHOTs as Docker images**.
 
 ## Project structure
 
 Starting from RESTHeart v5 we have merged all sub-projects into a single [Maven multi module project](https://maven.apache.org/guides/mini/guide-multiple-modules.html) and a single Git repository (this one).
 
-> The v4 architecture, in fact, was split into two separate Java processes: one for managing security, identity and access management (restheart-security) and one to access the database layer (restheart). The new v5 architecture is monolithic, like it was RESTHeart v3. This decision was due to the excessive complexity of building and deploying two distinct processes and the little gains we have observed in real applications. 
+> The v4 architecture, in fact, was split into two separate Java processes: one for managing security, identity and access management (restheart-security) and one to access the database layer (restheart). The new v5 architecture is monolithic, like it was RESTHeart v3. This decision was due to the excessive complexity of building and deploying two distinct processes and the little gains we have observed in real applications.
 
-Then `core` module now is just [Undertow](http://undertow.io) plus a _bootstrapper_ which reads the configuration and starts the HTTP server. The `security` module provides __Authentication__ and __Authorization__ services, while the `mongodb` module interacts with MongoDB and exposes all of its services via a REST API, as usual. Besides, we added a new `commons` module which is a shared library, including all interfaces and implementations in common among the other modules.
+Then `core` module now is just [Undertow](http://undertow.io) plus a _bootstrapper_ which reads the configuration and starts the HTTP server. The `security` module provides **Authentication** and **Authorization** services, while the `mongodb` module interacts with MongoDB and exposes all of its services via a REST API, as usual. Besides, we added a new `commons` module which is a shared library, including all interfaces and implementations in common among the other modules.
 
 ```
 .
@@ -355,7 +356,6 @@ Plugins are annotated with the [`@RegisterPlugin`](commons/src/main/java/org/res
 
 For example, below the [`MongoService`](mongodb/src/main/java/org/restheart/mongodb/MongoService.java) class, which provides all of MongoDB's capabilities to the `core` module.
 
-
 ```java
 @RegisterPlugin(name = "mongo",
         description = "handles request to mongodb resources",
@@ -371,7 +371,7 @@ public class MongoService implements Service {
 
 For more information, read the [documentation](http://restheart.org/docs/).
 
-> __WARNING__: that documentation has not yet been updated for v5, work is in progress. Please open a issue [here](https://github.com/SoftInstigate/restheart/issues) if you have any question, or send an email to <a href="mailto:ask@restheart.org">ask@restheart.org</a> and we'll be happy to clarify anything.
+> **WARNING**: that documentation has not yet been updated for v5, work is in progress. Please open a issue [here](https://github.com/SoftInstigate/restheart/issues) if you have any question, or send an email to <a href="mailto:ask@restheart.org">ask@restheart.org</a> and we'll be happy to clarify anything.
 
 ## Book a chat
 
@@ -381,13 +381,13 @@ If you have any question about RESTHeart and want to talk directly with the core
 
 RESTHeart v5 is a open source project distributed under a [open-core model](https://en.wikipedia.org/wiki/Open-core_model). It means that its main features are free to use under the OSI-approved open source licenses, but some enterprise-level features are distributed with a business-friendly commercial license. We hope this model will allow us to finance the continuous development and improvement of this product, which has become too large to be handled like a side project.
 
-This is a list of commercial-only features: 
+This is a list of commercial-only features:
 
-- [Transactions](https://restheart.org/docs/transactions/)
-- [Change Streams](https://restheart.org/docs/change-streams)
-- [JWT Authentication](https://restheart.org/docs/security/authentication/#jwt-authentication)
-- [RESTHeart Authenticator](https://restheart.org/docs/security/authentication/#restheart-authenticator) with users defined in the database
-- [RESTHeart Authorizer](https://restheart.org/docs/security/authorization/#restheart-authorizer) with ACL defined in the database and role-based data filter capabilities
+-   [Transactions](https://restheart.org/docs/transactions/)
+-   [Change Streams](https://restheart.org/docs/change-streams)
+-   [JWT Authentication](https://restheart.org/docs/security/authentication/#jwt-authentication)
+-   [RESTHeart Authenticator](https://restheart.org/docs/security/authentication/#restheart-authenticator) with users defined in the database
+-   [RESTHeart Authorizer](https://restheart.org/docs/security/authorization/#restheart-authorizer) with ACL defined in the database and role-based data filter capabilities
 
 Check the [editions matrix](https://restheart.org/editions) for more information.
 
