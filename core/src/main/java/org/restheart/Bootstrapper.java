@@ -90,7 +90,7 @@ import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_EMBEDDED_KE
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
-import org.restheart.handlers.BsonRequestServiceInitializer;
+import org.restheart.handlers.BsonRequestInitializer;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
@@ -569,7 +569,9 @@ public class Bootstrapper {
                     try {
                         i.getInstance().init();
                     } catch (Throwable t) {
-                        LOGGER.error("Error executing initializer {}", i.getName());
+                        LOGGER.error("Error executing initializer {}", 
+                                i.getName(),
+                                t);
                     }
                 });
 
@@ -1011,14 +1013,13 @@ public class Bootstrapper {
                         tokenManager);
             }
 
-            var _srv = pipe(
-                    new PipelineBranchInfoInjector(new PipelineBranchInfo(
+            var _srv = pipe(new PipelineBranchInfoInjector(new PipelineBranchInfo(
                             PIPELINE_BRANCH.SERVICE,
                             srv.getName(),
                             uri)),
                     new TracingInstrumentationHandler(),
                     new RequestLogger(),
-                    new BsonRequestServiceInitializer(),
+                    new BsonRequestInitializer(),
                     new CORSHandler(),
                     new XPoweredByInjector(),
                     new RequestContentInjector(ALWAYS),

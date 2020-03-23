@@ -45,6 +45,7 @@
         <module>core</module>
         <module>security</module>
         <module>mongodb</module>
+        <module>restheart-test-plugins</module>
     </modules>
 
     <!-- Project Information -->

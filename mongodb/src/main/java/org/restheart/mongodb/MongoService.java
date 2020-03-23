@@ -38,7 +38,7 @@ import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.AccountInjector;
 import org.restheart.mongodb.handlers.injectors.BodyInjector;
-import org.restheart.mongodb.handlers.injectors.BsonRequestInitializer;
+import org.restheart.mongodb.handlers.injectors.BsonRequestInjector;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.CollectionPropsInjector;
 import org.restheart.mongodb.handlers.injectors.DbPropsInjector;
@@ -110,7 +110,9 @@ public class MongoService implements Service {
             throws ConfigurationException {
         var rootHandler = path();
         
-        var basePipeline = PipelinedHandler.pipe(
+        var pipeline = PipelinedHandler.pipe(
+                new BsonRequestInjector(
+                        MongoServiceConfiguration.get().getAggregationCheckOperators()),
                 new MetricsInstrumentationHandler(),
                 new CORSHandler(),
                 new OptionsHandler(),
@@ -142,14 +144,7 @@ public class MongoService implements Service {
         } else {
             MongoServiceConfiguration.get().getMongoMounts().stream().forEach(m -> {
                 var uri = resolveURI((String) m.get(MONGO_MOUNT_WHERE_KEY));
-                var db = (String) m.get(MONGO_MOUNT_WHAT_KEY);
-
-                PipelinedHandler pipeline = new BsonRequestInitializer(
-                        uri,
-                        db,
-                        true,
-                        MongoServiceConfiguration.get().getAggregationCheckOperators(),
-                        basePipeline);
+                var resource = (String) m.get(MONGO_MOUNT_WHAT_KEY);
 
                 if (allPathTemplates) {
                     pathsTemplates.add(uri, pipeline);
@@ -159,7 +154,7 @@ public class MongoService implements Service {
 
                 LOGGER.info(ansi().fg(GREEN)
                         .a("URI {} bound to MongoDB resource {}")
-                        .reset().toString(), uri, db);
+                        .reset().toString(), uri, resource);
             });
 
             if (allPathTemplates) {
@@ -185,12 +180,12 @@ public class MongoService implements Service {
         if ("".equals(myURI) || "/".equals(myURI)) {
             return uri;
         } else if (uri == null) {
-            return myURI;
+            return URLUtils.removeTrailingSlashes(myURI);
         } else {
-            return myURI.concat(uri);
+            return URLUtils.removeTrailingSlashes(myURI.concat(uri));
         }
     }
-
+    
     private String myURI() {
         Object uri;
 

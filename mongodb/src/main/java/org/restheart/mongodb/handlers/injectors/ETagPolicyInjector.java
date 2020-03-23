@@ -30,7 +30,7 @@ import static org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY.REQ
 import static org.restheart.handlers.exchange.ExchangeKeys.ETAG_DOC_POLICY_METADATA_KEY;
 import static org.restheart.handlers.exchange.ExchangeKeys.ETAG_POLICY_METADATA_KEY;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import static org.restheart.mongodb.handlers.injectors.BsonRequestInitializer.LOGGER;
+import static org.restheart.mongodb.handlers.injectors.BsonRequestInjector.LOGGER;
 
 /**
  *
