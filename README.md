@@ -116,25 +116,28 @@ You need:
 
 For more information on how to install and run MongoDB check [install tutorial](https://docs.mongodb.com/manual/installation/#mongodb-community-edition-installation-tutorials) and [manage mongodb](https://docs.mongodb.com/manual/tutorial/manage-mongodb-processes/) on MongoDB documentation.
 
-### Get the latest releases of restheart
+### Get the latest releases of RESTHeart
 
-Download the latest distribution from:
+Two options:
 
-- [download restheart](https://github.com/SoftInstigate/restheart/releases/latest)
+1. [Build the source code](#how-to-Build)
+1. [Download the latest release](https://github.com/SoftInstigate/restheart/releases/tag/5.0.0-RC2);
 
-Un-zip or un-tar:
+If you choose to download either the zip or tar archive:
+
+Un-zip
 
 ```bash
 $ unzip restheart.zip
 ```
 
-or
+Or un-tar
 
 ```bash
 $ tar -xzf restheart.tar.gz
 ```
 
-Configuration files are under the folder `etc/`
+Configuration files are under the `etc/` folder.
 
 ```
 .
@@ -149,7 +152,7 @@ Configuration files are under the folder `etc/`
 └── restheart.jar
 ```
 
-#### Run *restheart*
+#### Run RESTHeart
 
 ```bash
 $ cd restheart
@@ -167,7 +170,7 @@ root-mongo-resource = /restheart
 
 > It means that the root resource `/` is bound to the `/restheart` database. This database doesn't actually exist until you explicitly create it by issuing a `PUT /` HTTP command.
 
-`restheart` will start bound on HTTP port `8080`.
+RESTHeart will start bound on HTTP port `8080`.
 
 ### Configuration
 
@@ -177,9 +180,9 @@ The main file is [`restheart.yml`](core/etc/restheart.yml) which is parametrized
 $ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
 ```
 
-Beware that you must restart the core `restheart.jar` process to reload a new configuration.
+Beware that you must restart the core `restheart.jar` process to reload a new configuration (of course, how to stop and start the process depends on how it was distributed: either in a docker container or a native Java process).
 
-Of course, you can edit the YAML configuration file or create distinct properties file, for example one for each deployment environment.
+You can edit the YAML configuration file or create distinct properties file. Usually one set of properties for each deployment environment is a common practice.
 
 #### Environment variables
 
@@ -196,15 +199,17 @@ For example, the parameter `mongo-uri` in the YAML file can be overridden by exp
 $ export MONGO_URI="mongodb://127.0.0.1"
 ```
 
+> Have a look at the [docker-compose.yml](docker-compose.yml) file for an example of how to export an environment variable if using Docker.
+
 The following log entry appears at the very beginning of logs during the startup process:
 
 ```
 [main] WARN  org.restheart.Configuration - >>> Overriding parameter 'mongo-uri' with environment value 'MONGO_URI=mongodb://127.0.0.1'
 ```
 
-A shell environment variable is equivalent to a YAML parameter in restheart.yml, but it’s all uppercase and '-' (dash) are replaced with '_' (underscore).
+A shell environment variable is equivalent to a YAML parameter in `restheart.yml`, but it’s all uppercase and '-' (dash) are replaced with '_' (underscore).
 
-> environment variables replacement doesn’t work with YAML structured data in configuration files, like arrays or maps. You must use properties files and mustache syntax for that.
+> Environment variables replacement works only with primitive types: it doesn’t work with YAML structured data in configuration files, like arrays or maps. It's mandatory to use properties files and mustache syntax for that.
 
 To know the available CLI parameters, run RESTHeart with `--help`:
 
@@ -230,6 +235,20 @@ Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javas
 ```bash
 $ mvn clean package
 ```
+
+After building `cd core/target` where, among other files, you'll have the structure below
+
+```
+.
+├── restheart.jar
+└──  plugins/
+    ├── restheart-mongodb.jar
+    └── restheart-security.jar
+```
+
+You can copy these files somewhere else and the [run the executable restheart.jar](#run-restheart) passing to it the path of the YAML configuration file. 
+
+Have a look at [`core/etc/restheart.yml`](core/etc/restheart.yml) and [`core/etc/default.properties`](core/etc/default.properties) for more.
 
 ### Integration Tests
 
