@@ -1,3 +1,23 @@
+/*-
+ * ========================LICENSE_START=================================
+ * restheart-core
+ * %%
+ * Copyright (C) 2014 - 2020 SoftInstigate
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * =========================LICENSE_END==================================
+ */
 package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
@@ -6,11 +26,6 @@ import java.util.Optional;
 import org.restheart.Bootstrapper;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.slf4j.MDC;
-
-/**
- * Handler to write tracing headers to the logging MDC. Pick it up via the
- * default way with "%X{name}", e.g. "%X{x-b3-traceid}".
- */
 public class TracingInstrumentationHandler extends PipelinedHandler {
     public TracingInstrumentationHandler() {
     }
