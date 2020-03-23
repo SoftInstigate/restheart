@@ -15,8 +15,6 @@
 ## Table of Contents
 
 - [Summary](#summary)
-- [Project structure](#project-structure)
-- [Plugins](#plugins)
 - [Run with Docker](#run-with-docker)
 - [Run manually](#run-manually)
 - [How to Build](#how-to-Build)
@@ -25,6 +23,8 @@
     - [Snapshot Builds](#snapshot-builds)
     - [Maven Site](#maven-Site)
 - [Continuous Integration](#continuous-integration)
+- [Project structure](#project-structure)
+- [Plugins](#plugins)
 - [Full documentation](#full-documentation)
 - [Book a chat](#book-a-chat)
 - [Commercial Editions](#commercial-editions)
@@ -39,66 +39,20 @@
 
 RESTHeart is a REST API Microservice for MongoDB.
 
-RESTHeart connects to __MongoDB__ and opens its data to the Web. Clients, such as mobile and JavaScript apps, can access the database via a simple __API__ based on __JSON__ messages.
+RESTHeart connects to __MongoDB__ and opens data to the Web. Clients, such as mobile and JavaScript apps, can access the database via a simple __API__ based on __JSON__ messages and plain __HTTP__.
 
-With RESTHeart teams can focus on building Angular, React, Vue, iOS or Android applications, because most of the server-side logic usually necessary for CRUD (Create, Read, Update, Delete) operations is automatically handled, without the need to write any code except for the client logic.
+The word "microservice" here is due to the fact that RESTHeart is 
 
-For example, to insert data in MongoDB developers model client-side JSON documents and then execute POST operations via HTTP to RESTHeart: no more need to deal with complicated server-side code and database drivers in Java, JavaScript, PHP, Ruby, Python, etc.
+  1. Fully stateless;
+  1. Natively designed to be deployed in a Docker container.
 
-For these reasons, RESTHeart is widely used by freelancers, Web agencies and System Integrators with deadlines, because it allows them to focus on the most creative parts of their work.
+With RESTHeart teams can focus on building Angular, React, Vue, iOS or Android applications, because most of the server-side logic usually necessary for database operations is automatically handled, __without the need to write any server-side code__ except for the client logic.
+
+For example, to insert data in MongoDB a developer models client-side JSON documents and then execute POST operations via HTTP to RESTHeart: no more need to deal with complicated server-side code and database drivers in Java, JavaScript, PHP, Ruby, Python, etc.
+
+For these reasons, RESTHeart is widely used by freelancers, Web agencies and System Integrators with deadlines, because it allows them to focus on the most important and creative part of their work: the User Experience.
 
 For more ideas have a look at the list of [features](https://restheart.org/features) and the collection of common [use cases](https://restheart.org/use-cases/).
-
-## Project structure
-
-Starting from RESTHeart v5 we have merged all sub-projects into a single [Maven multi module project](https://maven.apache.org/guides/mini/guide-multiple-modules.html) and a single Git repository (this one).
-
-> The v4 architecture, in fact, was split into two separate Java processes: one for managing security, identity and access management (restheart-security) and one to access the database layer (restheart). The new v5 architecture is monolithic, like it was RESTHeart v3. This decision was due to the excessive complexity of building and deploying two distinct processes and the little gains we have observed in real applications. 
-
-Then `core` module now is just [Undertow](http://undertow.io) plus a _bootstrapper_ which reads the configuration and starts the HTTP server. The `security` module provides __Authentication__ and __Authorization__ services, while the `mongodb` module interacts with MongoDB and exposes all of its services via a REST API, as usual. Besides, we added a new `commons` module which is a shared library, including all interfaces and implementations in common among the other modules.
-
-```
-.
-├── commons
-├── core
-├── mongodb
-└── security
-```
-
-## Plugins
-
-Except for the `core` services, everything else is a plugin. The `security` and `mongodb` modules are just JAR files which are copied into the `plugins/` folder within the root folder, where the `restheart.jar` core and `etc/` folder are.
-
-```
-.
-├── etc/
-│   ├── acl.yml
-│   ├── default.properties
-│   ├── restheart.yml
-│   └── users.yml
-├── plugins/
-│   ├── restheart-mongodb.jar
-│   └── restheart-security.jar
-└── restheart.jar
-```
-
-When the core module starts, it scans the Java classpath within the `plugins/` folder and loads all the JAR files there.
-
-Plugins are annotated with the [`@RegisterPlugin`](commons/src/main/java/org/restheart/plugins/RegisterPlugin.java) Java annotation and implement the [`Service`](commons/src/main/java/org/restheart/plugins/Service.java) interface.
-
-For example, below the [`MongoService`](mongodb/src/main/java/org/restheart/mongodb/MongoService.java) class, which provides all of MongoDB's capabilities to the `core` module.
-
-
-```java
-@RegisterPlugin(name = "mongo",
-        description = "handles request to mongodb resources",
-        enabledByDefault = true,
-        defaultURI = "/",
-        priority = Integer.MIN_VALUE)
-public class MongoService implements Service {
-    ...
-}
-```
 
 ## Run with Docker
 
@@ -130,7 +84,7 @@ The default `acl.yml` defines the following permission:
 - *admin* role can execute any request
 - *user* role can execute any request on collection `/{username}`
 
-> __WARNING__ You must update the passwords! See [Configuration](#configuration) for more information on how to override the default `users.yml` configuration file.
+> __WARNING__ You must update the passwords in production! See [Configuration](#configuration) for more information on how to override the default `users.yml` configuration file.
 
 ### Check that everything works
 
@@ -158,7 +112,7 @@ $ curl --user admin:secret :8080/collection
 
 You need:
 - Java v11+;
-- MongoDB running on `localhost` on port `27017`. Both MongoDB 3.x and 4.x will work.
+- MongoDB running on `localhost` on port `27017`. Both MongoDB 3.x and 4.x work.
 
 For more information on how to install and run MongoDB check [install tutorial](https://docs.mongodb.com/manual/installation/#mongodb-community-edition-installation-tutorials) and [manage mongodb](https://docs.mongodb.com/manual/tutorial/manage-mongodb-processes/) on MongoDB documentation.
 
@@ -198,7 +152,7 @@ Configuration files are under the folder `etc/`
 #### Run *restheart*
 
 ```bash
-$ cd restheart-<version>
+$ cd restheart
 
 $ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
 ```
@@ -271,9 +225,7 @@ Usage: java -Dfile.encoding=UTF-8 -jar -server restheart.jar [options]
 
 ## How to Build
 
-> Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and __Java 11__ or later.
-
-Build the project with Maven:
+Building RESTHeart requires [Maven](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and __Java 11__ or later.
 
 ```bash
 $ mvn clean package
@@ -291,25 +243,27 @@ $ mvn verify
 
 RESTHeart's releases are available on [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.restheart%22).
 
-Stable releases are available at:
+Stable releases are available at: https://oss.sonatype.org/content/repositories/releases/org/restheart/restheart/
 
-https://oss.sonatype.org/content/repositories/releases/org/restheart/restheart/
+> INFO: the main difference with the past is that in RESTHeart v5 a developer doesn't build a custom version of `restheart.jar` to create extensions anymore (it was usually done with the maven-shade-plugin), instead it's enough to compile against the `restheart-commons` library to create a plugin, which is a JAR file to be copied into the `plugins/` folder and class-loaded during startup.
 
-If you want to embed RESTHeart in your project, to compile new plugins, just add the `restheart-commons` dependency to your POM file:
+To compile new plugins, add the `restheart-commons` dependency to your POM file:
 
 ```xml
 <dependencies>
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart-commons</artifactId>
-        <version>5.0.0-RC1</version>
+        <version>5.0.0-RC2</version>
     </dependency>
 </dependencies>
 ```
 
+__IMPORTANT__: The `restheart-commons` artifact in the `commons` module has been released using the Apache v2 license instead of the AGPL v3. This is much like MongoDB is doing with the Java driver. It implies __your projects does not incur in the AGPL restrictions when extending RESTHeart with plugins__.
+
 ### Snapshot Builds
 
-Snapshots are available at [Sonatype](https://oss.sonatype.org/content/repositories/snapshots/org/restheart/restheart/). If you want to build your project against a development release, first add the SNAPSHOT repository:
+Snapshot builds are available at [Sonatype](https://oss.sonatype.org/content/repositories/snapshots/org/restheart/restheart/). If you want to build your project against a development release, first add the SNAPSHOT repository:
 
 
 ```xml
@@ -325,23 +279,74 @@ Snapshots are available at [Sonatype](https://oss.sonatype.org/content/repositor
 </repositories>
  ```
 
-Then include the SNAPSHOT dependency in your POM:
+Then include the desired SNAPSHOT dependency version in your POM, for example:
 
 ```xml
 <dependencies>
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart-commons</artifactId>
-        <version>5.0.0-RC1</version>
+        <version>5.0.1-SNAPSHOT</version>
     </dependency>
 </dependencies>
 ```
 
+However, as you should know how Maven works, the recommended way do deal with development snapshots is to build and install the code by yourself.
+
 ## Continuous Integration
 
-We continually integrate and deploy development releases to Maven Central.
+We continuously integrate and deploy development releases to Maven Central. RESTHeart's public Docker images are automatically built and pushed to [Docker Hub](https://hub.docker.com/r/softinstigate/restheart/). The `latest` tag for Docker images refers to the most recent stable release on the `master` branch, __we don't publish SNAPSHOTs as Docker images__.
 
-RESTHeart's public Docker images are automatically built and pushed to [Docker Hub](https://hub.docker.com/r/softinstigate/restheart/). The `latest` tag for Docker images refers to the most recent stable release on the `master` branch, we do not publish SNAPSHOTs as Docker images.
+## Project structure
+
+Starting from RESTHeart v5 we have merged all sub-projects into a single [Maven multi module project](https://maven.apache.org/guides/mini/guide-multiple-modules.html) and a single Git repository (this one).
+
+> The v4 architecture, in fact, was split into two separate Java processes: one for managing security, identity and access management (restheart-security) and one to access the database layer (restheart). The new v5 architecture is monolithic, like it was RESTHeart v3. This decision was due to the excessive complexity of building and deploying two distinct processes and the little gains we have observed in real applications. 
+
+Then `core` module now is just [Undertow](http://undertow.io) plus a _bootstrapper_ which reads the configuration and starts the HTTP server. The `security` module provides __Authentication__ and __Authorization__ services, while the `mongodb` module interacts with MongoDB and exposes all of its services via a REST API, as usual. Besides, we added a new `commons` module which is a shared library, including all interfaces and implementations in common among the other modules.
+
+```
+.
+├── commons
+├── core
+├── mongodb
+└── security
+```
+
+## Plugins
+
+Except for the `core` services, everything else is a plugin. The `security` and `mongodb` modules are just JAR files which are copied into the `plugins/` folder within the root folder, where the `restheart.jar` core and `etc/` folder are.
+
+```
+.
+├── etc/
+│   ├── acl.yml
+│   ├── default.properties
+│   ├── restheart.yml
+│   └── users.yml
+├── plugins/
+│   ├── restheart-mongodb.jar
+│   └── restheart-security.jar
+└── restheart.jar
+```
+
+When the core module starts, it scans the Java classpath within the `plugins/` folder and loads all the JAR files there.
+
+Plugins are annotated with the [`@RegisterPlugin`](commons/src/main/java/org/restheart/plugins/RegisterPlugin.java) Java annotation and implement the [`Service`](commons/src/main/java/org/restheart/plugins/Service.java) interface.
+
+For example, below the [`MongoService`](mongodb/src/main/java/org/restheart/mongodb/MongoService.java) class, which provides all of MongoDB's capabilities to the `core` module.
+
+
+```java
+@RegisterPlugin(name = "mongo",
+        description = "handles request to mongodb resources",
+        enabledByDefault = true,
+        defaultURI = "/",
+        priority = Integer.MIN_VALUE)
+public class MongoService implements Service {
+    ...
+}
+```
 
 ## Full documentation
 
@@ -355,7 +360,7 @@ If you have any question about RESTHeart and want to talk directly with the core
 
 ## Commercial Editions
 
-RESTHeart v5 is a open source project distributed under a [open-core model](https://en.wikipedia.org/wiki/Open-core_model). It means that its main features are free to use under the OSI-approved open source licenses, but some enterprise-level features are distributed with a more business-friendly commercial license.
+RESTHeart v5 is a open source project distributed under a [open-core model](https://en.wikipedia.org/wiki/Open-core_model). It means that its main features are free to use under the OSI-approved open source licenses, but some enterprise-level features are distributed with a business-friendly commercial license. We hope this model will allow us to finance the continuous development and improvement of this product, which has become too large to be handled like a side project.
 
 This is a list of commercial-only features: 
 
@@ -366,8 +371,6 @@ This is a list of commercial-only features:
 - [RESTHeart Authorizer](https://restheart.org/docs/security/authorization/#restheart-authorizer) with ACL defined in the database and role-based data filter capabilities
 
 Check the [editions matrix](https://restheart.org/editions) for more information.
-
-> This GitHub repository will always contain open source features, we are not going to mix OSS and commercial software in the same place.
 
 <hr></hr>
 
