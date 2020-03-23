@@ -12,6 +12,7 @@
     <artifactId>restheart-commons</artifactId>
     <packaging>jar</packaging>
 
+    <name>restheart-commons</name>
     <description>RESTHeart Commons - Common classes for core components and plugins.</description>
     <url>https://restheart.org</url>
     <inceptionYear>2019</inceptionYear>

@@ -10,8 +10,9 @@
 
     <groupId>org.restheart</groupId>
     <artifactId>restheart</artifactId>
-    <name>restheart-core</name>
     <packaging>jar</packaging>
+    
+    <name>restheart-core</name>
     <description>RESTHeart Core - Core services for RESTHeart</description>
     <url>https://restheart.org</url>
     <inceptionYear>2014</inceptionYear>

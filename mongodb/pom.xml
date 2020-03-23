@@ -11,9 +11,9 @@
     <groupId>org.restheart</groupId>
     <artifactId>restheart-mongodb</artifactId>
     <packaging>jar</packaging>
-    <description>
-        RESTHeart MongoDB - MongoDB plugin for RESTHeart.
-    </description>
+
+    <name>restheart-mongodb</name>
+    <description>RESTHeart MongoDB - MongoDB plugin for RESTHeart.</description>
     <url>http://www.restheart.org</url>
     <inceptionYear>2014</inceptionYear>
 
