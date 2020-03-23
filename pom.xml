@@ -6,7 +6,7 @@
     <artifactId>restheart-parent</artifactId>
     <version>5.0.0-RC3-SNAPSHOT</version>
     <packaging>pom</packaging>
-    
+
     <name>restheart</name>
     <description>RESTHeart - The REST API microservice for MongoDB.</description>
     <url>http://www.restheart.org</url>
@@ -33,6 +33,10 @@
             mvn install -Dmongodb.version=3.8   : Test with mongo:3.8 container
         -->
         <mongodb.version>4.2</mongodb.version>
+        <!--
+            mvn -DskipUpdateLicense=false add missing license headers
+        -->
+        <skipUpdateLicense>true</skipUpdateLicense>
     </properties>
 
     <modules>
