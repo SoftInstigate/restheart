@@ -171,13 +171,13 @@ Download the latest distribution from:
 Un-zip or un-tar:
 
 ```bash
-$ unzip restheart-<version>.zip
+$ unzip restheart.zip
 ```
 
-or:
+or
 
 ```bash
-$ tar -xzf restheart-<version>.tar.gz
+$ tar -xzf restheart.tar.gz
 ```
 
 Configuration files are under the folder `etc/`
