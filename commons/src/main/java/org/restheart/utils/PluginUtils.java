@@ -19,11 +19,11 @@
  */
 package org.restheart.utils;
 
+import java.util.Map;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
-import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 
@@ -84,22 +84,38 @@ public class PluginUtils {
 
     /**
      *
-     * @param registry the PluginsRegistry
-     * @param serviceName
+     * @param <P>
+     * @param serviceClass
      * @return the service default URI. If not explicitly set via defaulUri
      * attribute, it is /[service-name]
      */
-    public static String defaultURI(PluginsRegistry registry,
-            String serviceName) {
-        var service = registry.getServices().stream()
-                .filter(s -> serviceName.equals(s.getName()))
-                .findFirst();
+    public static <P extends Service> String defaultURI(Class<P> serviceClass) {
+        var a = serviceClass
+                .getDeclaredAnnotation(RegisterPlugin.class);
 
-        if (service != null && service.isPresent()) {
+        return a == null
+                ? null
+                : a.defaultURI() == null || "".equals(a.defaultURI())
+                ? "/".concat(a.name())
+                : a.defaultURI();
+    }
 
-            return defaultURI(service.get().getInstance());
+    /**
+     *
+     * @param <P>
+     * @param conf the plugin configuration got from @InjectConfiguration
+     * @param serviceClass the class of the service
+     * @return the actual service uri set in cofiguration or the defaultURI
+     */
+    public static <P extends Service> String actualUri(Map<String, Object> conf,
+            Class<P> serviceClass) {
+
+        if (conf != null
+                && conf.get("uri") != null
+                && conf.get("uri") instanceof String) {
+            return (String) conf.get("uri");
         } else {
-            return null;
+            return PluginUtils.defaultURI(serviceClass);
         }
     }
 }

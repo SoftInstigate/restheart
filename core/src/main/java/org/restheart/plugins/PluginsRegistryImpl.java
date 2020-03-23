@@ -93,12 +93,13 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      * force plugin objects instantiation
      */
     public void instantiateAll() {
+        getInitializers();
+        
         getAuthMechanisms();
         getAuthorizers();
         getTokenManager();
         getAuthenticators();
         
-        getInitializers();
         getInterceptors();
         getServices();
         

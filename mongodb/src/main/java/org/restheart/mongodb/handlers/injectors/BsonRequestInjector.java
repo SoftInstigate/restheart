@@ -60,11 +60,15 @@ import org.slf4j.LoggerFactory;
 
 /**
  * initialize the BsonRequest
+ *
+ * Assumes that the BsonRequest is already initialized by BsonRequestInitializer
+ * of restheart-core, configured by MongoMountsConfigurator
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BsonRequestInitializer extends PipelinedHandler {
+public class BsonRequestInjector extends PipelinedHandler {
     static final Logger LOGGER
-            = LoggerFactory.getLogger(BsonRequestInitializer.class);
+            = LoggerFactory.getLogger(BsonRequestInjector.class);
 
     private static final int DEFAULT_PAGESIZE = MongoServiceConfiguration
             .get()
@@ -74,58 +78,25 @@ public class BsonRequestInitializer extends PipelinedHandler {
             .get()
             .getMaxPagesize();
 
-    private final boolean mongoPipeline;
-
-    private final String requestUri;
-    private final String resourceUri;
     private final boolean checkAggregationOperators;
 
     /**
      *
-     * @param mongoPipeline true if the target of the request is the mongo
-     * handlers pipeline
      * @param checkAggregationOperators
      */
-    public BsonRequestInitializer(boolean mongoPipeline,
-            boolean checkAggregationOperators) {
-        this("/", "*", mongoPipeline, checkAggregationOperators, null);
+    public BsonRequestInjector(boolean checkAggregationOperators) {
+        this(checkAggregationOperators, null);
     }
 
     /**
      *
-     * @param requestUri
-     * @param resourceUri
-     * @param mongoPipeline
      * @param checkAggregationOperators
      * @param next
      */
-    public BsonRequestInitializer(String requestUri,
-            String resourceUri,
-            boolean mongoPipeline,
+    public BsonRequestInjector(
             boolean checkAggregationOperators,
             PipelinedHandler next) {
         super(next);
-
-        this.mongoPipeline = mongoPipeline;
-
-        if (requestUri == null) {
-            throw new IllegalArgumentException("whereUri cannot be null. check your mongo-mounts.");
-        }
-
-        if (!requestUri.startsWith("/")) {
-            throw new IllegalArgumentException("whereUri must start with \"/\". check your mongo-mounts");
-        }
-
-        if (resourceUri == null) {
-            throw new IllegalArgumentException("whatUri cannot be null. check your mongo-mounts.");
-        }
-
-        if (!resourceUri.startsWith("/") && !resourceUri.equals("*")) {
-            throw new IllegalArgumentException("whatUri must be * (all db resorces) or start with \"/\". (eg. /db/coll) check your mongo-mounts");
-        }
-
-        this.requestUri = URLUtils.removeTrailingSlashes(requestUri);
-        this.resourceUri = resourceUri;
         this.checkAggregationOperators = checkAggregationOperators;
     }
 
@@ -136,8 +107,6 @@ public class BsonRequestInitializer extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        BsonRequest.init(exchange, requestUri, resourceUri);
-
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
 
@@ -145,12 +114,6 @@ public class BsonRequestInitializer extends PipelinedHandler {
         // this makes sure OPTIONS works even on wrong paramenter
         // e.g. OPTIONS 127.0.0.1:8080?page=a
         if (request.isOptions()) {
-            next(exchange);
-            return;
-        }
-
-        // skip parameters injection if target resource is not the mongoPipeline
-        if (!mongoPipeline) {
             next(exchange);
             return;
         }
@@ -715,5 +678,4 @@ public class BsonRequestInitializer extends PipelinedHandler {
         next(exchange);
     }
 
-    
 }
