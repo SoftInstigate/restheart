@@ -35,6 +35,7 @@
         <mongodb.version>4.2</mongodb.version>
         <!--
             mvn -DskipUpdateLicense=false add missing license headers
+            Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
         -->
         <skipUpdateLicense>true</skipUpdateLicense>
     </properties>
