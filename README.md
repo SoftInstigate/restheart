@@ -352,9 +352,11 @@ Except for the `core` services, everything else is a plugin. The `security` and 
 
 When the core module starts, it scans the Java classpath within the `plugins/` folder and loads all the JAR files there.
 
-Plugins are annotated with the [`@RegisterPlugin`](commons/src/main/java/org/restheart/plugins/RegisterPlugin.java) Java annotation and implement the [`Service`](commons/src/main/java/org/restheart/plugins/Service.java) interface.
+Plugins are annotated with the [`@RegisterPlugin`](commons/src/main/java/org/restheart/plugins/RegisterPlugin.java) and implement an Interface. 
 
-For example, below the [`MongoService`](mongodb/src/main/java/org/restheart/mongodb/MongoService.java) class, which provides all of MongoDB's capabilities to the `core` module.
+Several types of Plugin exist to extends RESTHeart. For more information refer to [Plugins overview](https://restheart.org/docs/plugins/overview/) in the documentation.
+
+For example, below the [`MongoService`](mongodb/src/main/java/org/restheart/mongodb/MongoService.java) class implementing the [`Service`](commons/src/main/java/org/restheart/plugins/Service.java) interface, which provides all of MongoDB's capabilities to the `core` module:
 
 ```java
 @RegisterPlugin(name = "mongo",
