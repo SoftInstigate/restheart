@@ -18,16 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.plugins.interceptors;
+package org.restheart.test.plugins.interceptors;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
-import java.util.Map;
-import org.restheart.handlers.exchange.JsonResponse;
-import org.restheart.plugins.InjectConfiguration;
-import static org.restheart.plugins.InterceptPoint.RESPONSE;
+import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
@@ -38,46 +32,25 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(
-        name = "echoExampleResponseInterceptor",
+        name = "echoExampleAsyncResponseInterceptor",
         description = "used for testing purposes",
         enabledByDefault = false,
         requiresContent = true,
-        interceptPoint = RESPONSE)
-public class EchoExampleResponseInterceptor implements Interceptor {
-    
+        interceptPoint = RESPONSE_ASYNC)
+public class EchoExampleAsyncResponseInterceptor implements Interceptor {
+
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(EchoExampleResponseInterceptor.class);
-    
-    /**
-     * shows how to inject configuration via @OnInit
-     * @param args
-     */
-    @InjectConfiguration
-    public void init(Map<String, Object> args) {
-        LOGGER.trace("got args {}", args);
-    }
+            .getLogger(EchoExampleAsyncResponseInterceptor.class);
 
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        var response = JsonResponse.wrap(exchange);
-
-        exchange.getResponseHeaders().add(HttpString.tryFromString("header"),
-                "added by EchoExampleResponseInterceptor " + exchange.getRequestPath());
-
-        if (response.isContentAvailable()) {
-            JsonElement _content = response
-                    .readContent();
-
-            // can be null
-            if (_content.isJsonObject()) {
-                JsonObject content = _content
-                        .getAsJsonObject();
-
-                content.addProperty("prop2",
-                        "property added by EchoExampleResponseInterceptor");
-
-                response.writeContent(content);
-            }
+        try {
+            Thread.sleep(2 * 1000);
+            LOGGER.info("This log message is written 2 seconds after response "
+                    + "by echoExampleAsyncResponseInterceptor");
+        }
+        catch (InterruptedException ie) {
+            LOGGER.warn("error ", ie);
         }
     }
 
@@ -87,5 +60,4 @@ public class EchoExampleResponseInterceptor implements Interceptor {
                 || exchange.getRequestPath().equals("/piecho")
                 || exchange.getRequestPath().equals("/anything");
     }
-
 }

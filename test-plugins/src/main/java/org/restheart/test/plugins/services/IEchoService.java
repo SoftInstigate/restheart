@@ -18,9 +18,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
+package org.restheart.test.plugins.services;
+
+import org.restheart.plugins.RegisterPlugin;
+
 /**
- * Implementations of Initializer
- * 
+ * used for testing
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.security.plugins.initializers;
+@RegisterPlugin(
+        name = "iecho",
+        description = "only used for automatic testing purposes",
+        enabledByDefault = false,
+        defaultURI = "/iecho")
+public class IEchoService extends EchoService {
+
+}

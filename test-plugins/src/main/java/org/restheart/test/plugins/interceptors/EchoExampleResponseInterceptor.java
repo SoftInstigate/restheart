@@ -18,57 +18,74 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.plugins.interceptors;
+package org.restheart.test.plugins.interceptors;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
-import java.util.LinkedList;
-import org.restheart.handlers.exchange.JsonRequest;
+import io.undertow.util.HttpString;
+import java.util.Map;
+import org.restheart.handlers.exchange.JsonResponse;
+import org.restheart.plugins.InjectConfiguration;
+import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(
-        name = "echoExampleRequestInterceptor",
+        name = "echoExampleResponseInterceptor",
         description = "used for testing purposes",
         enabledByDefault = false,
-        requiresContent = true)
-public class EchoExampleRequestInterceptor implements Interceptor {
+        requiresContent = true,
+        interceptPoint = RESPONSE)
+public class EchoExampleResponseInterceptor implements Interceptor {
+    
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(EchoExampleResponseInterceptor.class);
+    
+    /**
+     * shows how to inject configuration via @OnInit
+     * @param args
+     */
+    @InjectConfiguration
+    public void init(Map<String, Object> args) {
+        LOGGER.trace("got args {}", args);
+    }
+
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        // add query parameter ?pagesize=0
-        var vals = new LinkedList<String>();
-        vals.add("param added by EchoExampleRequestInterceptor");
-        exchange.getQueryParameters().put("param", vals);
+        var response = JsonResponse.wrap(exchange);
 
-        var request = JsonRequest.wrap(exchange);
+        exchange.getResponseHeaders().add(HttpString.tryFromString("header"),
+                "added by EchoExampleResponseInterceptor " + exchange.getRequestPath());
 
-        JsonElement requestContent;
+        if (response.isContentAvailable()) {
+            JsonElement _content = response
+                    .readContent();
 
-        if (!request.isContentAvailable()) {
-            request.writeContent(new JsonObject());
-        }
+            // can be null
+            if (_content.isJsonObject()) {
+                JsonObject content = _content
+                        .getAsJsonObject();
 
-        if (request.isContentTypeJson()) {
-            requestContent = request.readContent();
+                content.addProperty("prop2",
+                        "property added by EchoExampleResponseInterceptor");
 
-            if (requestContent.isJsonObject()) {
-                requestContent.getAsJsonObject()
-                        .addProperty("prop1",
-                                "property added by EchoExampleRequestInterceptor");
-
-                request.writeContent(requestContent);
+                response.writeContent(content);
             }
         }
     }
-    
+
     @Override
     public boolean resolve(HttpServerExchange exchange) {
         return exchange.getRequestPath().equals("/iecho")
+                || exchange.getRequestPath().equals("/piecho")
                 || exchange.getRequestPath().equals("/anything");
     }
+
 }

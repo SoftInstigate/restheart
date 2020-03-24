@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.plugins.services;
+package org.restheart.test.plugins.services;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
