@@ -494,7 +494,7 @@ public class PluginsFactory {
             for (Path path : directoryStream) {
                 var jar = path.toUri().toURL();
                 urls.add(jar);
-                LOGGER.info("Added to classpath the plugins jar {}", jar);
+                LOGGER.info("Deployed plugin jar {}", jar);
             }
         } catch (IOException ex) {
             LOGGER.error("Cannot read jars in plugins directory {}",

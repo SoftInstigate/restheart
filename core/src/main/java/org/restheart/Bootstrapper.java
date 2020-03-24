@@ -828,7 +828,7 @@ public class Bootstrapper {
         builder.setServerOption(UndertowOptions.ALLOW_UNESCAPED_CHARACTERS_IN_URL,
                 configuration.isAllowUnescapedCharactersInUrl());
 
-        LOGGER.info("Allow unescaped characters in URL: {}",
+        LOGGER.debug("Allow unescaped characters in URL: {}",
                 configuration.isAllowUnescapedCharactersInUrl());
 
         ConfigurationHelper.setConnectionOptions(builder, configuration);
@@ -890,7 +890,7 @@ public class Bootstrapper {
     ) {
         getRootPathHandler().addPrefixPath("/", new RequestNotManagedHandler());
 
-        LOGGER.info("Content buffers maximun size "
+        LOGGER.debug("Content buffers maximun size "
                 + "is {} bytes",
                 MAX_CONTENT_SIZE);
 
