@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+    
+  <parent>
+    <groupId>org.restheart</groupId>
+    <artifactId>restheart-parent</artifactId>
+    <version>5.0.0-RC3-SNAPSHOT</version>
+  </parent>
+    
+  <groupId>org.restheart</groupId>
+  <artifactId>restheart-test-plugins</artifactId>
+  <packaging>jar</packaging>
+    
+  <name>restheart-test-plugins</name>
+  <description>RESTHeart Test Plugins - RESTHeart plugins used for testing</description>
+  <url>https://restheart.org</url>
+  <inceptionYear>2020</inceptionYear>
+    
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License (AGPL) version 3.0</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0.html</url>
+      <distribution>repo</distribution>
+      <comments>Core components license</comments>
+    </license>
+  </licenses>
+    
+  <dependencies>
+    <dependency>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-commons</artifactId>
+    </dependency>
+  </dependencies>
+  
+  <build>
+    <finalName>${project.artifactId}</finalName>
+  </build>
+</project>

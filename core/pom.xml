@@ -139,6 +139,12 @@
             <artifactId>restheart-security</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart-test-plugins</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
         <!-- END Test dependencies -->
     </dependencies>
 
@@ -346,6 +352,7 @@
                         <configuration>
                             <skip>${skipITs}</skip>
                             <target>
+                                <copy file="../test-plugins/target/restheart-test-plugins.jar" todir="./target/plugins" overwrite="true" />
                                 <echo>***** Initiliazing MongoDB cluster...</echo>
                                 <exec executable="docker">
                                     <arg value="run" />
@@ -375,6 +382,7 @@
                         <configuration>
                             <skip>${skipITs}</skip>
                             <target>
+                                <delete file="./target/plugins/restheart-test-plugins.jar" />
                                 <echo>***** Stopping RESTHeart process...</echo>
                                 <exec dir="${basedir}" executable="bin/stop.sh">
                                     <arg value="etc/test/restheart.yml" />

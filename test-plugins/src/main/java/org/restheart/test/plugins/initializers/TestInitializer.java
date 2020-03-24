@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.plugins.initializers;
+package org.restheart.test.plugins.initializers;
 
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;

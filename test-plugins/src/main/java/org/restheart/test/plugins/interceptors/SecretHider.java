@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.plugins.interceptors;
+package org.restheart.test.plugins.interceptors;
 
 import com.google.gson.JsonElement;
 import io.undertow.server.HttpServerExchange;
