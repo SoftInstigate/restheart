@@ -24,7 +24,6 @@ import org.bson.BsonValue;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.plugins.Plugin;
 
-
 /**
  * An Hook is executed after requests completes.
  * <p>
@@ -57,7 +56,9 @@ import org.restheart.plugins.Plugin;
  * <li>Location header:
  * ExchangeAttributes.responseHeader(HttpString.tryFromString(HttpHeaders.LOCATION)).readAttribute(exchange)
  * </ul>
- * @deprecated use org.restheart.plugins.Interceptor instead
+ *
+ * @deprecated use org.restheart.plugins.Interceptor with
+ * interceptPoint=RESPONSE_ASYNC instead
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  */
@@ -67,7 +68,8 @@ public interface Hook extends Plugin {
      *
      * @param exchange the server exchange
      * @param context the request context
-     * @param args the args specified in the collection metadata via args property
+     * @param args the args specified in the collection metadata via args
+     * property
      * @return true if completed successfully
      */
     default boolean hook(
@@ -76,14 +78,15 @@ public interface Hook extends Plugin {
             BsonValue args) {
         return hook(exchange, context, args, null);
     }
-        
 
     /**
      *
      * @param exchange the server exchange
      * @param context the request context
-     * @param args the args specified in the collection metadata via args property
-     * @param confArgs args specified in the configuration file via args property
+     * @param args the args specified in the collection metadata via args
+     * property
+     * @param confArgs args specified in the configuration file via args
+     * property
      * @return true if completed successfully
      */
     default boolean hook(
