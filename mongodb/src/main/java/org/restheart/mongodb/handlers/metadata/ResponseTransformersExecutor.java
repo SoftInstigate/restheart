@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.mongodb.GlobalTransformer;
 import org.restheart.plugins.mongodb.Transformer.PHASE;

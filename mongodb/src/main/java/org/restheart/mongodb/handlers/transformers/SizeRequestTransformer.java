@@ -30,9 +30,8 @@ import org.restheart.handlers.exchange.BsonResponse;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * During request phase, this transformer just sets the pagesize to 0 to avoid
- * retrieving data for count request. During response phase set the content to
- * just contain the _size property
+ * For count request (/_size) sets the pagesize to 0 to avoid retrieving data
+ * and sets response content to just contain the _size property
  *
  */
 public class SizeRequestTransformer extends PipelinedHandler {

@@ -237,6 +237,8 @@ plugins-args:
         log-level: INFO
     addBodyToWriteResponsesInitializer:
         enabled: false
+    snooper:
+        enabled: true
 
 #### Security
 

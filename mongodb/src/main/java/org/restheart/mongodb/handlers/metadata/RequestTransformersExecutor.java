@@ -28,7 +28,7 @@ import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;

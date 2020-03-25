@@ -20,6 +20,7 @@
  */
 package org.restheart.mongodb.utils;
 
+import org.restheart.utils.JsonUtils;
 import io.undertow.server.HttpServerExchange;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;

@@ -27,11 +27,9 @@ import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys._META;
 
 /**
- *
+ * sets the _id=_meta in /_meta requests
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- *
- * sets the _id=_meta
- *
  */
 public class MetaRequestTransformer extends PipelinedHandler {
 

@@ -51,7 +51,7 @@ import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.aggregation.AggregationPipeline;
 import org.restheart.mongodb.representation.UnsupportedDocumentIdException;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.utils.HttpStatus;

@@ -29,7 +29,7 @@ import org.bson.BsonValue;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

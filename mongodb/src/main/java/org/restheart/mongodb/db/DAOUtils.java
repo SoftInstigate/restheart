@@ -51,7 +51,7 @@ import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.exchange.OperationResult;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;

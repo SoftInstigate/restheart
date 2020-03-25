@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.utils;
+package org.restheart.utils;
 
 import com.mongodb.MongoClient;
 import java.util.ArrayList;

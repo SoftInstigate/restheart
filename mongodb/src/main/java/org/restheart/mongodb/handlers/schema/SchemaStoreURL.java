@@ -23,7 +23,7 @@ package org.restheart.mongodb.handlers.schema;
 import java.util.Objects;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 
 /**
  *

@@ -33,7 +33,7 @@ import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.exchange.RequestContext;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.mongodb.Transformer;
 import org.slf4j.Logger;
@@ -71,9 +71,9 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(name = "addRequestProperties",
         description = "Adds properties to the request body")
 @SuppressWarnings("deprecation")
-public class RequestPropsInjecterTransformer implements Transformer {
+public class RequestPropsInjectorTransformer implements Transformer {
     static final Logger LOGGER
-            = LoggerFactory.getLogger(RequestPropsInjecterTransformer.class);
+            = LoggerFactory.getLogger(RequestPropsInjectorTransformer.class);
 
     /**
      *
