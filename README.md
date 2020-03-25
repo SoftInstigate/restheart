@@ -39,7 +39,7 @@
 
 ## Summary
 
-3 things every developer in the world always need to implement:
+There are some features every developer in the world always need to implement:
 
 1. Data persistence.
 1. Authentication and Authorization.
