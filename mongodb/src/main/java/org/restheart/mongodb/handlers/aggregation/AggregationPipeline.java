@@ -27,7 +27,7 @@ import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 
 /**
  * represents a map reduce.

@@ -33,8 +33,7 @@ import org.restheart.mongodb.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**
- *
- * internally contentToTransform is always in HAL format
+ * Internally response content is always in HAL format
  * this transforms it to the target representation format
  * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>

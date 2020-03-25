@@ -33,7 +33,7 @@ import org.restheart.cache.CacheFactory;
 import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 public class JsonSchemaCacheSingleton {

@@ -32,7 +32,7 @@ import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.mongodb.representation.Resource;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 
 /**
  *

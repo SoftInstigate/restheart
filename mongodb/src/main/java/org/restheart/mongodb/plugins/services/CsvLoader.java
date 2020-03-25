@@ -43,7 +43,7 @@ import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ChannelReader;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;

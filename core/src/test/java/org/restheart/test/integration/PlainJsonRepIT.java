@@ -28,7 +28,7 @@ import org.bson.BsonValue;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.restheart.mongodb.utils.JsonUtils;
+import org.restheart.utils.JsonUtils;
 import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 
 /**
