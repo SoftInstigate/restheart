@@ -39,18 +39,29 @@
 
 ## Summary
 
-RESTHeart is a REST API Microservice for MongoDB.
+3 things every developer in the world always need to implement:
 
-RESTHeart connects to **MongoDB** and opens data to the Web. Clients, such as mobile and JavaScript apps, can access the database via a simple **API** based on **JSON** messages and plain **HTTP**.
+1. Data persistence.
+1. Authentication and Authorization.
+1. API.
 
-The word "microservice" here is due to the fact that RESTHeart is
+RESTHeart provides out-of-the-box:
 
-1. Fully stateless;
-1. Natively designed to be deployed in a Docker container.
+1. Data persistence via MongoDB.
+1. Secure Identity and Access Management.
+1. REST API with JSON messages.
 
-With RESTHeart teams can focus on building Angular, React, Vue, iOS or Android applications, because most of the server-side logic usually necessary for database operations is automatically handled, **without the need to write any server-side code** except for the client logic.
+RESTHeart is a __REST API Microservice for MongoDB__ which provides server-side Data, Identity and Access Management for Web and Mobile applications.
 
-For example, to insert data in MongoDB a developer models client-side JSON documents and then execute POST operations via HTTP to RESTHeart: no more need to deal with complicated server-side code and database drivers in Java, JavaScript, PHP, Ruby, Python, etc.
+RESTHeart is:
+
+1. A Stateless Microservice.
+1. Designed to be distributed as a Docker container.
+1. Easily deployable both on cloud and on-premises.
+
+With RESTHeart teams can focus on building Angular, React, Vue, iOS or Android applications, because most of the server-side logic necessary to manage database operations, authentication / authorization and related APIs is automatically handled, __without the need to write any server-side code__ except for the UX/UI.
+
+> For example, to insert data into MongoDB a developer has to just create client-side JSON documents and then execute POST operations via HTTP to RESTHeart: no more need to deal with complicated server-side coding and database drivers in Java, JavaScript, PHP, Ruby, Python, etc.
 
 For these reasons, RESTHeart is widely used by freelancers, Web agencies and System Integrators with deadlines, because it allows them to focus on the most important and creative part of their work: the User Experience.
 
