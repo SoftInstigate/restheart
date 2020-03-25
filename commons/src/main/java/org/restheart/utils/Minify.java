@@ -29,10 +29,6 @@ import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
 
 /**
- *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
- */
-/**
  * ---------------------- Minify.java 2015-10-04 ----------------------
  *
  * Copyright (c) 2015 Charles Bihis (www.whoischarles.com)
