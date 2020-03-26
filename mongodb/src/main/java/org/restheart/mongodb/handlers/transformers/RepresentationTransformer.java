@@ -45,15 +45,6 @@ public class RepresentationTransformer extends PipelinedHandler {
         var response = BsonResponse.wrap(exchange);
         var contentToTransform = response.getContent();
         
-        if (!request.isInError()
-                && (request.isDocument()
-                || request.isFile()
-                || request.isIndex())
-                || request.isTxns()) {
-            next(exchange);
-            return;
-        }
-        
         // can be null if an error occurs before RequestContextInjectorHandler.handle()
         REPRESENTATION_FORMAT rf = request.getRepresentationFormat() != null ?
                 request.getRepresentationFormat()
@@ -78,6 +69,15 @@ public class RepresentationTransformer extends PipelinedHandler {
 
         transformError(contentToTransform, responseContent);
 
+        if (!request.isInError()
+                && (request.isDocument()
+                || request.isFile()
+                || request.isIndex())
+                || request.isTxns()) {
+            next(exchange);
+            return;
+        }
+        
         if (request.isInError()) {
             contentToTransform.asDocument().keySet().stream()
                     .filter(

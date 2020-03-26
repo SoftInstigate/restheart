@@ -100,6 +100,6 @@ public class SnooperHook implements Interceptor {
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        return true;
+        return true;//BsonRequest.isInitialized(exchange);
     }
 }

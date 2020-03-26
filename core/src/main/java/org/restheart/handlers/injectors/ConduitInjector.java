@@ -28,8 +28,12 @@ import io.undertow.util.Headers;
 import org.restheart.handlers.ModifiableContentSinkConduit;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.ResponseInterceptorsStreamSinkConduit;
+import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
-import org.restheart.plugins.InterceptPoint;
+import static org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH.SERVICE;
+import static org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH.STATIC_RESOURCE;
+import static org.restheart.plugins.InterceptPoint.RESPONSE;
+import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
 import org.restheart.plugins.PluginsRegistryImpl;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
@@ -42,6 +46,8 @@ import org.xnio.conduits.StreamSinkConduit;
  * Executes the interceptors for proxied resource taking care of buffering the
  * response from the backend to make it accessible to them whose
  * requiresResponseContent() returns true
+ *
+ * Content is always availabe for service resources
  *
  * Note that getting the content has significant performance overhead for
  * proxied resources. To mitigate DoS attacks the injector limits the size of
@@ -94,14 +100,18 @@ public class ConduitInjector extends PipelinedHandler {
                 MDC.setContextMap(mdcCtx);
             }
 
-            if (PluginsRegistryImpl.getInstance()
-                    .getInterceptors()
-                    .stream()
-                    .filter(ri -> ri.isEnabled())
-                    .map(ri -> ri.getInstance())
-                    .filter(ri -> interceptPoint(ri) == InterceptPoint.RESPONSE)
-                    .filter(ri -> ri.resolve(cexchange))
-                    .anyMatch(ri -> requiresContent(ri))) {
+            final var req = ByteArrayRequest.wrap(exchange);
+
+            if (req.getPipelineBranchInfo().getBranch() == SERVICE
+                    || PluginsRegistryImpl.getInstance()
+                            .getInterceptors()
+                            .stream()
+                            .filter(ri -> ri.isEnabled())
+                            .map(ri -> ri.getInstance())
+                            .filter(ri -> interceptPoint(ri) == RESPONSE
+                            || interceptPoint(ri) == RESPONSE_ASYNC)
+                            .filter(ri -> ri.resolve(cexchange))
+                            .anyMatch(ri -> requiresContent(ri))) {
                 var mcsc = new ModifiableContentSinkConduit(factory.create(),
                         cexchange);
                 cexchange.putAttachment(MCSC_KEY, mcsc);

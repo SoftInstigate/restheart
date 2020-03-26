@@ -101,6 +101,7 @@ import org.restheart.handlers.QueryStringRebuilder;
 import org.restheart.handlers.RequestInterceptorsExecutor;
 import org.restheart.handlers.RequestLogger;
 import org.restheart.handlers.RequestNotManagedHandler;
+import org.restheart.handlers.ServicePipelineResponseInterceptorsExecutor;
 import org.restheart.handlers.ResponseSender;
 import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
@@ -1028,12 +1029,13 @@ public class Bootstrapper {
                     securityHandler,
                     new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
                     new QueryStringRebuilder(),
-                    new ConduitInjector(),
                     PipelinedWrappingHandler
                             .wrap(new ConfigurableEncodingHandler(
                                     PipelinedWrappingHandler
                                             .wrap(srv.getInstance()),
                                     configuration.isForceGzipEncoding())),
+                    new ServicePipelineResponseInterceptorsExecutor(),
+                    //new ConduitInjector(),
                     new ResponseSender()
             );
 

@@ -20,6 +20,7 @@
  */
 package org.restheart.mongodb.handlers;
 
+import org.restheart.mongodb.handlers.injectors.ResponseContentInjector;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
@@ -37,7 +38,7 @@ import org.restheart.utils.HttpStatus;
  */
 public class GzipEncodingHandler extends EncodingHandler {
 
-    private final ResponseSenderHandler sender = new ResponseSenderHandler(null);
+    private final ResponseContentInjector sender = new ResponseContentInjector(null);
 
     private boolean forceCompression = false;
 

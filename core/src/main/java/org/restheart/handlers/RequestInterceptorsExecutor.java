@@ -76,8 +76,8 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 .stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
-                .filter(ri -> ri.resolve(exchange))
                 .filter(ri -> interceptPoint == interceptPoint(ri))
+                .filter(ri -> ri.resolve(exchange))
                 .forEachOrdered(ri -> {
                     try {
                         LOGGER.debug("Executing request interceptor {} for {} on intercept point {}",

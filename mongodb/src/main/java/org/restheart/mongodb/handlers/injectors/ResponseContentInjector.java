@@ -18,18 +18,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers;
+package org.restheart.mongodb.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.utils.JsonUtils;
@@ -38,17 +37,17 @@ import org.restheart.utils.JsonUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ResponseSenderHandler extends PipelinedHandler {
+public class ResponseContentInjector extends PipelinedHandler {
     /**
      */
-    public ResponseSenderHandler() {
+    public ResponseContentInjector() {
         super(null);
     }
 
     /**
      * @param next
      */
-    public ResponseSenderHandler(PipelinedHandler next) {
+    public ResponseContentInjector(PipelinedHandler next) {
         super(next);
     }
 
@@ -61,8 +60,35 @@ public class ResponseSenderHandler extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
-        BsonValue responseContent = response.getContent();
 
+        addWarnings(request, response);
+
+        var pr = ByteArrayResponse.wrap(exchange);
+        
+        if (request.getJsonMode() == JsonMode.SHELL) {
+            pr.setContentType(Resource.JAVACRIPT_MEDIA_TYPE);
+        } else if (request.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL) {
+            pr.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+        } else {
+            pr.setContentType(Resource.JSON_MEDIA_TYPE);
+        }
+
+        if (!exchange.isResponseStarted()) {
+            exchange.setStatusCode(response.getStatusCode());
+        }
+
+        if (response.getContent() != null) {
+            pr.writeContent(JsonUtils
+                    .toJson(response.getContent(), request.getJsonMode())
+                    .getBytes());
+        }
+
+        next(exchange);
+    }
+
+    private void addWarnings(BsonRequest request, BsonResponse response) {
+        var responseContent = response.getContent();
+        
         if (response.getWarnings() != null
                 && !response.getWarnings().isEmpty()) {
             if (responseContent == null) {
@@ -103,33 +129,11 @@ public class ResponseSenderHandler extends PipelinedHandler {
                             w -> warnings.add(getWarningDoc(w)));
                 }
             }
+            
+            response.setContent(responseContent);
         }
-
-        if (request.getJsonMode() == JsonMode.SHELL) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
-                    Resource.JAVACRIPT_MEDIA_TYPE);
-        } else if (request.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
-                    Resource.HAL_JSON_MEDIA_TYPE);
-        } else {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
-                    Resource.JSON_MEDIA_TYPE);
-        }
-
-        if (!exchange.isResponseStarted()) {
-            exchange.setStatusCode(response.getStatusCode());
-        }
-
-        if (responseContent != null) {
-            exchange.getResponseSender().send(
-                    JsonUtils.toJson(responseContent, request.getJsonMode()));
-        }
-
-        exchange.endExchange();
-
-        next(exchange);
     }
-
+    
     private BsonDocument getWarningDoc(String warning) {
         Resource nrep = new Resource("#warnings");
         nrep.addProperty("message", new BsonString(warning));

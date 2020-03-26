@@ -239,6 +239,8 @@ plugins-args:
         enabled: false
     snooper:
         enabled: true
+    writeResult:
+        enabled: true
 
 #### Security
 

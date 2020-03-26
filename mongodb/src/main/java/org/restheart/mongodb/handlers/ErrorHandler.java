@@ -20,6 +20,7 @@
  */
 package org.restheart.mongodb.handlers;
 
+import org.restheart.mongodb.handlers.injectors.ResponseContentInjector;
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.MongoException;
 import com.mongodb.MongoExecutionTimeoutException;
@@ -45,10 +46,10 @@ public class ErrorHandler implements HttpHandler {
 
     private final PipelinedHandler sender = PipelinedHandler.pipe(
     new RepresentationTransformer(),
-    new ResponseSenderHandler());
+    new ResponseContentInjector());
             
 //            new TransformersListHandler(
-//            new ResponseSenderHandler(null),
+//            new ResponseContentInjector(null),
 //            PHASE.RESPONSE,
 //            new RepresentationTransformer());
 

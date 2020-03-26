@@ -26,10 +26,11 @@ import org.restheart.handlers.exchange.ByteArrayResponse;
 
 /**
  *
- * sends the response content attached to HttpServerExchange to the client
+ * Sends the response content attached to ByteArrayResponse to the client
  *
- * @see ExchangeHelper.getResponseContentAsJson() and
- * ExchangeHelper.getResponseContent()
+ * The response content of ByteArrayResponse can be set by any ProxableResponse
+ * implementation (eg. JsonResponse)
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseSender extends PipelinedHandler {

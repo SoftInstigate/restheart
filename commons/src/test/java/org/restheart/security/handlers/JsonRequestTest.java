@@ -39,9 +39,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class ExchangeHelperTest {
+public class JsonRequestTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ExchangeHelperTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JsonRequestTest.class);
 
     @BeforeClass
     public static void setUpClass() {
@@ -59,7 +59,7 @@ public class ExchangeHelperTest {
         }
     };
 
-    public ExchangeHelperTest() {
+    public JsonRequestTest() {
     }
 
     @Before
