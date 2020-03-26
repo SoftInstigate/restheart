@@ -43,7 +43,6 @@ import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ChannelReader;
-import org.restheart.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
@@ -51,6 +50,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.plugins.mongodb.Transformer;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

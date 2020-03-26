@@ -30,9 +30,9 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.exchange.RequestContext;
-import org.restheart.utils.JsonUtils;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.mongodb.Checker;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

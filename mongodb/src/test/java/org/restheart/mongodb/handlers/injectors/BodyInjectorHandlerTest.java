@@ -56,7 +56,7 @@ public class BodyInjectorHandlerTest {
         field.setAccessible(true);
 
         formData.add(field.get(null).toString(), jsonString);
-        BsonDocument result = BodyInjector.extractMetadata(formData);
+        BsonDocument result = RequestContentInjector.extractMetadata(formData);
         BsonDocument expected = BsonDocument.parse(jsonString);
         assertEquals(expected, result);
     }

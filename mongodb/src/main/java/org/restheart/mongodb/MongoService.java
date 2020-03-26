@@ -37,12 +37,12 @@ import org.restheart.mongodb.handlers.CORSHandler;
 import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.AccountInjector;
-import org.restheart.mongodb.handlers.injectors.BodyInjector;
 import org.restheart.mongodb.handlers.injectors.BsonRequestInjector;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.CollectionPropsInjector;
 import org.restheart.mongodb.handlers.injectors.DbPropsInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
+import org.restheart.mongodb.handlers.injectors.RequestContentInjector;
 import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.RegisterPlugin;
@@ -110,13 +110,11 @@ public class MongoService implements Service {
             throws ConfigurationException {
         var rootHandler = path();
         
-        var pipeline = PipelinedHandler.pipe(
-                new BsonRequestInjector(
-                        MongoServiceConfiguration.get().getAggregationCheckOperators()),
+        var pipeline = PipelinedHandler.pipe(new BsonRequestInjector(),
                 new MetricsInstrumentationHandler(),
                 new CORSHandler(),
                 new OptionsHandler(),
-                new BodyInjector(),
+                new RequestContentInjector(),
                 new AccountInjector(),
                 ClientSessionInjector.build(),
                 new DbPropsInjector(),

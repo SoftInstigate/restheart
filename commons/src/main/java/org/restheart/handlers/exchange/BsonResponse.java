@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.bson.BsonValue;
-import org.bson.json.JsonMode;
 import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.LoggerFactory;
@@ -80,12 +79,14 @@ public class BsonResponse extends Response<BsonValue> {
     public void setContent(BsonValue content) {
         this.content = content;
 
+        // This makes the content availabe to ProxiedResponse
+        // core's ResponseSender uses ByteArrayResponse 
+        // to send the content to the client
         if (content != null) {
             try {
                 ByteArrayResponse.wrap(wrapped)
-                        .writeContent(JsonUtils
-                                .toJson(content,
-                                        BsonRequest.wrap(wrapped).getJsonMode())
+                        .writeContent(JsonUtils.toJson(content,
+                                BsonRequest.wrap(wrapped).getJsonMode())
                                 .getBytes());
             } catch (IOException ioe) {
                 LOGGER.error("Error writing request content", ioe);

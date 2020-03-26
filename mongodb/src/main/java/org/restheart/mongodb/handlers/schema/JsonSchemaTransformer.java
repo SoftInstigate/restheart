@@ -29,8 +29,8 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.exchange.RequestContext;
-import org.restheart.utils.JsonUtils;
 import org.restheart.plugins.mongodb.Transformer;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

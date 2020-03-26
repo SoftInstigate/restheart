@@ -52,9 +52,9 @@ import static org.restheart.handlers.exchange.ExchangeKeys.TRUE_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys._ID;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ChannelReader;
-import org.restheart.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,9 +65,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BodyInjector extends PipelinedHandler {
+public class RequestContentInjector extends PipelinedHandler {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(BodyInjector.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(RequestContentInjector.class);
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
             + Resource.HAL_JSON_MEDIA_TYPE
@@ -263,7 +263,7 @@ public class BodyInjector extends PipelinedHandler {
      * Creates a new instance of BodyInjectorHandler
      *
      */
-    public BodyInjector() {
+    public RequestContentInjector() {
         this(null);
     }
     
@@ -272,7 +272,7 @@ public class BodyInjector extends PipelinedHandler {
      *
      * @param next
      */
-    public BodyInjector(PipelinedHandler next) {
+    public RequestContentInjector(PipelinedHandler next) {
         super(next);
         this.formParserFactory = FormParserFactory.builder().build();
     }

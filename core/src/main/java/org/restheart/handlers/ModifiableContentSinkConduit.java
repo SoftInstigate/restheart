@@ -28,15 +28,10 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import org.restheart.handlers.exchange.AbstractExchange;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.handlers.exchange.ProxableResponse;
-import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.BuffersUtils;
-import org.restheart.utils.HttpStatus;
-import static org.restheart.utils.PluginUtils.interceptPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.IoUtils;
@@ -47,8 +42,10 @@ import org.xnio.conduits.Conduits;
 import org.xnio.conduits.StreamSinkConduit;
 
 /**
- * a conduit that buffers data allowing to modify it it also responsible of
- * executing response interceptors when terminateWrites() is called
+ * A conduit that buffers data allowing to modify it.
+ *
+ * It is also responsible of executing response interceptors. terminateWrites()
+ * is called
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
@@ -60,6 +57,8 @@ public class ModifiableContentSinkConduit
     //private ByteBuffer data = null;
     private final HttpServerExchange exchange;
 
+    private final ResponseInterceptorsExecutor interceptorsExecutor;
+
     /**
      * Construct a new instance.
      *
@@ -70,6 +69,7 @@ public class ModifiableContentSinkConduit
             HttpServerExchange exchange) {
         super(next);
         this.exchange = exchange;
+        this.interceptorsExecutor = new ResponseInterceptorsExecutor();
 
         resetBufferPool(exchange);
     }
@@ -126,17 +126,14 @@ public class ModifiableContentSinkConduit
 
     @Override
     public void terminateWrites() throws IOException {
-        var resp = ByteArrayResponse.wrap(exchange);
-
-        if (!AbstractExchange.isInError(exchange)
-                && !AbstractExchange.responseInterceptorsExecuted(exchange)) {
-            AbstractExchange.setResponseInterceptorsExecuted(exchange);
-            
-            executeResponseAsyncInterceptor(exchange);
-            executeResponseInterceptor(exchange);
+        try {
+            interceptorsExecutor.handleRequest(exchange);
+        } catch (Exception e) {
+            throw new IOException(e);
         }
 
-        PooledByteBuffer[] dests = resp.getRawContent();
+        PooledByteBuffer[] dests = ByteArrayResponse.wrap(exchange)
+                .getRawContent();
 
         updateContentLenght(exchange, dests);
 
@@ -147,93 +144,6 @@ public class ModifiableContentSinkConduit
         }
 
         next.terminateWrites();
-    }
-
-    private void executeResponseInterceptor(HttpServerExchange exchange) {
-        var resp = ByteArrayResponse.wrap(exchange);
-
-        PluginsRegistryImpl.getInstance()
-                .getInterceptors()
-                .stream()
-                .filter(ri -> ri.isEnabled())
-                .map(ri -> ri.getInstance())
-                .filter(ri -> ri.resolve(exchange))
-                .filter(ri -> interceptPoint(ri) == InterceptPoint.RESPONSE)
-                .forEachOrdered(ri -> {
-                    LOGGER.debug("Executing response interceptor {} for {}",
-                            ri.getClass().getSimpleName(),
-                            exchange.getRequestPath());
-
-                    try {
-                        ri.handle(exchange);
-                    }
-                    catch (Exception ex) {
-                        LOGGER.error("Error executing response interceptor {} for {}",
-                                ri.getClass().getSimpleName(),
-                                exchange.getRequestPath(),
-                                ex);
-                        AbstractExchange.setInError(exchange);
-                        // set error message
-                        ByteArrayResponse response = ByteArrayResponse
-                                .wrap(exchange);
-
-                        // dump bufferd content
-                        BuffersUtils.dump("content buffer "
-                                + exchange.getRequestPath(),
-                                resp.getRawContent());
-
-                        response.endExchangeWithMessage(
-                                HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                                "Error executing response interceptor "
-                                + ri.getClass().getSimpleName(),
-                                ex);
-                    }
-                });
-    }
-
-    private void executeResponseAsyncInterceptor(HttpServerExchange exchange) {
-        var resp = ByteArrayResponse.wrap(exchange);
-
-        PluginsRegistryImpl.getInstance()
-                .getInterceptors()
-                .stream()
-                .filter(ri -> ri.isEnabled())
-                .map(ri -> ri.getInstance())
-                .filter(ri -> interceptPoint(ri) == InterceptPoint.RESPONSE_ASYNC)
-                .filter(ri -> ri.resolve(exchange))
-                .forEachOrdered(ri -> {
-                    exchange.getConnection().getWorker().execute(() -> {
-
-                        LOGGER.debug("Executing response interceptor {} for {}",
-                                ri.getClass().getSimpleName(),
-                                exchange.getRequestPath());
-
-                        try {
-                            ri.handle(exchange);
-                        }
-                        catch (Exception ex) {
-                            LOGGER.error("Error executing response interceptor {} for {}",
-                                    ri.getClass().getSimpleName(),
-                                    exchange.getRequestPath(),
-                                    ex);
-                            AbstractExchange.setInError(exchange);
-                            // set error message
-                            ByteArrayResponse response = ByteArrayResponse
-                                    .wrap(exchange);
-
-                            // dump bufferd content
-                            BuffersUtils.dump("content buffer "
-                                    + exchange.getRequestPath(),
-                                    resp.getRawContent());
-
-                            response.endExchangeWithMessage(
-                                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                                    "Error executing response interceptor "
-                                    + ri.getClass().getSimpleName(),
-                                    ex);
-                        }
-                    });
-                });
     }
 
     private void updateContentLenght(HttpServerExchange exchange, PooledByteBuffer[] dests) {
@@ -257,16 +167,14 @@ public class ModifiableContentSinkConduit
                         long.class,
                         HttpServerExchange.class);
                 m.setAccessible(true);
-            }
-            catch (NoSuchMethodException | SecurityException ex) {
+            } catch (NoSuchMethodException | SecurityException ex) {
                 LOGGER.error("could not find ServerFixedLengthStreamSinkConduit.reset method", ex);
                 throw new RuntimeException("could not find ServerFixedLengthStreamSinkConduit.reset method", ex);
             }
 
             try {
                 m.invoke(next, length, exchange);
-            }
-            catch (Throwable ex) {
+            } catch (Throwable ex) {
                 LOGGER.error("could not access BUFFERED_REQUEST_DATA field", ex);
                 throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
             }

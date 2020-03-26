@@ -20,7 +20,6 @@
  */
 package org.restheart.mongodb.utils;
 
-import org.restheart.utils.JsonUtils;
 import io.undertow.server.HttpServerExchange;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -54,6 +53,7 @@ import static org.restheart.handlers.exchange.ExchangeKeys.NULL_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.TRUE_KEY_ID;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.representation.UnsupportedDocumentIdException;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
