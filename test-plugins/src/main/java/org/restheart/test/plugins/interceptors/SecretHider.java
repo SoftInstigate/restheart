@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 public class SecretHider implements Interceptor {
     static final Logger LOGGER = LoggerFactory.getLogger(SecretHider.class);
-    
+
     @Override
     public void handle(HttpServerExchange hse) throws Exception {
         var content = JsonRequest.wrap(hse).readContent();
@@ -57,7 +57,8 @@ public class SecretHider implements Interceptor {
                 || k.endsWith(".secret"))) {
             var response = ByteArrayResponse.wrap(hse);
 
-            response.endExchangeWithMessage(HttpStatus.SC_FORBIDDEN, "cannot write secret");
+            response.endExchangeWithMessage(HttpStatus.SC_FORBIDDEN,
+                    "cannot write secret");
         }
     }
 

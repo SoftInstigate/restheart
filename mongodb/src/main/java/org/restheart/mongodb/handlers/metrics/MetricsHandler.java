@@ -40,6 +40,8 @@ import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import static org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
 import static org.restheart.handlers.exchange.ExchangeKeys._METRICS;
@@ -145,27 +147,32 @@ public class MetricsHandler extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = BsonRequest.wrap(exchange);
+        var response = BsonResponse.wrap(exchange);
 
         METRICS_GATHERING_LEVEL metricsLevelForRequest = getMetricsLevelForRequest(request);
         MetricRegistry registry = getMetricsRegistry(request, metricsLevelForRequest);
 
         if (registry != null) {
             if (request.isGet()) {
-
                 // detect metrics response type
-                Deque<String> representationFormatParameters = exchange.getQueryParameters().get(REPRESENTATION_FORMAT_KEY);
+                Deque<String> representationFormatParameters = 
+                        exchange.getQueryParameters()
+                                .get(REPRESENTATION_FORMAT_KEY);
+                
                 ResponseType responseType = Optional.ofNullable(
                         ResponseType.forQueryParameter(
-                                representationFormatParameters == null ? null : representationFormatParameters.getFirst())
+                                representationFormatParameters == null 
+                                        ? null 
+                                        : representationFormatParameters.getFirst())
                 ).orElseGet(()
-                        -> ResponseType.forAcceptHeader(exchange.getRequestHeaders().getFirst(Headers.ACCEPT))
+                        -> ResponseType.forAcceptHeader(exchange
+                                .getRequestHeaders().getFirst(Headers.ACCEPT))
                 );
 
                 // render metrics or error on unknown response type
                 if (responseType != null) {
-                    exchange.setStatusCode(HttpStatus.SC_OK);
+                    response.setStatusCode(HttpStatus.SC_OK);
                     responseType.writeTo(exchange, metricsLevelForRequest, registry);
-                    exchange.endExchange();
                 } else {
                     String acceptableTypes = Arrays.stream(ResponseType.values())
                             .map(ResponseType::getContentType)
@@ -175,19 +182,17 @@ public class MetricsHandler extends PipelinedHandler {
                             HttpStatus.SC_NOT_ACCEPTABLE,
                             "not acceptable, acceptable content types are: " + acceptableTypes
                     );
-                    next(exchange);
                 }
             } else {
-                exchange.setStatusCode(HttpStatus.SC_OK);
-                if (request.getContent() != null) {
-                    exchange.getResponseSender().send(request.getContent().toString());
-                }
-                exchange.endExchange();
+                response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
         } else {  //no matching registry found
-            ResponseHelper.endExchangeWithMessage(exchange, HttpStatus.SC_NOT_FOUND, "not found");
-            next(exchange);
+            ResponseHelper.endExchangeWithMessage(exchange, 
+                    HttpStatus.SC_NOT_FOUND, 
+                    "not found");
         }
+        
+        next(exchange);
     }
 
     @VisibleForTesting
@@ -390,6 +395,13 @@ public class MetricsHandler extends PipelinedHandler {
         }
 
         public void writeTo(HttpServerExchange exchange, METRICS_GATHERING_LEVEL metricsLevel, MetricRegistry registry) throws IOException {
+            var body = generateResponse(metricsLevel, registry);
+            
+            if (body != null) {
+                ByteArrayResponse.wrap(exchange).writeContent(body.getBytes());
+                
+            }
+            
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, getOutputContentType());
             exchange.getResponseSender().send(generateResponse(metricsLevel, registry));
         }
@@ -486,7 +498,9 @@ public class MetricsHandler extends PipelinedHandler {
         }
 
         public static ResponseType forQueryParameter(String rep) {
-            if (REPRESENTATION_FORMAT.STANDARD.name().equalsIgnoreCase(rep) 
+            if (REPRESENTATION_FORMAT.S.name().equalsIgnoreCase(rep) 
+                    || REPRESENTATION_FORMAT.STANDARD.name().equalsIgnoreCase(rep) 
+                    || REPRESENTATION_FORMAT.HAL.name().equalsIgnoreCase(rep)
                     || REPRESENTATION_FORMAT.SHAL.name().equalsIgnoreCase(rep)
                     || REPRESENTATION_FORMAT.PLAIN_JSON.name().equalsIgnoreCase(rep)
                     || REPRESENTATION_FORMAT.PJ.name().equalsIgnoreCase(rep)) {

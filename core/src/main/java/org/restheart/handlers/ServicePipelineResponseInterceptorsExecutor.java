@@ -21,11 +21,10 @@
 package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import org.restheart.handlers.exchange.AbstractExchange;
+import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
+import static org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH.SERVICE;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
@@ -33,9 +32,6 @@ import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xnio.channels.StreamSourceChannel;
-import org.xnio.conduits.AbstractStreamSinkConduit;
-import org.xnio.conduits.StreamSinkConduit;
 
 /**
  * conduit that executes response interceptors that don't require response
@@ -44,30 +40,44 @@ import org.xnio.conduits.StreamSinkConduit;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ResponseInterceptorsStreamSinkConduit
-        extends AbstractStreamSinkConduit<StreamSinkConduit> {
+public class ServicePipelineResponseInterceptorsExecutor
+        extends PipelinedHandler {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(ResponseInterceptorsStreamSinkConduit.class);
+    static final Logger LOGGER = LoggerFactory
+            .getLogger(ServicePipelineResponseInterceptorsExecutor.class);
 
-    private final StreamSinkConduit _next;
-
+    public ServicePipelineResponseInterceptorsExecutor() {
+        this(null);
+    }
+    
     /**
      * Construct a new instance.
      *
      * @param next
-     * @param exchange
      */
-    public ResponseInterceptorsStreamSinkConduit(StreamSinkConduit next,
-            HttpServerExchange exchange) {
+    public ServicePipelineResponseInterceptorsExecutor(PipelinedHandler next) {
         super(next);
-        this._next = next;
-
+    }
+    
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var pi = ByteArrayRequest.wrap(exchange).getPipelineBranchInfo();
+        
+        if (pi == null 
+                || pi.getBranch() == null
+                || pi.getBranch() != SERVICE) {
+            throw new IllegalStateException("ResponseInterceptorsExecturor "
+                    + "only supports service pipeline: " + pi);
+        }
+                
         if (!AbstractExchange.isInError(exchange)
                 && !AbstractExchange.responseInterceptorsExecuted(exchange)) {
             AbstractExchange.setResponseInterceptorsExecuted(exchange);
             executeAsyncResponseInterceptor(exchange);
             executeResponseInterceptor(exchange);
         }
+        
+        next(exchange);
     }
 
     private void executeResponseInterceptor(HttpServerExchange exchange) {
@@ -75,12 +85,11 @@ public class ResponseInterceptorsStreamSinkConduit
         PluginsRegistryImpl.getInstance()
                 .getInterceptors()
                 .stream()
+                .filter(i -> interceptPoint(
+                i.getInstance()) == InterceptPoint.RESPONSE)
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
-                .filter(ri -> interceptPoint(ri) == InterceptPoint.RESPONSE)
                 .filter(ri -> ri.resolve(exchange))
-                // this conduit does not provide access to response content
-                .filter(ri -> !requiresContent(ri))
                 .forEachOrdered(ri -> {
                     LOGGER.debug("Executing response interceptor {} for {}",
                             ri.getClass().getSimpleName(),
@@ -113,9 +122,10 @@ public class ResponseInterceptorsStreamSinkConduit
         PluginsRegistryImpl.getInstance()
                 .getInterceptors()
                 .stream()
+                .filter(i -> interceptPoint(
+                i.getInstance()) == InterceptPoint.RESPONSE_ASYNC)
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
-                .filter(ri -> interceptPoint(ri) == InterceptPoint.RESPONSE_ASYNC)
                 .filter(ri -> ri.resolve(exchange))
                 // this conduit does not provide access to response content
                 .filter(ri -> !requiresContent(ri))
@@ -146,41 +156,6 @@ public class ResponseInterceptorsStreamSinkConduit
                         }
                     });
                 });
-
     }
 
-    @Override
-    public int write(ByteBuffer src) throws IOException {
-        return _next.write(src);
-    }
-
-    @Override
-    public long write(ByteBuffer[] dsts, int offs, int len) throws IOException {
-        return _next.write(dsts, offs, len);
-    }
-
-    @Override
-    public long transferFrom(final FileChannel src, final long position, final long count) throws IOException {
-        return _next.transferFrom(src, position, count);
-    }
-
-    @Override
-    public long transferFrom(final StreamSourceChannel src, final long count, final ByteBuffer throughBuffer) throws IOException {
-        return _next.transferFrom(src, count, throughBuffer);
-    }
-
-    @Override
-    public int writeFinal(ByteBuffer src) throws IOException {
-        return _next.writeFinal(src);
-    }
-
-    @Override
-    public long writeFinal(ByteBuffer[] srcs, int offset, int length) throws IOException {
-        return _next.writeFinal(srcs, offset, length);
-    }
-
-    @Override
-    public void terminateWrites() throws IOException {
-        _next.terminateWrites();
-    }
 }

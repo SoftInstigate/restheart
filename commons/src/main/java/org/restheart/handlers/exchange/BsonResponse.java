@@ -21,11 +21,14 @@ package org.restheart.handlers.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.bson.BsonValue;
+import org.bson.json.JsonMode;
 import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -35,21 +38,21 @@ import org.slf4j.LoggerFactory;
 public class BsonResponse extends Response<BsonValue> {
     private static final AttachmentKey<BsonResponse> BSON_RESPONSE_ATTACHMENT_KEY
             = AttachmentKey.create(BsonResponse.class);
-    
+
     private BsonValue content;
-    
+
     private OperationResult dbOperationResult;
-    
+
     private final List<String> warnings = new ArrayList<>();
-    
+
     protected BsonResponse(HttpServerExchange exchange) {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(BsonResponse.class);
     }
-    
+
     public static BsonResponse wrap(HttpServerExchange exchange) {
         var cached = exchange.getAttachment(BSON_RESPONSE_ATTACHMENT_KEY);
-        
+
         if (cached == null) {
             var response = new BsonResponse(exchange);
             exchange.putAttachment(BSON_RESPONSE_ATTACHMENT_KEY,
@@ -59,11 +62,11 @@ public class BsonResponse extends Response<BsonValue> {
             return cached;
         }
     }
-    
+
     public static boolean isInitialized(HttpServerExchange exchange) {
         return (exchange.getAttachment(BSON_RESPONSE_ATTACHMENT_KEY) != null);
     }
-    
+
     /**
      * @return the content
      */
@@ -76,6 +79,18 @@ public class BsonResponse extends Response<BsonValue> {
      */
     public void setContent(BsonValue content) {
         this.content = content;
+
+        if (content != null) {
+            try {
+                ByteArrayResponse.wrap(wrapped)
+                        .writeContent(JsonUtils
+                                .toJson(content,
+                                        BsonRequest.wrap(wrapped).getJsonMode())
+                                .getBytes());
+            } catch (IOException ioe) {
+                LOGGER.error("Error writing request content", ioe);
+            }
+        }
     }
 
     /**
@@ -91,7 +106,7 @@ public class BsonResponse extends Response<BsonValue> {
     public void setDbOperationResult(OperationResult dbOperationResult) {
         this.dbOperationResult = dbOperationResult;
     }
-    
+
     /**
      * @return the warnings
      */

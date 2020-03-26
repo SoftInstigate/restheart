@@ -29,6 +29,7 @@ import org.restheart.utils.HttpStatus;
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @param <T>
  */
 public abstract class ProxableResponse<T> extends Response<T> {
     public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA

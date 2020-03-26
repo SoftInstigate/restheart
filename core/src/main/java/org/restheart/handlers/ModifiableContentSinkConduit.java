@@ -199,8 +199,8 @@ public class ModifiableContentSinkConduit
                 .stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
-                .filter(ri -> ri.resolve(exchange))
                 .filter(ri -> interceptPoint(ri) == InterceptPoint.RESPONSE_ASYNC)
+                .filter(ri -> ri.resolve(exchange))
                 .forEachOrdered(ri -> {
                     exchange.getConnection().getWorker().execute(() -> {
 

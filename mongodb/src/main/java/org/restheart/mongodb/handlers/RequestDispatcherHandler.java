@@ -20,6 +20,7 @@
  */
 package org.restheart.mongodb.handlers;
 
+import org.restheart.mongodb.handlers.injectors.ResponseContentInjector;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;
 import java.util.Map;
@@ -91,7 +92,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             = PipelinedHandler.pipe(new ResponseTransformersExecutor(),
                     new RepresentationTransformer(),
                     //new HookHandler(),
-                    new ResponseSenderHandler());
+                    new ResponseContentInjector());
 
     /**
      *
@@ -102,8 +103,8 @@ public class RequestDispatcherHandler extends PipelinedHandler {
     }
 
     private final Map<TYPE, Map<METHOD, PipelinedHandler>> handlersMultimap;
-    private final ResponseSenderHandler responseSenderHandler
-            = new ResponseSenderHandler(null);
+    private final ResponseContentInjector responseSenderHandler
+            = new ResponseContentInjector(null);
 
     /**
      * Creates a new instance of RequestDispacherHandler
@@ -233,7 +234,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                         new RequestTransformersExecutor(),
                         new GetRootHandler(),
                         new RepresentationTransformer(),
-                        new ResponseSenderHandler()));
+                        new ResponseContentInjector()));
 
         putHandler(TYPE.ROOT_SIZE, METHOD.GET,
                 PipelinedHandler.pipe(
@@ -241,7 +242,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                         new SizeRequestTransformer(true),
                         new GetRootHandler(),
                         new SizeRequestTransformer(false),
-                        new ResponseSenderHandler()));
+                        new ResponseContentInjector()));
 
         // *** DB handlers
         putHandler(TYPE.DB, METHOD.GET,
@@ -250,7 +251,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                         new AggregationTransformer(false),
                         new RepresentationTransformer(),
                         new ResponseTransformersExecutor(),
-                        new ResponseSenderHandler()
+                        new ResponseContentInjector()
                 ));
 
         putHandler(TYPE.DB_SIZE, METHOD.GET,
@@ -259,7 +260,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                         new SizeRequestTransformer(true),
                         new GetDBHandler(),
                         new SizeRequestTransformer(false),
-                        new ResponseSenderHandler()));
+                        new ResponseContentInjector()));
 
         putHandler(TYPE.DB_META, METHOD.GET,
                 PipelinedHandler.pipe(
@@ -267,7 +268,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                         new GetDocumentHandler(),
                         new AggregationTransformer(false),
                         new MetaRequestTransformer(),
-                        new ResponseSenderHandler()));
+                        new ResponseContentInjector()));
 
         putHandler(TYPE.DB, METHOD.PUT,
                 PipelinedHandler.pipe(
@@ -298,7 +299,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                         new RepresentationTransformer(),
                         new AggregationTransformer(false),
                         //new HookHandler(),
-                        new ResponseSenderHandler()
+                        new ResponseContentInjector()
                 ));
 
         putHandler(TYPE.COLLECTION_SIZE, METHOD.GET,
@@ -307,7 +308,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                         new SizeRequestTransformer(true),
                         new GetCollectionHandler(),
                         new SizeRequestTransformer(false),
-                        new ResponseSenderHandler()));
+                        new ResponseContentInjector()));
 
         putHandler(TYPE.COLLECTION_META, METHOD.GET,
                 PipelinedHandler.pipe(
@@ -315,7 +316,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                         new GetDocumentHandler(),
                         new AggregationTransformer(false),
                         new MetaRequestTransformer(),
-                        new ResponseSenderHandler()
+                        new ResponseContentInjector()
                 ));
 
         putHandler(TYPE.COLLECTION, METHOD.POST,
@@ -448,14 +449,14 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                         new SizeRequestTransformer(true),
                         new GetCollectionHandler(),
                         new SizeRequestTransformer(false),
-                        new ResponseSenderHandler()));
+                        new ResponseContentInjector()));
 
         putHandler(TYPE.FILES_BUCKET_META, METHOD.GET,
                 PipelinedHandler.pipe(
                         new RequestTransformersExecutor(),
                         new GetDocumentHandler(),
                         new MetaRequestTransformer(),
-                        new ResponseSenderHandler()
+                        new ResponseContentInjector()
                 ));
 
         putHandler(TYPE.FILES_BUCKET, METHOD.POST,
@@ -506,7 +507,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
         putHandler(TYPE.FILE_BINARY, METHOD.GET,
                 PipelinedHandler.pipe(new GetFileBinaryHandler(),
                         //new HookHandler(),
-                        new ResponseSenderHandler()
+                        new ResponseContentInjector()
                 ));
 
         putHandler(TYPE.FILE, METHOD.DELETE,
@@ -560,14 +561,14 @@ public class RequestDispatcherHandler extends PipelinedHandler {
                         new SizeRequestTransformer(true),
                         new GetCollectionHandler(),
                         new SizeRequestTransformer(false),
-                        new ResponseSenderHandler()));
+                        new ResponseContentInjector()));
 
         putHandler(TYPE.SCHEMA_STORE_META, METHOD.GET,
                 PipelinedHandler.pipe(
                         new RequestTransformersExecutor(),
                         new GetDocumentHandler(),
                         new MetaRequestTransformer(),
-                        new ResponseSenderHandler()
+                        new ResponseContentInjector()
                 ));
 
         putHandler(TYPE.SCHEMA_STORE, METHOD.PUT,
