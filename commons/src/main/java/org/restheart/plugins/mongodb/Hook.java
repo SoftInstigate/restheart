@@ -59,6 +59,7 @@ import org.restheart.plugins.Plugin;
  *
  * @deprecated use org.restheart.plugins.Interceptor with
  * interceptPoint=RESPONSE_ASYNC instead
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
  */

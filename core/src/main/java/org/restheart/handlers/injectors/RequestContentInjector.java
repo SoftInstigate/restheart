@@ -126,7 +126,19 @@ public class RequestContentInjector extends PipelinedHandler {
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
                 .filter(ri -> interceptPoint == interceptPoint(ri))
-                .filter(ri -> ri.resolve(exchange))
+                .filter(ri -> {
+                    try {
+                        return ri.resolve(exchange);
+                    } catch (Exception e) {
+                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
+                                ri.getClass().getSimpleName(),
+                                exchange.getRequestPath(),
+                                interceptPoint,
+                                e);
+
+                        return false;
+                    }
+                })
                 .anyMatch(ri -> requiresContent(ri));
     }
 
