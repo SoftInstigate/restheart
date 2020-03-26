@@ -27,7 +27,10 @@ import org.restheart.handlers.exchange.RequestContextPredicate;
 /**
  *
  * wraps a checker with args and confArgs to be added as a global checker
- * @deprecated use org.restheart.plugins.Interceptor instead
+ *
+ * @deprecated use org.restheart.plugins.Interceptor with
+ * interceptPoint=RESPONSE_ASYNC instead
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @Deprecated
@@ -38,12 +41,12 @@ public class GlobalHook {
     private final BsonValue confArgs;
 
     /**
-     * 
+     *
      * @param hook
-     * @param predicate hook is applied only to requests that resolve
-     * the predicate
+     * @param predicate hook is applied only to requests that resolve the
+     * predicate
      * @param args
-     * @param confArgs 
+     * @param confArgs
      */
     public GlobalHook(Hook hook,
             RequestContextPredicate predicate,
@@ -68,7 +71,7 @@ public class GlobalHook {
         return resolve(exchange, context)
                 && this.getHook().hook(exchange,
                         context,
-                        this.getArgs(), 
+                        this.getArgs(),
                         this.getConfArgs());
     }
 

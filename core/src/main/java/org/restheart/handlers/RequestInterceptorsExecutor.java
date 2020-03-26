@@ -77,7 +77,19 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
                 .filter(ri -> interceptPoint == interceptPoint(ri))
-                .filter(ri -> ri.resolve(exchange))
+                .filter(ri -> {
+                    try {
+                        return ri.resolve(exchange);
+                    } catch (Exception e) {
+                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
+                                ri.getClass().getSimpleName(),
+                                exchange.getRequestPath(),
+                                interceptPoint,
+                                e);
+                        
+                        return false;
+                    }
+                })
                 .forEachOrdered(ri -> {
                     try {
                         LOGGER.debug("Executing request interceptor {} for {} on intercept point {}",
@@ -86,8 +98,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                                 interceptPoint);
 
                         ri.handle(exchange);
-                    }
-                    catch (Exception ex) {
+                    } catch (Exception ex) {
                         LOGGER.error("Error executing request interceptor {} for {} on intercept point {}",
                                 ri.getClass().getSimpleName(),
                                 exchange.getRequestPath(),

@@ -82,12 +82,24 @@ public class ResponseInterceptorsExecutor
         PluginsRegistryImpl.getInstance()
                 .getInterceptors()
                 .stream()
-                .filter(i -> interceptPoint(
-                i.getInstance()) == InterceptPoint.RESPONSE)
+                .filter(i -> interceptPoint(i.getInstance())
+                == InterceptPoint.RESPONSE)
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
                 .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
-                .filter(ri -> ri.resolve(exchange))
+                .filter(ri -> {
+                    try {
+                        return ri.resolve(exchange);
+                    } catch (Exception e) {
+                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
+                                ri.getClass().getSimpleName(),
+                                exchange.getRequestPath(),
+                                InterceptPoint.RESPONSE,
+                                e);
+
+                        return false;
+                    }
+                })
                 .forEachOrdered(ri -> {
                     LOGGER.debug("Executing response interceptor {} for {}",
                             ri.getClass().getSimpleName(),
@@ -124,7 +136,18 @@ public class ResponseInterceptorsExecutor
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
                 .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
-                .filter(ri -> ri.resolve(exchange))
+                .filter(ri -> {
+                    try {
+                        return ri.resolve(exchange);
+                    } catch (Exception e) {
+                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
+                                ri.getClass().getSimpleName(),
+                                exchange.getRequestPath(),
+                                InterceptPoint.RESPONSE_ASYNC);
+
+                        return false;
+                    }
+                })
                 .forEachOrdered(ri -> {
                     exchange.getConnection().getWorker().execute(() -> {
                         LOGGER.debug("Executing async response interceptor {} for {}",

@@ -31,6 +31,7 @@ import org.restheart.handlers.UnmodifiableContentStreamSinkConduit;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import static org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH.SERVICE;
+import org.restheart.plugins.InterceptPoint;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
 import org.restheart.plugins.PluginsRegistryImpl;
@@ -109,7 +110,19 @@ public class ConduitInjector extends PipelinedHandler {
                             .map(ri -> ri.getInstance())
                             .filter(ri -> interceptPoint(ri) == RESPONSE
                             || interceptPoint(ri) == RESPONSE_ASYNC)
-                            .filter(ri -> ri.resolve(cexchange))
+                            .filter(ri -> {
+                                try {
+                                    return ri.resolve(exchange);
+                                } catch (Exception e) {
+                                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
+                                            ri.getClass().getSimpleName(),
+                                            exchange.getRequestPath(),
+                                            InterceptPoint.RESPONSE_ASYNC,
+                                            e);
+
+                                    return false;
+                                }
+                            })
                             .anyMatch(ri -> requiresContent(ri))) {
                 var mcsc = new ModifiableContentSinkConduit(factory.create(),
                         cexchange);
@@ -140,7 +153,18 @@ public class ConduitInjector extends PipelinedHandler {
                 .stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
-                .filter(ri -> ri.resolve(exchange))
+                .filter(ri -> {
+                    try {
+                        return ri.resolve(exchange);
+                    } catch (Exception e) {
+                        LOGGER.warn("Error resolving interceptor {} for {}",
+                                ri.getClass().getSimpleName(),
+                                exchange.getRequestPath(),
+                                e);
+
+                        return false;
+                    }
+                })
                 .anyMatch(ri -> requiresContent(ri))) {
             var _before = exchange.getRequestHeaders()
                     .get(Headers.ACCEPT_ENCODING);

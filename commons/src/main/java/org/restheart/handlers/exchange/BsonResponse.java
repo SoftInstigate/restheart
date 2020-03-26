@@ -79,7 +79,7 @@ public class BsonResponse extends Response<BsonValue> {
     public void setContent(BsonValue content) {
         this.content = content;
 
-        // This makes the content availabe to ProxiedResponse
+        // This makes the content availabe to ByteArrayResponse
         // core's ResponseSender uses ByteArrayResponse 
         // to send the content to the client
         if (content != null) {
