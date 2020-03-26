@@ -33,7 +33,6 @@ import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.CheckerMetadata;
 import org.restheart.mongodb.plugins.checkers.CheckersUtils;
-import org.restheart.utils.JsonUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.InterceptPoint;
@@ -44,6 +43,7 @@ import org.restheart.plugins.mongodb.Checker;
 import org.restheart.plugins.mongodb.Checker.PHASE;
 import org.restheart.plugins.mongodb.GlobalChecker;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -27,11 +27,10 @@ import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
 import org.restheart.handlers.ModifiableContentSinkConduit;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.ResponseInterceptorsStreamSinkConduit;
+import org.restheart.handlers.UnmodifiableContentStreamSinkConduit;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import static org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH.SERVICE;
-import static org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH.STATIC_RESOURCE;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
 import org.restheart.plugins.PluginsRegistryImpl;
@@ -117,7 +116,7 @@ public class ConduitInjector extends PipelinedHandler {
                 cexchange.putAttachment(MCSC_KEY, mcsc);
                 return mcsc;
             } else {
-                return new ResponseInterceptorsStreamSinkConduit(factory.create(),
+                return new UnmodifiableContentStreamSinkConduit(factory.create(),
                         cexchange);
             }
         });

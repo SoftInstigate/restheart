@@ -20,7 +20,6 @@
  */
 package org.restheart.mongodb.handlers;
 
-import org.restheart.mongodb.handlers.injectors.ResponseContentInjector;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.encoding.ContentEncodingRepository;
@@ -29,6 +28,7 @@ import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
+import org.restheart.mongodb.handlers.injectors.ResponseContentInjector;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 

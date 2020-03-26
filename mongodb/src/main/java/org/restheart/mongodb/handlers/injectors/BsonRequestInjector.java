@@ -82,22 +82,19 @@ public class BsonRequestInjector extends PipelinedHandler {
 
     /**
      *
-     * @param checkAggregationOperators
      */
-    public BsonRequestInjector(boolean checkAggregationOperators) {
-        this(checkAggregationOperators, null);
+    public BsonRequestInjector() {
+        this(null);
     }
 
     /**
      *
-     * @param checkAggregationOperators
      * @param next
      */
-    public BsonRequestInjector(
-            boolean checkAggregationOperators,
-            PipelinedHandler next) {
+    public BsonRequestInjector(PipelinedHandler next) {
         super(next);
-        this.checkAggregationOperators = checkAggregationOperators;
+        this.checkAggregationOperators = MongoServiceConfiguration.get()
+                .getAggregationCheckOperators();
     }
 
     /**

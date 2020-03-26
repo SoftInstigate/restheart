@@ -77,12 +77,6 @@ public class ResponseContentInjector extends PipelinedHandler {
             exchange.setStatusCode(response.getStatusCode());
         }
 
-        if (response.getContent() != null) {
-            pr.writeContent(JsonUtils
-                    .toJson(response.getContent(), request.getJsonMode())
-                    .getBytes());
-        }
-
         next(exchange);
     }
 
