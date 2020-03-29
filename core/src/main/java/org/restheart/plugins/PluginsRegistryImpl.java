@@ -58,18 +58,17 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private final Set<Predicate> globalSecurityPredicates
             = new LinkedHashSet<>();
-    
+
     // depecated plugins
-    
     private Set<PluginRecord<Checker>> checkers;
-    
+
     private Set<PluginRecord<Transformer>> transformers;
 
     private Set<PluginRecord<Hook>> hooks;
 
     private final Set<GlobalChecker> globalCheckers
             = new LinkedHashSet<>();
-    
+
     private final Set<GlobalTransformer> globalTransformers
             = new LinkedHashSet<>();
 
@@ -88,24 +87,28 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private PluginsRegistryImpl() {
     }
-    
+
     /**
      * force plugin objects instantiation
      */
     public void instantiateAll() {
-        getInitializers();
-        
-        getAuthMechanisms();
-        getAuthorizers();
-        getTokenManager();
-        getAuthenticators();
-        
-        getInterceptors();
-        getServices();
-        
-        getTransformers();
-        getCheckers();
-        getHooks();
+        try (var pluginFactory = PluginsFactory.getInstance()) {
+            getInitializers();
+
+            getAuthMechanisms();
+            getAuthorizers();
+            getTokenManager();
+            getAuthenticators();
+
+            getInterceptors();
+            getServices();
+
+            getTransformers();
+            getCheckers();
+            getHooks();
+
+            pluginFactory.injectDependencies();
+        }
     }
 
     /**
@@ -115,7 +118,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<AuthMechanism>> getAuthMechanisms() {
         if (this.authMechanisms == null) {
             this.authMechanisms = new LinkedHashSet<>();
-            this.authMechanisms.addAll(PluginsFactory.authMechanisms());
+            this.authMechanisms.addAll(PluginsFactory.getInstance()
+                    .authMechanisms());
         }
 
         return this.authMechanisms;
@@ -128,7 +132,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<Authenticator>> getAuthenticators() {
         if (this.authenticators == null) {
             this.authenticators = new LinkedHashSet<>();
-            this.authenticators.addAll(PluginsFactory.authenticators());
+            this.authenticators.addAll(PluginsFactory.getInstance()
+                    .authenticators());
         }
 
         return this.authenticators;
@@ -165,7 +170,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public PluginRecord<TokenManager> getTokenManager() {
         if (this.tokenManager == null) {
-            this.tokenManager = PluginsFactory.tokenManager();
+            this.tokenManager = PluginsFactory.getInstance()
+                    .tokenManager();
         }
 
         return this.tokenManager;
@@ -177,7 +183,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public Set<PluginRecord<Authorizer>> getAuthorizers() {
         if (this.authorizers == null) {
-            this.authorizers = PluginsFactory.authorizers();
+            this.authorizers = PluginsFactory.getInstance()
+                    .authorizers();
         }
 
         return this.authorizers;
@@ -190,7 +197,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<Initializer>> getInitializers() {
         if (this.initializers == null) {
             this.initializers = new LinkedHashSet<>();
-            this.initializers.addAll(PluginsFactory.initializers());
+            this.initializers.addAll(PluginsFactory.getInstance()
+                    .initializers());
         }
 
         return this.initializers;
@@ -200,7 +208,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<Interceptor>> getInterceptors() {
         if (this.interceptors == null) {
             this.interceptors = new LinkedHashSet<>();
-            this.interceptors.addAll(PluginsFactory
+            this.interceptors.addAll(PluginsFactory.getInstance()
                     .interceptors());
         }
 
@@ -214,7 +222,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<Service>> getServices() {
         if (this.services == null) {
             this.services = new LinkedHashSet<>();
-            this.services.addAll(PluginsFactory.services());
+            this.services.addAll(PluginsFactory.getInstance()
+                    .services());
         }
 
         return this.services;
@@ -230,7 +239,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<Predicate> getGlobalSecurityPredicates() {
         return globalSecurityPredicates;
     }
-    
+
     /**
      *
      * @return the globalCheckers
@@ -239,12 +248,13 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<Checker>> getCheckers() {
         if (this.checkers == null) {
             this.checkers = new LinkedHashSet<>();
-            this.checkers.addAll(PluginsFactory.checkers());
+            this.checkers.addAll(PluginsFactory.getInstance()
+                    .checkers());
         }
 
         return this.checkers;
     }
-    
+
     /**
      *
      * @return the globalCheckers
@@ -253,12 +263,13 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<Transformer>> getTransformers() {
         if (this.transformers == null) {
             this.transformers = new LinkedHashSet<>();
-            this.transformers.addAll(PluginsFactory.transformers());
+            this.transformers.addAll(PluginsFactory.getInstance()
+                    .transformers());
         }
 
         return this.transformers;
     }
-    
+
     /**
      *
      * @return the globalCheckers
@@ -267,13 +278,13 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<Hook>> getHooks() {
         if (this.hooks == null) {
             this.hooks = new LinkedHashSet<>();
-            this.hooks.addAll(PluginsFactory.hooks());
+            this.hooks.addAll(PluginsFactory.getInstance()
+                    .hooks());
         }
 
         return this.hooks;
     }
-    
-    
+
     /**
      *
      * @return the globalCheckers
@@ -301,6 +312,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     @Override
     public PathHandler getRootPathHandler() {
-       return Bootstrapper.getRootPathHandler();
+        return Bootstrapper.getRootPathHandler();
     }
 }
