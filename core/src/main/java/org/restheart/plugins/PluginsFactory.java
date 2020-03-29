@@ -23,6 +23,7 @@ package org.restheart.plugins;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.ScanResult;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -34,8 +35,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import org.restheart.Bootstrapper;
@@ -54,7 +58,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class PluginsFactory {
+public class PluginsFactory implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(PluginsFactory.class);
@@ -65,11 +69,35 @@ public class PluginsFactory {
     private static final Map<String, Map<String, Object>> PLUGINS_CONFS
             = consumePluginsConfiguration();
 
+    private static final PluginsFactory SINGLETON = new PluginsFactory();
+
+    private final ScanResult scanResult;
+
+    private PluginsFactory() {
+        this.scanResult = new ClassGraph()
+                .addClassLoader(getPluginsClassloader())
+                .enableAnnotationInfo()
+                .enableMethodInfo()
+                .initializeLoadedClasses()
+                .scan();
+    }
+
+    @Override
+    public void close() {
+        if (this.scanResult != null) {
+            this.scanResult.close();
+        }
+    }
+
+    public static PluginsFactory getInstance() {
+        return SINGLETON;
+    }
+
     /**
      *
      * @return the AuthenticationMechanisms
      */
-    static Set<PluginRecord<AuthMechanism>> authMechanisms() {
+    Set<PluginRecord<AuthMechanism>> authMechanisms() {
         return createPlugins(AuthMechanism.class,
                 Bootstrapper.getConfiguration().getAuthMechanisms());
     }
@@ -78,7 +106,7 @@ public class PluginsFactory {
      *
      * @return the Authenticators
      */
-    static Set<PluginRecord<Authenticator>> authenticators() {
+    Set<PluginRecord<Authenticator>> authenticators() {
         return createPlugins(Authenticator.class,
                 Bootstrapper.getConfiguration().getAuthenticators());
     }
@@ -87,7 +115,7 @@ public class PluginsFactory {
      *
      * @return the Authorizers
      */
-    static Set<PluginRecord<Authorizer>> authorizers() {
+    Set<PluginRecord<Authorizer>> authorizers() {
         return createPlugins(Authorizer.class,
                 Bootstrapper.getConfiguration().getAuthorizers());
     }
@@ -96,7 +124,7 @@ public class PluginsFactory {
      *
      * @return the Token Manager
      */
-    static PluginRecord<TokenManager> tokenManager() {
+    PluginRecord<TokenManager> tokenManager() {
         Set<PluginRecord<TokenManager>> tkms = createPlugins(TokenManager.class,
                 Bootstrapper.getConfiguration().getTokenManagers());
 
@@ -116,7 +144,7 @@ public class PluginsFactory {
     /**
      * create the initializers
      */
-    static Set<PluginRecord<Initializer>> initializers() {
+    Set<PluginRecord<Initializer>> initializers() {
         return createPlugins(Initializer.class, PLUGINS_CONFS);
     }
 
@@ -124,7 +152,7 @@ public class PluginsFactory {
      * creates the interceptors
      */
     @SuppressWarnings("unchecked")
-    static Set<PluginRecord<Interceptor>> interceptors() {
+    Set<PluginRecord<Interceptor>> interceptors() {
         return createPlugins(Interceptor.class, PLUGINS_CONFS);
     }
 
@@ -132,7 +160,7 @@ public class PluginsFactory {
      * creates the services
      */
     @SuppressWarnings("unchecked")
-    static Set<PluginRecord<Service>> services() {
+    Set<PluginRecord<Service>> services() {
         return createPlugins(Service.class, PLUGINS_CONFS);
     }
 
@@ -140,7 +168,7 @@ public class PluginsFactory {
      * creates the services
      */
     @SuppressWarnings("unchecked")
-    static Set<PluginRecord<Transformer>> transformers() {
+    Set<PluginRecord<Transformer>> transformers() {
         return createPlugins(Transformer.class, PLUGINS_CONFS);
     }
 
@@ -148,7 +176,7 @@ public class PluginsFactory {
      * creates the services
      */
     @SuppressWarnings("unchecked")
-    static Set<PluginRecord<Checker>> checkers() {
+    Set<PluginRecord<Checker>> checkers() {
         return createPlugins(Checker.class, PLUGINS_CONFS);
     }
 
@@ -156,7 +184,7 @@ public class PluginsFactory {
      * creates the services
      */
     @SuppressWarnings("unchecked")
-    static Set<PluginRecord<Hook>> hooks() {
+    Set<PluginRecord<Hook>> hooks() {
         return createPlugins(Hook.class, PLUGINS_CONFS);
     }
 
@@ -164,101 +192,94 @@ public class PluginsFactory {
      * @param type the class of the plugin , e.g. Initializer.class
      */
     @SuppressWarnings("unchecked")
-    private static <T extends Plugin> Set<PluginRecord<T>> createPlugins(
+    private <T extends Plugin> Set<PluginRecord<T>> createPlugins(
             Class type, Map<String, Map<String, Object>> confs) {
         Set<PluginRecord<T>> ret = new LinkedHashSet<>();
 
         var _type = type.getSimpleName();
 
-        try (var scanResult = new ClassGraph()
-                .addClassLoader(getPluginsClassloader())
-                .enableAnnotationInfo()
-                .enableMethodInfo()
-                .initializeLoadedClasses()
-                .scan()) {
-            var registeredPlugins = scanResult
-                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+        var registeredPlugins = scanResult
+                .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
 
-            ClassInfoList listOfType;
+        ClassInfoList listOfType;
 
-            if (type.isInterface()) {
-                if (type.equals(Authenticator.class)) {
-                    var tms = scanResult.getClassesImplementing(TokenManager.class.getName());
+        if (type.isInterface()) {
+            if (type.equals(Authenticator.class)) {
+                var tms = scanResult.getClassesImplementing(TokenManager.class.getName());
 
-                    listOfType = scanResult
-                            .getClassesImplementing(type.getName())
-                            .exclude(tms);
-                } else {
-                    listOfType = scanResult.getClassesImplementing(type.getName());
-                }
+                listOfType = scanResult
+                        .getClassesImplementing(type.getName())
+                        .exclude(tms);
             } else {
-                listOfType = scanResult.getSubclasses(type.getName());
+                listOfType = scanResult.getClassesImplementing(type.getName());
             }
-
-            var plugins = registeredPlugins.intersect(listOfType);
-
-            // sort by priority
-            plugins.sort((ClassInfo ci1, ClassInfo ci2) -> {
-                return Integer.compare(annotationParam(ci1, "priority"),
-                        annotationParam(ci2, "priority"));
-            });
-
-            plugins.stream().forEachOrdered(plugin -> {
-                Object i;
-
-                try {
-                    String name = annotationParam(plugin,
-                            "name");
-                    String description = annotationParam(plugin,
-                            "description");
-                    Boolean enabledByDefault = annotationParam(plugin,
-                            "enabledByDefault");
-
-                    var enabled = PluginRecord.isEnabled(enabledByDefault,
-                            confs != null ? confs.get(name) : null);
-
-                    if (enabled) {
-                        i = instantiatePlugin(plugin, _type, name, confs);
-
-                        var pr = new PluginRecord(
-                                name,
-                                description,
-                                enabledByDefault,
-                                plugin.getName(),
-                                (T) i,
-                                confs != null
-                                        ? confs.get(name)
-                                        : null);
-
-                        if (pr.isEnabled()) {
-                            ret.add(pr);
-                            LOGGER.debug("Registered {} {}: {}",
-                                    _type,
-                                    name,
-                                    description);
-                        }
-                    } else {
-                        LOGGER.debug("{} {} is disabled", _type, name);
-                    }
-                } catch (ConfigurationException
-                        | InstantiationException
-                        | IllegalAccessException
-                        | InvocationTargetException t) {
-                    LOGGER.error("Error registering {} {}: {}",
-                            _type,
-                            annotationParam(plugin, "name") != null
-                            ? (String) annotationParam(plugin, "name")
-                            : plugin.getSimpleName(),
-                            getRootException(t).getMessage(),
-                            t);
-                }
-            });
+        } else {
+            listOfType = scanResult.getSubclasses(type.getName());
         }
+
+        var plugins = registeredPlugins.intersect(listOfType);
+
+        // sort by priority
+        plugins.sort((ClassInfo ci1, ClassInfo ci2) -> {
+            return Integer.compare(annotationParam(ci1, "priority"),
+                    annotationParam(ci2, "priority"));
+        });
+
+        plugins.stream().forEachOrdered(plugin -> {
+            Object i;
+
+            try {
+                String name = annotationParam(plugin,
+                        "name");
+                String description = annotationParam(plugin,
+                        "description");
+                Boolean enabledByDefault = annotationParam(plugin,
+                        "enabledByDefault");
+
+                var enabled = PluginRecord.isEnabled(enabledByDefault,
+                        confs != null ? confs.get(name) : null);
+
+                if (enabled) {
+                    i = instantiatePlugin(plugin, _type, name, confs);
+
+                    var pr = new PluginRecord(
+                            name,
+                            description,
+                            enabledByDefault,
+                            plugin.getName(),
+                            (T) i,
+                            confs != null
+                                    ? confs.get(name)
+                                    : null);
+
+                    if (pr.isEnabled()) {
+                        ret.add(pr);
+                        LOGGER.debug("Registered {} {}: {}",
+                                _type,
+                                name,
+                                description);
+                    }
+                } else {
+                    LOGGER.debug("{} {} is disabled", _type, name);
+                }
+            } catch (ConfigurationException
+                    | InstantiationException
+                    | IllegalAccessException
+                    | InvocationTargetException t) {
+                LOGGER.error("Error registering {} {}: {}",
+                        _type,
+                        annotationParam(plugin, "name") != null
+                        ? (String) annotationParam(plugin, "name")
+                        : plugin.getSimpleName(),
+                        getRootException(t).getMessage(),
+                        t);
+            }
+        });
 
         return ret;
     }
 
-    private static Plugin instantiatePlugin(
+    private Plugin instantiatePlugin(
             ClassInfo pluginClassInfo,
             String pluginType,
             String pluginName,
@@ -267,18 +288,19 @@ public class PluginsFactory {
             InstantiationException,
             IllegalAccessException,
             InvocationTargetException {
-        final Plugin ret;
+        final Plugin plugin;
 
         try {
-            ret = (Plugin) pluginClassInfo.loadClass(false)
+            plugin = (Plugin) pluginClassInfo.loadClass(false)
                     .getDeclaredConstructor()
                     .newInstance();
 
-            invokeInjectMethods(pluginName,
-                    pluginType,
-                    pluginClassInfo,
-                    ret,
-                    confs);
+            INSTANITATED_PLUGINS.add(
+                    new InstatiatedPlugin(pluginName,
+                            pluginType,
+                            pluginClassInfo,
+                            plugin,
+                            confs));
         } catch (NoSuchMethodException nme) {
             throw new ConfigurationException(
                     pluginType
@@ -288,36 +310,57 @@ public class PluginsFactory {
                     + "()");
         }
 
-        return ret;
+        return plugin;
     }
 
-    private static void invokeInjectMethods(String pluginName,
-            String pluginType,
-            ClassInfo pluginClassInfo,
-            Object pluingInstance,
-            Map confs) throws ConfigurationException,
+    private final Deque<InstatiatedPlugin> INSTANITATED_PLUGINS
+            = new LinkedList<>();
+
+    public void injectDependencies() {
+        for (Iterator<InstatiatedPlugin> it = INSTANITATED_PLUGINS.iterator();
+                it.hasNext();) {
+            var ip = it.next();
+
+            try {
+                invokeInjectMethods(ip);
+            } catch (ConfigurationException
+                    | InstantiationException
+                    | IllegalAccessException
+                    | InvocationTargetException ex) {
+                LOGGER.error("Error injecting dependency to {} {}: {}",
+                        ip.pluginType,
+                        ip.pluginName,
+                        getRootException(ex).getMessage(),
+                        ex);
+            }
+
+            it.remove();
+        }
+    }
+
+    private void invokeInjectMethods(InstatiatedPlugin ip) throws ConfigurationException,
             InstantiationException,
             IllegalAccessException,
             InvocationTargetException {
-        invokeInjectConfigurationMethods(pluginName,
-                pluginType,
-                pluginClassInfo,
-                pluingInstance,
-                confs);
+        invokeInjectConfigurationMethods(ip.pluginName,
+                ip.pluginType,
+                ip.pluginClassInfo,
+                ip.pluingInstance,
+                ip.confs);
 
-        invokeInjectPluginsRegistryMethods(pluginName,
-                pluginType,
-                pluginClassInfo,
-                pluingInstance);
+        invokeInjectPluginsRegistryMethods(ip.pluginName,
+                ip.pluginType,
+                ip.pluginClassInfo,
+                ip.pluingInstance);
 
-        invokeInjectConfigurationAndPluginsRegistryMethods(pluginName,
-                pluginType,
-                pluginClassInfo,
-                pluingInstance,
-                confs);
+        invokeInjectConfigurationAndPluginsRegistryMethods(ip.pluginName,
+                ip.pluginType,
+                ip.pluginClassInfo,
+                ip.pluingInstance,
+                ip.confs);
     }
 
-    private static void invokeInjectConfigurationMethods(String pluginName,
+    private void invokeInjectConfigurationMethods(String pluginName,
             String pluginType,
             ClassInfo pluginClassInfo,
             Object pluingInstance,
@@ -374,7 +417,7 @@ public class PluginsFactory {
         }
     }
 
-    private static void invokeInjectPluginsRegistryMethods(String pluginName,
+    private void invokeInjectPluginsRegistryMethods(String pluginName,
             String pluginType,
             ClassInfo pluginClassInfo,
             Object pluingInstance) throws ConfigurationException,
@@ -408,7 +451,7 @@ public class PluginsFactory {
         }
     }
 
-    private static void invokeInjectConfigurationAndPluginsRegistryMethods(String pluginName,
+    private void invokeInjectConfigurationAndPluginsRegistryMethods(String pluginName,
             String pluginType,
             ClassInfo pluginClassInfo,
             Object pluingInstance,
@@ -468,7 +511,7 @@ public class PluginsFactory {
         }
     }
 
-    private static Throwable getRootException(Throwable t) {
+    private Throwable getRootException(Throwable t) {
         if (t.getCause() != null) {
             return getRootException(t.getCause());
         } else {
@@ -477,7 +520,7 @@ public class PluginsFactory {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T extends Object> T annotationParam(ClassInfo ci,
+    private <T extends Object> T annotationParam(ClassInfo ci,
             String param) {
         var annotationInfo = ci.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME);
         var annotationParamVals = annotationInfo.getParameterValues();
@@ -505,7 +548,7 @@ public class PluginsFactory {
         return urls.toArray(new URL[urls.size()]);
     }
 
-    private static Path getPluginsDirectory() {
+    private Path getPluginsDirectory() {
         var pluginsDir = Bootstrapper.getConfiguration().getPluginsDirectory();
 
         if (pluginsDir == null) {
@@ -531,13 +574,13 @@ public class PluginsFactory {
         }
     }
 
-    private static URLClassLoader PLUGINS_CL_CACHE = null;
+    private URLClassLoader PLUGINS_CL_CACHE = null;
 
     /**
      *
      * @return the URLClassLoader that resolve plugins classes
      */
-    private static URLClassLoader getPluginsClassloader() {
+    private URLClassLoader getPluginsClassloader() {
         if (PLUGINS_CL_CACHE == null) {
             PLUGINS_CL_CACHE = new URLClassLoader(
                     findPluginsJars(
@@ -564,5 +607,25 @@ public class PluginsFactory {
         });
 
         return confs;
+    }
+
+    private static class InstatiatedPlugin {
+        private final String pluginName;
+        private final String pluginType;
+        private final ClassInfo pluginClassInfo;
+        private final Object pluingInstance;
+        private final Map confs;
+
+        public InstatiatedPlugin(String pluginName,
+                String pluginType,
+                ClassInfo pluginClassInfo,
+                Object pluingInstance,
+                Map confs) {
+            this.pluginName = pluginName;
+            this.pluginType = pluginType;
+            this.pluginClassInfo = pluginClassInfo;
+            this.pluingInstance = pluingInstance;
+            this.confs = confs;
+        }
     }
 }

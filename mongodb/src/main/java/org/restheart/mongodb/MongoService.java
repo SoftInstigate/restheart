@@ -24,6 +24,7 @@ import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.pathTemplate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
+import java.util.Map;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.ConfigurationException;
@@ -45,6 +46,7 @@ import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
 import org.restheart.mongodb.handlers.injectors.RequestContentInjector;
 import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.PluginUtils;
@@ -64,25 +66,14 @@ public class MongoService implements Service {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(MongoService.class);
 
-    private final PipelinedHandler handlerPipeline;
+    private String myURI = null;
+    
+    private PipelinedHandler pipeline;
 
-    private final String myURI;
-
-    private final boolean mongoDbInitialized;
-
-    public MongoService() {
-        if (!MongoClientSingleton.isInitialized()) {
-            LOGGER.error("Service mongo is not initialized. "
-                    + "Make sure that mongoInitializer is enabled "
-                    + "and executed successfully");
-            this.mongoDbInitialized = false;
-            this.myURI = null;
-            this.handlerPipeline = null;
-        } else {
-            this.mongoDbInitialized = true;
-            this.myURI = myURI();
-            this.handlerPipeline = getBasePipeline();
-        }
+    @InjectConfiguration
+    public void init(Map<String, Object> conf) {
+        this.myURI = myURI();
+        this.pipeline = getBasePipeline();
     }
 
     @Override
@@ -92,10 +83,14 @@ public class MongoService implements Service {
 
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        if (mongoDbInitialized) {
-            this.handlerPipeline.handleRequest(exchange);
+        
+        
+        if (MongoClientSingleton.isInitialized()) {
+            this.pipeline.handleRequest(exchange);
         } else {
-            LOGGER.error("Service mongo is unavailabe");
+            LOGGER.error("Service mongo is not initialized. "
+                    + "Make sure that mongoInitializer is enabled "
+                    + "and executed successfully");
             ByteArrayResponse.wrap(exchange).setInError(true);
             ByteArrayResponse.wrap(exchange).setStatusCode(500);
         }
@@ -109,7 +104,7 @@ public class MongoService implements Service {
     private PipelinedHandler getBasePipeline()
             throws ConfigurationException {
         var rootHandler = path();
-        
+
         var pipeline = PipelinedHandler.pipe(new BsonRequestInjector(),
                 new MetricsInstrumentationHandler(),
                 new CORSHandler(),
@@ -121,7 +116,7 @@ public class MongoService implements Service {
                 new CollectionPropsInjector(),
                 new ETagPolicyInjector(),
                 RequestDispatcherHandler.getInstance());
-        
+
         // check that all mounts are either all paths or all path templates
         boolean allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
                 .stream()
@@ -183,7 +178,7 @@ public class MongoService implements Service {
             return URLUtils.removeTrailingSlashes(myURI.concat(uri));
         }
     }
-    
+
     private String myURI() {
         Object uri;
 
