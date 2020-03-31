@@ -50,6 +50,13 @@ public class BsonRequestInitializer extends PipelinedHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
+        //TODO we cannot only use mongoMounts
+        // we need:
+        // 1- resolve the URI with mongo service URI
+        // 2- take other bound URIs into account. 
+        //      if mongoUri=/, mongo-mounts=(/,*) and ping=/ping 
+        //      => /ping is not handled by mongo service
+        
         var mmm = mongoMounts.match(exchange.getRequestPath());
 
         if (mmm != null && mmm.getValue() != null) {

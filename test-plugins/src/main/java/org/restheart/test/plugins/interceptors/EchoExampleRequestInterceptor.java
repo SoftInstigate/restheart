@@ -62,6 +62,14 @@ public class EchoExampleRequestInterceptor implements Interceptor {
                                 "property added by EchoExampleRequestInterceptor");
 
                 request.writeContent(requestContent);
+                
+//                var breq = BsonRequest.wrap(exchange);
+//                
+//                var content = breq.getContent().asDocument();
+//                
+//                content.put("foo", new BsonString("bar"));
+//                
+//                breq.setContent(content);
             }
         }
     }
@@ -69,6 +77,7 @@ public class EchoExampleRequestInterceptor implements Interceptor {
     @Override
     public boolean resolve(HttpServerExchange exchange) {
         return exchange.getRequestPath().equals("/iecho")
-                || exchange.getRequestPath().equals("/anything");
+                || exchange.getRequestPath().equals("/anything")
+                || exchange.getRequestPath().equals("/restheart/coll");
     }
 }

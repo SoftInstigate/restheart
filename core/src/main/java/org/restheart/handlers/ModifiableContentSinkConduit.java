@@ -82,7 +82,7 @@ public class ModifiableContentSinkConduit
      */
     private void resetBufferPool(HttpServerExchange exchange) {
         var buffers = new PooledByteBuffer[MAX_BUFFERS];
-        exchange.putAttachment(ProxableResponse.BUFFERED_RESPONSE_DATA,
+        exchange.putAttachment(ProxableResponse.BUFFERED_RESPONSE_DATA_KEY,
                 buffers);
     }
 
@@ -90,7 +90,7 @@ public class ModifiableContentSinkConduit
     public int write(ByteBuffer src) throws IOException {
         return BuffersUtils.append(src,
                 (PooledByteBuffer[]) exchange
-                        .getAttachment(ProxableResponse.BUFFERED_RESPONSE_DATA),
+                        .getAttachment(ProxableResponse.BUFFERED_RESPONSE_DATA_KEY),
                 exchange);
     }
 

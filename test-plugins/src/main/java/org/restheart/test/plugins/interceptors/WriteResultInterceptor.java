@@ -76,7 +76,7 @@ public class WriteResultInterceptor implements Interceptor {
             response.setContent(resp);
         }
     }
-
+    
     @Override
     public boolean resolve(HttpServerExchange exchange) {
         // Note! BsonRequest.isInitialized() must be invoked first to avoid

@@ -37,10 +37,10 @@ import org.xnio.conduits.StreamSinkConduit;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class UnmodifiableContentStreamSinkConduit
+public class ContentStreamSinkConduit
         extends AbstractStreamSinkConduit<StreamSinkConduit> {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(UnmodifiableContentStreamSinkConduit.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(ContentStreamSinkConduit.class);
 
     private final StreamSinkConduit _next;
 
@@ -50,7 +50,7 @@ public class UnmodifiableContentStreamSinkConduit
      * @param next
      * @param exchange
      */
-    public UnmodifiableContentStreamSinkConduit(StreamSinkConduit next,
+    public ContentStreamSinkConduit(StreamSinkConduit next,
             HttpServerExchange exchange) {
         super(next);
         this._next = next;

@@ -60,8 +60,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * injects the request body in RequestContext also check the Content-Type header
- * in case body is not empty
+ * Injects the request content to BsonRequest from ByteArrayRequest buffer
+ *
+ * also check the Content-Type header in case the content is not empty
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -266,7 +267,7 @@ public class RequestContentInjector extends PipelinedHandler {
     public RequestContentInjector() {
         this(null);
     }
-    
+
     /**
      * Creates a new instance of BodyInjectorHandler
      *
@@ -286,7 +287,7 @@ public class RequestContentInjector extends PipelinedHandler {
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
-        
+
         if (request.isInError()) {
             next(exchange);
             return;
@@ -379,21 +380,21 @@ public class RequestContentInjector extends PipelinedHandler {
         } else {
             if (isHalOrJson(contentType)) {
                 final String contentString;
-                
+
                 var bar = ByteArrayRequest.wrap(exchange);
-                
+
                 if (bar.isContentAvailable()) {
                     // if content has been already injected by core's 
                     // RequestContentInjector
                     // get it from BsonRequest.readContent()
-                    contentString = new String(bar.readContent(), 
+                    contentString = new String(bar.readContent(),
                             StandardCharsets.UTF_8);
                 } else {
                     // otherwise use ChannelReader
                     contentString = ChannelReader
                             .read(exchange.getRequestChannel());
                 }
-               
+
                 // parse the json content
                 if (contentString != null
                         && !contentString.isEmpty()) { // check content type

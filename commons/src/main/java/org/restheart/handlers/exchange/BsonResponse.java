@@ -78,20 +78,6 @@ public class BsonResponse extends Response<BsonValue> {
      */
     public void setContent(BsonValue content) {
         this.content = content;
-
-        // This makes the content availabe to ByteArrayResponse
-        // core's ResponseSender uses ByteArrayResponse 
-        // to send the content to the client
-        if (content != null) {
-            try {
-                ByteArrayResponse.wrap(wrapped)
-                        .writeContent(JsonUtils.toJson(content,
-                                BsonRequest.wrap(wrapped).getJsonMode())
-                                .getBytes());
-            } catch (IOException ioe) {
-                LOGGER.error("Error writing request content", ioe);
-            }
-        }
     }
 
     /**

@@ -94,4 +94,13 @@ public @interface RegisterPlugin {
      * @return true if the Interceptor requires the content
      */
     boolean requiresContent() default false;
+
+    /**
+     * Set to true to avoid interceptors to be executed on requests handled by
+     * this plugin. Interceptor with interceptPoint=BEFORE_AUTH
+     *
+     * @return an array containing the InterceptPoints of the Interceptors to not
+     * execute
+     */
+    InterceptPoint[] dontIntercept() default {};
 }

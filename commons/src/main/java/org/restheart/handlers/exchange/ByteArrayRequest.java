@@ -24,6 +24,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,7 @@ public class ByteArrayRequest extends ProxableRequest<byte[]> {
             }
 
             int copied = BuffersUtils.transfer(
-                    ByteBuffer.wrap(content.toString().getBytes()),
+                    ByteBuffer.wrap(Arrays.toString(content).getBytes()),
                     dest,
                     wrapped);
 

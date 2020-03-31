@@ -29,7 +29,9 @@ import org.restheart.plugins.mongodb.Transformer.SCOPE;
 /**
  * wraps a transformer with args and confArgs to be added as a global
  * transformer
+ * 
  * @deprecated use org.restheart.plugins.Interceptor instead
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @Deprecated

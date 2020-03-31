@@ -28,8 +28,8 @@ import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.TransformerMetadata;
+import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.mongodb.GlobalTransformer;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * Applies the request transformers defined in the collection properties to the
  * request; it also applies the global tranformers
  *
- * It implements Interceptor only to be able get pluginsRegistry via
+ * It implements Initializer only to be able get pluginsRegistry via
  * InjectPluginsRegistry annotation
  *
  * It is added to the pipeline by RequestDispatcherHandler
@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(name = "requestTransformersExecutor",
         description = "executes the request transformers")
 public class RequestTransformersExecutor
-        extends AbstractTransformersExecutor implements Interceptor {
+        extends AbstractTransformersExecutor implements Initializer {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(RequestTransformersExecutor.class);
@@ -209,17 +209,10 @@ public class RequestTransformersExecutor
                 });
     }
 
-    /*
-     * @param exchange
-     * @return false. implements Service only to get pluginsRegistry
+    /**
+     * does nothing, implements Initializer only to get pluginsRegistry
      */
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        return false;
+    public void init() {
     }
 }
