@@ -21,6 +21,7 @@ package org.restheart.plugins;
 
 /**
  * Defines the intercept point of an Interceptor
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public enum InterceptPoint {
@@ -30,10 +31,10 @@ public enum InterceptPoint {
     REQUEST_BEFORE_AUTH,
     
     /**
-     * intercept the request after authentication occurs 
+     * intercept the request after authentication occurs
      */
     REQUEST_AFTER_AUTH,
-        
+
     /**
      * intercept the response and executes blocking the response
      */

@@ -279,6 +279,15 @@ public class PluginsFactory implements AutoCloseable {
         return ret;
     }
 
+    /**
+     * A deque containing the instantiated plugins than have to be injected
+     * dependecies. this is done after instantiation because using a dependency,
+     * eg the plugin registry, can change the order of plugins instantiation
+     * causing all sort of weird issues
+     */
+    private final Deque<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS
+            = new LinkedList<>();
+
     private Plugin instantiatePlugin(
             ClassInfo pluginClassInfo,
             String pluginType,
@@ -295,7 +304,7 @@ public class PluginsFactory implements AutoCloseable {
                     .getDeclaredConstructor()
                     .newInstance();
 
-            INSTANITATED_PLUGINS.add(
+            PLUGINS_TO_INJECT_DEPS.add(
                     new InstatiatedPlugin(pluginName,
                             pluginType,
                             pluginClassInfo,
@@ -313,11 +322,8 @@ public class PluginsFactory implements AutoCloseable {
         return plugin;
     }
 
-    private final Deque<InstatiatedPlugin> INSTANITATED_PLUGINS
-            = new LinkedList<>();
-
     public void injectDependencies() {
-        for (Iterator<InstatiatedPlugin> it = INSTANITATED_PLUGINS.iterator();
+        for (Iterator<InstatiatedPlugin> it = PLUGINS_TO_INJECT_DEPS.iterator();
                 it.hasNext();) {
             var ip = it.next();
 

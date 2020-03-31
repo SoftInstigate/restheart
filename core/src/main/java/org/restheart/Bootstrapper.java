@@ -48,6 +48,7 @@ import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.util.HttpString;
+import io.undertow.util.PathMatcher;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -161,6 +162,7 @@ public class Bootstrapper {
     private static Path CONFIGURATION_FILE;
     private static Path PROPERTIES_FILE;
     private static final PathHandler ROOT_PATH_HANDLER = path();
+    private static final PathMatcher<ResourceInfo> PLUGGED_RESOURCES = new PathMatcher<>();
     private static GracefulShutdownHandler HANDLERS = null;
     private static Configuration configuration;
     private static Undertow undertowServer;
@@ -521,7 +523,7 @@ public class Bootstrapper {
 
         // force instantiation of all plugins singletons
         PluginsRegistryImpl.getInstance().instantiateAll();
-        
+
         // run pre startup initializers
         PluginsRegistryImpl.getInstance()
                 .getInitializers()
@@ -570,7 +572,7 @@ public class Bootstrapper {
                     try {
                         i.getInstance().init();
                     } catch (Throwable t) {
-                        LOGGER.error("Error executing initializer {}", 
+                        LOGGER.error("Error executing initializer {}",
                                 i.getName(),
                                 t);
                     }
@@ -1015,9 +1017,9 @@ public class Bootstrapper {
             }
 
             var _srv = pipe(new PipelineBranchInfoInjector(new PipelineBranchInfo(
-                            PIPELINE_BRANCH.SERVICE,
-                            srv.getName(),
-                            uri)),
+                    PIPELINE_BRANCH.SERVICE,
+                    srv.getName(),
+                    uri)),
                     new TracingInstrumentationHandler(),
                     new RequestLogger(),
                     new BsonRequestInitializer(),
@@ -1040,6 +1042,11 @@ public class Bootstrapper {
             );
 
             paths.addPrefixPath(uri, _srv);
+
+            PLUGGED_RESOURCES.addPrefixPath(uri,
+                    new ResourceInfo(ResourceInfo.TYPE.SERVICE,
+                            uri,
+                            srv.getName()));
 
             LOGGER.info(ansi().fg(GREEN)
                     .a("URI {} bound to service {}, secured: {}")
@@ -1066,11 +1073,11 @@ public class Bootstrapper {
             return;
         }
 
-        conf.getProxies().stream().forEachOrdered(m -> {
-            String location = Configuration.getOrDefault(m,
+        conf.getProxies().stream().forEachOrdered(proxies -> {
+            String location = Configuration.getOrDefault(proxies,
                     ConfigurationKeys.PROXY_LOCATION_KEY, null, true);
 
-            Object _proxyPass = Configuration.getOrDefault(m,
+            Object _proxyPass = Configuration.getOrDefault(proxies,
                     ConfigurationKeys.PROXY_PASS_KEY, null, true);
 
             if (location == null && _proxyPass != null) {
@@ -1085,28 +1092,28 @@ public class Bootstrapper {
             }
 
             // The number of connections to create per thread
-            Integer connectionsPerThread = Configuration.getOrDefault(m,
+            Integer connectionsPerThread = Configuration.getOrDefault(proxies,
                     ConfigurationKeys.PROXY_CONNECTIONS_PER_THREAD, 10,
                     true);
 
-            Integer maxQueueSize = Configuration.getOrDefault(m,
+            Integer maxQueueSize = Configuration.getOrDefault(proxies,
                     ConfigurationKeys.PROXY_MAX_QUEUE_SIZE, 0, true);
 
-            Integer softMaxConnectionsPerThread = Configuration.getOrDefault(m,
+            Integer softMaxConnectionsPerThread = Configuration.getOrDefault(proxies,
                     ConfigurationKeys.PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true);
 
-            Integer ttl = Configuration.getOrDefault(m,
+            Integer ttl = Configuration.getOrDefault(proxies,
                     ConfigurationKeys.PROXY_TTL, -1, true);
 
-            boolean rewriteHostHeader = Configuration.getOrDefault(m,
+            boolean rewriteHostHeader = Configuration.getOrDefault(proxies,
                     ConfigurationKeys.PROXY_REWRITE_HOST_HEADER, true, true);
 
             // Time in seconds between retries for problem server
-            Integer problemServerRetry = Configuration.getOrDefault(m,
+            Integer problemServerRetry = Configuration.getOrDefault(proxies,
                     ConfigurationKeys.PROXY_PROBLEM_SERVER_RETRY, 10,
                     true);
 
-            String name = Configuration.getOrDefault(m,
+            String name = Configuration.getOrDefault(proxies,
                     ConfigurationKeys.PROXY_NAME, null,
                     true);
 
@@ -1185,6 +1192,11 @@ public class Bootstrapper {
                                         configuration.isForceGzipEncoding())));
 
                 paths.addPrefixPath(location, proxy);
+
+                PLUGGED_RESOURCES.addPrefixPath(location,
+                        new ResourceInfo(ResourceInfo.TYPE.PROXY,
+                                location,
+                                name));
 
                 LOGGER.info(ansi().fg(GREEN)
                         .a("URI {} bound to proxy resource {}")
@@ -1290,6 +1302,11 @@ public class Bootstrapper {
                         );
 
                         pathHandler.addPrefixPath(where, ph);
+
+                        PLUGGED_RESOURCES.addPrefixPath(where,
+                                new ResourceInfo(ResourceInfo.TYPE.STATIC_RESOURCE,
+                                        where,
+                                        path));
 
                         LOGGER.info(ansi().fg(GREEN)
                                 .a("URI {} bound to static resource {}")

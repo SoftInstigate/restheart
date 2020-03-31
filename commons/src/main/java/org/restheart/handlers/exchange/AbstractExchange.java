@@ -38,7 +38,7 @@ public abstract class AbstractExchange<T> {
     private static final AttachmentKey<Boolean> RESPONSE_INTERCEPTOR_EXECUTED
             = AttachmentKey.create(Boolean.class);
 
-    public static final int MAX_CONTENT_SIZE = 16 * 1024 * 1024; // 16byte
+    public static final int MAX_CONTENT_SIZE = 16 * 1024 * 1024; // 16Mbyte
 
     public static int MAX_BUFFERS = 1024;
     
@@ -74,8 +74,7 @@ public abstract class AbstractExchange<T> {
     }
 
     public static void setInError(HttpServerExchange exchange) {
-        exchange
-                .putAttachment(IN_ERROR_KEY, true);
+        exchange.putAttachment(IN_ERROR_KEY, true);
     }
 
     public static boolean responseInterceptorsExecuted(HttpServerExchange exchange) {
@@ -84,8 +83,7 @@ public abstract class AbstractExchange<T> {
     }
 
     public static void setResponseInterceptorsExecuted(HttpServerExchange exchange) {
-        exchange
-                .putAttachment(RESPONSE_INTERCEPTOR_EXECUTED, true);
+        exchange.putAttachment(RESPONSE_INTERCEPTOR_EXECUTED, true);
     }
 
     public abstract String getContentType();
@@ -133,7 +131,8 @@ public abstract class AbstractExchange<T> {
      */
     public boolean isAuthenticated() {
         return getWrappedExchange().getSecurityContext() != null
-                && getWrappedExchange().getSecurityContext().getAuthenticatedAccount() != null;
+                && getWrappedExchange().getSecurityContext()
+                        .getAuthenticatedAccount() != null;
     }
 
     /**

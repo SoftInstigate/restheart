@@ -168,9 +168,4 @@ public class AfterWriteCheckersExecutor extends BeforeWriteCheckersExecutor {
         return gc.getPhase(context) == Checker.PHASE.AFTER_WRITE
                 && gc.resolve(exchange, context);
     }
-
-    @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        return true;
-    }
 }

@@ -18,51 +18,53 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers;
+package org.restheart.mongodb.handlers;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.Arrays;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.PluginsRegistryImpl;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.LambdaUtils;
-import org.restheart.utils.PluginUtils;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Executes after-auth interceptors for mongoService after the db and collection
+ * metadata have been injected to the request
+ *
+ * It implements Initializer only to be able get pluginsRegistry via
+ * InjectPluginsRegistry annotation
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestInterceptorsExecutor extends PipelinedHandler {
+//@RegisterPlugin(name = "mongoRequestInterceptorsExecutor",
+//        description = "executes after-auth interceptors for mongoService",
+//        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
+public class MongoRequestInterceptorsExecutor extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(RequestInterceptorsExecutor.class);
+            .getLogger(MongoRequestInterceptorsExecutor.class);
 
-    private final ResponseSender sender = new ResponseSender();
-
-    private final InterceptPoint interceptPoint;
+    private PluginsRegistry registry;
 
     /**
-     *
-     * @param interceptPoint
+     * @param registry
      */
-    public RequestInterceptorsExecutor(InterceptPoint interceptPoint) {
-        super(null);
-        this.interceptPoint = interceptPoint;
+    public MongoRequestInterceptorsExecutor(PluginsRegistry registry) {
+        this(registry, null);
     }
 
     /**
+     * @param registry
      * @param next
-     * @param interceptPoint
      */
-    public RequestInterceptorsExecutor(PipelinedHandler next,
-            InterceptPoint interceptPoint) {
+    public MongoRequestInterceptorsExecutor(PluginsRegistry registry, PipelinedHandler next) {
         super(next);
-        this.interceptPoint = interceptPoint;
+        this.registry = registry;
     }
 
     /**
@@ -72,31 +74,19 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        // if the request is handled by a service set to not execute intercrptor
-        // at this interceptPoint, skip interceptors execution
-        var vip = PluginUtils.dontIntercept(
-                PluginsRegistryImpl.getInstance(), exchange);
-
-        if (Arrays.stream(vip).anyMatch(interceptPoint::equals)) {
-            next(exchange);
-            return;
-        }
-
-        PluginsRegistryImpl
-                .getInstance()
+        registry
                 .getInterceptors()
                 .stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
-                .filter(ri -> interceptPoint == interceptPoint(ri))
+                .filter(ri -> InterceptPoint.REQUEST_AFTER_AUTH == interceptPoint(ri))
                 .filter(ri -> {
                     try {
                         return ri.resolve(exchange);
                     } catch (Exception e) {
-                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
+                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point REQUEST_AFTER_AUTH",
                                 ri.getClass().getSimpleName(),
                                 exchange.getRequestPath(),
-                                interceptPoint,
                                 e);
 
                         return false;
@@ -104,17 +94,15 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 })
                 .forEachOrdered(ri -> {
                     try {
-                        LOGGER.debug("Executing request interceptor {} for {} on intercept point {}",
+                        LOGGER.debug("Executing request interceptor {} for {} on intercept point REQUEST_AFTER_AUTH",
                                 ri.getClass().getSimpleName(),
-                                exchange.getRequestPath(),
-                                interceptPoint);
+                                exchange.getRequestPath());
 
                         ri.handle(exchange);
                     } catch (Exception ex) {
-                        LOGGER.error("Error executing request interceptor {} for {} on intercept point {}",
+                        LOGGER.error("Error executing request interceptor {} for {} on intercept point REQUEST_AFTER_AUTH",
                                 ri.getClass().getSimpleName(),
                                 exchange.getRequestPath(),
-                                interceptPoint,
                                 ex);
                         AbstractExchange.setInError(exchange);
                         LambdaUtils.throwsSneakyExcpetion(ex);
@@ -130,9 +118,15 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
             }
 
-            sender.handleRequest(exchange);
-        } else {
-            next(exchange);
         }
+
+        next(exchange);
     }
+
+    /**
+     * does nothing, implements Initializer only to get pluginsRegistry
+     */
+//    @Override
+//    public void init() {
+//    }
 }

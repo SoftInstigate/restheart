@@ -56,6 +56,8 @@ public class TestInitializer implements Initializer {
     @InjectPluginsRegistry
     public void setPluginRegistry(PluginsRegistry pluginRegistry) {
         this.pluginRegistry = pluginRegistry;
+        
+        pluginRegistry.getServices();
     }
     
     @Override

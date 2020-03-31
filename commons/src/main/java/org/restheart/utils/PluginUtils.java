@@ -19,11 +19,15 @@
  */
 package org.restheart.utils;
 
+import io.undertow.server.HttpServerExchange;
 import java.util.Map;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import static org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH.SERVICE;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 
@@ -117,5 +121,52 @@ public class PluginUtils {
         } else {
             return PluginUtils.defaultURI(serviceClass);
         }
+    }
+
+    /**
+     *
+     * @param service
+     * @return the intercept points of interceptors that must not be executed on
+     * requests handled by service
+     */
+    public static InterceptPoint[] dontIntercept(Service service) {
+        var a = service.getClass()
+                .getDeclaredAnnotation(RegisterPlugin.class);
+
+        if (a == null) {
+            return new InterceptPoint[0];
+        } else {
+            return a.dontIntercept();
+        }
+    }
+
+    /**
+     *
+     * @param registry
+     * @param exchange
+     * @return the intercept points of interceptors that must not be executed on
+     * the exchange
+     */
+    public static InterceptPoint[] dontIntercept(PluginsRegistry registry,
+            HttpServerExchange exchange) {
+        var pi = ByteArrayRequest.wrap(exchange).getPipelineBranchInfo();
+
+        if (pi != null && pi.getBranch() == SERVICE) {
+            var srvName = pi.getName();
+
+            if (srvName != null) {
+                var _s = registry.getServices()
+                        .stream()
+                        .filter(s -> srvName.equals(s.getName()))
+                        .map(s -> s.getInstance())
+                        .findAny();
+
+                if (_s.isPresent()) {
+                    return dontIntercept(_s.get());
+                }
+            }
+        }
+
+        return new InterceptPoint[0];
     }
 }

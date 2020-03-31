@@ -21,6 +21,7 @@
 package org.restheart.mongodb.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
+import java.io.IOException;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -34,7 +35,8 @@ import org.restheart.mongodb.representation.Resource;
 import org.restheart.utils.JsonUtils;
 
 /**
- *
+ * Injects the response content to ByteArrayRequest buffer from BsonRequest
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseContentInjector extends PipelinedHandler {
@@ -71,6 +73,20 @@ public class ResponseContentInjector extends PipelinedHandler {
             pr.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
         } else {
             pr.setContentType(Resource.JSON_MEDIA_TYPE);
+        }
+        
+        // This makes the content availabe to ByteArrayResponse
+        // core's ResponseSender uses ByteArrayResponse 
+        // to send the content to the client
+        if (response.getContent() != null) {
+            try {
+                ByteArrayResponse.wrap(exchange)
+                        .writeContent(JsonUtils.toJson(response.getContent(),
+                                BsonRequest.wrap(exchange).getJsonMode())
+                                .getBytes());
+            } catch (IOException ioe) {
+                //LOGGER.error("Error writing request content", ioe);
+            }
         }
 
         if (!exchange.isResponseStarted()) {

@@ -34,9 +34,9 @@ import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.CheckerMetadata;
 import org.restheart.mongodb.plugins.checkers.CheckersUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.mongodb.Checker;
@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 /**
  * PipelinedHandler that executes the before-write checkers.
  *
- * It implements Interceptor only to be able get pluginsRegistry via
+ * It implements Initializer only to be able get pluginsRegistry via
  * InjectPluginsRegistry annotation
  *
  * It is added to the pipeline by RequestDispatcherHandler
@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 @SuppressWarnings("deprecation")
 public class BeforeWriteCheckersExecutor extends PipelinedHandler
-        implements Interceptor {
+        implements Initializer {
 
     public BeforeWriteCheckersExecutor() {
         super(null);
@@ -330,17 +330,9 @@ public class BeforeWriteCheckersExecutor extends PipelinedHandler
     }
 
     /**
-     *
-     * @param exchange
-     * @return false. implements Service only to get pluginsRegistry
+     * does nothing, implements Initializer only to get pluginsRegistry
      */
     @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        return false;
-    }
-
-    @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        throw new UnsupportedOperationException();
+    public void init() { 
     }
 }

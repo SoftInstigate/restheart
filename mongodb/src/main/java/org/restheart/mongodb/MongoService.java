@@ -35,6 +35,7 @@ import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WH
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.handlers.CORSHandler;
+import org.restheart.mongodb.handlers.MongoRequestInterceptorsExecutor;
 import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.AccountInjector;
@@ -47,6 +48,9 @@ import org.restheart.mongodb.handlers.injectors.RequestContentInjector;
 import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.PluginUtils;
@@ -61,6 +65,7 @@ import org.slf4j.LoggerFactory;
         description = "handles request to mongodb resources",
         enabledByDefault = true,
         defaultURI = "/",
+        dontIntercept = { InterceptPoint.REQUEST_AFTER_AUTH }, 
         priority = Integer.MIN_VALUE)
 public class MongoService implements Service {
     private static final Logger LOGGER = LoggerFactory
@@ -70,10 +75,10 @@ public class MongoService implements Service {
     
     private PipelinedHandler pipeline;
 
-    @InjectConfiguration
-    public void init(Map<String, Object> conf) {
+    @InjectPluginsRegistry
+    public void init(PluginsRegistry registry) {
         this.myURI = myURI();
-        this.pipeline = getBasePipeline();
+        this.pipeline = getBasePipeline(registry);
     }
 
     @Override
@@ -83,8 +88,6 @@ public class MongoService implements Service {
 
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        
-        
         if (MongoClientSingleton.isInitialized()) {
             this.pipeline.handleRequest(exchange);
         } else {
@@ -101,11 +104,11 @@ public class MongoService implements Service {
      *
      * @return a GracefulShutdownHandler
      */
-    private PipelinedHandler getBasePipeline()
+    private PipelinedHandler getBasePipeline(PluginsRegistry registry)
             throws ConfigurationException {
         var rootHandler = path();
 
-        var pipeline = PipelinedHandler.pipe(new BsonRequestInjector(),
+        var _pipeline = PipelinedHandler.pipe(new BsonRequestInjector(),
                 new MetricsInstrumentationHandler(),
                 new CORSHandler(),
                 new OptionsHandler(),
@@ -114,6 +117,7 @@ public class MongoService implements Service {
                 ClientSessionInjector.build(),
                 new DbPropsInjector(),
                 new CollectionPropsInjector(),
+                new MongoRequestInterceptorsExecutor(registry),
                 new ETagPolicyInjector(),
                 RequestDispatcherHandler.getInstance());
 
@@ -140,9 +144,9 @@ public class MongoService implements Service {
                 var resource = (String) m.get(MONGO_MOUNT_WHAT_KEY);
 
                 if (allPathTemplates) {
-                    pathsTemplates.add(uri, pipeline);
+                    pathsTemplates.add(uri, _pipeline);
                 } else {
-                    rootHandler.addPrefixPath(uri, pipeline);
+                    rootHandler.addPrefixPath(uri, _pipeline);
                 }
 
                 LOGGER.info(ansi().fg(GREEN)
