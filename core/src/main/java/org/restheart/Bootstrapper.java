@@ -20,6 +20,7 @@
  */
 package org.restheart;
 
+import org.restheart.handlers.exchange.PipelineInfo;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
@@ -31,7 +32,6 @@ import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import static com.sun.akuma.CLibrary.LIBC;
-import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
@@ -40,7 +40,6 @@ import io.undertow.server.handlers.AllowedMethodsHandler;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
-import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RequestLimit;
 import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
@@ -48,7 +47,6 @@ import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceHandler;
 import io.undertow.util.HttpString;
-import io.undertow.util.PathMatcher;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -161,8 +159,7 @@ public class Bootstrapper {
 
     private static Path CONFIGURATION_FILE;
     private static Path PROPERTIES_FILE;
-    private static final PathHandler ROOT_PATH_HANDLER = path();
-    private static final PathMatcher<ResourceInfo> PLUGGED_RESOURCES = new PathMatcher<>();
+
     private static GracefulShutdownHandler HANDLERS = null;
     private static Configuration configuration;
     private static Undertow undertowServer;
@@ -181,17 +178,6 @@ public class Bootstrapper {
      */
     public static Configuration getConfiguration() {
         return configuration;
-    }
-
-    /**
-     * Allows to programmatically add handlers to the root path handler
-     *
-     * @see Path.addPrefixPath()
-     *
-     * @return the restheart root path handler
-     */
-    public static PathHandler getRootPathHandler() {
-        return ROOT_PATH_HANDLER;
     }
 
     private static void parseCommandLineParameters(final String[] args) {
@@ -891,21 +877,22 @@ public class Bootstrapper {
             final Set<PluginRecord<Authorizer>> authorizers,
             final PluginRecord<TokenManager> tokenManager
     ) {
-        getRootPathHandler().addPrefixPath("/", new RequestNotManagedHandler());
+        PluginsRegistryImpl
+                .getInstance()
+                .getRootPathHandler()
+                .addPrefixPath("/", new RequestNotManagedHandler());
 
         LOGGER.debug("Content buffers maximun size "
                 + "is {} bytes",
                 MAX_CONTENT_SIZE);
 
-        plugServices(getRootPathHandler(),
-                authMechanisms, authorizers, tokenManager);
+        plugServices(authMechanisms, authorizers, tokenManager);
 
-        plugProxies(configuration, getRootPathHandler(),
-                authMechanisms, authorizers, tokenManager);
+        plugProxies(configuration, authMechanisms, authorizers, tokenManager);
 
-        plugStaticResourcesHandlers(configuration, getRootPathHandler());
+        plugStaticResourcesHandlers(configuration);
 
-        return buildGracefulShutdownHandler(getRootPathHandler());
+        return buildGracefulShutdownHandler();
     }
 
     /**
@@ -914,15 +901,17 @@ public class Bootstrapper {
      * @param paths
      * @return
      */
-    private static GracefulShutdownHandler buildGracefulShutdownHandler(
-            PathHandler paths) {
+    private static GracefulShutdownHandler buildGracefulShutdownHandler() {
         return new GracefulShutdownHandler(
                 new RequestLimitingHandler(
                         new RequestLimit(configuration.getRequestsLimit()),
                         new AllowedMethodsHandler(
                                 new BlockingHandler(
                                         new ErrorHandler(
-                                                new HttpContinueAcceptingHandler(paths))),
+                                                new HttpContinueAcceptingHandler(
+                                                        PluginsRegistryImpl
+                                                                .getInstance()
+                                                                .getRootPathHandler()))),
                                 // allowed methods
                                 HttpString.tryFromString(METHOD.GET.name()),
                                 HttpString.tryFromString(METHOD.POST.name()),
@@ -941,8 +930,7 @@ public class Bootstrapper {
      * @param tokenManager
      */
     @SuppressWarnings("unchecked")
-    private static void plugServices(final PathHandler paths,
-            final Set<PluginRecord<AuthMechanism>> mechanisms,
+    private static void plugServices(final Set<PluginRecord<AuthMechanism>> mechanisms,
             final Set<PluginRecord<Authorizer>> authorizers,
             final PluginRecord<TokenManager> tokenManager) {
         PluginsRegistryImpl.getInstance().getServices().stream().forEach(srv -> {
@@ -1041,12 +1029,12 @@ public class Bootstrapper {
                     new ResponseSender()
             );
 
-            paths.addPrefixPath(uri, _srv);
-
-            PLUGGED_RESOURCES.addPrefixPath(uri,
-                    new ResourceInfo(ResourceInfo.TYPE.SERVICE,
-                            uri,
-                            srv.getName()));
+            PluginsRegistryImpl
+                    .getInstance()
+                    .plugPipeline(uri, _srv,
+                            new PipelineInfo(PIPELINE_BRANCH.SERVICE,
+                                    uri,
+                                    srv.getName()));
 
             LOGGER.info(ansi().fg(GREEN)
                     .a("URI {} bound to service {}, secured: {}")
@@ -1064,7 +1052,6 @@ public class Bootstrapper {
      * @param authorizers
      */
     private static void plugProxies(final Configuration conf,
-            final PathHandler paths,
             final Set<PluginRecord<AuthMechanism>> authMechanisms,
             final Set<PluginRecord<Authorizer>> authorizers,
             final PluginRecord<TokenManager> tokenManager) {
@@ -1190,13 +1177,12 @@ public class Bootstrapper {
                                 new ConfigurableEncodingHandler( // Must be after ConduitInjector
                                         proxyHandler,
                                         configuration.isForceGzipEncoding())));
-
-                paths.addPrefixPath(location, proxy);
-
-                PLUGGED_RESOURCES.addPrefixPath(location,
-                        new ResourceInfo(ResourceInfo.TYPE.PROXY,
-                                location,
-                                name));
+                PluginsRegistryImpl
+                        .getInstance()
+                        .plugPipeline(location, proxy,
+                                new PipelineInfo(PIPELINE_BRANCH.PROXY,
+                                        location,
+                                        name));
 
                 LOGGER.info(ansi().fg(GREEN)
                         .a("URI {} bound to proxy resource {}")
@@ -1221,8 +1207,7 @@ public class Bootstrapper {
      * @param accessManager
      */
     private static void plugStaticResourcesHandlers(
-            final Configuration conf,
-            final PathHandler pathHandler) {
+            final Configuration conf) {
         if (!conf.getStaticResourcesMounts().isEmpty()) {
             conf.getStaticResourcesMounts().stream().forEach(sr -> {
                 try {
@@ -1301,12 +1286,12 @@ public class Bootstrapper {
                                 PipelinedWrappingHandler.wrap(handler)
                         );
 
-                        pathHandler.addPrefixPath(where, ph);
-
-                        PLUGGED_RESOURCES.addPrefixPath(where,
-                                new ResourceInfo(ResourceInfo.TYPE.STATIC_RESOURCE,
-                                        where,
-                                        path));
+                        PluginsRegistryImpl
+                                .getInstance()
+                                .plugPipeline(where, ph,
+                                        new PipelineInfo(PIPELINE_BRANCH.STATIC_RESOURCE,
+                                                where,
+                                                path));
 
                         LOGGER.info(ansi().fg(GREEN)
                                 .a("URI {} bound to static resource {}")
