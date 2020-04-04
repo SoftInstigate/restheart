@@ -50,8 +50,7 @@ public class SnooperHook implements Interceptor {
 
     @InjectConfiguration
     public void init(Map<String, Object> conf) {
-        LOGGER.info("Configuration args {}",
-                conf);
+        LOGGER.debug("Configuration args {}", conf);
     }
     
     /**
@@ -100,6 +99,6 @@ public class SnooperHook implements Interceptor {
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        return true;//BsonRequest.isInitialized(exchange);
+        return BsonRequest.isInitialized(exchange);
     }
 }

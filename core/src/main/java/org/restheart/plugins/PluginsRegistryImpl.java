@@ -333,6 +333,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     
     @Override
     public PipelineInfo getPipelineInfo(String path) {
-        return PIPELINE_INFOS.getPrefixPath(path);
+        var m = PIPELINE_INFOS.match(path);
+        
+        return m.getValue();
     }
 }

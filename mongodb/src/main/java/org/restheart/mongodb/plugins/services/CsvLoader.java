@@ -37,13 +37,12 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ChannelReader;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
@@ -127,10 +126,8 @@ public class CsvLoader implements Service {
      */
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
-
-        boolean respBodySet = false;
+        var request = ByteArrayRequest.wrap(exchange);
+        var response = ByteArrayResponse.wrap(exchange);
 
         if (request.isOptions()) {
             handleOptions(exchange);
@@ -143,10 +140,8 @@ public class CsvLoader implements Service {
                                 pluginsRegistry);
 
                         if (params.update && params.idIdx < 0) {
-                            ResponseHelper.endExchangeWithMessage(exchange,
-                                    HttpStatus.SC_BAD_REQUEST,
+                            response.endExchangeWithMessage(HttpStatus.SC_BAD_REQUEST,
                                     ERROR_NO_ID);
-                            respBodySet = true;
                         } else {
                             try {
                                 final String content = ChannelReader.read(exchange.getRequestChannel());
@@ -193,38 +188,24 @@ public class CsvLoader implements Service {
                                 }
                             } catch (IOException ex) {
                                 LOGGER.debug("error parsing CSV data", ex);
-                                ResponseHelper.endExchangeWithMessage(exchange,
-                                        HttpStatus.SC_BAD_REQUEST,
+                                response.endExchangeWithMessage(HttpStatus.SC_BAD_REQUEST,
                                         ERROR_PARSING_DATA);
-                                respBodySet = true;
 
                             }
                         }
                     } catch (IllegalArgumentException iae) {
-                        ResponseHelper.endExchangeWithMessage(exchange,
-                                HttpStatus.SC_BAD_REQUEST,
+                        response.endExchangeWithMessage(HttpStatus.SC_BAD_REQUEST,
                                 ERROR_QPARAM);
-                        respBodySet = true;
                     }
                 } else {
-                    ResponseHelper.endExchangeWithMessage(exchange,
-                            HttpStatus.SC_BAD_REQUEST,
+                    response.endExchangeWithMessage(HttpStatus.SC_BAD_REQUEST,
                             ERROR_CONTENT_TYPE);
-                    respBodySet = true;
                 }
 
             } else {
-                ResponseHelper.endExchangeWithMessage(exchange,
-                        HttpStatus.SC_NOT_IMPLEMENTED,
+                response.endExchangeWithMessage(HttpStatus.SC_NOT_IMPLEMENTED,
                         ERROR_WRONG_METHOD);
-                respBodySet = true;
             }
-        }
-
-        // this clean the error message about the wrong media type
-        // added by BodyInjectorHandler
-        if (!respBodySet) {
-            response.setContent(null);
         }
     }
 
@@ -309,7 +290,7 @@ public class CsvLoader implements Service {
         }
     }
 
-    private boolean doesApply(BsonRequest request) {
+    private boolean doesApply(ByteArrayRequest request) {
         return request.isPost();
     }
 

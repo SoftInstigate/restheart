@@ -23,10 +23,12 @@ package org.restheart.handlers;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.PathMatcher;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH;
 import org.restheart.plugins.MongoMount;
+import org.restheart.plugins.PluginsRegistryImpl;
 
 /**
- * Initializes BsonRequest for services
+ * Initializes BsonRequest for requets handled by MongoService
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
@@ -50,25 +52,26 @@ public class BsonRequestInitializer extends PipelinedHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        //TODO we cannot only use mongoMounts
-        // we need:
-        // 1- resolve the URI with mongo service URI
-        // 2- take other bound URIs into account. 
-        //      if mongoUri=/, mongo-mounts=(/,*) and ping=/ping 
-        //      => /ping is not handled by mongo service
-        
-        var mmm = mongoMounts.match(exchange.getRequestPath());
+        var path = exchange.getRequestPath();
 
-        if (mmm != null && mmm.getValue() != null) {
-            var mm = mmm.getValue();
+        var pi = PluginsRegistryImpl.getInstance().getPipelineInfo(path);
 
-            BsonRequest.init(exchange,
-                    mm.uri,
-                    mm.resource);
-        } else {
-            BsonRequest.init(exchange,
-                    DEFAULT_MONGO_MOUNT.uri,
-                    DEFAULT_MONGO_MOUNT.resource);
+        if (pi != null && 
+                pi.getType() == PIPELINE_BRANCH.SERVICE
+                && "mongo".equals(pi.getName())) {
+            var mmm = mongoMounts.match(path);
+
+            if (mmm != null && mmm.getValue() != null) {
+                var mm = mmm.getValue();
+
+                BsonRequest.init(exchange,
+                        mm.uri,
+                        mm.resource);
+            } else {
+                BsonRequest.init(exchange,
+                        DEFAULT_MONGO_MOUNT.uri,
+                        DEFAULT_MONGO_MOUNT.resource);
+            }
         }
 
         next(exchange);

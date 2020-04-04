@@ -797,7 +797,7 @@ public class Bootstrapper {
             }
         }
 
-        HANDLERS = getHandlersPipe(authMechanisms,
+        HANDLERS = getPipeline(authMechanisms,
                 authorizers,
                 tokenManager);
 
@@ -872,7 +872,7 @@ public class Bootstrapper {
      * @param tokenManager
      * @return a GracefulShutdownHandler
      */
-    private static GracefulShutdownHandler getHandlersPipe(
+    private static GracefulShutdownHandler getPipeline(
             final Set<PluginRecord<AuthMechanism>> authMechanisms,
             final Set<PluginRecord<Authorizer>> authorizers,
             final PluginRecord<TokenManager> tokenManager
@@ -892,7 +892,7 @@ public class Bootstrapper {
 
         plugStaticResourcesHandlers(configuration);
 
-        return buildGracefulShutdownHandler();
+        return getBasePipeline();
     }
 
     /**
@@ -901,7 +901,7 @@ public class Bootstrapper {
      * @param paths
      * @return
      */
-    private static GracefulShutdownHandler buildGracefulShutdownHandler() {
+    private static GracefulShutdownHandler getBasePipeline() {
         return new GracefulShutdownHandler(
                 new RequestLimitingHandler(
                         new RequestLimit(configuration.getRequestsLimit()),
