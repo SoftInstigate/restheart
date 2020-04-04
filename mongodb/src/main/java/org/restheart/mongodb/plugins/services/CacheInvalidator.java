@@ -22,8 +22,8 @@ package org.restheart.mongodb.plugins.services;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
@@ -48,8 +48,8 @@ public class CacheInvalidator implements Service {
      */
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = ByteArrayRequest.wrap(exchange);
+        var response = ByteArrayResponse.wrap(exchange);
 
         if (!MongoServiceConfiguration.get().isLocalCacheEnabled()) {
             ResponseHelper.endExchangeWithMessage(
