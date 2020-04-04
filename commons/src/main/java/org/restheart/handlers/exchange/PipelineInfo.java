@@ -21,7 +21,10 @@ import org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH;
 import org.restheart.utils.URLUtils;
 
 /**
- * simple class to hold a mongo-mount configuration entry
+ * Stores information about the pipeline that handles the request. For instance,
+ * if the request is handled by MongoService, pipeline info is:
+ *
+ * PipelineInfo(type=SERVICE, uri="/", name="mongo")
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
@@ -38,8 +41,29 @@ public class PipelineInfo {
 
     @Override
     public String toString() {
-        return "ResourceInfo(type: " + type
-                + ", uri: " + uri
-                + ", name: " + name + ")";
+        return "PipelineInfo(type: " + getType()
+                + ", uri: " + getUri()
+                + ", name: " + getName() + ")";
+    }
+
+    /**
+     * @return the type
+     */
+    public PIPELINE_BRANCH getType() {
+        return type;
+    }
+
+    /**
+     * @return the uri
+     */
+    public String getUri() {
+        return uri;
+    }
+
+    /**
+     * @return the name
+     */
+    public String getName() {
+        return name;
     }
 }
