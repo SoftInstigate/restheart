@@ -21,8 +21,11 @@ package org.restheart.plugins;
 
 import io.undertow.predicate.Predicate;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.util.PathMatcher;
 import java.util.Set;
 import org.restheart.ConfigurationException;
+import org.restheart.handlers.exchange.PipelineInfo;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.plugins.mongodb.GlobalChecker;
 import org.restheart.plugins.mongodb.GlobalHook;
@@ -123,9 +126,29 @@ public interface PluginsRegistry {
     public Set<GlobalHook> getGlobalHooks();
 
     /**
-     * Allows to programmatically add handlers to the root path handler
+     * Gets the RESTHeart root handler
      * 
-     * @return the root PathHandler of the pipeline
+     * Avoid adding handlers using PathHandler.addPrefixPath() or
+     * PathHandler.addExactPath(). Instead use PluginsRegistry.plug() which sets
+     * also the correct PipelineInfo
+     *
+     * @return the RESTHeart root handler
      */
     public PathHandler getRootPathHandler();
+
+    /**
+     * Plugs a pipeline into the root handler binding it to the path; also sets
+     * its PipelineInfo.
+     *
+     * @param path If the request contains this path, run the pipeline
+     * @param handler The handler which is activated upon match
+     * @param info The PipelineInfo describing the handling pipeline
+     */
+    public void plugPipeline(String path, PipelinedHandler handler, PipelineInfo info);
+
+    /**
+     * @param path
+     * @return the PipelineInfo of the pipeline handling the request
+     */
+    public PipelineInfo getPipelineInfo(String path);
 }

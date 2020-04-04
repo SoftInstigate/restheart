@@ -15,8 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart;
+package org.restheart.handlers.exchange;
 
+import org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -24,16 +25,12 @@ import org.restheart.utils.URLUtils;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ResourceInfo {
-    public enum TYPE {
-        PROXY, SERVICE, STATIC_RESOURCE
-    };
-
-    private final TYPE type;
+public class PipelineInfo {
+    private final PIPELINE_BRANCH type;
     private final String uri;
     private final String name;
 
-    public ResourceInfo(TYPE type, String uri, String name) {
+    public PipelineInfo(PIPELINE_BRANCH type, String uri, String name) {
         this.type = type;
         this.uri = URLUtils.removeTrailingSlashes(uri);
         this.name = name;

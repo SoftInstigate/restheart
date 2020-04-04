@@ -20,12 +20,15 @@
  */
 package org.restheart.plugins;
 
+import static io.undertow.Handlers.path;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.handlers.PathHandler;
+import io.undertow.util.PathMatcher;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import org.restheart.Bootstrapper;
 import org.restheart.ConfigurationException;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.PipelineInfo;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.plugins.mongodb.GlobalChecker;
 import org.restheart.plugins.mongodb.GlobalHook;
@@ -309,9 +312,27 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public synchronized Set<GlobalHook> getGlobalHooks() {
         return globalHooks;
     }
+    
+    private static final PathHandler ROOT_PATH_HANDLER = path();
+    
+    private static final PathMatcher<PipelineInfo> PIPELINE_INFOS 
+            = new PathMatcher<>();
 
     @Override
     public PathHandler getRootPathHandler() {
-        return Bootstrapper.getRootPathHandler();
+        return ROOT_PATH_HANDLER;
+    }
+    
+    @Override
+    public void plugPipeline(String path, 
+            PipelinedHandler handler, 
+            PipelineInfo info) {
+        ROOT_PATH_HANDLER.addPrefixPath(path, handler);
+        PIPELINE_INFOS.addPrefixPath(path, info);
+    }
+    
+    @Override
+    public PipelineInfo getPipelineInfo(String path) {
+        return PIPELINE_INFOS.getPrefixPath(path);
     }
 }
