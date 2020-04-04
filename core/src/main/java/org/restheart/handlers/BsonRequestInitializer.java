@@ -22,8 +22,8 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.PathMatcher;
-import org.restheart.MongoMount;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.plugins.MongoMount;
 
 /**
  * Initializes BsonRequest for services

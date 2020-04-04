@@ -21,11 +21,10 @@ package org.restheart.plugins;
 
 import io.undertow.predicate.Predicate;
 import io.undertow.server.handlers.PathHandler;
-import io.undertow.util.PathMatcher;
 import java.util.Set;
 import org.restheart.ConfigurationException;
-import org.restheart.handlers.exchange.PipelineInfo;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.PipelineInfo;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.plugins.mongodb.GlobalChecker;
 import org.restheart.plugins.mongodb.GlobalHook;

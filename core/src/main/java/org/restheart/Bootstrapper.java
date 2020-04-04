@@ -20,7 +20,6 @@
  */
 package org.restheart;
 
-import org.restheart.handlers.exchange.PipelineInfo;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
@@ -108,6 +107,7 @@ import static org.restheart.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
 import org.restheart.handlers.exchange.AbstractExchange.METHOD;
 import org.restheart.handlers.exchange.PipelineBranchInfo;
 import org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH;
+import org.restheart.handlers.exchange.PipelineInfo;
 import org.restheart.handlers.injectors.AuthHeadersRemover;
 import org.restheart.handlers.injectors.ConduitInjector;
 import org.restheart.handlers.injectors.PipelineBranchInfoInjector;
@@ -1060,7 +1060,7 @@ public class Bootstrapper {
             return;
         }
 
-        conf.getProxies().stream().forEachOrdered(proxies -> {
+        conf.getProxies().stream().forEachOrdered((Map<String, Object> proxies) -> {
             String location = Configuration.getOrDefault(proxies,
                     ConfigurationKeys.PROXY_LOCATION_KEY, null, true);
 

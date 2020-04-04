@@ -21,13 +21,11 @@ package org.restheart.handlers.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.bson.BsonValue;
 import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
-import org.restheart.utils.JsonUtils;
 import org.slf4j.LoggerFactory;
 
 /**
