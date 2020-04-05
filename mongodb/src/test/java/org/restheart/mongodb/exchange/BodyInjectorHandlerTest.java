@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.injectors;
+package org.restheart.mongodb.exchange;
 
 import io.undertow.server.handlers.form.FormData;
 import java.lang.reflect.Field;
@@ -56,7 +56,7 @@ public class BodyInjectorHandlerTest {
         field.setAccessible(true);
 
         formData.add(field.get(null).toString(), jsonString);
-        BsonDocument result = RequestContentInjector.extractMetadata(formData);
+        BsonDocument result = BsonRequestContentInjector.extractMetadata(formData);
         BsonDocument expected = BsonDocument.parse(jsonString);
         assertEquals(expected, result);
     }

@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.injectors;
+package org.restheart.mongodb.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import java.io.IOException;

@@ -123,24 +123,27 @@ public class RequestLogger extends PipelinedHandler {
             sb.append("\n----------------------------REQUEST---------------------------\n");
 
             sb.append("               URI=").append(exchange.getRequestURI()).append("\n");
-            
-            var pb = request.getPipelineBranchInfo();
-            sb.append("          servedBy=")
-                    .append(pb.getBranch().name().toLowerCase())
-                    .append(" ");
 
-            if (pb.getName() != null) {
+            var pb = request.getPipelineInfo();
+
+            if (pb != null) {
+                sb.append("          servedBy=")
+                        .append(pb.getType().name().toLowerCase())
+                        .append(" ");
+
+                if (pb.getName() != null) {
+                    sb
+                            .append("'")
+                            .append(pb.getName())
+                            .append("' ");
+                }
+
                 sb
-                        .append("'")
-                        .append(pb.getName())
-                        .append("' ");
+                        .append("bound to '")
+                        .append(pb.getUri())
+                        .append("'\n");
             }
 
-            sb
-                    .append("bound to '")
-                    .append(pb.getUri())
-                    .append("'\n");
-            
             sb.append(" characterEncoding=").append(exchange.getRequestHeaders().get(Headers.CONTENT_ENCODING))
                     .append("\n");
             sb.append("     contentLength=").append(exchange.getRequestContentLength()).append("\n");

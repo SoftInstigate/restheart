@@ -88,7 +88,6 @@ import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_EMBEDDED_KE
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
-import org.restheart.handlers.BsonRequestInitializer;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
@@ -101,16 +100,18 @@ import org.restheart.handlers.RequestLogger;
 import org.restheart.handlers.RequestNotManagedHandler;
 import org.restheart.handlers.ResponseInterceptorsExecutor;
 import org.restheart.handlers.ResponseSender;
+import org.restheart.handlers.ServiceRequestInitializer;
 import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
 import org.restheart.handlers.exchange.AbstractExchange.METHOD;
-import org.restheart.handlers.exchange.PipelineBranchInfo;
-import org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH;
 import org.restheart.handlers.exchange.PipelineInfo;
+import static org.restheart.handlers.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
+import static org.restheart.handlers.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
+import static org.restheart.handlers.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
 import org.restheart.handlers.injectors.AuthHeadersRemover;
 import org.restheart.handlers.injectors.ConduitInjector;
-import org.restheart.handlers.injectors.PipelineBranchInfoInjector;
+import org.restheart.handlers.injectors.PipelineInfoInjector;
 import org.restheart.handlers.injectors.RequestContentInjector;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
@@ -1004,13 +1005,10 @@ public class Bootstrapper {
                         tokenManager);
             }
 
-            var _srv = pipe(new PipelineBranchInfoInjector(new PipelineBranchInfo(
-                    PIPELINE_BRANCH.SERVICE,
-                    srv.getName(),
-                    uri)),
+            var _srv = pipe(new PipelineInfoInjector(),
                     new TracingInstrumentationHandler(),
                     new RequestLogger(),
-                    new BsonRequestInitializer(),
+                    new ServiceRequestInitializer(),
                     new CORSHandler(),
                     new XPoweredByInjector(),
                     new RequestContentInjector(ALWAYS),
@@ -1025,16 +1023,13 @@ public class Bootstrapper {
                                             .wrap(srv.getInstance()),
                                     configuration.isForceGzipEncoding())),
                     new ResponseInterceptorsExecutor(),
-                    //new ConduitInjector(),
                     new ResponseSender()
             );
 
             PluginsRegistryImpl
                     .getInstance()
                     .plugPipeline(uri, _srv,
-                            new PipelineInfo(PIPELINE_BRANCH.SERVICE,
-                                    uri,
-                                    srv.getName()));
+                            new PipelineInfo(SERVICE, uri, srv.getName()));
 
             LOGGER.info(ansi().fg(GREEN)
                     .a("URI {} bound to service {}, secured: {}")
@@ -1153,10 +1148,7 @@ public class Bootstrapper {
                         .build();
 
                 var proxy = pipe(
-                        new PipelineBranchInfoInjector(new PipelineBranchInfo(
-                                PIPELINE_BRANCH.PROXY,
-                                name,
-                                location)),
+                        new PipelineInfoInjector(),
                         new TracingInstrumentationHandler(),
                         new RequestLogger(),
                         new XPoweredByInjector(),
@@ -1180,9 +1172,7 @@ public class Bootstrapper {
                 PluginsRegistryImpl
                         .getInstance()
                         .plugPipeline(location, proxy,
-                                new PipelineInfo(PIPELINE_BRANCH.PROXY,
-                                        location,
-                                        name));
+                                new PipelineInfo(PROXY, location, name));
 
                 LOGGER.info(ansi().fg(GREEN)
                         .a("URI {} bound to proxy resource {}")
@@ -1278,10 +1268,7 @@ public class Bootstrapper {
                                 .setDirectoryListingEnabled(false);
 
                         PipelinedHandler ph = PipelinedHandler.pipe(
-                                new PipelineBranchInfoInjector(new PipelineBranchInfo(
-                                        PIPELINE_BRANCH.STATIC_RESOURCE,
-                                        null,
-                                        where)),
+                                new PipelineInfoInjector(),
                                 new RequestLogger(),
                                 PipelinedWrappingHandler.wrap(handler)
                         );
@@ -1289,7 +1276,7 @@ public class Bootstrapper {
                         PluginsRegistryImpl
                                 .getInstance()
                                 .plugPipeline(where, ph,
-                                        new PipelineInfo(PIPELINE_BRANCH.STATIC_RESOURCE,
+                                        new PipelineInfo(STATIC_RESOURCE,
                                                 where,
                                                 path));
 

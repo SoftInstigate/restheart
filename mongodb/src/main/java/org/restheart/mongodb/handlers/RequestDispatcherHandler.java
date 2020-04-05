@@ -56,7 +56,7 @@ import org.restheart.mongodb.handlers.files.PutFileHandler;
 import org.restheart.mongodb.handlers.indexes.DeleteIndexHandler;
 import org.restheart.mongodb.handlers.indexes.GetIndexesHandler;
 import org.restheart.mongodb.handlers.indexes.PutIndexHandler;
-import org.restheart.mongodb.handlers.injectors.ResponseContentInjector;
+import org.restheart.mongodb.exchange.ResponseContentInjector;
 import org.restheart.mongodb.handlers.metadata.AfterWriteCheckersExecutor;
 import org.restheart.mongodb.handlers.metadata.BeforeWriteCheckersExecutor;
 import org.restheart.mongodb.handlers.metadata.CheckersListHandler;

@@ -17,7 +17,7 @@
  */
 package org.restheart.handlers.exchange;
 
-import org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH;
+import java.util.Objects;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -29,11 +29,18 @@ import org.restheart.utils.URLUtils;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class PipelineInfo {
-    private final PIPELINE_BRANCH type;
+    public enum PIPELINE_TYPE {
+        SERVICE, PROXY, STATIC_RESOURCE
+    };
+    
+    private final PIPELINE_TYPE type;
     private final String uri;
     private final String name;
 
-    public PipelineInfo(PIPELINE_BRANCH type, String uri, String name) {
+    public PipelineInfo(PIPELINE_TYPE type, String uri, String name) {
+        Objects.requireNonNull(type, "argument 'branch' cannot be null");
+        Objects.requireNonNull(uri, "argument 'uri' cannot be null");
+        
         this.type = type;
         this.uri = URLUtils.removeTrailingSlashes(uri);
         this.name = name;
@@ -49,7 +56,7 @@ public class PipelineInfo {
     /**
      * @return the type
      */
-    public PIPELINE_BRANCH getType() {
+    public PIPELINE_TYPE getType() {
         return type;
     }
 

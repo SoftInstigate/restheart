@@ -30,7 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.handlers.exchange.ByteArrayResponse;
-import org.restheart.handlers.exchange.ProxableResponse;
+import org.restheart.handlers.exchange.ProxyResponse;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +82,7 @@ public class ModifiableContentSinkConduit
      */
     private void resetBufferPool(HttpServerExchange exchange) {
         var buffers = new PooledByteBuffer[MAX_BUFFERS];
-        exchange.putAttachment(ProxableResponse.BUFFERED_RESPONSE_DATA_KEY,
+        exchange.putAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY,
                 buffers);
     }
 
@@ -90,7 +90,7 @@ public class ModifiableContentSinkConduit
     public int write(ByteBuffer src) throws IOException {
         return BuffersUtils.append(src,
                 (PooledByteBuffer[]) exchange
-                        .getAttachment(ProxableResponse.BUFFERED_RESPONSE_DATA_KEY),
+                        .getAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY),
                 exchange);
     }
 

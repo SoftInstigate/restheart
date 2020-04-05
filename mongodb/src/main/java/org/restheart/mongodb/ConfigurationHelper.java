@@ -119,6 +119,5 @@ public class ConfigurationHelper {
         });
     }
 
-    private ConfigurationHelper() {
-    }
+    
 }

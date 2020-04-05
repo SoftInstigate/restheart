@@ -21,6 +21,8 @@ package org.restheart.plugins;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import java.util.function.Consumer;
+import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -45,5 +47,9 @@ public interface Service extends HandlingPlugin {
                 .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
         exchange.setStatusCode(HttpStatus.SC_OK);
         exchange.endExchange();
+    }
+    
+    default Consumer<HttpServerExchange> requestInitializer() {
+        return e -> ByteArrayRequest.wrap(e);
     }
 }
