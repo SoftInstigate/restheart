@@ -30,25 +30,29 @@ import static org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY.REQ
 import static org.restheart.handlers.exchange.ExchangeKeys.ETAG_DOC_POLICY_METADATA_KEY;
 import static org.restheart.handlers.exchange.ExchangeKeys.ETAG_POLICY_METADATA_KEY;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import static org.restheart.mongodb.handlers.injectors.BsonRequestInjector.LOGGER;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
- * injects the context authenticatedAccount
+ * injects the ETag Policy
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ETagPolicyInjector extends PipelinedHandler {
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(ETagPolicyInjector.class);
+
     /**
-     * Creates a new instance of AccountInjectorHandler
+     * Creates a new instance of ETagPolicyInjector
      *
      */
     public ETagPolicyInjector() {
         super(null);
     }
-    
+
     /**
-     * Creates a new instance of AccountInjectorHandler
+     * Creates a new instance of ETagPolicyInjector
      *
      * @param next
      */
@@ -64,12 +68,12 @@ public class ETagPolicyInjector extends PipelinedHandler {
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         var request = BsonRequest.wrap(exchange);
-        
+
         request.setETagCheckRequired(isETagCheckRequired(request));
-        
+
         next(exchange);
     }
-    
+
     /**
      *
      * @param request

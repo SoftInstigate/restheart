@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ByteArrayResponse extends ProxableResponse<byte[]> {
+public class ByteArrayResponse extends ProxyResponse<byte[]> {
 
     protected ByteArrayResponse(HttpServerExchange exchange) {
         super(exchange);

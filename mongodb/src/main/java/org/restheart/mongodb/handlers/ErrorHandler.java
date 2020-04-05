@@ -28,7 +28,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;
-import org.restheart.mongodb.handlers.injectors.ResponseContentInjector;
+import org.restheart.mongodb.exchange.ResponseContentInjector;
 import org.restheart.mongodb.handlers.transformers.RepresentationTransformer;
 import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ResponseHelper;

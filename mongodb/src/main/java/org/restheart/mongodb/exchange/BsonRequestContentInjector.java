@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.injectors;
+package org.restheart.mongodb.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormData;
@@ -66,9 +66,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RequestContentInjector extends PipelinedHandler {
+public class BsonRequestContentInjector {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(RequestContentInjector.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(BsonRequestContentInjector.class);
+
+    private static final String CONTENT_TYPE = "contentType";
 
     private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
             + Resource.HAL_JSON_MEDIA_TYPE
@@ -258,24 +260,14 @@ public class RequestContentInjector extends PipelinedHandler {
         return new Tika().detect(file);
     }
 
-    private final FormParserFactory formParserFactory;
+    private static final FormParserFactory FORM_PARSER
+            = FormParserFactory.builder().build();
 
     /**
      * Creates a new instance of BodyInjectorHandler
      *
      */
-    public RequestContentInjector() {
-        this(null);
-    }
-
-    /**
-     * Creates a new instance of BodyInjectorHandler
-     *
-     * @param next
-     */
-    public RequestContentInjector(PipelinedHandler next) {
-        super(next);
-        this.formParserFactory = FormParserFactory.builder().build();
+    public BsonRequestContentInjector() {
     }
 
     /**
@@ -283,20 +275,17 @@ public class RequestContentInjector extends PipelinedHandler {
      * @param exchange
      * @throws Exception
      */
-    @Override
-    public void handleRequest(final HttpServerExchange exchange) throws Exception {
+    public static void inject(final HttpServerExchange exchange) {
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
 
         if (request.isInError()) {
-            next(exchange);
             return;
         }
 
         if (request.isGet()
                 || request.isOptions()
                 || request.isDelete()) {
-            next(exchange);
             return;
         }
 
@@ -310,10 +299,9 @@ public class RequestContentInjector extends PipelinedHandler {
                         exchange,
                         HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
                         ERROR_INVALID_CONTENTTYPE_FILE);
-                next(exchange);
                 return;
             }
-            FormDataParser parser = this.formParserFactory.createParser(exchange);
+            FormDataParser parser = FORM_PARSER.createParser(exchange);
 
             if (parser == null) {
                 String errMsg = "There is no form parser registered "
@@ -323,7 +311,6 @@ public class RequestContentInjector extends PipelinedHandler {
                         exchange,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
-                next(exchange);
                 return;
             }
 
@@ -340,7 +327,6 @@ public class RequestContentInjector extends PipelinedHandler {
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         ioe);
-                next(exchange);
                 return;
             }
 
@@ -355,7 +341,6 @@ public class RequestContentInjector extends PipelinedHandler {
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         ex);
-                next(exchange);
                 return;
             }
 
@@ -368,7 +353,6 @@ public class RequestContentInjector extends PipelinedHandler {
                         exchange,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
-                next(exchange);
                 return;
             }
 
@@ -376,23 +360,43 @@ public class RequestContentInjector extends PipelinedHandler {
 
             request.setFilePath(path);
 
-            injectContentTypeFromFile(content.asDocument(), path.toFile());
+            try {
+                injectContentTypeFromFile(content.asDocument(), path.toFile());
+            } catch (IOException ioe) {
+                response.addWarning("error detecting content type");
+
+                LOGGER.warn("error detecting content type of file", ioe);
+
+                return;
+            }
         } else {
             if (isHalOrJson(contentType)) {
                 final String contentString;
 
                 var bar = ByteArrayRequest.wrap(exchange);
 
-                if (bar.isContentAvailable()) {
-                    // if content has been already injected by core's 
-                    // RequestContentInjector
-                    // get it from BsonRequest.readContent()
-                    contentString = new String(bar.readContent(),
-                            StandardCharsets.UTF_8);
-                } else {
-                    // otherwise use ChannelReader
-                    contentString = ChannelReader
-                            .read(exchange.getRequestChannel());
+                try {
+                    if (bar.isContentAvailable()) {
+                        // if content has been already injected by core's 
+                        // BsonRequestContentInjector
+                        // get it from BsonRequest.readContent()
+                        contentString = new String(bar.readContent(),
+                                StandardCharsets.UTF_8);
+                    } else {
+                        // otherwise use ChannelReader
+                        contentString = ChannelReader
+                                .read(exchange.getRequestChannel());
+                    }
+                } catch (IOException ieo) {
+                    String errMsg = "Error reading request content";
+
+                    LOGGER.error(errMsg, ieo);
+
+                    ResponseHelper.endExchangeWithMessage(
+                            exchange,
+                            HttpStatus.SC_NOT_ACCEPTABLE,
+                            errMsg);
+                    return;
                 }
 
                 // parse the json content
@@ -416,7 +420,6 @@ public class RequestContentInjector extends PipelinedHandler {
                                 HttpStatus.SC_NOT_ACCEPTABLE,
                                 "Invalid JSON. " + ex.getMessage(),
                                 ex);
-                        next(exchange);
                         return;
                     }
                 } else {
@@ -429,7 +432,6 @@ public class RequestContentInjector extends PipelinedHandler {
                         exchange,
                         HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
                         ERROR_INVALID_CONTENTTYPE);
-                next(exchange);
                 return;
             }
         }
@@ -445,7 +447,6 @@ public class RequestContentInjector extends PipelinedHandler {
                         "request data can be an array only "
                         + "for POST to collection resources "
                         + "(bulk post)");
-                next(exchange);
                 return;
             }
 
@@ -481,7 +482,6 @@ public class RequestContentInjector extends PipelinedHandler {
                 }
             })) {
                 // an error occurred
-                next(exchange);
                 return;
             }
         } else if (content.isDocument()) {
@@ -498,7 +498,6 @@ public class RequestContentInjector extends PipelinedHandler {
                         exchange,
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
-                next(exchange);
                 return;
             }
 
@@ -514,7 +513,6 @@ public class RequestContentInjector extends PipelinedHandler {
                         exchange,
                         HttpStatus.SC_BAD_REQUEST,
                         errMsg);
-                next(exchange);
                 return;
             }
 
@@ -523,7 +521,5 @@ public class RequestContentInjector extends PipelinedHandler {
         }
 
         request.setContent(content);
-
-        next(exchange);
     }
 }

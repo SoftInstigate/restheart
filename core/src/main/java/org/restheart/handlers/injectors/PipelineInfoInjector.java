@@ -23,37 +23,33 @@ package org.restheart.handlers.injectors;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.ByteArrayRequest;
-import org.restheart.handlers.exchange.PipelineBranchInfo;
+import org.restheart.plugins.PluginsRegistryImpl;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * It injects the PipelineBranchInfo. It allows to programmatically understand
- * which pipeline branch (service, proxy or static resource) is handling the
- * request via BsonRequest.getPipelineBranchInfo()
+ * Injects the PipelineInfo to allows to programmatically understand which
+ * pipeline (service, proxy or static resource) is handling the request via
+ * Request.getPipelineInfo()
  */
-public class PipelineBranchInfoInjector extends PipelinedHandler {
-    private final PipelineBranchInfo pbi;
+public class PipelineInfoInjector extends PipelinedHandler {
 
     /**
-     * Creates a new instance of PipelineBranchInfoInjector
+     * Creates a new instance of PipelineInfoInjector
      *
      * @param next
-     * @param pbi
      */
-    public PipelineBranchInfoInjector(PipelinedHandler next, PipelineBranchInfo pbi) {
+    public PipelineInfoInjector(PipelinedHandler next) {
         super(next);
-        this.pbi = pbi;
     }
 
     /**
-     * Creates a new instance of PipelineBranchInfoInjector
+     * Creates a new instance of PipelineInfoInjector
      *
-     * @param pbi
      */
-    public PipelineBranchInfoInjector(PipelineBranchInfo pbi) {
-        this(null, pbi);
+    public PipelineInfoInjector() {
+        this(null);
     }
 
     /**
@@ -63,7 +59,9 @@ public class PipelineBranchInfoInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        ByteArrayRequest.wrap(exchange).setPipelineBranchInfo(this.pbi);
+        ByteArrayRequest.wrap(exchange)
+                .setPipelineInfo(PluginsRegistryImpl.getInstance()
+                        .getPipelineInfo(exchange.getRequestPath()));
 
         next(exchange);
     }

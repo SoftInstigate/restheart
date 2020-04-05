@@ -43,7 +43,8 @@ import org.slf4j.LoggerFactory;
 public class CollectionPropsInjector extends PipelinedHandler {
     private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CollectionPropsInjector.class);
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(CollectionPropsInjector.class);
 
     private static final String RESOURCE_DOES_NOT_EXIST = "Resource does not exist";
     private static final String COLLECTION_DOES_NOT_EXIST = "Collection '%s' does not exist";

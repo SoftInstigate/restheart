@@ -30,7 +30,7 @@ import org.restheart.handlers.ModifiableContentSinkConduit;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
-import static org.restheart.handlers.exchange.PipelineBranchInfo.PIPELINE_BRANCH.SERVICE;
+import static org.restheart.handlers.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.plugins.InterceptPoint;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
@@ -102,7 +102,8 @@ public class ConduitInjector extends PipelinedHandler {
 
             final var req = ByteArrayRequest.wrap(exchange);
 
-            if (req.getPipelineBranchInfo().getBranch() == SERVICE
+            if (req.getPipelineInfo() != null 
+                    && req.getPipelineInfo().getType() == SERVICE
                     || PluginsRegistryImpl.getInstance()
                             .getInterceptors()
                             .stream()

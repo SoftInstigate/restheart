@@ -30,8 +30,8 @@ import java.lang.reflect.Field;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  * @param <T>
  */
-public abstract class ProxableRequest<T> extends Request<T> {
-    public ProxableRequest(HttpServerExchange exchange) {
+public abstract class ProxyRequest<T> extends Request<T> {
+    public ProxyRequest(HttpServerExchange exchange) {
         super(exchange);
     }
     

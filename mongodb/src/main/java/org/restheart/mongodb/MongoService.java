@@ -24,26 +24,31 @@ import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.pathTemplate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
+import io.undertow.util.PathMatcher;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.function.Consumer;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.ConfigurationException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
+import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 import org.restheart.mongodb.db.MongoClientSingleton;
+import org.restheart.mongodb.exchange.BsonRequestPropsInjector;
+import org.restheart.mongodb.exchange.BsonRequestContentInjector;
 import org.restheart.mongodb.handlers.CORSHandler;
 import org.restheart.mongodb.handlers.MongoRequestInterceptorsExecutor;
 import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.AccountInjector;
-import org.restheart.mongodb.handlers.injectors.BsonRequestInjector;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.CollectionPropsInjector;
 import org.restheart.mongodb.handlers.injectors.DbPropsInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
-import org.restheart.mongodb.handlers.injectors.RequestContentInjector;
 import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.InjectPluginsRegistry;
@@ -63,20 +68,24 @@ import org.slf4j.LoggerFactory;
         description = "handles request to mongodb resources",
         enabledByDefault = true,
         defaultURI = "/",
-        dontIntercept = { InterceptPoint.REQUEST_AFTER_AUTH }, 
+        dontIntercept = {InterceptPoint.REQUEST_AFTER_AUTH},
         priority = Integer.MIN_VALUE)
 public class MongoService implements Service {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(MongoService.class);
 
     private String myURI = null;
-    
+
     private PipelinedHandler pipeline;
 
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
         this.myURI = myURI();
         this.pipeline = getBasePipeline(registry);
+
+        // init mongoMounts
+        getMongoMounts().stream().forEachOrdered(mm
+                -> mongoMounts.addPrefixPath(mm.uri, mm));
     }
 
     @Override
@@ -89,11 +98,14 @@ public class MongoService implements Service {
         if (MongoClientSingleton.isInitialized()) {
             this.pipeline.handleRequest(exchange);
         } else {
-            LOGGER.error("Service mongo is not initialized. "
+            var response = ByteArrayResponse.wrap(exchange);
+
+            final var error = "Service mongo is not initialized. "
                     + "Make sure that mongoInitializer is enabled "
-                    + "and executed successfully");
-            ByteArrayResponse.wrap(exchange).setInError(true);
-            ByteArrayResponse.wrap(exchange).setStatusCode(500);
+                    + "and executed successfully";
+
+            response.endExchangeWithMessage(500, error);
+            LOGGER.error(error);
         }
     }
 
@@ -106,17 +118,16 @@ public class MongoService implements Service {
             throws ConfigurationException {
         var rootHandler = path();
 
-        var _pipeline = PipelinedHandler.pipe(new BsonRequestInjector(),
+        var _pipeline = PipelinedHandler.pipe(
                 new MetricsInstrumentationHandler(),
                 new CORSHandler(),
                 new OptionsHandler(),
-                new RequestContentInjector(),
                 new AccountInjector(),
                 ClientSessionInjector.build(),
                 new DbPropsInjector(),
                 new CollectionPropsInjector(),
-                new MongoRequestInterceptorsExecutor(registry),
                 new ETagPolicyInjector(),
+                new MongoRequestInterceptorsExecutor(registry),
                 RequestDispatcherHandler.getInstance());
 
         // check that all mounts are either all paths or all path templates
@@ -166,6 +177,59 @@ public class MongoService implements Service {
                 : url.contains("{") && url.contains("}");
     }
 
+    private final MongoMount DEFAULT_MONGO_MOUNT = new MongoMount("*", "/");
+
+    /**
+     * Return the BsonRequest initializer
+     *
+     * @return
+     */
+    @Override
+    public Consumer<HttpServerExchange> requestInitializer() {
+        return e -> {
+            var path = e.getRequestPath();
+
+            var mmm = mongoMounts.match(path);
+
+            if (mmm != null && mmm.getValue() != null) {
+                var mm = mmm.getValue();
+
+                BsonRequest.init(e,
+                        mm.uri,
+                        mm.resource);
+            } else {
+                BsonRequest.init(e,
+                        DEFAULT_MONGO_MOUNT.uri,
+                        DEFAULT_MONGO_MOUNT.resource);
+            }
+
+            BsonRequestPropsInjector.inject(e);
+            BsonRequestContentInjector.inject(e);
+        };
+    }
+
+    /**
+     * PathMatcher is used by the root PathHandler to route the call. Here we
+     * use the same logic to identify the correct MongoMount in order to
+     * correctly init the BsonRequest
+     */
+    private final PathMatcher<MongoMount> mongoMounts = new PathMatcher<>();
+
+    @SuppressWarnings("unchecked")
+    private Set<MongoMount> getMongoMounts() {
+        final var ret = new LinkedHashSet<MongoMount>();
+
+        MongoServiceConfiguration.get().getMongoMounts()
+                .stream()
+                .forEachOrdered(e -> {
+                    ret.add(new MongoMount(
+                            (String) e.get(MONGO_MOUNT_WHAT_KEY),
+                            resolveURI((String) e.get(MONGO_MOUNT_WHERE_KEY))));
+                });
+
+        return ret;
+    }
+
     /**
      *
      * @param uri
@@ -207,6 +271,40 @@ public class MongoService implements Service {
         } else {
             throw new IllegalArgumentException("Wrong 'uri' configuration of "
                     + "mongo service.");
+        }
+    }
+
+    /**
+     * helper class to store mongo mounts info
+     */
+    private static class MongoMount {
+        public String resource;
+        public String uri;
+
+        public MongoMount(String resource, String uri) {
+            if (uri == null) {
+                throw new IllegalArgumentException("'where' cannot be null. check your 'mongo-mounts'.");
+            }
+
+            if (!uri.startsWith("/")) {
+                throw new IllegalArgumentException("'where' must start with \"/\". check your 'mongo-mounts'");
+            }
+
+            if (resource == null) {
+                throw new IllegalArgumentException("'what' cannot be null. check your 'mongo-mounts'.");
+            }
+
+            if (!uri.startsWith("/") && !uri.equals("*")) {
+                throw new IllegalArgumentException("'what' must be * (all db resorces) or start with \"/\". (eg. /db/coll) check your 'mongo-mounts'");
+            }
+
+            this.resource = resource;
+            this.uri = org.restheart.utils.URLUtils.removeTrailingSlashes(uri);
+        }
+
+        @Override
+        public String toString() {
+            return "MongoMount(" + uri + " -> " + resource + ")";
         }
     }
 }

@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.injectors;
+package org.restheart.mongodb.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
@@ -66,9 +66,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BsonRequestInjector extends PipelinedHandler {
+public class BsonRequestPropsInjector {
     static final Logger LOGGER
-            = LoggerFactory.getLogger(BsonRequestInjector.class);
+            = LoggerFactory.getLogger(BsonRequestPropsInjector.class);
 
     private static final int DEFAULT_PAGESIZE = MongoServiceConfiguration
             .get()
@@ -78,32 +78,12 @@ public class BsonRequestInjector extends PipelinedHandler {
             .get()
             .getMaxPagesize();
 
-    private final boolean checkAggregationOperators;
-
-    /**
-     *
-     */
-    public BsonRequestInjector() {
-        this(null);
-    }
-
-    /**
-     *
-     * @param next
-     */
-    public BsonRequestInjector(PipelinedHandler next) {
-        super(next);
-        this.checkAggregationOperators = MongoServiceConfiguration.get()
-                .getAggregationCheckOperators();
-    }
-
     /**
      *
      * @param exchange
-     * @throws Exception
      */
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public static void inject(HttpServerExchange exchange) {
+
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
 
@@ -111,7 +91,6 @@ public class BsonRequestInjector extends PipelinedHandler {
         // this makes sure OPTIONS works even on wrong paramenter
         // e.g. OPTIONS 127.0.0.1:8080?page=a
         if (request.isOptions()) {
-            next(exchange);
             return;
         }
 
@@ -150,7 +129,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                     exchange,
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal database name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
-            next(exchange);
             return;
         }
 
@@ -162,7 +140,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal collection name, "
                     + "see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
-            next(exchange);
             return;
         }
 
@@ -175,7 +152,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                         exchange,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal txnId: it must be a number");
-                next(exchange);
                 return;
             }
         }
@@ -186,7 +162,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                     exchange,
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
-            next(exchange);
             return;
         }
 
@@ -205,7 +180,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                         exchange,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal pagesize paramenter, it is not a number", ex);
-                next(exchange);
                 return;
             }
         }
@@ -216,7 +190,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal page parameter, pagesize must be >= 0 and <= "
                     + MAX_PAGESIZE);
-            next(exchange);
             return;
         } else {
             request.setPagesize(pagesize);
@@ -233,7 +206,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                         exchange,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal page paramenter, it is not a number", ex);
-                next(exchange);
                 return;
             }
         }
@@ -243,7 +215,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                     exchange,
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal page paramenter, it is < 1");
-            next(exchange);
             return;
         } else {
             request.setPage(page);
@@ -271,7 +242,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                         exchange,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal sort_by paramenter");
-                next(exchange);
                 return;
             }
 
@@ -312,7 +282,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                         exchange,
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal hint paramenter");
-                next(exchange);
                 return;
             }
 
@@ -353,7 +322,6 @@ public class BsonRequestInjector extends PipelinedHandler {
 
                 return false;
             })) {
-                next(exchange);
                 return; // an error occurred
             }
             request.setKeys(exchange.getQueryParameters().get(KEYS_QPARAM_KEY));
@@ -402,7 +370,6 @@ public class BsonRequestInjector extends PipelinedHandler {
 
                 return false;
             })) {
-                next(exchange);
                 return; // an error occurred
             }
 
@@ -418,7 +385,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                     HttpStatus.SC_BAD_REQUEST,
                     "filter paramenter is mandatory for bulk write requests");
 
-            next(exchange);
             return;
         }
 
@@ -434,7 +400,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                         HttpStatus.SC_BAD_REQUEST,
                         "Illegal avars paramenter (empty)");
 
-                next(exchange);
                 return;
             }
 
@@ -450,17 +415,12 @@ public class BsonRequestInjector extends PipelinedHandler {
                             "illegal avars paramenter, it is not a json object: "
                             + _qvars.get());
 
-                    try {
-                        next(exchange);
-                    } catch (Exception e) {
-                        // nothing to do
-                    }
-
                     return;
                 }
-
+                
                 // throws SecurityException if aVars contains operators
-                if (checkAggregationOperators) {
+                if (MongoServiceConfiguration.get()
+                        .getAggregationCheckOperators()) {
                     AggregationPipeline.checkAggregationVariables(qvars);
                 }
 
@@ -472,12 +432,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                         "illegal avars paramenter: "
                         + _qvars.get(),
                         t);
-
-                try {
-                    next(exchange);
-                } catch (Exception e) {
-                    // nothing to do
-                }
 
                 return;
             }
@@ -500,12 +454,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                             exchange,
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal eager paramenter (must be LINEAR, RANDOM or NONE)");
-                    try {
-                        next(exchange);
-                    } catch (Exception e) {
-                        // nothing to do
-                    }
-
                     return;
                 }
             }
@@ -533,12 +481,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                             + DOC_ID_TYPE_QPARAM_KEY
                             + " paramenter; must be "
                             + Arrays.toString(DOC_ID_TYPE.values()));
-                    try {
-                        next(exchange);
-                    } catch (Exception e) {
-                        // nothing to do
-                    }
-
                     return;
                 }
             }
@@ -560,12 +502,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                         "wrong document id format: not a valid "
                         + docIdType.name(),
                         idide);
-                try {
-                    next(exchange);
-                } catch (Exception e) {
-                    // nothing to do
-                }
-
                 return;
             }
         }
@@ -590,12 +526,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                         + " paramenter; valid values are "
                         + Arrays.toString(HAL_MODE.values()));
 
-                try {
-                    next(exchange);
-                } catch (Exception e) {
-                    // nothing to do
-                }
-
                 return;
             }
 
@@ -619,12 +549,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal shardkey paramenter (empty)");
 
-                    try {
-                        next(exchange);
-                    } catch (Exception e) {
-                        // nothing to do
-                    }
-
                     return true;
                 }
 
@@ -636,12 +560,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                                 exchange,
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal shardkey paramenter (empty json object)");
-
-                        try {
-                            next(exchange);
-                        } catch (Exception e) {
-                            // nothing to do
-                        }
 
                         return true;
                     }
@@ -655,11 +573,6 @@ public class BsonRequestInjector extends PipelinedHandler {
                             "illegal shardkey paramenter: "
                             + f,
                             t);
-                    try {
-                        next(exchange);
-                    } catch (Exception e) {
-                        // nothing to do
-                    }
 
                     return true;
                 }
@@ -671,8 +584,5 @@ public class BsonRequestInjector extends PipelinedHandler {
 
             request.setFilter(exchange.getQueryParameters().get(FILTER_QPARAM_KEY));
         }
-
-        next(exchange);
     }
-
 }
