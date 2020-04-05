@@ -297,7 +297,11 @@ public class CsvLoader implements Service {
     private boolean checkContentType(HttpServerExchange exchange) {
         HeaderValues contentType = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-        return contentType != null && contentType.contains(CVS_CONTENT_TYPE);
+        return contentType != null
+                && contentType.stream()
+                        .anyMatch(ct
+                                -> ct.equals(CVS_CONTENT_TYPE)
+                        || ct.startsWith(CVS_CONTENT_TYPE.concat(";")));
     }
 }
 
