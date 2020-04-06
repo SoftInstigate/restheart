@@ -26,6 +26,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.Database;
@@ -150,14 +151,15 @@ public abstract class PipedHttpHandler implements HttpHandler {
      * @return
      * @throws Exception
      */
-    protected boolean isInvalidMetadata(BsonDocument content, HttpServerExchange exchange, RequestContext context) throws Exception {
+    protected boolean isInvalidMetadata(BsonDocument content, 
+            HttpServerExchange exchange, 
+            RequestContext context) throws Exception {        
         // check RELS metadata
         if (content.containsKey(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
             try {
                 Relationship.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                BsonResponse.wrap(exchange).setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong relationships definition. "
                         + ex.getMessage(), ex);
@@ -170,8 +172,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
             try {
                 TransformerMetadata.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                BsonResponse.wrap(exchange).setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong representation transformer definition. "
                         + ex.getMessage(), ex);
@@ -184,8 +185,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
             try {
                 CheckerMetadata.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                BsonResponse.wrap(exchange).setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong checker definition. "
                         + ex.getMessage(), ex);
@@ -205,10 +205,10 @@ public abstract class PipedHttpHandler implements HttpHandler {
      * @throws Exception
      */
     protected boolean isNotAcceptableContent(BsonValue _content, HttpServerExchange exchange, RequestContext context) throws Exception {
+
         // cannot proceed with no data
         if (_content == null) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             next(exchange, context);
@@ -216,16 +216,14 @@ public abstract class PipedHttpHandler implements HttpHandler {
         }
         // cannot proceed with an array
         if (!_content.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             next(exchange, context);
             return true;
         }
         if (_content.asDocument().isEmpty()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             next(exchange, context);
@@ -249,8 +247,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
             ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_CONFLICT,
                     "The ETag must be provided using the '"
                     + Headers.IF_MATCH
@@ -260,8 +257,7 @@ public abstract class PipedHttpHandler implements HttpHandler {
         }
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_EXPECTATION_FAILED,
                     ResponseHelper.getMessageFromErrorCode(11000));
             next(exchange, context);

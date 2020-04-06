@@ -27,7 +27,6 @@ import java.util.Optional;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys.AGGREGATION_VARIABLES_QPARAM_KEY;
@@ -50,9 +49,8 @@ import static org.restheart.handlers.exchange.ExchangeKeys.SORT_QPARAM_KEY;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.aggregation.AggregationPipeline;
-import org.restheart.mongodb.representation.UnsupportedDocumentIdException;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -125,8 +123,7 @@ public class BsonRequestPropsInjector {
         // check database name to be a valid mongodb name
         if (request.getDBName() != null
                 && request.isDbNameInvalid()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal database name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
             return;
@@ -135,8 +132,7 @@ public class BsonRequestPropsInjector {
         // check collection name to be a valid mongodb name
         if (request.getCollectionName() != null
                 && request.isCollectionNameInvalid()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal collection name, "
                     + "see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
@@ -148,8 +144,7 @@ public class BsonRequestPropsInjector {
             try {
                 request.getTxnId();
             } catch (Throwable t) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal txnId: it must be a number");
                 return;
@@ -158,8 +153,7 @@ public class BsonRequestPropsInjector {
 
         // check collection name to be a valid mongodb name
         if (request.isReservedResource()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
             return;
@@ -176,8 +170,7 @@ public class BsonRequestPropsInjector {
             try {
                 pagesize = Integer.parseInt(__pagesize.getFirst());
             } catch (NumberFormatException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal pagesize paramenter, it is not a number", ex);
                 return;
@@ -185,8 +178,7 @@ public class BsonRequestPropsInjector {
         }
 
         if (pagesize < 0 || pagesize > MAX_PAGESIZE) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal page parameter, pagesize must be >= 0 and <= "
                     + MAX_PAGESIZE);
@@ -202,8 +194,7 @@ public class BsonRequestPropsInjector {
             try {
                 page = Integer.parseInt(__page.getFirst());
             } catch (NumberFormatException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal page paramenter, it is not a number", ex);
                 return;
@@ -211,8 +202,7 @@ public class BsonRequestPropsInjector {
         }
 
         if (page < 1) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal page paramenter, it is < 1");
             return;
@@ -238,8 +228,7 @@ public class BsonRequestPropsInjector {
 
         if (sort_by != null) {
             if (sort_by.stream().anyMatch(s -> s == null || s.isEmpty())) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal sort_by paramenter");
                 return;
@@ -278,8 +267,7 @@ public class BsonRequestPropsInjector {
 
         if (hint != null) {
             if (hint.stream().anyMatch(s -> s == null || s.isEmpty())) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal hint paramenter");
                 return;
@@ -292,8 +280,7 @@ public class BsonRequestPropsInjector {
         if (keys != null) {
             if (keys.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setIError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal keys paramenter (empty)");
                     return true;
@@ -303,8 +290,7 @@ public class BsonRequestPropsInjector {
                     BsonValue _keys = JsonUtils.parse(f);
 
                     if (!_keys.isDocument()) {
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange,
+                        response.setIError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal keys paramenter, it is not a json object: "
                                 + f
@@ -313,8 +299,7 @@ public class BsonRequestPropsInjector {
                         return true;
                     }
                 } catch (Throwable t) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal keys paramenter: " + f, t);
                     return true;
@@ -333,8 +318,7 @@ public class BsonRequestPropsInjector {
         if (filters != null) {
             if (filters.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setIError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal filter paramenter (empty)");
                     return true;
@@ -344,8 +328,7 @@ public class BsonRequestPropsInjector {
                     BsonValue _filter = JsonUtils.parse(f);
 
                     if (!_filter.isDocument()) {
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange,
+                        response.setIError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal filter paramenter, it is not a json object: "
                                 + f
@@ -353,16 +336,14 @@ public class BsonRequestPropsInjector {
                                 + f.getClass().getSimpleName());
                         return true;
                     } else if (_filter.asDocument().keySet().isEmpty()) {
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange,
+                        response.setIError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal filter paramenter (empty json object)");
                         return true;
                     }
 
                 } catch (Throwable t) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal filter paramenter: " + f, t);
                     return true;
@@ -380,8 +361,7 @@ public class BsonRequestPropsInjector {
         if (request.getType() == TYPE.BULK_DOCUMENTS
                 && (request.isDelete() || request.isPatch())
                 && (filters == null || filters.isEmpty())) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "filter paramenter is mandatory for bulk write requests");
 
@@ -395,8 +375,7 @@ public class BsonRequestPropsInjector {
             Optional<String> _qvars = avars.stream().findFirst();
 
             if (!_qvars.isPresent()) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_BAD_REQUEST,
                         "Illegal avars paramenter (empty)");
 
@@ -409,8 +388,7 @@ public class BsonRequestPropsInjector {
                 try {
                     qvars = BsonDocument.parse(_qvars.get());
                 } catch (JsonParseException jpe) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setIError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal avars paramenter, it is not a json object: "
                             + _qvars.get());
@@ -426,8 +404,7 @@ public class BsonRequestPropsInjector {
 
                 request.setAggregationVars(qvars);
             } catch (SecurityException t) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal avars paramenter: "
                         + _qvars.get(),
@@ -450,8 +427,7 @@ public class BsonRequestPropsInjector {
                 try {
                     eager = EAGER_CURSOR_ALLOCATION_POLICY.valueOf(_eager.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setIError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal eager paramenter (must be LINEAR, RANDOM or NONE)");
                     return;
@@ -474,8 +450,7 @@ public class BsonRequestPropsInjector {
                 try {
                     docIdType = DOC_ID_TYPE.valueOf(_docIdType.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setIError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal "
                             + DOC_ID_TYPE_QPARAM_KEY
@@ -496,8 +471,7 @@ public class BsonRequestPropsInjector {
             try {
                 request.setDocumentId(URLUtils.getDocumentIdFromURI(_docId, docIdType));
             } catch (UnsupportedDocumentIdException idide) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "wrong document id format: not a valid "
                         + docIdType.name(),
@@ -518,8 +492,7 @@ public class BsonRequestPropsInjector {
             try {
                 request.setHalMode(HAL_MODE.valueOf(_halMode.trim().toUpperCase()));
             } catch (IllegalArgumentException iae) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal "
                         + HAL_QPARAM_KEY
@@ -529,11 +502,13 @@ public class BsonRequestPropsInjector {
                 return;
             }
 
-            // if representation has not been set explicitly, set it to HAL
+            // if representation has not been set explicitly, set to default
             if (exchange
                     .getQueryParameters()
                     .get(REPRESENTATION_FORMAT_KEY) == null) {
-                request.setRepresentationFormat(REPRESENTATION_FORMAT.HAL);
+                
+                request.setRepresentationFormat(MongoServiceConfiguration.get()
+                        .getDefaultRepresentationFormat());
             }
         }
 
@@ -544,8 +519,7 @@ public class BsonRequestPropsInjector {
         if (shardKeys != null) {
             if (shardKeys.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setIError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal shardkey paramenter (empty)");
 
@@ -556,8 +530,7 @@ public class BsonRequestPropsInjector {
                     BsonDocument _shardKeys = BsonDocument.parse(f);
 
                     if (_shardKeys.keySet().isEmpty()) {
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange,
+                        response.setIError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal shardkey paramenter (empty json object)");
 
@@ -567,8 +540,7 @@ public class BsonRequestPropsInjector {
                     request.setShardKey(_shardKeys);
 
                 } catch (Throwable t) {
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal shardkey paramenter: "
                             + f,

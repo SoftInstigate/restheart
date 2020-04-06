@@ -27,7 +27,7 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.junit.Before;
 import org.junit.Test;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.Resource;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import static org.restheart.test.integration.HttpClientAbstactIT.buildURI;
 import static org.restheart.test.integration.HttpClientAbstactIT.collectionTmpUri;

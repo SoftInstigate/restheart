@@ -34,10 +34,9 @@ import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.db.sessions.SessionOptions;
 import org.restheart.mongodb.db.sessions.Sid;
-import org.restheart.mongodb.representation.RepUtils;
-import org.restheart.mongodb.representation.Resource;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.representation.RepresentationUtils;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +89,7 @@ public class PostSessionHandler extends PipelinedHandler {
 
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
-                            RepUtils.getReferenceLink(
+                            RepresentationUtils.getReferenceLink(
                                     URLUtils.getRemappedRequestURL(exchange),
                                     new BsonString(sid.toString())));
 
@@ -102,7 +101,7 @@ public class PostSessionHandler extends PipelinedHandler {
 
             // TODO check if server supports sessions
             if (!MongoClientSingleton.getInstance().isReplicaSet()) {
-                ResponseHelper.endExchangeWithMessage(exchange,
+                response.setIError(
                         HttpStatus.SC_BAD_GATEWAY,
                         mce.getMessage());
             } else {

@@ -31,7 +31,7 @@ import java.util.Arrays;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.handlers.exchange.JsonResponse;
-import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.AbstractRequest;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.BuffersUtils;
@@ -65,7 +65,7 @@ public class EchoService implements Service {
         resp.addProperty("method", exchange.getRequestMethod().toString());
         resp.addProperty("URL", exchange.getRequestURL());
 
-        if (Request.isContentTypeJson(exchange)) {
+        if (AbstractRequest.isContentTypeJson(exchange)) {
             var request = JsonRequest.wrap(exchange);
 
             try {

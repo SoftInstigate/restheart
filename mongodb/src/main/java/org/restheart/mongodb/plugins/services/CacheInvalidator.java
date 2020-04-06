@@ -26,7 +26,6 @@ import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
@@ -52,8 +51,7 @@ public class CacheInvalidator implements Service {
         var response = ByteArrayResponse.wrap(exchange);
 
         if (!MongoServiceConfiguration.get().isLocalCacheEnabled()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_MODIFIED,
                     "caching is off");
             return;
@@ -66,8 +64,7 @@ public class CacheInvalidator implements Service {
             Deque<String> _coll = exchange.getQueryParameters().get("coll");
 
             if (_db == null || _db.getFirst() == null) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_BAD_REQUEST,
                         "the db query paramter is mandatory");
             } else {

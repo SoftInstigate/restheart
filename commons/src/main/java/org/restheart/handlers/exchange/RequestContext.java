@@ -771,14 +771,15 @@ public class RequestContext {
     }
 
     /**
-     * @return the inError
+     * @return true if request is errored
      */
     public boolean isInError() {
         return this.bsonRequest.isInError();
     }
 
     /**
-     * @param inError the inError to set
+     * sets the inError
+     * @param inError
      */
     public void setInError(boolean inError) {
         this.bsonRequest.setInError(inError);

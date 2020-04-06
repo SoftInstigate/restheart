@@ -32,7 +32,7 @@ import org.junit.Assert;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.Resource;
 import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 import static org.restheart.test.integration.AbstactIT.url;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;

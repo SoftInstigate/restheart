@@ -1,4 +1,4 @@
-/*-
+ /*-
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
@@ -26,7 +26,9 @@ import java.util.Map;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.AbstractExchange.METHOD;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
+import org.restheart.mongodb.exchange.ResponseContentInjector;
 import org.restheart.mongodb.handlers.aggregation.AggregationTransformer;
 import org.restheart.mongodb.handlers.aggregation.GetAggregationHandler;
 import org.restheart.mongodb.handlers.bulk.BulkDeleteDocumentsHandler;
@@ -56,7 +58,6 @@ import org.restheart.mongodb.handlers.files.PutFileHandler;
 import org.restheart.mongodb.handlers.indexes.DeleteIndexHandler;
 import org.restheart.mongodb.handlers.indexes.GetIndexesHandler;
 import org.restheart.mongodb.handlers.indexes.PutIndexHandler;
-import org.restheart.mongodb.exchange.ResponseContentInjector;
 import org.restheart.mongodb.handlers.metadata.AfterWriteCheckersExecutor;
 import org.restheart.mongodb.handlers.metadata.BeforeWriteCheckersExecutor;
 import org.restheart.mongodb.handlers.metadata.CheckersListHandler;
@@ -71,7 +72,6 @@ import org.restheart.mongodb.handlers.sessions.PostSessionHandler;
 import org.restheart.mongodb.handlers.transformers.MetaRequestTransformer;
 import org.restheart.mongodb.handlers.transformers.RepresentationTransformer;
 import org.restheart.mongodb.handlers.transformers.SizeRequestTransformer;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.mongodb.Transformer.PHASE;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -141,8 +141,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.debug(
                     "This is a bad request: returning a <{}> HTTP code",
                     HttpStatus.SC_BAD_REQUEST);
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "bad request");
             responseSenderHandler.handleRequest(exchange);
@@ -153,8 +152,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.debug(
                     "This method is not allowed: returning a <{}> HTTP code",
                     HttpStatus.SC_METHOD_NOT_ALLOWED);
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_METHOD_NOT_ALLOWED,
                     "method " + request.getMethod().name() + " not allowed");
             responseSenderHandler.handleRequest(exchange);
@@ -165,8 +163,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.debug(
                     "The resource is reserved: returning a <{}> HTTP code",
                     HttpStatus.SC_FORBIDDEN);
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
             responseSenderHandler.handleRequest(exchange);
@@ -184,8 +181,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.error(
                     "Can't find PipelinedHandler({}, {})",
                     request.getType(), request.getMethod());
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_METHOD_NOT_ALLOWED,
                     "method " + request.getMethod().name() + " not allowed");
             responseSenderHandler.handleRequest(exchange);

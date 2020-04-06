@@ -47,7 +47,7 @@ import org.junit.BeforeClass;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.db.DocumentDAO;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.Resource;
 
 /**
  *

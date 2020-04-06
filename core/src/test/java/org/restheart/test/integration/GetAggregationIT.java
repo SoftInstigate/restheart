@@ -37,7 +37,7 @@ import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import static org.restheart.handlers.exchange.ExchangeKeys._AGGREGATIONS;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.Resource;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 

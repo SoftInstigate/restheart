@@ -41,13 +41,13 @@ import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.MongoClientSingleton;
-import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ChannelReader;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.plugins.mongodb.Transformer;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -140,7 +140,7 @@ public class CsvLoader implements Service {
                                 pluginsRegistry);
 
                         if (params.update && params.idIdx < 0) {
-                            response.endExchangeWithMessage(HttpStatus.SC_BAD_REQUEST,
+                            response.setIError(HttpStatus.SC_BAD_REQUEST,
                                     ERROR_NO_ID);
                         } else {
                             try {
@@ -188,22 +188,22 @@ public class CsvLoader implements Service {
                                 }
                             } catch (IOException ex) {
                                 LOGGER.debug("error parsing CSV data", ex);
-                                response.endExchangeWithMessage(HttpStatus.SC_BAD_REQUEST,
+                                response.setIError(HttpStatus.SC_BAD_REQUEST,
                                         ERROR_PARSING_DATA);
 
                             }
                         }
                     } catch (IllegalArgumentException iae) {
-                        response.endExchangeWithMessage(HttpStatus.SC_BAD_REQUEST,
+                        response.setIError(HttpStatus.SC_BAD_REQUEST,
                                 ERROR_QPARAM);
                     }
                 } else {
-                    response.endExchangeWithMessage(HttpStatus.SC_BAD_REQUEST,
+                    response.setIError(HttpStatus.SC_BAD_REQUEST,
                             ERROR_CONTENT_TYPE);
                 }
 
             } else {
-                response.endExchangeWithMessage(HttpStatus.SC_NOT_IMPLEMENTED,
+                response.setIError(HttpStatus.SC_NOT_IMPLEMENTED,
                         ERROR_WRONG_METHOD);
             }
         }

@@ -33,7 +33,6 @@ import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.CheckerMetadata;
 import org.restheart.mongodb.plugins.checkers.CheckersUtils;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.InterceptPoint;
@@ -107,8 +106,7 @@ public class BeforeWriteCheckersExecutor extends PipelinedHandler
                 && !applyCheckers(exchange))
                 || (doesGlobalCheckersApply()
                 && !applyGlobalCheckers(exchange))) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "request check failed");
         }

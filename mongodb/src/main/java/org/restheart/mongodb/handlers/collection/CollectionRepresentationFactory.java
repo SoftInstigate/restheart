@@ -35,18 +35,18 @@ import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
 import static org.restheart.handlers.exchange.ExchangeKeys._AGGREGATIONS;
 import static org.restheart.handlers.exchange.ExchangeKeys._STREAMS;
 import org.restheart.handlers.exchange.RequestContext;
-import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.mongodb.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.mongodb.handlers.document.DocumentRepresentationFactory;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
 import org.restheart.mongodb.metadata.CheckerMetadata;
 import org.restheart.mongodb.plugins.checkers.JsonSchemaChecker;
 import org.restheart.mongodb.representation.AbstractRepresentationFactory;
-import org.restheart.mongodb.representation.Link;
-import org.restheart.mongodb.representation.RepUtils;
-import org.restheart.mongodb.representation.Resource;
-import org.restheart.mongodb.representation.UnsupportedDocumentIdException;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.representation.Link;
+import org.restheart.representation.RepresentationUtils;
+import org.restheart.representation.Resource;
+import org.restheart.representation.UnsupportedDocumentIdException;
 
 /**
  *
@@ -368,8 +368,7 @@ public class CollectionRepresentationFactory
                                     d);
                 } else {
                     nrep = new DocumentRepresentationFactory()
-                            .getRepresentation(
-                                    RepUtils.getReferenceLink(requestPath, _id),
+                            .getRepresentation(RepresentationUtils.getReferenceLink(requestPath, _id),
                                     exchange,
                                     d);
                 }

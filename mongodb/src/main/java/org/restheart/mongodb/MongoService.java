@@ -38,8 +38,8 @@ import org.restheart.handlers.exchange.ByteArrayResponse;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 import org.restheart.mongodb.db.MongoClientSingleton;
-import org.restheart.mongodb.exchange.BsonRequestPropsInjector;
 import org.restheart.mongodb.exchange.BsonRequestContentInjector;
+import org.restheart.mongodb.exchange.BsonRequestPropsInjector;
 import org.restheart.mongodb.handlers.CORSHandler;
 import org.restheart.mongodb.handlers.MongoRequestInterceptorsExecutor;
 import org.restheart.mongodb.handlers.OptionsHandler;
@@ -104,7 +104,7 @@ public class MongoService implements Service {
                     + "Make sure that mongoInitializer is enabled "
                     + "and executed successfully";
 
-            response.endExchangeWithMessage(500, error);
+            response.setIError(500, error);
             LOGGER.error(error);
         }
     }

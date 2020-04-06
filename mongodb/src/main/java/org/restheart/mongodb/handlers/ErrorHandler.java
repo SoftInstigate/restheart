@@ -27,11 +27,12 @@ import com.mongodb.MongoTimeoutException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.exchange.ResponseContentInjector;
+import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;
 import org.restheart.mongodb.handlers.transformers.RepresentationTransformer;
-import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,11 +49,6 @@ public class ErrorHandler implements HttpHandler {
     new RepresentationTransformer(),
     new ResponseContentInjector());
             
-//            new TransformersListHandler(
-//            new ResponseContentInjector(null),
-//            PHASE.RESPONSE,
-//            new RepresentationTransformer());
-
     private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 
     /**
@@ -79,18 +75,18 @@ public class ErrorHandler implements HttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var response = BsonResponse.wrap(exchange);
+        
         try {
             next.handleRequest(exchange);
         } catch (MongoTimeoutException nte) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setInError(
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Timeout connecting to MongoDB, is it running?", nte);
 
             sender.handleRequest(exchange);
         } catch (MongoExecutionTimeoutException mete) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_REQUEST_TIMEOUT,
                     "Operation exceeded time limit"
             );
@@ -118,14 +114,12 @@ public class ErrorHandler implements HttpHandler {
                     && mce.getMessage() != null
                     && !mce.getMessage().trim().isEmpty()) {
 
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         httpCode,
                         mce.getMessage());
 
             } else {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         httpCode,
                         ResponseHelper.getMessageFromErrorCode(mce.getCode()));
             }
@@ -134,8 +128,7 @@ public class ErrorHandler implements HttpHandler {
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
 
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setInError(
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Error handling the request, see log for more information", t);
             sender.handleRequest(exchange);

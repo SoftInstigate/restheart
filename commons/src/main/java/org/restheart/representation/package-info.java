@@ -17,31 +17,9 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
-
-import io.undertow.server.HttpServerExchange;
-
 /**
- * A request that stores content in the a class field.
- *
- * Do not use to access content of a proxied resource, must use BufferedRequest
- * instead.
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
+ * Classes to deal with MongoService resource representations
+ * 
+* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public abstract class Request<T> extends AbstractRequest<T> {
-    protected T content;
-
-    protected Request(HttpServerExchange exchange) {
-        super(exchange);
-    }
-
-    public T getContent() {
-        return this.content;
-    }
-
-    public void setContent(T content) {
-        this.content = content;
-    }
-}
+package org.restheart.representation;

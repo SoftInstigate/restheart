@@ -32,9 +32,9 @@ import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
-import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,8 +123,7 @@ public class GetCollectionHandler extends PipelinedHandler {
                 // the filter expression is not a valid json string
                 LOGGER.debug("invalid filter expression {}",
                         request.getFilter(), jpe);
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                BsonResponse.wrap(exchange).setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "wrong request, filter expression is invalid",
                         jpe);
@@ -138,8 +137,7 @@ public class GetCollectionHandler extends PipelinedHandler {
                             request.getFilter(),
                             me);
 
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    BsonResponse.wrap(exchange).setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "wrong request, filter expression is invalid",
                             me);
@@ -170,8 +168,7 @@ public class GetCollectionHandler extends PipelinedHandler {
             // call the ResponseTransformerMetadataHandler if piped in
             next(exchange);
         } catch (IllegalQueryParamenterException ex) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setInError(
                     HttpStatus.SC_BAD_REQUEST,
                     ex.getMessage(),
                     ex);

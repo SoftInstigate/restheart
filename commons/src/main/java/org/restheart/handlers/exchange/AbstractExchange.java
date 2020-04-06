@@ -25,6 +25,10 @@ import org.slf4j.Logger;
 
 /**
  *
+ * The root class in the exchange hierarchy. An exchange wraps undertow
+ * HttpServerExchange to provide simplified access to elements of the request
+ * and of the response, such as query parameters, headers and content
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  * @param <T>
  */
@@ -41,7 +45,7 @@ public abstract class AbstractExchange<T> {
     public static final int MAX_CONTENT_SIZE = 16 * 1024 * 1024; // 16Mbyte
 
     public static int MAX_BUFFERS = 1024;
-    
+
     public static void updateBufferSize(int bufferSize) {
         MAX_BUFFERS = 1 + (MAX_CONTENT_SIZE / bufferSize);
     }
@@ -97,6 +101,22 @@ public abstract class AbstractExchange<T> {
         return "application/json".equals(getContentType())
                 || (getContentType() != null
                 && getContentType().startsWith("application/json;"));
+    }
+    
+    /**
+     * @return ttrue if request is errored
+     */
+    public boolean isInError() {
+        return getWrappedExchange().getAttachment(IN_ERROR_KEY) != null
+                && (boolean) getWrappedExchange().getAttachment(IN_ERROR_KEY);
+
+    }
+    
+    /**
+     * @param inError the inError to set
+     */
+    public void setInError(boolean inError) {
+        getWrappedExchange().putAttachment(IN_ERROR_KEY, inError);
     }
 
     /**

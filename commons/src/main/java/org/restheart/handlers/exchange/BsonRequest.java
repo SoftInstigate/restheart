@@ -51,6 +51,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
+ * Request implementation used by MongoService and backed by BsonValue that
+ * provides simplify methods to deal with headers and query parameters specific
+ * to mongo request
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class BsonRequest extends Request<BsonValue> {
@@ -61,8 +65,6 @@ public class BsonRequest extends Request<BsonValue> {
 
     private BsonDocument dbProps;
     private BsonDocument collectionProps;
-
-    private BsonValue content;
 
     private Path filePath;
 
@@ -207,15 +209,15 @@ public class BsonRequest extends Request<BsonValue> {
             String requestUri,
             String resourceUri) {
         var request = new BsonRequest(exchange, requestUri, resourceUri);
-        
+
         exchange.putAttachment(BSON_REQUEST_ATTACHMENT_KEY, request);
-        
+
         return request;
     }
-    
+
     public static BsonRequest wrap(HttpServerExchange exchange) {
         var cached = exchange.getAttachment(BSON_REQUEST_ATTACHMENT_KEY);
-        
+
         if (cached == null) {
             throw new IllegalStateException("BsonRequest.wrap() invoked "
                     + "before BsonRequest.init()");
@@ -223,7 +225,7 @@ public class BsonRequest extends Request<BsonValue> {
             return cached;
         }
     }
-    
+
     public static boolean isInitialized(HttpServerExchange exchange) {
         return (exchange.getAttachment(BSON_REQUEST_ATTACHMENT_KEY) != null);
     }
@@ -307,14 +309,6 @@ public class BsonRequest extends Request<BsonValue> {
      */
     public TYPE getType() {
         return selectRequestType(pathTokens);
-    }
-
-    public BsonValue getContent() {
-        return this.content;
-    }
-
-    public void setContent(BsonValue content) {
-        this.content = content;
     }
 
     static TYPE selectRequestType(String[] pathTokens) {
@@ -1283,20 +1277,6 @@ public class BsonRequest extends Request<BsonValue> {
      */
     public void setNoProps(boolean noProps) {
         this.noProps = noProps;
-    }
-
-    /**
-     * @return the inError
-     */
-    public boolean isInError() {
-        return inError;
-    }
-
-    /**
-     * @param inError the inError to set
-     */
-    public void setInError(boolean inError) {
-        this.inError = inError;
     }
 
     /**

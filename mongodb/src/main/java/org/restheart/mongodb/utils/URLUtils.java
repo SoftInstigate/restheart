@@ -52,7 +52,7 @@ import static org.restheart.handlers.exchange.ExchangeKeys.MIN_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.NULL_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.TRUE_KEY_ID;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.representation.UnsupportedDocumentIdException;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -260,7 +260,7 @@ public class URLUtils {
      * @param collName
      * @param id
      * @return
-     * @throws org.restheart.mongodb.representation.UnsupportedDocumentIdException
+     * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithDocId(
             BsonRequest request,
@@ -298,7 +298,7 @@ public class URLUtils {
      * @param collName
      * @param ids
      * @return
-     * @throws org.restheart.mongodb.representation.UnsupportedDocumentIdException
+     * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterMany(
             BsonRequest request,
@@ -326,7 +326,7 @@ public class URLUtils {
      * @param referenceField
      * @param id
      * @return
-     * @throws org.restheart.mongodb.representation.UnsupportedDocumentIdException
+     * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterOne(
             BsonRequest request,
@@ -356,7 +356,7 @@ public class URLUtils {
      * @param referenceField
      * @param id
      * @return
-     * @throws org.restheart.mongodb.representation.UnsupportedDocumentIdException
+     * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterManyInverse(
             BsonRequest request,

@@ -45,10 +45,10 @@ import static org.restheart.handlers.exchange.ExchangeKeys.TYPE.FILES_BUCKET_MET
 import static org.restheart.handlers.exchange.ExchangeKeys.TYPE.SCHEMA;
 import static org.restheart.handlers.exchange.ExchangeKeys.TYPE.SCHEMA_STORE_META;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -202,8 +202,7 @@ public class GetDocumentHandler extends PipelinedHandler {
                 }
             }
 
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_FOUND,
                     errMsg);
             next(exchange);

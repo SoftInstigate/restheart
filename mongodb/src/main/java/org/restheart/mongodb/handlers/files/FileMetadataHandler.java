@@ -34,7 +34,6 @@ import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.mongodb.db.FileMetadataDAO;
 import org.restheart.mongodb.db.FileMetadataRepository;
 import org.restheart.mongodb.utils.RequestHelper;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -110,8 +109,7 @@ public class FileMetadataHandler extends PipelinedHandler {
         if (request.getFilePath() != null) {
             // PUT request with non null data will be dealt with by previous handler (PutFileHandler)
             if (request.isPatch()) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "only metadata is allowed, not binary data");
             }
@@ -143,8 +141,7 @@ public class FileMetadataHandler extends PipelinedHandler {
         if (content.get(_ID) == null) {
             content.put(_ID, id);
         } else if (!content.get(_ID).equals(id)) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "_id in json data cannot be different than id in URL");
             next(exchange);

@@ -32,9 +32,8 @@ import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.db.GridFsDAO;
 import org.restheart.mongodb.db.GridFsRepository;
-import org.restheart.mongodb.representation.RepUtils;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.representation.RepresentationUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,8 +94,7 @@ public class PostBucketHandler extends PipelinedHandler {
 
         // must be an object
         if (!_metadata.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data cannot be an array");
             next(exchange);
@@ -116,8 +114,7 @@ public class PostBucketHandler extends PipelinedHandler {
                                 metadata,
                                 request.getFilePath());
             } else {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_BAD_REQUEST,
                         "POST file request is in a bad format");
                 next(exchange);
@@ -127,8 +124,7 @@ public class PostBucketHandler extends PipelinedHandler {
             // update not supported
             String errMsg = "file resource update is not yet implemented";
             LOGGER.error(errMsg, t);
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_IMPLEMENTED,
                     errMsg);
             next(exchange);
@@ -140,7 +136,7 @@ public class PostBucketHandler extends PipelinedHandler {
         // insert the Location handler
         exchange.getResponseHeaders()
                 .add(HttpString.tryFromString("Location"),
-                        RepUtils.getReferenceLink(
+                        RepresentationUtils.getReferenceLink(
                                 URLUtils.getRemappedRequestURL(exchange),
                                 result.getNewId()));
 

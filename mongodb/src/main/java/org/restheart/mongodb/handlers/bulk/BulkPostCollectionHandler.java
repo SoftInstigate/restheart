@@ -156,8 +156,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
                         request.getType(),
                         document.asDocument()
                                 .get("_id").asString().getValue())) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_FORBIDDEN,
                     "id is reserved: " + document.asDocument()
                             .get("_id").asString().getValue());
@@ -169,8 +168,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
                 && document.asDocument().containsKey("_id")) {
             if (!(request.getDocIdType() == DOC_ID_TYPE.OID
                     || request.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                BsonResponse.wrap(exchange).setIError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "_id in content body is mandatory for documents with id type " + request.getDocIdType().name());
                 next(exchange);

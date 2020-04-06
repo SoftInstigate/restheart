@@ -31,14 +31,14 @@ import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys.BINARY_CONTENT;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
-import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
 import org.restheart.mongodb.metadata.Relationship;
-import org.restheart.mongodb.representation.Link;
-import org.restheart.mongodb.representation.RepUtils;
-import org.restheart.mongodb.representation.Resource;
-import org.restheart.mongodb.representation.UnsupportedDocumentIdException;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.representation.Link;
+import org.restheart.representation.RepresentationUtils;
+import org.restheart.representation.Resource;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 public class DocumentRepresentationFactory {
@@ -139,7 +139,7 @@ public class DocumentRepresentationFactory {
         BsonValue id = data.get("_id");
 
         if (request.isFullHalMode()) {
-            rep = new Resource(RepUtils.getReferenceLink(response, URLUtils.getParentPath(href), id));
+            rep = new Resource(RepresentationUtils.getReferenceLink(response, URLUtils.getParentPath(href), id));
         } else {
             rep = new Resource();
         }

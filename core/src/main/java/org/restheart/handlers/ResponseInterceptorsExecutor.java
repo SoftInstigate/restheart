@@ -117,7 +117,7 @@ public class ResponseInterceptorsExecutor
                         ByteArrayResponse response = ByteArrayResponse
                                 .wrap(exchange);
 
-                        response.endExchangeWithMessage(
+                        response.setInError(
                                 HttpStatus.SC_INTERNAL_SERVER_ERROR,
                                 "Error executing response interceptor "
                                 + ri.getClass().getSimpleName(),
@@ -166,7 +166,7 @@ public class ResponseInterceptorsExecutor
                             ByteArrayResponse response = ByteArrayResponse
                                     .wrap(exchange);
 
-                            response.endExchangeWithMessage(
+                            response.setInError(
                                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                                     "Error executing response interceptor "
                                     + ri.getClass().getSimpleName(),

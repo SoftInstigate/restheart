@@ -34,7 +34,6 @@ import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.DAOUtils;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.metadata.CheckerMetadata;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.plugins.mongodb.GlobalChecker;
 import org.restheart.utils.HttpStatus;
@@ -117,8 +116,7 @@ public class AfterWriteCheckersExecutor extends BeforeWriteCheckersExecutor {
                 coll.deleteOne(and(eq("_id", newId), eq("_etag", newEtag)));
             }
 
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "request check failed");
         }

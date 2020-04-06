@@ -38,7 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.Resource;
 import static org.restheart.test.integration.AbstactIT.url;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import static org.restheart.test.integration.HttpClientAbstactIT.collectionTmpUri;

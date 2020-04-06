@@ -151,8 +151,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         final String errMsg = String.format(
                 "File with ID <%s> not found", request.getDocumentId());
         LOGGER.trace(errMsg);
-        ResponseHelper.endExchangeWithMessage(
-                exchange,
+        BsonResponse.wrap(exchange).setIError(
                 HttpStatus.SC_NOT_FOUND,
                 errMsg);
         next(exchange);
