@@ -83,6 +83,10 @@ public abstract class AbstractRequest<T> extends AbstractExchange<T> {
             return METHOD.OTHER;
         }
     }
+    
+    public String getPath() {
+        return wrapped.getRequestPath();
+    }
 
     /**
      *
