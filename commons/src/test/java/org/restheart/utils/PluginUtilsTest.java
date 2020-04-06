@@ -133,6 +133,11 @@ public class PluginUtilsTest {
         public void handle(HttpServerExchange exchange) throws Exception {
 
         }
+        
+        @Override
+        public boolean resolve(HttpServerExchange exchange) {
+            return true;
+        }
 
         @Override
         public void init() {
@@ -146,6 +151,11 @@ public class PluginUtilsTest {
         @Override
         public void handle(HttpServerExchange exchange) throws Exception {
 
+        }
+        
+        @Override
+        public boolean resolve(HttpServerExchange exchange) {
+            return true;
         }
 
         @Override

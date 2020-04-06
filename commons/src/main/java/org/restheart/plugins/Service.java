@@ -29,12 +29,15 @@ import org.restheart.utils.HttpStatus;
  * @see https://restheart.org/docs/develop/security-plugins/#services
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Service extends HandlingPlugin {
-    @Override
-    default boolean resolve(HttpServerExchange exchange) {
-        return true;
-    }
-    
+public interface Service extends ConfigurablePlugin {
+    /**
+     * handle the request
+     *
+     * @param exchange
+     * @throws Exception
+     */
+    public void handle(final HttpServerExchange exchange) throws Exception;
+
      /**
      * helper method to handle OPTIONS requests
      *
