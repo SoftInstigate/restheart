@@ -89,11 +89,6 @@ public class MongoService implements Service {
     }
 
     @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        return true;
-    }
-
-    @Override
     public void handle(HttpServerExchange exchange) throws Exception {
         if (MongoClientSingleton.isInitialized()) {
             this.pipeline.handleRequest(exchange);

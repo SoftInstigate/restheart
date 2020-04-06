@@ -36,7 +36,7 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  * @param <T>
  */
-public abstract class BufferedResponse<T> extends Response<T> {
+public abstract class BufferedResponse<T> extends AbstractResponse<T> {
     public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA_KEY
             = AttachmentKey.create(PooledByteBuffer[].class);
     

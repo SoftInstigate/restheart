@@ -20,7 +20,6 @@
 package org.restheart.handlers.exchange;
 
 import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
 
 /**
  * A response that stores content in the a class field.
