@@ -23,6 +23,8 @@ import io.undertow.server.HttpServerExchange;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Deque;
+import org.bson.BsonValue;
+import org.restheart.representation.UnsupportedDocumentIdException;
 
 /**
  *
@@ -119,7 +121,21 @@ public class URLUtils {
 
         return ret;
     }
-
-    private URLUtils() {
+    
+    /**
+     *
+     * @param id
+     * @return
+     * @throws UnsupportedDocumentIdException
+     */
+    public static String getIdString(BsonValue id)
+            throws UnsupportedDocumentIdException {
+        if (id == null) {
+            return null;
+        } else if (id.isString()) {
+            return "'" + id.asString().getValue() + "'";
+        } else {
+            return JsonUtils.toJson(id).replace("\"", "'");
+        }
     }
 }

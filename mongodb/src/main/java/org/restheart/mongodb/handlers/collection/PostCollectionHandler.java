@@ -32,9 +32,9 @@ import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.DocumentDAO;
-import org.restheart.mongodb.representation.RepUtils;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.representation.RepresentationUtils;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -102,8 +102,7 @@ public class PostCollectionHandler extends PipelinedHandler {
 
         // cannot POST an array
         if (!_content.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             next(exchange);
@@ -117,8 +116,7 @@ public class PostCollectionHandler extends PipelinedHandler {
                 && RequestContext.isReservedResourceDocument(
                         request.getType(),
                         content.get("_id").asString().getValue())) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
             next(exchange);
@@ -130,8 +128,7 @@ public class PostCollectionHandler extends PipelinedHandler {
         if (!content.containsKey("_id")) {
             if (!(request.getDocIdType() == DOC_ID_TYPE.OID)
                     && !(request.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "_id in content body is mandatory "
                         + "for documents with id type "
@@ -160,8 +157,7 @@ public class PostCollectionHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '"
                     + Headers.IF_MATCH
@@ -173,8 +169,7 @@ public class PostCollectionHandler extends PipelinedHandler {
         
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_EXPECTATION_FAILED,
                     ResponseHelper.getMessageFromErrorCode(11000));
             next(exchange);
@@ -188,7 +183,7 @@ public class PostCollectionHandler extends PipelinedHandler {
         if (result.getHttpCode() == HttpStatus.SC_CREATED) {
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
-                            RepUtils.getReferenceLink(
+                            RepresentationUtils.getReferenceLink(
                                     URLUtils.getRemappedRequestURL(exchange),
                                     result.getNewData().get("_id")));
         }

@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JsonResponse extends ProxyResponse<JsonElement> {
+public class JsonResponse extends BufferedResponse<JsonElement> {
     protected JsonResponse(HttpServerExchange exchange) {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(JsonRequest.class);

@@ -51,7 +51,6 @@ import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.DATABASE;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.OFF;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -75,7 +74,7 @@ public class MetricsHandler extends PipelinedHandler {
     public MetricsHandler() {
         this(null);
     }
-    
+
     /**
      *
      * @param next
@@ -86,6 +85,7 @@ public class MetricsHandler extends PipelinedHandler {
 
     /**
      * Computes the needed metrics level for given request.
+     *
      * @param request current request
      * @return metrics level for request
      */
@@ -126,16 +126,21 @@ public class MetricsHandler extends PipelinedHandler {
 
     /**
      * Resolves the metrics registry for given gathering level.
+     *
      * @param request current request
      * @param metricsLevel desired metrics gathering level
      * @return metrics registry
      */
     MetricRegistry getMetricsRegistry(BsonRequest request, METRICS_GATHERING_LEVEL metricsLevel) {
         switch (metricsLevel) {
-            case ROOT: return metrics.registry();
-            case DATABASE: return metrics.registry(request.getDBName());
-            case COLLECTION: return metrics.registry(request.getDBName(), request.getCollectionName());
-            default: return null;
+            case ROOT:
+                return metrics.registry();
+            case DATABASE:
+                return metrics.registry(request.getDBName());
+            case COLLECTION:
+                return metrics.registry(request.getDBName(), request.getCollectionName());
+            default:
+                return null;
         }
     }
 
@@ -155,14 +160,14 @@ public class MetricsHandler extends PipelinedHandler {
         if (registry != null) {
             if (request.isGet()) {
                 // detect metrics response type
-                Deque<String> representationFormatParameters = 
-                        exchange.getQueryParameters()
+                Deque<String> representationFormatParameters
+                        = exchange.getQueryParameters()
                                 .get(REPRESENTATION_FORMAT_KEY);
-                
+
                 ResponseType responseType = Optional.ofNullable(
                         ResponseType.forQueryParameter(
-                                representationFormatParameters == null 
-                                        ? null 
+                                representationFormatParameters == null
+                                        ? null
                                         : representationFormatParameters.getFirst())
                 ).orElseGet(()
                         -> ResponseType.forAcceptHeader(exchange
@@ -178,7 +183,7 @@ public class MetricsHandler extends PipelinedHandler {
                             .map(ResponseType::getContentType)
                             .map(x -> "'" + x + "'")
                             .collect(Collectors.joining(","));
-                    ResponseHelper.endExchangeWithMessage(exchange,
+                    response.setIError(
                             HttpStatus.SC_NOT_ACCEPTABLE,
                             "not acceptable, acceptable content types are: " + acceptableTypes
                     );
@@ -187,11 +192,11 @@ public class MetricsHandler extends PipelinedHandler {
                 response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
         } else {  //no matching registry found
-            ResponseHelper.endExchangeWithMessage(exchange, 
-                    HttpStatus.SC_NOT_FOUND, 
+            response.setIError(
+                    HttpStatus.SC_NOT_FOUND,
                     "not found");
         }
-        
+
         next(exchange);
     }
 
@@ -216,7 +221,6 @@ public class MetricsHandler extends PipelinedHandler {
                 );
             }
         },
-
         /**
          * format description can be found at
          * https://prometheus.io/docs/instrumenting/exposition_formats/
@@ -241,7 +245,7 @@ public class MetricsHandler extends PipelinedHandler {
 
                 StringBuilder sb = new StringBuilder();
                 long timestamp = System.currentTimeMillis();
-                if(metricsLevel == ROOT) {
+                if (metricsLevel == ROOT) {
                     metricsProxy.registries().forEach(registryName -> {
 
                         // reconstruct database and collection name
@@ -251,11 +255,11 @@ public class MetricsHandler extends PipelinedHandler {
                         boolean isRootMetricsRegistry = metricsProxy.isDefault(databaseName);
 
                         // set values for database and collection labels
-                        if(isRootMetricsRegistry) {
+                        if (isRootMetricsRegistry) {
                             databaseName = DATABASE_AND_COLLECTION_ALL_VALUES_LABEL_VALUE;
                             collectionName = DATABASE_AND_COLLECTION_ALL_VALUES_LABEL_VALUE;
                         } else {
-                            if(collectionName == null) {
+                            if (collectionName == null) {
                                 collectionName = DATABASE_AND_COLLECTION_ALL_VALUES_LABEL_VALUE;
                             }
                         }
@@ -292,10 +296,10 @@ public class MetricsHandler extends PipelinedHandler {
                                 if (value.isNumber()) {
                                     sb.append("http_response_").append(groupKey).append("_").append(metricType);
                                     sb.append("{");
-                                    if(databaseName != null) {
+                                    if (databaseName != null) {
                                         sb.append("database=\"").append(escapePrometheusLabelValue(databaseName)).append("\",");
                                     }
-                                    if(collectionName != null) {
+                                    if (collectionName != null) {
                                         sb.append("collection=\"").append(escapePrometheusLabelValue(collectionName)).append("\",");
                                     }
                                     sb.append("type=\"").append(type).append("\",");
@@ -313,7 +317,7 @@ public class MetricsHandler extends PipelinedHandler {
 
                             sb.append("\n");
                         }
-                ));
+                        ));
 
                 // return result
                 return sb.toString();
@@ -396,12 +400,12 @@ public class MetricsHandler extends PipelinedHandler {
 
         public void writeTo(HttpServerExchange exchange, METRICS_GATHERING_LEVEL metricsLevel, MetricRegistry registry) throws IOException {
             var body = generateResponse(metricsLevel, registry);
-            
+
             if (body != null) {
                 ByteArrayResponse.wrap(exchange).writeContent(body.getBytes());
-                
+
             }
-            
+
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, getOutputContentType());
             exchange.getResponseSender().send(generateResponse(metricsLevel, registry));
         }
@@ -498,8 +502,8 @@ public class MetricsHandler extends PipelinedHandler {
         }
 
         public static ResponseType forQueryParameter(String rep) {
-            if (REPRESENTATION_FORMAT.S.name().equalsIgnoreCase(rep) 
-                    || REPRESENTATION_FORMAT.STANDARD.name().equalsIgnoreCase(rep) 
+            if (REPRESENTATION_FORMAT.S.name().equalsIgnoreCase(rep)
+                    || REPRESENTATION_FORMAT.STANDARD.name().equalsIgnoreCase(rep)
                     || REPRESENTATION_FORMAT.HAL.name().equalsIgnoreCase(rep)
                     || REPRESENTATION_FORMAT.SHAL.name().equalsIgnoreCase(rep)
                     || REPRESENTATION_FORMAT.PLAIN_JSON.name().equalsIgnoreCase(rep)

@@ -27,14 +27,20 @@ import java.lang.reflect.Field;
 
 /**
  *
+ * A buffered request stores request content in the BUFFERED_REQUEST_DATA
+ * attachment of the HttpServerExchange
+ *
+ * This makes possibile using an concrete implementation of it in proxied
+ * request.
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  * @param <T>
  */
-public abstract class ProxyRequest<T> extends Request<T> {
-    public ProxyRequest(HttpServerExchange exchange) {
+public abstract class BufferedRequest<T> extends AbstractRequest<T> {
+    public BufferedRequest(HttpServerExchange exchange) {
         super(exchange);
     }
-    
+
     public abstract T readContent() throws IOException;
 
     public abstract void writeContent(T content) throws IOException;
@@ -56,12 +62,11 @@ public abstract class ProxyRequest<T> extends Request<T> {
             throw new RuntimeException("could not access BUFFERED_REQUEST_DATA field", ex);
         }
     }
-    
-    
+
     public void setRawContent(PooledByteBuffer[] raw) {
         getWrappedExchange().putAttachment(getRawContentKey(), raw);
     }
-    
+
     public PooledByteBuffer[] getRawContent() {
         if (!isContentAvailable()) {
             throw new IllegalStateException("Request content is not available. "
@@ -72,8 +77,9 @@ public abstract class ProxyRequest<T> extends Request<T> {
 
         return getWrappedExchange().getAttachment(getRawContentKey());
     }
-    
+
     public boolean isContentAvailable() {
+
         return null != getWrappedExchange().getAttachment(getRawContentKey());
     }
 }

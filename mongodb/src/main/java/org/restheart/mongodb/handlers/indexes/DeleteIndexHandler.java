@@ -25,7 +25,6 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -72,8 +71,7 @@ public class DeleteIndexHandler extends PipelinedHandler {
         String indexId = request.getIndexId();
 
         if (indexId.startsWith("_") || indexId.equals("_id_")) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange, 
+            response.setIError(
                     HttpStatus.SC_UNAUTHORIZED, 
                     indexId + " is a default index and cannot be deleted");
             next(exchange);

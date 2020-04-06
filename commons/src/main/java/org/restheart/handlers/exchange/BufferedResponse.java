@@ -27,15 +27,20 @@ import java.io.IOException;
 import org.restheart.utils.HttpStatus;
 
 /**
+ * A buffered response stores response content in the BUFFERED_RESPONSE_DATA_KEY
+ * attachment of the HttpServerExchange
  *
+ * This makes possibile using an concrete implementation of it in proxied
+ * request.
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  * @param <T>
  */
-public abstract class ProxyResponse<T> extends Response<T> {
+public abstract class BufferedResponse<T> extends Response<T> {
     public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA_KEY
             = AttachmentKey.create(PooledByteBuffer[].class);
     
-    protected ProxyResponse(HttpServerExchange exchange) {
+    protected BufferedResponse(HttpServerExchange exchange) {
         super(exchange);
     }
     
@@ -73,31 +78,11 @@ public abstract class ProxyResponse<T> extends Response<T> {
     /**
      *
      * @param code
-     * @param body
-     * @throws java.io.IOException
-     */
-    public void endExchange(int code, T body) throws IOException {
-        setStatusCode(code);
-        setInError(true);
-        writeContent(body);
-    }
-
-    /**
-     *
-     * @param code
-     * @param message
-     */
-    public void endExchangeWithMessage(int code, String message) {
-        endExchangeWithMessage(code, message, null);
-    }
-
-    /**
-     *
-     * @param code
      * @param message
      * @param t
      */
-    public void endExchangeWithMessage(int code, String message, Throwable t) {
+    @Override
+    public void setInError(int code, String message, Throwable t) {
         setStatusCode(code);
         setContentTypeAsJson();
         setInError(true);
@@ -112,6 +97,16 @@ public abstract class ProxyResponse<T> extends Response<T> {
         }
     }
     
+    /**
+     * 
+     * @param code
+     * @param httpStatusText
+     * @param message
+     * @param t
+     * @param includeStackTrace
+     * @return the content descibing the error
+     * @throws IOException 
+     */
     protected abstract T getErrorContent(int code,
             String httpStatusText,
             String message,

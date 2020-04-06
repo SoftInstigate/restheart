@@ -25,11 +25,11 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.mongodb.representation.AbstractRepresentationFactory;
-import org.restheart.mongodb.representation.Link;
-import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.representation.Link;
+import org.restheart.representation.Resource;
 
 /**
  *

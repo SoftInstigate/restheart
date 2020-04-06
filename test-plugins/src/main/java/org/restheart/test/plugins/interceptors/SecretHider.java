@@ -57,7 +57,7 @@ public class SecretHider implements Interceptor {
                 || k.endsWith(".secret"))) {
             var response = ByteArrayResponse.wrap(hse);
 
-            response.endExchangeWithMessage(HttpStatus.SC_FORBIDDEN,
+            response.setIError(HttpStatus.SC_FORBIDDEN,
                     "cannot write secret");
         }
     }

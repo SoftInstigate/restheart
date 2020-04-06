@@ -30,10 +30,10 @@ import org.bson.BsonValue;
 import org.restheart.handlers.exchange.BsonRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
-import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
-import org.restheart.mongodb.representation.Link;
-import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.representation.Link;
+import org.restheart.representation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

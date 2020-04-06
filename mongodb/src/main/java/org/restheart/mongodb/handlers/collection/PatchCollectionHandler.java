@@ -31,7 +31,6 @@ import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -73,8 +72,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
         }
 
         if (request.getDBName().isEmpty()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, db name cannot be empty");
             next(exchange);
@@ -84,8 +82,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
         if (request.getCollectionName().isEmpty()
                 || (request.getCollectionName().startsWith("_")
                 && !request.getCollectionName().equals(_SCHEMAS))) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, collection name cannot be "
                     + "empty or start with _");
@@ -96,8 +93,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
         BsonValue _content = request.getContent();
 
         if (_content == null) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             next(exchange);
@@ -106,8 +102,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
 
         // cannot PATCH with an array
         if (!_content.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             next(exchange);
@@ -115,8 +110,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
         }
 
         if (_content.asDocument().isEmpty()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             next(exchange);

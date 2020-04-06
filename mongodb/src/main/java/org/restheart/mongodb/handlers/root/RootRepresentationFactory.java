@@ -27,11 +27,11 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
-import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.mongodb.handlers.database.DBRepresentationFactory;
 import org.restheart.mongodb.representation.AbstractRepresentationFactory;
-import org.restheart.mongodb.representation.Link;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.representation.Link;
+import org.restheart.representation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

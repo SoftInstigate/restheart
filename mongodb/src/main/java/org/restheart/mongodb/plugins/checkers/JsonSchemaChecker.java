@@ -28,15 +28,15 @@ import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
-import org.restheart.mongodb.representation.UnsupportedDocumentIdException;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.mongodb.Checker;
+import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,8 +84,7 @@ public class JsonSchemaChecker implements Checker {
 
         // cannot PUT an array
         if (args == null || !args.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "args must be a json object");
             return false;

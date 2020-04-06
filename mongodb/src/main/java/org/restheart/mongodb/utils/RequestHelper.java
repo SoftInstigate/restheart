@@ -50,7 +50,8 @@ public class RequestHelper {
      * @param etag
      * @return
      */
-    public static boolean checkReadEtag(HttpServerExchange exchange, BsonObjectId etag) {
+    public static boolean checkReadEtag(HttpServerExchange exchange, 
+            BsonObjectId etag) {
         if (etag == null) {
             return false;
         }
@@ -72,7 +73,9 @@ public class RequestHelper {
     public static ObjectId getWriteEtag(HttpServerExchange exchange) {
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_MATCH);
 
-        return vs == null || vs.getFirst() == null ? null : getEtagAsObjectId(vs.getFirst());
+        return vs == null || vs.getFirst() == null 
+                ? null 
+                : getEtagAsObjectId(vs.getFirst());
     }
 
     /**
@@ -97,18 +100,18 @@ public class RequestHelper {
      * @param content
      * @param exchange
      * @return true if content contains invalid metata. In this case it also
-     * invoke ResponseHelper.endExchangeWithMessage() on the exchange and the
-     * caller must invoke next() and return
+ invoke response.setInError() on the exchange and the
+ caller must invoke next() and return
      * @throws Exception
      */
-    public static boolean isInvalidMetadata(BsonDocument content, HttpServerExchange exchange) throws Exception {
+    public static boolean isInvalidMetadata(BsonDocument content, 
+            HttpServerExchange exchange) throws Exception {
         // check RELS metadata
         if (content.containsKey(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
             try {
                 Relationship.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                BsonResponse.wrap(exchange).setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong relationships definition. "
                         + ex.getMessage(), ex);
@@ -120,8 +123,7 @@ public class RequestHelper {
             try {
                 TransformerMetadata.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                BsonResponse.wrap(exchange).setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong representation transformer definition. "
                         + ex.getMessage(), ex);
@@ -133,8 +135,7 @@ public class RequestHelper {
             try {
                 CheckerMetadata.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                BsonResponse.wrap(exchange).setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong checker definition. "
                         + ex.getMessage(), ex);
@@ -149,30 +150,28 @@ public class RequestHelper {
      * @param content
      * @param exchange
      * @return true if content is not acceptable. In this case it also
-     * invoke ResponseHelper.endExchangeWithMessage() on the exchange and the
-     * caller must invoke next() and return
+ invoke response.setInError() on the exchange and the
+ caller must invoke next() and return
      * @throws Exception
      */
-    public static boolean isNotAcceptableContent(BsonValue content, HttpServerExchange exchange) throws Exception {
+    public static boolean isNotAcceptableContent(BsonValue content, 
+            HttpServerExchange exchange) throws Exception {
         // cannot proceed with no data
         if (content == null) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             return true;
         }
         // cannot proceed with an array
         if (!content.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             return true;
         }
         if (content.asDocument().isEmpty()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             return true;
@@ -182,23 +181,25 @@ public class RequestHelper {
 
     /**
      *
-     * warn side effect: invokes BsonResponse.wrap(exchange).setDbOperationResult(result)
+     * Warn side effect: invokes 
+     * BsonResponse.wrap(exchange).setDbOperationResult(result)
+     * 
      * @param result
      * @param exchange
      * @return true if response is in coflict. In this case it also
-     * invoke ResponseHelper.endExchangeWithMessage() on the exchange and the
-     * caller must invoke next() and return
+ invoke response.setInError() on the exchange and the
+ caller must invoke next() and return
      * @throws Exception
      */
-    public static boolean isResponseInConflict(OperationResult result, HttpServerExchange exchange) throws Exception {
+    public static boolean isResponseInConflict(OperationResult result, 
+            HttpServerExchange exchange) throws Exception {
         BsonResponse.wrap(exchange).setDbOperationResult(result);
         // inject the etag
         if (result.getEtag() != null) {
             ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_CONFLICT,
                     "The ETag must be provided using the '"
                     + Headers.IF_MATCH
@@ -207,13 +208,11 @@ public class RequestHelper {
         }
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            BsonResponse.wrap(exchange).setIError(
                     HttpStatus.SC_EXPECTATION_FAILED,
                     ResponseHelper.getMessageFromErrorCode(11000));
             return true;
         }
         return false;
     }
-
 }

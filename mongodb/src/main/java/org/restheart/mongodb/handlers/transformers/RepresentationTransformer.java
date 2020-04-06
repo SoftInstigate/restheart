@@ -28,8 +28,7 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
-import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -45,10 +44,8 @@ public class RepresentationTransformer extends PipelinedHandler {
         var response = BsonResponse.wrap(exchange);
         var contentToTransform = response.getContent();
         
-        // can be null if an error occurs before RequestContextInjectorHandler.handle()
-        REPRESENTATION_FORMAT rf = request.getRepresentationFormat() != null ?
-                request.getRepresentationFormat()
-                : MongoServiceConfiguration.get().getDefaultRepresentationFormat();
+        // can be null if an error occurs before BsonRequestPropsInjector.handle()
+        var rf = request.getRepresentationFormat();
                         
         final boolean isStandardRepresentation = 
                 rf == REPRESENTATION_FORMAT.STANDARD ||

@@ -34,7 +34,7 @@ import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -42,51 +42,6 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseHelper {
-
-    /**
-     *
-     * @param exchange
-     * @param code
-     * @param message
-     */
-    public static void endExchangeWithMessage(
-            HttpServerExchange exchange,
-            int code,
-            String message) {
-        endExchangeWithMessage(exchange, code, message, null);
-    }
-
-    /**
-     *
-     * @param exchange
-     * @param code
-     * @param message
-     * @param t
-     */
-    public static void endExchangeWithMessage(
-            HttpServerExchange exchange,
-            int code,
-            String message,
-            Throwable t) {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
-
-        response.setStatusCode(code);
-
-        String httpStatusText = HttpStatus.getStatusText(code);
-
-        request.setInError(true);
-
-        response.setContent(getErrorJsonDocument(
-                exchange.getRequestPath(),
-                code,
-                response,
-                httpStatusText,
-                message,
-                t, false)
-                .asBsonDocument());
-    }
-
     /**
      *
      * @param exchange

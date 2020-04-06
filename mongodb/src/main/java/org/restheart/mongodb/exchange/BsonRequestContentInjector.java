@@ -38,7 +38,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.ByteArrayRequest;
@@ -50,9 +49,8 @@ import static org.restheart.handlers.exchange.ExchangeKeys.NULL_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.PROPERTIES;
 import static org.restheart.handlers.exchange.ExchangeKeys.TRUE_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys._ID;
-import org.restheart.mongodb.representation.Resource;
 import org.restheart.mongodb.utils.ChannelReader;
-import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -273,7 +271,6 @@ public class BsonRequestContentInjector {
     /**
      *
      * @param exchange
-     * @throws Exception
      */
     public static void inject(final HttpServerExchange exchange) {
         var request = BsonRequest.wrap(exchange);
@@ -295,8 +292,7 @@ public class BsonRequestContentInjector {
         if (isFormOrMultipart(contentType)) {
             if (!((request.isPost() && request.isFilesBucket())
                     || (request.isPut() && request.isFile()))) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
                         ERROR_INVALID_CONTENTTYPE_FILE);
                 return;
@@ -307,8 +303,7 @@ public class BsonRequestContentInjector {
                 String errMsg = "There is no form parser registered "
                         + "for the request content type";
 
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
                 return;
@@ -322,8 +317,7 @@ public class BsonRequestContentInjector {
                 String errMsg = "Error parsing the multipart form: "
                         + "data could not be read";
 
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         ioe);
@@ -336,8 +330,7 @@ public class BsonRequestContentInjector {
                 String errMsg = "Invalid data: "
                         + "'properties' field is not a valid JSON";
 
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg,
                         ex);
@@ -349,8 +342,7 @@ public class BsonRequestContentInjector {
             if (fileField == null) {
                 String errMsg = "This request does not contain any binary file";
 
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
                 return;
@@ -392,8 +384,7 @@ public class BsonRequestContentInjector {
 
                     LOGGER.error(errMsg, ieo);
 
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setIError(
                             HttpStatus.SC_NOT_ACCEPTABLE,
                             errMsg);
                     return;
@@ -415,8 +406,7 @@ public class BsonRequestContentInjector {
                                     + ", got " + content.getBsonType().name());
                         }
                     } catch (JsonParseException | IllegalArgumentException ex) {
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange,
+                        response.setInError(
                                 HttpStatus.SC_NOT_ACCEPTABLE,
                                 "Invalid JSON. " + ex.getMessage(),
                                 ex);
@@ -428,8 +418,7 @@ public class BsonRequestContentInjector {
             } else if (contentType == null) {
                 content = null;
             } else {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
                         ERROR_INVALID_CONTENTTYPE);
                 return;
@@ -441,8 +430,7 @@ public class BsonRequestContentInjector {
         } else if (content.isArray()) {
             if (!request.isCollection() || !request.isPost()) {
 
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "request data can be an array only "
                         + "for POST to collection resources "
@@ -461,8 +449,7 @@ public class BsonRequestContentInjector {
                                         ? ""
                                         : _id.getBsonType().name());
 
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange,
+                        response.setIError(
                                 HttpStatus.SC_NOT_ACCEPTABLE,
                                 errMsg);
 
@@ -474,8 +461,7 @@ public class BsonRequestContentInjector {
                     String errMsg = "request data must be either "
                             + "an json object or an array of objects";
 
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setIError(
                             HttpStatus.SC_NOT_ACCEPTABLE,
                             errMsg);
                     return false;
@@ -494,8 +480,7 @@ public class BsonRequestContentInjector {
                         + "is not supported: "
                         + _id.getBsonType().name();
 
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         errMsg);
                 return;
@@ -509,8 +494,7 @@ public class BsonRequestContentInjector {
                 // not acceptable
                 String errMsg = "update operators (but $currentDate) cannot be used on POST and PUT requests";
 
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setIError(
                         HttpStatus.SC_BAD_REQUEST,
                         errMsg);
                 return;

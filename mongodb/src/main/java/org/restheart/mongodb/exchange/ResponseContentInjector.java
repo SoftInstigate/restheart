@@ -31,7 +31,7 @@ import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.Resource;
 import org.restheart.utils.JsonUtils;
 
 /**
@@ -76,7 +76,7 @@ public class ResponseContentInjector extends PipelinedHandler {
         }
         
         // This makes the content availabe to ByteArrayResponse
-        // core's ResponseSender uses ByteArrayResponse 
+        // core's ResponseSender uses BufferedResponse 
         // to send the content to the client
         if (response.getContent() != null) {
             try {

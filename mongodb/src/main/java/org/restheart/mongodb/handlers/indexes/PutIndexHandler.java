@@ -28,7 +28,6 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -74,8 +73,7 @@ public class PutIndexHandler extends PipelinedHandler {
         final String id = request.getIndexId();
 
         if (id.startsWith("_")) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange, 
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "index name cannot start with _");
             next(exchange);
@@ -86,8 +84,7 @@ public class PutIndexHandler extends PipelinedHandler {
         
         // must be an object
         if (!_content.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data cannot be an array");
             next(exchange);
@@ -101,8 +98,7 @@ public class PutIndexHandler extends PipelinedHandler {
         
         // must be an object, mandatory
         if (_keys == null || !_keys.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "keys must be a json object");
             next(exchange);
@@ -111,8 +107,7 @@ public class PutIndexHandler extends PipelinedHandler {
         
         // must be an object, optional
         if (_ops != null && !_ops.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "ops must be a json object");
             next(exchange);
@@ -123,8 +118,7 @@ public class PutIndexHandler extends PipelinedHandler {
         BsonDocument ops = _ops == null ? null : _ops.asDocument();
 
         if (keys == null) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange, 
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, content must include 'keys' object", null);
             next(exchange);
@@ -142,8 +136,7 @@ public class PutIndexHandler extends PipelinedHandler {
                     request.getClientSession(),
                     db, co, keys, ops);
         } catch (Throwable t) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange, 
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "error creating the index", 
                     t);

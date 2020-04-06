@@ -36,7 +36,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.Resource;
 import org.restheart.test.integration.HttpClientAbstactIT;
 import static org.restheart.utils.HttpStatus.SC_CREATED;
 

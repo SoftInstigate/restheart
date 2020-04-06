@@ -42,8 +42,8 @@ import org.restheart.handlers.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLI
 import static org.restheart.handlers.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.handlers.exchange.RequestContext;
-import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
+import org.restheart.representation.IllegalQueryParamenterException;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -207,7 +207,7 @@ public class DatabaseImpl implements Database {
      * @param page
      * @param pagesize
      * @return the db data
-     * @throws org.restheart.mongodb.handlers.IllegalQueryParamenterException
+     * @throws org.restheart.representation.IllegalQueryParamenterException
      *
      */
     @Override

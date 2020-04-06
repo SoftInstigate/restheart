@@ -77,8 +77,7 @@ public class PatchDBHandler extends PipelinedHandler {
 
         if (request.getDBName().isEmpty()
                 || request.getDBName().startsWith("_")) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, db name cannot be empty or start with _");
             next(exchange);
@@ -88,8 +87,7 @@ public class PatchDBHandler extends PipelinedHandler {
         BsonValue _content = request.getContent();
 
         if (_content == null) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             next(exchange);
@@ -98,8 +96,7 @@ public class PatchDBHandler extends PipelinedHandler {
 
         // cannot PATCH an array
         if (!_content.isDocument()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             next(exchange);
@@ -113,8 +110,7 @@ public class PatchDBHandler extends PipelinedHandler {
             try {
                 TransformerMetadata.getFromJson(content);
             } catch (InvalidMetadataException ex) {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                response.setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong representation transform logic definition. "
                         + ex.getMessage(),
@@ -141,8 +137,7 @@ public class PatchDBHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_CONFLICT,
                     "The database's ETag must be provided using the '"
                     + Headers.IF_MATCH

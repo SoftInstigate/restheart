@@ -1011,7 +1011,6 @@ public class Bootstrapper {
                     new ServiceRequestInitializer(),
                     new CORSHandler(),
                     new XPoweredByInjector(),
-                    new RequestContentInjector(ALWAYS),
                     new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
                     new QueryStringRebuilder(),
                     securityHandler,

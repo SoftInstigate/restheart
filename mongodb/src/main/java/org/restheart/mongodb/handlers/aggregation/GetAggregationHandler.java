@@ -35,10 +35,9 @@ import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
-import org.restheart.mongodb.representation.Resource;
-import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -90,8 +89,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                         -> q.getUri().equals(queryUri)).findFirst();
 
         if (!_query.isPresent()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_NOT_FOUND, "query does not exist");
             next(exchange);
             return;
@@ -102,8 +100,7 @@ public class GetAggregationHandler extends PipelinedHandler {
         AbstractAggregationOperation query = _query.get();
 
         if (null == query.getType()) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setIError(
                     HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
             next(exchange);
             return;
@@ -137,15 +134,13 @@ public class GetAggregationHandler extends PipelinedHandler {
                                         .getAggregationTimeLimit(), 
                                         TimeUnit.MILLISECONDS);
                     } catch (MongoCommandException | InvalidMetadataException ex) {
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange,
+                        response.setInError(
                                 HttpStatus.SC_INTERNAL_SERVER_ERROR,
                                 "error executing mapReduce", ex);
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange,
+                        response.setIError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "error executing mapReduce: "
                                 + qvnbe.getMessage());
@@ -174,15 +169,13 @@ public class GetAggregationHandler extends PipelinedHandler {
                                         .getAllowDiskUse().getValue());
                     } catch (MongoCommandException
                             | InvalidMetadataException ex) {
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange,
+                        response.setInError(
                                 HttpStatus.SC_INTERNAL_SERVER_ERROR,
                                 "error executing aggreation pipeline", ex);
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
-                        ResponseHelper.endExchangeWithMessage(
-                                exchange,
+                        response.setIError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "error executing aggreation pipeline: "
                                 + qvnbe.getMessage());
@@ -195,8 +188,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                     }
                     break;
                 default:
-                    ResponseHelper.endExchangeWithMessage(
-                            exchange,
+                    response.setIError(
                             HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
                     next(exchange);
                     return;
@@ -222,8 +214,7 @@ public class GetAggregationHandler extends PipelinedHandler {
             // call the ResponseTransformerMetadataHandler if piped in
             next(exchange);
         } catch (IllegalQueryParamenterException ex) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
+            response.setInError(
                     HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
             next(exchange);
         }

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ByteArrayRequest extends ProxyRequest<byte[]> {
+public class ByteArrayRequest extends BufferedRequest<byte[]> {
 
     protected ByteArrayRequest(HttpServerExchange exchange) {
         super(exchange);

@@ -17,31 +17,28 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
-
-import io.undertow.server.HttpServerExchange;
+package org.restheart.representation;
 
 /**
- * A request that stores content in the a class field.
- *
- * Do not use to access content of a proxied resource, must use BufferedRequest
- * instead.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
  */
-public abstract class Request<T> extends AbstractRequest<T> {
-    protected T content;
+public class IllegalQueryParamenterException extends Exception {
 
-    protected Request(HttpServerExchange exchange) {
-        super(exchange);
+    /**
+     *
+     * @param message
+     */
+    public IllegalQueryParamenterException(String message) {
+        super(message);
     }
 
-    public T getContent() {
-        return this.content;
-    }
-
-    public void setContent(T content) {
-        this.content = content;
+    /**
+     *
+     * @param message
+     * @param cause
+     */
+    public IllegalQueryParamenterException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

@@ -27,8 +27,11 @@ import java.util.TreeMap;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.mongodb.handlers.IllegalQueryParamenterException;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.representation.Link;
+import org.restheart.representation.RepresentationUtils;
+import org.restheart.representation.Resource;
 
 /**
  *
@@ -154,7 +157,7 @@ public abstract class AbstractRepresentationFactory {
         var request = BsonRequest.wrap(exchange);
         if (request.getPagesize() > 0) {
             TreeMap<String, String> links;
-            links = RepUtils.getPaginationLinks(exchange, size);
+            links = RepresentationUtils.getPaginationLinks(exchange, size);
             if (links != null) {
                 links.keySet().stream().forEach((k) -> {
                     rep.addLink(new Link(k, links.get(k)));

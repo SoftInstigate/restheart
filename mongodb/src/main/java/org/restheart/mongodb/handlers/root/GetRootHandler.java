@@ -34,7 +34,7 @@ import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**

@@ -36,7 +36,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import static org.restheart.mongodb.representation.Resource.HAL_JSON_MEDIA_TYPE;
+import static org.restheart.representation.Resource.HAL_JSON_MEDIA_TYPE;
 import static org.restheart.utils.HttpStatus.SC_CREATED;
 import static org.restheart.utils.HttpStatus.SC_OK;
 

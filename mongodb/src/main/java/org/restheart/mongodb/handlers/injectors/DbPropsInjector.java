@@ -25,8 +25,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -96,9 +96,7 @@ public class DbPropsInjector extends PipelinedHandler {
                     && !(request.isDb()
                     && request.isPut())
                     && !request.isRoot()) {
-                ResponseHelper
-                        .endExchangeWithMessage(
-                                exchange,
+                BsonResponse.wrap(exchange).setIError(
                                 HttpStatus.SC_NOT_FOUND,
                                 "Db '" + dbName + "' does not exist");
                 next(exchange);

@@ -37,7 +37,7 @@ import org.bson.Document;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.restheart.mongodb.db.MongoClientSingleton;
-import org.restheart.mongodb.representation.Resource;
+import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**

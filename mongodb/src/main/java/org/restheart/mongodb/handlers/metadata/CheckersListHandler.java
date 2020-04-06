@@ -25,8 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.RequestContext;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -83,8 +83,7 @@ public class CheckersListHandler extends PipelinedHandler {
             if (check(exchange, context)) {
                 next(exchange);
             } else {
-                ResponseHelper.endExchangeWithMessage(
-                        exchange,
+                BsonResponse.wrap(exchange).setIError(
                         HttpStatus.SC_BAD_REQUEST,
                         "request check failed");
                 next(exchange);
