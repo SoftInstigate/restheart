@@ -24,7 +24,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.LinkedList;
-import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.BufferedJsonRequest;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
 
@@ -45,7 +45,7 @@ public class EchoExampleRequestInterceptor implements Interceptor {
         vals.add("param added by EchoExampleRequestInterceptor");
         exchange.getQueryParameters().put("param", vals);
 
-        var request = JsonRequest.wrap(exchange);
+        var request = BufferedJsonRequest.wrap(exchange);
 
         JsonElement requestContent;
 

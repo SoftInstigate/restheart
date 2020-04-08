@@ -26,6 +26,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
@@ -79,10 +80,14 @@ public class WriteResultInterceptor implements Interceptor {
     
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        // Note! BsonRequest.isInitialized() must be invoked first to avoid
-        // errors on requests where the BsonRequest is not available
+        // Note! mhr makes sure that  BsonRequest is available
         
-        return BsonRequest.isInitialized(exchange) &&
+        var mhr = "mongo".equals(BufferedByteArrayRequest
+                .wrap(exchange)
+                .getPipelineInfo()
+                .getName());
+        
+        return mhr &&
                   "xcoll".equals(BsonRequest.wrap(exchange).getCollectionName())
                 && BsonResponse.wrap(exchange).getDbOperationResult() != null;
     }

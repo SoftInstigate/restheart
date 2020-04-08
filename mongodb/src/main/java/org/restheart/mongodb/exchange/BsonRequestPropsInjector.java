@@ -59,8 +59,7 @@ import org.slf4j.LoggerFactory;
 /**
  * initialize the BsonRequest
  *
- * Assumes that the BsonRequest is already initialized by BsonRequestInitializer
- * of restheart-core, configured by MongoMountsConfigurator
+ * Assumes that the BsonRequest and BsonRequest are already initialized 
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -81,7 +80,6 @@ public class BsonRequestPropsInjector {
      * @param exchange
      */
     public static void inject(HttpServerExchange exchange) {
-
         var request = BsonRequest.wrap(exchange);
         var response = BsonResponse.wrap(exchange);
 

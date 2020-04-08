@@ -53,9 +53,10 @@ public abstract class AbstractResponse<T> extends AbstractExchange<T> {
      */
     @Override
     public String getContentType() {
-        if (getWrappedExchange().getResponseHeaders().get(Headers.CONTENT_TYPE) != null) {
-            return getWrappedExchange().getResponseHeaders().get(Headers.CONTENT_TYPE)
-                    .getFirst();
+        if (getWrappedExchange().getResponseHeaders()
+                .get(Headers.CONTENT_TYPE) != null) {
+            return getWrappedExchange().getResponseHeaders()
+                    .get(Headers.CONTENT_TYPE).getFirst();
         } else {
             return null;
         }
@@ -65,8 +66,8 @@ public abstract class AbstractResponse<T> extends AbstractExchange<T> {
      * @param responseContentType the responseContentType to set
      */
     public void setContentType(String responseContentType) {
-        getWrappedExchange().getResponseHeaders().put(Headers.CONTENT_TYPE,
-                responseContentType);
+        getWrappedExchange().getResponseHeaders()
+                .put(Headers.CONTENT_TYPE, responseContentType);
     }
 
     /**
@@ -111,7 +112,6 @@ public abstract class AbstractResponse<T> extends AbstractExchange<T> {
     public void setMDCContext(Map<String, String> mdcCtx) {
         getWrappedExchange().putAttachment(MDC_CONTEXT_KEY, mdcCtx);
     }
-    
 
     /**
      *
@@ -119,10 +119,10 @@ public abstract class AbstractResponse<T> extends AbstractExchange<T> {
      * @param message
      * @param t
      */
-    public abstract void setInError(int code, 
-            String message, 
+    public abstract void setInError(int code,
+            String message,
             Throwable t);
-    
+
     /**
      *
      * @param code

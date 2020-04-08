@@ -27,6 +27,7 @@ import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 
@@ -128,7 +129,9 @@ public class PluginUtilsTest {
             interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
             initPoint = InitPoint.BEFORE_STARTUP,
             requiresContent = true)
-    private static class TestPlugin implements Service, Interceptor, Initializer {
+    private static class TestPlugin implements JsonService, 
+            Interceptor, 
+            Initializer {
         @Override
         public void handle(HttpServerExchange exchange) throws Exception {
 
@@ -147,7 +150,8 @@ public class PluginUtilsTest {
     
     @RegisterPlugin(name = "testDefaultPlugin",
             description = "test description")
-    private static class TestPluginDefault implements Service, Interceptor, Initializer {
+    private static class TestPluginDefault implements JsonService,
+            Interceptor, Initializer {
         @Override
         public void handle(HttpServerExchange exchange) throws Exception {
 

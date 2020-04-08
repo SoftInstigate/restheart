@@ -38,14 +38,13 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.handlers.exchange.ByteArrayRequest;
-import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.MongoClientSingleton;
-import org.restheart.mongodb.utils.ChannelReader;
+import org.restheart.plugins.ByteArrayService;
+import org.restheart.utils.ChannelReader;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 import org.restheart.plugins.mongodb.Transformer;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
@@ -75,7 +74,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(name = "csvLoader",
         description = "Uploads a csv file in a collection",
         defaultURI = "/csv")
-public class CsvLoader implements Service {
+public class CsvLoader implements ByteArrayService {
 
     private PluginsRegistry pluginsRegistry;
 
@@ -126,8 +125,8 @@ public class CsvLoader implements Service {
      */
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        var request = ByteArrayRequest.wrap(exchange);
-        var response = ByteArrayResponse.wrap(exchange);
+        var request = request().apply(exchange);
+        var response = response().apply(exchange);
 
         if (request.isOptions()) {
             handleOptions(exchange);

@@ -73,7 +73,7 @@ public class RequestContext {
             String whereUri,
             String whatUri) {
         this.bsonRequest = BsonRequest.init(exchange, whereUri, whatUri);
-        this.bsonResponse = BsonResponse.wrap(exchange);
+        this.bsonResponse = BsonResponse.init(exchange);
     }
     
     private RequestContext(

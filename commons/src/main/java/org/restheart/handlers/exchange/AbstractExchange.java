@@ -89,6 +89,10 @@ public abstract class AbstractExchange<T> {
     public static void setResponseInterceptorsExecuted(HttpServerExchange exchange) {
         exchange.putAttachment(RESPONSE_INTERCEPTOR_EXECUTED, true);
     }
+    
+    public HttpServerExchange getExchange() {
+        return wrapped;
+    }
 
     public abstract String getContentType();
 

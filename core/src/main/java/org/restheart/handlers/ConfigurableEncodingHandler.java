@@ -30,7 +30,7 @@ import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
 import org.restheart.handlers.exchange.AbstractExchange;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -76,7 +76,7 @@ public class ConfigurableEncodingHandler extends EncodingHandler {
             }
 
             AbstractExchange.setInError(exchange);
-            ByteArrayResponse.wrap(exchange).setIError(
+            BufferedByteArrayResponse.wrap(exchange).setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "Accept-Encoding header must include gzip or deflate");
 

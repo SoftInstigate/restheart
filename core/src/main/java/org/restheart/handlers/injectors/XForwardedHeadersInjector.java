@@ -26,7 +26,7 @@ import io.undertow.util.HttpString;
 import java.util.List;
 import java.util.Map;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.security.plugins.authenticators.BaseAccount;
 
 /**
@@ -74,7 +74,7 @@ public class XForwardedHeadersInjector extends PipelinedHandler {
             exchange.getRequestHeaders().remove(getXForwardedAccountIdHeaderName());
             exchange.getRequestHeaders().remove(getXForwardedRolesHeaderName());
 
-            Map<String, List<String>> xfhs = ByteArrayRequest.wrap(exchange)
+            Map<String, List<String>> xfhs = BufferedByteArrayRequest.wrap(exchange)
                     .getXForwardedHeaders();
 
             if (xfhs != null) {

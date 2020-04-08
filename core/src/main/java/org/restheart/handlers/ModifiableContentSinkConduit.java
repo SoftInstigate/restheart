@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
 import org.restheart.handlers.exchange.BufferedResponse;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.Logger;
@@ -132,7 +132,7 @@ public class ModifiableContentSinkConduit
             throw new IOException(e);
         }
 
-        PooledByteBuffer[] dests = ByteArrayResponse.wrap(exchange)
+        PooledByteBuffer[] dests = BufferedByteArrayResponse.wrap(exchange)
                 .getRawContent();
 
         updateContentLenght(exchange, dests);

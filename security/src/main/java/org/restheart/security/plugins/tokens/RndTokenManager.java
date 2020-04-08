@@ -35,7 +35,7 @@ import java.util.Optional;
 import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
-import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.BufferedJsonRequest;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;
@@ -190,7 +190,7 @@ public class RndTokenManager implements TokenManager {
         exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER,
                 Instant.now().plus(ttl, ChronoUnit.MINUTES).toString());
 
-        var request = JsonRequest.wrap(exchange);
+        var request = BufferedJsonRequest.wrap(exchange);
 
         if (request.getAuthenticatedAccount() != null
                 && request.getAuthenticatedAccount().getPrincipal() != null

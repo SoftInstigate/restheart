@@ -28,13 +28,17 @@ import io.undertow.util.PathMatcher;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.ConfigurationException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 import org.restheart.mongodb.db.MongoClientSingleton;
@@ -61,16 +65,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * The Service that handles requests to mongodb resources
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(name = "mongo",
-        description = "handles request to mongodb resources",
+        description = "handles requests to mongodb resources",
         enabledByDefault = true,
         defaultURI = "/",
         dontIntercept = {InterceptPoint.REQUEST_AFTER_AUTH},
         priority = Integer.MIN_VALUE)
-public class MongoService implements Service {
+public class MongoService implements Service<BsonRequest, BsonResponse> {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(MongoService.class);
 
@@ -93,7 +98,7 @@ public class MongoService implements Service {
         if (MongoClientSingleton.isInitialized()) {
             this.pipeline.handleRequest(exchange);
         } else {
-            var response = ByteArrayResponse.wrap(exchange);
+            var response = BufferedByteArrayResponse.wrap(exchange);
 
             final var error = "Service mongo is not initialized. "
                     + "Make sure that mongoInitializer is enabled "
@@ -197,10 +202,29 @@ public class MongoService implements Service {
                         DEFAULT_MONGO_MOUNT.uri,
                         DEFAULT_MONGO_MOUNT.resource);
             }
+        };
+    }
 
+    @Override
+    public Consumer<HttpServerExchange> responseInitializer() {
+        return e -> {
+            BsonResponse.init(e);
+
+            // BsonRequestPropsInjector and BsonRequestContentInjector requires 
+            // that both BsonRequest and BsonResponse are initialized
             BsonRequestPropsInjector.inject(e);
             BsonRequestContentInjector.inject(e);
         };
+    }
+
+    @Override
+    public Function<HttpServerExchange, BsonRequest> request() {
+        return e -> (BsonRequest) Request.of(e);
+    }
+
+    @Override
+    public Function<HttpServerExchange, BsonResponse> response() {
+        return e -> (BsonResponse) Response.of(e);
     }
 
     /**

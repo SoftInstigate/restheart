@@ -22,14 +22,21 @@ package org.restheart.plugins;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.function.Consumer;
-import org.restheart.handlers.exchange.ByteArrayRequest;
+import java.util.function.Function;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 import org.restheart.utils.HttpStatus;
 
 /**
+ * Interface to implement services
+ * 
+ * @param <R> the request type
+ * @param <S> the response type
  * @see https://restheart.org/docs/develop/security-plugins/#services
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Service extends ConfigurablePlugin {
+public interface Service<R extends Request<?>, S extends Response<?>>
+        extends HandlingPlugin<R, S>, ConfigurablePlugin {
     /**
      * handle the request
      *
@@ -38,7 +45,31 @@ public interface Service extends ConfigurablePlugin {
      */
     public void handle(final HttpServerExchange exchange) throws Exception;
 
-     /**
+    /**
+     * 
+     * @return the function used to instantiate the request object
+     */
+    public Consumer<HttpServerExchange> requestInitializer();
+
+    /**
+     * 
+     * @return the function used to instantiate the response object
+     */
+    public Consumer<HttpServerExchange> responseInitializer();
+
+    /**
+     * 
+     * @return the function used to retrieve the request object
+     */
+    public Function<HttpServerExchange, R> request();
+
+    /**
+     * 
+     * @return the function used to retrieve the response object
+     */
+    public Function<HttpServerExchange, S> response();
+
+    /**
      * helper method to handle OPTIONS requests
      *
      * @param exchange
@@ -50,9 +81,5 @@ public interface Service extends ConfigurablePlugin {
                 .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
         exchange.setStatusCode(HttpStatus.SC_OK);
         exchange.endExchange();
-    }
-    
-    default Consumer<HttpServerExchange> requestInitializer() {
-        return e -> ByteArrayRequest.wrap(e);
     }
 }

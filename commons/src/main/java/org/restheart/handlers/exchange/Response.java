@@ -20,30 +20,64 @@
 package org.restheart.handlers.exchange;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 
 /**
- * A response that stores content in the a class field.
+ * A response that stores content in a class field.
+ * 
+ * Only one response can be instantiated per each exchange. The single object is
+ * instantiated by ServiceExchangeInitializer using the responseInitializer()
+ * function defined by the handling service
  *
- * Do not use to access content of a proxied resource, must use BufferedResponse
- * instead.
+ * Cannot be used to access content of a proxied resource, must use
+ * BufferedResponse instead.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <T>
  */
 public abstract class Response<T> extends AbstractResponse<T> {
+    private static final AttachmentKey<Response<?>> RESPONSE_KEY
+            = AttachmentKey.create(Response.class);
+    
     protected T content;
 
     protected Response(HttpServerExchange exchange) {
         super(exchange);
+        
+        if (exchange.getAttachment(RESPONSE_KEY) != null) {
+            throw new IllegalStateException("Error instantiating response object "
+                    + getClass().getSimpleName()
+                    + ", "
+                    + of(exchange).getClass().getSimpleName()
+                    + " already bound to the exchange");
+        }
+
+        exchange.putAttachment(RESPONSE_KEY, this);
+    }
+    
+    public static Response<?> of(HttpServerExchange exchange) {
+        var ret = exchange.getAttachment(RESPONSE_KEY);
+
+        if (ret == null) {
+            throw new IllegalStateException("Response not initialized");
+        }
+
+        return ret;
     }
 
     public T getContent() {
         return this.content;
     }
-
+    
     public void setContent(T content) {
         this.content = content;
     }
+    
+    /**
+     * 
+     * @return the content as string
+     */
+    public abstract String readContent();
     
     /**
      *

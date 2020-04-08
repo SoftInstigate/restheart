@@ -100,7 +100,7 @@ import org.restheart.handlers.RequestLogger;
 import org.restheart.handlers.RequestNotManagedHandler;
 import org.restheart.handlers.ResponseInterceptorsExecutor;
 import org.restheart.handlers.ResponseSender;
-import org.restheart.handlers.ServiceRequestInitializer;
+import org.restheart.handlers.ServiceExchangeInitializer;
 import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_CONTENT_SIZE;
@@ -1008,7 +1008,7 @@ public class Bootstrapper {
             var _srv = pipe(new PipelineInfoInjector(),
                     new TracingInstrumentationHandler(),
                     new RequestLogger(),
-                    new ServiceRequestInitializer(),
+                    new ServiceExchangeInitializer(),
                     new CORSHandler(),
                     new XPoweredByInjector(),
                     new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),

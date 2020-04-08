@@ -28,8 +28,8 @@ import io.undertow.util.Headers;
 import org.restheart.handlers.ContentStreamSinkConduit;
 import org.restheart.handlers.ModifiableContentSinkConduit;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.ByteArrayRequest;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
 import static org.restheart.handlers.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.plugins.InterceptPoint;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
@@ -95,12 +95,12 @@ public class ConduitInjector extends PipelinedHandler {
             // For proxied requests a thread switch in the request handling happens,
             // loosing the MDC context. TracingInstrumentationHandler adds it to the
             // exchange as an Attachment
-            var mdcCtx = ByteArrayResponse.wrap(exchange).getMDCContext();
+            var mdcCtx = BufferedByteArrayResponse.wrap(exchange).getMDCContext();
             if (mdcCtx != null) {
                 MDC.setContextMap(mdcCtx);
             }
 
-            final var req = ByteArrayRequest.wrap(exchange);
+            final var req = BufferedByteArrayRequest.wrap(exchange);
 
             if (req.getPipelineInfo() != null 
                     && req.getPipelineInfo().getType() == SERVICE

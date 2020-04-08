@@ -23,7 +23,7 @@ package org.restheart.mongodb.handlers;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.utils.HttpStatus;
@@ -112,7 +112,7 @@ public class MongoRequestInterceptorsExecutor extends PipelinedHandler {
         // if an interceptor sets the response as errored
         // stop processing the request and send the response
         if (AbstractExchange.isInError(exchange)) {
-            var response = ByteArrayResponse.wrap(exchange);
+            var response = BufferedByteArrayResponse.wrap(exchange);
             // if in error but no status code use 400 Bad Request
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);

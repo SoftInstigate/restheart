@@ -23,9 +23,9 @@ package org.restheart.test.plugins.interceptors;
 import com.google.gson.JsonElement;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
-import org.restheart.handlers.exchange.ByteArrayRequest;
-import org.restheart.handlers.exchange.ByteArrayResponse;
-import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.handlers.exchange.BufferedJsonRequest;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
@@ -50,12 +50,12 @@ public class SecretHider implements Interceptor {
 
     @Override
     public void handle(HttpServerExchange hse) throws Exception {
-        var content = JsonRequest.wrap(hse).readContent();
+        var content = BufferedJsonRequest.wrap(hse).readContent();
 
         if (keys(content).stream()
                 .anyMatch(k -> "secret".equals(k)
                 || k.endsWith(".secret"))) {
-            var response = ByteArrayResponse.wrap(hse);
+            var response = BufferedByteArrayResponse.wrap(hse);
 
             response.setIError(HttpStatus.SC_FORBIDDEN,
                     "cannot write secret");
@@ -64,9 +64,9 @@ public class SecretHider implements Interceptor {
 
     @Override
     public boolean resolve(HttpServerExchange hse) {
-        var req = ByteArrayRequest.wrap(hse);
+        var req = BufferedByteArrayRequest.wrap(hse);
 
-        return ByteArrayRequest.isContentTypeJson(hse)
+        return BufferedByteArrayRequest.isContentTypeJson(hse)
                 && !req.isAccountInRole("admin")
                 && hse.getRequestPath().startsWith("/coll")
                 && (req.isPost() || req.isPatch() || req.isPut());

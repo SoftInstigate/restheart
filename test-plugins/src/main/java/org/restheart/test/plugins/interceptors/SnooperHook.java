@@ -26,6 +26,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
@@ -99,6 +100,11 @@ public class SnooperHook implements Interceptor {
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        return BsonRequest.isInitialized(exchange);
+        // Handle only for request handled by the mongo service
+
+        return "mongo".equals(BufferedByteArrayRequest
+                .wrap(exchange)
+                .getPipelineInfo()
+                .getName());
     }
 }

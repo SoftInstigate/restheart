@@ -22,7 +22,7 @@ package org.restheart.test.plugins.initializers;
 
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.BufferedJsonRequest;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
@@ -69,7 +69,7 @@ public class TestInitializer implements Initializer {
         // add a global security predicate
         this.pluginRegistry.getGlobalSecurityPredicates()
                 .add((Predicate) (HttpServerExchange exchange) -> {
-                    var request = JsonRequest.wrap(exchange);
+                    var request = BufferedJsonRequest.wrap(exchange);
                     return !(request.isGet()
                             && "/secho/foo".equals(URLUtils.removeTrailingSlashes(
                                     exchange.getRequestPath())));

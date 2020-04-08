@@ -38,7 +38,7 @@ import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
-import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.BufferedJsonRequest;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +97,7 @@ public class RequestLogger extends PipelinedHandler {
             return;
         }
 
-        var request = JsonRequest.wrap(exchange);
+        var request = BufferedJsonRequest.wrap(exchange);
 
         final StringBuilder sb = new StringBuilder();
         final long start = request != null && request.getStartTime() != null

@@ -40,7 +40,7 @@ import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import static org.restheart.handlers.exchange.ExchangeKeys.FALSE_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.FILE_METADATA;
 import static org.restheart.handlers.exchange.ExchangeKeys.MAX_KEY_ID;
@@ -49,7 +49,7 @@ import static org.restheart.handlers.exchange.ExchangeKeys.NULL_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys.PROPERTIES;
 import static org.restheart.handlers.exchange.ExchangeKeys.TRUE_KEY_ID;
 import static org.restheart.handlers.exchange.ExchangeKeys._ID;
-import org.restheart.mongodb.utils.ChannelReader;
+import org.restheart.utils.ChannelReader;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
@@ -58,9 +58,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * Injects the request content to BsonRequest from ByteArrayRequest buffer
- *
- * also check the Content-Type header in case the content is not empty
+ * Injects the request content to BsonRequest from BufferedByteArrayRequest buffer
+
+ also check the Content-Type header in case the content is not empty
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -365,7 +365,7 @@ public class BsonRequestContentInjector {
             if (isHalOrJson(contentType)) {
                 final String contentString;
 
-                var bar = ByteArrayRequest.wrap(exchange);
+                var bar = BufferedByteArrayRequest.wrap(exchange);
 
                 try {
                     if (bar.isContentAvailable()) {

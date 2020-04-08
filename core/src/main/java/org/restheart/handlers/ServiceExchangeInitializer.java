@@ -24,22 +24,18 @@ import io.undertow.server.HttpServerExchange;
 import org.restheart.plugins.PluginsRegistryImpl;
 
 /**
- * Initializes the Request invoking
- * Service.requestInitializer().accept(exchange)
- *
- * Service.requestInitializer() is a Consumer that allows the Service to
- * initialize its own implementation of Request, for instance parsing the
- * request body according to its needs
+ * Initializes the Request and the Response invoking requestInitializer() and
+ * responseInitializer() functions defined by the handling service
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ServiceRequestInitializer extends PipelinedHandler {
+public class ServiceExchangeInitializer extends PipelinedHandler {
 
     /**
      * Creates a new instance of RequestInitializer
      *
      */
-    public ServiceRequestInitializer() {
+    public ServiceExchangeInitializer() {
         super();
     }
 
@@ -57,6 +53,10 @@ public class ServiceRequestInitializer extends PipelinedHandler {
         if (srv.isPresent()) {
             srv.get().getInstance()
                     .requestInitializer()
+                    .accept(exchange);
+
+            srv.get().getInstance()
+                    .responseInitializer()
                     .accept(exchange);
         }
 

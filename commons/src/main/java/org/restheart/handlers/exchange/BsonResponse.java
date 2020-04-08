@@ -20,7 +20,6 @@
 package org.restheart.handlers.exchange;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.AttachmentKey;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -47,9 +46,6 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class BsonResponse extends Response<BsonValue> {
-    private static final AttachmentKey<BsonResponse> BSON_RESPONSE_ATTACHMENT_KEY
-            = AttachmentKey.create(BsonResponse.class);
-
     private OperationResult dbOperationResult;
 
     private final List<String> warnings = new ArrayList<>();
@@ -58,22 +54,23 @@ public class BsonResponse extends Response<BsonValue> {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(BsonResponse.class);
     }
-
-    public static BsonResponse wrap(HttpServerExchange exchange) {
-        var cached = exchange.getAttachment(BSON_RESPONSE_ATTACHMENT_KEY);
-
-        if (cached == null) {
-            var response = new BsonResponse(exchange);
-            exchange.putAttachment(BSON_RESPONSE_ATTACHMENT_KEY,
-                    response);
-            return response;
-        } else {
-            return cached;
-        }
+    
+    public static BsonResponse init(HttpServerExchange exchange) {
+        return new BsonResponse(exchange);
     }
 
-    public static boolean isInitialized(HttpServerExchange exchange) {
-        return (exchange.getAttachment(BSON_RESPONSE_ATTACHMENT_KEY) != null);
+    public static BsonResponse wrap(HttpServerExchange exchange) {
+        return (BsonResponse) of(exchange);
+    }
+
+    @Override
+    public String readContent() {
+        if (content != null) {
+            return JsonUtils.toJson(content, 
+                    BsonRequest.wrap(wrapped).getJsonMode());
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -131,11 +128,11 @@ public class BsonResponse extends Response<BsonValue> {
 
         transformError();
 
-        // This makes the content availabe to ByteArrayResponse
+        // This makes the content availabe to BufferedByteArrayResponse
         // core's ResponseSender uses BufferedResponse 
         // to send the content to the client
         if (getContent() != null) {
-            var bar = ByteArrayResponse.wrap(wrapped);
+            var bar = BufferedByteArrayResponse.wrap(wrapped);
 
             bar.setContentTypeAsJson();
 
