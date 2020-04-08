@@ -23,7 +23,7 @@ package org.restheart.security.plugins.authorizers;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.restheart.ConfigurationException;
-import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
@@ -71,7 +71,7 @@ public class FullAuthorizer implements Authorizer {
 
     @Override
     public boolean isAuthenticationRequired(HttpServerExchange exchange) {
-        return !ByteArrayRequest.wrap(exchange).isOptions()
+        return !BufferedByteArrayRequest.wrap(exchange).isOptions()
                 && (authenticationRequired == null
                         ? true
                         : authenticationRequired);

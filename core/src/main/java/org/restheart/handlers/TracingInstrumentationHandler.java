@@ -24,7 +24,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Optional;
 import org.restheart.Bootstrapper;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
 import org.slf4j.MDC;
 public class TracingInstrumentationHandler extends PipelinedHandler {
     public TracingInstrumentationHandler() {
@@ -44,7 +44,7 @@ public class TracingInstrumentationHandler extends PipelinedHandler {
                             .ifPresent(value -> {
                                 // saves the MDC Context
                                 // @see Response.getMDCContext() javadoc
-                                ByteArrayResponse.wrap(exchange)
+                                BufferedByteArrayResponse.wrap(exchange)
                                         .setMDCContext(MDC.getCopyOfContextMap());
                                 MDC.put(traceIdHeader, value);
                                 exchange.getResponseHeaders()

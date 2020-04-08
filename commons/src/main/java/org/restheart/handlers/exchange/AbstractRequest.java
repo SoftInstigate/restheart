@@ -47,7 +47,7 @@ public abstract class AbstractRequest<T> extends AbstractExchange<T> {
     public static final String SLASH = "/";
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
-
+    
     private static final AttachmentKey<PipelineInfo> PIPELINE_INFO_KEY
             = AttachmentKey.create(PipelineInfo.class);
 
@@ -60,7 +60,7 @@ public abstract class AbstractRequest<T> extends AbstractExchange<T> {
     protected AbstractRequest(HttpServerExchange exchange) {
         super(exchange);
     }
-
+    
     public static String getContentType(HttpServerExchange exchange) {
         return exchange.getRequestHeaders()
                 .getFirst(Headers.CONTENT_TYPE);

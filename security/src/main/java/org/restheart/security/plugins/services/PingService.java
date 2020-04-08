@@ -23,11 +23,10 @@ package org.restheart.security.plugins.services;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.restheart.ConfigurationException;
-import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.plugins.ByteArrayService;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -39,7 +38,7 @@ import org.restheart.utils.HttpStatus;
         description = "simple ping service",
         enabledByDefault = true,
         defaultURI = "/ping")
-public class PingService implements Service {
+public class PingService implements ByteArrayService {
 
     private String msg = null;
 
@@ -55,15 +54,14 @@ public class PingService implements Service {
      */
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        var request = JsonRequest.wrap(exchange);
+        var request = request().apply(exchange);
+        var response = response().apply(exchange);
 
         if (request.isGet()) {
-            exchange.setStatusCode(HttpStatus.SC_OK);
-            exchange.getResponseSender().send(msg);
-            exchange.endExchange();
+            response.setStatusCode(HttpStatus.SC_OK);
+            response.setContent(msg.getBytes());
         } else {
-            exchange.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
-            exchange.endExchange();
+            response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
         }
     }
 }

@@ -34,9 +34,9 @@ import org.restheart.ConfigurationException;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.JsonService;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
@@ -54,7 +54,7 @@ import org.restheart.utils.HttpStatus;
         enabledByDefault = true,
         defaultURI = "/tokens"
 )
-public class RndTokenService implements Service {
+public class RndTokenService implements JsonService {
 
     // used to compare the requested URI containing escaped chars
     private static final Escaper ESCAPER = UrlEscapers.urlPathSegmentEscaper();
@@ -86,6 +86,8 @@ public class RndTokenService implements Service {
      */
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
+        var response = response().apply(exchange);
+        
         if (exchange.getRequestPath().startsWith(getUri())
                 && exchange.getRequestPath().length() >= (getUri().length() + 2)
                 && Methods.OPTIONS.equals(exchange.getRequestMethod())) {
@@ -96,8 +98,7 @@ public class RndTokenService implements Service {
                             + "Content-Type, Host, Origin, X-Requested-With, "
                             + "User-Agent, No-Auth-Challenge");
 
-            exchange.setStatusCode(HttpStatus.SC_OK);
-            exchange.endExchange();
+            response.setStatusCode(HttpStatus.SC_OK);
             return;
         }
 
@@ -105,8 +106,7 @@ public class RndTokenService implements Service {
                 || exchange.getSecurityContext().getAuthenticatedAccount() == null
                 || exchange.getSecurityContext().getAuthenticatedAccount()
                         .getPrincipal() == null) {
-            exchange.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
-            exchange.endExchange();
+            response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
             return;
         }
 
@@ -116,8 +116,7 @@ public class RndTokenService implements Service {
                 && !(ESCAPER.escape(getUri() + "/" + exchange.getSecurityContext()
                         .getAuthenticatedAccount().getPrincipal().getName()))
                         .equals(exchange.getRequestURI())) {
-            exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
-            exchange.endExchange();
+            response.setStatusCode(HttpStatus.SC_FORBIDDEN);
             return;
         }
 
@@ -131,11 +130,10 @@ public class RndTokenService implements Service {
                     new JsonPrimitive(exchange.getResponseHeaders()
                             .get(AUTH_TOKEN_VALID_HEADER).getFirst()));
 
-            exchange.setStatusCode(HttpStatus.SC_OK);
+            response.setStatusCode(HttpStatus.SC_OK);
             // TODO use static var for content type
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
             exchange.getResponseSender().send(resp.toString());
-            exchange.endExchange();
         } else if (Methods.DELETE.equals(exchange.getRequestMethod())) {
             BaseAccount account = new BaseAccount(exchange.getSecurityContext()
                     .getAuthenticatedAccount().getPrincipal().getName(),
@@ -144,11 +142,9 @@ public class RndTokenService implements Service {
             invalidate(account);
 
             removeAuthTokens(exchange);
-            exchange.setStatusCode(HttpStatus.SC_NO_CONTENT);
-            exchange.endExchange();
+            response.setStatusCode(HttpStatus.SC_NO_CONTENT);
         } else {
-            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
-            exchange.endExchange();
+            response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
         }
     }
 

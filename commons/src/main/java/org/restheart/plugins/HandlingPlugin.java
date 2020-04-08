@@ -17,32 +17,18 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
+package org.restheart.plugins;
 
-import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
-import org.restheart.utils.ChannelReader;
+import org.restheart.handlers.exchange.AbstractRequest;
+import org.restheart.handlers.exchange.AbstractResponse;
 
 /**
- *
+ * Parent interface of handling plugins: Service and Proxy
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @param <R>
+ * @param <S>
  */
-public class ByteArrayRequest extends Request<byte[]> {
-    private ByteArrayRequest(HttpServerExchange exchange) {
-        super(exchange);
-    }
-    
-    public static ByteArrayRequest init(HttpServerExchange exchange) {
-        return new ByteArrayRequest(exchange);
-    }
-
-    public static ByteArrayRequest wrap(HttpServerExchange exchange) {
-        return (ByteArrayRequest) of(exchange);
-    }
-
-    public void injectContent() throws IOException {
-        setContent(ChannelReader
-                .read(wrapped.getRequestChannel())
-                .getBytes());
-    }
+public interface HandlingPlugin<R extends AbstractRequest<?>, S extends AbstractResponse<?>>
+        extends Plugin, ExchangeTypeResolver {
 }

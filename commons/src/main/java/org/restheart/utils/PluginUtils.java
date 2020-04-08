@@ -21,7 +21,7 @@ package org.restheart.utils;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
-import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import static org.restheart.handlers.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
@@ -149,7 +149,7 @@ public class PluginUtils {
      */
     public static InterceptPoint[] dontIntercept(PluginsRegistry registry,
             HttpServerExchange exchange) {
-        var pi = ByteArrayRequest.wrap(exchange).getPipelineInfo();
+        var pi = BufferedByteArrayRequest.wrap(exchange).getPipelineInfo();
 
         if (pi != null && pi.getType() == SERVICE) {
             var srvName = pi.getName();

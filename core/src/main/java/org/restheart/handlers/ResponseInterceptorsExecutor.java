@@ -22,7 +22,7 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.exchange.AbstractExchange;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
@@ -114,7 +114,7 @@ public class ResponseInterceptorsExecutor
                                 ex);
                         AbstractExchange.setInError(exchange);
                         // set error message
-                        ByteArrayResponse response = ByteArrayResponse
+                        BufferedByteArrayResponse response = BufferedByteArrayResponse
                                 .wrap(exchange);
 
                         response.setInError(
@@ -163,7 +163,7 @@ public class ResponseInterceptorsExecutor
                                     ex);
                             AbstractExchange.setInError(exchange);
                             // set error message
-                            ByteArrayResponse response = ByteArrayResponse
+                            BufferedByteArrayResponse response = BufferedByteArrayResponse
                                     .wrap(exchange);
 
                             response.setInError(

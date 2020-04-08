@@ -22,14 +22,14 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import java.nio.ByteBuffer;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.handlers.exchange.PipelineInfo;
+import org.restheart.handlers.exchange.Response;
+import org.restheart.plugins.PluginsRegistryImpl;
 
 /**
  *
- * Sends the response content attached to ByteArrayResponse to the client
- *
- * The response content of ByteArrayResponse can be set by any ProxableResponse
- * implementation (eg. JsonResponse)
+ * Sends the response content to the client
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -56,18 +56,43 @@ public class ResponseSender extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var response = ByteArrayResponse.wrap(exchange);
+        var registry = PluginsRegistryImpl.getInstance();
+        var path = exchange.getRequestPath();
 
-        if (!exchange.isResponseStarted() && response.getStatusCode() > 0) {
-            exchange.setStatusCode(response.getStatusCode());
+        var pi = registry.getPipelineInfo(path);
+
+        if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
+            var srv = registry.getServices().stream()
+                    .filter(s -> s.getName().equals(pi.getName()))
+                    .findAny();
+
+            if (srv.isPresent()) {
+                Response response = (Response) srv.get().getInstance()
+                        .response().apply(exchange);
+
+                exchange.setStatusCode(response.getStatusCode());
+
+                var content = response.readContent();
+
+                if (content != null) {
+                    exchange.getResponseSender().send(response.readContent());
+                }
+            }
+
+        } else if (pi.getType() == PipelineInfo.PIPELINE_TYPE.PROXY) {
+            var response = BufferedByteArrayResponse.wrap(exchange);
+
+            if (!exchange.isResponseStarted() && response.getStatusCode() > 0) {
+                exchange.setStatusCode(response.getStatusCode());
+            }
+
+            if (response.isContentAvailable()) {
+                exchange.getResponseSender().send(
+                        ByteBuffer.wrap(response.readContent()));
+            }
+
+            exchange.endExchange();
         }
-
-        if (response.isContentAvailable()) {
-            exchange.getResponseSender().send(
-                    ByteBuffer.wrap(response.readContent()));
-        }
-
-        exchange.endExchange();
 
         next(exchange);
     }

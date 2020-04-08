@@ -20,21 +20,49 @@
 package org.restheart.handlers.exchange;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 
 /**
- * A request that stores content in the a class field.
+ * A request that stores content in a class field.
  *
- * Do not use to access content of a proxied resource, must use BufferedRequest
- * instead.
+ * Only one request can be instantiated per each exchange. The single object is
+ * instantiated by ServiceExchangeInitializer using the requestInitializer()
+ * function defined by the handling service
+ *
+ * Cannot be used to access content of a proxied resource, must use
+ * BufferedRequest instead.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <T>
  */
 public abstract class Request<T> extends AbstractRequest<T> {
+    private static final AttachmentKey<Request<?>> REQUEST_KEY
+            = AttachmentKey.create(Request.class);
+
     protected T content;
 
     protected Request(HttpServerExchange exchange) {
         super(exchange);
+
+        if (exchange.getAttachment(REQUEST_KEY) != null) {
+            throw new IllegalStateException("Error instantiating request object "
+                    + getClass().getSimpleName()
+                    + ", "
+                    + of(exchange).getClass().getSimpleName()
+                    + " already bound to the exchange");
+        }
+
+        exchange.putAttachment(REQUEST_KEY, this);
+    }
+
+    public static Request<?> of(HttpServerExchange exchange) {
+        var ret = exchange.getAttachment(REQUEST_KEY);
+
+        if (ret == null) {
+            throw new IllegalStateException("Request not initialized");
+        }
+
+        return ret;
     }
 
     public T getContent() {

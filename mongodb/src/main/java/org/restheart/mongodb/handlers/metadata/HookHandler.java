@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.HookMetadata;
 import org.restheart.plugins.InjectPluginsRegistry;
@@ -136,11 +137,11 @@ public class HookHandler implements Interceptor {
 
     @Override
     public boolean resolve(HttpServerExchange exchange) {
-        // Skip handling if BsonRequest and BsonResponse are not initialized.
-        // This happens when the request has not been processed by the mongo
-        // service pipeline
+        // Handle only for request handled by the mongo service
 
-        return BsonRequest.isInitialized(exchange)
-                && BsonResponse.isInitialized(exchange);
+        return "mongo".equals(BufferedByteArrayRequest
+                .wrap(exchange)
+                .getPipelineInfo()
+                .getName());
     }
 }

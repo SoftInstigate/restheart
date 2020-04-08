@@ -21,7 +21,6 @@ package org.restheart.handlers.exchange;
 
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
@@ -52,8 +51,8 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * Request implementation used by MongoService and backed by BsonValue that
- * provides simplify methods to deal with headers and query parameters specific
- * to mongo request
+ * provides simplified methods to deal with headers and query parameters
+ * specific to mongo requests
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
@@ -95,8 +94,6 @@ public class BsonRequest extends Request<BsonValue> {
 
     private boolean noProps = false;
 
-    private boolean inError = false;
-
     private Account authenticatedAccount = null;
 
     private ClientSessionImpl clientSession = null;
@@ -112,9 +109,6 @@ public class BsonRequest extends Request<BsonValue> {
     private final PathTemplateMatch pathTemplateMatch;
 
     private final JsonMode jsonMode;
-
-    private static final AttachmentKey<BsonRequest> BSON_REQUEST_ATTACHMENT_KEY
-            = AttachmentKey.create(BsonRequest.class);
 
     protected BsonRequest(HttpServerExchange exchange,
             String requestUri,
@@ -210,24 +204,11 @@ public class BsonRequest extends Request<BsonValue> {
             String resourceUri) {
         var request = new BsonRequest(exchange, requestUri, resourceUri);
 
-        exchange.putAttachment(BSON_REQUEST_ATTACHMENT_KEY, request);
-
         return request;
     }
 
     public static BsonRequest wrap(HttpServerExchange exchange) {
-        var cached = exchange.getAttachment(BSON_REQUEST_ATTACHMENT_KEY);
-
-        if (cached == null) {
-            throw new IllegalStateException("BsonRequest.wrap() invoked "
-                    + "before BsonRequest.init()");
-        } else {
-            return cached;
-        }
-    }
-
-    public static boolean isInitialized(HttpServerExchange exchange) {
-        return (exchange.getAttachment(BSON_REQUEST_ATTACHMENT_KEY) != null);
+        return (BsonRequest) of(exchange);
     }
 
     /**

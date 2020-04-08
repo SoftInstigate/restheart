@@ -28,12 +28,13 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import org.restheart.handlers.exchange.ByteArrayRequest;
-import org.restheart.handlers.exchange.JsonRequest;
-import org.restheart.handlers.exchange.JsonResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
+import org.restheart.handlers.exchange.BufferedJsonRequest;
 import org.restheart.handlers.exchange.AbstractRequest;
+import org.restheart.handlers.exchange.JsonResponse;
+import org.restheart.handlers.exchange.Response;
+import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 import org.restheart.utils.BuffersUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory;
         description = "echoes the request",
         enabledByDefault = true,
         defaultURI = "/echo")
-public class EchoService implements Service {
+public class EchoService implements JsonService {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(EchoService.class);
@@ -60,24 +61,25 @@ public class EchoService implements Service {
      */
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
+        var response = response().apply(exchange);
+        
         JsonObject resp = new JsonObject();
 
         resp.addProperty("method", exchange.getRequestMethod().toString());
         resp.addProperty("URL", exchange.getRequestURL());
 
         if (AbstractRequest.isContentTypeJson(exchange)) {
-            var request = JsonRequest.wrap(exchange);
+            var request = BufferedJsonRequest.wrap(exchange);
 
             try {
                 resp.add("content", request.readContent());
             } catch (JsonSyntaxException jse) {
-                resp.addProperty("content", getTruncatedContent(
-                        ByteArrayRequest.wrap(exchange)));
+                resp.addProperty("content", getTruncatedContent(BufferedByteArrayRequest.wrap(exchange)));
                 resp.addProperty("note",
                         "showing up to 20 bytes of the request content");
             }
         } else {
-            var request = ByteArrayRequest.wrap(exchange);
+            var request = BufferedByteArrayRequest.wrap(exchange);
             if (request.isContentTypeXml() || request.isContentTypeText()) {
                 resp.addProperty("content", BuffersUtils.toString(request.getRawContent(),
                         Charset.forName("utf-8")));
@@ -87,8 +89,6 @@ public class EchoService implements Service {
                         "showing up to 20 bytes of the request content");
             }
         }
-
-        var response = JsonResponse.wrap(exchange);
 
         response.setStatusCode(HttpStatus.SC_OK);
 
@@ -118,10 +118,10 @@ public class EchoService implements Service {
 
         });
 
-        response.writeContent(resp);
+        response.setContent(resp);
     }
 
-    private String getTruncatedContent(ByteArrayRequest request)
+    private String getTruncatedContent(BufferedByteArrayRequest request)
             throws IOException {
         byte[] content = request.readContent();
 

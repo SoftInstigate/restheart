@@ -35,7 +35,7 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.restheart.ConfigurationException;
-import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
@@ -117,7 +117,7 @@ public class RequestPredicatesAuthorizer
     @Override
     public boolean isAuthenticationRequired(final HttpServerExchange exchange) {
         // don't require authentication for OPTIONS requests
-        if (ByteArrayRequest.wrap(exchange).isOptions()) {
+        if (BufferedByteArrayRequest.wrap(exchange).isOptions()) {
             return false;
         }
 

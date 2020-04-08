@@ -17,32 +17,32 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
+package org.restheart.plugins;
 
-import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
-import org.restheart.utils.ChannelReader;
+import com.google.common.reflect.TypeToken;
+import java.lang.reflect.Type;
+import org.restheart.handlers.exchange.AbstractRequest;
+import org.restheart.handlers.exchange.AbstractResponse;
 
 /**
- *
+ * Interface to get the response and request implementation classes at runtime
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @param <R>
+ * @param <S>
  */
-public class ByteArrayRequest extends Request<byte[]> {
-    private ByteArrayRequest(HttpServerExchange exchange) {
-        super(exchange);
-    }
-    
-    public static ByteArrayRequest init(HttpServerExchange exchange) {
-        return new ByteArrayRequest(exchange);
+public interface ExchangeTypeResolver<R extends AbstractRequest<?>, S extends AbstractResponse<?>> {
+    default Type requestType() {
+        var typeToken = new TypeToken<R>(getClass()) {
+        };
+
+        return typeToken.getType();
     }
 
-    public static ByteArrayRequest wrap(HttpServerExchange exchange) {
-        return (ByteArrayRequest) of(exchange);
-    }
+    default Type responseType() {
+        var typeToken = new TypeToken<S>(getClass()) {
+        };
 
-    public void injectContent() throws IOException {
-        setContent(ChannelReader
-                .read(wrapped.getRequestChannel())
-                .getBytes());
+        return typeToken.getType();
     }
 }

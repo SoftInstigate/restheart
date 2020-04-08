@@ -29,11 +29,10 @@ import io.undertow.util.HttpString;
 import java.util.Map;
 import java.util.Set;
 import org.restheart.ConfigurationException;
-import org.restheart.handlers.exchange.JsonRequest;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
@@ -49,7 +48,7 @@ import org.restheart.utils.URLUtils;
         description = "returns the roles of the authenticated client",
         enabledByDefault = true,
         defaultURI = "/roles")
-public class GetRoleService implements Service {
+public class GetRoleService implements JsonService {
     Map<String, Object> confArgs = null;
     
     /**
@@ -70,7 +69,7 @@ public class GetRoleService implements Service {
      */
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        var request = JsonRequest.wrap(exchange);
+        var request = request().apply(exchange);
 
         if (request.isOptions()) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");

@@ -25,7 +25,7 @@ import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Map;
-import org.restheart.handlers.exchange.JsonResponse;
+import org.restheart.handlers.exchange.BufferedJsonResponse;
 import org.restheart.plugins.InjectConfiguration;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import org.restheart.plugins.Interceptor;
@@ -59,7 +59,7 @@ public class EchoExampleResponseInterceptor implements Interceptor {
 
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        var response = JsonResponse.wrap(exchange);
+        var response = BufferedJsonResponse.wrap(exchange);
 
         exchange.getResponseHeaders().add(HttpString.tryFromString("header"),
                 "added by EchoExampleResponseInterceptor " + exchange.getRequestPath());

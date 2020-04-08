@@ -22,12 +22,10 @@ package org.restheart.mongodb.plugins.services;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
-import org.restheart.handlers.exchange.ByteArrayRequest;
-import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
+import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -38,7 +36,7 @@ import org.restheart.utils.HttpStatus;
         description = "Invalidates the db and collection metadata cache",
         defaultURI = "/ic"
 )
-public class CacheInvalidator implements Service {
+public class CacheInvalidator implements ByteArrayService {
 
     /**
      *
@@ -47,8 +45,8 @@ public class CacheInvalidator implements Service {
      */
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        var request = ByteArrayRequest.wrap(exchange);
-        var response = ByteArrayResponse.wrap(exchange);
+        var request = request().apply(exchange);
+        var response = response().apply(exchange);
 
         if (!MongoServiceConfiguration.get().isLocalCacheEnabled()) {
             response.setIError(

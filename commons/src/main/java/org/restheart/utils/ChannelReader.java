@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.utils;
+package org.restheart.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -55,8 +55,5 @@ public class ChannelReader {
             buf.clear();
         }
         return new String(os.toByteArray(), CHARSET);
-    }
-
-    private ChannelReader() {
     }
 }

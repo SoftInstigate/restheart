@@ -17,32 +17,38 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
+package org.restheart.plugins;
 
 import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
-import org.restheart.utils.ChannelReader;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.JsonResponse;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ByteArrayRequest extends Request<byte[]> {
-    private ByteArrayRequest(HttpServerExchange exchange) {
-        super(exchange);
-    }
-    
-    public static ByteArrayRequest init(HttpServerExchange exchange) {
-        return new ByteArrayRequest(exchange);
+public interface JsonService extends Service<JsonRequest, JsonResponse> {
+    @Override
+    default Consumer<HttpServerExchange> requestInitializer() {
+        return e -> JsonRequest.init(e);
     }
 
-    public static ByteArrayRequest wrap(HttpServerExchange exchange) {
-        return (ByteArrayRequest) of(exchange);
+    @Override
+    default Consumer<HttpServerExchange> responseInitializer() {
+        return e -> JsonResponse.init(e);
     }
 
-    public void injectContent() throws IOException {
-        setContent(ChannelReader
-                .read(wrapped.getRequestChannel())
-                .getBytes());
+    @Override
+    default Function<HttpServerExchange, JsonRequest> request() {
+        return e -> (JsonRequest) Request.of(e);
+    }
+
+    @Override
+    default Function<HttpServerExchange, JsonResponse> response() {
+        return e -> (JsonResponse) Response.of(e);
     }
 }

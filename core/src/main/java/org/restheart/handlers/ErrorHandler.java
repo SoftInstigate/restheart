@@ -22,7 +22,7 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +60,7 @@ public class ErrorHandler implements HttpHandler {
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
 
-            ByteArrayResponse.wrap(exchange).setInError(
+            BufferedByteArrayResponse.wrap(exchange).setInError(
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Error handling the request, see log for more information", t);
 

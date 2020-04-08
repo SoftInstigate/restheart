@@ -29,7 +29,7 @@ import org.bson.json.JsonMode;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
 import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.representation.Resource;
 import org.restheart.utils.JsonUtils;
@@ -65,7 +65,7 @@ public class ResponseContentInjector extends PipelinedHandler {
 
         addWarnings(request, response);
 
-        var pr = ByteArrayResponse.wrap(exchange);
+        var pr = BufferedByteArrayResponse.wrap(exchange);
         
         if (request.getJsonMode() == JsonMode.SHELL) {
             pr.setContentType(Resource.JAVACRIPT_MEDIA_TYPE);
@@ -75,12 +75,12 @@ public class ResponseContentInjector extends PipelinedHandler {
             pr.setContentType(Resource.JSON_MEDIA_TYPE);
         }
         
-        // This makes the content availabe to ByteArrayResponse
+        // This makes the content availabe to BufferedByteArrayResponse
         // core's ResponseSender uses BufferedResponse 
         // to send the content to the client
         if (response.getContent() != null) {
             try {
-                ByteArrayResponse.wrap(exchange)
+                BufferedByteArrayResponse.wrap(exchange)
                         .writeContent(JsonUtils.toJson(response.getContent(),
                                 BsonRequest.wrap(exchange).getJsonMode())
                                 .getBytes());
