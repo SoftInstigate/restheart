@@ -31,9 +31,17 @@ public class ByteArrayRequest extends Request<byte[]> {
     private ByteArrayRequest(HttpServerExchange exchange) {
         super(exchange);
     }
-    
+
     public static ByteArrayRequest init(HttpServerExchange exchange) {
-        return new ByteArrayRequest(exchange);
+        var ret = new ByteArrayRequest(exchange);
+
+        try {
+            ret.injectContent();
+        } catch (IOException ieo) {
+            ret.setInError(true);
+        }
+
+        return ret;
     }
 
     public static ByteArrayRequest wrap(HttpServerExchange exchange) {

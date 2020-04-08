@@ -23,6 +23,8 @@ package org.restheart.security.plugins.services;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.restheart.ConfigurationException;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
@@ -49,14 +51,11 @@ public class PingService implements ByteArrayService {
 
     /**
      *
-     * @param exchange
      * @throws Exception
      */
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        var request = request().apply(exchange);
-        var response = response().apply(exchange);
-
+    public void handle(ByteArrayRequest request, 
+            ByteArrayResponse response) throws Exception {
         if (request.isGet()) {
             response.setStatusCode(HttpStatus.SC_OK);
             response.setContent(msg.getBytes());

@@ -31,6 +31,8 @@ import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import java.util.Map;
 import org.restheart.ConfigurationException;
+import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.JsonResponse;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;
@@ -85,8 +87,8 @@ public class RndTokenService implements JsonService {
      * @throws Exception
      */
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        var response = response().apply(exchange);
+    public void handle(JsonRequest request, JsonResponse response) throws Exception {
+        var exchange = request.getExchange();
         
         if (exchange.getRequestPath().startsWith(getUri())
                 && exchange.getRequestPath().length() >= (getUri().length() + 2)

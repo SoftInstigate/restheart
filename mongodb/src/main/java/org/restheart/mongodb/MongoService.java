@@ -36,7 +36,6 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.handlers.exchange.BufferedByteArrayResponse;
 import org.restheart.handlers.exchange.Request;
 import org.restheart.handlers.exchange.Response;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
@@ -94,12 +93,10 @@ public class MongoService implements Service<BsonRequest, BsonResponse> {
     }
 
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
+    public void handle(BsonRequest request, BsonResponse response) throws Exception {
         if (MongoClientSingleton.isInitialized()) {
-            this.pipeline.handleRequest(exchange);
+            this.pipeline.handleRequest(request.getExchange());
         } else {
-            var response = BufferedByteArrayResponse.wrap(exchange);
-
             final var error = "Service mongo is not initialized. "
                     + "Make sure that mongoInitializer is enabled "
                     + "and executed successfully";

@@ -30,6 +30,7 @@ import io.undertow.server.HttpServerExchange;
 public class JsonResponse extends Response<JsonElement> {
     private JsonResponse(HttpServerExchange exchange) {
         super(exchange);
+        setContentTypeAsJson();
     }
     
     public static JsonResponse init(HttpServerExchange exchange) {

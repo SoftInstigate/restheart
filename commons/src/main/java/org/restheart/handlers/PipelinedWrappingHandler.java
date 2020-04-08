@@ -21,6 +21,8 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 import org.restheart.plugins.Service;
 
 /**
@@ -121,8 +123,8 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
     }
 }
 
-class ServiceWrapper extends PipelinedHandler {
-    final Service service;
+class ServiceWrapper<R extends Request<?>, S extends Response<?>> extends PipelinedHandler {
+    final Service<R,S> service;
     
     ServiceWrapper(Service service) {
         this.service = service;
@@ -130,6 +132,7 @@ class ServiceWrapper extends PipelinedHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        service.handle(exchange);
+        service.handle(service.request().apply(exchange),
+                service.response().apply(exchange));
     }
 }
