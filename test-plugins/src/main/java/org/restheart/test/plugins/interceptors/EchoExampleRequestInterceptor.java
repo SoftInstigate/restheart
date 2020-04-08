@@ -24,7 +24,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
 import java.util.LinkedList;
-import org.restheart.handlers.exchange.BufferedJsonRequest;
+import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.Request;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
 
@@ -40,28 +41,26 @@ import org.restheart.plugins.RegisterPlugin;
 public class EchoExampleRequestInterceptor implements Interceptor {
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
+        var request = (JsonRequest) Request.of(exchange);
+        
         // add query parameter ?pagesize=0
         var vals = new LinkedList<String>();
         vals.add("param added by EchoExampleRequestInterceptor");
         exchange.getQueryParameters().put("param", vals);
 
-        var request = BufferedJsonRequest.wrap(exchange);
-
         JsonElement requestContent;
 
-        if (!request.isContentAvailable()) {
-            request.writeContent(new JsonObject());
+        if (request.getContent() == null) {
+            request.setContent(new JsonObject());
         }
 
         if (request.isContentTypeJson()) {
-            requestContent = request.readContent();
+            requestContent = request.getContent();
 
             if (requestContent.isJsonObject()) {
                 requestContent.getAsJsonObject()
                         .addProperty("prop1",
                                 "property added by EchoExampleRequestInterceptor");
-
-                request.writeContent(requestContent);
             }
         }
     }
@@ -69,7 +68,6 @@ public class EchoExampleRequestInterceptor implements Interceptor {
     @Override
     public boolean resolve(HttpServerExchange exchange) {
         return exchange.getRequestPath().equals("/iecho")
-                || exchange.getRequestPath().equals("/anything")
-                || exchange.getRequestPath().equals("/restheart/coll");
+                || exchange.getRequestPath().equals("/anything");
     }
 }
