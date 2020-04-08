@@ -30,9 +30,8 @@ import static org.mockito.Mockito.when;
 import org.restheart.handlers.exchange.AbstractRequest;
 import org.restheart.handlers.exchange.AbstractResponse;
 import org.restheart.handlers.exchange.BufferedJsonRequest;
-import org.restheart.handlers.exchange.JsonRequest;
-import org.restheart.handlers.exchange.JsonResponse;
 import org.restheart.plugins.ConfigurablePlugin;
+import org.restheart.plugins.HandlingPlugin;
 
 /**
  *

@@ -20,8 +20,9 @@
  */
 package org.restheart.mongodb.plugins.services;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.Deque;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
 import org.restheart.plugins.ByteArrayService;
@@ -40,13 +41,12 @@ public class CacheInvalidator implements ByteArrayService {
 
     /**
      *
-     * @param exchange
      * @throws Exception
      */
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        var request = request().apply(exchange);
-        var response = response().apply(exchange);
+    public void handle(ByteArrayRequest request, 
+            ByteArrayResponse response) throws Exception {
+        var exchange = request.getExchange();
 
         if (!MongoServiceConfiguration.get().isLocalCacheEnabled()) {
             response.setIError(
@@ -56,7 +56,7 @@ public class CacheInvalidator implements ByteArrayService {
         }
 
         if (request.isOptions()) {
-            handleOptions(exchange);
+            handleOptions(request);
         } else if (request.isPost()) {
             Deque<String> _db = exchange.getQueryParameters().get("db");
             Deque<String> _coll = exchange.getQueryParameters().get("coll");

@@ -40,10 +40,11 @@ public interface Service<R extends Request<?>, S extends Response<?>>
     /**
      * handle the request
      *
-     * @param exchange
+     * @param request
+     * @param response
      * @throws Exception
      */
-    public void handle(final HttpServerExchange exchange) throws Exception;
+    public void handle(final R request, final S response) throws Exception;
 
     /**
      * 
@@ -72,10 +73,12 @@ public interface Service<R extends Request<?>, S extends Response<?>>
     /**
      * helper method to handle OPTIONS requests
      *
-     * @param exchange
+     * @param request
      * @throws Exception
      */
-    default void handleOptions(HttpServerExchange exchange) throws Exception {
+    default void handleOptions(final R request) throws Exception {
+        var exchange = request.getExchange();
+        
         exchange.getResponseHeaders()
                 .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
                 .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");

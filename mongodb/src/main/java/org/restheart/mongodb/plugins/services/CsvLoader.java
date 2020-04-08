@@ -38,15 +38,16 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.plugins.ByteArrayService;
-import org.restheart.utils.ChannelReader;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.mongodb.Transformer;
 import org.restheart.representation.Resource;
+import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -120,16 +121,15 @@ public class CsvLoader implements ByteArrayService {
 
     /**
      *
-     * @param exchange
      * @throws Exception
      */
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        var request = request().apply(exchange);
-        var response = response().apply(exchange);
+    public void handle(ByteArrayRequest request, 
+            ByteArrayResponse response) throws Exception {
+        var exchange = request.getExchange();
 
         if (request.isOptions()) {
-            handleOptions(exchange);
+            handleOptions(request);
         } else {
             exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Resource.JSON_MEDIA_TYPE);
             if (doesApply(request)) {

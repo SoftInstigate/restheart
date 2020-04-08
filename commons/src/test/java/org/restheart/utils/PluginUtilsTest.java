@@ -23,13 +23,14 @@ import io.undertow.server.HttpServerExchange;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
+import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.JsonResponse;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
 
 /**
  *
@@ -133,8 +134,13 @@ public class PluginUtilsTest {
             Interceptor, 
             Initializer {
         @Override
-        public void handle(HttpServerExchange exchange) throws Exception {
+        public void handle(JsonRequest r, JsonResponse s) throws Exception {
 
+        }
+        
+        @Override
+        public void handle(HttpServerExchange exchange) throws Exception {
+            
         }
         
         @Override
@@ -153,8 +159,13 @@ public class PluginUtilsTest {
     private static class TestPluginDefault implements JsonService,
             Interceptor, Initializer {
         @Override
-        public void handle(HttpServerExchange exchange) throws Exception {
+        public void handle(JsonRequest request, JsonResponse response) throws Exception {
 
+        }
+        
+        @Override
+        public void handle(HttpServerExchange exchange) throws Exception {
+            
         }
         
         @Override

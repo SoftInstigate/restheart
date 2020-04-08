@@ -24,14 +24,12 @@ import io.undertow.server.HttpServerExchange;
 import java.lang.reflect.Type;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.restheart.handlers.exchange.AbstractRequest;
-import org.restheart.handlers.exchange.AbstractResponse;
 import org.restheart.handlers.exchange.BufferedRequest;
 import org.restheart.handlers.exchange.BufferedResponse;
 import org.restheart.handlers.exchange.Request;
 import org.restheart.handlers.exchange.Response;
-import org.restheart.plugins.ConfigurablePlugin;
-import org.restheart.plugins.ExchangeTypeResolver;
+import org.restheart.plugins.HandlingPlugin;
+import org.restheart.plugins.Service;
 
 /**
  *
@@ -40,36 +38,7 @@ import org.restheart.plugins.ExchangeTypeResolver;
 interface Plugin {
 }
 
-/**
- *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
- */
-interface HandlingPlugin<R extends AbstractRequest<?>, S extends AbstractResponse<?>> 
-        extends Plugin, ExchangeTypeResolver {
-}
-
 interface Proxy<R extends BufferedRequest<?>, S extends BufferedResponse<?>> extends HandlingPlugin<R, S> {
-}
-
-interface MService<R extends Request<?>, S extends Response<?>> extends HandlingPlugin<R, S>, ConfigurablePlugin {
-    /**
-     * handle the request
-     *
-     * @param request
-     * @param response
-     * @throws Exception
-     */
-    public void handle(final R request, final S response) throws Exception;
-
-    // do we just need request and response, that on first invocation bind the objects
-    // to the exchange, then just retrive them
-    public Consumer<HttpServerExchange> requestInitializer();
-    
-    public Consumer<HttpServerExchange> responseInitializer();
-
-    public Function<HttpServerExchange, R> request();
-
-    public Function<HttpServerExchange, S> response();
 }
 
 interface PluginTypeResolver<P extends HandlingPlugin<?, ?>> {
@@ -81,10 +50,10 @@ interface PluginTypeResolver<P extends HandlingPlugin<?, ?>> {
     }
 }
 
-class MyService implements MService<DummyRequest, DummyResponse> {
+class MyService implements Service<DummyRequest, DummyResponse> {
     @Override
     public void handle(DummyRequest request, DummyResponse response) throws Exception {
-        System.out.println("MyService handled " + request.getPath());
+        System.out.println("*** MyService.handle(" + request.getPath() + ")");
     }
 
     @Override

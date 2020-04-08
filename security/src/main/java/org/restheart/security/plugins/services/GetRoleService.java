@@ -23,12 +23,13 @@ package org.restheart.security.plugins.services;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.util.Map;
 import java.util.Set;
 import org.restheart.ConfigurationException;
+import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.JsonResponse;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.JsonService;
@@ -64,13 +65,12 @@ public class GetRoleService implements JsonService {
     /**
      * Handles the request.
      *
-     * @param exchange
      * @throws Exception
      */
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        var request = request().apply(exchange);
-
+    public void handle(JsonRequest request, JsonResponse response) throws Exception {
+        var exchange = request.getExchange();
+        
         if (request.isOptions()) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"),

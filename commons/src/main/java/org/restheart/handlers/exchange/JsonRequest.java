@@ -35,17 +35,25 @@ public class JsonRequest extends Request<JsonElement> {
     }
     
     public static JsonRequest init(HttpServerExchange exchange) {
-        return new JsonRequest(exchange);
+        var ret = new JsonRequest(exchange);
+        
+        try {
+            ret.injectContent();
+        } catch (IOException ieo) {
+            ret.setInError(true);
+        }
+        
+        return ret;
     }
-
+    
     public static JsonRequest wrap(HttpServerExchange exchange) {
         return (JsonRequest) of(exchange);
     }
-
+    
     public void injectContent() throws IOException {
         var json = JsonParser.parseString(ChannelReader
                 .read(wrapped.getRequestChannel()));
-
+        
         setContent(json);
     }
 }
