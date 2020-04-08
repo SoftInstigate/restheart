@@ -20,12 +20,15 @@
  */
 package org.restheart.test.plugins.interceptors;
 
-import com.google.gson.JsonElement;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
+import org.bson.BsonValue;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.handlers.exchange.BufferedByteArrayResponse;
-import org.restheart.handlers.exchange.BufferedJsonRequest;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
@@ -49,13 +52,15 @@ public class SecretHider implements Interceptor {
     static final Logger LOGGER = LoggerFactory.getLogger(SecretHider.class);
 
     @Override
-    public void handle(HttpServerExchange hse) throws Exception {
-        var content = BufferedJsonRequest.wrap(hse).readContent();
+    public void handle(HttpServerExchange exchange) throws Exception {
+        var request = (BsonRequest) Request.of(exchange);
+        var response = (BsonResponse) Response.of(exchange);
+        
+        var content = request.getContent();
 
         if (keys(content).stream()
                 .anyMatch(k -> "secret".equals(k)
                 || k.endsWith(".secret"))) {
-            var response = BufferedByteArrayResponse.wrap(hse);
 
             response.setIError(HttpStatus.SC_FORBIDDEN,
                     "cannot write secret");
@@ -75,18 +80,18 @@ public class SecretHider implements Interceptor {
     /**
      * @return the keys of the JSON
      */
-    private ArrayList<String> keys(JsonElement val) {
+    private ArrayList<String> keys(BsonValue val) {
         var keys = new ArrayList<String>();
 
         if (val == null) {
             return keys;
-        } else if (val.isJsonObject()) {
-            val.getAsJsonObject().keySet().forEach(k -> {
+        } else if (val.isDocument()) {
+            val.asDocument().keySet().forEach(k -> {
                 keys.add(k);
-                keys.addAll(keys(val.getAsJsonObject().get(k)));
+                keys.addAll(keys(val.asDocument().get(k)));
             });
-        } else if (val.isJsonArray()) {
-            val.getAsJsonArray().forEach(v -> keys.addAll(keys(v)));
+        } else if (val.isArray()) {
+            val.asArray().forEach(v -> keys.addAll(keys(v)));
         }
 
         return keys;

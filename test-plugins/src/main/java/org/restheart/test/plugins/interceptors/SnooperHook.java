@@ -27,6 +27,8 @@ import org.bson.BsonValue;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.BufferedByteArrayRequest;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
@@ -60,8 +62,8 @@ public class SnooperHook implements Interceptor {
      */
     @Override
     public void handle(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = (BsonRequest) Request.of(exchange);
+        var response = (BsonResponse) Response.of(exchange);
         
         LOGGER.info("Request {} {} {}",
                 request.getMethod(),
