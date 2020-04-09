@@ -19,16 +19,13 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.handlers.exchange.AbstractRequest;
-import org.restheart.handlers.exchange.AbstractResponse;
+import org.restheart.handlers.exchange.JsonRequest;
+import org.restheart.handlers.exchange.JsonResponse;
 
 /**
- * Parent interface of handling plugins: Service and Proxy
- * 
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
- * @param <R>
- * @param <S>
  */
-public interface HandlingPlugin<R extends AbstractRequest<?>, S extends AbstractResponse<?>>
-        extends Plugin, ExchangeTypeResolver<R, S> {
+public interface JsonInterceptor extends Interceptor<JsonRequest, JsonResponse> {
+    
 }

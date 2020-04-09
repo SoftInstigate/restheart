@@ -19,12 +19,13 @@
  */
 package org.restheart.handlers.exchange;
 
+import com.google.common.reflect.TypeToken;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,13 @@ public class BufferedByteArrayRequest extends BufferedRequest<byte[]> {
 
     public static BufferedByteArrayRequest wrap(HttpServerExchange exchange) {
         return new BufferedByteArrayRequest(exchange);
+    }
+    
+    public static Type type() {
+        var typeToken = new TypeToken<BufferedByteArrayRequest>(BufferedByteArrayRequest.class) {
+        };
+
+        return typeToken.getType();
     }
     
     /**
@@ -68,7 +76,7 @@ public class BufferedByteArrayRequest extends BufferedRequest<byte[]> {
             }
 
             int copied = BuffersUtils.transfer(
-                    ByteBuffer.wrap(Arrays.toString(content).getBytes()),
+                    ByteBuffer.wrap(content),
                     dest,
                     wrapped);
 

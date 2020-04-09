@@ -20,17 +20,12 @@
  */
 package org.restheart.test.plugins.interceptors;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import org.bson.BsonValue;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.handlers.exchange.BufferedByteArrayRequest;
-import org.restheart.handlers.exchange.BufferedByteArrayResponse;
-import org.restheart.handlers.exchange.Request;
-import org.restheart.handlers.exchange.Response;
+import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -48,14 +43,11 @@ import org.slf4j.LoggerFactory;
         + "to users does not have the role 'admin'",
         enabledByDefault = false,
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
-public class SecretHider implements Interceptor {
+public class SecretHider implements BsonInterceptor {
     static final Logger LOGGER = LoggerFactory.getLogger(SecretHider.class);
 
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        var request = (BsonRequest) Request.of(exchange);
-        var response = (BsonResponse) Response.of(exchange);
-        
+    public void handle(BsonRequest request, BsonResponse response) throws Exception {
         var content = request.getContent();
 
         if (keys(content).stream()
@@ -68,13 +60,10 @@ public class SecretHider implements Interceptor {
     }
 
     @Override
-    public boolean resolve(HttpServerExchange hse) {
-        var req = BufferedByteArrayRequest.wrap(hse);
-
-        return BufferedByteArrayRequest.isContentTypeJson(hse)
-                && !req.isAccountInRole("admin")
-                && hse.getRequestPath().startsWith("/coll")
-                && (req.isPost() || req.isPatch() || req.isPut());
+    public boolean resolve(BsonRequest request, BsonResponse response) {
+        return !request.isAccountInRole("admin")
+                && "/coll".equals(request.getCollectionName())
+                && (request.isPost() || request.isPatch() || request.isPut());
     }
 
     /**

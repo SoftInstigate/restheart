@@ -20,9 +20,10 @@
  */
 package org.restheart.test.plugins.interceptors;
 
-import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.plugins.ByteArrayInterceptor;
 import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
-import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,32 +33,29 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(
-        name = "echoExampleAsyncResponseInterceptor",
+        name = "echoAsyncResponseInterceptor",
         description = "used for testing purposes",
         enabledByDefault = false,
         requiresContent = true,
         interceptPoint = RESPONSE_ASYNC)
-public class EchoExampleAsyncResponseInterceptor implements Interceptor {
+public class EchoAsyncResponseInterceptor implements ByteArrayInterceptor {
 
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(EchoExampleAsyncResponseInterceptor.class);
+            .getLogger(EchoAsyncResponseInterceptor.class);
 
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
+    public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
         try {
             Thread.sleep(2 * 1000);
             LOGGER.info("This log message is written 2 seconds after response "
-                    + "by echoExampleAsyncResponseInterceptor");
-        }
-        catch (InterruptedException ie) {
+                    + "by echoAsyncResponseInterceptor");
+        } catch (InterruptedException ie) {
             LOGGER.warn("error ", ie);
         }
     }
 
     @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        return exchange.getRequestPath().equals("/iecho")
-                || exchange.getRequestPath().equals("/piecho")
-                || exchange.getRequestPath().equals("/anything");
+    public boolean resolve(ByteArrayRequest request, ByteArrayResponse response) {
+        return request.getPath().equals("/iecho");
     }
 }

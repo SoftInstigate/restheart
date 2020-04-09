@@ -29,6 +29,7 @@ import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.handlers.exchange.Request;
 import org.restheart.handlers.exchange.Response;
+import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
@@ -47,7 +48,7 @@ import org.slf4j.LoggerFactory;
         enabledByDefault = false,
         interceptPoint = InterceptPoint.RESPONSE_ASYNC)
 @SuppressWarnings("deprecation")
-public class SnooperHook implements Interceptor {
+public class SnooperHook implements BsonInterceptor {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(SnooperHook.class);
 
@@ -55,19 +56,12 @@ public class SnooperHook implements Interceptor {
     public void init(Map<String, Object> conf) {
         LOGGER.debug("Configuration args {}", conf);
     }
-    
-    /**
-     *
-     * @param exchange
-     */
+
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        var request = (BsonRequest) Request.of(exchange);
-        var response = (BsonResponse) Response.of(exchange);
-        
+    public void handle(BsonRequest request, BsonResponse response) throws Exception {
         LOGGER.info("Request {} {} {}",
                 request.getMethod(),
-                exchange.getRequestURI(), exchange.getStatusCode());
+                request.getPath(), response.getStatusCode());
 
         if (response.getDbOperationResult() != null) {
             BsonValue newId = response
@@ -101,12 +95,7 @@ public class SnooperHook implements Interceptor {
     }
 
     @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        // Handle only for request handled by the mongo service
-
-        return "mongo".equals(BufferedByteArrayRequest
-                .wrap(exchange)
-                .getPipelineInfo()
-                .getName());
+    public boolean resolve(BsonRequest request, BsonResponse response) {
+        return true;
     }
 }

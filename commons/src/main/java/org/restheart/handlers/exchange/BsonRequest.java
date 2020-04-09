@@ -19,11 +19,13 @@
  */
 package org.restheart.handlers.exchange;
 
+import com.google.common.reflect.TypeToken;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -209,6 +211,13 @@ public class BsonRequest extends Request<BsonValue> {
 
     public static BsonRequest wrap(HttpServerExchange exchange) {
         return (BsonRequest) of(exchange);
+    }
+    
+    public static Type type() {
+        var typeToken = new TypeToken<BsonRequest>(BsonRequest.class) {
+        };
+
+        return typeToken.getType();
     }
 
     /**

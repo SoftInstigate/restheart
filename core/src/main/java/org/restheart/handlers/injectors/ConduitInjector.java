@@ -31,7 +31,8 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.handlers.exchange.BufferedByteArrayResponse;
 import static org.restheart.handlers.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
-import org.restheart.plugins.InterceptPoint;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
 import org.restheart.plugins.PluginsRegistryImpl;
@@ -43,11 +44,9 @@ import org.slf4j.MDC;
 import org.xnio.conduits.StreamSinkConduit;
 
 /**
- * Executes the interceptors for proxied resource taking care of buffering the
+ * Executes the interceptors for proxied requests taking care of buffering the
  * response from the backend to make it accessible to them whose
  * requiresResponseContent() returns true
- *
- * Content is always availabe for service resources
  *
  * Note that getting the content has significant performance overhead for
  * proxied resources. To mitigate DoS attacks the injector limits the size of
@@ -100,31 +99,35 @@ public class ConduitInjector extends PipelinedHandler {
                 MDC.setContextMap(mdcCtx);
             }
 
-            final var req = BufferedByteArrayRequest.wrap(exchange);
+            if (PluginsRegistryImpl.getInstance()
+                    .getInterceptors()
+                    .stream()
+                    .filter(ri -> ri.isEnabled())
+                    .map(ri -> ri.getInstance())
+                    .filter(ri -> interceptPoint(ri) == RESPONSE
+                    || interceptPoint(ri) == RESPONSE_ASYNC)
+                    // IMPORTANT: An interceptor can intercept 
+                    // - request handled by a Proxy when its request and response 
+                    //   are BufferedByteArrayRequest and BufferedByteArrayResponse
+                    .filter(ri -> ri.requestType().equals(BufferedByteArrayRequest.type())
+                    && ri.responseType().equals(BufferedByteArrayResponse.type()))
+                    .filter(ri -> {
+                        try {
+                            return ri.resolve(
+                                    BufferedByteArrayRequest.wrap(exchange),
+                                    BufferedByteArrayResponse.wrap(exchange));
+                        } catch (Exception e) {
+                            LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
+                                    ri.getClass().getSimpleName(),
+                                    exchange.getRequestPath(),
+                                    interceptPoint(ri),
+                                    e);
 
-            if (req.getPipelineInfo() != null 
-                    && req.getPipelineInfo().getType() == SERVICE
-                    || PluginsRegistryImpl.getInstance()
-                            .getInterceptors()
-                            .stream()
-                            .filter(ri -> ri.isEnabled())
-                            .map(ri -> ri.getInstance())
-                            .filter(ri -> interceptPoint(ri) == RESPONSE
-                            || interceptPoint(ri) == RESPONSE_ASYNC)
-                            .filter(ri -> {
-                                try {
-                                    return ri.resolve(exchange);
-                                } catch (Exception e) {
-                                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
-                                            ri.getClass().getSimpleName(),
-                                            exchange.getRequestPath(),
-                                            InterceptPoint.RESPONSE_ASYNC,
-                                            e);
+                            return false;
+                        }
+                    })
+                    .anyMatch(ri -> requiresContent(ri))) {
 
-                                    return false;
-                                }
-                            })
-                            .anyMatch(ri -> requiresContent(ri))) {
                 var mcsc = new ModifiableContentSinkConduit(factory.create(),
                         cexchange);
                 cexchange.putAttachment(MCSC_KEY, mcsc);
@@ -154,9 +157,16 @@ public class ConduitInjector extends PipelinedHandler {
                 .stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
+                // IMPORTANT: An interceptor can intercept 
+                // - request handled by a Proxy when its request and response 
+                //   are BufferedByteArrayRequest and BufferedByteArrayResponse
+                .filter(ri -> ri.requestType().equals(BufferedByteArrayRequest.type())
+                && ri.responseType().equals(BufferedByteArrayResponse.type()))
                 .filter(ri -> {
                     try {
-                        return ri.resolve(exchange);
+                        return ri.resolve(
+                                BufferedByteArrayRequest.wrap(exchange),
+                                BufferedByteArrayResponse.wrap(exchange));
                     } catch (Exception e) {
                         LOGGER.warn("Error resolving interceptor {} for {}",
                                 ri.getClass().getSimpleName(),

@@ -23,7 +23,12 @@ package org.restheart.handlers;
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
 import org.restheart.handlers.exchange.AbstractExchange;
+import org.restheart.handlers.exchange.AbstractRequest;
+import org.restheart.handlers.exchange.AbstractResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
@@ -72,7 +77,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        // if the request is handled by a service set to not execute intercrptor
+        // if the request is handled by a service set to not execute interceptors
         // at this interceptPoint, skip interceptors execution
         var vip = PluginUtils.dontIntercept(
                 PluginsRegistryImpl.getInstance(), exchange);
@@ -82,16 +87,43 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             return;
         }
 
+        AbstractRequest request;
+        AbstractResponse response;
+
+        var handlingService = PluginUtils.handlingService(
+                PluginsRegistryImpl.getInstance(),
+                exchange);
+
+        if (handlingService != null) {
+            request = Request.of(exchange);
+            response = Response.of(exchange);
+        } else {
+            request = BufferedByteArrayRequest.wrap(exchange);
+            response = BufferedByteArrayResponse.wrap(exchange);
+        }
+
         PluginsRegistryImpl
                 .getInstance()
                 .getInterceptors()
                 .stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
+                // IMPORTANT: An interceptor can intercept 
+                // - requests handled by a Service when its request and response 
+                //   types are equal to the ones declared by the Service
+                // - request handled by a Proxy when its request and response 
+                //   are BufferedByteArrayRequest and BufferedByteArrayResponse
+                .filter(ri -> 
+                        (handlingService == null
+                && ri.requestType().equals(BufferedByteArrayRequest.type())
+                && ri.responseType().equals(BufferedByteArrayResponse.type()))
+                || (handlingService != null
+                && ri.requestType().equals(handlingService.requestType())
+                && ri.responseType().equals(handlingService.responseType())))
                 .filter(ri -> interceptPoint == interceptPoint(ri))
                 .filter(ri -> {
                     try {
-                        return ri.resolve(exchange);
+                        return ri.resolve(request, response);
                     } catch (Exception e) {
                         LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
                                 ri.getClass().getSimpleName(),
@@ -109,7 +141,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                                 exchange.getRequestPath(),
                                 interceptPoint);
 
-                        ri.handle(exchange);
+                        ri.handle(request, response);
                     } catch (Exception ex) {
                         LOGGER.error("Error executing request interceptor {} for {} on intercept point {}",
                                 ri.getClass().getSimpleName(),
@@ -124,7 +156,6 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         // if an interceptor sets the response as errored
         // stop processing the request and send the response
         if (AbstractExchange.isInError(exchange)) {
-            var response = BufferedByteArrayResponse.wrap(exchange);
             // if in error but no status code use 400 Bad Request
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);

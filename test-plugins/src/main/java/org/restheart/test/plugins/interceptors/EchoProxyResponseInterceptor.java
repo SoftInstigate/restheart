@@ -20,17 +20,20 @@
  */
 package org.restheart.test.plugins.interceptors;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.undertow.server.HttpServerExchange;
+import com.google.gson.JsonParser;
 import io.undertow.util.HttpString;
+import java.nio.charset.Charset;
 import java.util.Map;
-import org.restheart.handlers.exchange.JsonResponse;
-import org.restheart.handlers.exchange.Response;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.plugins.InjectConfiguration;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
-import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.ProxyInterceptor;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.utils.BuffersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,18 +42,19 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(
-        name = "echoExampleResponseInterceptor",
+        name = "echoProxyResponseInterceptor",
         description = "used for testing purposes",
         enabledByDefault = false,
         requiresContent = true,
         interceptPoint = RESPONSE)
-public class EchoExampleResponseInterceptor implements Interceptor {
-    
+public class EchoProxyResponseInterceptor implements ProxyInterceptor {
+
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(EchoExampleResponseInterceptor.class);
-    
+            .getLogger(EchoProxyResponseInterceptor.class);
+
     /**
      * shows how to inject configuration via @OnInit
+     *
      * @param args
      */
     @InjectConfiguration
@@ -59,31 +63,32 @@ public class EchoExampleResponseInterceptor implements Interceptor {
     }
 
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        var response = (JsonResponse) Response.of(exchange);
+    public void handle(BufferedByteArrayRequest request, BufferedByteArrayResponse response) throws Exception {
+        response.getExchange().getResponseHeaders()
+                .add(HttpString.tryFromString("header"),
+                        "added by echoProxyResponseInterceptor "
+                        + request.getPath());
 
-        exchange.getResponseHeaders().add(HttpString.tryFromString("header"),
-                "added by EchoExampleResponseInterceptor " + exchange.getRequestPath());
+        var content = response.readContent();
+        
+        if (content != null && response.isContentTypeJson()) {
+            var _content = JsonParser.parseString(
+                    BuffersUtils.toString(content,
+                            Charset.forName("utf-8")));
 
-        if (response.getContent() != null) {
-            JsonElement _content = response.getContent();
+            JsonObject __content = _content
+                    .getAsJsonObject();
 
-            // can be null
-            if (_content.isJsonObject()) {
-                JsonObject content = _content
-                        .getAsJsonObject();
+            __content.addProperty("prop3",
+                    "property added by echoProxyResponseInterceptor");
+            
+            response.writeContent(__content.toString().getBytes());
 
-                content.addProperty("prop2",
-                        "property added by EchoExampleResponseInterceptor");
-            }
         }
     }
 
     @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        return exchange.getRequestPath().equals("/iecho")
-                || exchange.getRequestPath().equals("/piecho")
-                || exchange.getRequestPath().equals("/anything");
+    public boolean resolve(BufferedByteArrayRequest request, BufferedByteArrayResponse response) {
+        return request.getPath().equals("/piecho");
     }
-
 }

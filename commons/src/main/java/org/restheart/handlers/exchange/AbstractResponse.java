@@ -19,9 +19,11 @@
  */
 package org.restheart.handlers.exchange;
 
+import com.google.common.reflect.TypeToken;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
+import java.lang.reflect.Type;
 import java.util.Map;
 
 /**
@@ -42,12 +44,19 @@ public abstract class AbstractResponse<T> extends AbstractExchange<T> {
     protected AbstractResponse(HttpServerExchange exchange) {
         super(exchange);
     }
+    
+    public static Type type() {
+        var typeToken = new TypeToken<AbstractResponse>(AbstractResponse.class) {
+        };
+
+        return typeToken.getType();
+    }
 
     public static String getContentType(HttpServerExchange exchange) {
         return exchange.getResponseHeaders()
                 .getFirst(Headers.CONTENT_TYPE);
     }
-
+    
     /**
      * @return the responseContentType
      */

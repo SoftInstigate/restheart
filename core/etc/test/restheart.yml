@@ -223,11 +223,15 @@ plugins-args:
         uri: /iecho
         secured: false
         enabled: true
-    echoExampleRequestInterceptor:
+    echoRequestInterceptor:
         enabled: true
-    echoExampleResponseInterceptor:
+    echoResponseInterceptor:
         enabled: true
-    echoExampleAsyncResponseInterceptor:
+    echoAsyncResponseInterceptor:
+        enabled: true
+    echoProxyRequestInterceptor:
+        enabled: true
+    echoProxyResponseInterceptor:
         enabled: true
     secretHider:
         enabled: true

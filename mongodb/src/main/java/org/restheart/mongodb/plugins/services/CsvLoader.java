@@ -39,13 +39,11 @@ import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
-import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.mongodb.Transformer;
 import org.restheart.representation.Resource;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
@@ -54,7 +52,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * service to upload a csv file in a collection<br>
+ * service to upload a csv file in a collection
+ *
  * query parameters:<br>
  * - db=&lt;db_name&gt; *required<br>
  * - coll=&lt;collection_name&gt; *required<br>
@@ -65,7 +64,6 @@ import org.slf4j.LoggerFactory;
  * each row<br>
  * - values=&lt;values&gt; optional (default: no values) values of additional
  * props to add to each row<br>
- * - transformer=&lt;tname&gt; optional (default: no transformer). name (as
  * defined in conf file) of a tranformer to apply to imported data - update
  * optional (default: no). use data to update matching documents");
  *
@@ -79,7 +77,6 @@ public class CsvLoader implements ByteArrayService {
 
     private PluginsRegistry pluginsRegistry;
 
-    
     @InjectPluginsRegistry
     public void init(PluginsRegistry pluginsRegistry) {
         this.pluginsRegistry = pluginsRegistry;
@@ -103,7 +100,7 @@ public class CsvLoader implements ByteArrayService {
             + "sep=<column_separator> optional (default: ,), "
             + "props=<props> optional (default: no props) additional props to add to each row, "
             + "values=<values> optional (default: no values) values of additional props to add to each row, "
-            + "transformer=<tname> optional (default: no transformer). name (as defined in conf file) of a tranformer to apply to imported data, "
+            + "transformer=<tname> optional (default: no transformer). name of an interceptor to transform data, "
             + "update=<value> optional (default: false). if true, update matching documents (requires id to be set), "
             + "upsert=<value> optional (default: true). when update=true, create new documents when not matching existing ones.";
 
@@ -124,7 +121,7 @@ public class CsvLoader implements ByteArrayService {
      * @throws Exception
      */
     @Override
-    public void handle(ByteArrayRequest request, 
+    public void handle(ByteArrayRequest request,
             ByteArrayResponse response) throws Exception {
         var exchange = request.getExchange();
 
@@ -145,7 +142,7 @@ public class CsvLoader implements ByteArrayService {
                             try {
                                 final String content = ChannelReader.read(exchange.getRequestChannel());
 
-                                List<BsonDocument> documents = parseCsv(exchange, params, content);
+                                List<BsonDocument> documents = parseCsv(exchange, request, response, params, content);
 
                                 if (documents != null && documents.size() > 0) {
                                     MongoCollection<BsonDocument> mcoll = MongoClientSingleton.getInstance().getClient()
@@ -209,6 +206,8 @@ public class CsvLoader implements ByteArrayService {
     }
 
     private List<BsonDocument> parseCsv(HttpServerExchange exchange,
+            ByteArrayRequest request,
+            ByteArrayResponse response,
             CsvRequestParams params,
             String rawContent) throws IOException {
         List<BsonDocument> listOfBsonDocuments = new ArrayList<>();
@@ -251,14 +250,6 @@ public class CsvLoader implements ByteArrayService {
 
                     // add props specified via keys and values qparams
                     addProps(params, doc);
-
-                    // apply transformer if defined
-                    if (params.transformer != null) {
-                        params.transformer.transform(exchange,
-                                RequestContext.wrap(exchange),
-                                doc,
-                                null);
-                    }
 
                     listOfBsonDocuments.add(doc);
                 }
@@ -310,7 +301,6 @@ class CsvRequestParams {
     private static final String SEPARATOR_QPARAM_NAME = "sep";
     private static final String DB_QPARAM_NAME = "db";
     private static final String COLL_QPARAM_NAME = "coll";
-    private static final String TRANFORMER_QPARAM_NAME = "transformer";
     private static final String PROP_KEYS_NAME = "props";
     private static final String PROP_VALUES_NAME = "values";
     private static final String UPDATE_QPARAM_NAME = "update";
@@ -320,7 +310,6 @@ class CsvRequestParams {
     public final String db;
     public final String coll;
     public final String sep;
-    public final Transformer transformer;
     public final boolean update;
     public final boolean upsert;
 
@@ -332,7 +321,6 @@ class CsvRequestParams {
         Deque<String> _coll = exchange.getQueryParameters().get(COLL_QPARAM_NAME);
         Deque<String> _sep = exchange.getQueryParameters().get(SEPARATOR_QPARAM_NAME);
         Deque<String> _id = exchange.getQueryParameters().get(ID_IDX_QPARAM_NAME);
-        Deque<String> _tranformer = exchange.getQueryParameters().get(TRANFORMER_QPARAM_NAME);
         Deque<String> _update = exchange.getQueryParameters().get(UPDATE_QPARAM_NAME);
         Deque<String> _upsert = exchange.getQueryParameters().get(UPSERT_QPARAM_NAME);
 
@@ -357,25 +345,6 @@ class CsvRequestParams {
             idIdx = Integer.parseInt(_idIdx);
         } catch (NumberFormatException nfe) {
             throw new IllegalArgumentException(nfe);
-        }
-
-        String transformerName = _tranformer != null ? _tranformer.size() > 0 ? _tranformer.getFirst() : null : null;
-
-        if (transformerName != null) {
-            var _transformer = pluginsRegistry
-                    .getTransformers()
-                    .stream()
-                    .filter(t -> transformerName.equals(t.getName()))
-                    .findFirst();
-
-            if (_transformer.isPresent()) {
-                transformer = _transformer.get().getInstance();
-            } else {
-                transformer = null;
-            }
-
-        } else {
-            transformer = null;
         }
 
         update = _update != null && (_update.isEmpty() || "true".equalsIgnoreCase(_update.getFirst()));

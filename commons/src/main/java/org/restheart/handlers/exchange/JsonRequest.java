@@ -39,7 +39,7 @@ public class JsonRequest extends Request<JsonElement> {
         
         try {
             ret.injectContent();
-        } catch (IOException ieo) {
+        } catch (Throwable ieo) {
             ret.setInError(true);
         }
         

@@ -20,9 +20,10 @@
  */
 package org.restheart.security.plugins.interceptors;
 
-import io.undertow.server.HttpServerExchange;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.plugins.BsonInterceptor;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
-import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
 import static org.restheart.plugins.security.TokenManager.ACCESS_CONTROL_EXPOSE_HEADERS;
 
@@ -38,7 +39,7 @@ import static org.restheart.plugins.security.TokenManager.ACCESS_CONTROL_EXPOSE_
         interceptPoint = RESPONSE,
         enabledByDefault = true
 )
-public class TokenCORSResponseInterceptor implements Interceptor {
+public class TokenCORSResponseInterceptor implements BsonInterceptor {
 
     private String[] headers;
     
@@ -51,7 +52,9 @@ public class TokenCORSResponseInterceptor implements Interceptor {
     }
 
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
+    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+        var exchange = request.getExchange();
+        
         var hs = exchange
                 .getResponseHeaders()
                 .get(ACCESS_CONTROL_EXPOSE_HEADERS);
@@ -76,7 +79,7 @@ public class TokenCORSResponseInterceptor implements Interceptor {
     }
 
     @Override
-    public boolean resolve(HttpServerExchange exchange) {
+    public boolean resolve(BsonRequest request, BsonResponse response) {
         return true;
     }
     

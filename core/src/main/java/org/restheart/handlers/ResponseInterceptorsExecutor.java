@@ -21,11 +21,19 @@
 package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
+import java.util.Arrays;
 import org.restheart.handlers.exchange.AbstractExchange;
+import org.restheart.handlers.exchange.AbstractRequest;
+import org.restheart.handlers.exchange.AbstractResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginsRegistryImpl;
-import org.restheart.utils.HttpStatus;
+import org.restheart.plugins.Service;
+import org.restheart.utils.LambdaUtils;
+import org.restheart.utils.PluginUtils;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;
@@ -67,17 +75,44 @@ public class ResponseInterceptorsExecutor
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
+        AbstractRequest request;
+        AbstractResponse response;
+
+        var handlingService = PluginUtils.handlingService(
+                PluginsRegistryImpl.getInstance(),
+                exchange);
+
+        if (handlingService != null) {
+            request = Request.of(exchange);
+            response = Response.of(exchange);
+        } else {
+            request = BufferedByteArrayRequest.wrap(exchange);
+            response = BufferedByteArrayResponse.wrap(exchange);
+        }
+
         if (!AbstractExchange.isInError(exchange)
                 && !AbstractExchange.responseInterceptorsExecuted(exchange)) {
             AbstractExchange.setResponseInterceptorsExecuted(exchange);
-            executeAsyncResponseInterceptor(exchange);
-            executeResponseInterceptor(exchange);
+            executeAsyncResponseInterceptor(exchange, handlingService, request, response);
+            executeResponseInterceptor(exchange, handlingService, request, response);
         }
 
         next(exchange);
     }
 
-    private void executeResponseInterceptor(HttpServerExchange exchange) {
+    private void executeResponseInterceptor(HttpServerExchange exchange,
+            Service handlingService,
+            AbstractRequest request,
+            AbstractResponse response) {
+        // if the request is handled by a service set to not execute interceptors
+        // at this interceptPoint, skip interceptors execution
+        var vip = PluginUtils.dontIntercept(
+                PluginsRegistryImpl.getInstance(), exchange);
+
+        if (Arrays.stream(vip).anyMatch(InterceptPoint.RESPONSE::equals)) {
+            return;
+        }
+
         AbstractExchange.setResponseInterceptorsExecuted(exchange);
         PluginsRegistryImpl.getInstance()
                 .getInterceptors()
@@ -86,10 +121,20 @@ public class ResponseInterceptorsExecutor
                 == InterceptPoint.RESPONSE)
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
+                // IMPORTANT: An interceptor can intercept 
+                // - requests handled by a Service when its request and response 
+                //   types are equal to the ones declared by the Service
+                // - request handled by a Proxy when its request and response 
+                //   are BufferedByteArrayRequest and BufferedByteArrayResponse
+                .filter(ri -> (handlingService == null
+                && ri.requestType().equals(BufferedByteArrayRequest.type())
+                && ri.responseType().equals(BufferedByteArrayResponse.type()))
+                || (handlingService != null && ri.requestType().equals(handlingService.requestType())
+                && ri.responseType().equals(handlingService.responseType())))
                 .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
                 .filter(ri -> {
                     try {
-                        return ri.resolve(exchange);
+                        return ri.resolve(request, response);
                     } catch (Exception e) {
                         LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
                                 ri.getClass().getSimpleName(),
@@ -101,32 +146,39 @@ public class ResponseInterceptorsExecutor
                     }
                 })
                 .forEachOrdered(ri -> {
-                    LOGGER.debug("Executing response interceptor {} for {}",
+                    LOGGER.debug("Executing interceptor {} for {} on intercept point {}",
                             ri.getClass().getSimpleName(),
-                            exchange.getRequestPath());
+                            exchange.getRequestPath(),
+                            InterceptPoint.RESPONSE);
 
                     try {
-                        ri.handle(exchange);
+                        ri.handle(request, response);
                     } catch (Exception ex) {
-                        LOGGER.error("Error executing response interceptor {} for {}",
+                        LOGGER.error("Error executing interceptor {} for {} on intercept point {}",
                                 ri.getClass().getSimpleName(),
                                 exchange.getRequestPath(),
+                                InterceptPoint.RESPONSE,
                                 ex);
-                        AbstractExchange.setInError(exchange);
-                        // set error message
-                        BufferedByteArrayResponse response = BufferedByteArrayResponse
-                                .wrap(exchange);
 
-                        response.setInError(
-                                HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                                "Error executing response interceptor "
-                                + ri.getClass().getSimpleName(),
-                                ex);
+                        AbstractExchange.setInError(exchange);
+                        LambdaUtils.throwsSneakyExcpetion(ex);
                     }
                 });
     }
 
-    private void executeAsyncResponseInterceptor(HttpServerExchange exchange) {
+    private void executeAsyncResponseInterceptor(HttpServerExchange exchange,
+            Service handlingService,
+            AbstractRequest request,
+            AbstractResponse response) {
+        // if the request is handled by a service set to not execute interceptors
+        // at this interceptPoint, skip interceptors execution
+        var vip = PluginUtils.dontIntercept(
+                PluginsRegistryImpl.getInstance(), exchange);
+
+        if (Arrays.stream(vip).anyMatch(InterceptPoint.RESPONSE_ASYNC::equals)) {
+            return;
+        }
+
         AbstractExchange.setResponseInterceptorsExecuted(exchange);
         PluginsRegistryImpl.getInstance()
                 .getInterceptors()
@@ -135,10 +187,20 @@ public class ResponseInterceptorsExecutor
                 i.getInstance()) == InterceptPoint.RESPONSE_ASYNC)
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
+                // IMPORTANT: An interceptor can intercept 
+                // - requests handled by a Service when its request and response 
+                //   types are equal to the ones declared by the Service
+                // - request handled by a Proxy when its request and response 
+                //   are BufferedByteArrayRequest and BufferedByteArrayResponse
+                .filter(ri -> (handlingService == null
+                && ri.requestType().equals(BufferedByteArrayRequest.type())
+                && ri.responseType().equals(BufferedByteArrayResponse.type()))
+                || (handlingService != null && ri.requestType().equals(handlingService.requestType())
+                && ri.responseType().equals(handlingService.responseType())))
                 .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
                 .filter(ri -> {
                     try {
-                        return ri.resolve(exchange);
+                        return ri.resolve(request, response);
                     } catch (Exception e) {
                         LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
                                 ri.getClass().getSimpleName(),
@@ -150,27 +212,22 @@ public class ResponseInterceptorsExecutor
                 })
                 .forEachOrdered(ri -> {
                     exchange.getConnection().getWorker().execute(() -> {
-                        LOGGER.debug("Executing async response interceptor {} for {}",
+                        LOGGER.debug("Executing interceptor {} for {} on intercept point {}",
                                 ri.getClass().getSimpleName(),
-                                exchange.getRequestPath());
+                                exchange.getRequestPath(),
+                                InterceptPoint.RESPONSE_ASYNC);
 
                         try {
-                            ri.handle(exchange);
+                            ri.handle(request, response);
                         } catch (Exception ex) {
-                            LOGGER.error("Error executing response interceptor {} for {}",
+                            LOGGER.error("Error executing interceptor {} for {} on intercept point {}",
                                     ri.getClass().getSimpleName(),
                                     exchange.getRequestPath(),
+                                    InterceptPoint.RESPONSE_ASYNC,
                                     ex);
-                            AbstractExchange.setInError(exchange);
-                            // set error message
-                            BufferedByteArrayResponse response = BufferedByteArrayResponse
-                                    .wrap(exchange);
 
-                            response.setInError(
-                                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                                    "Error executing response interceptor "
-                                    + ri.getClass().getSimpleName(),
-                                    ex);
+                            AbstractExchange.setInError(exchange);
+                            LambdaUtils.throwsSneakyExcpetion(ex);
                         }
                     });
                 });

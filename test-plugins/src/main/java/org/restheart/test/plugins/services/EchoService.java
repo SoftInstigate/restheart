@@ -22,14 +22,18 @@ package org.restheart.test.plugins.services;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import org.restheart.handlers.exchange.JsonRequest;
-import org.restheart.handlers.exchange.JsonResponse;
-import org.restheart.plugins.JsonService;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.utils.BuffersUtils;
 import org.restheart.utils.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -40,67 +44,77 @@ import org.slf4j.LoggerFactory;
         description = "echoes the request",
         enabledByDefault = true,
         defaultURI = "/echo")
-public class EchoService implements JsonService {
-
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(EchoService.class);
-
-    /**
-     * handle the request
-     *
-     * @param request
-     * @param response
-     * @throws Exception
-     */
+public class EchoService implements ByteArrayService {
     @Override
-    public void handle(JsonRequest request, JsonResponse response) throws Exception {
-        if (request.isInError()) {
-            response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
-            return;
-        }
-
+    public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
         var exchange = request.getExchange();
-
-        response.setContentTypeAsJson();
-
         JsonObject resp = new JsonObject();
+        response.setContentTypeAsJson();
 
         resp.addProperty("method", exchange.getRequestMethod().toString());
         resp.addProperty("URL", exchange.getRequestURL());
 
-        try {
-            resp.add("content", request.getContent());
-            response.setStatusCode(HttpStatus.SC_OK);
+        if (request.isContentTypeJson()) {
+            try {
+                resp.add("content", JsonParser.parseString(
+                        new String(request.getContent(), Charset.forName("utf-8"))));
+            } catch (JsonSyntaxException jse) {
+                resp.addProperty("content", getTruncatedContent(request));
+                resp.addProperty("note",
+                        "showing up to 20 bytes of the request content");
+            }
+        } else {
+            if (request.isContentTypeXml() || request.isContentTypeText()) {
+                resp.addProperty("content", BuffersUtils.toString(request.getContent(),
+                        Charset.forName("utf-8")));
+            } else {
+                resp.addProperty("content", getTruncatedContent(request));
+                resp.addProperty("note",
+                        "showing up to 20 bytes of the request content");
+            }
+        }
 
-            var qparams = new JsonObject();
-            resp.add("qparams", qparams);
+        response.setStatusCode(HttpStatus.SC_OK);
 
-            exchange.getQueryParameters().forEach((name, values) -> {
-                var _values = new JsonArray();
+        var qparams = new JsonObject();
+        resp.add("qparams", qparams);
 
-                qparams.add(name, _values);
+        exchange.getQueryParameters().forEach((name, values) -> {
+            var _values = new JsonArray();
 
-                values.iterator().forEachRemaining(value -> {
-                    _values.add(value);
-                });
+            qparams.add(name, _values);
+
+            values.iterator().forEachRemaining(value -> {
+                _values.add(value);
+            });
+        });
+
+        var headers = new JsonObject();
+        resp.add("headers", headers);
+
+        exchange.getRequestHeaders().forEach(header -> {
+            var _values = new JsonArray();
+            headers.add(header.getHeaderName().toString(), _values);
+
+            header.iterator().forEachRemaining(value -> {
+                _values.add(value);
             });
 
-            var headers = new JsonObject();
-            resp.add("headers", headers);
+        });
 
-            exchange.getRequestHeaders().forEach(header -> {
-                var _values = new JsonArray();
-                headers.add(header.getHeaderName().toString(), _values);
+        response.setContent(resp.toString().getBytes());
+    }
 
-                header.iterator().forEachRemaining(value -> {
-                    _values.add(value);
-                });
+    private String getTruncatedContent(ByteArrayRequest request)
+            throws IOException {
+        byte[] content = request.getContent();
 
-            });
-
-            response.setContent(resp);
-        } catch (JsonSyntaxException jse) {
-            response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        if (content == null) {
+            return null;
+        } else if (content.length < 1024) {
+            return new String(content, StandardCharsets.UTF_8);
+        } else {
+            return new String(Arrays.copyOfRange(content, 0, 1023), StandardCharsets.UTF_8);
         }
     }
 }

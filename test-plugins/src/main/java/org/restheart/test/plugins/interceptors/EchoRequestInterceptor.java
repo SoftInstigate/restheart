@@ -21,53 +21,54 @@
 package org.restheart.test.plugins.interceptors;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import io.undertow.server.HttpServerExchange;
+import com.google.gson.JsonParser;
+import java.nio.charset.Charset;
 import java.util.LinkedList;
-import org.restheart.handlers.exchange.JsonRequest;
-import org.restheart.handlers.exchange.Request;
-import org.restheart.plugins.Interceptor;
+import org.restheart.handlers.exchange.ByteArrayRequest;
+import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.plugins.ByteArrayInterceptor;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.utils.BuffersUtils;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(
-        name = "echoExampleRequestInterceptor",
+        name = "echoRequestInterceptor",
         description = "used for testing purposes",
         enabledByDefault = false,
         requiresContent = true)
-public class EchoExampleRequestInterceptor implements Interceptor {
+public class EchoRequestInterceptor implements ByteArrayInterceptor {
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        var request = (JsonRequest) Request.of(exchange);
-        
+    public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
         // add query parameter ?pagesize=0
         var vals = new LinkedList<String>();
-        vals.add("param added by EchoExampleRequestInterceptor");
-        exchange.getQueryParameters().put("param", vals);
-
-        JsonElement requestContent;
-
-        if (request.getContent() == null) {
-            request.setContent(new JsonObject());
-        }
+        vals.add("param added by echoRequestInterceptor");
+        request.getExchange().getQueryParameters().put("param", vals);
 
         if (request.isContentTypeJson()) {
-            requestContent = request.getContent();
+            try {
+                JsonElement requestContent = JsonParser.parseString(
+                        BuffersUtils.toString(request.getContent(),
+                                Charset.forName("utf-8")));
 
-            if (requestContent.isJsonObject()) {
-                requestContent.getAsJsonObject()
-                        .addProperty("prop1",
-                                "property added by EchoExampleRequestInterceptor");
+                if (requestContent.isJsonObject()) {
+                    requestContent.getAsJsonObject()
+                            .addProperty("prop1",
+                                    "property added by echoRequestInterceptor");
+                }
+
+                request.setContent(requestContent.toString().getBytes());
+            } catch (Throwable t) {
+
             }
         }
+
     }
-    
+
     @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        return exchange.getRequestPath().equals("/iecho")
-                || exchange.getRequestPath().equals("/anything");
+    public boolean resolve(ByteArrayRequest request, ByteArrayResponse response) {
+        return request.getPath().equals("/iecho");
     }
 }
