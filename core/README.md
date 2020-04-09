@@ -1,7 +1,7 @@
 # RESTHeart Core
 
-This module provides RESTHeart's fundamental capabilities: An HTTP server via Undertow and a bootstrapper able to read the configuiration files and start the main process.
+This module provides RESTHeart's fundamental capabilities: An HTTP server via Undertow and a bootstrapper able to read the configuration and start the main process.
 
-<hr>
+<hr />
 
 _Made with :heart: by [SoftInstigate](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.
