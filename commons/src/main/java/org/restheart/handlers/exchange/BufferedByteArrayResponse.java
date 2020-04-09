@@ -19,6 +19,7 @@
  */
 package org.restheart.handlers.exchange;
 
+import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -27,6 +28,7 @@ import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.utils.BuffersUtils;
@@ -46,7 +48,14 @@ public class BufferedByteArrayResponse extends BufferedResponse<byte[]> {
     public static BufferedByteArrayResponse wrap(HttpServerExchange exchange) {
         return new BufferedByteArrayResponse(exchange);
     }
+    
+    public static Type type() {
+        var typeToken = new TypeToken<BufferedByteArrayResponse>(BufferedByteArrayResponse.class) {
+        };
 
+        return typeToken.getType();
+    }
+    
     /**
      * @return the content as Json
      * @throws java.io.IOException

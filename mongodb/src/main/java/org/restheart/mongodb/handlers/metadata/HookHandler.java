@@ -25,12 +25,11 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.handlers.exchange.RequestContext;
 import org.restheart.mongodb.metadata.HookMetadata;
+import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.JsonUtils;
@@ -46,7 +45,7 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(name = "hooksExecutor",
         description = "executes the hooks",
         interceptPoint = InterceptPoint.RESPONSE_ASYNC)
-public class HookHandler implements Interceptor {
+public class HookHandler implements BsonInterceptor {
 
     static final Logger LOGGER
             = LoggerFactory.getLogger(HookHandler.class);
@@ -58,19 +57,13 @@ public class HookHandler implements Interceptor {
         this.pluginsRegistry = pluginsRegistry;
     }
 
-    /**
-     *
-     * @param exchange
-     * @throws Exception
-     */
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
-        var context = RequestContext.wrap(exchange);
+    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+        var exchange = request.getExchange();
+        var context = RequestContext.wrap(request, response);
 
         // execute global hooks
-        executeGlobalHooks(exchange);
+        executeGlobalHooks(exchange, context);
 
         if (request.getCollectionProps() != null
                 && request.getCollectionProps()
@@ -127,21 +120,15 @@ public class HookHandler implements Interceptor {
         }
     }
 
-    private void executeGlobalHooks(HttpServerExchange exchange) {
-        var context = RequestContext.wrap(exchange);
-
+    @Override
+    public boolean resolve(BsonRequest request, BsonResponse response) {
+        return true;
+    }
+    
+    private void executeGlobalHooks(HttpServerExchange exchange, 
+            RequestContext context) {
         // execute global request tranformers
         pluginsRegistry.getGlobalHooks().stream()
                 .forEachOrdered(gh -> gh.hook(exchange, context));
-    }
-
-    @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        // Handle only for request handled by the mongo service
-
-        return "mongo".equals(BufferedByteArrayRequest
-                .wrap(exchange)
-                .getPipelineInfo()
-                .getName());
     }
 }

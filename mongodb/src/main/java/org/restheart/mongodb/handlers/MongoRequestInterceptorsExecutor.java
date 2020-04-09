@@ -23,7 +23,11 @@ package org.restheart.mongodb.handlers;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.AbstractExchange;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.utils.HttpStatus;
@@ -80,9 +84,14 @@ public class MongoRequestInterceptorsExecutor extends PipelinedHandler {
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
                 .filter(ri -> InterceptPoint.REQUEST_AFTER_AUTH == interceptPoint(ri))
+                // IMPORTANT: An interceptor can intercep
+                // - requests handled by MongoService when its request and response 
+                //   types are BsonRequest and BsonResponse
+                .filter(ri -> ri.requestType().equals(BsonRequest.type())
+                && ri.responseType().equals(BsonResponse.type()))
                 .filter(ri -> {
                     try {
-                        return ri.resolve(exchange);
+                        return ri.resolve(Request.of(exchange), Response.of(exchange));
                     } catch (Exception e) {
                         LOGGER.warn("Error resolving interceptor {} for {} on intercept point REQUEST_AFTER_AUTH",
                                 ri.getClass().getSimpleName(),
@@ -98,7 +107,7 @@ public class MongoRequestInterceptorsExecutor extends PipelinedHandler {
                                 ri.getClass().getSimpleName(),
                                 exchange.getRequestPath());
 
-                        ri.handle(exchange);
+                        ri.handle(Request.of(exchange), Response.of(exchange));
                     } catch (Exception ex) {
                         LOGGER.error("Error executing request interceptor {} for {} on intercept point REQUEST_AFTER_AUTH",
                                 ri.getClass().getSimpleName(),

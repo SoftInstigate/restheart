@@ -75,19 +75,40 @@ public class RequestContext {
         this.bsonRequest = BsonRequest.init(exchange, whereUri, whatUri);
         this.bsonResponse = BsonResponse.init(exchange);
     }
-    
+
     private RequestContext(
             BsonRequest bsonRequest,
             BsonResponse bsonResponse) {
         this.bsonRequest = bsonRequest;
         this.bsonResponse = bsonResponse;
     }
-    
-    public static RequestContext wrap(HttpServerExchange exchange) {
-        return new RequestContext(BsonRequest.wrap(exchange),
-                BsonResponse.wrap(exchange));
+
+    public static RequestContext wrap(BsonRequest request, BsonResponse response) {
+        return new RequestContext(request, response);
     }
-    
+
+    public static RequestContext wrap(HttpServerExchange exchange) {
+        var _request = Request.of(exchange);
+        var _response = Response.of(exchange);
+
+        if (_request instanceof BsonRequest
+                && _response instanceof BsonResponse) {
+            return new RequestContext(
+                    (BsonRequest) _request,
+                    (BsonResponse) _response);
+        } else {
+            throw new IllegalStateException("Cannot wrap RequestContext "
+                    + "because the exchange is not bound "
+                    + "to BsonRequest and BsonResponse. "
+                    + "Actual bindings:  "
+                    + (_request == null ? "null" : _request.getClass()
+                            .getSimpleName())
+                    + " and "
+                    + (_response == null ? "null" : _response.getClass()
+                            .getSimpleName()));
+        }
+    }
+
     /**
      *
      * @param dbName
@@ -779,6 +800,7 @@ public class RequestContext {
 
     /**
      * sets the inError
+     *
      * @param inError
      */
     public void setInError(boolean inError) {

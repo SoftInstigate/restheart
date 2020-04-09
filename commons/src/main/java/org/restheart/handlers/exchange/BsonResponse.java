@@ -19,10 +19,12 @@
  */
 package org.restheart.handlers.exchange;
 
+import com.google.common.reflect.TypeToken;
 import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -61,6 +63,13 @@ public class BsonResponse extends Response<BsonValue> {
 
     public static BsonResponse wrap(HttpServerExchange exchange) {
         return (BsonResponse) of(exchange);
+    }
+    
+    public static Type type() {
+        var typeToken = new TypeToken<BsonResponse>(BsonResponse.class) {
+        };
+
+        return typeToken.getType();
     }
 
     @Override

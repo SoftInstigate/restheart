@@ -22,6 +22,7 @@ package org.restheart.utils;
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.restheart.handlers.exchange.BufferedByteArrayRequest;
+import org.restheart.handlers.exchange.PipelineInfo;
 import static org.restheart.handlers.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
@@ -144,12 +145,12 @@ public class PluginUtils {
      *
      * @param registry
      * @param exchange
-     * @return the intercept points of interceptors that must not be executed on
-     * the exchange
+     * @return the service handling the exchange or null if the request is not
+     * handled by a service
      */
-    public static InterceptPoint[] dontIntercept(PluginsRegistry registry,
+    public static Service handlingService(PluginsRegistry registry,
             HttpServerExchange exchange) {
-        var pi = BufferedByteArrayRequest.wrap(exchange).getPipelineInfo();
+        var pi = pipelineInfo(exchange);
 
         if (pi != null && pi.getType() == SERVICE) {
             var srvName = pi.getName();
@@ -162,11 +163,31 @@ public class PluginUtils {
                         .findAny();
 
                 if (_s.isPresent()) {
-                    return dontIntercept(_s.get());
+                    return _s.get();
                 }
             }
         }
 
-        return new InterceptPoint[0];
+        return null;
+    }
+
+    /**
+     *
+     * @param registry
+     * @param exchange
+     * @return the intercept points of interceptors that must not be executed on
+     * the exchange
+     */
+    public static InterceptPoint[] dontIntercept(PluginsRegistry registry,
+            HttpServerExchange exchange) {
+        var hs = handlingService(registry, exchange);
+
+        return hs == null
+                ? new InterceptPoint[0]
+                : dontIntercept(hs);
+    }
+
+    public static PipelineInfo pipelineInfo(HttpServerExchange exchange) {
+        return BufferedByteArrayRequest.wrap(exchange).getPipelineInfo();
     }
 }

@@ -20,17 +20,13 @@
  */
 package org.restheart.test.plugins.interceptors;
 
-import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.handlers.exchange.BufferedByteArrayRequest;
-import org.restheart.handlers.exchange.Request;
-import org.restheart.handlers.exchange.Response;
+import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
 
 @RegisterPlugin(name = "writeResult",
@@ -38,13 +34,10 @@ import org.restheart.plugins.RegisterPlugin;
         + "updated and old version of the written document.",
         interceptPoint = InterceptPoint.RESPONSE,
         enabledByDefault = false)
-public class WriteResultInterceptor implements Interceptor {
+public class WriteResultInterceptor implements BsonInterceptor {
 
     @Override
-    public void handle(HttpServerExchange exchange) throws Exception {
-        var request = (BsonRequest) Request.of(exchange);
-        var response = (BsonResponse) Response.of(exchange);
-
+    public void handle(BsonRequest request, BsonResponse response) throws Exception {
         var responseContent = response.getContent();
 
         final BsonDocument resp;
@@ -79,18 +72,10 @@ public class WriteResultInterceptor implements Interceptor {
             response.setContent(resp);
         }
     }
-    
+
     @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        // Note! mhr makes sure that  BsonRequest is available
-        
-        var mhr = "mongo".equals(BufferedByteArrayRequest
-                .wrap(exchange)
-                .getPipelineInfo()
-                .getName());
-        
-        return mhr &&
-                  "xcoll".equals(BsonRequest.wrap(exchange).getCollectionName())
-                && BsonResponse.wrap(exchange).getDbOperationResult() != null;
+    public boolean resolve(BsonRequest request, BsonResponse response) {
+        return "xcoll".equals(request.getCollectionName())
+                && response.getDbOperationResult() != null;
     }
 }

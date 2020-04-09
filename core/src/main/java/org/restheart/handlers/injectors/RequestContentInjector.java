@@ -26,11 +26,18 @@ import io.undertow.server.handlers.RequestBufferingHandler;
 import io.undertow.util.AttachmentKey;
 import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
+import org.restheart.handlers.exchange.AbstractRequest;
+import org.restheart.handlers.exchange.AbstractResponse;
+import org.restheart.handlers.exchange.BufferedByteArrayRequest;
+import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginsRegistryImpl;
+import org.restheart.utils.PluginUtils;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;
@@ -120,15 +127,42 @@ public class RequestContentInjector extends PipelinedHandler {
 
     private boolean isContentRequired(HttpServerExchange exchange,
             InterceptPoint interceptPoint) {
+        AbstractRequest request;
+        AbstractResponse response;
+
+        var handlingService = PluginUtils.handlingService(
+                PluginsRegistryImpl.getInstance(),
+                exchange);
+
+        if (handlingService != null) {
+            request = Request.of(exchange);
+            response = Response.of(exchange);
+        } else {
+            request = BufferedByteArrayRequest.wrap(exchange);
+            response = BufferedByteArrayResponse.wrap(exchange);
+        }
+        
         return PluginsRegistryImpl
                 .getInstance()
                 .getInterceptors().stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
                 .filter(ri -> interceptPoint == interceptPoint(ri))
+                // IMPORTANT: An interceptor can intercept 
+                // - requests handled by a Service when its request and response 
+                //   types are equal to the ones declared by the Service
+                // - request handled by a Proxy when its request and response 
+                //   are BufferedByteArrayRequest and BufferedByteArrayResponse
+                .filter(ri -> 
+                        (handlingService == null
+                && ri.requestType().equals(BufferedByteArrayRequest.type())
+                && ri.responseType().equals(BufferedByteArrayResponse.type()))
+                || (handlingService != null
+                && ri.requestType().equals(handlingService.requestType())
+                && ri.responseType().equals(handlingService.responseType())))
                 .filter(ri -> {
                     try {
-                        return ri.resolve(exchange);
+                        return ri.resolve(request, response);
                     } catch (Exception e) {
                         LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
                                 ri.getClass().getSimpleName(),

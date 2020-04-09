@@ -44,7 +44,7 @@ public abstract class BufferedRequest<T> extends AbstractRequest<T> {
     public abstract T readContent() throws IOException;
 
     public abstract void writeContent(T content) throws IOException;
-
+    
     @SuppressWarnings("unchecked")
     protected AttachmentKey<PooledByteBuffer[]> getRawContentKey() {
         Field f;

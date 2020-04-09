@@ -19,12 +19,14 @@
  */
 package org.restheart.handlers.exchange;
 
+import com.google.common.reflect.TypeToken;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -65,7 +67,7 @@ public abstract class AbstractRequest<T> extends AbstractExchange<T> {
         return exchange.getRequestHeaders()
                 .getFirst(Headers.CONTENT_TYPE);
     }
-
+    
     private static METHOD selectMethod(HttpString _method) {
         if (Methods.GET.equals(_method)) {
             return METHOD.GET;

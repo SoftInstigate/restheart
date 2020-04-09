@@ -19,7 +19,6 @@
  */
 package org.restheart.utils;
 
-import io.undertow.server.HttpServerExchange;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
@@ -28,7 +27,7 @@ import org.restheart.handlers.exchange.JsonResponse;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.JsonInterceptor;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
 
@@ -131,20 +130,15 @@ public class PluginUtilsTest {
             initPoint = InitPoint.BEFORE_STARTUP,
             requiresContent = true)
     private static class TestPlugin implements JsonService, 
-            Interceptor, 
+            JsonInterceptor, 
             Initializer {
         @Override
         public void handle(JsonRequest r, JsonResponse s) throws Exception {
 
         }
-        
+                
         @Override
-        public void handle(HttpServerExchange exchange) throws Exception {
-            
-        }
-        
-        @Override
-        public boolean resolve(HttpServerExchange exchange) {
+        public boolean resolve(JsonRequest r, JsonResponse s) {
             return true;
         }
 
@@ -157,19 +151,14 @@ public class PluginUtilsTest {
     @RegisterPlugin(name = "testDefaultPlugin",
             description = "test description")
     private static class TestPluginDefault implements JsonService,
-            Interceptor, Initializer {
+            JsonInterceptor, Initializer {
         @Override
         public void handle(JsonRequest request, JsonResponse response) throws Exception {
 
         }
         
         @Override
-        public void handle(HttpServerExchange exchange) throws Exception {
-            
-        }
-        
-        @Override
-        public boolean resolve(HttpServerExchange exchange) {
+        public boolean resolve(JsonRequest r, JsonResponse s) {
             return true;
         }
 
