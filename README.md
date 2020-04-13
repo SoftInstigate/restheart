@@ -287,7 +287,7 @@ To compile new plugins, add the `restheart-commons` dependency to your POM file:
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart-commons</artifactId>
-        <version>5.0.0-RC2</version>
+        <version>5.0.0-RC3</version>
     </dependency>
 </dependencies>
 ```
@@ -361,6 +361,8 @@ Except for the `core` services, everything else is a plugin. The `security` and 
 │   └── restheart-security.jar
 └── restheart.jar
 ```
+
+> Plugin examples are collected [here](https://github.com/SoftInstigate/restheart-examples).
 
 When the core module starts, it scans the Java classpath within the `plugins/` folder and loads all the JAR files there.
 
