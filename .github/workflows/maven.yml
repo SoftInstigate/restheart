@@ -68,8 +68,8 @@ jobs:
                   body: |
                       Release ${{ github.ref }}
                   files: |
-                      target/restheart.tar.gz
-                      target/restheart.zip
-                      target/restheart.jar
+                      core/target/restheart.tar.gz
+                      core/target/restheart.zip
+                      core/target/restheart.jar
                   draft: true
                   prerelease: false
