@@ -22,7 +22,6 @@
 -   [How to Build](#how-to-Build)
     -   [Integration Tests](#integration-tests)
 -   [Maven Dependencies](#maven-dependencies)
-    -   [Snapshot Builds](#snapshot-builds)
     -   [Maven Site](#maven-Site)
 -   [Continuous Integration](#continuous-integration)
 -   [Project structure](#project-structure)
