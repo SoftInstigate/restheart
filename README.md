@@ -374,11 +374,12 @@ For example, below the [`MongoService`](mongodb/src/main/java/org/restheart/mong
 
 ```java
 @RegisterPlugin(name = "mongo",
-        description = "handles request to mongodb resources",
+        description = "handles requests to mongodb resources",
         enabledByDefault = true,
         defaultURI = "/",
+        dontIntercept = {InterceptPoint.REQUEST_AFTER_AUTH},
         priority = Integer.MIN_VALUE)
-public class MongoService implements Service {
+public class MongoService implements Service<BsonRequest, BsonResponse> {
     ...
 }
 ```
