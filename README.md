@@ -294,37 +294,6 @@ To compile new plugins, add the `restheart-commons` dependency to your POM file:
 
 **IMPORTANT**: The `restheart-commons` artifact in the `commons` module has been released using the Apache v2 license instead of the AGPL v3. This is much like MongoDB is doing with the Java driver. It implies **your projects does not incur in the AGPL restrictions when extending RESTHeart with plugins**.
 
-### Snapshot Builds
-
-Snapshot builds are available at [Sonatype](https://oss.sonatype.org/content/repositories/snapshots/org/restheart/restheart/). If you want to build your project against a development release, first add the SNAPSHOT repository:
-
-```xml
-<repositories>
-    <repository>
-        <id>restheart-mvn-repo</id>
-        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        <snapshots>
-            <enabled>true</enabled>
-            <updatePolicy>always</updatePolicy>
-        </snapshots>
-    </repository>
-</repositories>
-```
-
-Then include the desired SNAPSHOT dependency version in your POM, for example:
-
-```xml
-<dependencies>
-    <dependency>
-        <groupId>org.restheart</groupId>
-        <artifactId>restheart-commons</artifactId>
-        <version>5.0.1-SNAPSHOT</version>
-    </dependency>
-</dependencies>
-```
-
-However, as you should know how Maven works, the recommended way do deal with development snapshots is to build and install the code by yourself.
-
 ## Continuous Integration
 
 We continuously integrate and deploy development releases to Maven Central. RESTHeart's public Docker images are automatically built and pushed to [Docker Hub](https://hub.docker.com/r/softinstigate/restheart/). The `latest` tag for Docker images refers to the most recent stable release on the `master` branch, **we don't publish SNAPSHOTs as Docker images**.
