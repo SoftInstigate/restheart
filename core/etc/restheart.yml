@@ -295,15 +295,18 @@ plugins-args:
 
 #### Logging
 
- # enable-log-console: true => log messages to the console (default value: true)
- # enable-log-file: true => log messages to a file (default value: true)
- # log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
- # log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
- # requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
- # ansi-console: use Ansi console for logging.
- # requests-log-trace-headers: add the HTTP headers you want to be put on the MDC for logback. Use with %X{header-name} in logback.xml.
- #      Useful for tracing support in the logs. Leave empty to deactivate this feature.
- # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
+# enable-log-console: true => log messages to the console (default value: true)
+# enable-log-file: true => log messages to a file (default value: true)
+# log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
+# log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
+# ansi-console: use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
+# requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
+# requests-log-trace-headers: add the HTTP headers you want to be put on the MDC for logback. Use with %X{header-name} in logback.xml.
+#                             Useful for tracing support in the logs. Leave empty to deactivate this feature.
+# metrics-gathering-level: metrics gathering for which level? OFF => no gathering, ROOT => gathering at root level,
+#                          DATABASE => at db level, COLLECTION => at collection level
+# WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
+
 
 enable-log-file: {{{enable-log-file}}}
 log-file-path: {{{log-file-path}}}
@@ -311,6 +314,7 @@ enable-log-console: {{{enable-log-console}}}
 log-level: {{{log-level}}}
 requests-log-level: 1
 ansi-console: true
+metrics-gathering-level: DATABASE
 requests-log-trace-headers:
 #  - x-b3-traceid      # vv Zipkin headers, see https://github.com/openzipkin/b3-propagation
 #  - x-b3-spanid
