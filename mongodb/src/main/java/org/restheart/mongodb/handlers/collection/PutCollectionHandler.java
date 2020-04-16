@@ -102,11 +102,6 @@ public class PutCollectionHandler extends PipelinedHandler {
 
         final BsonDocument content = _content.asDocument();
 
-        if (RequestHelper.isInvalidMetadata(content, exchange)) {
-            next(exchange);
-            return;
-        }
-
         boolean updating = request.getCollectionProps() != null;
 
         OperationResult result = dbsDAO.upsertCollection(

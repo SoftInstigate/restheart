@@ -31,10 +31,6 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.PipelineInfo;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.plugins.mongodb.GlobalChecker;
-import org.restheart.plugins.mongodb.GlobalHook;
-import org.restheart.plugins.mongodb.GlobalTransformer;
-import org.restheart.plugins.mongodb.Hook;
-import org.restheart.plugins.mongodb.Transformer;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
@@ -65,17 +61,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     // depecated plugins
     private Set<PluginRecord<Checker>> checkers;
 
-    private Set<PluginRecord<Transformer>> transformers;
-
-    private Set<PluginRecord<Hook>> hooks;
 
     private final Set<GlobalChecker> globalCheckers
-            = new LinkedHashSet<>();
-
-    private final Set<GlobalTransformer> globalTransformers
-            = new LinkedHashSet<>();
-
-    private final Set<GlobalHook> globalHooks
             = new LinkedHashSet<>();
 
     private static PluginsRegistryImpl HOLDER;
@@ -106,9 +93,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             getInterceptors();
             getServices();
 
-            getTransformers();
             getCheckers();
-            getHooks();
 
             pluginFactory.injectDependencies();
         }
@@ -263,55 +248,10 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      * @return the globalCheckers
      */
     @Override
-    public Set<PluginRecord<Transformer>> getTransformers() {
-        if (this.transformers == null) {
-            this.transformers = new LinkedHashSet<>();
-            this.transformers.addAll(PluginsFactory.getInstance()
-                    .transformers());
-        }
-
-        return this.transformers;
-    }
-
-    /**
-     *
-     * @return the globalCheckers
-     */
-    @Override
-    public Set<PluginRecord<Hook>> getHooks() {
-        if (this.hooks == null) {
-            this.hooks = new LinkedHashSet<>();
-            this.hooks.addAll(PluginsFactory.getInstance()
-                    .hooks());
-        }
-
-        return this.hooks;
-    }
-
-    /**
-     *
-     * @return the globalCheckers
-     */
-    @Override
     public Set<GlobalChecker> getGlobalCheckers() {
         return globalCheckers;
     }
 
-    /**
-     * @return the globalTransformers
-     */
-    @Override
-    public Set<GlobalTransformer> getGlobalTransformers() {
-        return globalTransformers;
-    }
-
-    /**
-     * @return the globalHooks
-     */
-    @Override
-    public synchronized Set<GlobalHook> getGlobalHooks() {
-        return globalHooks;
-    }
     
     private static final PathHandler ROOT_PATH_HANDLER = path();
     

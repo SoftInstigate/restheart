@@ -28,17 +28,22 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.handlers.exchange.RequestContext;
-import org.restheart.plugins.mongodb.Transformer;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.handlers.exchange.Request;
+import org.restheart.handlers.exchange.Response;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * On write, escapes schema properties ($ prefixed) 
+ * On read, unescape schema properties
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JsonSchemaTransformer implements Transformer {
+public class JsonSchemaTransformer extends PipelinedHandler {
 
     static final Logger LOGGER = LoggerFactory
             .getLogger(JsonSchemaTransformer.class);
@@ -46,85 +51,83 @@ public class JsonSchemaTransformer implements Transformer {
     private static final BsonString $SCHEMA
             = new BsonString("http://json-schema.org/draft-04/schema#");
 
-    /**
-     *
-     * @param schema
-     */
-    public static void escapeSchema(BsonDocument schema) {
-        BsonValue escaped = JsonUtils.escapeKeys(schema, false);
-
-        if (escaped.isDocument()) {
-            List<String> keys = Lists.newArrayList(schema.keySet().iterator());
-
-            keys.stream().forEach(f -> schema.remove(f));
-
-            schema.putAll(escaped.asDocument());
-        }
-    }
+    private final boolean phase;
 
     /**
      *
-     * @param schema
+     * @param phase true for request, false for response
      */
-    public static void unescapeSchema(BsonDocument schema) {
-        BsonValue unescaped = JsonUtils.unescapeKeys(schema);
-
-        if (unescaped != null && unescaped.isDocument()) {
-            List<String> keys = Lists.newArrayList(schema.keySet().iterator());
-
-            keys.stream().forEach(f -> schema.remove(f));
-
-            schema.putAll(unescaped.asDocument());
-        }
+    public JsonSchemaTransformer(boolean phase) {
+        super(null);
+        this.phase = phase;
     }
 
     @Override
-    public void transform(HttpServerExchange exchange,
-            RequestContext context,
-            final BsonValue contentToTransform,
-            BsonValue args) {
-        if (context.isInError()) {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = (BsonRequest) Request.of(exchange);
+
+        BsonValue content;
+
+        if (this.phase) { // request
+            content = request.getContent();
+
+        } else { // response
+            var response = (BsonResponse) Response.of(exchange);
+            content = response.getContent();
+        }
+
+        if (content != null) {
+            if (content.isDocument()) {
+                transform(request, content.asDocument());
+            } else if (content.isArray()) {
+                content.asArray().stream()
+                        .filter(doc -> doc.isDocument())
+                        .map(doc -> doc.asDocument())
+                        .forEachOrdered(doc -> transform(request, doc));
+            }
+        }
+
+        next(exchange);
+    }
+
+    private void transform(BsonRequest request, BsonDocument document) {
+        if (request.isInError()) {
             return;
         }
-        
-        BsonDocument _contentToTransform
-                = contentToTransform == null
-                        ? null
-                        : contentToTransform.asDocument();
 
-        if (context.isSchema()) {
-            if (context.isGet()) {
-                unescapeSchema(_contentToTransform);
-            } else if (context.isPut() || context.isPatch()) {
+        if (request.isSchema()) {
+            if (request.isGet()) {
+                unescapeSchema(document);
+            } else if (request.isPut() || request.isPatch()) {
                 BsonDocument content;
 
-                if (context.getContent() != null) {
-                    content = context.getContent().asDocument();
+                if (request.getContent() != null) {
+                    content = request.getContent().asDocument();
                 } else {
                     content = new BsonDocument();
                 }
 
                 // generate id as specs mandates
                 SchemaStoreURL uri = new SchemaStoreURL(
-                        context.getDBName(),
-                        context.getDocumentId());
+                        request.getDBName(),
+                        request.getDocumentId());
 
                 content.put("id", new BsonString(uri.toString()));
 
                 // escape all $ prefixed keys
-                escapeSchema(_contentToTransform);
+                escapeSchema(document);
 
                 // add (overwrite) $schema field
-                if (null != _contentToTransform) {
-                    _contentToTransform.put("_$schema", $SCHEMA);
+                if (null != document) {
+                    document.put("_$schema", $SCHEMA);
                 }
             }
-        } else if (context.isSchemaStore()) {
-            if (context.isPost()) {
+        } else if (request.isSchemaStore()) {
+            if (request.isPost()) {
                 BsonDocument content;
 
-                if (context.getContent() != null) {
-                    content = context.getContent().asDocument();
+                if (request.getContent() != null) {
+                    content = request.getContent().asDocument();
                 } else {
                     content = new BsonDocument();
                 }
@@ -142,24 +145,24 @@ public class JsonSchemaTransformer implements Transformer {
                 }
 
                 SchemaStoreURL uri = new SchemaStoreURL(
-                        context.getDBName(),
+                        request.getDBName(),
                         schemaId);
 
                 content.put("id", new BsonString(uri.toString()));
 
                 // escape all $ prefixed keys
-                escapeSchema(_contentToTransform);
+                escapeSchema(document);
 
                 // add (overwrite) $schema field
-                if (null != _contentToTransform) {
-                    _contentToTransform.put("_$schema", $SCHEMA);
+                if (null != document) {
+                    document.put("_$schema", $SCHEMA);
                 }
-            } else if (context.isGet()) {
+            } else if (request.isGet()) {
                 // apply transformation on embedded schemas
 
-                if (null != _contentToTransform && _contentToTransform.containsKey("_embedded")) {
+                if (null != document && document.containsKey("_embedded")) {
 
-                    BsonValue _embedded = _contentToTransform
+                    BsonValue _embedded = document
                             .get("_embedded");
 
                     if (_embedded.isDocument()
@@ -181,6 +184,38 @@ public class JsonSchemaTransformer implements Transformer {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     *
+     * @param schema
+     */
+    static void escapeSchema(BsonDocument schema) {
+        BsonValue escaped = JsonUtils.escapeKeys(schema, false);
+
+        if (escaped.isDocument()) {
+            List<String> keys = Lists.newArrayList(schema.keySet().iterator());
+
+            keys.stream().forEach(f -> schema.remove(f));
+
+            schema.putAll(escaped.asDocument());
+        }
+    }
+
+    /**
+     *
+     * @param schema
+     */
+    static void unescapeSchema(BsonDocument schema) {
+        BsonValue unescaped = JsonUtils.unescapeKeys(schema);
+
+        if (unescaped != null && unescaped.isDocument()) {
+            List<String> keys = Lists.newArrayList(schema.keySet().iterator());
+
+            keys.stream().forEach(f -> schema.remove(f));
+
+            schema.putAll(unescaped.asDocument());
         }
     }
 }

@@ -45,8 +45,6 @@ import java.util.Set;
 import org.restheart.Bootstrapper;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.mongodb.Checker;
-import org.restheart.plugins.mongodb.Hook;
-import org.restheart.plugins.mongodb.Transformer;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
@@ -168,24 +166,8 @@ public class PluginsFactory implements AutoCloseable {
      * creates the services
      */
     @SuppressWarnings("unchecked")
-    Set<PluginRecord<Transformer>> transformers() {
-        return createPlugins(Transformer.class, PLUGINS_CONFS);
-    }
-
-    /**
-     * creates the services
-     */
-    @SuppressWarnings("unchecked")
     Set<PluginRecord<Checker>> checkers() {
         return createPlugins(Checker.class, PLUGINS_CONFS);
-    }
-
-    /**
-     * creates the services
-     */
-    @SuppressWarnings("unchecked")
-    Set<PluginRecord<Hook>> hooks() {
-        return createPlugins(Hook.class, PLUGINS_CONFS);
     }
 
     /**

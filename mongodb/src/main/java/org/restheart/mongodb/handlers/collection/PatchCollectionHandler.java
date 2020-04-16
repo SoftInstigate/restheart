@@ -119,11 +119,6 @@ public class PatchCollectionHandler extends PipelinedHandler {
 
         final BsonDocument content = _content.asDocument();
 
-        if (RequestHelper.isInvalidMetadata(content, exchange)) {
-            next(exchange);
-            return;
-        }
-
         OperationResult result = dbsDAO
                 .upsertCollection(
                         request.getClientSession(),

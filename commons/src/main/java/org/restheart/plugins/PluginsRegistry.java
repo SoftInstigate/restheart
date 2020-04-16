@@ -27,10 +27,6 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.PipelineInfo;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.plugins.mongodb.GlobalChecker;
-import org.restheart.plugins.mongodb.GlobalHook;
-import org.restheart.plugins.mongodb.GlobalTransformer;
-import org.restheart.plugins.mongodb.Hook;
-import org.restheart.plugins.mongodb.Transformer;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
@@ -96,33 +92,12 @@ public interface PluginsRegistry {
      */
     public Set<PluginRecord<Checker>> getCheckers();
 
-    /**
-     *
-     * @return the transformers
-     */
-    public Set<PluginRecord<Transformer>> getTransformers();
-
-    /**
-     *
-     * @return the hooks
-     */
-    public Set<PluginRecord<Hook>> getHooks();
 
     /**
      *
      * @return the globalCheckers
      */
     public Set<GlobalChecker> getGlobalCheckers();
-
-    /**
-     * @return the globalTransformers
-     */
-    public Set<GlobalTransformer> getGlobalTransformers();
-
-    /**
-     * @return the globalHooks
-     */
-    public Set<GlobalHook> getGlobalHooks();
 
     /**
      * Gets the RESTHeart root handler

@@ -30,8 +30,6 @@ import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.plugins.interceptors.LocalCachesSingleton;
-import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
-import org.restheart.mongodb.metadata.TransformerMetadata;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -104,21 +102,6 @@ public class PatchDBHandler extends PipelinedHandler {
         }
 
         BsonDocument content = _content.asDocument();
-
-        // check RTL metadata
-        if (content.containsKey(TransformerMetadata.RTS_ELEMENT_NAME)) {
-            try {
-                TransformerMetadata.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                response.setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong representation transform logic definition. "
-                        + ex.getMessage(),
-                        ex);
-                next(exchange);
-                return;
-            }
-        }
 
         OperationResult result = dbsDAO.upsertDB(
                 request.getClientSession(),

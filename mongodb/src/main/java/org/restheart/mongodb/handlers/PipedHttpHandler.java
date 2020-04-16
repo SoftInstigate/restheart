@@ -34,7 +34,6 @@ import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
 import org.restheart.mongodb.metadata.CheckerMetadata;
 import org.restheart.mongodb.metadata.Relationship;
-import org.restheart.mongodb.metadata.TransformerMetadata;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 @Deprecated
@@ -162,19 +161,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
                 BsonResponse.wrap(exchange).setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong relationships definition. "
-                        + ex.getMessage(), ex);
-                next(exchange, context);
-                return true;
-            }
-        }
-        // check RT metadata
-        if (content.containsKey(TransformerMetadata.RTS_ELEMENT_NAME)) {
-            try {
-                TransformerMetadata.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                BsonResponse.wrap(exchange).setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong representation transformer definition. "
                         + ex.getMessage(), ex);
                 next(exchange, context);
                 return true;
