@@ -29,7 +29,7 @@ import org.restheart.handlers.exchange.BsonResponse;
 import static org.restheart.handlers.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.handlers.exchange.OperationResult;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
+import org.restheart.mongodb.plugins.interceptors.LocalCachesSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.HttpStatus;
 

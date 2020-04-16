@@ -107,6 +107,6 @@ public class GetMetricsIT extends HttpClientAbstactIT {
         //configuration says: it is not activated for collections, so it should return 404, default restheart answer
         assertEquals("check status code", HttpStatus.SC_NOT_FOUND, statusLine.getStatusCode());
         assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", "application/hal+json", entity.getContentType().getValue());
+        assertEquals("check content type", "application/json", entity.getContentType().getValue());
     }
 }

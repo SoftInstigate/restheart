@@ -18,64 +18,48 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.injectors;
+package org.restheart.mongodb.plugins.interceptors;
 
-import io.undertow.server.HttpServerExchange;
+import com.mongodb.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.plugins.InjectMongoClient;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
 /**
  *
- * this handler injects the db properties in the RequestContext this handler is
- * also responsible of sending NOT_FOUND in case of requests involving not
+ * Injects the db properties into the BsonRequest
+ *
+ * It is also responsible of sending NOT_FOUND in case of requests involving not
  * existing dbs (that are not PUT)
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DbPropsInjector extends PipelinedHandler {
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+@RegisterPlugin(name="dbPropsInjector", 
+        description = "Injects the db properties into the BsonRequest",
+        interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
+        priority = Integer.MIN_VALUE)
+public class DbPropsInjector implements Interceptor<BsonRequest, BsonResponse> {
+    private DatabaseImpl dbsDAO = null;
     
-    /**
-     * Creates a new instance of DbPropsInjectorHandler
-     *
-     */
-    public DbPropsInjector() {
-        super(null);
-    }
-    
-    /**
-     * Creates a new instance of DbPropsInjectorHandler
-     *
-     * @param next
-     */
-    public DbPropsInjector(PipelinedHandler next) {
-        super(next);
+    @InjectMongoClient
+    public void init(MongoClient mclient) {
+        this.dbsDAO = new DatabaseImpl();
     }
 
     /**
-     *
-     * @param exchange
+     * @param request
+     * @param response
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
-        
-        if (request.isInError()
-                || request.isSessions()
-                || request.isTxn()
-                || request.isTxns()
-                || request.isRoot()
-                || request.isRootSize()) {
-            next(exchange);
-            return;
-        }
-
+    public void handle(BsonRequest request, BsonResponse response) throws Exception {
         String dbName = request.getDBName();
 
         if (dbName != null) {
@@ -84,7 +68,7 @@ public class DbPropsInjector extends PipelinedHandler {
             if (!LocalCachesSingleton.isEnabled()
                     || request.getClientSession() != null) {
                 dbProps = dbsDAO.getDatabaseProperties(
-                        request.getClientSession(), 
+                        request.getClientSession(),
                         dbName);
             } else {
                 dbProps = LocalCachesSingleton.getInstance()
@@ -96,10 +80,9 @@ public class DbPropsInjector extends PipelinedHandler {
                     && !(request.isDb()
                     && request.isPut())
                     && !request.isRoot()) {
-                BsonResponse.wrap(exchange).setIError(
-                                HttpStatus.SC_NOT_FOUND,
-                                "Db '" + dbName + "' does not exist");
-                next(exchange);
+                response.setIError(
+                        HttpStatus.SC_NOT_FOUND,
+                        "Db '" + dbName + "' does not exist");
                 return;
             }
 
@@ -109,7 +92,17 @@ public class DbPropsInjector extends PipelinedHandler {
 
             request.setDbProps(dbProps);
         }
+    }
 
-        next(exchange);
+    @Override
+    public boolean resolve(BsonRequest request, BsonResponse response) {
+        return this.dbsDAO != null && 
+                !(request.isInError()
+                || request.isSessions()
+                || request.isTxn()
+                || request.isTxns()
+                || request.isRoot()
+                || request.isRootSize()
+                || request.isMetrics());
     }
 }

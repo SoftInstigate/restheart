@@ -24,7 +24,7 @@ import java.util.Deque;
 import org.restheart.handlers.exchange.ByteArrayRequest;
 import org.restheart.handlers.exchange.ByteArrayResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.handlers.injectors.LocalCachesSingleton;
+import org.restheart.mongodb.plugins.interceptors.LocalCachesSingleton;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
