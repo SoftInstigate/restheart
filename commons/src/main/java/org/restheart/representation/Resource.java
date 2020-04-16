@@ -24,10 +24,10 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.ExchangeKeys;
-import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
-import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.ExchangeKeys;
+import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
+import org.restheart.exchange.ExchangeKeys.TYPE;
 
 /**
  *

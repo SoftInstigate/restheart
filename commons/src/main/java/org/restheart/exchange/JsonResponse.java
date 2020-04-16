@@ -17,32 +17,34 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
+package org.restheart.exchange;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.utils.JsonUtils;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ByteArrayResponse extends Response<byte[]> {
-    private ByteArrayResponse(HttpServerExchange exchange) {
+public class JsonResponse extends Response<JsonElement> {
+    private JsonResponse(HttpServerExchange exchange) {
         super(exchange);
+        setContentTypeAsJson();
     }
     
-    public static ByteArrayResponse init(HttpServerExchange exchange) {
-        return new ByteArrayResponse(exchange);
+    public static JsonResponse init(HttpServerExchange exchange) {
+        return new JsonResponse(exchange);
     }
     
-    public static ByteArrayResponse wrap(HttpServerExchange exchange) {
-        return (ByteArrayResponse) of(exchange);
+    public static JsonResponse wrap(HttpServerExchange exchange) {
+        return (JsonResponse) of(exchange);
     }
     
     @Override
     public String readContent() {
         if (content != null) {
-            return new String(content);
+            return content.toString();
         } else {
             return null;
         }
@@ -52,20 +54,16 @@ public class ByteArrayResponse extends Response<byte[]> {
     public void setInError(int code, String message, Throwable t) {
         setStatusCode(code);
         
-        var resp = new StringBuilder();
+        var resp = new JsonObject();
 
         if (message != null) {
-            resp.append("msg: ");
-            resp.append(message);
-            resp.append("\n");
+            resp.addProperty("msg", message);
         }
 
         if (t != null) {
-            resp.append("exception: ");
-            resp.append(t.getMessage());
-            resp.append("\n");
+            resp.addProperty("exception", t.getMessage());
         }
 
-        setContent(resp.toString().getBytes());
+        setContent(resp);
     }
 }

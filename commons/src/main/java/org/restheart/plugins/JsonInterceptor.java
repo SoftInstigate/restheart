@@ -19,8 +19,8 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.handlers.exchange.JsonRequest;
-import org.restheart.handlers.exchange.JsonResponse;
+import org.restheart.exchange.JsonRequest;
+import org.restheart.exchange.JsonResponse;
 
 /**
  *

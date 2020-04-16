@@ -20,7 +20,6 @@
  */
 package org.restheart.mongodb.handlers.injectors;
 
-import org.restheart.mongodb.plugins.interceptors.CollectionPropsInjector;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import org.junit.After;
@@ -33,9 +32,10 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.restheart.handlers.exchange.AbstractExchange;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
+import org.restheart.exchange.AbstractExchange;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.ExchangeKeys.TYPE;
+import org.restheart.mongodb.plugins.interceptors.CollectionPropsInjector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

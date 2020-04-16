@@ -17,34 +17,31 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
+package org.restheart.exchange;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class JsonResponse extends Response<JsonElement> {
-    private JsonResponse(HttpServerExchange exchange) {
+public class ByteArrayResponse extends Response<byte[]> {
+    private ByteArrayResponse(HttpServerExchange exchange) {
         super(exchange);
-        setContentTypeAsJson();
     }
     
-    public static JsonResponse init(HttpServerExchange exchange) {
-        return new JsonResponse(exchange);
+    public static ByteArrayResponse init(HttpServerExchange exchange) {
+        return new ByteArrayResponse(exchange);
     }
     
-    public static JsonResponse wrap(HttpServerExchange exchange) {
-        return (JsonResponse) of(exchange);
+    public static ByteArrayResponse wrap(HttpServerExchange exchange) {
+        return (ByteArrayResponse) of(exchange);
     }
     
     @Override
     public String readContent() {
         if (content != null) {
-            return content.toString();
+            return new String(content);
         } else {
             return null;
         }
@@ -54,16 +51,20 @@ public class JsonResponse extends Response<JsonElement> {
     public void setInError(int code, String message, Throwable t) {
         setStatusCode(code);
         
-        var resp = new JsonObject();
+        var resp = new StringBuilder();
 
         if (message != null) {
-            resp.addProperty("msg", message);
+            resp.append("msg: ");
+            resp.append(message);
+            resp.append("\n");
         }
 
         if (t != null) {
-            resp.addProperty("exception", t.getMessage());
+            resp.append("exception: ");
+            resp.append(t.getMessage());
+            resp.append("\n");
         }
 
-        setContent(resp);
+        setContent(resp.toString().getBytes());
     }
 }

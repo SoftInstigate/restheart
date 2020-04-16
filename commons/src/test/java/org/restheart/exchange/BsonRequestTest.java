@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
+package org.restheart.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;

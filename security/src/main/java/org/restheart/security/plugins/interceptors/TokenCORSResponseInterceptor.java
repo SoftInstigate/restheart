@@ -20,8 +20,8 @@
  */
 package org.restheart.security.plugins.interceptors;
 
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.BsonResponse;
 import org.restheart.plugins.BsonInterceptor;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import org.restheart.plugins.RegisterPlugin;

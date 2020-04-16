@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.exchange.RequestContext;
+import org.restheart.exchange.RequestContext;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.mongodb.Checker;
 import org.restheart.utils.JsonUtils;

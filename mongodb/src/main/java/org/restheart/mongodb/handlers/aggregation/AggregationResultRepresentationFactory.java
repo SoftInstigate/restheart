@@ -24,7 +24,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.exchange.BsonRequest;
 import org.restheart.mongodb.representation.AbstractRepresentationFactory;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.IllegalQueryParamenterException;

@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
+package org.restheart.exchange;
 
 import com.google.common.reflect.TypeToken;
 import io.undertow.server.HttpServerExchange;
@@ -34,7 +34,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
+import static org.restheart.exchange.AbstractExchange.LOGGER;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;

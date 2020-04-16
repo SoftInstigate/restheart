@@ -23,8 +23,8 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.restheart.handlers.exchange.Request;
-import org.restheart.handlers.exchange.Response;
+import org.restheart.exchange.Request;
+import org.restheart.exchange.Response;
 import org.restheart.utils.HttpStatus;
 
 /**

@@ -27,7 +27,7 @@ import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.exchange.BsonRequest;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.UnsupportedDocumentIdException;

@@ -25,8 +25,8 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.List;
 import java.util.Map;
+import org.restheart.exchange.BufferedByteArrayRequest;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.security.plugins.authenticators.BaseAccount;
 
 /**

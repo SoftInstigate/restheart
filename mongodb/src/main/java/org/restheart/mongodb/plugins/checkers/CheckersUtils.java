@@ -23,8 +23,8 @@ package org.restheart.mongodb.plugins.checkers;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.RequestContext;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.RequestContext;
 import org.restheart.utils.JsonUtils;
 
 /**

@@ -20,19 +20,14 @@
  */
 package org.restheart.test.plugins.interceptors;
 
-import io.undertow.server.HttpServerExchange;
 import java.util.Map;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.handlers.exchange.BufferedByteArrayRequest;
-import org.restheart.handlers.exchange.Request;
-import org.restheart.handlers.exchange.Response;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.BsonResponse;
 import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;

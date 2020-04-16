@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
-import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.exchange.BsonRequest;
 import org.restheart.mongodb.MongoServiceConfiguration;
 public class MetricsInstrumentationHandlerTest {
 

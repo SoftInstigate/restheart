@@ -22,8 +22,8 @@ package org.restheart.test.plugins.interceptors;
 
 import java.util.ArrayList;
 import org.bson.BsonValue;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.BsonResponse;
 import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;

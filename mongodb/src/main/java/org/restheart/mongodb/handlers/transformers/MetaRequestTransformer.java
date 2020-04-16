@@ -22,9 +22,9 @@ package org.restheart.mongodb.handlers.transformers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonString;
+import org.restheart.exchange.BsonResponse;
+import static org.restheart.exchange.ExchangeKeys._META;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.BsonResponse;
-import static org.restheart.handlers.exchange.ExchangeKeys._META;
 
 /**
  * sets the _id=_meta in /_meta requests

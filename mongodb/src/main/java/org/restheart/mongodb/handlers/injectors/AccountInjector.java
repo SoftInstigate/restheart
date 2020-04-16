@@ -21,8 +21,8 @@
 package org.restheart.mongodb.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.exchange.BsonRequest;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.BsonRequest;
 
 /**
  *

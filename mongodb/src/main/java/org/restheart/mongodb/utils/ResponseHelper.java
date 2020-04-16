@@ -32,8 +32,8 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.BsonResponse;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 

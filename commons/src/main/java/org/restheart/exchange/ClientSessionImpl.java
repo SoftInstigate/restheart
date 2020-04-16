@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
+package org.restheart.exchange;
 
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.TransactionOptions;

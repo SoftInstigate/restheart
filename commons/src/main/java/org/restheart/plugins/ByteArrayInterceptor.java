@@ -19,8 +19,8 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.handlers.exchange.ByteArrayRequest;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.exchange.ByteArrayRequest;
+import org.restheart.exchange.ByteArrayResponse;
 
 /**
  *

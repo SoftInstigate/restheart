@@ -11,8 +11,8 @@
 package org.restheart.test.plugins.services;
 
 import java.util.function.BiConsumer;
-import org.restheart.handlers.exchange.ByteArrayRequest;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.exchange.ByteArrayRequest;
+import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.RegisterPlugin;
 

@@ -22,8 +22,8 @@ package org.restheart.mongodb.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
+import org.restheart.exchange.BsonRequest;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.BsonRequest;
 
 /**
  * this handler dispatches request to normal or bulk post collection handlers

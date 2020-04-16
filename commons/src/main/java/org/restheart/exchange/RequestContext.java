@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
+package org.restheart.exchange;
 
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
@@ -31,12 +31,12 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
-import org.restheart.handlers.exchange.AbstractExchange.METHOD;
-import org.restheart.handlers.exchange.ExchangeKeys.DOC_ID_TYPE;
-import org.restheart.handlers.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
-import org.restheart.handlers.exchange.ExchangeKeys.HAL_MODE;
-import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
-import org.restheart.handlers.exchange.ExchangeKeys.TYPE;
+import org.restheart.exchange.AbstractExchange.METHOD;
+import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
+import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.exchange.ExchangeKeys.HAL_MODE;
+import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
+import org.restheart.exchange.ExchangeKeys.TYPE;
 
 /**
  *

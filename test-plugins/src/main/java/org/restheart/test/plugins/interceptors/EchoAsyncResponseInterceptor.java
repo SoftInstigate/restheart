@@ -20,8 +20,8 @@
  */
 package org.restheart.test.plugins.interceptors;
 
-import org.restheart.handlers.exchange.ByteArrayRequest;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.exchange.ByteArrayRequest;
+import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayInterceptor;
 import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
 import org.restheart.plugins.RegisterPlugin;

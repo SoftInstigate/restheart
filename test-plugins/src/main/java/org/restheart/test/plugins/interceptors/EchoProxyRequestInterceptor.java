@@ -25,13 +25,12 @@ import com.google.gson.JsonParser;
 import io.undertow.util.HttpString;
 import java.nio.charset.Charset;
 import java.util.Map;
-import org.restheart.handlers.exchange.BufferedByteArrayRequest;
-import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.BufferedByteArrayRequest;
+import org.restheart.exchange.BufferedByteArrayResponse;
 import org.restheart.plugins.InjectConfiguration;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import org.restheart.plugins.ProxyInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.utils.BuffersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

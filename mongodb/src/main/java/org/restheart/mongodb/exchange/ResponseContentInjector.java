@@ -26,11 +26,11 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.json.JsonMode;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.handlers.exchange.BufferedByteArrayResponse;
-import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.representation.Resource;
 import org.restheart.utils.JsonUtils;
 

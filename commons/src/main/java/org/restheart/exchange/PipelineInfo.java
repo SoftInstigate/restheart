@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.restheart.handlers.exchange;
+package org.restheart.exchange;
 
 import java.util.Objects;
 import org.restheart.utils.URLUtils;

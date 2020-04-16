@@ -26,8 +26,8 @@ import io.undertow.util.Headers;
 import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.handlers.exchange.BsonResponse;
-import org.restheart.handlers.exchange.OperationResult;
+import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.OperationResult;
 import org.restheart.utils.HttpStatus;
 
 /**

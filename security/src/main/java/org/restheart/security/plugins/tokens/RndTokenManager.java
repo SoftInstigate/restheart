@@ -35,7 +35,7 @@ import java.util.Optional;
 import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
-import org.restheart.handlers.exchange.BufferedJsonRequest;
+import org.restheart.exchange.BufferedJsonRequest;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;

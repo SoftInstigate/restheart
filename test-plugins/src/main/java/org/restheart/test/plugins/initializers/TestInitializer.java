@@ -22,7 +22,7 @@ package org.restheart.test.plugins.initializers;
 
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.exchange.BufferedJsonRequest;
+import org.restheart.exchange.BufferedJsonRequest;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;

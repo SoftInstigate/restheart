@@ -22,8 +22,8 @@ package org.restheart.mongodb.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
+import org.restheart.exchange.BsonRequest;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.utils.HttpStatus;
 
 /**

@@ -21,9 +21,9 @@ package org.restheart.utils;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
-import org.restheart.handlers.exchange.BufferedByteArrayRequest;
-import org.restheart.handlers.exchange.PipelineInfo;
-import static org.restheart.handlers.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
+import org.restheart.exchange.BufferedByteArrayRequest;
+import org.restheart.exchange.PipelineInfo;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InterceptPoint;
