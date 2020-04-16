@@ -44,18 +44,14 @@ import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.exchange.BsonRequestContentInjector;
 import org.restheart.mongodb.exchange.BsonRequestPropsInjector;
 import org.restheart.mongodb.handlers.CORSHandler;
-import org.restheart.mongodb.handlers.MongoRequestInterceptorsExecutor;
 import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.AccountInjector;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
-import org.restheart.mongodb.handlers.injectors.CollectionPropsInjector;
-import org.restheart.mongodb.handlers.injectors.DbPropsInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
 import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
@@ -72,7 +68,6 @@ import org.slf4j.LoggerFactory;
         description = "handles requests to mongodb resources",
         enabledByDefault = true,
         defaultURI = "/",
-        dontIntercept = {InterceptPoint.REQUEST_AFTER_AUTH},
         priority = Integer.MIN_VALUE)
 public class MongoService implements Service<BsonRequest, BsonResponse> {
     private static final Logger LOGGER = LoggerFactory
@@ -121,10 +116,7 @@ public class MongoService implements Service<BsonRequest, BsonResponse> {
                 new OptionsHandler(),
                 new AccountInjector(),
                 ClientSessionInjector.build(),
-                new DbPropsInjector(),
-                new CollectionPropsInjector(),
                 new ETagPolicyInjector(),
-                new MongoRequestInterceptorsExecutor(registry),
                 RequestDispatcherHandler.getInstance());
 
         // check that all mounts are either all paths or all path templates
