@@ -18,12 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.plugins.transformers;
+package org.restheart.mongodb.plugins.interceptors;
 
+import com.google.common.collect.Lists;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import org.bson.BsonArray;
@@ -32,86 +35,90 @@ import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.handlers.exchange.RequestContext;
+import org.restheart.handlers.exchange.BsonRequest;
+import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
+import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.mongodb.Transformer;
 import org.restheart.utils.JsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * this transformer adds properties to the resource representation. usually it
- * is applied on REQUEST phase to store properties evaluated server side
+ * addRequestProperties adds properties to write requests on documents of
+ * collections that have the following metadata:
  *
- * the properties to add are passed in the args argumenet
+ * { "rts": [ { "name":"addRequestProperties", "args": {"log": ["userName",
+ * "remoteIp"] } } ] }
  *
- * ags can be an array of strings, each specifiying the names of the properties
- * to add or an object with a single property of an array of strings. in the
- * latter case, the properties are added to the representation nested in the
- * passed object property key.
+ * This is an example on how to refactor an old (<v5) Transformer as an
+ * Interceptor. The Transformer was applied using collection metatada; here the
+ * resolve() method checks if the collection properties obtained via the method
+ * request.getCollectionProps() contains the expected metadata object.
+ *
+ * args can be either an array of strings, each specifiying the properties to
+ * add, or an object with a single property, as in the above example where the
+ * properties are added to the request in the nested "log" subdocument.
  *
  * the properties that can be added are: userName, userRoles, epochTimeStamp,
  * dateTime, localIp, localPort, localServerName, queryString, relativePath,
  * remoteIp, requestMethod, requestProtocol
  *
- * <br>for instance, with the following definition:
- * <br>{"name":"addRequestProperties", "phase":"REQUEST", "args":{"log":
- * ["userName", "remoteIp"]}}
- * <br>injected properties are: log: { userName:"andrea", remoteIp:"127.0.0.1"}
- *
- * <br>for instance, with the following definition:
- * <br>{"name":"addRequestProperties", "phase":"REQUEST", "args":["userName",
- * "remoteIp"]}
- * <br>injected properties are: userName:"andrea", remoteIp:"127.0.0.1"
- *
  */
 @RegisterPlugin(name = "addRequestProperties",
-        description = "Adds properties to the request body")
-@SuppressWarnings("deprecation")
-public class RequestPropsInjectorTransformer implements Transformer {
-    static final Logger LOGGER
-            = LoggerFactory.getLogger(RequestPropsInjectorTransformer.class);
-
+        description = "Adds properties to write requests on documents of collections with special metadata")
+public class AddRequestProperties implements BsonInterceptor {
     /**
      *
-     * @param exchange
-     * @param context
-     * @param contentToTransform
-     * @param args properties to add
      */
     @Override
-    public void transform(
-            final HttpServerExchange exchange,
-            final RequestContext context,
-            BsonValue contentToTransform,
-            final BsonValue args) {
-        if (context.isGet()) {
-            // nothing to do
-            return;
+    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+        var args = Metadata
+                .getFromJson(request.getCollectionProps())
+                .stream()
+                .filter(rt -> "addRequestProperties".equals(rt.getName()))
+                .findFirst()
+                .get()
+                .getArgs();
+
+        var content = request.getContent() != null
+                ? request.getContent()
+                : new BsonDocument();
+
+        if (content.isDocument()) {
+            addProps(content.asDocument(), args, request, response);
+        } else if (content.isArray()) {
+            content.asArray()
+                    .stream()
+                    .filter(doc -> doc.isDocument())
+                    .map(doc -> doc.asDocument())
+                    .forEach(doc -> addProps(doc, args, request, response));
         }
 
-        if (contentToTransform == null) {
-            // nothing to do
-            return;
-        }
+        request.setContent(content);
+    }
 
-        if (!contentToTransform.isDocument()) {
-            throw new IllegalStateException(
-                    "content to transform is not a document");
-        }
+    @Override
+    public boolean resolve(BsonRequest request, BsonResponse response) {
+        return !request.isGet()
+                && !request.isOptions()
+                && !request.isDelete()
+                && Metadata
+                        .getFromJson(request.getCollectionProps())
+                        .stream()
+                        .filter(rt -> "addRequestProperties".equals(rt.getName()))
+                        .findFirst().isPresent();
+    }
 
-        BsonDocument _contentToTransform = contentToTransform.asDocument();
-
+    private void addProps(BsonDocument doc, BsonValue args, BsonRequest request, BsonResponse response) {
         BsonDocument injected = new BsonDocument();
 
         if (args.isDocument()) {
             BsonDocument _args = args.asDocument();
 
             HashMap<String, BsonValue> properties
-                    = getPropsValues(exchange, context);
+                    = getPropsValues(request.getExchange());
 
             String firstKey = _args.keySet().iterator().next();
 
@@ -130,25 +137,24 @@ public class RequestPropsInjectorTransformer implements Transformer {
                         if (value != null) {
                             injected.put(el, value);
                         } else {
-                            context.addWarning("property in the args list "
+                            response.addWarning("property in the args list "
                                     + "does not have a value: " + _el);
                         }
                     } else {
-                        context.addWarning("property in the args list "
+                        response.addWarning("property in the args list "
                                 + "is not a string: " + _el);
                     }
                 });
 
-                _contentToTransform.put(firstKey, injected);
+                doc.put(firstKey, injected);
             } else {
-                context.addWarning("transformer wrong definition: "
+                response.addWarning("transformer wrong definition: "
                         + "args must be an object with a array containing "
                         + "the names of the properties to inject. got "
                         + _args.toJson());
             }
         } else if (args.isArray()) {
-            HashMap<String, BsonValue> properties
-                    = getPropsValues(exchange, context);
+            HashMap<String, BsonValue> properties = getPropsValues(request.getExchange());
 
             BsonArray toinject = args.asArray();
 
@@ -161,35 +167,34 @@ public class RequestPropsInjectorTransformer implements Transformer {
                     if (value != null) {
                         injected.put(el, value);
                     } else {
-                        context.addWarning("property in the args list does not have a value: " + _el);
+                        response.addWarning("property in the args list does not have a value: " + _el);
                     }
                 } else {
-                    context.addWarning("property in the args list is not a string: " + _el);
+                    response.addWarning("property in the args list is not a string: " + _el);
                 }
             });
 
-            _contentToTransform.putAll(injected);
+            doc.putAll(injected);
         } else {
-            context.addWarning("transformer wrong definition: "
+            response.addWarning("transformer wrong definition: "
                     + "args must be an object with a array containing "
                     + "the names of the properties to inject. got "
                     + JsonUtils.toJson(args));
         }
     }
 
-    HashMap<String, BsonValue> getPropsValues(
-            final HttpServerExchange exchange,
-            final RequestContext context) {
+    private HashMap<String, BsonValue> getPropsValues(
+            final HttpServerExchange exchange) {
         HashMap<String, BsonValue> properties = new HashMap<>();
 
         String _userName = ExchangeAttributes
-                        .remoteUser()
-                        .readAttribute(exchange);
-        
-        BsonValue userName = _userName != null 
+                .remoteUser()
+                .readAttribute(exchange);
+
+        BsonValue userName = _userName != null
                 ? new BsonString(_userName)
                 : BsonNull.VALUE;
-        
+
         // remote user
         properties.put("userName", userName);
 
@@ -256,5 +261,92 @@ public class RequestPropsInjectorTransformer implements Transformer {
                 ExchangeAttributes.requestProtocol().readAttribute(exchange)));
 
         return properties;
+    }
+}
+
+class Metadata {
+
+    /**
+     *
+     */
+    public static final String RTS_ELEMENT_NAME = "rts";
+
+    /**
+     *
+     */
+    public static final String RT_NAME_ELEMENT_NAME = "name";
+
+    /**
+     *
+     */
+    public static final String RT_ARGS_ELEMENT_NAME = "args";
+
+    /**
+     *
+     * @param props
+     * @return
+     * @throws InvalidMetadataException
+     */
+    public static List<Metadata> getFromJson(BsonDocument props) {
+        BsonValue _rts = props.get(RTS_ELEMENT_NAME);
+
+        if (_rts == null || !_rts.isArray()) {
+            return Lists.newArrayList();
+        }
+
+        BsonArray rts = _rts.asArray();
+
+        List<Metadata> ret = new ArrayList<>();
+
+        rts.getValues().stream()
+                .filter(o -> (o.isDocument()))
+                .forEachOrdered(o -> ret.add(getSingleFromJson(o.asDocument())));
+
+        return ret;
+    }
+
+    private static Metadata getSingleFromJson(BsonDocument props) {
+        BsonValue _name = props.get(RT_NAME_ELEMENT_NAME);
+        BsonValue _args = props.get(RT_ARGS_ELEMENT_NAME);
+
+        String name;
+
+        if (_name == null || !_name.isString()) {
+            name = null;
+        } else {
+            name = _name.asString().getValue();
+        }
+
+        return new Metadata(name, _args);
+    }
+
+    private final String name;
+    private final BsonValue args;
+
+    /**
+     *
+     * @param phase
+     * @param scope
+     * @param name the name of the transfromer as specified in the yml
+     * configuration file
+     * @param args
+     */
+    public Metadata(String name, BsonValue args) {
+        this.name = name;
+        this.args = args;
+    }
+
+    /**
+     * @return the name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @return the args
+     */
+    public BsonValue getArgs() {
+        return args;
     }
 }

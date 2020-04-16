@@ -23,16 +23,11 @@ package org.restheart.mongodb.utils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
-import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.handlers.exchange.BsonResponse;
 import org.restheart.handlers.exchange.OperationResult;
-import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
-import org.restheart.mongodb.metadata.CheckerMetadata;
-import org.restheart.mongodb.metadata.Relationship;
-import org.restheart.mongodb.metadata.TransformerMetadata;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -93,56 +88,6 @@ public class RequestHelper {
         } else {
             return new ObjectId();
         }
-    }
-
-    /**
-     *
-     * @param content
-     * @param exchange
-     * @return true if content contains invalid metata. In this case it also
- invoke response.setInError() on the exchange and the
- caller must invoke next() and return
-     * @throws Exception
-     */
-    public static boolean isInvalidMetadata(BsonDocument content, 
-            HttpServerExchange exchange) throws Exception {
-        // check RELS metadata
-        if (content.containsKey(Relationship.RELATIONSHIPS_ELEMENT_NAME)) {
-            try {
-                Relationship.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                BsonResponse.wrap(exchange).setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong relationships definition. "
-                        + ex.getMessage(), ex);
-                return true;
-            }
-        }
-        // check RT metadata
-        if (content.containsKey(TransformerMetadata.RTS_ELEMENT_NAME)) {
-            try {
-                TransformerMetadata.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                BsonResponse.wrap(exchange).setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong representation transformer definition. "
-                        + ex.getMessage(), ex);
-                return true;
-            }
-        }
-        // check SC metadata
-        if (content.containsKey(CheckerMetadata.ROOT_KEY)) {
-            try {
-                CheckerMetadata.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                BsonResponse.wrap(exchange).setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong checker definition. "
-                        + ex.getMessage(), ex);
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

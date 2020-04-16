@@ -27,12 +27,11 @@ import org.restheart.handlers.exchange.BsonRequest;
 import org.restheart.handlers.exchange.BsonResponse;
 
 /**
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- *
  * For count request (/_size) sets the pagesize to 0 to avoid retrieving data
  * and sets response content to just contain the _size property
  *
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SizeRequestTransformer extends PipelinedHandler {
     private final boolean phase;
