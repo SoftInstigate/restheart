@@ -41,13 +41,13 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name="dbPropsInjector", 
+@RegisterPlugin(name = "dbPropsInjector",
         description = "Injects the db properties into the BsonRequest",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         priority = Integer.MIN_VALUE)
 public class DbPropsInjector implements Interceptor<BsonRequest, BsonResponse> {
     private DatabaseImpl dbsDAO = null;
-    
+
     @InjectMongoClient
     public void init(MongoClient mclient) {
         this.dbsDAO = new DatabaseImpl();
@@ -96,8 +96,9 @@ public class DbPropsInjector implements Interceptor<BsonRequest, BsonResponse> {
 
     @Override
     public boolean resolve(BsonRequest request, BsonResponse response) {
-        return this.dbsDAO != null && 
-                !(request.isInError()
+        return this.dbsDAO != null
+                && "mongo".equals(request.getPipelineInfo().getName())
+                && !(request.isInError()
                 || request.isSessions()
                 || request.isTxn()
                 || request.isTxns()
