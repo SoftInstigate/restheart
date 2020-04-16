@@ -31,7 +31,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.handlers.exchange.OperationResult;
+import org.restheart.exchange.OperationResult;
 import org.restheart.utils.HttpStatus;
 
 /**

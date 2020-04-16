@@ -24,7 +24,7 @@ import com.mongodb.client.ClientSession;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.Document;
-import org.restheart.handlers.exchange.OperationResult;
+import org.restheart.exchange.OperationResult;
 
 /**
  *

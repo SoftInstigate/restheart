@@ -27,9 +27,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import org.restheart.handlers.exchange.AbstractRequest;
-import org.restheart.handlers.exchange.AbstractResponse;
-import org.restheart.handlers.exchange.BufferedJsonRequest;
+import org.restheart.exchange.AbstractRequest;
+import org.restheart.exchange.AbstractResponse;
+import org.restheart.exchange.BufferedJsonRequest;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.HandlingPlugin;
 

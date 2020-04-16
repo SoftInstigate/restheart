@@ -42,7 +42,7 @@ import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
-import org.restheart.handlers.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

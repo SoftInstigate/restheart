@@ -19,8 +19,8 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.BsonResponse;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.BsonResponse;
 
 /**
  *

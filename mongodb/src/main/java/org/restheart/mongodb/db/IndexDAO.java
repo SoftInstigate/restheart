@@ -33,7 +33,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import static org.restheart.handlers.exchange.ExchangeKeys.DB_META_DOCID;
+import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import org.restheart.utils.HttpStatus;
 
 /**

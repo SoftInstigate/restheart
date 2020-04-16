@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
+package org.restheart.exchange;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonArray;
@@ -30,7 +30,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
-import static org.restheart.handlers.exchange.AbstractExchange.MAX_BUFFERS;
+import static org.restheart.exchange.AbstractExchange.MAX_BUFFERS;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
 

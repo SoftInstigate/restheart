@@ -24,7 +24,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.Optional;
 import org.restheart.Bootstrapper;
-import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.BufferedByteArrayResponse;
 import org.slf4j.MDC;
 public class TracingInstrumentationHandler extends PipelinedHandler {
     public TracingInstrumentationHandler() {

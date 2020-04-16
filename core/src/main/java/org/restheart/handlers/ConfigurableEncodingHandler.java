@@ -29,8 +29,8 @@ import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
-import org.restheart.handlers.exchange.AbstractExchange;
-import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.AbstractExchange;
+import org.restheart.exchange.BufferedByteArrayResponse;
 import org.restheart.utils.HttpStatus;
 
 /**

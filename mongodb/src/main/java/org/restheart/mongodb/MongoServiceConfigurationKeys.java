@@ -20,8 +20,8 @@
  */
 package org.restheart.mongodb;
 
-import org.restheart.handlers.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
-import org.restheart.handlers.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
+import org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY;
+import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 
 /**
  *

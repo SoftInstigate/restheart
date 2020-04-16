@@ -22,9 +22,9 @@ package org.restheart.mongodb.handlers.transformers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.BsonResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.BsonRequest;
-import org.restheart.handlers.exchange.BsonResponse;
 
 /**
  * For count request (/_size) sets the pagesize to 0 to avoid retrieving data

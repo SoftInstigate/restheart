@@ -19,8 +19,8 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.handlers.exchange.AbstractRequest;
-import org.restheart.handlers.exchange.AbstractResponse;
+import org.restheart.exchange.AbstractRequest;
+import org.restheart.exchange.AbstractResponse;
 
 /**
  * Interceptors allow to snoop and modify requests and responses at different

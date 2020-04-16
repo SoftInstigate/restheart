@@ -22,9 +22,9 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import java.nio.ByteBuffer;
-import org.restheart.handlers.exchange.BufferedByteArrayResponse;
-import org.restheart.handlers.exchange.PipelineInfo;
-import org.restheart.handlers.exchange.Response;
+import org.restheart.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.PipelineInfo;
+import org.restheart.exchange.Response;
 import org.restheart.plugins.PluginsRegistryImpl;
 
 /**

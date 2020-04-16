@@ -22,7 +22,7 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.BufferedByteArrayResponse;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -30,7 +30,7 @@ import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import org.restheart.handlers.exchange.RequestContext;
+import org.restheart.exchange.RequestContext;
 import org.restheart.mongodb.plugins.checkers.CheckersUtils;
 import org.restheart.plugins.mongodb.Checker;
 import org.slf4j.Logger;

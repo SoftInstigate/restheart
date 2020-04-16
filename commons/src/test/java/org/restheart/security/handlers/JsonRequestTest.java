@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.restheart.handlers.exchange.BufferedJsonRequest;
+import org.restheart.exchange.BufferedJsonRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

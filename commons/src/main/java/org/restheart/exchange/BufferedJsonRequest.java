@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.handlers.exchange;
+package org.restheart.exchange;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -29,7 +29,7 @@ import io.undertow.util.Headers;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import static org.restheart.handlers.exchange.AbstractExchange.LOGGER;
+import static org.restheart.exchange.AbstractExchange.LOGGER;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
 

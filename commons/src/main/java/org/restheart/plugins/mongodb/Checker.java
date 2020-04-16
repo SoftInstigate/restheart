@@ -22,7 +22,7 @@ package org.restheart.plugins.mongodb;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.exchange.RequestContext;
+import org.restheart.exchange.RequestContext;
 import org.restheart.plugins.Plugin;
 
 /**

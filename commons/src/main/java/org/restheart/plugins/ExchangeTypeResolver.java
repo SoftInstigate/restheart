@@ -21,8 +21,8 @@ package org.restheart.plugins;
 
 import com.google.common.reflect.TypeToken;
 import java.lang.reflect.Type;
-import org.restheart.handlers.exchange.AbstractRequest;
-import org.restheart.handlers.exchange.AbstractResponse;
+import org.restheart.exchange.AbstractRequest;
+import org.restheart.exchange.AbstractResponse;
 
 /**
  * Interface to get the response and request implementation classes at runtime

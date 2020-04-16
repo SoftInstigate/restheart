@@ -22,10 +22,10 @@ package org.restheart.plugins;
 import io.undertow.server.HttpServerExchange;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.restheart.handlers.exchange.JsonRequest;
-import org.restheart.handlers.exchange.JsonResponse;
-import org.restheart.handlers.exchange.Request;
-import org.restheart.handlers.exchange.Response;
+import org.restheart.exchange.JsonRequest;
+import org.restheart.exchange.JsonResponse;
+import org.restheart.exchange.Request;
+import org.restheart.exchange.Response;
 
 /**
  *

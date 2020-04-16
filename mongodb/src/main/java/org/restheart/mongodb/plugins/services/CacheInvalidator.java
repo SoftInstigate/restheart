@@ -21,8 +21,8 @@
 package org.restheart.mongodb.plugins.services;
 
 import java.util.Deque;
-import org.restheart.handlers.exchange.ByteArrayRequest;
-import org.restheart.handlers.exchange.ByteArrayResponse;
+import org.restheart.exchange.ByteArrayRequest;
+import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.plugins.interceptors.LocalCachesSingleton;
 import org.restheart.plugins.ByteArrayService;

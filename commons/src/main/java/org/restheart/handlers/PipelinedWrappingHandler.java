@@ -21,8 +21,8 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.handlers.exchange.Request;
-import org.restheart.handlers.exchange.Response;
+import org.restheart.exchange.Request;
+import org.restheart.exchange.Response;
 import org.restheart.plugins.Service;
 
 /**

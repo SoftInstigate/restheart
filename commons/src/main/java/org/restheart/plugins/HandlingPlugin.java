@@ -19,8 +19,8 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.handlers.exchange.AbstractRequest;
-import org.restheart.handlers.exchange.AbstractResponse;
+import org.restheart.exchange.AbstractRequest;
+import org.restheart.exchange.AbstractResponse;
 
 /**
  * Parent interface of handling plugins: Service and Proxy

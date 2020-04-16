@@ -25,7 +25,7 @@ import com.mongodb.client.MongoCollection;
 import java.util.Formatter;
 import java.util.Objects;
 import org.bson.BsonDocument;
-import org.restheart.handlers.exchange.ClientSessionImpl;
+import org.restheart.exchange.ClientSessionImpl;
 
 /**
  *

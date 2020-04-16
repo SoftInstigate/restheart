@@ -28,8 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
-import org.restheart.handlers.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
-import org.restheart.handlers.exchange.OperationResult;
+import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.exchange.OperationResult;
 import org.restheart.representation.IllegalQueryParamenterException;
 
 /**

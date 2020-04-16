@@ -21,8 +21,8 @@
 package org.restheart.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
+import org.restheart.exchange.BufferedByteArrayRequest;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.handlers.exchange.BufferedByteArrayRequest;
 import org.restheart.plugins.PluginsRegistryImpl;
 
 /**
