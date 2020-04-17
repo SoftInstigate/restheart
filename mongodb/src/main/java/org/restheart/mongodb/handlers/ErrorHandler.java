@@ -30,7 +30,6 @@ import org.restheart.exchange.BsonResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.exchange.ResponseContentInjector;
 import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;
-import org.restheart.mongodb.handlers.transformers.RepresentationTransformer;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;

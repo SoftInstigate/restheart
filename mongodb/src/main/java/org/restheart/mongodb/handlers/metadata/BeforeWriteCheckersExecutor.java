@@ -190,13 +190,13 @@ public class BeforeWriteCheckersExecutor extends PipelinedHandler
             LOGGER.debug("checker '{}' does not support this request. Check will fail", checker.getClass().getSimpleName());
             String noteMsg = "";
 
-            if (CheckersUtils.doesRequestUsesDotNotation(
+            if (CheckersUtils.doesRequestUseDotNotation(
                     request.getContent())) {
                 noteMsg = noteMsg.concat(
                         "uses the dot notation");
             }
 
-            if (CheckersUtils.doesRequestUsesUpdateOperators(
+            if (CheckersUtils.doesRequestUseUpdateOperators(
                     request.getContent())) {
                 noteMsg = noteMsg.isEmpty()
                         ? "uses update operators"

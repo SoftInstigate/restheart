@@ -165,9 +165,9 @@ public class JsonSchemaChecker implements Checker {
     public PHASE getPhase(RequestContext context) {
         if (context.isPatch()
                 || CheckersUtils
-                        .doesRequestUsesDotNotation(context.getContent())
+                        .doesRequestUseDotNotation(context.getContent())
                 || CheckersUtils
-                        .doesRequestUsesUpdateOperators(context.getContent())) {
+                        .doesRequestUseUpdateOperators(context.getContent())) {
             return PHASE.AFTER_WRITE;
         } else {
             return PHASE.BEFORE_WRITE;
