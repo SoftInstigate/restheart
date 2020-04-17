@@ -21,12 +21,12 @@
 package org.restheart.mongodb.interceptors;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
-import org.restheart.exchange.RequestContext;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.BsonResponse;
+import org.restheart.plugins.BsonInterceptor;
+import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.mongodb.Checker;
-import org.restheart.plugins.mongodb.Checker.PHASE;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,66 +34,69 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  *
- * ContentSizeChecker allows to check the request content length
+ * ContentSizeChecker allows to check the request content length on documents of
+ * collections that have the following metadata:
  *
- * the args arguments is the size condition: a is json object as follows: {
- * "max": MAX_SIZE, "min": MIN_SIZE }
+ * { "checkContentSize": { "max": MAX_SIZE, "min": MIN_SIZE } }
  *
- * sizes are in bytes
- *
+ * Sizes are in bytes
+ * 
  */
 @RegisterPlugin(
-        name = "checkContentSize", 
-        description = "Checks the request content length")
+        name = "checkContentSize",
+        description = "Checks the write request content length on documents of collections with 'checkContentSize' metadata",
+        interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH)
 @SuppressWarnings("deprecation")
-public class ContentSizeChecker implements Checker {
+public class ContentSizeChecker implements BsonInterceptor {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ContentSizeChecker.class);
 
     /**
      *
-     * @param exchange
-     * @param context
-     * @param contentToCheck
-     * @param args
-     * @return
      */
     @Override
-    public boolean check(
-            HttpServerExchange exchange,
-            RequestContext context,
-            BsonDocument contentToCheck,
-            BsonValue args) {
-        if (args.isDocument()) {
-            BsonDocument condition = args.asDocument();
+    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+        Integer max = request.getCollectionProps()
+                .get("checkContentSize")
+                .asDocument()
+                .get("max")
+                .asInt32()
+                .intValue();
 
-            Integer maxSize;
-            BsonValue _maxSize = condition.get("max");
+        Integer min = request.getCollectionProps()
+                .get("checkContentSize")
+                .asDocument()
+                .containsKey("min")
+                && request.getCollectionProps()
+                        .get("checkContentSize")
+                        .asDocument()
+                        .get("min")
+                        .isInt32()
+                        ? request.getCollectionProps()
+                                .get("checkContentSize")
+                                .asDocument()
+                                .get("min")
+                                .asInt32()
+                                .intValue()
+                        : null;
 
-            if (_maxSize != null && _maxSize.isInt32()) {
-                maxSize = _maxSize.asInt32().getValue();
+        var check = (min == null
+                ? checkSize(request.getExchange(), -1, max)
+                : checkSize(request.getExchange(), min, max));
+
+        if (!check) {
+            var errorMsg = "Request violates content length constraints: ";
+
+            if (min != null) {
+                errorMsg = errorMsg
+                        .concat("min size=").concat(min.toString())
+                        .concat("max size=").concat(max.toString());
             } else {
-                context.addWarning("checker wrong definition: "
-                        + "'max' property missing.");
-                return true;
+                errorMsg = errorMsg
+                        .concat("max size=").concat(max.toString());
             }
 
-            Integer minSize = null;
-            BsonValue _minSize = condition.get("min");
-
-            if (_minSize != null) {
-                minSize = _minSize.asNumber().intValue();
-            }
-
-            return (minSize == null
-                    ? checkSize(exchange, -1, maxSize)
-                    : checkSize(exchange, minSize, maxSize));
-
-        } else {
-            context.addWarning("checker wrong definition: "
-                    + "args property must be a json object "
-                    + "with 'min' and 'max' properties.");
-            return true;
+            response.setInError(HttpStatus.SC_BAD_REQUEST, errorMsg);
         }
     }
 
@@ -117,17 +120,23 @@ public class ContentSizeChecker implements Checker {
     }
 
     @Override
-    public PHASE getPhase(RequestContext context) {
-        return PHASE.BEFORE_WRITE;
-    }
-
-    /**
-     *
-     * @param context
-     * @return
-     */
-    @Override
-    public boolean doesSupportRequests(RequestContext context) {
-        return true;
+    public boolean resolve(BsonRequest request, BsonResponse response) {
+        return !request.isGet()
+                && !request.isOptions()
+                && !request.isDelete()
+                && request.getCollectionProps()
+                        .containsKey("checkContentSize")
+                && request.getCollectionProps()
+                        .get("checkContentSize")
+                        .isDocument()
+                && request.getCollectionProps()
+                        .get("checkContentSize")
+                        .asDocument()
+                        .containsKey("max")
+                && request.getCollectionProps()
+                        .get("checkContentSize")
+                        .asDocument()
+                        .get("max")
+                        .isInt32();
     }
 }

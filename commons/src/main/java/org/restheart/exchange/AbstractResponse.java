@@ -126,11 +126,21 @@ public abstract class AbstractResponse<T> extends AbstractExchange<T> {
      *
      * @param code
      * @param message
-     * @param t
+     * @param t can be null
      */
     public abstract void setInError(int code,
             String message,
             Throwable t);
+    
+    /**
+     *
+     * @param code
+     * @param message
+     */
+    public void setInError(int code,
+            String message) {
+        setInError(code, message, null);
+    }
 
     /**
      *
