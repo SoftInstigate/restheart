@@ -20,25 +20,26 @@
  */
 package org.restheart.mongodb.interceptors;
 
-import io.undertow.server.HttpServerExchange;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
-import org.json.JSONException;
 import org.json.JSONObject;
+import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.BsonResponse;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
-import org.restheart.exchange.RequestContext;
 import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.plugins.BsonInterceptor;
+import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.mongodb.Checker;
 import org.restheart.representation.UnsupportedDocumentIdException;
-import org.restheart.utils.CheckersUtils;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,13 +47,30 @@ import org.slf4j.LoggerFactory;
  *
  * Checks documents according to the specified JSON schema
  *
+ * This intercetor is able to check PUT and POST requests that don't use update
+ * operators. PATCH requests are checked by jsonSchemaAfterWrite
+ * <br><br>
+ * Note that checking bulk PATCH, i.e. PATCH /coll/*, is not supported. In this
+ * case the optional metadata property 'skipNotSuppored' controls the behaviour:
+ * if true, the request is not checked and executed, if false the request fails.
+ *
+ * It checks the request content against the JSON schema specified by the
+ * 'jsonSchema' collection metadata:
+ * <br><br>
+ * { "jsonSchema": { "schemaId": &lt;schemaId&gt; "schemaStoreDb":
+ * &lt;schemaStoreDb&gt;, "skipNotSupported": &lt;boolean&gt; } }
+ * <br><br>
+ * schemaStoreDb is optional, default value is same db, skipNotSuppored is
+ * optional, defaul value is false
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-        name = "jsonSchema",
-        description = "Checks the request according to the specified JSON schema")
+        name = "jsonSchemaBeforeWrite",
+        description = "Checks the request content against the JSON schema specified by the 'jsonSchema' collection metadata",
+        interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 @SuppressWarnings("deprecation")
-public class JsonSchemaBeforeWriteChecker implements Checker {
+public class JsonSchemaBeforeWriteChecker implements BsonInterceptor {
 
     /**
      *
@@ -64,60 +82,71 @@ public class JsonSchemaBeforeWriteChecker implements Checker {
      */
     public static final String SCHEMA_ID_PROPERTY = "schemaId";
 
+    /**
+     *
+     */
+    public static final String SKIP_NOT_SUPPORTED_PROPERTY = "skipNotSupported";
+
     static final Logger LOGGER
             = LoggerFactory.getLogger(JsonSchemaBeforeWriteChecker.class);
 
-    /**
-     *
-     * @param exchange
-     * @param context
-     * @param contentToCheck
-     * @param args
-     * @return
-     */
     @Override
-    public boolean check(
-            HttpServerExchange exchange,
-            RequestContext context,
-            BsonDocument contentToCheck,
-            BsonValue args) {
-        Objects.requireNonNull(args, "missing metadata property 'args'");
+    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+        var args = request.getCollectionProps()
+                .get("jsonSchema")
+                .asDocument();
 
-        // cannot PUT an array
-        if (args == null || !args.isDocument()) {
-            BsonResponse.wrap(exchange).setIError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "args must be a json object");
-            return false;
+        // this request is not supported by jsonSchema checkers
+        // 
+        if (request.isPatch() && request.isBulkDocuments()) {
+            BsonValue skipNotSupported = args.get(SKIP_NOT_SUPPORTED_PROPERTY);
+
+            if (skipNotSupported != null
+                    && skipNotSupported.isBoolean()
+                    && skipNotSupported.asBoolean().getValue()) {
+                LOGGER.debug("skipping jsonSchema checking since the request is a bulk PATCH and skipNotSupported=true");
+                return;
+            } else {
+                response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
+                        "'jsonSchema' checker does not support bulk PATCH requests. "
+                        + "Set 'skipNotSupported:true' to allow them.");
+                return;
+            }
         }
 
-        BsonDocument _args = args.asDocument();
-
-        BsonValue _schemaStoreDb = _args.get(SCHEMA_STORE_DB_PROPERTY);
+        BsonValue _schemaStoreDb = args.get(SCHEMA_STORE_DB_PROPERTY);
         String schemaStoreDb;
 
-        BsonValue schemaId = _args.get(SCHEMA_ID_PROPERTY);
+        BsonValue schemaId = args.get(SCHEMA_ID_PROPERTY);
 
-        Objects.requireNonNull(schemaId, "missing property '"
-                + SCHEMA_ID_PROPERTY
-                + "' in metadata property 'args'");
+        if (schemaId == null) {
+            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "wrong 'jsonSchema': missing property "
+                    + SCHEMA_ID_PROPERTY);
+            return;
+        }
 
         if (_schemaStoreDb == null) {
             // if not specified assume the current db as the schema store db
-            schemaStoreDb = context.getDBName();
+            schemaStoreDb = request.getDBName();
         } else if (_schemaStoreDb.isString()) {
             schemaStoreDb = _schemaStoreDb.asString().getValue();
         } else {
-            throw new IllegalArgumentException("property "
+            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "wrong 'jsonSchema': "
+                    + "property "
                     + SCHEMA_STORE_DB_PROPERTY
-                    + " in metadata 'args' must be a string");
+                    + " must be a string");
+            return;
         }
 
         try {
             URLUtils.checkId(schemaId);
         } catch (UnsupportedDocumentIdException ex) {
-            throw new IllegalArgumentException(
-                    "schema 'id' is not a valid id", ex);
+            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "wrong 'jsonSchema': "
+                    + "schema 'id' is not valid", ex);
+            return;
         }
 
         Schema theschema;
@@ -127,62 +156,91 @@ public class JsonSchemaBeforeWriteChecker implements Checker {
                     .getInstance()
                     .get(schemaStoreDb, schemaId);
         } catch (JsonSchemaNotFoundException ex) {
-            context.addWarning(ex.getMessage());
-            return false;
+            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "wrong 'jsonSchema': schema "
+                    + schemaStoreDb + "/" + _SCHEMAS + "/"
+                    + JsonUtils.getIdAsString(schemaId, false)
+                    + " not found");
+            return;
         }
 
         if (Objects.isNull(theschema)) {
-            throw new IllegalArgumentException("cannot validate, schema "
-                    + schemaStoreDb
-                    + "/"
-                    + _SCHEMAS
-                    + "/" + schemaId.toString() + " not found");
+            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "wrong 'jsonSchema': schema "
+                    + schemaStoreDb + "/" + _SCHEMAS + "/"
+                    + JsonUtils.getIdAsString(schemaId, false)
+                    + " not found");
+            return;
         }
 
-        String _data = contentToCheck == null
-                ? "{}"
-                : contentToCheck.toJson();
+        documentsToCheck(request, response)
+                .stream()
+                .forEachOrdered(doc -> {
 
-        try {
-            theschema.validate(
-                    new JSONObject(_data));
-        } catch (JSONException je) {
-            context.addWarning(je.getMessage());
+                    try {
+                        theschema.validate(doc);
+                    } catch (ValidationException ve) {
+                        var errors = new ArrayList<String>();
 
-            return false;
-        } catch (ValidationException ve) {
-            context.addWarning(ve.getMessage());
-            ve.getCausingExceptions().stream()
-                    .map(ValidationException::getMessage)
-                    .forEach(context::addWarning);
+                        errors.add(ve.getMessage().replaceAll("#: ", ""));
 
-            return false;
+                        ve.getCausingExceptions().stream()
+                                .map(ValidationException::getMessage)
+                                .forEach(errors::add);
+
+                        var errMsgBuilder = new StringBuilder();
+
+                        errors.stream()
+                                .map(e -> e.replaceAll("#: ", ""))
+                                .forEachOrdered(e -> errMsgBuilder.append(e).append(", "));
+
+                        var errMsg = errMsgBuilder.toString();
+
+                        if (errMsg.length() > 2
+                                && ", ".equals(errMsg.substring(errMsg.length() - 2, errMsg.length()))) {
+                            errMsg = errMsg.substring(0, errMsg.length() - 2);
+
+                        }
+
+                        response.setInError(HttpStatus.SC_BAD_REQUEST,
+                                "Request content violates schema "
+                                + JsonUtils.getIdAsString(schemaId, true)
+                                + ": "
+                                + errMsg);
+                    }
+                });
+    }
+
+    List<JSONObject> documentsToCheck(BsonRequest request, BsonResponse response) {
+        var ret = new ArrayList<JSONObject>();
+
+        var content = request.getContent() == null
+                ? new BsonDocument()
+                : request.getContent();
+
+        if (content.isDocument()) {
+            ret.add(new JSONObject(content.asDocument().toJson()));
+        } else if (content.isArray()) {
+            content.asArray()
+                    .stream()
+                    .filter(doc -> doc.isDocument())
+                    .map(doc -> doc.asDocument().toJson())
+                    .map(doc -> new JSONObject(doc))
+                    .forEachOrdered(ret::add);
         }
 
-        return true;
+        return ret;
     }
 
     @Override
-    public PHASE getPhase(RequestContext context) {
-        if (context.isPatch()
-                || CheckersUtils
-                        .doesRequestUseDotNotation(context.getContent())
-                || CheckersUtils
-                        .doesRequestUseUpdateOperators(context.getContent())) {
-            return PHASE.AFTER_WRITE;
-        } else {
-            return PHASE.BEFORE_WRITE;
-        }
-    }
-
-    /**
-     *
-     * @param context
-     * @return
-     */
-    @Override
-    public boolean doesSupportRequests(RequestContext context) {
-        return !(CheckersUtils.isBulkRequest(context)
-                && getPhase(context) == PHASE.AFTER_WRITE);
+    public boolean resolve(BsonRequest request, BsonResponse response) {
+        return ((request.isWriteDocument() && !request.isPatch())
+                || (request.isPatch() && request.isBulkDocuments()))
+                && request.getCollectionProps() != null
+                && request.getCollectionProps()
+                        .containsKey("jsonSchema")
+                && request.getCollectionProps()
+                        .get("jsonSchema")
+                        .isDocument();
     }
 }

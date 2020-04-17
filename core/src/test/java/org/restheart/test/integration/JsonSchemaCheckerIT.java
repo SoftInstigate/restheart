@@ -101,7 +101,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         resp = Unirest.put(url(DB, COLL_BASIC))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
-                .body("{'checkers': [ { 'name': 'jsonSchema', 'args': { 'schemaId': 'basic' }, 'skipNotSupported': true } ] }")
+                .body("{ 'jsonSchema': { 'schemaId': 'basic', 'skipNotSupported': true } }")
                 .asString();
 
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL_BASIC), HttpStatus.SC_CREATED, resp.getStatus());
@@ -110,7 +110,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         resp = Unirest.put(url(DB, COLL_CHILD))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
-                .body("{'checkers': [ { 'name': 'jsonSchema', 'args': { 'schemaId': 'child' }, 'skipNotSupported': true } ] }")
+                .body("{ 'jsonSchema': { 'schemaId': 'child', 'skipNotSupported': true } }")
                 .asString();
 
         Assert.assertEquals("create collection " + DB.concat("/").concat(COLL_CHILD), HttpStatus.SC_CREATED, resp.getStatus());
