@@ -54,6 +54,11 @@ public class CollectionPropsInjector implements Interceptor<BsonRequest, BsonRes
     private static final String FILE_BUCKET_DOES_NOT_EXIST = "File Bucket '%s' does not exist";
     private static final String SCHEMA_STORE_DOES_NOT_EXIST = "Schema Store does not exist";
 
+    /**
+     * Makes sure that dbsDAO is instantiated after MongoClient initialization
+     *
+     * @param mclient
+     */
     @InjectMongoClient
     public void init(MongoClient mclient) {
         this.dbsDAO = new DatabaseImpl();
