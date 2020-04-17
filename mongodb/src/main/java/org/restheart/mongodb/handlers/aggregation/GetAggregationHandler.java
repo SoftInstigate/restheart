@@ -35,7 +35,7 @@ import org.restheart.exchange.BsonResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
+import org.restheart.mongodb.metadata.InvalidMetadataException;
 import org.restheart.representation.IllegalQueryParamenterException;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;

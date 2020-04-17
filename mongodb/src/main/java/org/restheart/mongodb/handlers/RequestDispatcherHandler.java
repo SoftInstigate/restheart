@@ -58,9 +58,6 @@ import org.restheart.mongodb.handlers.files.PutFileHandler;
 import org.restheart.mongodb.handlers.indexes.DeleteIndexHandler;
 import org.restheart.mongodb.handlers.indexes.GetIndexesHandler;
 import org.restheart.mongodb.handlers.indexes.PutIndexHandler;
-import org.restheart.mongodb.handlers.metadata.AfterWriteCheckersExecutor;
-import org.restheart.mongodb.handlers.metadata.BeforeWriteCheckersExecutor;
-import org.restheart.mongodb.handlers.metadata.CheckersListHandler;
 import org.restheart.mongodb.handlers.metrics.MetricsHandler;
 import org.restheart.mongodb.handlers.root.GetRootHandler;
 import org.restheart.mongodb.handlers.schema.JsonMetaSchemaChecker;
@@ -298,13 +295,10 @@ public class RequestDispatcherHandler extends PipelinedHandler {
         putHandler(TYPE.COLLECTION, METHOD.POST,
                 new NormalOrBulkDispatcherHandler(
                         PipelinedHandler.pipe(
-                                new BeforeWriteCheckersExecutor(),
                                 new PostCollectionHandler(),
-                                new AfterWriteCheckersExecutor(),
                                 DEFAULT_RESP_TRANFORMERS
                         ),
                         PipelinedHandler.pipe(
-                                new BeforeWriteCheckersExecutor(),
                                 new BulkPostCollectionHandler(),
                                 DEFAULT_RESP_TRANFORMERS)
                 ));
@@ -337,9 +331,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
 
         putHandler(TYPE.DOCUMENT, METHOD.PUT,
                 PipelinedHandler.pipe(
-                        new BeforeWriteCheckersExecutor(),
                         new PutDocumentHandler(),
-                        new AfterWriteCheckersExecutor(),
                         DEFAULT_RESP_TRANFORMERS
                 ));
 
@@ -351,9 +343,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
 
         putHandler(TYPE.DOCUMENT, METHOD.PATCH,
                 PipelinedHandler.pipe(
-                        new BeforeWriteCheckersExecutor(),
                         new PatchDocumentHandler(),
-                        new AfterWriteCheckersExecutor(),
                         DEFAULT_RESP_TRANFORMERS));
 
         // *** BULK_DOCUMENTS handlers, i.e. bulk operations
@@ -365,7 +355,6 @@ public class RequestDispatcherHandler extends PipelinedHandler {
 
         putHandler(TYPE.BULK_DOCUMENTS, METHOD.PATCH,
                 PipelinedHandler.pipe(
-                        new BeforeWriteCheckersExecutor(),
                         new BulkPatchDocumentsHandler(),
                         DEFAULT_RESP_TRANFORMERS
                 ));
@@ -419,14 +408,12 @@ public class RequestDispatcherHandler extends PipelinedHandler {
 
         putHandler(TYPE.FILES_BUCKET, METHOD.POST,
                 PipelinedHandler.pipe(
-                        new BeforeWriteCheckersExecutor(),
                         new PostBucketHandler(),
                         DEFAULT_RESP_TRANFORMERS
                 ));
 
         putHandler(TYPE.FILE, METHOD.PUT,
                 PipelinedHandler.pipe(
-                        new BeforeWriteCheckersExecutor(),
                         new PutFileHandler(),
                         new FileMetadataHandler(),
                         DEFAULT_RESP_TRANFORMERS
@@ -472,9 +459,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
         // can treat the metadata like a regular document.
         putHandler(TYPE.FILE, METHOD.PATCH,
                 PipelinedHandler.pipe(
-                        new BeforeWriteCheckersExecutor(),
                         new FileMetadataHandler(),
-                        new AfterWriteCheckersExecutor(),
                         DEFAULT_RESP_TRANFORMERS
                 ));
 
@@ -528,7 +513,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
 
         putHandler(TYPE.SCHEMA_STORE, METHOD.POST,
                 PipelinedHandler.pipe(
-                        new CheckersListHandler(new JsonMetaSchemaChecker()),
+                        new JsonMetaSchemaChecker(),
                         new JsonSchemaTransformer(true),
                         new PostCollectionHandler(),
                         DEFAULT_RESP_TRANFORMERS
@@ -549,7 +534,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
 
         putHandler(TYPE.SCHEMA, METHOD.PUT,
                 PipelinedHandler.pipe(
-                        new CheckersListHandler(new JsonMetaSchemaChecker()),
+                        new JsonMetaSchemaChecker(),
                         new JsonSchemaTransformer(true),
                         new PutDocumentHandler(),
                         DEFAULT_RESP_TRANFORMERS

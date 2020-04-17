@@ -25,8 +25,6 @@ import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.plugins.mongodb.Checker;
-import org.restheart.plugins.mongodb.GlobalChecker;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
@@ -85,19 +83,6 @@ public interface PluginsRegistry {
      * security predicates to apply to all requests
      */
     public Set<Predicate> getGlobalSecurityPredicates();
-
-    /**
-     *
-     * @return the globalCheckers
-     */
-    public Set<PluginRecord<Checker>> getCheckers();
-
-
-    /**
-     *
-     * @return the globalCheckers
-     */
-    public Set<GlobalChecker> getGlobalCheckers();
 
     /**
      * Gets the RESTHeart root handler
