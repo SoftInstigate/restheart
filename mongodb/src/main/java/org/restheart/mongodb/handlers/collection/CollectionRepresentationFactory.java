@@ -38,7 +38,7 @@ import org.restheart.exchange.RequestContext;
 import org.restheart.mongodb.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.mongodb.handlers.document.DocumentRepresentationFactory;
 import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
-import org.restheart.mongodb.interceptors.JsonSchemaChecker;
+import org.restheart.mongodb.interceptors.JsonSchemaBeforeWriteChecker;
 import org.restheart.mongodb.metadata.CheckerMetadata;
 import org.restheart.mongodb.representation.AbstractRepresentationFactory;
 import org.restheart.mongodb.utils.URLUtils;
@@ -118,10 +118,10 @@ public class CollectionRepresentationFactory
                             return JSON_SCHEMA_NAME.equals(c.getName());
                         }).forEach((CheckerMetadata c) -> {
                     BsonValue schemaId = c.getArgs().asDocument()
-                            .get(JsonSchemaChecker.SCHEMA_ID_PROPERTY);
+                            .get(JsonSchemaBeforeWriteChecker.SCHEMA_ID_PROPERTY);
 
                     BsonValue _schemaStoreDb = c.getArgs().asDocument()
-                            .get(JsonSchemaChecker.SCHEMA_STORE_DB_PROPERTY);
+                            .get(JsonSchemaBeforeWriteChecker.SCHEMA_STORE_DB_PROPERTY);
 
                     // just in case the checker is missing the mandatory schemaId property
                     if (schemaId == null) {

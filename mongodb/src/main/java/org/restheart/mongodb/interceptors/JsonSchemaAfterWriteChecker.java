@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
         name = "jsonSchema",
         description = "Checks the request according to the specified JSON schema")
 @SuppressWarnings("deprecation")
-public class JsonSchemaChecker implements Checker {
+public class JsonSchemaAfterWriteChecker implements Checker {
 
     /**
      *
@@ -65,7 +65,7 @@ public class JsonSchemaChecker implements Checker {
     public static final String SCHEMA_ID_PROPERTY = "schemaId";
 
     static final Logger LOGGER
-            = LoggerFactory.getLogger(JsonSchemaChecker.class);
+            = LoggerFactory.getLogger(JsonSchemaAfterWriteChecker.class);
 
     /**
      *
