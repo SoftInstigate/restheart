@@ -48,6 +48,11 @@ import org.restheart.utils.HttpStatus;
 public class DbPropsInjector implements Interceptor<BsonRequest, BsonResponse> {
     private DatabaseImpl dbsDAO = null;
 
+    /**
+     * Makes sure that dbsDAO is instantiated after MongoClient initialization
+     *
+     * @param mclient
+     */
     @InjectMongoClient
     public void init(MongoClient mclient) {
         this.dbsDAO = new DatabaseImpl();
