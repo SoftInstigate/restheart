@@ -212,7 +212,7 @@ public class BsonRequest extends Request<BsonValue> {
     public static BsonRequest wrap(HttpServerExchange exchange) {
         return (BsonRequest) of(exchange);
     }
-    
+
     public static Type type() {
         var typeToken = new TypeToken<BsonRequest>(BsonRequest.class) {
         };
@@ -1516,6 +1516,24 @@ public class BsonRequest extends Request<BsonValue> {
      */
     public boolean isMetrics() {
         return getType() == TYPE.METRICS;
+    }
+
+    /**
+     * helper method to check if a request writes a document or a file or a
+     * schema
+     *
+     * @return true if the request writes a document or a file or a schema
+     */
+    public boolean isWriteDocument() {
+        return (((isPut()
+                || isPatch())
+                && (isFile()
+                || isDocument()
+                || isSchema()))
+                || isPost()
+                && (isCollection()
+                || isFilesBucket()
+                || isSchemaStore()));
     }
 
     /**

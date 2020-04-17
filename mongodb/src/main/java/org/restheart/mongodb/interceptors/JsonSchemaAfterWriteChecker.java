@@ -20,169 +20,145 @@
  */
 package org.restheart.mongodb.interceptors;
 
-import io.undertow.server.HttpServerExchange;
-import java.util.Objects;
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
+import io.undertow.util.Headers;
+import java.util.ArrayList;
+import java.util.List;
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
-import org.everit.json.schema.Schema;
-import org.everit.json.schema.ValidationException;
-import org.json.JSONException;
 import org.json.JSONObject;
+import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.BsonResponse;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
-import org.restheart.exchange.RequestContext;
-import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
-import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.db.DAOUtils;
+import org.restheart.mongodb.db.MongoClientSingleton;
+import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.mongodb.Checker;
-import org.restheart.representation.UnsupportedDocumentIdException;
-import org.restheart.utils.CheckersUtils;
-import org.restheart.utils.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * Checks documents according to the specified JSON schema
  *
+ * This intercetor is able to check PATCH requests (excluding bulk PATCH). Other
+ * requests are checked by jsonSchemaBeforeWrite
+ *
+ * It checks the request content against the JSON schema specified by the
+ * 'jsonSchema' collection metadata:
+ * <br><br>
+ * { "jsonSchema": { "schemaId": &lt;schemaId&gt; "schemaStoreDb":
+ * &lt;schemaStoreDb&gt; } }
+ * <br><br>
+ * schemaStoreDb is optional, default value is same db
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-        name = "jsonSchema",
-        description = "Checks the request according to the specified JSON schema")
+        name = "jsonSchemaAfterWrite",
+        description = "Checks the request content against the JSON schema specified by the 'jsonSchema' collection metadata",
+        interceptPoint = InterceptPoint.RESPONSE)
 @SuppressWarnings("deprecation")
-public class JsonSchemaAfterWriteChecker implements Checker {
-
-    /**
-     *
-     */
-    public static final String SCHEMA_STORE_DB_PROPERTY = "schemaStoreDb";
-
-    /**
-     *
-     */
-    public static final String SCHEMA_ID_PROPERTY = "schemaId";
-
-    static final Logger LOGGER
-            = LoggerFactory.getLogger(JsonSchemaAfterWriteChecker.class);
-
-    /**
-     *
-     * @param exchange
-     * @param context
-     * @param contentToCheck
-     * @param args
-     * @return
-     */
+public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
     @Override
-    public boolean check(
-            HttpServerExchange exchange,
-            RequestContext context,
-            BsonDocument contentToCheck,
-            BsonValue args) {
-        Objects.requireNonNull(args, "missing metadata property 'args'");
+    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+        super.handle(request, response);
 
-        // cannot PUT an array
-        if (args == null || !args.isDocument()) {
-            BsonResponse.wrap(exchange).setIError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "args must be a json object");
-            return false;
+        if (request.isInError()) {
+            rollback(request, response);
         }
+    }
 
-        BsonDocument _args = args.asDocument();
+    @Override
+    public boolean resolve(BsonRequest request, BsonResponse response) {
+        return request.getCollectionProps() != null
+                && (request.isPatch() && !request.isBulkDocuments())
+                && request.getCollectionProps() != null
+                && request.getCollectionProps()
+                        .containsKey("jsonSchema")
+                && request.getCollectionProps()
+                        .get("jsonSchema")
+                        .isDocument()
+                && (response.getDbOperationResult() != null
+                && response.getDbOperationResult().getHttpCode() < 300);
+    }
 
-        BsonValue _schemaStoreDb = _args.get(SCHEMA_STORE_DB_PROPERTY);
-        String schemaStoreDb;
-
-        BsonValue schemaId = _args.get(SCHEMA_ID_PROPERTY);
-
-        Objects.requireNonNull(schemaId, "missing property '"
-                + SCHEMA_ID_PROPERTY
-                + "' in metadata property 'args'");
-
-        if (_schemaStoreDb == null) {
-            // if not specified assume the current db as the schema store db
-            schemaStoreDb = context.getDBName();
-        } else if (_schemaStoreDb.isString()) {
-            schemaStoreDb = _schemaStoreDb.asString().getValue();
-        } else {
-            throw new IllegalArgumentException("property "
-                    + SCHEMA_STORE_DB_PROPERTY
-                    + " in metadata 'args' must be a string");
-        }
-
-        try {
-            URLUtils.checkId(schemaId);
-        } catch (UnsupportedDocumentIdException ex) {
-            throw new IllegalArgumentException(
-                    "schema 'id' is not a valid id", ex);
-        }
-
-        Schema theschema;
-
-        try {
-            theschema = JsonSchemaCacheSingleton
-                    .getInstance()
-                    .get(schemaStoreDb, schemaId);
-        } catch (JsonSchemaNotFoundException ex) {
-            context.addWarning(ex.getMessage());
-            return false;
-        }
-
-        if (Objects.isNull(theschema)) {
-            throw new IllegalArgumentException("cannot validate, schema "
-                    + schemaStoreDb
-                    + "/"
-                    + _SCHEMAS
-                    + "/" + schemaId.toString() + " not found");
-        }
-
-        String _data = contentToCheck == null
+    String documentToCheck(BsonRequest request, BsonResponse response) {
+        return response.getDbOperationResult().getNewData() == null
                 ? "{}"
-                : contentToCheck.toJson();
-
-        try {
-            theschema.validate(
-                    new JSONObject(_data));
-        } catch (JSONException je) {
-            context.addWarning(je.getMessage());
-
-            return false;
-        } catch (ValidationException ve) {
-            context.addWarning(ve.getMessage());
-            ve.getCausingExceptions().stream()
-                    .map(ValidationException::getMessage)
-                    .forEach(context::addWarning);
-
-            return false;
-        }
-
-        return true;
+                : response.getDbOperationResult().getNewData().toJson();
     }
 
     @Override
-    public PHASE getPhase(RequestContext context) {
-        if (context.isPatch()
-                || CheckersUtils
-                        .doesRequestUseDotNotation(context.getContent())
-                || CheckersUtils
-                        .doesRequestUseUpdateOperators(context.getContent())) {
-            return PHASE.AFTER_WRITE;
+    List<JSONObject> documentsToCheck(BsonRequest request, BsonResponse response) {
+        var ret = new ArrayList<JSONObject>();
+
+        var content = response.getDbOperationResult().getNewData() == null
+                ? new BsonDocument()
+                : response.getDbOperationResult().getNewData();
+
+        ret.add(new JSONObject(content.asDocument().toJson()));
+
+        return ret;
+    }
+
+    private void rollback(BsonRequest request, BsonResponse response)
+            throws Exception {
+        var exchange = request.getExchange();
+
+        // restore old data
+        MongoClient client = MongoClientSingleton
+                .getInstance()
+                .getClient();
+
+        MongoDatabase mdb = client
+                .getDatabase(request.getDBName());
+
+        MongoCollection<BsonDocument> coll = mdb
+                .getCollection(
+                        request.getCollectionName(),
+                        BsonDocument.class);
+
+        BsonDocument oldData = response
+                .getDbOperationResult()
+                .getOldData();
+
+        Object newEtag = response.getDbOperationResult().getEtag();
+
+        if (oldData != null) {
+            // document was updated, restore old one
+            DAOUtils.restoreDocument(
+                    request.getClientSession(),
+                    coll,
+                    oldData.get("_id"),
+                    request.getShardKey(),
+                    oldData,
+                    newEtag,
+                    "_etag");
+
+            // add to response old etag
+            if (oldData.get("$set") != null
+                    && oldData.get("$set").isDocument()
+                    && oldData.get("$set")
+                            .asDocument()
+                            .get("_etag") != null) {
+                exchange.getResponseHeaders().put(Headers.ETAG,
+                        oldData.get("$set")
+                                .asDocument()
+                                .get("_etag")
+                                .asObjectId()
+                                .getValue()
+                                .toString());
+            } else {
+                exchange.getResponseHeaders().remove(Headers.ETAG);
+            }
+
         } else {
-            return PHASE.BEFORE_WRITE;
-        }
-    }
+            // document was created, delete it
+            Object newId = response.getDbOperationResult()
+                    .getNewData().get("_id");
 
-    /**
-     *
-     * @param context
-     * @return
-     */
-    @Override
-    public boolean doesSupportRequests(RequestContext context) {
-        return !(CheckersUtils.isBulkRequest(context)
-                && getPhase(context) == PHASE.AFTER_WRITE);
+            coll.deleteOne(and(eq("_id", newId), eq("_etag", newEtag)));
+        }
     }
 }

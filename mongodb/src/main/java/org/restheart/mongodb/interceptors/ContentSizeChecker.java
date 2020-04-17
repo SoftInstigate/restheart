@@ -36,9 +36,9 @@ import org.slf4j.LoggerFactory;
  *
  * ContentSizeChecker allows to check the request content length on documents of
  * collections that have the following metadata:
- *
+ * <br><br>
  * { "checkContentSize": { "max": MAX_SIZE, "min": MIN_SIZE } }
- *
+ * <br><br>
  * Sizes are in bytes
  * 
  */
@@ -110,7 +110,7 @@ public class ContentSizeChecker implements BsonInterceptor {
                 ? requestLenght <= maxSize
                 : requestLenght >= minSize && requestLenght <= maxSize);
 
-        LOGGER.debug("checkSize({}, {}, {}) -> {}",
+        LOGGER.trace("checkSize({}, {}, {}) -> {}",
                 requestLenght,
                 minSize,
                 maxSize,
@@ -121,9 +121,8 @@ public class ContentSizeChecker implements BsonInterceptor {
 
     @Override
     public boolean resolve(BsonRequest request, BsonResponse response) {
-        return !request.isGet()
-                && !request.isOptions()
-                && !request.isDelete()
+        return request.isWriteDocument()
+                && request.getCollectionProps() != null
                 && request.getCollectionProps()
                         .containsKey("checkContentSize")
                 && request.getCollectionProps()
