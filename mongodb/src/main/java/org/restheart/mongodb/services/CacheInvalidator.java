@@ -18,13 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.plugins.services;
+package org.restheart.mongodb.services;
 
 import java.util.Deque;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.plugins.interceptors.LocalCachesSingleton;
+import org.restheart.mongodb.interceptors.LocalCachesSingleton;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;

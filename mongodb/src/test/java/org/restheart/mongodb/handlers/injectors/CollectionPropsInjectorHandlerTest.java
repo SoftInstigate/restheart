@@ -35,7 +35,7 @@ import org.junit.runner.Description;
 import org.restheart.exchange.AbstractExchange;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.ExchangeKeys.TYPE;
-import org.restheart.mongodb.plugins.interceptors.CollectionPropsInjector;
+import org.restheart.mongodb.interceptors.CollectionPropsInjector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
