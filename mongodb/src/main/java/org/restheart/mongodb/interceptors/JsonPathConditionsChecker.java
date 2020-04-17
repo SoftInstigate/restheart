@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.plugins.checkers;
+package org.restheart.mongodb.interceptors;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.HashSet;
@@ -32,6 +32,7 @@ import org.bson.BsonValue;
 import org.restheart.exchange.RequestContext;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.mongodb.Checker;
+import org.restheart.utils.CheckersUtils;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

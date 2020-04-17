@@ -18,14 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.plugins.checkers;
+package org.restheart.utils;
 
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.RequestContext;
-import org.restheart.utils.JsonUtils;
 
 /**
  *
@@ -37,15 +36,15 @@ public class CheckersUtils {
      * @param context
      * @return
      */
-    @SuppressWarnings( "deprecation" )
+    @SuppressWarnings("deprecation")
     public static boolean isBulkRequest(RequestContext context) {
         return context.isBulkDocuments() || context.getContent().isArray();
     }
-    
+
     /**
      *
      * @param request
-     * @return
+     * @return if the request is a bulk request
      */
     public static boolean isBulkRequest(BsonRequest request) {
         return request.isBulkDocuments() || request.getContent().isArray();
@@ -54,7 +53,7 @@ public class CheckersUtils {
     /**
      *
      * @param content
-     * @return
+     * @return true if the request content includes update operators
      */
     public static boolean doesRequestUseUpdateOperators(BsonValue content) {
         if (content.isDocument()) {
@@ -77,7 +76,8 @@ public class CheckersUtils {
     /**
      *
      * @param content
-     * @return
+     * @return true if the request content includes properties identified with
+     * the dot notation
      */
     public static boolean doesRequestUseDotNotation(BsonValue content) {
         if (content.isDocument()) {
@@ -99,8 +99,5 @@ public class CheckersUtils {
         } else {
             return true;
         }
-    }
-
-    private CheckersUtils() {
     }
 }
