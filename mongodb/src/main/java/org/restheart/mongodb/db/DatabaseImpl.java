@@ -42,7 +42,7 @@ import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.exchange.OperationResult;
 import org.restheart.exchange.RequestContext;
-import org.restheart.mongodb.interceptors.LocalCachesSingleton;
+import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.representation.IllegalQueryParamenterException;
 import org.restheart.utils.HttpStatus;
 
@@ -253,15 +253,14 @@ public class DatabaseImpl implements Database {
 
         List<BsonDocument> data = new ArrayList<>();
 
-        _colls.stream().map(
-                (collName) -> {
+        _colls.stream().map((collName) -> {
                     BsonDocument properties
                     = new BsonDocument("_id", new BsonString(collName));
 
                     BsonDocument collProperties;
 
-                    if (LocalCachesSingleton.isEnabled()) {
-                        collProperties = LocalCachesSingleton.getInstance()
+                    if (MetadataCachesSingleton.isEnabled()) {
+                        collProperties = MetadataCachesSingleton.getInstance()
                                 .getCollectionProperties(dbName, collName);
                     } else {
                         collProperties = collectionDAO.getCollectionProps(

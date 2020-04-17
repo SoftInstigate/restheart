@@ -79,7 +79,7 @@ public class CollectionPropsInjector implements Interceptor<BsonRequest, BsonRes
         if (dbName != null && collName != null && !request.isDbMeta()) {
             BsonDocument collProps;
 
-            if (!LocalCachesSingleton.isEnabled()
+            if (!MetadataCachesSingleton.isEnabled()
                     || request.getClientSession() != null) {
                 collProps = dbsDAO.
                         getCollectionProperties(
@@ -87,7 +87,7 @@ public class CollectionPropsInjector implements Interceptor<BsonRequest, BsonRes
                                 dbName,
                                 collName);
             } else {
-                collProps = LocalCachesSingleton.getInstance()
+                collProps = MetadataCachesSingleton.getInstance()
                         .getCollectionProperties(dbName, collName);
             }
 

@@ -23,7 +23,7 @@ package org.restheart.mongodb;
 import java.util.Map;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.PLUGINS_ARGS_KEY;
 import org.restheart.mongodb.db.MongoClientSingleton;
-import org.restheart.mongodb.interceptors.LocalCachesSingleton;
+import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
@@ -61,8 +61,8 @@ public class MongoServiceInitializer implements Initializer {
             return;
         }
 
-        // initialize LocalCachesSingleton
-        LocalCachesSingleton.init(MongoServiceConfiguration.get());
+        // initialize MetadataCachesSingleton
+        MetadataCachesSingleton.init(MongoServiceConfiguration.get());
     }
 
     @InjectPluginsRegistry

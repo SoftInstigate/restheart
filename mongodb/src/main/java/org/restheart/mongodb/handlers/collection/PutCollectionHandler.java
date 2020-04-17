@@ -31,7 +31,7 @@ import org.restheart.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.interceptors.LocalCachesSingleton;
+import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -115,7 +115,7 @@ public class PutCollectionHandler extends PipelinedHandler {
         response.setDbOperationResult(result);
 
         // invalidate the cache collection item
-        LocalCachesSingleton.getInstance().invalidateCollection(
+        MetadataCachesSingleton.getInstance().invalidateCollection(
                 request.getDBName(),
                 request.getCollectionName());
 

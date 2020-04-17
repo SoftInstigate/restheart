@@ -29,7 +29,7 @@ import org.restheart.exchange.BsonResponse;
 import org.restheart.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.interceptors.LocalCachesSingleton;
+import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -126,7 +126,7 @@ public class PutDBHandler extends PipelinedHandler {
         }
 
         // invalidate the cache db item
-        LocalCachesSingleton.getInstance().invalidateDb(request.getDBName());
+        MetadataCachesSingleton.getInstance().invalidateDb(request.getDBName());
 
         response.setStatusCode(result.getHttpCode());
 

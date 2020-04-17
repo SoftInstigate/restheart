@@ -24,7 +24,7 @@ import java.util.Deque;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.interceptors.LocalCachesSingleton;
+import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
@@ -69,11 +69,11 @@ public class CacheInvalidator implements ByteArrayService {
                 String db = _db.getFirst();
 
                 if (_coll == null || _coll.getFirst() == null) {
-                    LocalCachesSingleton.getInstance().invalidateDb(db);
+                    MetadataCachesSingleton.getInstance().invalidateDb(db);
                 } else {
                     String coll = _coll.getFirst();
 
-                    LocalCachesSingleton.getInstance()
+                    MetadataCachesSingleton.getInstance()
                             .invalidateCollection(db, coll);
                 }
 
