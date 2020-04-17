@@ -101,9 +101,9 @@ public class JsonMetaSchemaChecker implements Checker {
     @Override
     public PHASE getPhase(RequestContext context) {
         if (context.isPatch()
-                || CheckersUtils.doesRequestUsesDotNotation(
+                || CheckersUtils.doesRequestUseDotNotation(
                         context.getContent())
-                || CheckersUtils.doesRequestUsesUpdateOperators(
+                || CheckersUtils.doesRequestUseUpdateOperators(
                         context.getContent())) {
             return PHASE.AFTER_WRITE;
         } else {

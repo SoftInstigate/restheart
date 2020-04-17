@@ -56,7 +56,7 @@ public class CheckersUtils {
      * @param content
      * @return
      */
-    public static boolean doesRequestUsesUpdateOperators(BsonValue content) {
+    public static boolean doesRequestUseUpdateOperators(BsonValue content) {
         if (content.isDocument()) {
             return JsonUtils.containsUpdateOperators(content.asDocument());
         } else if (content.isArray()) {
@@ -64,7 +64,7 @@ public class CheckersUtils {
 
             return objs.stream().allMatch(obj -> {
                 if (obj.isDocument()) {
-                    return doesRequestUsesUpdateOperators(obj);
+                    return doesRequestUseUpdateOperators(obj);
                 } else {
                     return true;
                 }
@@ -79,7 +79,7 @@ public class CheckersUtils {
      * @param content
      * @return
      */
-    public static boolean doesRequestUsesDotNotation(BsonValue content) {
+    public static boolean doesRequestUseDotNotation(BsonValue content) {
         if (content.isDocument()) {
             BsonDocument obj = content.asDocument();
 
@@ -91,7 +91,7 @@ public class CheckersUtils {
 
             return objs.stream().anyMatch(obj -> {
                 if (obj.isDocument()) {
-                    return doesRequestUsesDotNotation(obj);
+                    return doesRequestUseDotNotation(obj);
                 } else {
                     return true;
                 }
