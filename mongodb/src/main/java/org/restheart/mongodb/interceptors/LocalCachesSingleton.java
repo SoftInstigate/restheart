@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.plugins.interceptors;
+package org.restheart.mongodb.interceptors;
 
 import com.mongodb.MongoException;
 import java.util.Optional;

@@ -42,7 +42,7 @@ import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.exchange.OperationResult;
 import org.restheart.exchange.RequestContext;
-import org.restheart.mongodb.plugins.interceptors.LocalCachesSingleton;
+import org.restheart.mongodb.interceptors.LocalCachesSingleton;
 import org.restheart.representation.IllegalQueryParamenterException;
 import org.restheart.utils.HttpStatus;
 

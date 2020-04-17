@@ -23,4 +23,4 @@
  * 
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.mongodb.plugins.services;
+package org.restheart.mongodb.services;

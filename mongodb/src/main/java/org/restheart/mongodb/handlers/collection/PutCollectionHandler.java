@@ -31,7 +31,7 @@ import org.restheart.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.plugins.interceptors.LocalCachesSingleton;
+import org.restheart.mongodb.interceptors.LocalCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
