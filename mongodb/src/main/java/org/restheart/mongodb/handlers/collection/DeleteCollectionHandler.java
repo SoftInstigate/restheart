@@ -26,7 +26,7 @@ import org.restheart.exchange.BsonResponse;
 import org.restheart.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.interceptors.LocalCachesSingleton;
+import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 
 /**
@@ -81,7 +81,7 @@ public class DeleteCollectionHandler extends PipelinedHandler {
 
         response.setStatusCode(result.getHttpCode());
 
-        LocalCachesSingleton.getInstance()
+        MetadataCachesSingleton.getInstance()
                 .invalidateCollection(request.getDBName(), request.getCollectionName());
 
         next(exchange);

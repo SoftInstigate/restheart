@@ -70,13 +70,13 @@ public class DbPropsInjector implements Interceptor<BsonRequest, BsonResponse> {
         if (dbName != null) {
             BsonDocument dbProps;
 
-            if (!LocalCachesSingleton.isEnabled()
+            if (!MetadataCachesSingleton.isEnabled()
                     || request.getClientSession() != null) {
                 dbProps = dbsDAO.getDatabaseProperties(
                         request.getClientSession(),
                         dbName);
             } else {
-                dbProps = LocalCachesSingleton.getInstance()
+                dbProps = MetadataCachesSingleton.getInstance()
                         .getDBProperties(dbName);
             }
 

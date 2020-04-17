@@ -31,10 +31,11 @@ import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
 
 /**
- *
+ * Caches for db and collection metadata
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class LocalCachesSingleton {
+public class MetadataCachesSingleton {
 
     private static final String SEPARATOR = "_@_@_";
     private static boolean initialized = false;
@@ -57,7 +58,7 @@ public class LocalCachesSingleton {
      *
      * @return
      */
-    public static LocalCachesSingleton getInstance() {
+    public static MetadataCachesSingleton getInstance() {
         return LocalCachesSingletonHolder.INSTANCE;
     }
 
@@ -74,7 +75,7 @@ public class LocalCachesSingleton {
     /**
      * Default ctor
      */
-    private LocalCachesSingleton(DatabaseImpl dbsDAO) {
+    private MetadataCachesSingleton(DatabaseImpl dbsDAO) {
         this.dbsDAO = dbsDAO;
         setup();
     }
@@ -203,7 +204,7 @@ public class LocalCachesSingleton {
 
     private static class LocalCachesSingletonHolder {
 
-        private static final LocalCachesSingleton INSTANCE = new LocalCachesSingleton(new DatabaseImpl());
+        private static final MetadataCachesSingleton INSTANCE = new MetadataCachesSingleton(new DatabaseImpl());
 
         private LocalCachesSingletonHolder() {
         }

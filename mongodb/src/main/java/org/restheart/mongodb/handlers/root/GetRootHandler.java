@@ -33,7 +33,7 @@ import org.restheart.exchange.RequestContext;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.interceptors.LocalCachesSingleton;
+import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
@@ -116,8 +116,8 @@ public class GetRootHandler extends PipelinedHandler {
                         + request.getPagesize());
 
                 dbs.stream().map((db) -> {
-                    if (LocalCachesSingleton.isEnabled()) {
-                        return LocalCachesSingleton.getInstance()
+                    if (MetadataCachesSingleton.isEnabled()) {
+                        return MetadataCachesSingleton.getInstance()
                                 .getDBProperties(db);
                     } else {
                         return dbsDAO.getDatabaseProperties(

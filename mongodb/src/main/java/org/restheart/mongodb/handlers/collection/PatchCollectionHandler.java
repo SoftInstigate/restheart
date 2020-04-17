@@ -29,7 +29,7 @@ import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.interceptors.LocalCachesSingleton;
+import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -137,7 +137,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
 
         response.setStatusCode(result.getHttpCode());
 
-        LocalCachesSingleton.getInstance()
+        MetadataCachesSingleton.getInstance()
                 .invalidateCollection(
                         request.getDBName(),
                         request.getCollectionName());
