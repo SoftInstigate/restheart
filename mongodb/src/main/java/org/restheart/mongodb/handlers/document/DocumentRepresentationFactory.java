@@ -31,7 +31,7 @@ import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.BsonResponse;
 import static org.restheart.exchange.ExchangeKeys.BINARY_CONTENT;
 import org.restheart.exchange.ExchangeKeys.TYPE;
-import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
+import org.restheart.mongodb.metadata.InvalidMetadataException;
 import org.restheart.mongodb.metadata.Relationship;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.IllegalQueryParamenterException;

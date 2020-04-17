@@ -22,17 +22,18 @@ package org.restheart.mongodb.handlers.schema;
 
 import io.undertow.server.HttpServerExchange;
 import java.io.InputStream;
+import java.util.ArrayList;
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import org.restheart.exchange.RequestContext;
-import org.restheart.plugins.mongodb.Checker;
-import org.restheart.utils.CheckersUtils;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.BsonResponse;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JsonMetaSchemaChecker implements Checker {
+public class JsonMetaSchemaChecker extends PipelinedHandler {
 
     static final String JSON_METASCHEMA_FILENAME = "json-schema-draft-v4.json";
 
@@ -69,56 +70,51 @@ public class JsonMetaSchemaChecker implements Checker {
     /**
      *
      * @param exchange
-     * @param context
-     * @param contentToCheck
-     * @param args
-     * @return
      */
     @Override
-    public boolean check(
-            HttpServerExchange exchange,
-            RequestContext context,
-            BsonDocument contentToCheck,
-            BsonValue args) {
-        if (contentToCheck == null) {
-            return false;
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = (BsonRequest) BsonRequest.of(exchange);
+        var response = (BsonResponse) BsonResponse.of(exchange);
+
+        if (!request.isWriteDocument() || request.isPatch()) {
+            next(exchange);
+            return;
         }
+
+        var contentToCheck = request.getContent() == null
+                ? new BsonDocument()
+                : request.getContent();
 
         try {
             schema.validate(new JSONObject(contentToCheck.toString()));
         } catch (ValidationException ve) {
-            context.addWarning(ve.getMessage());
+            var errors = new ArrayList<String>();
+
+            errors.add(ve.getMessage().replaceAll("#: ", ""));
+
             ve.getCausingExceptions().stream()
                     .map(ValidationException::getMessage)
-                    .forEach(context::addWarning);
+                    .forEach(errors::add);
 
-            return false;
+            var errMsgBuilder = new StringBuilder();
+
+            errors.stream()
+                    .map(e -> e.replaceAll("#: ", ""))
+                    .forEachOrdered(e -> errMsgBuilder.append(e).append(", "));
+
+            var errMsg = errMsgBuilder.toString();
+
+            if (errMsg.length() > 2
+                    && ", ".equals(errMsg.substring(errMsg.length() - 2, errMsg.length()))) {
+                errMsg = errMsg.substring(0, errMsg.length() - 2);
+
+            }
+
+            response.setInError(HttpStatus.SC_BAD_REQUEST,
+                    "Request content violates JSON Schema meta schema: "
+                    + errMsg);
         }
 
-        return true;
-    }
-
-    @Override
-    public PHASE getPhase(RequestContext context) {
-        if (context.isPatch()
-                || CheckersUtils.doesRequestUseDotNotation(
-                        context.getContent())
-                || CheckersUtils.doesRequestUseUpdateOperators(
-                        context.getContent())) {
-            return PHASE.AFTER_WRITE;
-        } else {
-            return PHASE.BEFORE_WRITE;
-        }
-    }
-
-    /**
-     *
-     * @param context
-     * @return
-     */
-    @Override
-    public boolean doesSupportRequests(RequestContext context) {
-        return !(CheckersUtils.isBulkRequest(context)
-                && getPhase(context) == PHASE.AFTER_WRITE);
+        next(exchange);
     }
 }

@@ -37,16 +37,12 @@ import static org.restheart.exchange.ExchangeKeys._STREAMS;
 import org.restheart.exchange.RequestContext;
 import org.restheart.mongodb.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.mongodb.handlers.document.DocumentRepresentationFactory;
-import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
-import org.restheart.mongodb.interceptors.JsonSchemaBeforeWriteChecker;
-import org.restheart.mongodb.metadata.CheckerMetadata;
 import org.restheart.mongodb.representation.AbstractRepresentationFactory;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.IllegalQueryParamenterException;
 import org.restheart.representation.Link;
 import org.restheart.representation.RepresentationUtils;
 import org.restheart.representation.Resource;
-import org.restheart.representation.UnsupportedDocumentIdException;
 
 /**
  *
@@ -105,51 +101,6 @@ public class CollectionRepresentationFactory
         }
     }
 
-    private static void addSchemaLinks(
-            Resource rep,
-            BsonRequest request) {
-        try {
-            List<CheckerMetadata> checkers
-                    = CheckerMetadata.getFromJson(request.getCollectionProps());
-
-            if (checkers != null) {
-                checkers
-                        .stream().filter((CheckerMetadata c) -> {
-                            return JSON_SCHEMA_NAME.equals(c.getName());
-                        }).forEach((CheckerMetadata c) -> {
-                    BsonValue schemaId = c.getArgs().asDocument()
-                            .get(JsonSchemaBeforeWriteChecker.SCHEMA_ID_PROPERTY);
-
-                    BsonValue _schemaStoreDb = c.getArgs().asDocument()
-                            .get(JsonSchemaBeforeWriteChecker.SCHEMA_STORE_DB_PROPERTY);
-
-                    // just in case the checker is missing the mandatory schemaId property
-                    if (schemaId == null) {
-                        return;
-                    }
-
-                    String schemaStoreDb;
-
-                    if (_schemaStoreDb == null) {
-                        schemaStoreDb = request.getDBName();
-                    } else {
-                        schemaStoreDb = _schemaStoreDb.toString();
-                    }
-
-                    try {
-                        rep.addLink(new Link("schema", URLUtils
-                                .getUriWithDocId(request,
-                                        schemaStoreDb, "_schemas", schemaId)));
-                    } catch (UnsupportedDocumentIdException ex) {
-                    }
-                });
-
-            }
-        } catch (InvalidMetadataException ime) {
-            // nothing to do
-        }
-    }
-
     /**
      *
      */
@@ -188,7 +139,6 @@ public class CollectionRepresentationFactory
         addSizeAndTotalPagesProperties(size, request, rep);
         addAggregationsLinks(request, rep, requestPath);
         addStreamsLinks(request, rep, requestPath);
-        addSchemaLinks(rep, request);
         addEmbeddedData(embeddedData, rep, requestPath, exchange);
 
         if (request.isFullHalMode()) {

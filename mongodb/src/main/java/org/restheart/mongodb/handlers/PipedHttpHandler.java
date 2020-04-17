@@ -31,8 +31,7 @@ import org.restheart.exchange.OperationResult;
 import org.restheart.exchange.RequestContext;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.handlers.metadata.InvalidMetadataException;
-import org.restheart.mongodb.metadata.CheckerMetadata;
+import org.restheart.mongodb.metadata.InvalidMetadataException;
 import org.restheart.mongodb.metadata.Relationship;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -161,19 +160,6 @@ public abstract class PipedHttpHandler implements HttpHandler {
                 BsonResponse.wrap(exchange).setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "wrong relationships definition. "
-                        + ex.getMessage(), ex);
-                next(exchange, context);
-                return true;
-            }
-        }
-        // check SC metadata
-        if (content.containsKey(CheckerMetadata.ROOT_KEY)) {
-            try {
-                CheckerMetadata.getFromJson(content);
-            } catch (InvalidMetadataException ex) {
-                BsonResponse.wrap(exchange).setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "wrong checker definition. "
                         + ex.getMessage(), ex);
                 next(exchange, context);
                 return true;

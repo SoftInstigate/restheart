@@ -29,8 +29,6 @@ import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.plugins.mongodb.Checker;
-import org.restheart.plugins.mongodb.GlobalChecker;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
@@ -56,13 +54,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     private Set<PluginRecord<Interceptor>> interceptors;
 
     private final Set<Predicate> globalSecurityPredicates
-            = new LinkedHashSet<>();
-
-    // depecated plugins
-    private Set<PluginRecord<Checker>> checkers;
-
-
-    private final Set<GlobalChecker> globalCheckers
             = new LinkedHashSet<>();
 
     private static PluginsRegistryImpl HOLDER;
@@ -92,8 +83,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
             getInterceptors();
             getServices();
-
-            getCheckers();
 
             pluginFactory.injectDependencies();
         }
@@ -228,31 +217,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         return globalSecurityPredicates;
     }
 
-    /**
-     *
-     * @return the globalCheckers
-     */
-    @Override
-    public Set<PluginRecord<Checker>> getCheckers() {
-        if (this.checkers == null) {
-            this.checkers = new LinkedHashSet<>();
-            this.checkers.addAll(PluginsFactory.getInstance()
-                    .checkers());
-        }
-
-        return this.checkers;
-    }
-
-    /**
-     *
-     * @return the globalCheckers
-     */
-    @Override
-    public Set<GlobalChecker> getGlobalCheckers() {
-        return globalCheckers;
-    }
-
-    
     private static final PathHandler ROOT_PATH_HANDLER = path();
     
     private static final PathMatcher<PipelineInfo> PIPELINE_INFOS 
