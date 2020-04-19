@@ -125,6 +125,7 @@ public class RequestContentInjector extends PipelinedHandler {
                 && isContentRequired(exchange, InterceptPoint.REQUEST_BEFORE_AUTH)));
     }
 
+    @SuppressWarnings("unchecked")
     private boolean isContentRequired(HttpServerExchange exchange,
             InterceptPoint interceptPoint) {
         AbstractRequest request;
@@ -135,11 +136,11 @@ public class RequestContentInjector extends PipelinedHandler {
                 exchange);
 
         if (handlingService != null) {
-            request = Request.of(exchange);
-            response = Response.of(exchange);
+            request = Request.of(exchange, Request.class);
+            response = Response.of(exchange, Response.class);
         } else {
-            request = BufferedByteArrayRequest.wrap(exchange);
-            response = BufferedByteArrayResponse.wrap(exchange);
+            request = BufferedByteArrayRequest.of(exchange);
+            response = BufferedByteArrayResponse.of(exchange);
         }
         
         return PluginsRegistryImpl

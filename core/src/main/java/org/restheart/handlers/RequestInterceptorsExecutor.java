@@ -76,6 +76,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
      * @throws Exception
      */
     @Override
+    @SuppressWarnings("unchecked")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         // if the request is handled by a service set to not execute interceptors
         // at this interceptPoint, skip interceptors execution
@@ -95,11 +96,11 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 exchange);
 
         if (handlingService != null) {
-            request = Request.of(exchange);
-            response = Response.of(exchange);
+            request = Request.of(exchange, Request.class);
+            response = Response.of(exchange, Response.class);
         } else {
-            request = BufferedByteArrayRequest.wrap(exchange);
-            response = BufferedByteArrayResponse.wrap(exchange);
+            request = BufferedByteArrayRequest.of(exchange);
+            response = BufferedByteArrayResponse.of(exchange);
         }
 
         PluginsRegistryImpl

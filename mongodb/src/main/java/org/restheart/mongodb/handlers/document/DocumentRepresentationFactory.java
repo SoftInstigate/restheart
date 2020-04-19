@@ -82,8 +82,8 @@ public class DocumentRepresentationFactory {
     private static void addRelationshipsLinks(Resource rep,
             HttpServerExchange exchange,
             BsonDocument data) {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = BsonRequest.of(exchange);
+        var response = BsonResponse.of(exchange);
 
         List<Relationship> rels = null;
 
@@ -131,8 +131,8 @@ public class DocumentRepresentationFactory {
     public Resource getRepresentation(String href, HttpServerExchange exchange,
             BsonDocument data)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = BsonRequest.of(exchange);
+        var response = BsonResponse.of(exchange);
 
         Resource rep;
 

@@ -34,7 +34,6 @@ import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
 import static org.restheart.exchange.ExchangeKeys._STREAMS;
-import org.restheart.exchange.RequestContext;
 import org.restheart.mongodb.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.mongodb.handlers.document.DocumentRepresentationFactory;
 import org.restheart.mongodb.representation.AbstractRepresentationFactory;
@@ -121,7 +120,7 @@ public class CollectionRepresentationFactory
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
         
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;
@@ -296,13 +295,13 @@ public class CollectionRepresentationFactory
             HttpServerExchange exchange,
             Resource rep)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
         
         for (BsonDocument d : embeddedData) {
             BsonValue _id = d.get(_ID);
 
             if (_id != null
-                    && RequestContext.isReservedResourceCollection(
+                    && BsonRequest.isReservedResourceCollection(
                             _id.toString())) {
                 rep.addWarning("filtered out reserved resource "
                         + requestPath + "/"

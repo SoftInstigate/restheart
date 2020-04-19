@@ -67,7 +67,7 @@ public class ETagPolicyInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
 
         request.setETagCheckRequired(isETagCheckRequired(request));
 

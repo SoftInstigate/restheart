@@ -103,20 +103,20 @@ public class RequestHelper {
             HttpServerExchange exchange) throws Exception {
         // cannot proceed with no data
         if (content == null) {
-            BsonResponse.wrap(exchange).setIError(
+            BsonResponse.of(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             return true;
         }
         // cannot proceed with an array
         if (!content.isDocument()) {
-            BsonResponse.wrap(exchange).setIError(
+            BsonResponse.of(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             return true;
         }
         if (content.asDocument().isEmpty()) {
-            BsonResponse.wrap(exchange).setIError(
+            BsonResponse.of(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             return true;
@@ -127,7 +127,7 @@ public class RequestHelper {
     /**
      *
      * Warn side effect: invokes 
-     * BsonResponse.wrap(exchange).setDbOperationResult(result)
+     * BsonResponse.of(exchange).setDbOperationResult(result)
      * 
      * @param result
      * @param exchange
@@ -138,13 +138,13 @@ public class RequestHelper {
      */
     public static boolean isResponseInConflict(OperationResult result, 
             HttpServerExchange exchange) throws Exception {
-        BsonResponse.wrap(exchange).setDbOperationResult(result);
+        BsonResponse.of(exchange).setDbOperationResult(result);
         // inject the etag
         if (result.getEtag() != null) {
             ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            BsonResponse.wrap(exchange).setIError(
+            BsonResponse.of(exchange).setIError(
                     HttpStatus.SC_CONFLICT,
                     "The ETag must be provided using the '"
                     + Headers.IF_MATCH
@@ -153,7 +153,7 @@ public class RequestHelper {
         }
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            BsonResponse.wrap(exchange).setIError(
+            BsonResponse.of(exchange).setIError(
                     HttpStatus.SC_EXPECTATION_FAILED,
                     ResponseHelper.getMessageFromErrorCode(11000));
             return true;

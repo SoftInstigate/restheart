@@ -24,8 +24,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
-import org.restheart.exchange.Request;
-import org.restheart.exchange.Response;
 
 /**
  *
@@ -44,11 +42,11 @@ public interface ByteArrayService extends Service<ByteArrayRequest, ByteArrayRes
 
     @Override
     default Function<HttpServerExchange, ByteArrayRequest> request() {
-        return e -> (ByteArrayRequest) Request.of(e);
+        return e -> ByteArrayRequest.of(e);
     }
 
     @Override
     default Function<HttpServerExchange, ByteArrayResponse> response() {
-        return e -> (ByteArrayResponse) Response.of(e);
+        return e -> ByteArrayResponse.of(e);
     }
 }

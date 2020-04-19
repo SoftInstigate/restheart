@@ -46,7 +46,7 @@ public class BufferedJsonResponse extends BufferedResponse<JsonElement> {
         LOGGER = LoggerFactory.getLogger(BufferedJsonRequest.class);
     }
 
-    public static BufferedJsonResponse wrap(HttpServerExchange exchange) {
+    public static BufferedJsonResponse of(HttpServerExchange exchange) {
         return new BufferedJsonResponse(exchange);
     }
 

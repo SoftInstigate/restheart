@@ -59,7 +59,7 @@ public class PipelineInfoInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        BufferedByteArrayRequest.wrap(exchange)
+        BufferedByteArrayRequest.of(exchange)
                 .setPipelineInfo(PluginsRegistryImpl.getInstance()
                 .getPipelineInfo(exchange.getRequestPath()));
 

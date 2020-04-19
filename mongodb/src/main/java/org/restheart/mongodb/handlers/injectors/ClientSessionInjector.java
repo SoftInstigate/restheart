@@ -100,7 +100,7 @@ public class ClientSessionInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
         
         if (request.isInError()
                 || !exchange.getQueryParameters()
@@ -113,7 +113,7 @@ public class ClientSessionInjector extends PipelinedHandler {
             request.setClientSession(getClientSessionFactory()
                     .getClientSession(exchange));
         } catch (IllegalArgumentException ex) {
-            BsonResponse.wrap(exchange).setIError(
+            BsonResponse.of(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     ex.getMessage());
             next(exchange);

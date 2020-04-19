@@ -55,6 +55,7 @@ public class ResponseSender extends PipelinedHandler {
      * @throws Exception
      */
     @Override
+    @SuppressWarnings("unchecked")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var registry = PluginsRegistryImpl.getInstance();
         var path = exchange.getRequestPath();
@@ -80,7 +81,7 @@ public class ResponseSender extends PipelinedHandler {
             }
 
         } else if (pi.getType() == PipelineInfo.PIPELINE_TYPE.PROXY) {
-            var response = BufferedByteArrayResponse.wrap(exchange);
+            var response = BufferedByteArrayResponse.of(exchange);
 
             if (!exchange.isResponseStarted() && response.getStatusCode() > 0) {
                 exchange.setStatusCode(response.getStatusCode());

@@ -71,7 +71,7 @@ public class FullAuthorizer implements Authorizer {
 
     @Override
     public boolean isAuthenticationRequired(HttpServerExchange exchange) {
-        return !BufferedByteArrayRequest.wrap(exchange).isOptions()
+        return !BufferedByteArrayRequest.of(exchange).isOptions()
                 && (authenticationRequired == null
                         ? true
                         : authenticationRequired);

@@ -40,6 +40,7 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var registry = PluginsRegistryImpl.getInstance();
         var path = exchange.getRequestPath();

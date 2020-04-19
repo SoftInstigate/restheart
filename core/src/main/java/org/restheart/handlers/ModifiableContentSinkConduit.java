@@ -132,7 +132,7 @@ public class ModifiableContentSinkConduit
             throw new IOException(e);
         }
 
-        PooledByteBuffer[] dests = BufferedByteArrayResponse.wrap(exchange)
+        PooledByteBuffer[] dests = BufferedByteArrayResponse.of(exchange)
                 .getRawContent();
 
         updateContentLenght(exchange, dests);

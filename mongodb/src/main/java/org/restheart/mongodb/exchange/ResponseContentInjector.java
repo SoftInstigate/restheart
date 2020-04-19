@@ -60,12 +60,12 @@ public class ResponseContentInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = BsonRequest.of(exchange);
+        var response = BsonResponse.of(exchange);
 
         addWarnings(request, response);
 
-        var pr = BufferedByteArrayResponse.wrap(exchange);
+        var pr = BufferedByteArrayResponse.of(exchange);
         
         if (request.getJsonMode() == JsonMode.SHELL) {
             pr.setContentType(Resource.JAVACRIPT_MEDIA_TYPE);
@@ -80,9 +80,9 @@ public class ResponseContentInjector extends PipelinedHandler {
         // to send the content to the client
         if (response.getContent() != null) {
             try {
-                BufferedByteArrayResponse.wrap(exchange)
+                BufferedByteArrayResponse.of(exchange)
                         .writeContent(JsonUtils.toJson(response.getContent(),
-                                BsonRequest.wrap(exchange).getJsonMode())
+                                BsonRequest.of(exchange).getJsonMode())
                                 .getBytes());
             } catch (IOException ioe) {
                 //LOGGER.error("Error writing request content", ioe);

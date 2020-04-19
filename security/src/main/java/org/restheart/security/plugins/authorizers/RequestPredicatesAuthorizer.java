@@ -117,7 +117,7 @@ public class RequestPredicatesAuthorizer
     @Override
     public boolean isAuthenticationRequired(final HttpServerExchange exchange) {
         // don't require authentication for OPTIONS requests
-        if (BufferedByteArrayRequest.wrap(exchange).isOptions()) {
+        if (BufferedByteArrayRequest.of(exchange).isOptions()) {
             return false;
         }
 

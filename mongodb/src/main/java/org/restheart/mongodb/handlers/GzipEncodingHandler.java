@@ -71,7 +71,7 @@ public class GzipEncodingHandler extends EncodingHandler {
                 }
             }
 
-            BsonResponse.wrap(exchange).setIError(
+            BsonResponse.of(exchange).setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "Accept-Encoding header must include gzip");
 

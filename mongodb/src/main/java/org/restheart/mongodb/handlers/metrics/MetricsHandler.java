@@ -151,8 +151,8 @@ public class MetricsHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = BsonRequest.of(exchange);
+        var response = BsonResponse.of(exchange);
 
         METRICS_GATHERING_LEVEL metricsLevelForRequest = getMetricsLevelForRequest(request);
         MetricRegistry registry = getMetricsRegistry(request, metricsLevelForRequest);
@@ -402,7 +402,7 @@ public class MetricsHandler extends PipelinedHandler {
             var body = generateResponse(metricsLevel, registry);
 
             if (body != null) {
-                BufferedByteArrayResponse.wrap(exchange).writeContent(body.getBytes());
+                BufferedByteArrayResponse.of(exchange).writeContent(body.getBytes());
 
             }
 

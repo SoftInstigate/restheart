@@ -87,8 +87,8 @@ public class GetDocumentHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = BsonRequest.of(exchange);
+        var response = BsonResponse.of(exchange);
         
         if (request.isInError()) {
             next(exchange);

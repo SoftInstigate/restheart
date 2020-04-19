@@ -74,7 +74,7 @@ public class XForwardedHeadersInjector extends PipelinedHandler {
             exchange.getRequestHeaders().remove(getXForwardedAccountIdHeaderName());
             exchange.getRequestHeaders().remove(getXForwardedRolesHeaderName());
 
-            Map<String, List<String>> xfhs = BufferedByteArrayRequest.wrap(exchange)
+            Map<String, List<String>> xfhs = BufferedByteArrayRequest.of(exchange)
                     .getXForwardedHeaders();
 
             if (xfhs != null) {

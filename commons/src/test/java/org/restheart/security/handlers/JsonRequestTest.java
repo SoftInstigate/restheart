@@ -73,7 +73,7 @@ public class JsonRequestTest {
     @Test
     public void testSelectRequestMethod() {
         var exchange = new HttpServerExchange();
-        var request = BufferedJsonRequest.wrap(exchange);
+        var request = BufferedJsonRequest.of(exchange);
 
         exchange.setRequestMethod(new HttpString("UNKNOWN"));
         assertEquals(BufferedJsonRequest.METHOD.OTHER, request.getMethod());

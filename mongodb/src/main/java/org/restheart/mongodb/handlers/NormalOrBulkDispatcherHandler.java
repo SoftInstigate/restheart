@@ -55,7 +55,7 @@ public class NormalOrBulkDispatcherHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        BsonValue content = BsonRequest.wrap(exchange).getContent();
+        BsonValue content = BsonRequest.of(exchange).getContent();
 
         if (content != null 
                 && content.isArray()) {

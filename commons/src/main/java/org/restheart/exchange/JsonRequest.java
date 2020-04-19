@@ -46,8 +46,8 @@ public class JsonRequest extends Request<JsonElement> {
         return ret;
     }
     
-    public static JsonRequest wrap(HttpServerExchange exchange) {
-        return (JsonRequest) of(exchange);
+    public static JsonRequest of(HttpServerExchange exchange) {
+        return of(exchange, JsonRequest.class);
     }
     
     public void injectContent() throws IOException {

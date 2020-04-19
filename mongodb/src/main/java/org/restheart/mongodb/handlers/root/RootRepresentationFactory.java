@@ -64,7 +64,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
         
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;

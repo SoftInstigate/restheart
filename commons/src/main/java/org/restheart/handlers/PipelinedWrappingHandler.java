@@ -51,9 +51,9 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
      * @param next
      * @param service
      */
-    private PipelinedWrappingHandler(PipelinedHandler next, Service service) {
+    private <R extends Request<?>, S extends Response<?>> PipelinedWrappingHandler(PipelinedHandler next, Service<R, S> service) {
         super(next);
-        wrapped = new ServiceWrapper(service);
+        wrapped = new ServiceWrapper<>(service);
     }
 
     /**
@@ -77,10 +77,12 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
     
     /**
      * 
+     * @param <R>
+     * @param <S>
      * @param service
      * @return the wrapping handler
      */
-    public static PipelinedWrappingHandler wrap(Service service) {
+    public static <R extends Request<?>, S extends Response<?>> PipelinedWrappingHandler wrap(Service<R,S> service) {
         return wrap(null, service);
     }
     
@@ -96,11 +98,13 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
     
     /**
      * 
+     * @param <R>
+     * @param <S>
      * @param next
      * @param service
      * @return the wrapping handler 
      */
-    public static PipelinedWrappingHandler wrap(PipelinedHandler next, Service service) {
+    public static <R extends Request<?>, S extends Response<?>> PipelinedWrappingHandler wrap(PipelinedHandler next, Service<R,S> service) {
         return new PipelinedWrappingHandler(next, service);
     }
     
@@ -126,7 +130,7 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 class ServiceWrapper<R extends Request<?>, S extends Response<?>> extends PipelinedHandler {
     final Service<R,S> service;
     
-    ServiceWrapper(Service service) {
+    ServiceWrapper(Service<R, S> service) {
         this.service = service;
     }
 

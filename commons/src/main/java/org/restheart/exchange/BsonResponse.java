@@ -56,15 +56,15 @@ public class BsonResponse extends Response<BsonValue> {
         super(exchange);
         LOGGER = LoggerFactory.getLogger(BsonResponse.class);
     }
-    
+
     public static BsonResponse init(HttpServerExchange exchange) {
         return new BsonResponse(exchange);
     }
 
-    public static BsonResponse wrap(HttpServerExchange exchange) {
-        return (BsonResponse) of(exchange);
+    public static BsonResponse of(HttpServerExchange exchange) {
+        return of(exchange, BsonResponse.class);
     }
-    
+
     public static Type type() {
         var typeToken = new TypeToken<BsonResponse>(BsonResponse.class) {
         };
@@ -75,8 +75,8 @@ public class BsonResponse extends Response<BsonValue> {
     @Override
     public String readContent() {
         if (content != null) {
-            return JsonUtils.toJson(content, 
-                    BsonRequest.wrap(wrapped).getJsonMode());
+            return JsonUtils.toJson(content,
+                    BsonRequest.of(wrapped).getJsonMode());
         } else {
             return null;
         }
@@ -141,14 +141,14 @@ public class BsonResponse extends Response<BsonValue> {
         // core's ResponseSender uses BufferedResponse 
         // to send the content to the client
         if (getContent() != null) {
-            var bar = BufferedByteArrayResponse.wrap(wrapped);
+            var bar = BufferedByteArrayResponse.of(wrapped);
 
             bar.setContentTypeAsJson();
 
             try {
                 bar.writeContent(
                         JsonUtils.toJson(getContent(),
-                                BsonRequest.wrap(wrapped).getJsonMode())
+                                BsonRequest.of(wrapped).getJsonMode())
                                 .getBytes());
             } catch (IOException ioe) {
                 //LOGGER.error("Error writing request content", ioe);
@@ -256,7 +256,7 @@ public class BsonResponse extends Response<BsonValue> {
         var contentToTransform = getContent();
         var errorContent = new BsonDocument();
 
-        var rf = BsonRequest.wrap(wrapped).getRepresentationFormat();
+        var rf = BsonRequest.of(wrapped).getRepresentationFormat();
 
         final boolean isStandardRepresentation
                 = rf == ExchangeKeys.REPRESENTATION_FORMAT.STANDARD

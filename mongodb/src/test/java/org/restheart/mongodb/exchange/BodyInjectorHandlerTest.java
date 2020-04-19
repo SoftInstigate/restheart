@@ -21,11 +21,9 @@
 package org.restheart.mongodb.exchange;
 
 import io.undertow.server.handlers.form.FormData;
-import java.lang.reflect.Field;
 import org.bson.BsonDocument;
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
-import org.restheart.mongodb.handlers.PipedHttpHandler;
 
 /**
  *
@@ -52,10 +50,8 @@ public class BodyInjectorHandlerTest {
         final String jsonString
                 = "{\"key1\": \"value1\", \"key2\": \"value2\"}";
         FormData formData = new FormData(1);
-        Field field = PipedHttpHandler.class.getDeclaredField("PROPERTIES");
-        field.setAccessible(true);
 
-        formData.add(field.get(null).toString(), jsonString);
+        formData.add("properties", jsonString);
         BsonDocument result = BsonRequestContentInjector.extractMetadata(formData);
         BsonDocument expected = BsonDocument.parse(jsonString);
         assertEquals(expected, result);

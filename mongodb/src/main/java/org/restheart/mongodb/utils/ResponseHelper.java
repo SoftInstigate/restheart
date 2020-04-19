@@ -52,8 +52,8 @@ public class ResponseHelper {
             HttpServerExchange exchange,
             int code,
             Resource rep) {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = BsonRequest.of(exchange);
+        var response = BsonResponse.of(exchange);
 
         request.setInError(true);
         response.setStatusCode(code);

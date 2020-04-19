@@ -111,7 +111,7 @@ public abstract class AbstractRepresentationFactory {
     protected Resource createRepresentation(
             final HttpServerExchange exchange,
             final String requestPath) {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
 
         String queryString
                 = exchange.getQueryString() == null
@@ -154,7 +154,7 @@ public abstract class AbstractRepresentationFactory {
             long size,
             final Resource rep)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
         if (request.getPagesize() > 0) {
             TreeMap<String, String> links;
             links = RepresentationUtils.getPaginationLinks(exchange, size);
