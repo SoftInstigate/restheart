@@ -81,8 +81,9 @@ public class ConduitInjector extends PipelinedHandler {
      * @throws Exception
      */
     @Override
+    @SuppressWarnings("unchecked")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        // wrap the response buffering it if any interceptor resolvers the request 
+        // of the response buffering it if any interceptor resolvers the request 
         // and requires the content from the backend
         exchange.addResponseWrapper((ConduitFactory<StreamSinkConduit> factory,
                 HttpServerExchange cexchange) -> {
@@ -91,7 +92,7 @@ public class ConduitInjector extends PipelinedHandler {
             // For proxied requests a thread switch in the request handling happens,
             // loosing the MDC context. TracingInstrumentationHandler adds it to the
             // exchange as an Attachment
-            var mdcCtx = BufferedByteArrayResponse.wrap(exchange).getMDCContext();
+            var mdcCtx = BufferedByteArrayResponse.of(exchange).getMDCContext();
             if (mdcCtx != null) {
                 MDC.setContextMap(mdcCtx);
             }
@@ -111,8 +112,8 @@ public class ConduitInjector extends PipelinedHandler {
                     .filter(ri -> {
                         try {
                             return ri.resolve(
-                                    BufferedByteArrayRequest.wrap(exchange),
-                                    BufferedByteArrayResponse.wrap(exchange));
+                                    BufferedByteArrayRequest.of(exchange),
+                                    BufferedByteArrayResponse.of(exchange));
                         } catch (Exception e) {
                             LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
                                     ri.getClass().getSimpleName(),
@@ -147,6 +148,7 @@ public class ConduitInjector extends PipelinedHandler {
      *
      * @param exchange
      */
+    @SuppressWarnings("unchecked")
     private static void forceIdentityEncodingForInterceptors(
             HttpServerExchange exchange) {
         if (PluginsRegistryImpl.getInstance()
@@ -162,8 +164,8 @@ public class ConduitInjector extends PipelinedHandler {
                 .filter(ri -> {
                     try {
                         return ri.resolve(
-                                BufferedByteArrayRequest.wrap(exchange),
-                                BufferedByteArrayResponse.wrap(exchange));
+                                BufferedByteArrayRequest.of(exchange),
+                                BufferedByteArrayResponse.of(exchange));
                     } catch (Exception e) {
                         LOGGER.warn("Error resolving interceptor {} for {}",
                                 ri.getClass().getSimpleName(),

@@ -44,8 +44,8 @@ public class ByteArrayRequest extends Request<byte[]> {
         return ret;
     }
 
-    public static ByteArrayRequest wrap(HttpServerExchange exchange) {
-        return (ByteArrayRequest) of(exchange);
+    public static ByteArrayRequest of(HttpServerExchange exchange) {
+        return of(exchange, ByteArrayRequest.class);
     }
 
     public void injectContent() throws IOException {

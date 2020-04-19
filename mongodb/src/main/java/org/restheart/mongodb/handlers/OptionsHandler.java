@@ -75,7 +75,7 @@ public class OptionsHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
 
         if (!(request.isOptions())) {
             next(exchange);

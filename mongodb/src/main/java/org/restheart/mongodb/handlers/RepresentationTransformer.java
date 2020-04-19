@@ -40,8 +40,8 @@ import org.restheart.utils.HttpStatus;
 public class RepresentationTransformer extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = BsonRequest.of(exchange);
+        var response = BsonResponse.of(exchange);
         var contentToTransform = response.getContent();
         
         // can be null if an error occurs before BsonRequestPropsInjector.handle()

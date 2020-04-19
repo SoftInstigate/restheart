@@ -97,7 +97,7 @@ public class RequestLogger extends PipelinedHandler {
             return;
         }
 
-        var request = BufferedJsonRequest.wrap(exchange);
+        var request = BufferedJsonRequest.of(exchange);
 
         final StringBuilder sb = new StringBuilder();
         final long start = request != null && request.getStartTime() != null

@@ -208,12 +208,12 @@ public class MongoService implements Service<BsonRequest, BsonResponse> {
 
     @Override
     public Function<HttpServerExchange, BsonRequest> request() {
-        return e -> (BsonRequest) Request.of(e);
+        return e -> BsonRequest.of(e);
     }
 
     @Override
     public Function<HttpServerExchange, BsonResponse> response() {
-        return e -> (BsonResponse) Response.of(e);
+        return e -> BsonResponse.of(e);
     }
 
     /**

@@ -83,11 +83,11 @@ public class ResponseInterceptorsExecutor
                 exchange);
 
         if (handlingService != null) {
-            request = Request.of(exchange);
-            response = Response.of(exchange);
+            request = Request.of(exchange, Request.class);
+            response = Response.of(exchange, Response.class);
         } else {
-            request = BufferedByteArrayRequest.wrap(exchange);
-            response = BufferedByteArrayResponse.wrap(exchange);
+            request = BufferedByteArrayRequest.of(exchange);
+            response = BufferedByteArrayResponse.of(exchange);
         }
 
         if (!AbstractExchange.isInError(exchange)
@@ -100,6 +100,7 @@ public class ResponseInterceptorsExecutor
         next(exchange);
     }
 
+    @SuppressWarnings("unchecked")
     private void executeResponseInterceptor(HttpServerExchange exchange,
             Service handlingService,
             AbstractRequest request,
@@ -166,6 +167,7 @@ public class ResponseInterceptorsExecutor
                 });
     }
 
+    @SuppressWarnings("unchecked")
     private void executeAsyncResponseInterceptor(HttpServerExchange exchange,
             Service handlingService,
             AbstractRequest request,

@@ -69,7 +69,7 @@ public class TestInitializer implements Initializer {
         // add a global security predicate
         this.pluginRegistry.getGlobalSecurityPredicates()
                 .add((Predicate) (HttpServerExchange exchange) -> {
-                    var request = BufferedJsonRequest.wrap(exchange);
+                    var request = BufferedJsonRequest.of(exchange);
                     return !(request.isGet()
                             && "/secho/foo".equals(URLUtils.removeTrailingSlashes(
                                     exchange.getRequestPath())));

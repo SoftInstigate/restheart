@@ -273,8 +273,8 @@ public class BsonRequestContentInjector {
      * @param exchange
      */
     public static void inject(final HttpServerExchange exchange) {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = BsonRequest.of(exchange);
+        var response = BsonResponse.of(exchange);
 
         if (request.isInError()) {
             return;
@@ -365,7 +365,7 @@ public class BsonRequestContentInjector {
             if (isHalOrJson(contentType)) {
                 final String contentString;
 
-                var bar = BufferedByteArrayRequest.wrap(exchange);
+                var bar = BufferedByteArrayRequest.of(exchange);
 
                 try {
                     if (bar.isContentAvailable()) {

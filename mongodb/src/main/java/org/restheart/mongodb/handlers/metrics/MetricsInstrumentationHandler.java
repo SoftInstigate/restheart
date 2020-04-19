@@ -71,7 +71,7 @@ public class MetricsInstrumentationHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
         
         final long requestStartTime = request.getRequestStartTime();
 
@@ -89,7 +89,7 @@ public class MetricsInstrumentationHandler extends PipelinedHandler {
     }
 
     private void addDefaultMetrics(MetricRegistry registry, long duration, HttpServerExchange exchange) {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
         
         registry.timer(request.getType().toString() + "." + request.getMethod().toString())
                 .update(duration, TimeUnit.MILLISECONDS);
@@ -102,7 +102,7 @@ public class MetricsInstrumentationHandler extends PipelinedHandler {
     @VisibleForTesting
     void addMetrics(long startTime, HttpServerExchange exchange) {
         if (configuration.gatheringAboveOrEqualToLevel(ROOT)) {
-            var request = BsonRequest.wrap(exchange);
+            var request = BsonRequest.of(exchange);
             
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;

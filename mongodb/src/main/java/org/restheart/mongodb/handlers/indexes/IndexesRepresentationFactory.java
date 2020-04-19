@@ -59,7 +59,7 @@ public class IndexesRepresentationFactory {
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
         
         String requestPath = URLUtils.removeTrailingSlashes(
                 request.getUnmappedRequestUri());

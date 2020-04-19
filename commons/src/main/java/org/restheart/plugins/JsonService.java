@@ -24,8 +24,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
-import org.restheart.exchange.Request;
-import org.restheart.exchange.Response;
 
 /**
  *
@@ -44,11 +42,11 @@ public interface JsonService extends Service<JsonRequest, JsonResponse> {
 
     @Override
     default Function<HttpServerExchange, JsonRequest> request() {
-        return e -> (JsonRequest) Request.of(e);
+        return e -> JsonRequest.of(e);
     }
 
     @Override
     default Function<HttpServerExchange, JsonResponse> response() {
-        return e -> (JsonResponse) Response.of(e);
+        return e -> JsonResponse.of(e);
     }
 }

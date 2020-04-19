@@ -62,7 +62,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
         final String requestPath = buildRequestPath(exchange);
         final Resource rep = createRepresentation(exchange, null);
 
-        addBulkResult(result, BsonResponse.wrap(exchange), rep, requestPath);
+        addBulkResult(result, BsonResponse.of(exchange), rep, requestPath);
 
         return rep;
     }

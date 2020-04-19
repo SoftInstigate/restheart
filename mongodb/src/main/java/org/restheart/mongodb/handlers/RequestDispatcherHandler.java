@@ -124,13 +124,13 @@ public class RequestDispatcherHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
 
         if (request.getType() == TYPE.INVALID) {
             LOGGER.debug(
                     "This is a bad request: returning a <{}> HTTP code",
                     HttpStatus.SC_BAD_REQUEST);
-            BsonResponse.wrap(exchange).setIError(
+            BsonResponse.of(exchange).setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "bad request");
             responseSenderHandler.handleRequest(exchange);
@@ -141,7 +141,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.debug(
                     "This method is not allowed: returning a <{}> HTTP code",
                     HttpStatus.SC_METHOD_NOT_ALLOWED);
-            BsonResponse.wrap(exchange).setIError(
+            BsonResponse.of(exchange).setIError(
                     HttpStatus.SC_METHOD_NOT_ALLOWED,
                     "method " + request.getMethod().name() + " not allowed");
             responseSenderHandler.handleRequest(exchange);
@@ -152,7 +152,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.debug(
                     "The resource is reserved: returning a <{}> HTTP code",
                     HttpStatus.SC_FORBIDDEN);
-            BsonResponse.wrap(exchange).setIError(
+            BsonResponse.of(exchange).setIError(
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
             responseSenderHandler.handleRequest(exchange);
@@ -170,7 +170,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.error(
                     "Can't find PipelinedHandler({}, {})",
                     request.getType(), request.getMethod());
-            BsonResponse.wrap(exchange).setIError(
+            BsonResponse.of(exchange).setIError(
                     HttpStatus.SC_METHOD_NOT_ALLOWED,
                     "method " + request.getMethod().name() + " not allowed");
             responseSenderHandler.handleRequest(exchange);

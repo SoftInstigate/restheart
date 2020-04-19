@@ -24,23 +24,12 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.RequestContext;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class CheckersUtils {
-    /**
-     *
-     * @param context
-     * @return
-     */
-    @SuppressWarnings("deprecation")
-    public static boolean isBulkRequest(RequestContext context) {
-        return context.isBulkDocuments() || context.getContent().isArray();
-    }
-
     /**
      *
      * @param request

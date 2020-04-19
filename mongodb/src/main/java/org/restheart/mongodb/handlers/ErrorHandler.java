@@ -74,7 +74,7 @@ public class ErrorHandler implements HttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var response = BsonResponse.wrap(exchange);
+        var response = BsonResponse.of(exchange);
         
         try {
             next.handleRequest(exchange);

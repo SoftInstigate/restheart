@@ -41,7 +41,7 @@ public class BufferedByteArrayRequest extends BufferedRequest<byte[]> {
         LOGGER = LoggerFactory.getLogger(BufferedByteArrayRequest.class);
     }
 
-    public static BufferedByteArrayRequest wrap(HttpServerExchange exchange) {
+    public static BufferedByteArrayRequest of(HttpServerExchange exchange) {
         return new BufferedByteArrayRequest(exchange);
     }
     

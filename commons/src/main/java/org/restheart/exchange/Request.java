@@ -48,21 +48,29 @@ public abstract class Request<T> extends AbstractRequest<T> {
             throw new IllegalStateException("Error instantiating request object "
                     + getClass().getSimpleName()
                     + ", "
-                    + of(exchange).getClass().getSimpleName()
+                    + exchange.getAttachment(REQUEST_KEY).getClass().getSimpleName()
                     + " already bound to the exchange");
         }
 
         exchange.putAttachment(REQUEST_KEY, this);
     }
 
-    public static Request<?> of(HttpServerExchange exchange) {
+    @SuppressWarnings("unchecked")
+    public static <R extends Request<?>> R of(HttpServerExchange exchange, Class<R> type) {
         var ret = exchange.getAttachment(REQUEST_KEY);
 
         if (ret == null) {
             throw new IllegalStateException("Request not initialized");
         }
 
-        return ret;
+        if (type.isAssignableFrom(ret.getClass())) {
+            return (R) ret;
+        } else {
+            throw new IllegalStateException("Request bound to exchange is not "
+                    + "of the specified type,"
+                    + " expected " + type.getClass().getSimpleName()
+                    + " got" + ret.getClass().getSimpleName());
+        }
     }
 
     public T getContent() {

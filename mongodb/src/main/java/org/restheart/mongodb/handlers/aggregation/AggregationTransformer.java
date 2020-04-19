@@ -55,10 +55,10 @@ public class AggregationTransformer extends PipelinedHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
         var contentToTransform = phase
-                ? BsonRequest.wrap(exchange).getContent()
-                : BsonResponse.wrap(exchange).getContent();
+                ? BsonRequest.of(exchange).getContent()
+                : BsonResponse.of(exchange).getContent();
 
         if (contentToTransform != null && contentToTransform.isDocument()) {
             transform(request, contentToTransform.asDocument());

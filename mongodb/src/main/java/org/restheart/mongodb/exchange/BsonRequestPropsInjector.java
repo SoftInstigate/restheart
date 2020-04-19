@@ -80,8 +80,8 @@ public class BsonRequestPropsInjector {
      * @param exchange
      */
     public static void inject(HttpServerExchange exchange) {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = BsonRequest.of(exchange);
+        var response = BsonResponse.of(exchange);
 
         // skip parameters injection if method is OPTIONS
         // this makes sure OPTIONS works even on wrong paramenter

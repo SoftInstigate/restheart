@@ -55,7 +55,7 @@ public class AccountInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
         
         // inject authenticatedAccount
         if (exchange.getSecurityContext() != null) {

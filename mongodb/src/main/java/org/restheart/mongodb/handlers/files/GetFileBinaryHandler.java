@@ -88,8 +88,8 @@ public class GetFileBinaryHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = BsonRequest.of(exchange);
+        var response = BsonResponse.of(exchange);
         
         if (request.isInError()) {
             next(exchange);
@@ -151,7 +151,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         final String errMsg = String.format(
                 "File with ID <%s> not found", request.getDocumentId());
         LOGGER.trace(errMsg);
-        BsonResponse.wrap(exchange).setIError(
+        BsonResponse.of(exchange).setIError(
                 HttpStatus.SC_NOT_FOUND,
                 errMsg);
         next(exchange);

@@ -52,9 +52,9 @@ public class SizeRequestTransformer extends PipelinedHandler {
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         // for request phase
         if (phase) {
-            BsonRequest.wrap(exchange).setPagesize(0);
+            BsonRequest.of(exchange).setPagesize(0);
         } else {
-            var response = BsonResponse.wrap(exchange);
+            var response = BsonResponse.of(exchange);
 
             // for response phase
             if (response.getContent() != null

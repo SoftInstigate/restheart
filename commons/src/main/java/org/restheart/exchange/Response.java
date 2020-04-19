@@ -48,21 +48,29 @@ public abstract class Response<T> extends AbstractResponse<T> {
             throw new IllegalStateException("Error instantiating response object "
                     + getClass().getSimpleName()
                     + ", "
-                    + of(exchange).getClass().getSimpleName()
+                    + exchange.getAttachment(RESPONSE_KEY).getClass().getSimpleName()
                     + " already bound to the exchange");
         }
 
         exchange.putAttachment(RESPONSE_KEY, this);
     }
     
-    public static Response<?> of(HttpServerExchange exchange) {
+    @SuppressWarnings("unchecked")
+    public static <R extends Response<?>> R of(HttpServerExchange exchange, Class<R> type) {
         var ret = exchange.getAttachment(RESPONSE_KEY);
 
         if (ret == null) {
             throw new IllegalStateException("Response not initialized");
         }
-
-        return ret;
+        
+        if (type.isAssignableFrom(ret.getClass())) {
+            return (R) ret;
+        } else {
+            throw new IllegalStateException("Response bound to exchange is not "
+                    + "of the specified type,"
+                    + " expected " + type.getClass().getSimpleName()
+                    + " got" + ret.getClass().getSimpleName());
+        }
     }
 
     public T getContent() {

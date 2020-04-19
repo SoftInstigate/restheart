@@ -82,8 +82,8 @@ public class GetCollectionHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.wrap(exchange);
-        var response = BsonResponse.wrap(exchange);
+        var request = BsonRequest.of(exchange);
+        var response = BsonResponse.of(exchange);
         
         if (request.isInError()) {
             next(exchange);
@@ -123,7 +123,7 @@ public class GetCollectionHandler extends PipelinedHandler {
                 // the filter expression is not a valid json string
                 LOGGER.debug("invalid filter expression {}",
                         request.getFilter(), jpe);
-                BsonResponse.wrap(exchange).setInError(
+                BsonResponse.of(exchange).setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "wrong request, filter expression is invalid",
                         jpe);
@@ -137,7 +137,7 @@ public class GetCollectionHandler extends PipelinedHandler {
                             request.getFilter(),
                             me);
 
-                    BsonResponse.wrap(exchange).setInError(
+                    BsonResponse.of(exchange).setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "wrong request, filter expression is invalid",
                             me);
@@ -168,7 +168,7 @@ public class GetCollectionHandler extends PipelinedHandler {
             // call the ResponseTransformerMetadataHandler if piped in
             next(exchange);
         } catch (IllegalQueryParamenterException ex) {
-            BsonResponse.wrap(exchange).setInError(
+            BsonResponse.of(exchange).setInError(
                     HttpStatus.SC_BAD_REQUEST,
                     ex.getMessage(),
                     ex);

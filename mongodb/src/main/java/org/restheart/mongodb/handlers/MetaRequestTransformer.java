@@ -39,7 +39,7 @@ public class MetaRequestTransformer extends PipelinedHandler {
      */
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        var content = BsonResponse.wrap(exchange).getContent();
+        var content = BsonResponse.of(exchange).getContent();
         // for response phase
         if (content != null
                 && content.isDocument()

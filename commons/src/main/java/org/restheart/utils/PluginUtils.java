@@ -188,6 +188,6 @@ public class PluginUtils {
     }
 
     public static PipelineInfo pipelineInfo(HttpServerExchange exchange) {
-        return BufferedByteArrayRequest.wrap(exchange).getPipelineInfo();
+        return BufferedByteArrayRequest.of(exchange).getPipelineInfo();
     }
 }

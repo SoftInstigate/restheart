@@ -34,8 +34,8 @@ public class ByteArrayResponse extends Response<byte[]> {
         return new ByteArrayResponse(exchange);
     }
     
-    public static ByteArrayResponse wrap(HttpServerExchange exchange) {
-        return (ByteArrayResponse) of(exchange);
+    public static ByteArrayResponse of(HttpServerExchange exchange) {
+        return of(exchange, ByteArrayResponse.class);
     }
     
     @Override

@@ -154,50 +154,50 @@ public class BsonRequestTest {
         String whatUri = "/db/mycollection";
         String whereUri = "/";
 
-        RequestContext context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/mycollection", context.getUnmappedRequestUri());
+        BsonRequest request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/db/mycollection", request.getUnmappedRequestUri());
 
         whatUri = "*";
         whereUri = "/";
 
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/", context.getUnmappedRequestUri());
+        request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/", request.getUnmappedRequestUri());
 
         whatUri = "*";
         whereUri = "/data";
 
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/", context.getUnmappedRequestUri());
+        request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/", request.getUnmappedRequestUri());
 
         whatUri = "/data";
         whereUri = "/";
 
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/data", context.getUnmappedRequestUri());
+        request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/data", request.getUnmappedRequestUri());
 
         whatUri = "/db/coll";
         whereUri = "/";
 
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll", context.getUnmappedRequestUri());
+        request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/db/coll", request.getUnmappedRequestUri());
 
         whatUri = "/db/coll/doc";
         whereUri = "/";
 
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll/doc", context.getUnmappedRequestUri());
+        request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/db/coll/doc", request.getUnmappedRequestUri());
 
         whatUri = "/db/coll/";
         whereUri = "/";
 
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll", context.getUnmappedRequestUri());
+        request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/db/coll", request.getUnmappedRequestUri());
 
         whatUri = "/db/coll////";
         whereUri = "/";
 
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll", context.getUnmappedRequestUri());
+        request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/db/coll", request.getUnmappedRequestUri());
     }
 
     /**
@@ -213,25 +213,25 @@ public class BsonRequestTest {
         String whatUri = "/db/mycollection";
         String whereUri = "/";
 
-        RequestContext context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/mycollection/x", context.getUnmappedRequestUri());
+        BsonRequest request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/db/mycollection/x", request.getUnmappedRequestUri());
 
         whatUri = "*";
         whereUri = "/";
 
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/x", context.getUnmappedRequestUri());
+        request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/x", request.getUnmappedRequestUri());
 
         whatUri = "db";
         whereUri = "/";
 
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/x", context.getUnmappedRequestUri());
+        request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/db/x", request.getUnmappedRequestUri());
 
         whatUri = "db/coll";
         whereUri = "/";
 
-        context = new RequestContext(ex, whereUri, whatUri);
-        assertEquals("/db/coll/x", context.getUnmappedRequestUri());
+        request = BsonRequest.init(ex, whereUri, whatUri);
+        assertEquals("/db/coll/x", request.getUnmappedRequestUri());
     }
 }

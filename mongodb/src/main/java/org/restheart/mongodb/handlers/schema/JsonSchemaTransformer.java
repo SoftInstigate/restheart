@@ -64,7 +64,7 @@ public class JsonSchemaTransformer extends PipelinedHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = (BsonRequest) Request.of(exchange);
+        var request = BsonRequest.of(exchange);
 
         BsonValue content;
 
@@ -72,7 +72,7 @@ public class JsonSchemaTransformer extends PipelinedHandler {
             content = request.getContent();
 
         } else { // response
-            var response = (BsonResponse) Response.of(exchange);
+            var response = BsonRequest.of(exchange);
             content = response.getContent();
         }
 

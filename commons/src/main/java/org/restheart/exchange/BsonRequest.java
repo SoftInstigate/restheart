@@ -209,8 +209,8 @@ public class BsonRequest extends Request<BsonValue> {
         return request;
     }
 
-    public static BsonRequest wrap(HttpServerExchange exchange) {
-        return (BsonRequest) of(exchange);
+    public static BsonRequest of(HttpServerExchange exchange) {
+        return of(exchange, BsonRequest.class);
     }
 
     public static Type type() {

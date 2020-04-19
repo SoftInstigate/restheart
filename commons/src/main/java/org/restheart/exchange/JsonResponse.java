@@ -37,8 +37,8 @@ public class JsonResponse extends Response<JsonElement> {
         return new JsonResponse(exchange);
     }
     
-    public static JsonResponse wrap(HttpServerExchange exchange) {
-        return (JsonResponse) of(exchange);
+    public static JsonResponse of(HttpServerExchange exchange) {
+        return JsonResponse.of(exchange, JsonResponse.class);
     }
     
     @Override

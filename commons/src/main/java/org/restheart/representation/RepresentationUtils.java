@@ -64,7 +64,7 @@ public class RepresentationUtils {
     public static TreeMap<String, String> getPaginationLinks(
             HttpServerExchange exchange,
             long size) throws IllegalQueryParamenterException {
-        var request = BsonRequest.wrap(exchange);
+        var request = BsonRequest.of(exchange);
 
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
         String queryString = URLUtils.decodeQueryString(exchange.getQueryString());

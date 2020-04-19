@@ -37,6 +37,7 @@ import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import static org.restheart.test.integration.AbstactIT.MONGO_URI;
 import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
+
 @Ignore
 public class SkipTimeTest {
 

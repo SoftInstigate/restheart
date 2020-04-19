@@ -190,7 +190,7 @@ public class RndTokenManager implements TokenManager {
         exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER,
                 Instant.now().plus(ttl, ChronoUnit.MINUTES).toString());
 
-        var request = BufferedJsonRequest.wrap(exchange);
+        var request = BufferedJsonRequest.of(exchange);
 
         if (request.getAuthenticatedAccount() != null
                 && request.getAuthenticatedAccount().getPrincipal() != null
