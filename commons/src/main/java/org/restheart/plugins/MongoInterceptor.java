@@ -19,14 +19,13 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 
 /**
- * Specialized Interceptor interface for services implementing BsonService
- * 
+ * Specialized Interceptor interface for MongoService
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface BsonInterceptor extends Interceptor<BsonRequest, BsonResponse> {
+public interface MongoInterceptor extends Interceptor<MongoRequest, MongoResponse> {
     
 }

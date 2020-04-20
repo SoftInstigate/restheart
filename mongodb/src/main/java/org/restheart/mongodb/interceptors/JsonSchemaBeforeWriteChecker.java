@@ -28,14 +28,14 @@ import org.bson.BsonValue;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.json.JSONObject;
+import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.utils.HttpStatus;
@@ -70,7 +70,7 @@ import org.slf4j.LoggerFactory;
         description = "Checks the request content against the JSON schema specified by the 'jsonSchema' collection metadata",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 @SuppressWarnings("deprecation")
-public class JsonSchemaBeforeWriteChecker implements BsonInterceptor {
+public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
 
     /**
      *
@@ -234,7 +234,8 @@ public class JsonSchemaBeforeWriteChecker implements BsonInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return ((request.isWriteDocument() && !request.isPatch())
+        return request.isHandledBy("mongo")
+                && ((request.isWriteDocument() && !request.isPatch())
                 || (request.isPatch() && request.isBulkDocuments()))
                 && request.getCollectionProps() != null
                 && request.getCollectionProps()

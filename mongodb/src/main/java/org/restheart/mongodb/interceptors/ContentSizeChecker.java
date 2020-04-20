@@ -23,8 +23,8 @@ package org.restheart.mongodb.interceptors;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
         description = "Checks the write request content length on documents of collections with 'checkContentSize' metadata",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH)
 @SuppressWarnings("deprecation")
-public class ContentSizeChecker implements BsonInterceptor {
+public class ContentSizeChecker implements MongoInterceptor {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ContentSizeChecker.class);
 

@@ -25,8 +25,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 
 @RegisterPlugin(name = "writeResult",
@@ -34,7 +34,7 @@ import org.restheart.plugins.RegisterPlugin;
         + "updated and old version of the written document.",
         interceptPoint = InterceptPoint.RESPONSE,
         enabledByDefault = false)
-public class WriteResultInterceptor implements BsonInterceptor {
+public class WriteResultInterceptor implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
@@ -75,7 +75,8 @@ public class WriteResultInterceptor implements BsonInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return "xcoll".equals(request.getCollectionName())
+        return request.isHandledBy("mongo")
+                && "xcoll".equals(request.getCollectionName())
                 && response.getDbOperationResult() != null;
     }
 }

@@ -102,7 +102,7 @@ public class DbPropsInjector implements Interceptor<MongoRequest, MongoResponse>
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return this.dbsDAO != null
-                && "mongo".equals(request.getPipelineInfo().getName())
+                && request.isHandledBy("mongo")
                 && !(request.isInError()
                 || request.isSessions()
                 || request.isTxn()

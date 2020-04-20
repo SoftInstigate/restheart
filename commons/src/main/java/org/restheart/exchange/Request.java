@@ -21,6 +21,8 @@ package org.restheart.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import org.restheart.plugins.Service;
+import org.restheart.utils.PluginUtils;
 
 /**
  * A request that stores content in a class field.
@@ -79,5 +81,15 @@ public abstract class Request<T> extends AbstractRequest<T> {
 
     public void setContent(T content) {
         this.content = content;
+    }
+
+    /**
+     * 
+     * @param serviceName
+     * @return true if the request is handled by the specified Service 
+     */
+    public boolean isHandledBy(String serviceName) {
+        return serviceName == null ? false : serviceName.equals(
+                PluginUtils.pipelineInfo(wrapped).getName());
     }
 }

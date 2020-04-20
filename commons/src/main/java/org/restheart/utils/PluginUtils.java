@@ -69,6 +69,20 @@ public class PluginUtils {
             return a.requiresContent();
         }
     }
+    
+    /**
+     *
+     * @param service
+     * @return the service name
+     */
+    public static String name(Service service) {
+        var a = service.getClass()
+                .getDeclaredAnnotation(RegisterPlugin.class);
+
+        return a == null
+                ? null
+                : a.name();
+    }
 
     /**
      *
@@ -86,7 +100,7 @@ public class PluginUtils {
                 ? "/".concat(a.name())
                 : a.defaultURI();
     }
-
+    
     /**
      *
      * @param <P>

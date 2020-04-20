@@ -22,8 +22,8 @@ package org.restheart.security.plugins.interceptors;
 
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.BsonInterceptor;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
+import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import static org.restheart.plugins.security.TokenManager.ACCESS_CONTROL_EXPOSE_HEADERS;
 
@@ -39,7 +39,7 @@ import static org.restheart.plugins.security.TokenManager.ACCESS_CONTROL_EXPOSE_
         interceptPoint = RESPONSE,
         enabledByDefault = true
 )
-public class TokenCORSResponseInterceptor implements BsonInterceptor {
+public class TokenCORSResponseInterceptor implements MongoInterceptor {
 
     private String[] headers;
     

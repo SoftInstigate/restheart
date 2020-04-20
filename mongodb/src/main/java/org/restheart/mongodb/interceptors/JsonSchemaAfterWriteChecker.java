@@ -71,7 +71,8 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return request.getCollectionProps() != null
+        return request.isHandledBy("mongo")
+                && request.getCollectionProps() != null
                 && (request.isPatch() && !request.isBulkDocuments())
                 && request.getCollectionProps() != null
                 && request.getCollectionProps()

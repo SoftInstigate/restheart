@@ -22,7 +22,6 @@ package org.restheart.mongodb.db;
 
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoCommandException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
