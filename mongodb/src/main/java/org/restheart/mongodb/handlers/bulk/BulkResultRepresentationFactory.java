@@ -104,11 +104,11 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                 wr.getUpserts().stream().
                         forEach(update -> {
                             nrep.addLink(new Link("rh:newdoc",
-                                            RepresentationUtils
-                                                    .getReferenceLink(
-                                                            response,
-                                                            requestPath,
-                                                            update.getId())),
+                                    RepresentationUtils
+                                            .getReferenceLink(
+                                                    response,
+                                                    requestPath,
+                                                    update.getId())),
                                     true);
                         });
             }
@@ -141,10 +141,10 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                 wr.getUpserts().stream().
                         forEach(update -> {
                             nrep.addLink(new Link("rh:newdoc",
-                                            RepresentationUtils
-                                                    .getReferenceLink(
-                                                            requestPath,
-                                                            update.getId())),
+                                    RepresentationUtils
+                                            .getReferenceLink(
+                                                    requestPath,
+                                                    update.getId())),
                                     true);
                         });
             }
@@ -179,6 +179,19 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
                         new BsonInt32(
                                 ResponseHelper.getHttpStatusFromErrorCode(
                                         error.getCode())));
+            } else if (error.getCode() == 2) {
+                nrep.addProperty("index",
+                        new BsonInt32(error.getIndex()));
+                nrep.addProperty("httpStatus",
+                        new BsonInt32(
+                                ResponseHelper.getHttpStatusFromErrorCode(
+                                        error.getCode())));
+                nrep.addProperty("message",
+                        new BsonString(
+                                ResponseHelper.getMessageFromErrorCode(
+                                        error.getCode())
+                                + ": "
+                                + error.getMessage()));
             } else {
                 nrep.addProperty("index",
                         new BsonInt32(error.getIndex()));
@@ -205,8 +218,8 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
      * @throws IllegalQueryParamenterException
      */
     @Override
-    public Resource getRepresentation(HttpServerExchange exchange, 
-            List<BsonDocument> embeddedData, long size) 
+    public Resource getRepresentation(HttpServerExchange exchange,
+            List<BsonDocument> embeddedData, long size)
             throws IllegalQueryParamenterException {
         throw new UnsupportedOperationException("Not supported."); //To change body of generated methods, choose Tools | Templates.
     }

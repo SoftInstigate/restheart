@@ -73,7 +73,12 @@ public class DAOUtils {
      *
      */
     public static final int DUPLICATE_KEY_ERROR = 11000;
-
+    
+    /**
+     * 
+     */
+    public static final int BAD_VALUE_KEY_ERROR = 2;
+    
     /**
      *
      */
@@ -287,25 +292,31 @@ public class DAOUtils {
                         documentId,
                         mce.getErrorCode(),
                         mce.getErrorMessage());
-                if (mce.getErrorCode() == DUPLICATE_KEY_ERROR) {
-                    if (allowUpsert
-                            && filter != null
-                            && !filter.isEmpty()
-                            && mce.getErrorMessage().contains("_id_ dup key")) {
-                        // error 11000 is duplicate key error
-                        // happens when the _id and a filter are specified,
-                        // the document exists but does not match the filter
+                switch (mce.getErrorCode()) {
+                    case DUPLICATE_KEY_ERROR:
+                        if (allowUpsert
+                                && filter != null
+                                && !filter.isEmpty()
+                                && mce.getErrorMessage().contains("_id_ dup key")) {
+                            // error 11000 is duplicate key error
+                            // happens when the _id and a filter are specified,
+                            // the document exists but does not match the filter
+                            return new OperationResult(ResponseHelper
+                                    .getHttpStatusFromErrorCode(mce.getErrorCode()),
+                                    oldDocument,
+                                    null);
+                        } else {
+                            return new OperationResult(HttpStatus.SC_CONFLICT,
+                                    oldDocument,
+                                    null);
+                        }
+                    case BAD_VALUE_KEY_ERROR:
                         return new OperationResult(ResponseHelper
                                 .getHttpStatusFromErrorCode(mce.getErrorCode()),
                                 oldDocument,
                                 null);
-                    } else {
-                        return new OperationResult(HttpStatus.SC_CONFLICT,
-                                oldDocument,
-                                null);
-                    }
-                } else {
-                    throw mce;
+                    default:
+                        throw mce;
                 }
             }
 
@@ -322,26 +333,31 @@ public class DAOUtils {
                                 getUpdateDocument(data, deepPatching),
                                 allowUpsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
-                if (mce.getErrorCode() == DUPLICATE_KEY_ERROR) {
-                    if (allowUpsert
-                            && filter != null
-                            && !filter.isEmpty()
-                            && mce.getErrorMessage().contains("_id_ dup key")) {
-                        // DuplicateKey error
-                        // this happens if the filter parameter didn't match
-                        // the existing document and so the upserted doc
-                        // has an existing _id
+                switch (mce.getErrorCode()) {
+                    case DUPLICATE_KEY_ERROR:
+                        if (allowUpsert
+                                && filter != null
+                                && !filter.isEmpty()
+                                && mce.getErrorMessage().contains("_id_ dup key")) {
+                            // error 11000 is duplicate key error
+                            // happens when the _id and a filter are specified,
+                            // the document exists but does not match the filter
+                            return new OperationResult(ResponseHelper
+                                    .getHttpStatusFromErrorCode(mce.getErrorCode()),
+                                    oldDocument,
+                                    null);
+                        } else {
+                            return new OperationResult(HttpStatus.SC_CONFLICT,
+                                    oldDocument,
+                                    null);
+                        }
+                    case BAD_VALUE_KEY_ERROR:
                         return new OperationResult(ResponseHelper
                                 .getHttpStatusFromErrorCode(mce.getErrorCode()),
                                 oldDocument,
                                 null);
-                    } else {
-                        return new OperationResult(HttpStatus.SC_CONFLICT,
-                                oldDocument,
-                                null);
-                    }
-                } else {
-                    throw mce;
+                    default:
+                        throw mce;
                 }
             }
 
