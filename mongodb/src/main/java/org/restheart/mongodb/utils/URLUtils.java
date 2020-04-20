@@ -39,7 +39,7 @@ import static org.bson.BsonType.BOOLEAN;
 import static org.bson.BsonType.STRING;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE.MAXKEY;
 import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE.MINKEY;
@@ -263,7 +263,7 @@ public class URLUtils {
      * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithDocId(
-            BsonRequest request,
+            MongoRequest request,
             String dbName,
             String collName,
             BsonValue id)
@@ -301,7 +301,7 @@ public class URLUtils {
      * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterMany(
-            BsonRequest request,
+            MongoRequest request,
             String dbName,
             String collName,
             BsonValue[] ids)
@@ -329,7 +329,7 @@ public class URLUtils {
      * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterOne(
-            BsonRequest request,
+            MongoRequest request,
             String dbName,
             String collName,
             String referenceField,
@@ -359,7 +359,7 @@ public class URLUtils {
      * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterManyInverse(
-            BsonRequest request,
+            MongoRequest request,
             String dbName,
             String collName,
             String referenceField,

@@ -23,8 +23,8 @@ package org.restheart.mongodb.handlers.bulk;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.BulkOperationResult;
@@ -83,8 +83,8 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
 
         if (request.isInError()) {
             next(exchange);
@@ -146,16 +146,16 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
     }
 
     private boolean checkId(HttpServerExchange exchange, BsonValue document) throws Exception {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         
         if (document.isDocument()
                 && document.asDocument().containsKey("_id")
                 && document.asDocument().get("_id").isString()
-                && BsonRequest.isReservedResourceDocument(
+                && MongoRequest.isReservedResourceDocument(
                         request.getType(),
                         document.asDocument()
                                 .get("_id").asString().getValue())) {
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_FORBIDDEN,
                     "id is reserved: " + document.asDocument()
                             .get("_id").asString().getValue());
@@ -167,7 +167,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
                 && document.asDocument().containsKey("_id")) {
             if (!(request.getDocIdType() == DOC_ID_TYPE.OID
                     || request.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
-                BsonResponse.of(exchange).setIError(
+                MongoResponse.of(exchange).setIError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "_id in content body is mandatory for documents with id type " + request.getDocIdType().name());
                 next(exchange);

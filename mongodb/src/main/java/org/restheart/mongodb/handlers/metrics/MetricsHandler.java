@@ -38,8 +38,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.BufferedByteArrayResponse;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import static org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
@@ -89,7 +89,7 @@ public class MetricsHandler extends PipelinedHandler {
      * @param request current request
      * @return metrics level for request
      */
-    METRICS_GATHERING_LEVEL getMetricsLevelForRequest(BsonRequest request) {
+    METRICS_GATHERING_LEVEL getMetricsLevelForRequest(MongoRequest request) {
 
         // check if enabled at all
         METRICS_GATHERING_LEVEL level = OFF;
@@ -131,7 +131,7 @@ public class MetricsHandler extends PipelinedHandler {
      * @param metricsLevel desired metrics gathering level
      * @return metrics registry
      */
-    MetricRegistry getMetricsRegistry(BsonRequest request, METRICS_GATHERING_LEVEL metricsLevel) {
+    MetricRegistry getMetricsRegistry(MongoRequest request, METRICS_GATHERING_LEVEL metricsLevel) {
         switch (metricsLevel) {
             case ROOT:
                 return metrics.registry();
@@ -151,8 +151,8 @@ public class MetricsHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
 
         METRICS_GATHERING_LEVEL metricsLevelForRequest = getMetricsLevelForRequest(request);
         MetricRegistry registry = getMetricsRegistry(request, metricsLevelForRequest);

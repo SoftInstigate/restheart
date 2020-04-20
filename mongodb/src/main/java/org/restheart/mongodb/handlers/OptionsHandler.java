@@ -22,7 +22,7 @@ package org.restheart.mongodb.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.utils.HttpStatus;
 
@@ -75,7 +75,7 @@ public class OptionsHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
 
         if (!(request.isOptions())) {
             next(exchange);

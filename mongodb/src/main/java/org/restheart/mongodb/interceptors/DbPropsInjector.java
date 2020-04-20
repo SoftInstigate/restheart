@@ -23,8 +23,8 @@ package org.restheart.mongodb.interceptors;
 import com.mongodb.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InterceptPoint;
@@ -34,10 +34,10 @@ import org.restheart.utils.HttpStatus;
 
 /**
  *
- * Injects the db properties into the BsonRequest
- *
- * It is also responsible of sending NOT_FOUND in case of requests involving not
- * existing dbs (that are not PUT)
+ * Injects the db properties into the MongoRequest
+
+ It is also responsible of sending NOT_FOUND in case of requests involving not
+ existing dbs (that are not PUT)
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -45,7 +45,7 @@ import org.restheart.utils.HttpStatus;
         description = "Injects the db properties into the BsonRequest",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         priority = Integer.MIN_VALUE)
-public class DbPropsInjector implements Interceptor<BsonRequest, BsonResponse> {
+public class DbPropsInjector implements Interceptor<MongoRequest, MongoResponse> {
     private DatabaseImpl dbsDAO = null;
 
     /**
@@ -64,7 +64,7 @@ public class DbPropsInjector implements Interceptor<BsonRequest, BsonResponse> {
      * @throws Exception
      */
     @Override
-    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
         String dbName = request.getDBName();
 
         if (dbName != null) {
@@ -100,7 +100,7 @@ public class DbPropsInjector implements Interceptor<BsonRequest, BsonResponse> {
     }
 
     @Override
-    public boolean resolve(BsonRequest request, BsonResponse response) {
+    public boolean resolve(MongoRequest request, MongoResponse response) {
         return this.dbsDAO != null
                 && "mongo".equals(request.getPipelineInfo().getName())
                 && !(request.isInError()

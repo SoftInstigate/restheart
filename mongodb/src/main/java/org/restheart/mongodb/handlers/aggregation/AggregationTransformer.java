@@ -26,8 +26,8 @@ import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -55,10 +55,10 @@ public class AggregationTransformer extends PipelinedHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         var contentToTransform = phase
-                ? BsonRequest.of(exchange).getContent()
-                : BsonResponse.of(exchange).getContent();
+                ? MongoRequest.of(exchange).getContent()
+                : MongoResponse.of(exchange).getContent();
 
         if (contentToTransform != null && contentToTransform.isDocument()) {
             transform(request, contentToTransform.asDocument());
@@ -70,7 +70,7 @@ public class AggregationTransformer extends PipelinedHandler {
         next(exchange);
     }
 
-    private void transform(BsonRequest request, BsonDocument contentToTransform) {
+    private void transform(MongoRequest request, BsonDocument contentToTransform) {
         if (!contentToTransform.isDocument()) {
             throw new IllegalStateException(
                     "content to transform is not a document");

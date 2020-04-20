@@ -28,8 +28,8 @@ import java.util.UUID;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.db.sessions.SessionOptions;
@@ -76,8 +76,8 @@ public class PostSessionHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
 
         if (request.isInError()) {
             next(exchange);
@@ -112,7 +112,7 @@ public class PostSessionHandler extends PipelinedHandler {
         next(exchange);
     }
 
-    private SessionOptions options(BsonRequest request) {
+    private SessionOptions options(MongoRequest request) {
         final BsonValue _content = request.getContent();
 
         // must be an object

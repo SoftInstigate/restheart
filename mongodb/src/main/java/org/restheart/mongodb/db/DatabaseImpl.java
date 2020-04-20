@@ -37,7 +37,7 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
@@ -151,7 +151,7 @@ public class DatabaseImpl implements Database {
         }
 
         // filter out reserved dbs
-        return _colls.stream().filter(coll -> !BsonRequest
+        return _colls.stream().filter(coll -> !MongoRequest
                 .isReservedResourceCollection(coll))
                 .sorted()
                 .collect(Collectors.toList());
@@ -166,7 +166,7 @@ public class DatabaseImpl implements Database {
     public long getDBSize(final List<String> colls) {
         // filter out reserved resources
         List<String> _colls = colls.stream()
-                .filter(coll -> !BsonRequest
+                .filter(coll -> !MongoRequest
                 .isReservedResourceCollection(coll))
                 .collect(Collectors.toList());
 
@@ -220,7 +220,7 @@ public class DatabaseImpl implements Database {
             throws IllegalQueryParamenterException {
         // filter out reserved resources
         List<String> _colls = colls.stream()
-                .filter(coll -> !BsonRequest
+                .filter(coll -> !MongoRequest
                 .isReservedResourceCollection(coll))
                 .collect(Collectors.toList());
 

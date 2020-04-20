@@ -38,8 +38,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.BufferedByteArrayRequest;
 import static org.restheart.exchange.ExchangeKeys.FALSE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.FILE_METADATA;
@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * Injects the request content to BsonRequest from BufferedByteArrayRequest buffer
+ * Injects the request content to MongoRequest from BufferedByteArrayRequest buffer
 
  also check the Content-Type header in case the content is not empty
  *
@@ -156,7 +156,7 @@ public class BsonRequestContentInjector {
      */
     private static void filterJsonContent(
             final BsonDocument content,
-            final BsonResponse response) {
+            final MongoResponse response) {
         filterOutReservedKeys(content, response);
     }
 
@@ -171,7 +171,7 @@ public class BsonRequestContentInjector {
      */
     private static void filterOutReservedKeys(
             final BsonDocument content,
-            final BsonResponse response) {
+            final MongoResponse response) {
         final HashSet<String> keysToRemove = new HashSet<>();
         content.keySet().stream()
                 .filter(key -> key.startsWith("_") && !key.equals(_ID))
@@ -273,8 +273,8 @@ public class BsonRequestContentInjector {
      * @param exchange
      */
     public static void inject(final HttpServerExchange exchange) {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
 
         if (request.isInError()) {
             return;
@@ -371,7 +371,7 @@ public class BsonRequestContentInjector {
                     if (bar.isContentAvailable()) {
                         // if content has been already injected by core's 
                         // BsonRequestContentInjector
-                        // get it from BsonRequest.readContent()
+                        // get it from MongoRequest.readContent()
                         contentString = new String(bar.readContent(),
                                 StandardCharsets.UTF_8);
                     } else {

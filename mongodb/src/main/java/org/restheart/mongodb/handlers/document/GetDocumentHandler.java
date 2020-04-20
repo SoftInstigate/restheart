@@ -30,8 +30,8 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
 import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
@@ -87,8 +87,8 @@ public class GetDocumentHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
         
         if (request.isInError()) {
             next(exchange);

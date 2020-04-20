@@ -27,8 +27,8 @@ import java.util.Optional;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import static org.restheart.exchange.ExchangeKeys.AGGREGATION_VARIABLES_QPARAM_KEY;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
@@ -57,9 +57,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * initialize the BsonRequest
- *
- * Assumes that the BsonRequest and BsonRequest are already initialized 
+ * initialize the MongoRequest
+
+ Assumes that the MongoRequest and MongoRequest are already initialized 
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -80,8 +80,8 @@ public class BsonRequestPropsInjector {
      * @param exchange
      */
     public static void inject(HttpServerExchange exchange) {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
 
         // skip parameters injection if method is OPTIONS
         // this makes sure OPTIONS works even on wrong paramenter

@@ -24,7 +24,7 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.representation.AbstractRepresentationFactory;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.IllegalQueryParamenterException;
@@ -57,7 +57,7 @@ public class AggregationResultRepresentationFactory
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
 
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;

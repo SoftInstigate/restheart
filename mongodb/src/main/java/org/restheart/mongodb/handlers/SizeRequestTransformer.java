@@ -22,8 +22,8 @@ package org.restheart.mongodb.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 
 /**
@@ -52,9 +52,9 @@ public class SizeRequestTransformer extends PipelinedHandler {
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         // for request phase
         if (phase) {
-            BsonRequest.of(exchange).setPagesize(0);
+            MongoRequest.of(exchange).setPagesize(0);
         } else {
-            var response = BsonResponse.of(exchange);
+            var response = MongoResponse.of(exchange);
 
             // for response phase
             if (response.getContent() != null

@@ -32,8 +32,8 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
@@ -52,8 +52,8 @@ public class ResponseHelper {
             HttpServerExchange exchange,
             int code,
             Resource rep) {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
 
         request.setInError(true);
         response.setStatusCode(code);
@@ -73,7 +73,7 @@ public class ResponseHelper {
      */
     public static Resource getErrorJsonDocument(String href,
             int code,
-            BsonResponse response,
+            MongoResponse response,
             String httpStatusText,
             String message,
             Throwable t,

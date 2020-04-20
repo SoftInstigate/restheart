@@ -27,7 +27,7 @@ import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.utils.JsonUtils;
@@ -282,7 +282,7 @@ public class Relationship {
      * @throws org.restheart.representation.UnsupportedDocumentIdException
      */
     public String getRelationshipLink(
-            BsonRequest request,
+            MongoRequest request,
             String dbName,
             String collName,
             BsonDocument data)

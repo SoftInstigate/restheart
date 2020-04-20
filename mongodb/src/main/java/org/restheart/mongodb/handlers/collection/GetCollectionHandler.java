@@ -27,8 +27,8 @@ import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
@@ -82,8 +82,8 @@ public class GetCollectionHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
         
         if (request.isInError()) {
             next(exchange);
@@ -123,7 +123,7 @@ public class GetCollectionHandler extends PipelinedHandler {
                 // the filter expression is not a valid json string
                 LOGGER.debug("invalid filter expression {}",
                         request.getFilter(), jpe);
-                BsonResponse.of(exchange).setInError(
+                MongoResponse.of(exchange).setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "wrong request, filter expression is invalid",
                         jpe);
@@ -137,7 +137,7 @@ public class GetCollectionHandler extends PipelinedHandler {
                             request.getFilter(),
                             me);
 
-                    BsonResponse.of(exchange).setInError(
+                    MongoResponse.of(exchange).setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "wrong request, filter expression is invalid",
                             me);
@@ -168,7 +168,7 @@ public class GetCollectionHandler extends PipelinedHandler {
             // call the ResponseTransformerMetadataHandler if piped in
             next(exchange);
         } catch (IllegalQueryParamenterException ex) {
-            BsonResponse.of(exchange).setInError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_BAD_REQUEST,
                     ex.getMessage(),
                     ex);

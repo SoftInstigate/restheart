@@ -22,7 +22,7 @@ package org.restheart.mongodb.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonString;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoResponse;
 import static org.restheart.exchange.ExchangeKeys._META;
 import org.restheart.handlers.PipelinedHandler;
 
@@ -39,7 +39,7 @@ public class MetaRequestTransformer extends PipelinedHandler {
      */
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        var content = BsonResponse.of(exchange).getContent();
+        var content = MongoResponse.of(exchange).getContent();
         // for response phase
         if (content != null
                 && content.isDocument()

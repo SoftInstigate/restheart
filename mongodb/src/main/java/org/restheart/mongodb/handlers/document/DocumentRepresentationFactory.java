@@ -27,8 +27,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import static org.restheart.exchange.ExchangeKeys.BINARY_CONTENT;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.metadata.InvalidMetadataException;
@@ -82,8 +82,8 @@ public class DocumentRepresentationFactory {
     private static void addRelationshipsLinks(Resource rep,
             HttpServerExchange exchange,
             BsonDocument data) {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
 
         List<Relationship> rels = null;
 
@@ -131,8 +131,8 @@ public class DocumentRepresentationFactory {
     public Resource getRepresentation(String href, HttpServerExchange exchange,
             BsonDocument data)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
 
         Resource rep;
 

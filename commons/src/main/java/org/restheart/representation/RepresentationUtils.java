@@ -37,8 +37,8 @@ import org.bson.BsonValue;
 import org.bson.types.MaxKey;
 import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
 import org.restheart.utils.URLUtils;
@@ -64,7 +64,7 @@ public class RepresentationUtils {
     public static TreeMap<String, String> getPaginationLinks(
             HttpServerExchange exchange,
             long size) throws IllegalQueryParamenterException {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
 
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
         String queryString = URLUtils.decodeQueryString(exchange.getQueryString());
@@ -154,7 +154,7 @@ public class RepresentationUtils {
      * @return
      */
     public static String getReferenceLink(
-            BsonResponse response,
+            MongoResponse response,
             String parentUrl,
             BsonValue docId) {
         if (response == null || parentUrl == null) {

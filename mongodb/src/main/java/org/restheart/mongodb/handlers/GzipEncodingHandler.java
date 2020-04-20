@@ -28,7 +28,7 @@ import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.exchange.ResponseContentInjector;
 import org.restheart.utils.HttpStatus;
 
@@ -71,7 +71,7 @@ public class GzipEncodingHandler extends EncodingHandler {
                 }
             }
 
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "Accept-Encoding header must include gzip");
 

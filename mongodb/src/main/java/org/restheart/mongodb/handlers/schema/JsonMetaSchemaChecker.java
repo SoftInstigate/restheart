@@ -30,8 +30,8 @@ import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -73,8 +73,8 @@ public class JsonMetaSchemaChecker extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = (BsonRequest) BsonRequest.of(exchange);
-        var response = (BsonResponse) BsonResponse.of(exchange);
+        var request = (MongoRequest) MongoRequest.of(exchange);
+        var response = (MongoResponse) MongoResponse.of(exchange);
 
         if (!request.isWriteDocument() || request.isPatch()) {
             next(exchange);

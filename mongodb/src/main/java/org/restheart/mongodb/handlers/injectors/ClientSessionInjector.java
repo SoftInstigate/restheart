@@ -21,8 +21,8 @@
 package org.restheart.mongodb.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.sessions.ClientSessionFactory;
@@ -100,7 +100,7 @@ public class ClientSessionInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         
         if (request.isInError()
                 || !exchange.getQueryParameters()
@@ -113,7 +113,7 @@ public class ClientSessionInjector extends PipelinedHandler {
             request.setClientSession(getClientSessionFactory()
                     .getClientSession(exchange));
         } catch (IllegalArgumentException ex) {
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     ex.getMessage());
             next(exchange);

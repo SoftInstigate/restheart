@@ -28,7 +28,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -61,7 +61,7 @@ public class JsonSchemaTransformer extends PipelinedHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
 
         BsonValue content;
 
@@ -69,7 +69,7 @@ public class JsonSchemaTransformer extends PipelinedHandler {
             content = request.getContent();
 
         } else { // response
-            var response = BsonRequest.of(exchange);
+            var response = MongoRequest.of(exchange);
             content = response.getContent();
         }
 
@@ -87,7 +87,7 @@ public class JsonSchemaTransformer extends PipelinedHandler {
         next(exchange);
     }
 
-    private void transform(BsonRequest request, BsonDocument document) {
+    private void transform(MongoRequest request, BsonDocument document) {
         if (request.isInError()) {
             return;
         }

@@ -32,8 +32,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.JsonUtils;
@@ -69,7 +69,7 @@ public class AddRequestProperties implements BsonInterceptor {
      *
      */
     @Override
-    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var args = request.getCollectionProps().get("addRequestProperties");
         
         var content = request.getContent() != null
@@ -90,7 +90,7 @@ public class AddRequestProperties implements BsonInterceptor {
     }
 
     @Override
-    public boolean resolve(BsonRequest request, BsonResponse response) {
+    public boolean resolve(MongoRequest request, MongoResponse response) {
         return !request.isGet()
                 && !request.isOptions()
                 && !request.isDelete()
@@ -104,7 +104,7 @@ public class AddRequestProperties implements BsonInterceptor {
     }
 
     private void addProps(BsonDocument doc, BsonValue propNames, 
-            BsonRequest request, BsonResponse response) {
+            MongoRequest request, MongoResponse response) {
         BsonDocument injected = new BsonDocument();
 
         if (propNames.isDocument()) {

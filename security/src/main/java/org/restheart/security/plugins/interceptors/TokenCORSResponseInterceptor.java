@@ -20,8 +20,8 @@
  */
 package org.restheart.security.plugins.interceptors;
 
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.BsonInterceptor;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import org.restheart.plugins.RegisterPlugin;
@@ -52,7 +52,7 @@ public class TokenCORSResponseInterceptor implements BsonInterceptor {
     }
 
     @Override
-    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var exchange = request.getExchange();
         
         var hs = exchange
@@ -79,7 +79,7 @@ public class TokenCORSResponseInterceptor implements BsonInterceptor {
     }
 
     @Override
-    public boolean resolve(BsonRequest request, BsonResponse response) {
+    public boolean resolve(MongoRequest request, MongoResponse response) {
         return true;
     }
     

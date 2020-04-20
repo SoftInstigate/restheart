@@ -22,7 +22,7 @@ package org.restheart.mongodb.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.handlers.PipelinedHandler;
 
 /**
@@ -55,7 +55,7 @@ public class NormalOrBulkDispatcherHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        BsonValue content = BsonRequest.of(exchange).getContent();
+        BsonValue content = MongoRequest.of(exchange).getContent();
 
         if (content != null 
                 && content.isArray()) {

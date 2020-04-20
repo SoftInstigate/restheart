@@ -23,8 +23,8 @@ package org.restheart.mongodb.handlers.collection;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
@@ -63,8 +63,8 @@ public class PatchCollectionHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
         
         if (request.isInError()) {
             next(exchange);
