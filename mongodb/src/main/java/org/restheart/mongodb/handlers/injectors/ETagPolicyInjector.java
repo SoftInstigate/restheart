@@ -22,12 +22,12 @@ package org.restheart.mongodb.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
-import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.ExchangeKeys;
 import static org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY.OPTIONAL;
 import static org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY.REQUIRED;
 import static org.restheart.exchange.ExchangeKeys.ETAG_DOC_POLICY_METADATA_KEY;
 import static org.restheart.exchange.ExchangeKeys.ETAG_POLICY_METADATA_KEY;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.slf4j.Logger;

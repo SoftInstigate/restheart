@@ -22,8 +22,8 @@ package org.restheart.mongodb.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonString;
-import org.restheart.exchange.MongoResponse;
 import static org.restheart.exchange.ExchangeKeys._META;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 
 /**

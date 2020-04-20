@@ -23,10 +23,10 @@ package org.restheart.mongodb.interceptors;
 import com.mongodb.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.MongoResponse;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InterceptPoint;
@@ -110,7 +110,7 @@ public class CollectionPropsInjector implements Interceptor<MongoRequest, MongoR
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return dbsDAO != null
-                && "mongo".equals(request.getPipelineInfo().getName())
+                && request.isHandledBy("mongo")
                 && !(request.isInError()
                 || request.isTxn()
                 || request.isTxns());

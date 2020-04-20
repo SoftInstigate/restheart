@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
         + "to users does not have the role 'admin'",
         enabledByDefault = false,
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
-public class SecretHider implements BsonInterceptor {
+public class SecretHider implements MongoInterceptor {
     static final Logger LOGGER = LoggerFactory.getLogger(SecretHider.class);
 
     @Override
@@ -61,7 +61,8 @@ public class SecretHider implements BsonInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return !request.isAccountInRole("admin")
+        return request.isHandledBy("mongo") 
+                && !request.isAccountInRole("admin")
                 && "/coll".equals(request.getCollectionName())
                 && (request.isPost() || request.isPatch() || request.isPut());
     }

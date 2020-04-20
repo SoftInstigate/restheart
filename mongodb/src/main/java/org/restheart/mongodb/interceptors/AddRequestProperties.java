@@ -34,7 +34,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.BsonInterceptor;
+import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.JsonUtils;
 
@@ -64,7 +64,7 @@ import org.restheart.utils.JsonUtils;
  */
 @RegisterPlugin(name = "addRequestProperties",
         description = "Adds properties to write requests on documents of collections with 'addRequestProperties' metadata")
-public class AddRequestProperties implements BsonInterceptor {
+public class AddRequestProperties implements MongoInterceptor {
     /**
      *
      */
@@ -91,7 +91,8 @@ public class AddRequestProperties implements BsonInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return !request.isGet()
+        return request.isHandledBy("mongo")
+                && !request.isGet()
                 && !request.isOptions()
                 && !request.isDelete()
                 && request.getCollectionProps() != null

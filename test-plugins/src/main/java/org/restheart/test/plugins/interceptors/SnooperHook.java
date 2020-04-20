@@ -25,9 +25,9 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
         enabledByDefault = false,
         interceptPoint = InterceptPoint.RESPONSE_ASYNC)
 @SuppressWarnings("deprecation")
-public class SnooperHook implements BsonInterceptor {
+public class SnooperHook implements MongoInterceptor {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(SnooperHook.class);
 
@@ -91,6 +91,6 @@ public class SnooperHook implements BsonInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return true;
+        return request.isHandledBy("mongo");
     }
 }
