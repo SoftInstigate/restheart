@@ -114,8 +114,8 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 //   types are equal to the ones declared by the Service
                 // - request handled by a Proxy when its request and response 
                 //   are BufferedByteArrayRequest and BufferedByteArrayResponse
-                .filter(ri -> 
-                        (handlingService == null
+                .filter(ri
+                        -> (handlingService == null
                 && ri.requestType().equals(BufferedByteArrayRequest.type())
                 && ri.responseType().equals(BufferedByteArrayResponse.type()))
                 || (handlingService != null
@@ -154,9 +154,14 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                     }
                 });
 
-        // if an interceptor sets the response as errored
+        // If an interceptor sets the response as errored
         // stop processing the request and send the response
-        if (AbstractExchange.isInError(exchange)) {
+        // This happens AFTER_AUTH, otherwise not authenticated requests 
+        // might snoop information. For instance, a request to MongoService might
+        // be able to check if a collection exists (this check is done by 
+        // BEFORE_AUTH interceptor CollectionPropsInjector)
+        if (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH
+                && AbstractExchange.isInError(exchange)) {
             // if in error but no status code use 400 Bad Request
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
