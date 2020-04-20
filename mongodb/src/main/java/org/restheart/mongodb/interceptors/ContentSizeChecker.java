@@ -21,8 +21,8 @@
 package org.restheart.mongodb.interceptors;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
@@ -55,7 +55,7 @@ public class ContentSizeChecker implements BsonInterceptor {
      *
      */
     @Override
-    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
         Integer max = request.getCollectionProps()
                 .get("checkContentSize")
                 .asDocument()
@@ -120,7 +120,7 @@ public class ContentSizeChecker implements BsonInterceptor {
     }
 
     @Override
-    public boolean resolve(BsonRequest request, BsonResponse response) {
+    public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isWriteDocument()
                 && request.getCollectionProps() != null
                 && request.getCollectionProps()

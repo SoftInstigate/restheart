@@ -25,8 +25,8 @@ import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
@@ -85,8 +85,8 @@ public class PostCollectionHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
         
         if (request.isInError()) {
             next(exchange);
@@ -112,7 +112,7 @@ public class PostCollectionHandler extends PipelinedHandler {
 
         if (content.containsKey("_id")
                 && content.get("_id").isString()
-                && BsonRequest.isReservedResourceDocument(
+                && MongoRequest.isReservedResourceDocument(
                         request.getType(),
                         content.get("_id").asString().getValue())) {
             response.setIError(

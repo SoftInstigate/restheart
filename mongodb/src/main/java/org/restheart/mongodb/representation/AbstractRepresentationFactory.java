@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.TreeMap;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.IllegalQueryParamenterException;
 import org.restheart.representation.Link;
@@ -61,7 +61,7 @@ public abstract class AbstractRepresentationFactory {
      */
     protected void addSizeAndTotalPagesProperties(
             final long size,
-            BsonRequest request,
+            MongoRequest request,
             final Resource rep) {
 
         if (size == 0) {
@@ -111,7 +111,7 @@ public abstract class AbstractRepresentationFactory {
     protected Resource createRepresentation(
             final HttpServerExchange exchange,
             final String requestPath) {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
 
         String queryString
                 = exchange.getQueryString() == null
@@ -154,7 +154,7 @@ public abstract class AbstractRepresentationFactory {
             long size,
             final Resource rep)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         if (request.getPagesize() > 0) {
             TreeMap<String, String> links;
             links = RepresentationUtils.getPaginationLinks(exchange, size);

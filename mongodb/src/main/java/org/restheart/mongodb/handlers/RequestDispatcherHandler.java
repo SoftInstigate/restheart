@@ -24,8 +24,8 @@ import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;
 import java.util.Map;
 import org.restheart.exchange.AbstractExchange.METHOD;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.exchange.ResponseContentInjector;
@@ -124,13 +124,13 @@ public class RequestDispatcherHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
 
         if (request.getType() == TYPE.INVALID) {
             LOGGER.debug(
                     "This is a bad request: returning a <{}> HTTP code",
                     HttpStatus.SC_BAD_REQUEST);
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_BAD_REQUEST,
                     "bad request");
             responseSenderHandler.handleRequest(exchange);
@@ -141,7 +141,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.debug(
                     "This method is not allowed: returning a <{}> HTTP code",
                     HttpStatus.SC_METHOD_NOT_ALLOWED);
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_METHOD_NOT_ALLOWED,
                     "method " + request.getMethod().name() + " not allowed");
             responseSenderHandler.handleRequest(exchange);
@@ -152,7 +152,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.debug(
                     "The resource is reserved: returning a <{}> HTTP code",
                     HttpStatus.SC_FORBIDDEN);
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
             responseSenderHandler.handleRequest(exchange);
@@ -170,7 +170,7 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.error(
                     "Can't find PipelinedHandler({}, {})",
                     request.getType(), request.getMethod());
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_METHOD_NOT_ALLOWED,
                     "method " + request.getMethod().name() + " not allowed");
             responseSenderHandler.handleRequest(exchange);

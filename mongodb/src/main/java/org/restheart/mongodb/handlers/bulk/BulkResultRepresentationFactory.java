@@ -28,7 +28,7 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.BulkOperationResult;
 import org.restheart.mongodb.representation.AbstractRepresentationFactory;
 import org.restheart.mongodb.utils.ResponseHelper;
@@ -62,7 +62,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
         final String requestPath = buildRequestPath(exchange);
         final Resource rep = createRepresentation(exchange, null);
 
-        addBulkResult(result, BsonResponse.of(exchange), rep, requestPath);
+        addBulkResult(result, MongoResponse.of(exchange), rep, requestPath);
 
         return rep;
     }
@@ -88,7 +88,7 @@ public class BulkResultRepresentationFactory extends AbstractRepresentationFacto
 
     private void addBulkResult(
             final BulkOperationResult result,
-            final BsonResponse response,
+            final MongoResponse response,
             final Resource rep,
             final String requestPath) {
         Resource nrep = new Resource();

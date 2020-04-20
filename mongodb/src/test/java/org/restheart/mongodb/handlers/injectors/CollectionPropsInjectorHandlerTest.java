@@ -33,7 +33,7 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.restheart.exchange.AbstractExchange;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.interceptors.CollectionPropsInjector;
 import org.slf4j.Logger;
@@ -128,11 +128,11 @@ public class CollectionPropsInjectorHandlerTest {
         assertEquals(false, CollectionPropsInjector.checkCollection(context));
     }
 
-    private BsonRequest createRequest(String requestPath, String httpMethod) {
+    private MongoRequest createRequest(String requestPath, String httpMethod) {
         HttpServerExchange exchange = new HttpServerExchange();
         exchange.setRequestPath(requestPath);
         exchange.setRequestMethod(new HttpString(httpMethod));
-        return BsonRequest.init(exchange, "/", "*");
+        return MongoRequest.init(exchange, "/", "*");
     }
 
 }

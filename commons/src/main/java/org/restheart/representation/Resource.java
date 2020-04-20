@@ -24,7 +24,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.exchange.ExchangeKeys.TYPE;
@@ -249,7 +249,7 @@ public class Resource {
      * @param request
      * @return true if representationFormat == HAL
      */
-    public static boolean isHALRep(BsonRequest request) {
+    public static boolean isHALRep(MongoRequest request) {
         return request.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL;
     }
 
@@ -257,7 +257,7 @@ public class Resource {
      * @param request
      * @return true if representationFormat == SHAL or PLAIN_JSON or PJ
      */
-    public static boolean isSHALRep(BsonRequest request) {
+    public static boolean isSHALRep(MongoRequest request) {
         return request.getRepresentationFormat() == REPRESENTATION_FORMAT.SHAL
                 || request.getRepresentationFormat()
                 == REPRESENTATION_FORMAT.PLAIN_JSON
@@ -269,7 +269,7 @@ public class Resource {
      * @param request
      * @return true if representationFormat == STSNDARD or S
      */
-    public static boolean isStandardRep(BsonRequest request) {
+    public static boolean isStandardRep(MongoRequest request) {
         return request.getRepresentationFormat() == REPRESENTATION_FORMAT.STANDARD
                 || request.getRepresentationFormat() == REPRESENTATION_FORMAT.S;
     }

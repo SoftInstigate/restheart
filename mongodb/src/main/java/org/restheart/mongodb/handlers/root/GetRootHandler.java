@@ -27,8 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
@@ -76,8 +76,8 @@ public class GetRootHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
 
         if (request.isInError()) {
             next(exchange);
@@ -94,7 +94,7 @@ public class GetRootHandler extends PipelinedHandler {
 
             // filter out reserved resources
             List<String> dbs = _dbs.stream()
-                    .filter(db -> BsonRequest.isReservedResourceDb(db))
+                    .filter(db -> MongoRequest.isReservedResourceDb(db))
                     .collect(Collectors.toList());
 
             if (dbs == null) {

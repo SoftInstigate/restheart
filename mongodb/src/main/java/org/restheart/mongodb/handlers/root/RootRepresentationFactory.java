@@ -25,7 +25,7 @@ import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.handlers.database.DBRepresentationFactory;
 import org.restheart.mongodb.representation.AbstractRepresentationFactory;
@@ -64,7 +64,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;
@@ -92,12 +92,12 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
     private void addSpecialProperties(
             final Resource rep,
-            BsonRequest request) {
+            MongoRequest request) {
         rep.addProperty("_type", new BsonString(request.getType().name()));
     }
 
     private void addEmbeddedData(
-            BsonRequest request,
+            MongoRequest request,
             List<BsonDocument> embeddedData,
             final Resource rep,
             final String requestPath) {
@@ -125,7 +125,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void embeddedDbs(
-            BsonRequest request,
+            MongoRequest request,
             List<BsonDocument> embeddedData,
             boolean trailingSlash,
             String requestPath,

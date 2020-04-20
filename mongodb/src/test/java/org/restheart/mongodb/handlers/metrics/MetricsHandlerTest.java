@@ -30,7 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.DATABASE;
@@ -77,7 +77,7 @@ public class MetricsHandlerTest {
         assertRequestContextForMetricsRequest(createRequest(URI_METRICS_COLLECTION), "foo", "bar");
     }
 
-    private void assertRequestContextForMetricsRequest(BsonRequest request, String expectedDatabaseName, String expectedCollectionName) {
+    private void assertRequestContextForMetricsRequest(MongoRequest request, String expectedDatabaseName, String expectedCollectionName) {
         assertEquals(expectedDatabaseName, request.getDBName());
         assertEquals(expectedCollectionName, request.getCollectionName());
     }
@@ -165,12 +165,12 @@ public class MetricsHandlerTest {
         verify(handler.metrics, times(1)).registry(eq(requestContext.getDBName()), eq(requestContext.getCollectionName()));
     }
 
-    private BsonRequest createRequest(String resourceUri) {
+    private MongoRequest createRequest(String resourceUri) {
         HttpServerExchange httpServerExchange = mock(HttpServerExchange.class);
         
         when(httpServerExchange.getStatusCode()).thenReturn(200);
         when(httpServerExchange.getRequestMethod()).thenReturn(Methods.GET);
         when(httpServerExchange.getRequestPath()).thenReturn("/");
-        return BsonRequest.init(httpServerExchange, "/", resourceUri);
+        return MongoRequest.init(httpServerExchange, "/", resourceUri);
     }
 }

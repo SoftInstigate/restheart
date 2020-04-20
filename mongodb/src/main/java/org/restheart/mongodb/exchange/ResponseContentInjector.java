@@ -26,8 +26,8 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.json.JsonMode;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.BufferedByteArrayResponse;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.handlers.PipelinedHandler;
@@ -35,7 +35,7 @@ import org.restheart.representation.Resource;
 import org.restheart.utils.JsonUtils;
 
 /**
- * Injects the response content to ByteArrayRequest buffer from BsonRequest
+ * Injects the response content to ByteArrayRequest buffer from MongoRequest
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -60,8 +60,8 @@ public class ResponseContentInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
 
         addWarnings(request, response);
 
@@ -82,7 +82,7 @@ public class ResponseContentInjector extends PipelinedHandler {
             try {
                 BufferedByteArrayResponse.of(exchange)
                         .writeContent(JsonUtils.toJson(response.getContent(),
-                                BsonRequest.of(exchange).getJsonMode())
+                                MongoRequest.of(exchange).getJsonMode())
                                 .getBytes());
             } catch (IOException ioe) {
                 //LOGGER.error("Error writing request content", ioe);
@@ -96,7 +96,7 @@ public class ResponseContentInjector extends PipelinedHandler {
         next(exchange);
     }
 
-    private void addWarnings(BsonRequest request, BsonResponse response) {
+    private void addWarnings(MongoRequest request, MongoResponse response) {
         var responseContent = response.getContent();
         
         if (response.getWarnings() != null

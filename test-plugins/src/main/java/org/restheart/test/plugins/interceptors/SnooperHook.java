@@ -23,8 +23,8 @@ package org.restheart.test.plugins.interceptors;
 import java.util.Map;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InterceptPoint;
@@ -53,7 +53,7 @@ public class SnooperHook implements BsonInterceptor {
     }
 
     @Override
-    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
         LOGGER.info("Request {} {} {}",
                 request.getMethod(),
                 request.getPath(), response.getStatusCode());
@@ -90,7 +90,7 @@ public class SnooperHook implements BsonInterceptor {
     }
 
     @Override
-    public boolean resolve(BsonRequest request, BsonResponse response) {
+    public boolean resolve(MongoRequest request, MongoResponse response) {
         return true;
     }
 }

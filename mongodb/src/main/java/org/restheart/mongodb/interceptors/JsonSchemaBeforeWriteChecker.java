@@ -28,8 +28,8 @@ import org.bson.BsonValue;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.json.JSONObject;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
@@ -91,7 +91,7 @@ public class JsonSchemaBeforeWriteChecker implements BsonInterceptor {
             = LoggerFactory.getLogger(JsonSchemaBeforeWriteChecker.class);
 
     @Override
-    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var args = request.getCollectionProps()
                 .get("jsonSchema")
                 .asDocument();
@@ -211,7 +211,7 @@ public class JsonSchemaBeforeWriteChecker implements BsonInterceptor {
                 });
     }
 
-    List<JSONObject> documentsToCheck(BsonRequest request, BsonResponse response) {
+    List<JSONObject> documentsToCheck(MongoRequest request, MongoResponse response) {
         var ret = new ArrayList<JSONObject>();
 
         var content = request.getContent() == null
@@ -233,7 +233,7 @@ public class JsonSchemaBeforeWriteChecker implements BsonInterceptor {
     }
 
     @Override
-    public boolean resolve(BsonRequest request, BsonResponse response) {
+    public boolean resolve(MongoRequest request, MongoResponse response) {
         return ((request.isWriteDocument() && !request.isPatch())
                 || (request.isPatch() && request.isBulkDocuments()))
                 && request.getCollectionProps() != null

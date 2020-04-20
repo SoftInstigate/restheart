@@ -26,7 +26,7 @@ import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.MongoTimeoutException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.exchange.ResponseContentInjector;
 import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;
@@ -74,7 +74,7 @@ public class ErrorHandler implements HttpHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var response = BsonResponse.of(exchange);
+        var response = MongoResponse.of(exchange);
         
         try {
             next.handleRequest(exchange);

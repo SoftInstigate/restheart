@@ -23,8 +23,8 @@ package org.restheart.test.plugins.interceptors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.BsonInterceptor;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
@@ -37,7 +37,7 @@ import org.restheart.plugins.RegisterPlugin;
 public class WriteResultInterceptor implements BsonInterceptor {
 
     @Override
-    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var responseContent = response.getContent();
 
         final BsonDocument resp;
@@ -74,7 +74,7 @@ public class WriteResultInterceptor implements BsonInterceptor {
     }
 
     @Override
-    public boolean resolve(BsonRequest request, BsonResponse response) {
+    public boolean resolve(MongoRequest request, MongoResponse response) {
         return "xcoll".equals(request.getCollectionName())
                 && response.getDbOperationResult() != null;
     }

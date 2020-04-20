@@ -28,7 +28,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
@@ -94,7 +94,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;
@@ -127,7 +127,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
     private void addProperties(
             final Resource rep,
-            BsonRequest request) {
+            MongoRequest request) {
         final BsonDocument dbProps = request.getDbProps();
 
         rep.addProperties(dbProps);
@@ -135,7 +135,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
     private void addEmbeddedData(
             final List<BsonDocument> embeddedData,
-            final BsonRequest request,
+            final MongoRequest request,
             final Resource rep,
             final String requestPath) {
         if (embeddedData != null) {
@@ -150,7 +150,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void addLinkTemplates(
-            final BsonRequest request,
+            final MongoRequest request,
             final Resource rep,
             final String requestPath) {
         String parentPath = URLUtils.getParentPath(requestPath);
@@ -180,7 +180,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
 
     private void embeddedCollections(
             final List<BsonDocument> embeddedData,
-            final BsonRequest request,
+            final MongoRequest request,
             final String requestPath,
             final Resource rep) {
         embeddedData.stream().forEach((d) -> {

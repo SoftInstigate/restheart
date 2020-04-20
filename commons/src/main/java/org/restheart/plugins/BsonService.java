@@ -19,13 +19,35 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.MongoResponse;
+import io.undertow.server.HttpServerExchange;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.BsonResponse;
 
 /**
- *
+ * Specialized Service interface that uses BsonRequest and BsonResponse
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface BsonInterceptor extends Interceptor<MongoRequest, MongoResponse> {
-    
+public interface BsonService extends Service<BsonRequest, BsonResponse> {
+    @Override
+    default Consumer<HttpServerExchange> requestInitializer() {
+        return e -> BsonRequest.init(e);
+    }
+
+    @Override
+    default Consumer<HttpServerExchange> responseInitializer() {
+        return e -> BsonResponse.init(e);
+    }
+
+    @Override
+    default Function<HttpServerExchange, BsonRequest> request() {
+        return e -> BsonRequest.of(e);
+    }
+
+    @Override
+    default Function<HttpServerExchange, BsonResponse> response() {
+        return e -> BsonResponse.of(e);
+    }
 }

@@ -29,8 +29,8 @@ import io.undertow.util.Headers;
 import java.io.IOException;
 import org.bson.BsonObjectId;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
@@ -88,8 +88,8 @@ public class GetFileBinaryHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
-        var response = BsonResponse.of(exchange);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
         
         if (request.isInError()) {
             next(exchange);
@@ -146,19 +146,19 @@ public class GetFileBinaryHandler extends PipelinedHandler {
     }
 
     private void fileNotFound(
-            BsonRequest request,
+            MongoRequest request,
             HttpServerExchange exchange) throws Exception {
         final String errMsg = String.format(
                 "File with ID <%s> not found", request.getDocumentId());
         LOGGER.trace(errMsg);
-        BsonResponse.of(exchange).setIError(
+        MongoResponse.of(exchange).setIError(
                 HttpStatus.SC_NOT_FOUND,
                 errMsg);
         next(exchange);
     }
 
     private void sendBinaryContent(
-            final BsonResponse request,
+            final MongoResponse request,
             final GridFSBucket gridFSBucket,
             final GridFSFile file,
             final HttpServerExchange exchange)

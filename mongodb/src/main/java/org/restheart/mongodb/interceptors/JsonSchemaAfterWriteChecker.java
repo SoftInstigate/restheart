@@ -30,8 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.json.JSONObject;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.DAOUtils;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.plugins.InterceptPoint;
@@ -61,7 +61,7 @@ import org.restheart.plugins.RegisterPlugin;
 @SuppressWarnings("deprecation")
 public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
     @Override
-    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
         super.handle(request, response);
 
         if (request.isInError()) {
@@ -70,7 +70,7 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
     }
 
     @Override
-    public boolean resolve(BsonRequest request, BsonResponse response) {
+    public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.getCollectionProps() != null
                 && (request.isPatch() && !request.isBulkDocuments())
                 && request.getCollectionProps() != null
@@ -83,14 +83,14 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
                 && response.getDbOperationResult().getHttpCode() < 300);
     }
 
-    String documentToCheck(BsonRequest request, BsonResponse response) {
+    String documentToCheck(MongoRequest request, MongoResponse response) {
         return response.getDbOperationResult().getNewData() == null
                 ? "{}"
                 : response.getDbOperationResult().getNewData().toJson();
     }
 
     @Override
-    List<JSONObject> documentsToCheck(BsonRequest request, BsonResponse response) {
+    List<JSONObject> documentsToCheck(MongoRequest request, MongoResponse response) {
         var ret = new ArrayList<JSONObject>();
 
         var content = response.getDbOperationResult().getNewData() == null
@@ -102,7 +102,7 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
         return ret;
     }
 
-    private void rollback(BsonRequest request, BsonResponse response)
+    private void rollback(MongoRequest request, MongoResponse response)
             throws Exception {
         var exchange = request.getExchange();
 

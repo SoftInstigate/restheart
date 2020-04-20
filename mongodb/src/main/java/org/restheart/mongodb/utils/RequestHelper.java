@@ -26,7 +26,7 @@ import io.undertow.util.Headers;
 import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.OperationResult;
 import org.restheart.utils.HttpStatus;
 
@@ -103,20 +103,20 @@ public class RequestHelper {
             HttpServerExchange exchange) throws Exception {
         // cannot proceed with no data
         if (content == null) {
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             return true;
         }
         // cannot proceed with an array
         if (!content.isDocument()) {
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             return true;
         }
         if (content.asDocument().isEmpty()) {
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             return true;
@@ -127,7 +127,7 @@ public class RequestHelper {
     /**
      *
      * Warn side effect: invokes 
-     * BsonResponse.of(exchange).setDbOperationResult(result)
+ MongoResponse.of(exchange).setDbOperationResult(result)
      * 
      * @param result
      * @param exchange
@@ -138,13 +138,13 @@ public class RequestHelper {
      */
     public static boolean isResponseInConflict(OperationResult result, 
             HttpServerExchange exchange) throws Exception {
-        BsonResponse.of(exchange).setDbOperationResult(result);
+        MongoResponse.of(exchange).setDbOperationResult(result);
         // inject the etag
         if (result.getEtag() != null) {
             ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_CONFLICT,
                     "The ETag must be provided using the '"
                     + Headers.IF_MATCH
@@ -153,7 +153,7 @@ public class RequestHelper {
         }
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            BsonResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setIError(
                     HttpStatus.SC_EXPECTATION_FAILED,
                     ResponseHelper.getMessageFromErrorCode(11000));
             return true;

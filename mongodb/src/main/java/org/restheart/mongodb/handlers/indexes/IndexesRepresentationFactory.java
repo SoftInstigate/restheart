@@ -27,7 +27,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.utils.URLUtils;
@@ -59,7 +59,7 @@ public class IndexesRepresentationFactory {
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         
         String requestPath = URLUtils.removeTrailingSlashes(
                 request.getUnmappedRequestUri());

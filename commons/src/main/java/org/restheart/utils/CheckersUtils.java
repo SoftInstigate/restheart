@@ -23,7 +23,7 @@ package org.restheart.utils;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 
 /**
  *
@@ -35,7 +35,7 @@ public class CheckersUtils {
      * @param request
      * @return if the request is a bulk request
      */
-    public static boolean isBulkRequest(BsonRequest request) {
+    public static boolean isBulkRequest(MongoRequest request) {
         return request.isBulkDocuments() || request.getContent().isArray();
     }
 

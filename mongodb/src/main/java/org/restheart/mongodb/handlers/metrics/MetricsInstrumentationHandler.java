@@ -24,7 +24,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import java.util.concurrent.TimeUnit;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import static org.restheart.exchange.ExchangeKeys._METRICS;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
@@ -71,7 +71,7 @@ public class MetricsInstrumentationHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         
         final long requestStartTime = request.getRequestStartTime();
 
@@ -89,7 +89,7 @@ public class MetricsInstrumentationHandler extends PipelinedHandler {
     }
 
     private void addDefaultMetrics(MetricRegistry registry, long duration, HttpServerExchange exchange) {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         
         registry.timer(request.getType().toString() + "." + request.getMethod().toString())
                 .update(duration, TimeUnit.MILLISECONDS);
@@ -102,7 +102,7 @@ public class MetricsInstrumentationHandler extends PipelinedHandler {
     @VisibleForTesting
     void addMetrics(long startTime, HttpServerExchange exchange) {
         if (configuration.gatheringAboveOrEqualToLevel(ROOT)) {
-            var request = BsonRequest.of(exchange);
+            var request = MongoRequest.of(exchange);
             
             long endTime = System.currentTimeMillis();
             long duration = endTime - startTime;

@@ -32,8 +32,8 @@ import java.util.function.Function;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.ConfigurationException;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
         enabledByDefault = true,
         defaultURI = "/",
         priority = Integer.MIN_VALUE)
-public class MongoService implements Service<BsonRequest, BsonResponse> {
+public class MongoService implements Service<MongoRequest, MongoResponse> {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(MongoService.class);
 
@@ -87,7 +87,7 @@ public class MongoService implements Service<BsonRequest, BsonResponse> {
     }
 
     @Override
-    public void handle(BsonRequest request, BsonResponse response) throws Exception {
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
         if (MongoClientSingleton.isInitialized()) {
             this.pipeline.handleRequest(request.getExchange());
         } else {
@@ -170,7 +170,7 @@ public class MongoService implements Service<BsonRequest, BsonResponse> {
     private final MongoMount DEFAULT_MONGO_MOUNT = new MongoMount("*", "/");
 
     /**
-     * Return the BsonRequest initializer
+     * Return the MongoRequest initializer
      *
      * @return
      */
@@ -184,11 +184,11 @@ public class MongoService implements Service<BsonRequest, BsonResponse> {
             if (mmm != null && mmm.getValue() != null) {
                 var mm = mmm.getValue();
 
-                BsonRequest.init(e,
+                MongoRequest.init(e,
                         mm.uri,
                         mm.resource);
             } else {
-                BsonRequest.init(e,
+                MongoRequest.init(e,
                         DEFAULT_MONGO_MOUNT.uri,
                         DEFAULT_MONGO_MOUNT.resource);
             }
@@ -198,23 +198,23 @@ public class MongoService implements Service<BsonRequest, BsonResponse> {
     @Override
     public Consumer<HttpServerExchange> responseInitializer() {
         return e -> {
-            BsonResponse.init(e);
+            MongoResponse.init(e);
 
             // BsonRequestPropsInjector and BsonRequestContentInjector requires 
-            // that both BsonRequest and BsonResponse are initialized
+            // that both MongoRequest and MongoResponse are initialized
             BsonRequestPropsInjector.inject(e);
             BsonRequestContentInjector.inject(e);
         };
     }
 
     @Override
-    public Function<HttpServerExchange, BsonRequest> request() {
-        return e -> BsonRequest.of(e);
+    public Function<HttpServerExchange, MongoRequest> request() {
+        return e -> MongoRequest.of(e);
     }
 
     @Override
-    public Function<HttpServerExchange, BsonResponse> response() {
-        return e -> BsonResponse.of(e);
+    public Function<HttpServerExchange, MongoResponse> response() {
+        return e -> MongoResponse.of(e);
     }
 
     /**

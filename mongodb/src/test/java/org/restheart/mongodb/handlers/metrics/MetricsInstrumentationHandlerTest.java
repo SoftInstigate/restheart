@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.MongoServiceConfiguration;
 public class MetricsInstrumentationHandlerTest {
 
@@ -93,7 +93,7 @@ public class MetricsInstrumentationHandlerTest {
         when(httpServerExchange.getRequestMethod()).thenReturn(Methods.GET);
         when(httpServerExchange.getRequestPath()).thenReturn("/foo/bar");
         
-        var request = BsonRequest.init(httpServerExchange, "foo", "bar");
+        var request = MongoRequest.init(httpServerExchange, "foo", "bar");
         
         when(httpServerExchange.getAttachment(anyObject())).thenReturn(request);
 

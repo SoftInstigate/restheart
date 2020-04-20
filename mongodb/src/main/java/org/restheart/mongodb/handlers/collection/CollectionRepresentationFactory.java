@@ -29,7 +29,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
@@ -120,7 +120,7 @@ public class CollectionRepresentationFactory
             List<BsonDocument> embeddedData,
             long size)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;
@@ -155,7 +155,7 @@ public class CollectionRepresentationFactory
 
     private void addProperties(
             final Resource rep,
-            final BsonRequest request) {
+            final MongoRequest request) {
         // add the collection properties
         final BsonDocument collProps = request.getCollectionProps();
 
@@ -184,7 +184,7 @@ public class CollectionRepresentationFactory
     }
 
     private void addAggregationsLinks(
-            final BsonRequest request,
+            final MongoRequest request,
             final Resource rep,
             final String requestPath) {
         BsonValue _aggregations = request
@@ -214,7 +214,7 @@ public class CollectionRepresentationFactory
     }
     
     private void addStreamsLinks(
-            final BsonRequest request,
+            final MongoRequest request,
             final Resource rep,
             final String requestPath) {
         BsonValue _streams = request
@@ -244,7 +244,7 @@ public class CollectionRepresentationFactory
     }
 
     private void addLinkTemplates(
-            final BsonRequest request,
+            final MongoRequest request,
             final Resource rep,
             final String requestPath) {
         // link templates and curies
@@ -295,13 +295,13 @@ public class CollectionRepresentationFactory
             HttpServerExchange exchange,
             Resource rep)
             throws IllegalQueryParamenterException {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         
         for (BsonDocument d : embeddedData) {
             BsonValue _id = d.get(_ID);
 
             if (_id != null
-                    && BsonRequest.isReservedResourceCollection(
+                    && MongoRequest.isReservedResourceCollection(
                             _id.toString())) {
                 rep.addWarning("filtered out reserved resource "
                         + requestPath + "/"

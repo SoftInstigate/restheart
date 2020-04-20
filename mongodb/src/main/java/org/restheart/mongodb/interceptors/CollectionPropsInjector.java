@@ -23,8 +23,8 @@ package org.restheart.mongodb.interceptors;
 import com.mongodb.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.restheart.exchange.BsonRequest;
-import org.restheart.exchange.BsonResponse;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.mongodb.db.DatabaseImpl;
@@ -46,7 +46,7 @@ import org.restheart.utils.HttpStatus;
         description = "Injects the collection properties into the BsonRequest",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         priority = Integer.MIN_VALUE + 1)
-public class CollectionPropsInjector implements Interceptor<BsonRequest, BsonResponse> {
+public class CollectionPropsInjector implements Interceptor<MongoRequest, MongoResponse> {
     private DatabaseImpl dbsDAO = null;
 
     private static final String RESOURCE_DOES_NOT_EXIST = "Resource does not exist";
@@ -71,7 +71,7 @@ public class CollectionPropsInjector implements Interceptor<BsonRequest, BsonRes
      * @throws Exception
      */
     @Override
-    public void handle(BsonRequest request, BsonResponse response)
+    public void handle(MongoRequest request, MongoResponse response)
             throws Exception {
         String dbName = request.getDBName();
         String collName = request.getCollectionName();
@@ -108,7 +108,7 @@ public class CollectionPropsInjector implements Interceptor<BsonRequest, BsonRes
     }
 
     @Override
-    public boolean resolve(BsonRequest request, BsonResponse response) {
+    public boolean resolve(MongoRequest request, MongoResponse response) {
         return dbsDAO != null
                 && "mongo".equals(request.getPipelineInfo().getName())
                 && !(request.isInError()
@@ -122,7 +122,7 @@ public class CollectionPropsInjector implements Interceptor<BsonRequest, BsonRes
      * @param response
      * @throws Exception
      */
-    protected void doesNotExists(BsonRequest request, BsonResponse response)
+    protected void doesNotExists(MongoRequest request, MongoResponse response)
             throws Exception {
         final String errMsg;
         final String resourceName = request.getCollectionName();
@@ -149,7 +149,7 @@ public class CollectionPropsInjector implements Interceptor<BsonRequest, BsonRes
      * @param request
      * @return
      */
-    public static boolean checkCollection(BsonRequest request) {
+    public static boolean checkCollection(MongoRequest request) {
         return !(request.isCollection() && request.isPut())
                 && !(request.isFilesBucket() && request.isPut())
                 && !(request.isSchemaStore() && request.isPut())

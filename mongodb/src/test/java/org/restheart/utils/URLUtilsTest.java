@@ -38,7 +38,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
@@ -351,11 +351,11 @@ public class URLUtilsTest {
         assertEquals(expResult, result);
     }
 
-    private BsonRequest prepareRequest() {
+    private MongoRequest prepareRequest() {
         HttpServerExchange exchange = new HttpServerExchange();
         exchange.setRequestPath("");
         exchange.setRequestMethod(HttpString.EMPTY);
-        return BsonRequest.init(exchange, "", "");
+        return MongoRequest.init(exchange, "", "");
     }
 
 }

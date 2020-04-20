@@ -96,25 +96,25 @@ public class BsonRequestTest {
     @Test
     public void testSelectRequestType() {
         String[] pathTokens = "/".split("/");
-        assertEquals(ExchangeKeys.TYPE.ROOT, BsonRequest.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.ROOT, MongoRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db".split("/");
-        assertEquals(ExchangeKeys.TYPE.DB, BsonRequest.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.DB, MongoRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/collection".split("/");
-        assertEquals(ExchangeKeys.TYPE.COLLECTION, BsonRequest.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.COLLECTION, MongoRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/collection/document".split("/");
-        assertEquals(ExchangeKeys.TYPE.DOCUMENT, BsonRequest.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.DOCUMENT, MongoRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/collection/_indexes".split("/");
-        assertEquals(ExchangeKeys.TYPE.COLLECTION_INDEXES, BsonRequest.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.COLLECTION_INDEXES, MongoRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/collection/_indexes/123".split("/");
-        assertEquals(ExchangeKeys.TYPE.INDEX, BsonRequest.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.INDEX, MongoRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/collection/_aggrs/test".split("/");
-        assertEquals(ExchangeKeys.TYPE.AGGREGATION, BsonRequest.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.AGGREGATION, MongoRequest.selectRequestType(pathTokens));
     }
 
     /**
@@ -123,7 +123,7 @@ public class BsonRequestTest {
     @Test
     public void test_COLLECTION_FILES_selectRequestType() {
         String[] pathTokens = "/db/mybucket.files".split("/");
-        assertEquals(ExchangeKeys.TYPE.FILES_BUCKET, BsonRequest.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.FILES_BUCKET, MongoRequest.selectRequestType(pathTokens));
     }
 
     /**
@@ -132,13 +132,13 @@ public class BsonRequestTest {
     @Test
     public void test_FILE_selectRequestType() {
         String[] pathTokens = "/db/mybucket.files/123".split("/");
-        assertEquals(ExchangeKeys.TYPE.FILE, BsonRequest.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.FILE, MongoRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/mybucket.files/123/binary".split("/");
-        assertEquals(ExchangeKeys.TYPE.FILE_BINARY, BsonRequest.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.FILE_BINARY, MongoRequest.selectRequestType(pathTokens));
 
         pathTokens = "/db/mybucket.files/123/456".split("/");
-        assertEquals(ExchangeKeys.TYPE.FILE, BsonRequest.selectRequestType(pathTokens));
+        assertEquals(ExchangeKeys.TYPE.FILE, MongoRequest.selectRequestType(pathTokens));
     }
 
     /**
@@ -154,49 +154,49 @@ public class BsonRequestTest {
         String whatUri = "/db/mycollection";
         String whereUri = "/";
 
-        BsonRequest request = BsonRequest.init(ex, whereUri, whatUri);
+        MongoRequest request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/db/mycollection", request.getUnmappedRequestUri());
 
         whatUri = "*";
         whereUri = "/";
 
-        request = BsonRequest.init(ex, whereUri, whatUri);
+        request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/", request.getUnmappedRequestUri());
 
         whatUri = "*";
         whereUri = "/data";
 
-        request = BsonRequest.init(ex, whereUri, whatUri);
+        request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/", request.getUnmappedRequestUri());
 
         whatUri = "/data";
         whereUri = "/";
 
-        request = BsonRequest.init(ex, whereUri, whatUri);
+        request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/data", request.getUnmappedRequestUri());
 
         whatUri = "/db/coll";
         whereUri = "/";
 
-        request = BsonRequest.init(ex, whereUri, whatUri);
+        request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/db/coll", request.getUnmappedRequestUri());
 
         whatUri = "/db/coll/doc";
         whereUri = "/";
 
-        request = BsonRequest.init(ex, whereUri, whatUri);
+        request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/db/coll/doc", request.getUnmappedRequestUri());
 
         whatUri = "/db/coll/";
         whereUri = "/";
 
-        request = BsonRequest.init(ex, whereUri, whatUri);
+        request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/db/coll", request.getUnmappedRequestUri());
 
         whatUri = "/db/coll////";
         whereUri = "/";
 
-        request = BsonRequest.init(ex, whereUri, whatUri);
+        request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/db/coll", request.getUnmappedRequestUri());
     }
 
@@ -213,25 +213,25 @@ public class BsonRequestTest {
         String whatUri = "/db/mycollection";
         String whereUri = "/";
 
-        BsonRequest request = BsonRequest.init(ex, whereUri, whatUri);
+        MongoRequest request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/db/mycollection/x", request.getUnmappedRequestUri());
 
         whatUri = "*";
         whereUri = "/";
 
-        request = BsonRequest.init(ex, whereUri, whatUri);
+        request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/x", request.getUnmappedRequestUri());
 
         whatUri = "db";
         whereUri = "/";
 
-        request = BsonRequest.init(ex, whereUri, whatUri);
+        request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/db/x", request.getUnmappedRequestUri());
 
         whatUri = "db/coll";
         whereUri = "/";
 
-        request = BsonRequest.init(ex, whereUri, whatUri);
+        request = MongoRequest.init(ex, whereUri, whatUri);
         assertEquals("/db/coll/x", request.getUnmappedRequestUri());
     }
 }

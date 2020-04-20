@@ -21,7 +21,7 @@
 package org.restheart.mongodb.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.handlers.PipelinedHandler;
 
 /**
@@ -55,7 +55,7 @@ public class AccountInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
         
         // inject authenticatedAccount
         if (exchange.getSecurityContext() != null) {

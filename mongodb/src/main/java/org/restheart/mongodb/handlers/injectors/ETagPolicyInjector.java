@@ -22,7 +22,7 @@ package org.restheart.mongodb.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
-import org.restheart.exchange.BsonRequest;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.ExchangeKeys;
 import static org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY.OPTIONAL;
 import static org.restheart.exchange.ExchangeKeys.ETAG_CHECK_POLICY.REQUIRED;
@@ -67,7 +67,7 @@ public class ETagPolicyInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
-        var request = BsonRequest.of(exchange);
+        var request = MongoRequest.of(exchange);
 
         request.setETagCheckRequired(isETagCheckRequired(request));
 
@@ -79,7 +79,7 @@ public class ETagPolicyInjector extends PipelinedHandler {
      * @param request
      * @return
      */
-    public boolean isETagCheckRequired(BsonRequest request) {
+    public boolean isETagCheckRequired(MongoRequest request) {
         var collectionProps = request.getCollectionProps();
         var dbProps = request.getDbProps();
 

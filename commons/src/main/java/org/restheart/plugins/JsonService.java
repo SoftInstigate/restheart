@@ -26,7 +26,8 @@ import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 
 /**
- *
+ * Specialized Service interface that uses JsonRequest and JsonResponse
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface JsonService extends Service<JsonRequest, JsonResponse> {
