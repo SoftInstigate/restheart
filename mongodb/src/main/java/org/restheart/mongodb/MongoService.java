@@ -34,8 +34,6 @@ import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.BsonResponse;
-import org.restheart.exchange.Request;
-import org.restheart.exchange.Response;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
