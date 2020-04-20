@@ -42,6 +42,7 @@ import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.exchange.BsonRequestContentInjector;
 import org.restheart.mongodb.exchange.BsonRequestPropsInjector;
 import org.restheart.mongodb.handlers.CORSHandler;
+import org.restheart.mongodb.handlers.ErrorHandler;
 import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.AccountInjector;
@@ -59,7 +60,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The Service that handles requests to mongodb resources
- * 
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(name = "mongo",
@@ -108,14 +109,16 @@ public class MongoService implements Service<BsonRequest, BsonResponse> {
             throws ConfigurationException {
         var rootHandler = path();
 
-        var _pipeline = PipelinedHandler.pipe(
-                new MetricsInstrumentationHandler(),
-                new CORSHandler(),
-                new OptionsHandler(),
-                new AccountInjector(),
-                ClientSessionInjector.build(),
-                new ETagPolicyInjector(),
-                RequestDispatcherHandler.getInstance());
+        var _pipeline = PipelinedWrappingHandler.wrap(
+                new ErrorHandler(
+                        PipelinedHandler.pipe(
+                                new MetricsInstrumentationHandler(),
+                                new CORSHandler(),
+                                new OptionsHandler(),
+                                new AccountInjector(),
+                                ClientSessionInjector.build(),
+                                new ETagPolicyInjector(),
+                                RequestDispatcherHandler.getInstance())));
 
         // check that all mounts are either all paths or all path templates
         boolean allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()

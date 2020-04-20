@@ -255,6 +255,9 @@ public class ResponseHelper {
      */
     public static int getHttpStatusFromErrorCode(int code) {
         switch (code) {
+            case 2:
+                // Unknown top level operator
+                return HttpStatus.SC_BAD_REQUEST;
             case 13:
                 // The MongoDB user does not have enough permissions to execute this operation.
                 return HttpStatus.SC_FORBIDDEN;
@@ -298,6 +301,8 @@ public class ResponseHelper {
      */
     public static String getMessageFromErrorCode(int code) {
         switch (code) {
+            case 2:
+                return "Bad value";
             case 13:
                 return "The MongoDB user does not have enough "
                         + "permissions to execute this operation";

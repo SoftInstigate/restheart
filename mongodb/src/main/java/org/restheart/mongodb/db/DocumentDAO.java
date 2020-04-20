@@ -20,7 +20,9 @@
  */
 package org.restheart.mongodb.db;
 
+import com.mongodb.MongoBulkWriteException;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoCommandException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
@@ -44,6 +46,8 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.OperationResult;
+import static org.restheart.mongodb.db.DAOUtils.BAD_VALUE_KEY_ERROR;
+import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,7 +141,7 @@ public class DocumentDAO implements DocumentRepository {
                 shardKeys,
                 content,
                 !patching);
-        
+
         BsonDocument oldDocument = updateResult.getOldData();
 
         if (patching) {
@@ -463,11 +467,23 @@ public class DocumentDAO implements DocumentRepository {
                 DAOUtils.getUpdateDocument(data),
                 DAOUtils.U_NOT_UPSERT_OPS));
 
-        BulkWriteResult result = cs == null
-                ? mcoll.bulkWrite(patches)
-                : mcoll.bulkWrite(cs, patches);
+        try {
+            BulkWriteResult result = cs == null
+                    ? mcoll.bulkWrite(patches)
+                    : mcoll.bulkWrite(cs, patches);
 
-        return new BulkOperationResult(HttpStatus.SC_OK, null, result);
+            return new BulkOperationResult(HttpStatus.SC_OK, null, result);
+        } catch (MongoBulkWriteException mce) {
+            switch (mce.getCode()) {
+                case BAD_VALUE_KEY_ERROR:
+                    return new BulkOperationResult(ResponseHelper
+                            .getHttpStatusFromErrorCode(mce.getCode()),
+                            null,
+                            null);
+                default:
+                    throw mce;
+            }
+        }
     }
 
     private OperationResult optimisticCheckEtag(
