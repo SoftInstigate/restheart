@@ -95,7 +95,11 @@ The default `acl.yml` defines the following permission:
 -   _admin_ role can execute any request
 -   _user_ role can execute any request on collection `/{username}`
 
-> **WARNING** You must update the passwords in production! See [Configuration](#configuration) for more information on how to override the default `users.yml` configuration file.
+---
+
+**WARNING** You must update the passwords in production! See [Configuration](#configuration) for more information on how to override the default `users.yml` configuration file.
+
+---
 
 ### Check that everything works
 
@@ -172,7 +176,11 @@ $ cd restheart
 $ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
 ```
 
-By default RESTHeart only mounts the database `restheart`. This is controlled by the `root-mongo-resource` in the `restheart/etc/default.properties` file
+---
+
+By default RESTHeart only mounts the database `restheart`. This is controlled by the `root-mongo-resource` in the `restheart/etc/default.properties` file.
+
+---
 
 ```properties
 # The MongoDB resource to bind to the root URI /
@@ -180,7 +188,12 @@ By default RESTHeart only mounts the database `restheart`. This is controlled by
 root-mongo-resource = /restheart
 ```
 
-> It means that the root resource `/` is bound to the `/restheart` database. This database doesn't actually exist until you explicitly create it by issuing a `PUT /` HTTP command.
+It means that the root resource `/` is bound to the `/restheart` database. This database __doesn't actually exist__ until you explicitly create it by issuing a `PUT /` HTTP command. Example for localhost:
+
+```bash
+$ curl --user admin:secret -I -X PUT :8080/
+HTTP/1.1 201 OK
+```
 
 RESTHeart will start bound on HTTP port `8080`.
 
@@ -192,7 +205,7 @@ The main file is [`restheart.yml`](core/etc/restheart.yml) which is parametrized
 $ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
 ```
 
-Beware that you must restart the core `restheart.jar` process to reload a new configuration (of course, how to stop and start the process depends on how it was distributed: either in a docker container or a native Java process).
+Beware that you must restart the core `restheart.jar` process to reload a new configuration (how to stop and start the process depends on how it was distributed: either in a docker container or a native Java process).
 
 You can edit the YAML configuration file or create distinct properties file. Usually one set of properties for each deployment environment is a common practice.
 
@@ -221,7 +234,11 @@ The following log entry appears at the very beginning of logs during the startup
 
 A shell environment variable is equivalent to a YAML parameter in `restheart.yml`, but it’s all uppercase and '-' (dash) are replaced with '\_' (underscore).
 
-> Environment variables replacement works only with primitive types: it doesn’t work with YAML structured data in configuration files, like arrays or maps. It's mandatory to use properties files and mustache syntax for that.
+---
+
+Environment variables replacement works only with primitive types: it doesn’t work with YAML structured data in configuration files, like arrays or maps. It's mandatory to use properties files and mustache syntax for that.
+
+---
 
 To know the available CLI parameters, run RESTHeart with `--help`:
 
@@ -276,7 +293,11 @@ RESTHeart's releases are available on [Maven Central](http://search.maven.org/#s
 
 Stable releases are available at: https://oss.sonatype.org/content/repositories/releases/org/restheart/restheart/
 
-> INFO: the main difference with the past is that in RESTHeart v5 a developer doesn't build a custom version of `restheart.jar` to create extensions anymore (it was usually done with the maven-shade-plugin), instead it's enough to compile against the `restheart-commons` library to create a plugin, which is a JAR file to be copied into the `plugins/` folder and class-loaded during startup.
+---
+
+The main difference with the past is that in RESTHeart v5 for a developer is just enough to compile against the `restheart-commons` library to create a plugin, which is a JAR file to be copied into the `plugins/` folder and class-loaded during startup.
+
+---
 
 To compile new plugins, add the `restheart-commons` dependency to your POM file:
 
@@ -329,7 +350,11 @@ Except for the `core` services, everything else is a plugin. The `security` and 
 └── restheart.jar
 ```
 
-> Plugin examples are collected [here](https://github.com/SoftInstigate/restheart-examples).
+---
+
+Plugin examples are collected [here](https://github.com/SoftInstigate/restheart-examples).
+
+---
 
 When the core module starts, it scans the Java classpath within the `plugins/` folder and loads all the JAR files there.
 
@@ -355,7 +380,11 @@ public class MongoService implements Service<BsonRequest, BsonResponse> {
 
 For more information, read the [documentation](http://restheart.org/docs/).
 
-> **WARNING**: that documentation has not yet been updated for v5, work is in progress. Please open a issue [here](https://github.com/SoftInstigate/restheart/issues) if you have any question, or send an email to <a href="mailto:ask@restheart.org">ask@restheart.org</a> and we'll be happy to clarify anything.
+---
+
+**WARNING**: that documentation has not yet been updated for v5, work is in progress. Please open a issue [here](https://github.com/SoftInstigate/restheart/issues) if you have any question, or send an email to <a href="mailto:ask@restheart.org">ask@restheart.org</a> and we'll be happy to clarify anything.
+
+---
 
 ## Book a chat
 
@@ -375,6 +404,6 @@ This is a list of commercial-only features:
 
 Check the [editions matrix](https://restheart.org/editions) for more information.
 
-<hr></hr>
+---
 
 _Made with :heart: by [SoftInstigate](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.
