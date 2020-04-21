@@ -24,7 +24,7 @@ import io.undertow.util.AttachmentKey;
 
 /**
  * A response that stores content in a class field.
- * 
+ *
  * Only one response can be instantiated per each exchange. The single object is
  * instantiated by ServiceExchangeInitializer using the responseInitializer()
  * function defined by the handling service
@@ -38,12 +38,12 @@ import io.undertow.util.AttachmentKey;
 public abstract class Response<T> extends AbstractResponse<T> {
     private static final AttachmentKey<Response<?>> RESPONSE_KEY
             = AttachmentKey.create(Response.class);
-    
+
     protected T content;
 
     protected Response(HttpServerExchange exchange) {
         super(exchange);
-        
+
         if (exchange.getAttachment(RESPONSE_KEY) != null) {
             throw new IllegalStateException("Error instantiating response object "
                     + getClass().getSimpleName()
@@ -54,7 +54,7 @@ public abstract class Response<T> extends AbstractResponse<T> {
 
         exchange.putAttachment(RESPONSE_KEY, this);
     }
-    
+
     @SuppressWarnings("unchecked")
     public static <R extends Response<?>> R of(HttpServerExchange exchange, Class<R> type) {
         var ret = exchange.getAttachment(RESPONSE_KEY);
@@ -62,7 +62,7 @@ public abstract class Response<T> extends AbstractResponse<T> {
         if (ret == null) {
             throw new IllegalStateException("Response not initialized");
         }
-        
+
         if (type.isAssignableFrom(ret.getClass())) {
             return (R) ret;
         } else {
@@ -76,17 +76,19 @@ public abstract class Response<T> extends AbstractResponse<T> {
     public T getContent() {
         return this.content;
     }
-    
+
     public void setContent(T content) {
         this.content = content;
     }
-    
+
     /**
-     * 
+     * Reads the content as a String. This method is used by ResponseSender to
+     * generate the response content to send to the client.
+     *
      * @return the content as string
      */
     public abstract String readContent();
-    
+
     /**
      *
      * @param code
