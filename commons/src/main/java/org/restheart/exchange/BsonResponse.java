@@ -23,6 +23,7 @@ import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.restheart.utils.JsonUtils;
 
 /**
  * Response implementation backed by BsonValue
@@ -46,7 +47,7 @@ public class BsonResponse extends Response<BsonValue> {
     @Override
     public String readContent() {
         if (content != null) {
-            return content.toString();
+            return JsonUtils.toJson(content);
         } else {
             return null;
         }
