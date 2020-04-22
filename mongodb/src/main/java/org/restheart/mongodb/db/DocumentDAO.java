@@ -369,7 +369,7 @@ public class DocumentDAO implements DocumentRepository {
                     requestEtag,
                     HttpStatus.SC_NO_CONTENT, true);
         } else {
-            return new OperationResult(HttpStatus.SC_NO_CONTENT);
+            return new OperationResult(HttpStatus.SC_NO_CONTENT, oldDocument, null);
         }
     }
 
