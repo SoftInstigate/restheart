@@ -40,14 +40,14 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BufferedJsonResponse extends BufferedResponse<JsonElement> {
-    protected BufferedJsonResponse(HttpServerExchange exchange) {
+public class JsonProxyResponse extends ProxyResponse<JsonElement> {
+    protected JsonProxyResponse(HttpServerExchange exchange) {
         super(exchange);
-        LOGGER = LoggerFactory.getLogger(BufferedJsonRequest.class);
+        LOGGER = LoggerFactory.getLogger(JsonProxyRequest.class);
     }
 
-    public static BufferedJsonResponse of(HttpServerExchange exchange) {
-        return new BufferedJsonResponse(exchange);
+    public static JsonProxyResponse of(HttpServerExchange exchange) {
+        return new JsonProxyResponse(exchange);
     }
 
     /**
@@ -66,7 +66,7 @@ public class BufferedJsonResponse extends BufferedResponse<JsonElement> {
         } else {
             try {
                 String rawContentAsString = BuffersUtils.toString(
-                        getRawContent(),
+                        getBuffer(),
                         StandardCharsets.UTF_8);
 
                 return JsonParser.parseString(rawContentAsString);
@@ -80,14 +80,14 @@ public class BufferedJsonResponse extends BufferedResponse<JsonElement> {
     public void writeContent(JsonElement content) throws IOException {
         setContentTypeAsJson();
         if (content == null) {
-            setRawContent(null);
+            setBuffer(null);
         } else {
             PooledByteBuffer[] dest;
             if (isContentAvailable()) {
-                dest = getRawContent();
+                dest = getBuffer();
             } else {
                 dest = new PooledByteBuffer[MAX_BUFFERS];
-                setRawContent(dest);
+                setBuffer(dest);
             }
 
             BuffersUtils.transfer(

@@ -19,82 +19,135 @@
  */
 package org.restheart.exchange;
 
+import com.google.common.reflect.TypeToken;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import io.undertow.util.Headers;
+import java.lang.reflect.Type;
+import java.util.Map;
 
 /**
- * A response that stores content in a class field.
  *
- * Only one response can be instantiated per each exchange. The single object is
- * instantiated by ServiceExchangeInitializer using the responseInitializer()
- * function defined by the handling service
- *
- * Cannot be used to access content of a proxied resource, must use
- * BufferedResponse instead.
+ * The root class for implementing a Response providing the implementation for
+ * common methods
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <T>
  */
-public abstract class Response<T> extends AbstractResponse<T> {
-    private static final AttachmentKey<Response<?>> RESPONSE_KEY
-            = AttachmentKey.create(Response.class);
+public abstract class Response<T> extends Exchange<T> {
+    private static final AttachmentKey<Integer> STATUS_CODE
+            = AttachmentKey.create(Integer.class);
 
-    protected T content;
+    private static final AttachmentKey<Map<String, String>> MDC_CONTEXT_KEY
+            = AttachmentKey.create(Map.class);
 
     protected Response(HttpServerExchange exchange) {
         super(exchange);
+    }
+    
+    public static Type type() {
+        var typeToken = new TypeToken<Response>(Response.class) {
+        };
 
-        if (exchange.getAttachment(RESPONSE_KEY) != null) {
-            throw new IllegalStateException("Error instantiating response object "
-                    + getClass().getSimpleName()
-                    + ", "
-                    + exchange.getAttachment(RESPONSE_KEY).getClass().getSimpleName()
-                    + " already bound to the exchange");
-        }
-
-        exchange.putAttachment(RESPONSE_KEY, this);
+        return typeToken.getType();
     }
 
-    @SuppressWarnings("unchecked")
-    public static <R extends Response<?>> R of(HttpServerExchange exchange, Class<R> type) {
-        var ret = exchange.getAttachment(RESPONSE_KEY);
-
-        if (ret == null) {
-            throw new IllegalStateException("Response not initialized");
-        }
-
-        if (type.isAssignableFrom(ret.getClass())) {
-            return (R) ret;
+    public static String getContentType(HttpServerExchange exchange) {
+        return exchange.getResponseHeaders()
+                .getFirst(Headers.CONTENT_TYPE);
+    }
+    
+    /**
+     * @return the responseContentType
+     */
+    @Override
+    public String getContentType() {
+        if (getWrappedExchange().getResponseHeaders()
+                .get(Headers.CONTENT_TYPE) != null) {
+            return getWrappedExchange().getResponseHeaders()
+                    .get(Headers.CONTENT_TYPE).getFirst();
         } else {
-            throw new IllegalStateException("Response bound to exchange is not "
-                    + "of the specified type,"
-                    + " expected " + type.getClass().getSimpleName()
-                    + " got" + ret.getClass().getSimpleName());
+            return null;
         }
-    }
-
-    public T getContent() {
-        return this.content;
-    }
-
-    public void setContent(T content) {
-        this.content = content;
     }
 
     /**
-     * Reads the content as a String. This method is used by ResponseSender to
-     * generate the response content to send to the client.
-     *
-     * @return the content as string
+     * @param responseContentType the responseContentType to set
      */
-    public abstract String readContent();
+    public void setContentType(String responseContentType) {
+        getWrappedExchange().getResponseHeaders()
+                .put(Headers.CONTENT_TYPE, responseContentType);
+    }
+
+    /**
+     * sets Content-Type=application/json
+     */
+    public void setContentTypeAsJson() {
+        setContentType("application/json");
+    }
+
+    /**
+     * @return the responseStatusCode of -1 if not set
+     */
+    public int getStatusCode() {
+        var wrappedExchange = getWrappedExchange();
+
+        if (wrappedExchange == null
+                || wrappedExchange.getAttachment(STATUS_CODE) == null) {
+            return -1;
+        } else {
+            return wrappedExchange.getAttachment(STATUS_CODE);
+        }
+    }
+
+    /**
+     * @param responseStatusCode the responseStatusCode to set
+     */
+    public void setStatusCode(int responseStatusCode) {
+        getWrappedExchange().putAttachment(STATUS_CODE, responseStatusCode);
+    }
+
+    /**
+     * Logging MDC Context is bind to the thread context. In case of a thread
+     * switch it must be restored from this exchange attachment using
+     * MDC.setContextMap()
+     *
+     * @return the MDC Context
+     */
+    public Map<String, String> getMDCContext() {
+        return getWrappedExchange().getAttachment(MDC_CONTEXT_KEY);
+    }
+
+    public void setMDCContext(Map<String, String> mdcCtx) {
+        getWrappedExchange().putAttachment(MDC_CONTEXT_KEY, mdcCtx);
+    }
 
     /**
      *
      * @param code
      * @param message
-     * @param t
+     * @param t can be null
      */
-    @Override
-    public abstract void setInError(int code, String message, Throwable t);
+    public abstract void setInError(int code,
+            String message,
+            Throwable t);
+    
+    /**
+     *
+     * @param code
+     * @param message
+     */
+    public void setInError(int code,
+            String message) {
+        setInError(code, message, null);
+    }
+
+    /**
+     *
+     * @param code
+     * @param message
+     */
+    public void setIError(int code, String message) {
+        setInError(code, message, null);
+    }
 }

@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(
         name = "snooper",
-        description = "An example hook that logs request and response info",
+        description = "A test hook that logs the request and response content and, for write requests, the response.getDbOperationResult()",
         enabledByDefault = false,
         interceptPoint = InterceptPoint.RESPONSE_ASYNC)
 @SuppressWarnings("deprecation")

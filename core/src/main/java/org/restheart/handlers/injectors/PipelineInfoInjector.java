@@ -21,7 +21,7 @@
 package org.restheart.handlers.injectors;
 
 import io.undertow.server.HttpServerExchange;
-import org.restheart.exchange.BufferedByteArrayRequest;
+import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginsRegistryImpl;
 
@@ -59,7 +59,7 @@ public class PipelineInfoInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        BufferedByteArrayRequest.of(exchange)
+        ByteArrayProxyRequest.of(exchange)
                 .setPipelineInfo(PluginsRegistryImpl.getInstance()
                 .getPipelineInfo(exchange.getRequestPath()));
 

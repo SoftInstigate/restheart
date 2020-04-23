@@ -27,32 +27,36 @@ import java.io.IOException;
 import org.restheart.utils.HttpStatus;
 
 /**
- * A buffered response stores response content in the BUFFERED_RESPONSE_DATA_KEY
- * attachment of the HttpServerExchange
+ * Base class for Response implementation that can be used in proxied requests.
  *
- * This makes possibile using an concrete implementation of it in proxied
- * request.
- * 
+ * It stores the response content in the BUFFERED_RESPONSE_DATA_KEY attachment
+ * of the HttpServerExchange.
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  * @param <T>
  */
-public abstract class BufferedResponse<T> extends AbstractResponse<T> {
+public abstract class ProxyResponse<T> extends Response<T>
+        implements BufferedExchange<T> {
     public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA_KEY
             = AttachmentKey.create(PooledByteBuffer[].class);
-    
-    protected BufferedResponse(HttpServerExchange exchange) {
+
+    protected ProxyResponse(HttpServerExchange exchange) {
         super(exchange);
     }
-    
+
+    @Override
     public abstract T readContent() throws IOException;
 
+    @Override
+
     public abstract void writeContent(T content) throws IOException;
-    
+
     public AttachmentKey<PooledByteBuffer[]> getRawContentKey() {
         return BUFFERED_RESPONSE_DATA_KEY;
     }
 
-    public PooledByteBuffer[] getRawContent() {
+    @Override
+    public PooledByteBuffer[] getBuffer() {
         if (!isContentAvailable()) {
             throw new IllegalStateException("Response content is not available. "
                     + "Add a Response Inteceptor with "
@@ -62,19 +66,21 @@ public abstract class BufferedResponse<T> extends AbstractResponse<T> {
 
         return getWrappedExchange().getAttachment(getRawContentKey());
     }
-    
-    public void setRawContent(PooledByteBuffer[] raw) {
+
+    @Override
+    public void setBuffer(PooledByteBuffer[] raw) {
         getWrappedExchange().putAttachment(getRawContentKey(), raw);
     }
-    
+
+    @Override
     public boolean isContentAvailable() {
         return null != getWrappedExchange().getAttachment(getRawContentKey());
     }
-    
+
     protected void setContentLength(int length) {
         wrapped.getResponseHeaders().put(Headers.CONTENT_LENGTH, length);
     }
-    
+
     /**
      *
      * @param code
@@ -96,16 +102,16 @@ public abstract class BufferedResponse<T> extends AbstractResponse<T> {
             throw new RuntimeException(ioe);
         }
     }
-    
+
     /**
-     * 
+     *
      * @param code
      * @param httpStatusText
      * @param message
      * @param t
      * @param includeStackTrace
      * @return the content descibing the error
-     * @throws IOException 
+     * @throws IOException
      */
     protected abstract T getErrorContent(int code,
             String httpStatusText,

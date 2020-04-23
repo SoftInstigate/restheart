@@ -29,7 +29,7 @@ import org.restheart.utils.ChannelReader;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class JsonRequest extends Request<JsonElement> {
+public class JsonRequest extends ServiceRequest<JsonElement> {
     private JsonRequest(HttpServerExchange exchange) {
         super(exchange);
     }

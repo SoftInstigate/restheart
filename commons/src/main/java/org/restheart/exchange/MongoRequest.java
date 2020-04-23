@@ -40,7 +40,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
-import static org.restheart.exchange.AbstractExchange.LOGGER;
+import static org.restheart.exchange.Exchange.LOGGER;
 import static org.restheart.exchange.ExchangeKeys.*;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;

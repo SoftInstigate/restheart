@@ -26,7 +26,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.json.JsonMode;
-import org.restheart.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -65,7 +65,7 @@ public class ResponseContentInjector extends PipelinedHandler {
 
         addWarnings(request, response);
 
-        var pr = BufferedByteArrayResponse.of(exchange);
+        var pr = ByteArrayProxyResponse.of(exchange);
         
         if (request.getJsonMode() == JsonMode.SHELL) {
             pr.setContentType(Resource.JAVACRIPT_MEDIA_TYPE);
@@ -80,7 +80,7 @@ public class ResponseContentInjector extends PipelinedHandler {
         // to send the content to the client
         if (response.getContent() != null) {
             try {
-                BufferedByteArrayResponse.of(exchange)
+                ByteArrayProxyResponse.of(exchange)
                         .writeContent(JsonUtils.toJson(response.getContent(),
                                 MongoRequest.of(exchange).getJsonMode())
                                 .getBytes());

@@ -24,13 +24,13 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.RequestBufferingHandler;
 import io.undertow.util.AttachmentKey;
-import static org.restheart.exchange.AbstractExchange.MAX_BUFFERS;
-import org.restheart.exchange.AbstractRequest;
-import org.restheart.exchange.AbstractResponse;
-import org.restheart.exchange.BufferedByteArrayRequest;
-import org.restheart.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.ByteArrayProxyRequest;
+import org.restheart.exchange.ByteArrayProxyResponse;
+import static org.restheart.exchange.Exchange.MAX_BUFFERS;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
+import org.restheart.exchange.ServiceRequest;
+import org.restheart.exchange.ServiceResponse;
 import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ALWAYS;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
@@ -128,19 +128,19 @@ public class RequestContentInjector extends PipelinedHandler {
     @SuppressWarnings("unchecked")
     private boolean isContentRequired(HttpServerExchange exchange,
             InterceptPoint interceptPoint) {
-        AbstractRequest request;
-        AbstractResponse response;
+        Request request;
+        Response response;
 
         var handlingService = PluginUtils.handlingService(
                 PluginsRegistryImpl.getInstance(),
                 exchange);
 
         if (handlingService != null) {
-            request = Request.of(exchange, Request.class);
-            response = Response.of(exchange, Response.class);
+            request = ServiceRequest.of(exchange, ServiceRequest.class);
+            response = ServiceResponse.of(exchange, ServiceResponse.class);
         } else {
-            request = BufferedByteArrayRequest.of(exchange);
-            response = BufferedByteArrayResponse.of(exchange);
+            request = ByteArrayProxyRequest.of(exchange);
+            response = ByteArrayProxyResponse.of(exchange);
         }
         
         return PluginsRegistryImpl
@@ -153,11 +153,11 @@ public class RequestContentInjector extends PipelinedHandler {
                 // - requests handled by a Service when its request and response 
                 //   types are equal to the ones declared by the Service
                 // - request handled by a Proxy when its request and response 
-                //   are BufferedByteArrayRequest and BufferedByteArrayResponse
+                //   are ByteArrayProxyRequest and ByteArrayProxyResponse
                 .filter(ri -> 
                         (handlingService == null
-                && ri.requestType().equals(BufferedByteArrayRequest.type())
-                && ri.responseType().equals(BufferedByteArrayResponse.type()))
+                && ri.requestType().equals(ByteArrayProxyRequest.type())
+                && ri.responseType().equals(ByteArrayProxyResponse.type()))
                 || (handlingService != null
                 && ri.requestType().equals(handlingService.requestType())
                 && ri.responseType().equals(handlingService.responseType())))
