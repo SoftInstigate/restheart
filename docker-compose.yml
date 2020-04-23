@@ -15,7 +15,6 @@ volumes:
 
 services:
     restheart:
-        build: ./core
         image: softinstigate/restheart
         container_name: restheart
         environment:
