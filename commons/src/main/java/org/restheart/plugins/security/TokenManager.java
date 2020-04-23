@@ -42,21 +42,21 @@ public interface TokenManager extends Authenticator, ConfigurablePlugin {
      * @param account
      * @return the token for the account
      */
-    public PasswordCredential get(Account account);
+    public PasswordCredential get(final Account account);
 
     /**
      * invalidates the token bound to the account
      *
      * @param account
      */
-    public void invalidate(Account account);
+    public void invalidate(final Account account);
 
     /**
      * updates the account bound to a token
      *
      * @param account
      */
-    public void update(Account account);
+    public void update(final Account account);
 
     /**
      * injects the token headers in the response
@@ -64,5 +64,5 @@ public interface TokenManager extends Authenticator, ConfigurablePlugin {
      * @param exchange
      * @param token
      */
-    public void injectTokenHeaders(HttpServerExchange exchange, PasswordCredential token);
+    public void injectTokenHeaders(final HttpServerExchange exchange, final PasswordCredential token);
 }

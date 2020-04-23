@@ -74,12 +74,4 @@ public class IdentityAuthMechanism implements AuthMechanism {
             SecurityContext securityContext) {
         return new AuthenticationMechanism.ChallengeResult(true, 200);
     }
-
-    /**
-     * @return the mechanismName
-     */
-    @Override
-    public String getMechanismName() {
-        return "identityAuthMechanism";
-    }
 }

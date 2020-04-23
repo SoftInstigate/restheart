@@ -150,12 +150,4 @@ public class TokenBasicAuthMechanism
             return new ChallengeResult(true, UNAUTHORIZED);
         }
     }
-
-    /**
-     * @return the mechanismName
-     */
-    @Override
-    public String getMechanismName() {
-        return "tokenBasicAuthMechanism";
-    }
 }

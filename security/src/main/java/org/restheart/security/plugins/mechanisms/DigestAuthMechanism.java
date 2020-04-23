@@ -688,12 +688,4 @@ public class DigestAuthMechanism implements AuthMechanism {
             return response;
         }
     }
-
-    /**
-     * @return the mechanismName
-     */
-    @Override
-    public String getMechanismName() {
-        return mechanismName;
-    }
 }

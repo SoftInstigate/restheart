@@ -19,7 +19,7 @@
  */
 package org.restheart.plugins.security;
 
-import io.undertow.server.HttpServerExchange;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.ConfigurablePlugin;
 
 /**
@@ -30,15 +30,15 @@ public interface Authorizer extends ConfigurablePlugin {
 
     /**
      *
-     * @param exchange
+     * @param request
      * @return true if request is allowed
      */
-    boolean isAllowed(HttpServerExchange exchange);
+    boolean isAllowed(final Request request);
 
     /**
      *
-     * @param exchange
+     * @param request
      * @return true if not authenticated user won't be allowed
      */
-    boolean isAuthenticationRequired(final HttpServerExchange exchange);
+    boolean isAuthenticationRequired(final Request request);
 }

@@ -28,6 +28,7 @@ import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.Plugin;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
@@ -72,11 +73,11 @@ public class PluginUtils {
     
     /**
      *
-     * @param service
-     * @return the service name
+     * @param plugin
+     * @return the plugin name
      */
-    public static String name(Service service) {
-        var a = service.getClass()
+    public static String name(Plugin plugin) {
+        var a = plugin.getClass()
                 .getDeclaredAnnotation(RegisterPlugin.class);
 
         return a == null

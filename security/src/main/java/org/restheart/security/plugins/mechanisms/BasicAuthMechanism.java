@@ -95,9 +95,4 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
             final SecurityContext securityContext) {
         return super.authenticate(exchange, securityContext);
     }
-
-    @Override
-    public String getMechanismName() {
-        return "basicAuthMechanism";
-    }
 }

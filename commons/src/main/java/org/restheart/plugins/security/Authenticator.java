@@ -30,11 +30,11 @@ import org.restheart.plugins.ConfigurablePlugin;
  */
 public interface Authenticator extends IdentityManager, ConfigurablePlugin {
     @Override
-    public Account verify(Account account);
+    public Account verify(final Account account);
 
     @Override
-    public Account verify(String id, Credential credential);
+    public Account verify(final String id, final Credential credential);
 
     @Override
-    public Account verify(Credential credential);
+    public Account verify(final Credential credential);
 }

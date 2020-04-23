@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.restheart.utils.PluginUtils;
 
 /**
  *
@@ -59,6 +60,16 @@ public abstract class Request<T> extends Exchange<T> {
 
     protected Request(HttpServerExchange exchange) {
         super(exchange);
+    }
+    
+    public static Request of(HttpServerExchange exchange) {
+        var pi = PluginUtils.pipelineInfo(exchange);
+        
+        if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
+            return ServiceRequest.of(exchange);
+        } else {
+            return ByteArrayProxyRequest.of(exchange);
+        }
     }
     
     public static String getContentType(HttpServerExchange exchange) {
