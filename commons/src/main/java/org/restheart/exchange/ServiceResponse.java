@@ -51,6 +51,17 @@ public abstract class ServiceResponse<T> extends Response<T> {
 
         exchange.putAttachment(RESPONSE_KEY, this);
     }
+    
+    @SuppressWarnings("unchecked")
+    public static ServiceResponse<?> of(HttpServerExchange exchange) {
+        var ret = exchange.getAttachment(RESPONSE_KEY);
+
+        if (ret == null) {
+            throw new IllegalStateException("Response not initialized");
+        }
+
+        return ret;
+    }
 
     @SuppressWarnings("unchecked")
     public static <R extends ServiceResponse<?>> R of(HttpServerExchange exchange, Class<R> type) {

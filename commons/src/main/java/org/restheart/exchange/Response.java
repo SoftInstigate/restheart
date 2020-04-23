@@ -25,6 +25,7 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
 import java.lang.reflect.Type;
 import java.util.Map;
+import org.restheart.utils.PluginUtils;
 
 /**
  *
@@ -43,6 +44,16 @@ public abstract class Response<T> extends Exchange<T> {
 
     protected Response(HttpServerExchange exchange) {
         super(exchange);
+    }
+    
+    public static Response of(HttpServerExchange exchange) {
+        var pi = PluginUtils.pipelineInfo(exchange);
+        
+        if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
+            return ServiceResponse.of(exchange);
+        } else {
+            return ByteArrayProxyResponse.of(exchange);
+        }
     }
     
     public static Type type() {

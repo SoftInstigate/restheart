@@ -25,6 +25,7 @@ import io.undertow.security.api.AuthenticationMechanism.ChallengeResult;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.plugins.ConfigurablePlugin;
+import org.restheart.utils.PluginUtils;
 
 /**
  * @see https://restheart.org/docs/develop/security-plugins/#authentication-mechanisms
@@ -42,5 +43,7 @@ public interface AuthMechanism extends
     public ChallengeResult sendChallenge(final HttpServerExchange exchange,
             final SecurityContext securityContext);
 
-    public String getMechanismName();
+    default String getMechanismName() {
+        return PluginUtils.name(this);
+    }
 }

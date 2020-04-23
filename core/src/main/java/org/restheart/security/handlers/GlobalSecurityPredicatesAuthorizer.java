@@ -23,6 +23,7 @@ package org.restheart.security.handlers;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
+import org.restheart.exchange.Request;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
@@ -58,10 +59,13 @@ public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (isAllowed(exchange)
-                && checkGlobalPredicates(exchange)) {
+        var request = Request.of(exchange);
+        
+        if (isAllowed(request)
+                && checkGlobalPredicates(request)) {
             next(exchange);
         } else {
+            
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);
             // set status code and end exchange
@@ -76,9 +80,9 @@ public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
      * @return true if no global security predicate denies the request and any
      * accessManager allows the request
      */
-    private boolean isAllowed(HttpServerExchange exchange) {
+    private boolean isAllowed(final Request request) {
         if (getGlobalSecurityPredicates() != null
-                && !checkGlobalPredicates(exchange)) {
+                && !checkGlobalPredicates(request)) {
             return false;
         }
 
@@ -88,7 +92,7 @@ public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
             return authorizers.stream()
                     .filter(a -> a.getInstance() != null)
                     .filter(a -> a.isEnabled())
-                    .anyMatch(a -> a.getInstance().isAllowed(exchange));
+                    .anyMatch(a -> a.getInstance().isAllowed(request));
         }
     }
 
@@ -97,11 +101,11 @@ public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
      * @param exchange
      * @return true if all global security predicates resolve the request
      */
-    private boolean checkGlobalPredicates(HttpServerExchange exchange) {
+    private boolean checkGlobalPredicates(final Request request) {
         return PluginsRegistryImpl.getInstance()
                 .getGlobalSecurityPredicates()
                 .stream()
-                .allMatch(predicate -> predicate.resolve(exchange));
+                .allMatch(predicate -> predicate.resolve(request.getExchange()));
     }
 
     /**

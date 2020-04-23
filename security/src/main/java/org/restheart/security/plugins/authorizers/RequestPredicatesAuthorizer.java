@@ -35,7 +35,7 @@ import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.restheart.ConfigurationException;
-import org.restheart.exchange.ByteArrayProxyRequest;
+import org.restheart.exchange.Request;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
@@ -89,14 +89,16 @@ public class RequestPredicatesAuthorizer
     }
 
     /**
-     * @param exchange
+     * @param request
      * @return
      */
     @Override
-    public boolean isAllowed(HttpServerExchange exchange) {
+    public boolean isAllowed(final Request request) {
         if (noAclDefined()) {
             return false;
         }
+        
+        var exchange = request.getExchange();
 
         // this fixes undertow bug 377
         // https://issues.jboss.org/browse/UNDERTOW-377
@@ -107,7 +109,7 @@ public class RequestPredicatesAuthorizer
         // Predicate.resolve() uses getRelativePath() that is the path relative to
         // the last PathHandler We want to check against the full request path
         // see https://issues.jboss.org/browse/UNDERTOW-1317
-        exchange.setRelativePath(exchange.getRequestPath());
+        request.getExchange().setRelativePath(request.getExchange().getRequestPath());
 
         return roles(exchange).anyMatch(role -> aclForRole(role)
                 .stream()
@@ -115,9 +117,9 @@ public class RequestPredicatesAuthorizer
     }
 
     @Override
-    public boolean isAuthenticationRequired(final HttpServerExchange exchange) {
+    public boolean isAuthenticationRequired(final Request request) {
         // don't require authentication for OPTIONS requests
-        if (ByteArrayProxyRequest.of(exchange).isOptions()) {
+        if (request.isOptions()) {
             return false;
         }
 
@@ -128,6 +130,7 @@ public class RequestPredicatesAuthorizer
         Set<Predicate> ps = getAcl().get("$unauthenticated");
 
         if (ps != null) {
+            var exchange = request.getExchange();
             // this fixes undertow bug 377
             // https://issues.jboss.org/browse/UNDERTOW-377
             if (exchange.getAttachment(PREDICATE_CONTEXT) == null) {

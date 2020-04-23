@@ -23,6 +23,7 @@ package org.restheart.security.handlers;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
+import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.Authorizer;
@@ -53,7 +54,8 @@ public class AuthenticationConstraintHandler extends PipelinedHandler {
                         .stream()
                         .filter(a -> a.isEnabled())
                         .filter(a -> a.getInstance() != null)
-                        .allMatch(a -> a.getInstance().isAuthenticationRequired(exchange));
+                        .allMatch(a -> a.getInstance()
+                                .isAuthenticationRequired(Request.of(exchange)));
     }
 
     @Override
