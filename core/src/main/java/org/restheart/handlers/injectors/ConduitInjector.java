@@ -25,8 +25,8 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
-import org.restheart.exchange.BufferedByteArrayRequest;
-import org.restheart.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.ByteArrayProxyRequest;
+import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.handlers.ContentStreamSinkConduit;
 import org.restheart.handlers.ModifiableContentSinkConduit;
 import org.restheart.handlers.PipelinedHandler;
@@ -92,7 +92,7 @@ public class ConduitInjector extends PipelinedHandler {
             // For proxied requests a thread switch in the request handling happens,
             // loosing the MDC context. TracingInstrumentationHandler adds it to the
             // exchange as an Attachment
-            var mdcCtx = BufferedByteArrayResponse.of(exchange).getMDCContext();
+            var mdcCtx = ByteArrayProxyResponse.of(exchange).getMDCContext();
             if (mdcCtx != null) {
                 MDC.setContextMap(mdcCtx);
             }
@@ -106,14 +106,14 @@ public class ConduitInjector extends PipelinedHandler {
                     || interceptPoint(ri) == RESPONSE_ASYNC)
                     // IMPORTANT: An interceptor can intercept 
                     // - request handled by a Proxy when its request and response 
-                    //   are BufferedByteArrayRequest and BufferedByteArrayResponse
-                    .filter(ri -> ri.requestType().equals(BufferedByteArrayRequest.type())
-                    && ri.responseType().equals(BufferedByteArrayResponse.type()))
+                    //   are ByteArrayProxyRequest and ByteArrayProxyResponse
+                    .filter(ri -> ri.requestType().equals(ByteArrayProxyRequest.type())
+                    && ri.responseType().equals(ByteArrayProxyResponse.type()))
                     .filter(ri -> {
                         try {
                             return ri.resolve(
-                                    BufferedByteArrayRequest.of(exchange),
-                                    BufferedByteArrayResponse.of(exchange));
+                                    ByteArrayProxyRequest.of(exchange),
+                                    ByteArrayProxyResponse.of(exchange));
                         } catch (Exception e) {
                             LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
                                     ri.getClass().getSimpleName(),
@@ -158,14 +158,14 @@ public class ConduitInjector extends PipelinedHandler {
                 .map(ri -> ri.getInstance())
                 // IMPORTANT: An interceptor can intercept 
                 // - request handled by a Proxy when its request and response 
-                //   are BufferedByteArrayRequest and BufferedByteArrayResponse
-                .filter(ri -> ri.requestType().equals(BufferedByteArrayRequest.type())
-                && ri.responseType().equals(BufferedByteArrayResponse.type()))
+                //   are ByteArrayProxyRequest and ByteArrayProxyResponse
+                .filter(ri -> ri.requestType().equals(ByteArrayProxyRequest.type())
+                && ri.responseType().equals(ByteArrayProxyResponse.type()))
                 .filter(ri -> {
                     try {
                         return ri.resolve(
-                                BufferedByteArrayRequest.of(exchange),
-                                BufferedByteArrayResponse.of(exchange));
+                                ByteArrayProxyRequest.of(exchange),
+                                ByteArrayProxyResponse.of(exchange));
                     } catch (Exception e) {
                         LOGGER.warn("Error resolving interceptor {} for {}",
                                 ri.getClass().getSimpleName(),

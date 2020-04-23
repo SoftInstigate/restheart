@@ -26,11 +26,11 @@ import org.restheart.utils.ChannelReader;
 import org.restheart.utils.JsonUtils;
 
 /**
- * Request implementation backed by BsonValue
+ * ServiceRequest implementation backed by BsonValue
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class BsonRequest extends Request<BsonValue> {
+public class BsonRequest extends ServiceRequest<BsonValue> {
     protected BsonRequest(HttpServerExchange exchange) {
         super(exchange);
     }

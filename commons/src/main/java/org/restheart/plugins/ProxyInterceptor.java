@@ -19,13 +19,13 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.exchange.BufferedByteArrayRequest;
-import org.restheart.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.ByteArrayProxyRequest;
+import org.restheart.exchange.ByteArrayProxyResponse;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface ProxyInterceptor extends Interceptor<BufferedByteArrayRequest, BufferedByteArrayResponse> {
+public interface ProxyInterceptor extends Interceptor<ByteArrayProxyRequest, ByteArrayProxyResponse> {
     
 }

@@ -23,8 +23,8 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.restheart.exchange.Request;
-import org.restheart.exchange.Response;
+import org.restheart.exchange.ServiceRequest;
+import org.restheart.exchange.ServiceResponse;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -35,7 +35,7 @@ import org.restheart.utils.HttpStatus;
  * @see https://restheart.org/docs/develop/security-plugins/#services
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Service<R extends Request<?>, S extends Response<?>>
+public interface Service<R extends ServiceRequest<?>, S extends ServiceResponse<?>>
         extends HandlingPlugin<R, S>, ConfigurablePlugin {
     /**
      * handle the request

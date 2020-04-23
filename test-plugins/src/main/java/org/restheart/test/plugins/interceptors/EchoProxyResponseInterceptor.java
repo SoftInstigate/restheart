@@ -25,8 +25,8 @@ import com.google.gson.JsonParser;
 import io.undertow.util.HttpString;
 import java.nio.charset.Charset;
 import java.util.Map;
-import org.restheart.exchange.BufferedByteArrayRequest;
-import org.restheart.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.ByteArrayProxyRequest;
+import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.plugins.InjectConfiguration;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import org.restheart.plugins.ProxyInterceptor;
@@ -61,7 +61,7 @@ public class EchoProxyResponseInterceptor implements ProxyInterceptor {
     }
 
     @Override
-    public void handle(BufferedByteArrayRequest request, BufferedByteArrayResponse response) throws Exception {
+    public void handle(ByteArrayProxyRequest request, ByteArrayProxyResponse response) throws Exception {
         response.getExchange().getResponseHeaders()
                 .add(HttpString.tryFromString("header"),
                         "added by echoProxyResponseInterceptor "
@@ -86,7 +86,7 @@ public class EchoProxyResponseInterceptor implements ProxyInterceptor {
     }
 
     @Override
-    public boolean resolve(BufferedByteArrayRequest request, BufferedByteArrayResponse response) {
+    public boolean resolve(ByteArrayProxyRequest request, ByteArrayProxyResponse response) {
         return request.getPath().equals("/piecho");
     }
 }

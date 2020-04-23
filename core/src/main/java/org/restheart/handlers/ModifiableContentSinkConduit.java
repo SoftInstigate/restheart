@@ -28,9 +28,9 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import static org.restheart.exchange.AbstractExchange.MAX_BUFFERS;
-import org.restheart.exchange.BufferedByteArrayResponse;
-import org.restheart.exchange.BufferedResponse;
+import org.restheart.exchange.ByteArrayProxyResponse;
+import static org.restheart.exchange.Exchange.MAX_BUFFERS;
+import org.restheart.exchange.ProxyResponse;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +82,7 @@ public class ModifiableContentSinkConduit
      */
     private void resetBufferPool(HttpServerExchange exchange) {
         var buffers = new PooledByteBuffer[MAX_BUFFERS];
-        exchange.putAttachment(BufferedResponse.BUFFERED_RESPONSE_DATA_KEY,
+        exchange.putAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY,
                 buffers);
     }
 
@@ -90,7 +90,7 @@ public class ModifiableContentSinkConduit
     public int write(ByteBuffer src) throws IOException {
         return BuffersUtils.append(src,
                 (PooledByteBuffer[]) exchange
-                        .getAttachment(BufferedResponse.BUFFERED_RESPONSE_DATA_KEY),
+                        .getAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY),
                 exchange);
     }
 
@@ -132,8 +132,8 @@ public class ModifiableContentSinkConduit
             throw new IOException(e);
         }
 
-        PooledByteBuffer[] dests = BufferedByteArrayResponse.of(exchange)
-                .getRawContent();
+        PooledByteBuffer[] dests = ByteArrayProxyResponse.of(exchange)
+                .getBuffer();
 
         updateContentLenght(exchange, dests);
 

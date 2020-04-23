@@ -21,7 +21,7 @@ package org.restheart.utils;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Map;
-import org.restheart.exchange.BufferedByteArrayRequest;
+import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.PipelineInfo;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.plugins.InitPoint;
@@ -202,6 +202,6 @@ public class PluginUtils {
     }
 
     public static PipelineInfo pipelineInfo(HttpServerExchange exchange) {
-        return BufferedByteArrayRequest.of(exchange).getPipelineInfo();
+        return ByteArrayProxyRequest.of(exchange).getPipelineInfo();
     }
 }

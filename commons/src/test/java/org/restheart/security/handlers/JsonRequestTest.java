@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.restheart.exchange.BufferedJsonRequest;
+import org.restheart.exchange.JsonProxyRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,15 +73,15 @@ public class JsonRequestTest {
     @Test
     public void testSelectRequestMethod() {
         var exchange = new HttpServerExchange();
-        var request = BufferedJsonRequest.of(exchange);
+        var request = JsonProxyRequest.of(exchange);
 
         exchange.setRequestMethod(new HttpString("UNKNOWN"));
-        assertEquals(BufferedJsonRequest.METHOD.OTHER, request.getMethod());
+        assertEquals(JsonProxyRequest.METHOD.OTHER, request.getMethod());
 
         exchange.setRequestMethod(new HttpString("GET"));
-        assertEquals(BufferedJsonRequest.METHOD.GET, request.getMethod());
+        assertEquals(JsonProxyRequest.METHOD.GET, request.getMethod());
 
         exchange.setRequestMethod(new HttpString("PATCH"));
-        assertEquals(BufferedJsonRequest.METHOD.PATCH, request.getMethod());
+        assertEquals(JsonProxyRequest.METHOD.PATCH, request.getMethod());
     }
 }

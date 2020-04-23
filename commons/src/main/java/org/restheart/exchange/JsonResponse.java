@@ -27,7 +27,7 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class JsonResponse extends Response<JsonElement> {
+public class JsonResponse extends ServiceResponse<JsonElement> {
     private JsonResponse(HttpServerExchange exchange) {
         super(exchange);
         setContentTypeAsJson();

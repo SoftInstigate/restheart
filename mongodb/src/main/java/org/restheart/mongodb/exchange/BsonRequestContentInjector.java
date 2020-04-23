@@ -38,7 +38,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import org.restheart.exchange.BufferedByteArrayRequest;
+import org.restheart.exchange.ByteArrayProxyRequest;
 import static org.restheart.exchange.ExchangeKeys.FALSE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.FILE_METADATA;
 import static org.restheart.exchange.ExchangeKeys.MAX_KEY_ID;
@@ -365,7 +365,7 @@ public class BsonRequestContentInjector {
             if (isHalOrJson(contentType)) {
                 final String contentString;
 
-                var bar = BufferedByteArrayRequest.of(exchange);
+                var bar = ByteArrayProxyRequest.of(exchange);
 
                 try {
                     if (bar.isContentAvailable()) {

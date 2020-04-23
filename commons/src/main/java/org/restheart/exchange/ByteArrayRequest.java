@@ -27,7 +27,7 @@ import org.restheart.utils.ChannelReader;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ByteArrayRequest extends Request<byte[]> {
+public class ByteArrayRequest extends ServiceRequest<byte[]> {
     private ByteArrayRequest(HttpServerExchange exchange) {
         super(exchange);
     }

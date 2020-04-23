@@ -22,13 +22,13 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.Arrays;
-import org.restheart.exchange.AbstractExchange;
-import org.restheart.exchange.AbstractRequest;
-import org.restheart.exchange.AbstractResponse;
-import org.restheart.exchange.BufferedByteArrayRequest;
-import org.restheart.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.ByteArrayProxyRequest;
+import org.restheart.exchange.ByteArrayProxyResponse;
+import org.restheart.exchange.Exchange;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
+import org.restheart.exchange.ServiceRequest;
+import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
@@ -88,19 +88,19 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             return;
         }
 
-        AbstractRequest request;
-        AbstractResponse response;
+        Request request;
+        Response response;
 
         var handlingService = PluginUtils.handlingService(
                 PluginsRegistryImpl.getInstance(),
                 exchange);
 
         if (handlingService != null) {
-            request = Request.of(exchange, Request.class);
-            response = Response.of(exchange, Response.class);
+            request = ServiceRequest.of(exchange, ServiceRequest.class);
+            response = ServiceResponse.of(exchange, ServiceResponse.class);
         } else {
-            request = BufferedByteArrayRequest.of(exchange);
-            response = BufferedByteArrayResponse.of(exchange);
+            request = ByteArrayProxyRequest.of(exchange);
+            response = ByteArrayProxyResponse.of(exchange);
         }
 
         PluginsRegistryImpl
@@ -113,11 +113,11 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 // - requests handled by a Service when its request and response 
                 //   types are equal to the ones declared by the Service
                 // - request handled by a Proxy when its request and response 
-                //   are BufferedByteArrayRequest and BufferedByteArrayResponse
+                //   are ByteArrayProxyRequest and ByteArrayProxyResponse
                 .filter(ri
                         -> (handlingService == null
-                && ri.requestType().equals(BufferedByteArrayRequest.type())
-                && ri.responseType().equals(BufferedByteArrayResponse.type()))
+                && ri.requestType().equals(ByteArrayProxyRequest.type())
+                && ri.responseType().equals(ByteArrayProxyResponse.type()))
                 || (handlingService != null
                 && ri.requestType().equals(handlingService.requestType())
                 && ri.responseType().equals(handlingService.responseType())))
@@ -149,7 +149,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                                 exchange.getRequestPath(),
                                 interceptPoint,
                                 ex);
-                        AbstractExchange.setInError(exchange);
+                        Exchange.setInError(exchange);
                         LambdaUtils.throwsSneakyExcpetion(ex);
                     }
                 });
@@ -161,7 +161,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         // be able to check if a collection exists (this check is done by 
         // BEFORE_AUTH interceptor CollectionPropsInjector)
         if (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH
-                && AbstractExchange.isInError(exchange)) {
+                && Exchange.isInError(exchange)) {
             // if in error but no status code use 400 Bad Request
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);

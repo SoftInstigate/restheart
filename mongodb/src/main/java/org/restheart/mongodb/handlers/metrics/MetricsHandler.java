@@ -38,7 +38,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
-import org.restheart.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import static org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
 import static org.restheart.exchange.ExchangeKeys._METRICS;
@@ -402,7 +402,7 @@ public class MetricsHandler extends PipelinedHandler {
             var body = generateResponse(metricsLevel, registry);
 
             if (body != null) {
-                BufferedByteArrayResponse.of(exchange).writeContent(body.getBytes());
+                ByteArrayProxyResponse.of(exchange).writeContent(body.getBytes());
 
             }
 

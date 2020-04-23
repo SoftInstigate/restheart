@@ -19,17 +19,14 @@
  */
 package org.restheart.exchange;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
+import com.google.common.reflect.TypeToken;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import static org.restheart.exchange.AbstractExchange.LOGGER;
+import static org.restheart.exchange.Exchange.MAX_BUFFERS;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
 
@@ -37,68 +34,56 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BufferedJsonRequest extends BufferedRequest<JsonElement> {
+public class ByteArrayProxyRequest extends ProxyRequest<byte[]> {
 
-    protected BufferedJsonRequest(HttpServerExchange exchange) {
+    protected ByteArrayProxyRequest(HttpServerExchange exchange) {
         super(exchange);
-        LOGGER = LoggerFactory.getLogger(BufferedJsonRequest.class);
+        LOGGER = LoggerFactory.getLogger(ByteArrayProxyRequest.class);
     }
 
-    public static BufferedJsonRequest of(HttpServerExchange exchange) {
-        return new BufferedJsonRequest(exchange);
+    public static ByteArrayProxyRequest of(HttpServerExchange exchange) {
+        return new ByteArrayProxyRequest(exchange);
     }
+    
+    public static Type type() {
+        var typeToken = new TypeToken<ByteArrayProxyRequest>(ByteArrayProxyRequest.class) {
+        };
 
+        return typeToken.getType();
+    }
+    
     /**
      * @return the content as Json
      * @throws java.io.IOException
      */
     @Override
-    public JsonElement readContent()
+    public byte[] readContent()
             throws IOException {
-        if (!isContentAvailable()) {
-            return null;
-        }
-
-        if (getWrappedExchange().getAttachment(getRawContentKey()) == null) {
-            return JsonNull.INSTANCE;
-        } else {
-            try {
-                return JsonParser.parseString(BuffersUtils.toString(getRawContent(),
-                        StandardCharsets.UTF_8));
-            } catch (JsonParseException ex) {
-                // dump bufferd content
-                BuffersUtils.dump("Error parsing content", getRawContent());
-
-                throw new IOException("Error parsing json", ex);
-            }
-        }
+        return BuffersUtils.toByteArray(getBuffer());
     }
 
     @Override
-    public void writeContent(JsonElement content) throws IOException {
-        setContentTypeAsJson();
+    public void writeContent(byte[] content) throws IOException {
         if (content == null) {
-            setRawContent(null);
-            getWrappedExchange().getRequestHeaders().remove(Headers.CONTENT_LENGTH);
+            setBuffer(null);
         } else {
             PooledByteBuffer[] dest;
             if (isContentAvailable()) {
-                dest = getRawContent();
+                dest = getBuffer();
             } else {
                 dest = new PooledByteBuffer[MAX_BUFFERS];
-                setRawContent(dest);
+                setBuffer(dest);
             }
 
             int copied = BuffersUtils.transfer(
-                    ByteBuffer.wrap(content.toString().getBytes()),
+                    ByteBuffer.wrap(content),
                     dest,
                     wrapped);
 
             // updated request content length
             // this is not needed in Response.writeContent() since done
             // by ModificableContentSinkConduit.updateContentLenght();
-            getWrappedExchange().getRequestHeaders().put(Headers.CONTENT_LENGTH, 
-                    copied);
+            getWrappedExchange().getRequestHeaders().put(Headers.CONTENT_LENGTH, copied);
         }
     }
 }

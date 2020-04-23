@@ -34,7 +34,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import static org.restheart.exchange.AbstractExchange.LOGGER;
+import static org.restheart.exchange.Exchange.LOGGER;
 import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
@@ -137,11 +137,11 @@ public class MongoResponse extends BsonResponse {
 
         transformError();
 
-        // This makes the content availabe to BufferedByteArrayResponse
+        // This makes the content availabe to ByteArrayProxyResponse
         // core's ResponseSender uses BufferedResponse 
         // to send the content to the client
         if (getContent() != null) {
-            var bar = BufferedByteArrayResponse.of(wrapped);
+            var bar = ByteArrayProxyResponse.of(wrapped);
 
             bar.setContentTypeAsJson();
 

@@ -32,7 +32,7 @@ import org.slf4j.Logger;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  * @param <T>
  */
-public abstract class AbstractExchange<T> {
+public abstract class Exchange<T> {
 
     protected static Logger LOGGER;
 
@@ -56,7 +56,7 @@ public abstract class AbstractExchange<T> {
 
     protected final HttpServerExchange wrapped;
 
-    public AbstractExchange(HttpServerExchange exchange) {
+    public Exchange(HttpServerExchange exchange) {
         this.wrapped = exchange;
     }
 

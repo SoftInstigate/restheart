@@ -25,7 +25,7 @@ import io.undertow.server.HttpServerExchange;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class ByteArrayResponse extends Response<byte[]> {
+public class ByteArrayResponse extends ServiceResponse<byte[]> {
     private ByteArrayResponse(HttpServerExchange exchange) {
         super(exchange);
     }

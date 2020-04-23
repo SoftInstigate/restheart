@@ -88,9 +88,9 @@ import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_EMBEDDED_KE
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
-import org.restheart.exchange.AbstractExchange;
-import static org.restheart.exchange.AbstractExchange.MAX_CONTENT_SIZE;
-import org.restheart.exchange.AbstractExchange.METHOD;
+import org.restheart.exchange.Exchange;
+import static org.restheart.exchange.Exchange.MAX_CONTENT_SIZE;
+import org.restheart.exchange.Exchange.METHOD;
 import org.restheart.exchange.PipelineInfo;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
@@ -802,7 +802,7 @@ public class Bootstrapper {
                 tokenManager);
 
         // update buffer size in 
-        AbstractExchange.updateBufferSize(configuration.getBufferSize());
+        Exchange.updateBufferSize(configuration.getBufferSize());
 
         builder = builder
                 .setIoThreads(configuration.getIoThreads())

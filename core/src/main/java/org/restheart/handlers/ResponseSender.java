@@ -22,9 +22,9 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import java.nio.ByteBuffer;
-import org.restheart.exchange.BufferedByteArrayResponse;
+import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
-import org.restheart.exchange.Response;
+import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.PluginsRegistryImpl;
 
 /**
@@ -68,7 +68,7 @@ public class ResponseSender extends PipelinedHandler {
                     .findAny();
 
             if (srv.isPresent()) {
-                Response response = (Response) srv.get().getInstance()
+                var response = (ServiceResponse) srv.get().getInstance()
                         .response().apply(exchange);
 
                 exchange.setStatusCode(response.getStatusCode());
@@ -81,7 +81,7 @@ public class ResponseSender extends PipelinedHandler {
             }
 
         } else if (pi.getType() == PipelineInfo.PIPELINE_TYPE.PROXY) {
-            var response = BufferedByteArrayResponse.of(exchange);
+            var response = ByteArrayProxyResponse.of(exchange);
 
             if (!exchange.isResponseStarted() && response.getStatusCode() > 0) {
                 exchange.setStatusCode(response.getStatusCode());

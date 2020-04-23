@@ -30,7 +30,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
-import static org.restheart.exchange.AbstractExchange.MAX_BUFFERS;
+import static org.restheart.exchange.Exchange.MAX_BUFFERS;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
 
@@ -38,19 +38,19 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BufferedByteArrayResponse extends BufferedResponse<byte[]> {
+public class ByteArrayProxyResponse extends ProxyResponse<byte[]> {
 
-    protected BufferedByteArrayResponse(HttpServerExchange exchange) {
+    protected ByteArrayProxyResponse(HttpServerExchange exchange) {
         super(exchange);
-        LOGGER = LoggerFactory.getLogger(BufferedJsonRequest.class);
+        LOGGER = LoggerFactory.getLogger(JsonProxyRequest.class);
     }
 
-    public static BufferedByteArrayResponse of(HttpServerExchange exchange) {
-        return new BufferedByteArrayResponse(exchange);
+    public static ByteArrayProxyResponse of(HttpServerExchange exchange) {
+        return new ByteArrayProxyResponse(exchange);
     }
     
     public static Type type() {
-        var typeToken = new TypeToken<BufferedByteArrayResponse>(BufferedByteArrayResponse.class) {
+        var typeToken = new TypeToken<ByteArrayProxyResponse>(ByteArrayProxyResponse.class) {
         };
 
         return typeToken.getType();
@@ -63,20 +63,20 @@ public class BufferedByteArrayResponse extends BufferedResponse<byte[]> {
     @Override
     public byte[] readContent()
             throws IOException {
-        return BuffersUtils.toByteArray(getRawContent());
+        return BuffersUtils.toByteArray(getBuffer());
     }
 
     @Override
     public void writeContent(byte[] content) throws IOException {
         if (content == null) {
-            setRawContent(null);
+            setBuffer(null);
         } else {
             PooledByteBuffer[] dest;
             if (isContentAvailable()) {
-                dest = getRawContent();
+                dest = getBuffer();
             } else {
                 dest = new PooledByteBuffer[MAX_BUFFERS];
-                setRawContent(dest);
+                setBuffer(dest);
             }
 
             BuffersUtils.transfer(

@@ -19,8 +19,8 @@
  */
 package org.restheart.plugins;
 
-import org.restheart.exchange.AbstractRequest;
-import org.restheart.exchange.AbstractResponse;
+import org.restheart.exchange.Request;
+import org.restheart.exchange.Response;
 
 /**
  * Parent interface of handling plugins: Service and Proxy
@@ -29,6 +29,6 @@ import org.restheart.exchange.AbstractResponse;
  * @param <R>
  * @param <S>
  */
-public interface HandlingPlugin<R extends AbstractRequest<?>, S extends AbstractResponse<?>>
+public interface HandlingPlugin<R extends Request<?>, S extends Response<?>>
         extends Plugin, ExchangeTypeResolver<R, S> {
 }

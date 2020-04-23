@@ -26,11 +26,11 @@ import org.bson.BsonValue;
 import org.restheart.utils.JsonUtils;
 
 /**
- * Response implementation backed by BsonValue
+ * ServiceResponse implementation backed by BsonValue
  * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class BsonResponse extends Response<BsonValue> {
+public class BsonResponse extends ServiceResponse<BsonValue> {
     protected BsonResponse(HttpServerExchange exchange) {
         super(exchange);
         setContentTypeAsJson();

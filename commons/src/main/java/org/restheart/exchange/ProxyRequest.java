@@ -27,22 +27,23 @@ import java.lang.reflect.Field;
 
 /**
  *
- * A buffered request stores request content in the BUFFERED_REQUEST_DATA
- * attachment of the HttpServerExchange
+ * Base class for Request implementation that can be used in proxied requests.
  *
- * This makes possibile using an concrete implementation of it in proxied
- * request.
- *
+ * It stores the response content in the BUFFERED_REQUEST_DATA attachment
+ * of the HttpServerExchange.
+ * 
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  * @param <T>
  */
-public abstract class BufferedRequest<T> extends AbstractRequest<T> {
-    public BufferedRequest(HttpServerExchange exchange) {
+public abstract class ProxyRequest<T> extends Request<T> implements BufferedExchange<T> {
+    public ProxyRequest(HttpServerExchange exchange) {
         super(exchange);
     }
 
+    @Override
     public abstract T readContent() throws IOException;
 
+    @Override
     public abstract void writeContent(T content) throws IOException;
     
     @SuppressWarnings("unchecked")
@@ -63,11 +64,13 @@ public abstract class BufferedRequest<T> extends AbstractRequest<T> {
         }
     }
 
-    public void setRawContent(PooledByteBuffer[] raw) {
+    @Override
+    public void setBuffer(PooledByteBuffer[] raw) {
         getWrappedExchange().putAttachment(getRawContentKey(), raw);
     }
 
-    public PooledByteBuffer[] getRawContent() {
+    @Override
+    public PooledByteBuffer[] getBuffer() {
         if (!isContentAvailable()) {
             throw new IllegalStateException("Request content is not available. "
                     + "Add a Request Inteceptor with "
@@ -78,8 +81,8 @@ public abstract class BufferedRequest<T> extends AbstractRequest<T> {
         return getWrappedExchange().getAttachment(getRawContentKey());
     }
 
+    @Override
     public boolean isContentAvailable() {
-
         return null != getWrappedExchange().getAttachment(getRawContentKey());
     }
 }
