@@ -80,7 +80,7 @@ This runs both RESTHeart and MongoDB using `docker-compose`
 ```bash
 $ curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml
 
-$ docker-compose up -d --no-build
+$ docker-compose up -d
 ```
 
 To check that RESTHeart is up and running, open the URL [http://localhost:8080/ping](http://localhost:8080/ping), you should see the message: "Greetings from RESTHeart!".
