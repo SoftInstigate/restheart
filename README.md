@@ -137,7 +137,7 @@ For more information on how to install and run MongoDB check [install tutorial](
 Two options:
 
 1. [Build the source code](#how-to-Build)
-1. [Download the latest release](https://github.com/SoftInstigate/restheart/releases/tag/5.0.0-RC4);
+1. [Download the latest release](https://github.com/SoftInstigate/restheart/releases/download/5.0.0-RC4/restheart.zip);
 
 If you choose to download either the zip or tar archive:
 
