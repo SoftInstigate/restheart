@@ -83,6 +83,8 @@ $ curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-c
 $ docker-compose up -d --no-build
 ```
 
+To check that RESTHeart is up and running, open the URL [http://localhost:8080/ping](http://localhost:8080/ping), you should see the message: "Greetings from RESTHeart!".
+
 ### Default users and ACL
 
 The default `users.yml` defines the following users:
@@ -104,6 +106,19 @@ The default `acl.yml` defines the following permission:
 ### Check that everything works
 
 ```bash
+# Call the ping service
+$ curl -i http://localhost:8080/ping
+HTTP/1.1 200 OK
+Connection: keep-alive
+Access-Control-Allow-Origin: *
+X-Powered-By: restheart.org
+Access-Control-Allow-Credentials: true
+Access-Control-Expose-Headers: Location, ETag, Auth-Token, Auth-Token-Valid-Until, Auth-Token-Location, X-Powered-By
+Content-Length: 25
+Date: Thu, 23 Apr 2020 15:14:01 GMT
+
+Greetings from RESTHeart!
+
 # create database 'restheart'
 $ curl --user admin:secret -I -X PUT :8080/
 HTTP/1.1 201 OK
