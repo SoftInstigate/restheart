@@ -191,6 +191,8 @@ $ cd restheart
 $ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
 ```
 
+To check that RESTHeart is up and running, open the URL [http://localhost:8080/ping](http://localhost:8080/ping), you should see the message: "Greetings from RESTHeart!".
+
 ---
 
 By default RESTHeart only mounts the database `restheart`. This is controlled by the `root-mongo-resource` in the `restheart/etc/default.properties` file.
