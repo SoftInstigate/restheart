@@ -171,8 +171,15 @@ public class PluginsFactory implements AutoCloseable {
 
         var _type = type.getSimpleName();
 
-        var registeredPlugins = scanResult
-                .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+        ClassInfoList registeredPlugins;
+
+        try {
+            registeredPlugins = scanResult
+                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+        } catch (Throwable t) {
+            LOGGER.error("Error deploying plugins: {}", t.getMessage());
+            throw t;
+        }
 
         ClassInfoList listOfType;
 
@@ -511,12 +518,34 @@ public class PluginsFactory implements AutoCloseable {
     private static URL[] findPluginsJars(Path pluginsDirectory) {
         var urls = new ArrayList<>();
 
+        if (!Files.exists(pluginsDirectory)) {
+            LOGGER.error("Plugin directory {} does not exist", pluginsDirectory);
+            throw new IllegalArgumentException("Plugins directory "
+                    + pluginsDirectory
+                    + " does not exist");
+        }
+
+        if (!Files.isReadable(pluginsDirectory)) {
+            LOGGER.error("Plugin directory {} is not readable", pluginsDirectory);
+            throw new IllegalArgumentException("Plugins directory "
+                    + pluginsDirectory
+                    + " is not readable");
+        }
+
         try (DirectoryStream<Path> directoryStream = Files
                 .newDirectoryStream(pluginsDirectory, "*.jar")) {
             for (Path path : directoryStream) {
                 var jar = path.toUri().toURL();
+
+                if (!Files.isReadable(path)) {
+                    LOGGER.error("Plugin jar {} is not readable", jar);
+                    throw new IllegalArgumentException("Plugin jar "
+                            + jar
+                            + " is not readable");
+                }
+
                 urls.add(jar);
-                LOGGER.info("Deployed plugin jar {}", jar);
+                LOGGER.info("Found plugin jar {}", jar);
             }
         } catch (IOException ex) {
             LOGGER.error("Cannot read jars in plugins directory {}",
@@ -537,7 +566,7 @@ public class PluginsFactory implements AutoCloseable {
         if (pluginsDir.startsWith("/")) {
             return Paths.get(pluginsDir);
         } else {
-            // this is to allow specifying the plugin directory path 
+            // this is to allow specifying the plugins directory path 
             // relative to the jar (also working when running from classes)
             URL location = PluginsFactory.class.getProtectionDomain()
                     .getCodeSource()
