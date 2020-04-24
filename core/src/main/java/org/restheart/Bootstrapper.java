@@ -95,6 +95,7 @@ import org.restheart.exchange.PipelineInfo;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
+import org.restheart.exchange.Response;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
@@ -129,8 +130,10 @@ import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.handlers.SecurityHandler;
 import org.restheart.security.plugins.authorizers.FullAuthorizer;
 import org.restheart.utils.FileUtils;
+import org.restheart.utils.HttpStatus;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
+import org.restheart.utils.PluginUtils;
 import static org.restheart.utils.PluginUtils.defaultURI;
 import static org.restheart.utils.PluginUtils.initPoint;
 import org.restheart.utils.RESTHeartDaemon;
@@ -518,6 +521,17 @@ public class Bootstrapper {
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
+                    } catch (LinkageError le) {
+                        // this occurs executing plugin code compiled
+                        // with wrong version of restheart-commons
+
+                        String version = Version.getInstance().getVersion() == null
+                                ? "of correct version"
+                                : "v" + Version.getInstance().getVersion();
+
+                        LOGGER.error("Linkage error executing initializer {} "
+                                + "Check that it was compiled against restheart-commons {}",
+                                i.getName(), version, le);
                     } catch (Throwable t) {
                         LOGGER.error("Error executing initializer {}", i.getName());
                     }
@@ -557,6 +571,17 @@ public class Bootstrapper {
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
+                    } catch (LinkageError le) {
+                        // this occurs executing plugin code compiled
+                        // with wrong version of restheart-commons
+
+                        String version = Version.getInstance().getVersion() == null
+                                ? "of correct version"
+                                : "v" + Version.getInstance().getVersion();
+
+                        LOGGER.error("Linkage error executing initializer {} "
+                                + "Check that it was compiled against restheart-commons {}",
+                                i.getName(), version, le);
                     } catch (Throwable t) {
                         LOGGER.error("Error executing initializer {}",
                                 i.getName(),

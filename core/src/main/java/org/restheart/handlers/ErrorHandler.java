@@ -22,8 +22,11 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.restheart.exchange.ByteArrayProxyResponse;
+import org.restheart.Version;
+import org.restheart.exchange.ByteArrayResponse;
+import org.restheart.exchange.Response;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,12 +60,35 @@ public class ErrorHandler implements HttpHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         try {
             next.handleRequest(exchange);
-        } catch (Exception t) {
+        } catch (LinkageError le) {
+            // this occurs executing plugin code compiled
+            // with wrong version of restheart-commons
+            var pi = PluginUtils.pipelineInfo(exchange);
+            
+            String version = Version.getInstance().getVersion() == null
+                ? "of correct version"
+                : "v" + Version.getInstance().getVersion();
+
+            var errMsg = "Linkage error handling the request. "
+                    + "Check that "
+                    + pi.getType().name().toLowerCase()
+                    + " "
+                    + pi.getName()
+                    + " was compiled against restheart-commons "
+                    + version;
+
+            LOGGER.error(errMsg, le);
+
+            Response.of(exchange).setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    errMsg);
+
+            sender.handleRequest(exchange);
+        } catch (Throwable t) {
             LOGGER.error("Error handling the request", t);
 
-            ByteArrayProxyResponse.of(exchange).setInError(
+            Response.of(exchange).setInError(
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Error handling the request, see log for more information", t);
+                    "Error handling the request, see logs for more information", t);
 
             sender.handleRequest(exchange);
         }
