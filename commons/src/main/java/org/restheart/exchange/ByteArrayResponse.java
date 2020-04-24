@@ -19,6 +19,7 @@
  */
 package org.restheart.exchange;
 
+import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
 
 /**
@@ -29,15 +30,15 @@ public class ByteArrayResponse extends ServiceResponse<byte[]> {
     private ByteArrayResponse(HttpServerExchange exchange) {
         super(exchange);
     }
-    
+
     public static ByteArrayResponse init(HttpServerExchange exchange) {
         return new ByteArrayResponse(exchange);
     }
-    
+
     public static ByteArrayResponse of(HttpServerExchange exchange) {
         return of(exchange, ByteArrayResponse.class);
     }
-    
+
     @Override
     public String readContent() {
         if (content != null) {
@@ -50,21 +51,18 @@ public class ByteArrayResponse extends ServiceResponse<byte[]> {
     @Override
     public void setInError(int code, String message, Throwable t) {
         setStatusCode(code);
-        
-        var resp = new StringBuilder();
+
+        var resp = new JsonObject();
 
         if (message != null) {
-            resp.append("msg: ");
-            resp.append(message);
-            resp.append("\n");
+            resp.addProperty("msg", message);
         }
 
         if (t != null) {
-            resp.append("exception: ");
-            resp.append(t.getMessage());
-            resp.append("\n");
+            resp.addProperty("exception", t.getMessage());
         }
 
+        setContentTypeAsJson();
         setContent(resp.toString().getBytes());
     }
 }
