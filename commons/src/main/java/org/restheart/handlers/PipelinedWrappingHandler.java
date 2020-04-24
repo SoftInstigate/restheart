@@ -27,7 +27,7 @@ import org.restheart.plugins.Service;
 
 /**
  * wraps a HttpHandler into a PipelinedHttpHandler
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PipelinedWrappingHandler extends PipelinedHandler {
@@ -44,7 +44,7 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
         super(next);
         wrapped = handler;
     }
-    
+
     /**
      * Creates a new instance of PipedWrappingHandler
      *
@@ -65,49 +65,49 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
         super(null);
         wrapped = handler;
     }
-    
+
     /**
-     * 
+     *
      * @param handler
      * @return the wrapping handler
      */
     public static PipelinedWrappingHandler wrap(HttpHandler handler) {
         return wrap(null, handler);
     }
-    
+
     /**
-     * 
+     *
      * @param <R>
      * @param <S>
      * @param service
      * @return the wrapping handler
      */
-    public static <R extends ServiceRequest<?>, S extends ServiceResponse<?>> PipelinedWrappingHandler wrap(Service<R,S> service) {
+    public static <R extends ServiceRequest<?>, S extends ServiceResponse<?>> PipelinedWrappingHandler wrap(Service<R, S> service) {
         return wrap(null, service);
     }
-    
+
     /**
-     * 
+     *
      * @param next
      * @param handler
-     * @return the wrapping handler 
+     * @return the wrapping handler
      */
     public static PipelinedWrappingHandler wrap(PipelinedHandler next, HttpHandler handler) {
         return new PipelinedWrappingHandler(next, handler);
     }
-    
+
     /**
-     * 
+     *
      * @param <R>
      * @param <S>
      * @param next
      * @param service
-     * @return the wrapping handler 
+     * @return the wrapping handler
      */
-    public static <R extends ServiceRequest<?>, S extends ServiceResponse<?>> PipelinedWrappingHandler wrap(PipelinedHandler next, Service<R,S> service) {
+    public static <R extends ServiceRequest<?>, S extends ServiceResponse<?>> PipelinedWrappingHandler wrap(PipelinedHandler next, Service<R, S> service) {
         return new PipelinedWrappingHandler(next, service);
     }
-    
+
     /**
      *
      * @param exchange
@@ -128,8 +128,8 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 }
 
 class ServiceWrapper<R extends ServiceRequest<?>, S extends ServiceResponse<?>> extends PipelinedHandler {
-    final Service<R,S> service;
-    
+    final Service<R, S> service;
+
     ServiceWrapper(Service<R, S> service) {
         this.service = service;
     }
