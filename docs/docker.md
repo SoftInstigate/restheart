@@ -1,9 +1,11 @@
 # Run with Docker
 
-To run both RESTHeart and MongoDB services you can use `docker-compose`. Just copy and paste the following line:
+RESTHeart public docker image is freely available on [Docker hub](https://hub.docker.com/r/softinstigate/restheart). Have a look at the [Dockerfile](../core/Dockerfile).
+
+To run both RESTHeart and MongoDB services you can use `docker-compose`. Just copy and paste the following shell command:
 
 ```bash
-$ curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml && docker-compose up
+curl https://raw.githubusercontent.com/SoftInstigate/restheart/master/docker-compose.yml --output docker-compose.yml && docker-compose up
 ```
 
 You should see something similar to the following logs:
