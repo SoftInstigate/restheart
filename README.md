@@ -82,8 +82,8 @@ For more information on how to install and run MongoDB check the [Installation T
 
 Two options:
 
-1. [Build the source code](#how-to-Build)
 1. [Download the latest release](https://github.com/SoftInstigate/restheart/releases/download/5.0.0-RC4/restheart.zip);
+1. If you know Maven, you can [build the source code](docs/build.md).
 
 If you choose to download either the zip or tar archive:
 
