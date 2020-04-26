@@ -26,8 +26,8 @@
     -   [Configuration files](#Configuration-files)
     -   [Environment variables](#Environment-variables)
     -   [Run the process in background](#Run-the-process-in-background)
--   [Run with Docker](docs/docker.md)
--   [Build it yourself](docs/build.md)
+-   [Run with Docker](#Run-with-Docker)
+-   [Build it yourself](#Build-it-yourself)
 -   [User guide](#user-guide)
 -   [Book a chat](#book-a-chat)
 -   [Commercial Editions](#commercial-editions)
@@ -270,6 +270,14 @@ In  this case to see the logs you first need to enable file logging and set an a
 enable-log-file = true
 log-file-path = /usr/local/var/log/restheart.log
 ```
+
+## Run with Docker
+
+Go to the [Docker page](docs/docker.md).
+
+## Build it yourself
+
+Go to the [Build page](docs/build.md).
 
 ## User guide
 
