@@ -12,6 +12,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.restheart%22%20AND%20a:%22restheart%22)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat at https://gitter.im/SoftInstigate/restheart](https://badges.gitter.im/SoftInstigate/restheart.svg)](https://gitter.im/SoftInstigate/restheart?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 <!-- [![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/) -->
 
 ## Table of Contents
@@ -44,7 +45,7 @@ RESTHeart provides out-of-the-box:
 1. Secure Identity and Access Management.
 1. REST API with JSON messages.
 
-RESTHeart is a __REST API Microservice for MongoDB__ which provides server-side Data, Identity and Access Management for Web and Mobile applications.
+RESTHeart is a **REST API Microservice for MongoDB** which provides server-side Data, Identity and Access Management for Web and Mobile applications.
 
 RESTHeart is:
 
@@ -52,7 +53,7 @@ RESTHeart is:
 1. Designed to be distributed as a Docker container.
 1. Easily deployable both on cloud and on-premises.
 
-With RESTHeart teams can focus on building Angular, React, Vue, iOS or Android applications, because most of the server-side logic necessary to manage database operations, authentication / authorization and related APIs is automatically handled, __without the need to write any server-side code__ except for the UX/UI.
+With RESTHeart teams can focus on building Angular, React, Vue, iOS or Android applications, because most of the server-side logic necessary to manage database operations, authentication / authorization and related APIs is automatically handled, **without the need to write any server-side code** except for the UX/UI.
 
 > For example, to insert data into MongoDB a developer has to just create client-side JSON documents and then execute POST operations via HTTP to RESTHeart: no more need to deal with complicated server-side coding and database drivers in Java, JavaScript, PHP, Ruby, Python, etc.
 
@@ -68,7 +69,7 @@ To run RESTHEart connected to a local instance of MongoDB you need:
 
 -   At least Java v11;
 -   MongoDB v3 or v4 running on `localhost` on port `27017`.
--   A command line HTTP client like [curl](https://curl.haxx.se) and [httpie](https://httpie.org) or a API client like [Postman](https://www.postman.com). 
+-   A command line HTTP client like [curl](https://curl.haxx.se) and [httpie](https://httpie.org) or a API client like [Postman](https://www.postman.com).
 
 ---
 
@@ -78,12 +79,12 @@ The default RESTHeart's [configuration properties file](core/etc/default.propert
 
 For more information on how to install and run MongoDB check the [Installation Tutorial](https://docs.mongodb.com/manual/installation/#mongodb-community-edition-installation-tutorials) and [Manage MongoDB](https://docs.mongodb.com/manual/tutorial/manage-mongodb-processes/) on MongoDB's documentation.
 
-### Download the latest release
+### Get the latest release
 
-Two options:
+Two alternatives:
 
-1. [Download the latest release](https://github.com/SoftInstigate/restheart/releases/download/5.0.0-RC4/restheart.zip);
-1. If you know Maven, you can [build the source code](docs/build.md).
+-   Download the [ZIP](https://github.com/SoftInstigate/restheart/releases/download/5.0.0-RC4/restheart.zip) or [TAR.GZ](https://github.com/SoftInstigate/restheart/releases/download/5.0.0-RC4/restheart.tar.gz) archive.
+-   If you know Maven, you can even [build the source code](docs/build.md) by yourself.
 
 If you choose to download either the zip or tar archive:
 
@@ -136,7 +137,7 @@ By default RESTHeart only mounts the database `restheart`. This is controlled by
 root-mongo-resource = /restheart
 ```
 
-It means that the root resource `/` is bound to the `/restheart` database. This database __doesn't actually exist__ until you explicitly create it by issuing a `PUT /` HTTP command. 
+It means that the root resource `/` is bound to the `/restheart` database. This database **doesn't actually exist** until you explicitly create it by issuing a `PUT /` HTTP command.
 
 Example for localhost:
 
