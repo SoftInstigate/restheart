@@ -4,7 +4,7 @@
     </a>
 </p>
 
-# RESTHeart - REST API Microservice for MongoDB.
+# RESTHeart - The REST API for MongoDB.
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build](https://github.com/SoftInstigate/restheart/workflows/Build/badge.svg)](https://github.com/SoftInstigate/restheart/actions?query=workflow%3A%22Build%22)
@@ -52,7 +52,7 @@ RESTHeart provides out-of-the-box:
 1. Secure Identity and Access Management.
 1. REST API with JSON messages.
 
-RESTHeart is a **REST API Microservice for MongoDB** which provides server-side Data, Identity and Access Management for Web and Mobile applications.
+RESTHeart is a **REST API for MongoDB** which provides server-side Data, Identity and Access Management for Web and Mobile applications.
 
 RESTHeart is:
 
