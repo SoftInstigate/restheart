@@ -62,11 +62,19 @@ For more ideas have a look at the list of [features](https://restheart.org/featu
 
 ## Download and Run
 
-Preliminarily you need:
+### Preliminary information
+
+To run RESTHEart connected to a local instance of MongoDB you need:
 
 -   At least Java v11;
 -   MongoDB v3 or v4 running on `localhost` on port `27017`.
 -   A command line HTTP client like [curl](https://curl.haxx.se) and [httpie](https://httpie.org) or a API client like [Postman](https://www.postman.com). 
+
+---
+
+The default RESTHeart's [configuration properties file](core/etc/default.properties) points a local MongoDB instance, running on `localhost` with standard port `27017`. Instead, to connect RESTHeart to a remote MongoDB instance please have a look at the [Configuration](#configuration) section.
+
+---
 
 For more information on how to install and run MongoDB check the [Installation Tutorial](https://docs.mongodb.com/manual/installation/#mongodb-community-edition-installation-tutorials) and [Manage MongoDB](https://docs.mongodb.com/manual/tutorial/manage-mongodb-processes/) on MongoDB's documentation.
 
@@ -179,7 +187,13 @@ The main file is [`restheart.yml`](core/etc/restheart.yml) which is parametrized
 $ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
 ```
 
-Beware that you must restart the core `restheart.jar` process to reload a new configuration (how to stop and start the process depends on how it was distributed: either in a docker container or a native Java process).
+---
+
+To connect RESTHeart to a remote MongoDB instance you have to edit the `mongo-uri` property, setting you own [Connection String](https://docs.mongodb.com/manual/reference/connection-string/). For example, a MongoDB Atlas cluster connection string could be something like `mongodb+srv://<username>:<password>@cluster0.mongodb.net/test?w=majority`. Remember that RESTHeart internally uses the MongoDB Java driver, so you must follow that connection string format.
+
+---
+
+You have to restart the core `restheart.jar` process to reload a new configuration. How to stop and start the process depends on how it was started: either within a docker container or as a native Java process. In case of native Java, usually you have to kill the background `java` process but it depends on your operating system.
 
 You can edit the YAML configuration file or create distinct properties file. Usually one set of properties for each deployment environment is a common practice.
 
@@ -192,10 +206,10 @@ Is is possible to override any primitive type parameter in `restheart.yml` with 
 -   Long
 -   Boolean
 
-For example, the parameter `mongo-uri` in the YAML file can be overridden by exporting a `MONGO_URI` environment variable:
+For example, the parameter `mongo-uri` in the YAML file can be overridden by setting a `MONGO_URI` environment variable:
 
 ```bash
-$ export MONGO_URI="mongodb://127.0.0.1"
+$ MONGO_URI="mongodb://127.0.0.1" java -jar restheart.jar etc/restheart.yml -e etc/default.properties
 ```
 
 > Have a look at the [docker-compose.yml](docker-compose.yml) file for an example of how to export an environment variable if using Docker.
