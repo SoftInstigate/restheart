@@ -19,6 +19,13 @@
 
 -   [Summary](#summary)
 -   [Download and Run](#download-and-run)
+    -   [Prerequisites](#Prerequisites)
+    -   [Get the latest release](#Get-the-latest-release)
+    -   [Run with Java](#Run-with-Java)
+-   [Configuration](#Configuration)
+    -   [Configuration files](#Configuration-files)
+    -   [Environment variables](#Environment-variables)
+    -   [Run the process in background](#Run-the-process-in-background)
 -   [Run with Docker](docs/docker.md)
 -   [Build it yourself](docs/build.md)
 -   [User guide](#user-guide)
@@ -114,7 +121,7 @@ Configuration files are under the `etc/` folder.
 └── restheart.jar
 ```
 
-#### Run with Java
+### Run with Java
 
 ```bash
 $ cd restheart
@@ -148,7 +155,7 @@ HTTP/1.1 201 OK
 
 RESTHeart will start bound on HTTP port `8080`.
 
-### Default users and ACL
+#### Default users and ACL
 
 The default `users.yml` defines the following users:
 
@@ -160,7 +167,7 @@ The default `acl.yml` defines the following permission:
 -   _admin_ role can execute any request
 -   _user_ role can execute any request on collection `/{username}`
 
-### Check that everything works
+#### Check that everything works
 
 ```bash
 # create database 'restheart'
@@ -180,9 +187,11 @@ $ curl --user admin:secret :8080/collection
 [{"_id":{"$oid":"5dd3cfb2fe3c18a7834121d3"},"a":1,"_etag":{"$oid":"5dd3cfb2439f805aea9d5130"}},{"_id":{"$oid":"5dd3cfb0fe3c18a7834121d1"},"a":2,"_etag":{"$oid":"5dd3cfb0439f805aea9d512f"}}]%
 ```
 
-### Configuration
+## Configuration
 
-The main file is [`restheart.yml`](core/etc/restheart.yml) which is parametrized using [Mustache.java](https://github.com/spullara/mustache.java). The [`default.properties`](core/etc/default.properties) contains actual values for parameters defined into the YAML file. You pass these properties at startup, using the `-e` or `--envFile` parameter, like this:
+### Configuration files
+
+The main configuration file is [`restheart.yml`](core/etc/restheart.yml) which is parametrized using [Mustache.java](https://github.com/spullara/mustache.java). The [`default.properties`](core/etc/default.properties) contains actual values for parameters defined into the YAML file. You pass these properties at startup, using the `-e` or `--envFile` parameter, like this:
 
 ```bash
 $ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
@@ -198,7 +207,7 @@ You have to restart the core `restheart.jar` process to reload a new configurati
 
 You can edit the YAML configuration file or create distinct properties file. Usually one set of properties for each deployment environment is a common practice.
 
-#### Environment variables
+### Environment variables
 
 Is is possible to override any primitive type parameter in `restheart.yml` with an environment variable. Primitive types are:
 
@@ -244,6 +253,22 @@ Usage: java -Dfile.encoding=UTF-8 -jar -server restheart.jar [options]
       Default: false
     --help, -?
       This help message
+```
+
+### Run the process in background
+
+To run RESTHeart in background add the `--fork` parameter, like this:
+
+```bash
+$ java -jar restheart.jar --fork etc/restheart.yml -e etc/default.properties
+```
+
+In  this case to see the logs you first need to enable file logging and set an absolute path to a log file. For example, check that `/usr/local/var/log/restheart.log` is writeable and then edit `etc/default.properties` like this:
+
+```properties
+[...]
+enable-log-file = true
+log-file-path = /usr/local/var/log/restheart.log
 ```
 
 ## User guide
