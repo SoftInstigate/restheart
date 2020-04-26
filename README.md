@@ -62,12 +62,13 @@ For more ideas have a look at the list of [features](https://restheart.org/featu
 
 ## Download and Run
 
-You need:
+Preliminarily you need:
 
--   Java v11+;
--   MongoDB running on `localhost` on port `27017`. Both MongoDB 3.x and 4.x work.
+-   At least Java v11;
+-   MongoDB v3 or v4 running on `localhost` on port `27017`.
+-   A command line HTTP client like [curl](https://curl.haxx.se) and [httpie](https://httpie.org) or a API client like [Postman](https://www.postman.com). 
 
-For more information on how to install and run MongoDB check [install tutorial](https://docs.mongodb.com/manual/installation/#mongodb-community-edition-installation-tutorials) and [manage mongodb](https://docs.mongodb.com/manual/tutorial/manage-mongodb-processes/) on MongoDB documentation.
+For more information on how to install and run MongoDB check the [Installation Tutorial](https://docs.mongodb.com/manual/installation/#mongodb-community-edition-installation-tutorials) and [Manage MongoDB](https://docs.mongodb.com/manual/tutorial/manage-mongodb-processes/) on MongoDB's documentation.
 
 ### Download the latest release
 
@@ -127,7 +128,9 @@ By default RESTHeart only mounts the database `restheart`. This is controlled by
 root-mongo-resource = /restheart
 ```
 
-It means that the root resource `/` is bound to the `/restheart` database. This database __doesn't actually exist__ until you explicitly create it by issuing a `PUT /` HTTP command. Example for localhost:
+It means that the root resource `/` is bound to the `/restheart` database. This database __doesn't actually exist__ until you explicitly create it by issuing a `PUT /` HTTP command. 
+
+Example for localhost:
 
 ```bash
 $ curl --user admin:secret -I -X PUT :8080/
@@ -135,6 +138,38 @@ HTTP/1.1 201 OK
 ```
 
 RESTHeart will start bound on HTTP port `8080`.
+
+### Default users and ACL
+
+The default `users.yml` defines the following users:
+
+-   id: `admin`, password: `secret`, role: `admin`
+-   id: `user`, password: `secret`, role: `user`
+
+The default `acl.yml` defines the following permission:
+
+-   _admin_ role can execute any request
+-   _user_ role can execute any request on collection `/{username}`
+
+### Check that everything works
+
+```bash
+# create database 'restheart'
+$ curl --user admin:secret -I -X PUT :8080/
+HTTP/1.1 201 OK
+
+# create collection 'restheart.collection'
+$ curl --user admin:secret -I -X PUT :8080/collection
+HTTP/1.1 201 OK
+
+# create a couple of documents
+$ curl --user admin:secret -X POST :8080/collection -d '{"a":1}' -H "Content-Type: application/json"
+$ curl --user admin:secret -X POST :8080/collection -d '{"a":2}' -H "Content-Type: application/json"
+
+# get documents
+$ curl --user admin:secret :8080/collection
+[{"_id":{"$oid":"5dd3cfb2fe3c18a7834121d3"},"a":1,"_etag":{"$oid":"5dd3cfb2439f805aea9d5130"}},{"_id":{"$oid":"5dd3cfb0fe3c18a7834121d1"},"a":2,"_etag":{"$oid":"5dd3cfb0439f805aea9d512f"}}]%
+```
 
 ### Configuration
 

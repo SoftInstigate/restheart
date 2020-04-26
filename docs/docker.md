@@ -1,6 +1,6 @@
 # Run with Docker
 
-RESTHeart public docker image is freely available on [Docker hub](https://hub.docker.com/r/softinstigate/restheart). Have a look at the [Dockerfile](../core/Dockerfile).
+The official RESTHeart's public docker image is freely available on [Docker hub](https://hub.docker.com/r/softinstigate/restheart). Have a look at the [Dockerfile](../core/Dockerfile).
 
 To run both RESTHeart and MongoDB services you can use `docker-compose`. Just copy and paste the following shell command:
 
@@ -62,36 +62,6 @@ Stopping restheart-mongo ... done
 
 If you want to run the services in background just add the `-d` parameter, like `docker-compose up -d`. In this case you can tail the logs with `docker-compose logs -f`. To stop the containers use `docker-compose stop` then `docker-compose start` to start them again. To completely shutdown the containers and clean-up everything use `docker-compose down -v`. Beware the `down` command with `-v` parameter erases the MongoDB attached docker volume (named `restheart-mongo-volume`) with all its data.
 
+Now you can [Check that everything works](../README.md#check-that-everything-works)
+
 Read the [docker compose documentation](https://docs.docker.com/compose/) for more.
-
-### Default users and ACL
-
-The default `users.yml` defines the following users:
-
--   id: `admin`, password: `secret`, role: `admin`
--   id: `user`, password: `secret`, role: `user`
-
-The default `acl.yml` defines the following permission:
-
--   _admin_ role can execute any request
--   _user_ role can execute any request on collection `/{username}`
-
-### Check that everything works
-
-```bash
-# create database 'restheart'
-$ curl --user admin:secret -I -X PUT :8080/
-HTTP/1.1 201 OK
-
-# create collection 'restheart.collection'
-$ curl --user admin:secret -I -X PUT :8080/collection
-HTTP/1.1 201 OK
-
-# create a couple of documents
-$ curl --user admin:secret -X POST :8080/collection -d '{"a":1}' -H "Content-Type: application/json"
-$ curl --user admin:secret -X POST :8080/collection -d '{"a":2}' -H "Content-Type: application/json"
-
-# get documents
-$ curl --user admin:secret :8080/collection
-[{"_id":{"$oid":"5dd3cfb2fe3c18a7834121d3"},"a":1,"_etag":{"$oid":"5dd3cfb2439f805aea9d5130"}},{"_id":{"$oid":"5dd3cfb0fe3c18a7834121d1"},"a":2,"_etag":{"$oid":"5dd3cfb0439f805aea9d512f"}}]%
-```
