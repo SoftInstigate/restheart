@@ -63,13 +63,12 @@ For more ideas have a look at the list of [features](https://restheart.org/featu
 
 ## Download and Run
 
-### Preliminary information
+### Prerequisites
 
 To run RESTHEart connected to a local instance of MongoDB you need:
 
 -   At least Java v11;
 -   MongoDB v3 or v4 running on `localhost` on port `27017`.
--   A command line HTTP client like [curl](https://curl.haxx.se) and [httpie](https://httpie.org) or a API client like [Postman](https://www.postman.com).
 
 ---
 
@@ -119,11 +118,12 @@ Configuration files are under the `etc/` folder.
 
 ```bash
 $ cd restheart
-
 $ java -jar restheart.jar etc/restheart.yml -e etc/default.properties
 ```
 
 To check that RESTHeart is up and running, open the URL [http://localhost:8080/ping](http://localhost:8080/ping), you should see the message: "Greetings from RESTHeart!".
+
+Alternatively, use a command line HTTP client like [curl](https://curl.haxx.se) and [httpie](https://httpie.org) or a API client like [Postman](https://www.postman.com).
 
 ---
 
