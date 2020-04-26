@@ -18,8 +18,8 @@
 
 -   [Summary](#summary)
 -   [Download and Run](#download-and-run)
--   [Run with Docker](docs/docker#run-with-docker)
--   [Build it yourself](docs/build#how-to-build)
+-   [Run with Docker](docs/docker.md)
+-   [Build it yourself](docs/build.md)
 -   [User guide](#full-documentation)
 -   [Book a chat](#book-a-chat)
 -   [Commercial Editions](#commercial-editions)
