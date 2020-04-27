@@ -31,18 +31,6 @@
             <groupId>org.restheart</groupId>
             <artifactId>restheart-commons</artifactId>
         </dependency>
-        <!-- update undertow dependency to avoid warning log message:
-        WARNING: An illegal reflective access operation has occurred -->
-        <dependency>
-            <groupId>org.jboss.xnio</groupId>
-            <artifactId>xnio-nio</artifactId>
-        </dependency>
-        <!--  update undertow dependency to avoid warning log message:
-        WARNING: An illegal reflective access operation has occurred -->
-        <dependency>
-            <groupId>org.jboss.threads</groupId>
-            <artifactId>jboss-threads</artifactId>
-        </dependency>
         <dependency>
             <groupId>io.undertow</groupId>
             <artifactId>undertow-core</artifactId>
