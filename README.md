@@ -209,7 +209,7 @@ You can edit the YAML configuration file or create distinct properties file. Usu
 
 ### Environment variables
 
-Is is possible to override any primitive type parameter in `restheart.yml` with an environment variable. Primitive types are:
+It is possible to override any primitive type parameter in `restheart.yml` with an environment variable. Primitive types are:
 
 -   String
 -   Integer
