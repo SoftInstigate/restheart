@@ -40,8 +40,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import static org.restheart.representation.Resource.APPLICATION_PDF_TYPE;
-import static org.restheart.representation.Resource.HAL_JSON_MEDIA_TYPE;
+import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
 import static org.restheart.utils.HttpStatus.SC_CREATED;
 import static org.restheart.utils.HttpStatus.SC_NOT_FOUND;
@@ -90,7 +89,7 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
         String url = dbTmpUri + "/" + BUCKET + ".files/" + fileId.toString() + "/binary";
 
         HttpResponse httpResp = this.check("Response is 200 OK", adminExecutor.execute(Request.Get(url)), SC_OK);
-        HttpEntity entity = checkContentType(httpResp, APPLICATION_PDF_TYPE);
+        HttpEntity entity = checkContentType(httpResp, Exchange.APPLICATION_PDF_TYPE);
 
         File tempFile = tempFolder.newFile(FILENAME);
         FileOutputStream fos = new FileOutputStream(tempFile);
@@ -126,7 +125,7 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
     public void testEmptyBucket() throws IOException {
         // test that GET /db includes the rh:bucket array
         HttpResponse httpResp = this.check("Response is 200 OK", adminExecutor.execute(Request.Get(dbTmpUri)), SC_OK);
-        HttpEntity entity = checkContentType(httpResp, HAL_JSON_MEDIA_TYPE);
+        HttpEntity entity = checkContentType(httpResp, Exchange.HAL_JSON_MEDIA_TYPE);
 
         String content = EntityUtils.toString(entity);
         JsonObject json = Json.parse(content).asObject();
@@ -149,7 +148,7 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
         // test that GET /db/bucket.files includes the file
         String bucketUrl = dbTmpUri + "/" + BUCKET + ".files";
         HttpResponse httpResp = this.check("Response is 200 OK", adminExecutor.execute(Request.Get(bucketUrl)), SC_OK);
-        HttpEntity entity = checkContentType(httpResp, HAL_JSON_MEDIA_TYPE);
+        HttpEntity entity = checkContentType(httpResp, Exchange.HAL_JSON_MEDIA_TYPE);
 
         String content = EntityUtils.toString(entity);
         JsonObject json = Json.parse(content).asObject();
@@ -174,7 +173,7 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
         Response resp = adminExecutor.execute(Request.Get(fileUrl));
 
         HttpResponse httpResp = this.check("Response is 200 OK", resp, SC_OK);
-        HttpEntity entity = checkContentType(httpResp, HAL_JSON_MEDIA_TYPE);
+        HttpEntity entity = checkContentType(httpResp, Exchange.HAL_JSON_MEDIA_TYPE);
 
         String content = EntityUtils.toString(entity);
 

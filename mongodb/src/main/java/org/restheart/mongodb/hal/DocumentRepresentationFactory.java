@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.document;
+package org.restheart.mongodb.hal;
 
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
@@ -35,13 +35,12 @@ import org.restheart.mongodb.metadata.InvalidMetadataException;
 import org.restheart.mongodb.metadata.Relationship;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.Link;
 import org.restheart.representation.RepresentationUtils;
-import org.restheart.representation.Resource;
 import org.restheart.representation.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-public class DocumentRepresentationFactory {
+
+class DocumentRepresentationFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentRepresentationFactory.class);
 
@@ -117,7 +116,6 @@ public class DocumentRepresentationFactory {
      *
      */
     public DocumentRepresentationFactory() {
-
     }
 
     /**
@@ -128,7 +126,8 @@ public class DocumentRepresentationFactory {
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public Resource getRepresentation(String href, HttpServerExchange exchange,
+    public Resource getRepresentation(String href, 
+            HttpServerExchange exchange,
             BsonDocument data)
             throws IllegalQueryParamenterException {
         var request = MongoRequest.of(exchange);

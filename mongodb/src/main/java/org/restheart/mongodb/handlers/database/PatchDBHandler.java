@@ -75,7 +75,7 @@ public class PatchDBHandler extends PipelinedHandler {
 
         if (request.getDBName().isEmpty()
                 || request.getDBName().startsWith("_")) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, db name cannot be empty or start with _");
             next(exchange);
@@ -85,7 +85,7 @@ public class PatchDBHandler extends PipelinedHandler {
         BsonValue _content = request.getContent();
 
         if (_content == null) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             next(exchange);
@@ -94,7 +94,7 @@ public class PatchDBHandler extends PipelinedHandler {
 
         // cannot PATCH an array
         if (!_content.isDocument()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             next(exchange);
@@ -120,7 +120,7 @@ public class PatchDBHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_CONFLICT,
                     "The database's ETag must be provided using the '"
                     + Headers.IF_MATCH

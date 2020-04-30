@@ -18,24 +18,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.aggregation;
+package org.restheart.mongodb.hal;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.List;
-import org.bson.BsonDocument;
+import org.bson.BsonArray;
 import org.bson.BsonInt32;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.mongodb.representation.AbstractRepresentationFactory;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.Link;
-import org.restheart.representation.Resource;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class AggregationResultRepresentationFactory
+class AggregationResultRepresentationFactory
         extends AbstractRepresentationFactory {
 
     /**
@@ -54,7 +50,7 @@ public class AggregationResultRepresentationFactory
      */
     @Override
     public Resource getRepresentation(HttpServerExchange exchange,
-            List<BsonDocument> embeddedData,
+            BsonArray embeddedData,
             long size)
             throws IllegalQueryParamenterException {
         var request = MongoRequest.of(exchange);
@@ -79,7 +75,7 @@ public class AggregationResultRepresentationFactory
         return rep;
     }
 
-    private void addEmbeddedData(List<BsonDocument> embeddedData,
+    private void addEmbeddedData(BsonArray embeddedData,
             final Resource rep)
             throws IllegalQueryParamenterException {
         if (embeddedData != null) {
@@ -99,13 +95,17 @@ public class AggregationResultRepresentationFactory
                 URLUtils.getParentPath(URLUtils.getParentPath(requestPath))));
     }
 
-    private void embeddedDocuments(List<BsonDocument> embeddedData,
+    private void embeddedDocuments(BsonArray embeddedData,
             Resource rep) throws IllegalQueryParamenterException {
-        embeddedData.stream().map((d) -> {
-            Resource nrep = new Resource();
-            nrep.addProperties(d);
-            return nrep;
-        }).forEach((nrep) -> {
+        embeddedData.stream()
+                .filter(d -> d != null)
+                .filter(d -> d.isDocument())
+                .map(d -> d.asDocument())
+                .map((d) -> {
+                    Resource nrep = new Resource();
+                    nrep.addProperties(d);
+                    return nrep;
+                }).forEach((nrep) -> {
             rep.addChild("rh:result", nrep);
         });
     }

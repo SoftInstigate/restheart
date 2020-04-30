@@ -139,7 +139,7 @@ public class CollectionPropsInjector implements Interceptor<MongoRequest, MongoR
                     request.getCollectionName());
         }
 
-        response.setIError(
+        response.setInError(
                 HttpStatus.SC_NOT_FOUND,
                 errMsg);
     }

@@ -92,7 +92,7 @@ public class PutCollectionHandler extends PipelinedHandler {
 
         // cannot PUT an array
         if (!_content.isDocument()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             next(exchange);
@@ -125,7 +125,7 @@ public class PutCollectionHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_CONFLICT,
                     "The collection's ETag must be provided using the '"
                     + Headers.IF_MATCH

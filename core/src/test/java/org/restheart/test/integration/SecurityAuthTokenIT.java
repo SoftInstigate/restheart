@@ -36,7 +36,7 @@ import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.*;
 import org.junit.Test;
-import org.restheart.representation.Resource;
+import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -160,8 +160,8 @@ public class SecurityAuthTokenIT extends HttpClientAbstactIT {
 
         assertNotNull("content type not null", entity.getContentType());
         assertTrue("check content type",
-                entity.getContentType().getValue().equals(Resource.HAL_JSON_MEDIA_TYPE)
-                || entity.getContentType().getValue().equals(Resource.JSON_MEDIA_TYPE));
+                entity.getContentType().getValue().equals(Exchange.HAL_JSON_MEDIA_TYPE)
+                || entity.getContentType().getValue().equals(Exchange.JSON_MEDIA_TYPE));
 
         String content = EntityUtils.toString(entity);
 

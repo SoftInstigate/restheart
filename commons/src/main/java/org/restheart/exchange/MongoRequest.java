@@ -1364,7 +1364,7 @@ public class MongoRequest extends BsonRequest {
     public boolean isFileBinary() {
         return getType() == TYPE.FILE_BINARY;
     }
-
+    
     /**
      * helper method to check request resource type
      *

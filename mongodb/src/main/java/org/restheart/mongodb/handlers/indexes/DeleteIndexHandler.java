@@ -71,7 +71,7 @@ public class DeleteIndexHandler extends PipelinedHandler {
         String indexId = request.getIndexId();
 
         if (indexId.startsWith("_") || indexId.equals("_id_")) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_UNAUTHORIZED, 
                     indexId + " is a default index and cannot be deleted");
             next(exchange);

@@ -19,7 +19,7 @@
  * =========================LICENSE_END==================================
  */
 /**
- * Handlers in charge of injecting data in the request context.
+ * Handlers in charge of injecting data into the request
  * 
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */

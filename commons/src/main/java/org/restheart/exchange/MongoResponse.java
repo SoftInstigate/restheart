@@ -21,7 +21,6 @@ package org.restheart.exchange;
 
 import com.google.common.reflect.TypeToken;
 import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
@@ -35,7 +34,6 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
 import static org.restheart.exchange.Exchange.LOGGER;
-import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.LoggerFactory;
@@ -51,6 +49,8 @@ public class MongoResponse extends BsonResponse {
     private OperationResult dbOperationResult;
 
     private final List<String> warnings = new ArrayList<>();
+
+    private long count = -1;
 
     protected MongoResponse(HttpServerExchange exchange) {
         super(exchange);
@@ -74,11 +74,58 @@ public class MongoResponse extends BsonResponse {
 
     @Override
     public String readContent() {
-        if (content != null) {
-            return JsonUtils.toJson(content,
-                    MongoRequest.of(wrapped).getJsonMode());
+        var request = MongoRequest.of(wrapped);
+        BsonValue tosend;
+        
+        if (!request.isGet() && (content == null || content.isDocument())) {
+            tosend = addWarnings(content == null ? null : content.asDocument());
+        } else {
+            tosend = content;
+        }
+        
+        if (tosend != null) {
+            return JsonUtils.toJson(tosend, request.getJsonMode());
         } else {
             return null;
+        }
+    }
+
+    private BsonDocument addWarnings(BsonDocument content) {
+        if (content != null) {
+            if (warnings != null
+                    && !warnings.isEmpty()
+                    && content.isDocument()) {
+                var contentWithWarnings = new BsonDocument();
+
+                var ws = new BsonArray();
+
+                warnings.stream()
+                        .map(w -> new BsonString(w))
+                        .forEachOrdered(ws::add);
+
+                contentWithWarnings.put("_warnings", ws);
+
+                contentWithWarnings.putAll(content.asDocument());
+
+                return contentWithWarnings;
+            } else {
+                return content;
+            }
+        } else if (warnings != null
+                && !warnings.isEmpty()) {
+            var contentWithWarnings = new BsonDocument();
+
+            var ws = new BsonArray();
+
+            warnings.stream()
+                    .map(w -> new BsonString(w))
+                    .forEachOrdered(ws::add);
+
+            contentWithWarnings.put("_warnings", ws);
+
+            return contentWithWarnings;
+        } else {
+            return content;
         }
     }
 
@@ -127,33 +174,24 @@ public class MongoResponse extends BsonResponse {
 
         setInError(true);
 
-        setContent(getErrorContent(
-                wrapped.getRequestPath(),
-                code,
+        setContent(getErrorContent(code,
                 httpStatusText,
                 message,
-                t, false)
-                .asBsonDocument());
+                t, false));
+    }
 
-        transformError();
+    /**
+     * @return the count
+     */
+    public long getCount() {
+        return count;
+    }
 
-        // This makes the content availabe to ByteArrayProxyResponse
-        // core's ResponseSender uses BufferedResponse 
-        // to send the content to the client
-        if (getContent() != null) {
-            var bar = ByteArrayProxyResponse.of(wrapped);
-
-            bar.setContentTypeAsJson();
-
-            try {
-                bar.writeContent(
-                        JsonUtils.toJson(getContent(),
-                                MongoRequest.of(wrapped).getJsonMode())
-                                .getBytes());
-            } catch (IOException ioe) {
-                //LOGGER.error("Error writing request content", ioe);
-            }
-        }
+    /**
+     * @param count the count to set
+     */
+    public void setCount(long count) {
+        this.count = count;
     }
 
     /**
@@ -167,36 +205,35 @@ public class MongoResponse extends BsonResponse {
      * @param includeStackTrace
      * @return
      */
-    private Resource getErrorContent(String href,
-            int code,
+    private BsonDocument getErrorContent(int code,
             String httpStatusText,
             String message,
             Throwable t,
             boolean includeStackTrace) {
-        var rep = new Resource(href);
+        var rep = new BsonDocument();
 
-        rep.addProperty("http status code",
+        rep.put("http status code",
                 new BsonInt32(code));
-        rep.addProperty("http status description",
+        rep.put("http status description",
                 new BsonString(httpStatusText));
         if (message != null) {
-            rep.addProperty("message", new BsonString(
+            rep.put("message", new BsonString(
                     avoidEscapedChars(message)));
         }
 
-        Resource nrep = new Resource();
+        BsonDocument _exception = new BsonDocument();
 
         if (t != null) {
-            nrep.addProperty(
+            _exception.put(
                     "exception",
                     new BsonString(t.getClass().getName()));
 
             if (t.getMessage() != null) {
                 if (t instanceof JsonParseException) {
-                    nrep.addProperty("exception message",
+                    _exception.put("exception message",
                             new BsonString("invalid json"));
                 } else {
-                    nrep.addProperty("exception message",
+                    _exception.put("exception message",
                             new BsonString(avoidEscapedChars(t.getMessage())));
                 }
             }
@@ -205,16 +242,20 @@ public class MongoResponse extends BsonResponse {
                 BsonArray stackTrace = getStackTrace(t);
 
                 if (stackTrace != null) {
-                    nrep.addProperty("stack trace", stackTrace);
+                    _exception.put("stack trace", stackTrace);
                 }
             }
 
-            rep.addChild("rh:exception", nrep);
+            rep.put("_exception", _exception);
         }
 
+        var _warnings = new BsonArray();
+
         // add warnings
-        if (getWarnings() != null) {
-            getWarnings().forEach(w -> rep.addWarning(w));
+        if (getWarnings() != null && !getWarnings().isEmpty()) {
+            getWarnings().forEach(w -> _warnings.add(new BsonString(w)));
+
+            rep.put("_warnings", _warnings);
         }
 
         return rep;
@@ -247,107 +288,5 @@ public class MongoResponse extends BsonResponse {
                 : s
                         .replaceAll("\"", "'")
                         .replaceAll("\t", "  ");
-    }
-
-    /**
-     * Tranforms the error document to the target representation format.
-     */
-    private void transformError() {
-        var contentToTransform = getContent();
-        var errorContent = new BsonDocument();
-
-        var rf = MongoRequest.of(wrapped).getRepresentationFormat();
-
-        final boolean isStandardRepresentation
-                = rf == ExchangeKeys.REPRESENTATION_FORMAT.STANDARD
-                || rf == ExchangeKeys.REPRESENTATION_FORMAT.S;
-
-        if (contentToTransform == null
-                || (!isStandardRepresentation
-                && rf != ExchangeKeys.REPRESENTATION_FORMAT.SHAL
-                && rf != ExchangeKeys.REPRESENTATION_FORMAT.PLAIN_JSON
-                && rf != ExchangeKeys.REPRESENTATION_FORMAT.PJ)) {
-            return;
-        }
-
-        setContentType(Resource.JSON_MEDIA_TYPE);
-
-        if (contentToTransform.isDocument()) {
-            BsonValue _embedded = contentToTransform
-                    .asDocument()
-                    .get("_embedded");
-
-            if (_embedded != null) {
-                BsonDocument embedded = _embedded.asDocument();
-
-                // add _warnings if any
-                BsonArray _warnings = new BsonArray();
-                addItems(_warnings, embedded, "rh:warnings");
-
-                if (!_warnings.isEmpty()) {
-                    errorContent.append("_warnings", _warnings);
-                }
-
-                // add _errors if any
-                BsonArray _errors = new BsonArray();
-                addItems(_errors, embedded, "rh:error");
-
-                if (!_errors.isEmpty()) {
-                    errorContent.append("_errors", _errors);
-                }
-
-                // add _results if any
-                if (embedded.containsKey("rh:result")) {
-                    BsonArray bulkResp = embedded.get("rh:result")
-                            .asArray();
-
-                    if (bulkResp.size() > 0) {
-                        BsonValue el = bulkResp.get(0);
-
-                        if (el.isDocument()) {
-                            BsonDocument doc = el.asDocument();
-
-                            doc
-                                    .keySet()
-                                    .stream()
-                                    .forEach(key
-                                            -> errorContent
-                                            .append(key, doc.get(key)));
-                        }
-                    }
-                }
-
-                // add _exception if any
-                BsonArray _exception = new BsonArray();
-                addItems(_exception, embedded, "rh:exception");
-
-                if (!_exception.isEmpty()) {
-                    errorContent.append("_exceptions", _exception);
-                }
-            }
-        }
-
-        if (isInError()) {
-            contentToTransform.asDocument().keySet().stream()
-                    .filter(
-                            key -> !"_embedded".equals(key)
-                            && !"_links".equals(key))
-                    .forEach(key -> errorContent.append(key,
-                    contentToTransform
-                            .asDocument()
-                            .get(key)));
-
-        }
-
-        setContent(errorContent);
-    }
-
-    private void addItems(BsonArray elements, BsonDocument items, String ns) {
-        if (items.containsKey(ns)) {
-            elements.addAll(
-                    items
-                            .get(ns)
-                            .asArray());
-        }
     }
 }

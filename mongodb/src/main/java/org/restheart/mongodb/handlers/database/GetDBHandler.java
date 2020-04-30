@@ -23,14 +23,13 @@ package org.restheart.mongodb.handlers.database;
 import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
-import org.bson.BsonDocument;
+import org.bson.BsonArray;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -80,30 +79,26 @@ public class GetDBHandler extends PipelinedHandler {
             next(exchange);
             return;
         }
-
+        
         List<String> colls = dbsDAO.getCollectionNames(
                 request.getClientSession(),
                 request.getDBName());
 
-        List<BsonDocument> data = null;
-
         if (request.getPagesize() > 0) {
-            data = dbsDAO.getDatabaseData(
+            var data = dbsDAO.getDatabaseData(
                     request.getClientSession(),
                     request.getDBName(),
                     colls,
                     request.getPage(),
                     request.getPagesize());
+            response.setContent(data);
+        } else {
+            response.setContent(new BsonArray());
         }
 
-        response.setContent(new DBRepresentationFactory()
-                .getRepresentation(
-                        exchange,
-                        data,
-                        dbsDAO.getDBSize(colls))
-                .asBsonDocument());
+        response.setCount(dbsDAO.getDBSize(colls));
 
-        response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+        response.setContentTypeAsJson();
         response.setStatusCode(HttpStatus.SC_OK);
 
         ResponseHelper.injectEtagHeader(exchange, request.getDbProps());

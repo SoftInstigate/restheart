@@ -18,11 +18,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.database;
+package org.restheart.mongodb.hal;
 
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
-import java.util.List;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
@@ -32,12 +32,8 @@ import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.mongodb.handlers.collection.CollectionRepresentationFactory;
-import org.restheart.mongodb.representation.AbstractRepresentationFactory;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.Link;
-import org.restheart.representation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +41,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DBRepresentationFactory extends AbstractRepresentationFactory {
+class DBRepresentationFactory extends AbstractRepresentationFactory {
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(DBRepresentationFactory.class);
@@ -91,11 +87,11 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     @Override
     public Resource getRepresentation(
             HttpServerExchange exchange,
-            List<BsonDocument> embeddedData,
+            BsonArray embeddedData,
             long size)
             throws IllegalQueryParamenterException {
         var request = MongoRequest.of(exchange);
-        
+
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;
 
@@ -134,7 +130,7 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void addEmbeddedData(
-            final List<BsonDocument> embeddedData,
+            final BsonArray embeddedData,
             final MongoRequest request,
             final Resource rep,
             final String requestPath) {
@@ -179,56 +175,60 @@ public class DBRepresentationFactory extends AbstractRepresentationFactory {
     }
 
     private void embeddedCollections(
-            final List<BsonDocument> embeddedData,
+            final BsonArray embeddedData,
             final MongoRequest request,
             final String requestPath,
             final Resource rep) {
-        embeddedData.stream().forEach((d) -> {
-            BsonValue _id = d.get("_id");
+        embeddedData.stream()
+                .filter(d -> d != null)
+                .filter(d -> d.isDocument())
+                .map(d -> d.asDocument())
+                .forEach((d) -> {
+                    BsonValue _id = d.get("_id");
 
-            if (_id != null && _id.isString()) {
-                BsonString id = _id.asString();
+                    if (_id != null && _id.isString()) {
+                        BsonString id = _id.asString();
 
-                // avoid starting double slash in self href for root URI
-                String rp = URLUtils.removeTrailingSlashes(requestPath);
-                rp = "/".equals(rp) ? "" : rp;
+                        // avoid starting double slash in self href for root URI
+                        String rp = URLUtils.removeTrailingSlashes(requestPath);
+                        rp = "/".equals(rp) ? "" : rp;
 
-                final Resource nrep;
+                        final Resource nrep;
 
-                if (request.isFullHalMode()) {
-                    nrep = new Resource(rp + "/" + id.getValue());
-                } else {
-                    nrep = new Resource();
-                }
+                        if (request.isFullHalMode()) {
+                            nrep = new Resource(rp + "/" + id.getValue());
+                        } else {
+                            nrep = new Resource();
+                        }
 
-                nrep.addProperties(d);
+                        nrep.addProperties(d);
 
-                if (id.getValue().endsWith(FS_FILES_SUFFIX)) {
-                    if (request.isFullHalMode()) {
-                        CollectionRepresentationFactory.addSpecialProperties(
-                                nrep, TYPE.FILES_BUCKET, d);
+                        if (id.getValue().endsWith(FS_FILES_SUFFIX)) {
+                            if (request.isFullHalMode()) {
+                                CollectionRepresentationFactory.addSpecialProperties(
+                                        nrep, TYPE.FILES_BUCKET, d);
+                            }
+
+                            rep.addChild("rh:bucket", nrep);
+                        } else if (_SCHEMAS.equals(id.getValue())) {
+                            if (request.isFullHalMode()) {
+                                CollectionRepresentationFactory.addSpecialProperties(
+                                        nrep, TYPE.SCHEMA_STORE, d);
+                            }
+
+                            rep.addChild("rh:schema-store", nrep);
+                        } else {
+                            if (request.isFullHalMode()) {
+                                CollectionRepresentationFactory.addSpecialProperties(
+                                        nrep, TYPE.COLLECTION, d);
+                            }
+
+                            rep.addChild("rh:coll", nrep);
+                        }
+                    } else {
+                        // this shoudn't be possible
+                        LOGGER.error("Collection missing string _id field: {}", _id);
                     }
-
-                    rep.addChild("rh:bucket", nrep);
-                } else if (_SCHEMAS.equals(id.getValue())) {
-                    if (request.isFullHalMode()) {
-                        CollectionRepresentationFactory.addSpecialProperties(
-                                nrep, TYPE.SCHEMA_STORE, d);
-                    }
-
-                    rep.addChild("rh:schema-store", nrep);
-                } else {
-                    if (request.isFullHalMode()) {
-                        CollectionRepresentationFactory.addSpecialProperties(
-                                nrep, TYPE.COLLECTION, d);
-                    }
-
-                    rep.addChild("rh:coll", nrep);
-                }
-            } else {
-                // this shoudn't be possible
-                LOGGER.error("Collection missing string _id field: {}", _id);
-            }
-        });
+                });
     }
 }

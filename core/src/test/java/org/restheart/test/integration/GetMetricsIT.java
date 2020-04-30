@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
-import org.restheart.representation.Resource;
+import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -62,7 +62,7 @@ public class GetMetricsIT extends HttpClientAbstactIT {
 
         assertEquals("check status code", HttpStatus.SC_OK, statusLine.getStatusCode());
         assertNotNull("content type not null", entity.getContentType());
-        assertEquals("check content type", Resource.JSON_MEDIA_TYPE, entity.getContentType().getValue());
+        assertEquals("check content type", Exchange.JSON_MEDIA_TYPE, entity.getContentType().getValue());
 
         String content = EntityUtils.toString(entity);
         assertTrue(content.contains("\"version\": \"3.0.0\""));

@@ -41,7 +41,6 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -49,6 +48,7 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.util.EntityUtils;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.types.ObjectId;
 import static org.junit.Assert.assertEquals;
@@ -106,7 +106,7 @@ public class LoadGetPT extends AbstractPT {
         final Database dbsDAO = new DatabaseImpl();
         MongoCollection dbcoll = dbsDAO.getCollection(db, coll);
 
-        ArrayList<BsonDocument> data;
+        BsonArray data;
 
         try {
             data = new DatabaseImpl().getCollectionData(

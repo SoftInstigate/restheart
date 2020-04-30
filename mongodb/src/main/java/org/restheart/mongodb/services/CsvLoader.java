@@ -44,7 +44,6 @@ import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.representation.Resource;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
@@ -128,7 +127,7 @@ public class CsvLoader implements ByteArrayService {
         if (request.isOptions()) {
             handleOptions(request);
         } else {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Resource.JSON_MEDIA_TYPE);
+            response.setContentTypeAsJson();
             if (doesApply(request)) {
                 if (checkContentType(exchange)) {
                     try {
@@ -136,7 +135,7 @@ public class CsvLoader implements ByteArrayService {
                                 pluginsRegistry);
 
                         if (params.update && params.idIdx < 0) {
-                            response.setIError(HttpStatus.SC_BAD_REQUEST,
+                            response.setInError(HttpStatus.SC_BAD_REQUEST,
                                     ERROR_NO_ID);
                         } else {
                             try {
@@ -184,22 +183,22 @@ public class CsvLoader implements ByteArrayService {
                                 }
                             } catch (IOException ex) {
                                 LOGGER.debug("error parsing CSV data", ex);
-                                response.setIError(HttpStatus.SC_BAD_REQUEST,
+                                response.setInError(HttpStatus.SC_BAD_REQUEST,
                                         ERROR_PARSING_DATA);
 
                             }
                         }
                     } catch (IllegalArgumentException iae) {
-                        response.setIError(HttpStatus.SC_BAD_REQUEST,
+                        response.setInError(HttpStatus.SC_BAD_REQUEST,
                                 ERROR_QPARAM);
                     }
                 } else {
-                    response.setIError(HttpStatus.SC_BAD_REQUEST,
+                    response.setInError(HttpStatus.SC_BAD_REQUEST,
                             ERROR_CONTENT_TYPE);
                 }
 
             } else {
-                response.setIError(HttpStatus.SC_NOT_IMPLEMENTED,
+                response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
                         ERROR_WRONG_METHOD);
             }
         }

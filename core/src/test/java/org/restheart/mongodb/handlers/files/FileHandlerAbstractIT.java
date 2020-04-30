@@ -36,7 +36,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.util.EntityUtils;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import org.restheart.representation.Resource;
+import org.restheart.exchange.Exchange;
 import org.restheart.test.integration.HttpClientAbstactIT;
 import static org.restheart.utils.HttpStatus.SC_CREATED;
 
@@ -65,7 +65,7 @@ public abstract class FileHandlerAbstractIT extends HttpClientAbstactIT {
         // create db
         Response resp = adminExecutor
                 .execute(Request.Put(dbTmpUri)
-                        .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+                        .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
 
         HttpResponse httpResp = resp.returnResponse();
         assertNotNull(httpResp);
@@ -77,7 +77,7 @@ public abstract class FileHandlerAbstractIT extends HttpClientAbstactIT {
         // create bucket
         String bucketUrl = dbTmpUri + "/" + BUCKET + ".files/";
         resp = adminExecutor.execute(Request.Put(bucketUrl)
-                .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+                .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
 
         httpResp = resp.returnResponse();
         assertNotNull(httpResp);

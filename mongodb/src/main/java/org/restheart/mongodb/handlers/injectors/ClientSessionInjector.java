@@ -113,7 +113,7 @@ public class ClientSessionInjector extends PipelinedHandler {
             request.setClientSession(getClientSessionFactory()
                     .getClientSession(exchange));
         } catch (IllegalArgumentException ex) {
-            MongoResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     ex.getMessage());
             next(exchange);

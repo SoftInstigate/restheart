@@ -35,6 +35,31 @@ import org.slf4j.Logger;
 public abstract class Exchange<T> {
 
     protected static Logger LOGGER;
+    
+    /**
+     * Supported content types
+     */
+    public static final String HAL_JSON_MEDIA_TYPE = "application/hal+json";
+
+    /**
+     *
+     */
+    public static final String JSON_MEDIA_TYPE = "application/json";
+
+    /**
+     *
+     */
+    public static final String APP_FORM_URLENCODED_TYPE = "application/x-www-form-urlencoded";
+
+    /**
+     *
+     */
+    public static final String APPLICATION_PDF_TYPE = "application/pdf";
+
+    /**
+     *
+     */
+    public static final String MULTIPART_FORM_DATA_TYPE = "multipart/form-data";
 
     protected static final AttachmentKey<Boolean> IN_ERROR_KEY
             = AttachmentKey.create(Boolean.class);

@@ -109,7 +109,7 @@ public class FileMetadataHandler extends PipelinedHandler {
         if (request.getFilePath() != null) {
             // PUT request with non null data will be dealt with by previous handler (PutFileHandler)
             if (request.isPatch()) {
-                response.setIError(
+                response.setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "only metadata is allowed, not binary data");
             }
@@ -141,7 +141,7 @@ public class FileMetadataHandler extends PipelinedHandler {
         if (content.get(_ID) == null) {
             content.put(_ID, id);
         } else if (!content.get(_ID).equals(id)) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "_id in json data cannot be different than id in URL");
             next(exchange);

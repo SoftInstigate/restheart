@@ -22,19 +22,10 @@ package org.restheart.mongodb.utils;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.bson.BsonInt32;
-import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.Document;
-import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.MongoResponse;
-import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -42,122 +33,6 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseHelper {
-    /**
-     *
-     * @param exchange
-     * @param code
-     * @param rep
-     */
-    public static void endExchangeWithRepresentation(
-            HttpServerExchange exchange,
-            int code,
-            Resource rep) {
-        var request = MongoRequest.of(exchange);
-        var response = MongoResponse.of(exchange);
-
-        request.setInError(true);
-        response.setStatusCode(code);
-        response.setContent(rep.asBsonDocument());
-    }
-
-    /**
-     *
-     * @param href
-     * @param code
-     * @param response
-     * @param httpStatusText
-     * @param message
-     * @param t
-     * @param includeStackTrace
-     * @return
-     */
-    public static Resource getErrorJsonDocument(String href,
-            int code,
-            MongoResponse response,
-            String httpStatusText,
-            String message,
-            Throwable t,
-            boolean includeStackTrace) {
-        Resource rep = new Resource(href);
-
-        rep.addProperty("http status code",
-                new BsonInt32(code));
-        rep.addProperty("http status description",
-                new BsonString(httpStatusText));
-        if (message != null) {
-            rep.addProperty(
-                    "message",
-                    new BsonString(avoidEscapedChars(message)));
-        }
-
-        Resource nrep = new Resource();
-
-        if (t != null) {
-            nrep.addProperty(
-                    "exception",
-                    new BsonString(t.getClass().getName()));
-
-            if (t.getMessage() != null) {
-                if (t instanceof JsonParseException) {
-                    nrep.addProperty("exception message",
-                            new BsonString("invalid json"));
-                } else {
-                    nrep.addProperty("exception message",
-                            new BsonString(
-                                    avoidEscapedChars(t.getMessage())));
-                }
-
-            }
-
-            if (includeStackTrace) {
-                BsonArray stackTrace = getStackTraceJson(t);
-
-                if (stackTrace != null) {
-                    nrep.addProperty("stack trace", stackTrace);
-                }
-            }
-
-            rep.addChild("rh:exception", nrep);
-        }
-
-        // add warnings
-        if (response != null
-                && response.getWarnings() != null) {
-            response.getWarnings().forEach(w -> rep.addWarning(w));
-        }
-
-        return rep;
-    }
-
-    private static BsonArray getStackTraceJson(Throwable t) {
-        if (t == null || t.getStackTrace() == null) {
-            return null;
-        }
-
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        t.printStackTrace(pw);
-        String st = sw.toString();
-        st = avoidEscapedChars(st);
-        String[] lines = st.split("\n");
-
-        BsonArray list = new BsonArray();
-
-        for (String line : lines) {
-            list.add(new BsonString(line));
-        }
-
-        return list;
-    }
-
-    private static String avoidEscapedChars(String s) {
-        return s == null
-                ? null
-                : s
-                        .replaceAll("\"", "'")
-                        .replaceAll("\t", "  ");
-    }
-
     /**
      * Set the ETag in the response's header
      *

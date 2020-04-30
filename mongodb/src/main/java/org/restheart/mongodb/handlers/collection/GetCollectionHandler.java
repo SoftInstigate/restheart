@@ -24,7 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
 import io.undertow.server.HttpServerExchange;
-import java.util.ArrayList;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
 import org.restheart.exchange.MongoRequest;
@@ -34,7 +34,6 @@ import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +83,7 @@ public class GetCollectionHandler extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
-        
+
         if (request.isInError()) {
             next(exchange);
             return;
@@ -99,18 +98,18 @@ public class GetCollectionHandler extends PipelinedHandler {
 
         if (request.isCount()) {
             size = dbsDAO
-                    .getCollectionSize(request.getClientSession(), 
+                    .getCollectionSize(request.getClientSession(),
                             coll, request.getFiltersDocument());
         }
 
         // ***** get data
-        ArrayList<BsonDocument> data = null;
+        BsonArray data = null;
 
         if (request.getPagesize() > 0) {
 
             try {
                 data = dbsDAO.getCollectionData(
-                        request.getClientSession(), 
+                        request.getClientSession(),
                         coll,
                         request.getPage(),
                         request.getPagesize(),
@@ -155,11 +154,10 @@ public class GetCollectionHandler extends PipelinedHandler {
         }
 
         try {
-            response.setContent(new CollectionRepresentationFactory()
-                    .getRepresentation(exchange, data, size)
-                    .asBsonDocument());
+            response.setContent(data);
+            response.setCount(size);
 
-            response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+            response.setContentTypeAsJson();
             response.setStatusCode(HttpStatus.SC_OK);
 
             ResponseHelper

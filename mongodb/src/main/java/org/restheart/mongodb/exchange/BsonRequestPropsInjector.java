@@ -121,7 +121,7 @@ public class BsonRequestPropsInjector {
         // check database name to be a valid mongodb name
         if (request.getDBName() != null
                 && request.isDbNameInvalid()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal database name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
             return;
@@ -130,7 +130,7 @@ public class BsonRequestPropsInjector {
         // check collection name to be a valid mongodb name
         if (request.getCollectionName() != null
                 && request.isCollectionNameInvalid()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal collection name, "
                     + "see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
@@ -142,7 +142,7 @@ public class BsonRequestPropsInjector {
             try {
                 request.getTxnId();
             } catch (Throwable t) {
-                response.setIError(
+                response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal txnId: it must be a number");
                 return;
@@ -151,7 +151,7 @@ public class BsonRequestPropsInjector {
 
         // check collection name to be a valid mongodb name
         if (request.isReservedResource()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
             return;
@@ -176,9 +176,9 @@ public class BsonRequestPropsInjector {
         }
 
         if (pagesize < 0 || pagesize > MAX_PAGESIZE) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_BAD_REQUEST,
-                    "illegal page parameter, pagesize must be >= 0 and <= "
+                    "illegal pagesize parameter, pagesize must be >= 0 and <= "
                     + MAX_PAGESIZE);
             return;
         } else {
@@ -200,7 +200,7 @@ public class BsonRequestPropsInjector {
         }
 
         if (page < 1) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal page paramenter, it is < 1");
             return;
@@ -226,7 +226,7 @@ public class BsonRequestPropsInjector {
 
         if (sort_by != null) {
             if (sort_by.stream().anyMatch(s -> s == null || s.isEmpty())) {
-                response.setIError(
+                response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal sort_by paramenter");
                 return;
@@ -265,7 +265,7 @@ public class BsonRequestPropsInjector {
 
         if (hint != null) {
             if (hint.stream().anyMatch(s -> s == null || s.isEmpty())) {
-                response.setIError(
+                response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal hint paramenter");
                 return;
@@ -278,7 +278,7 @@ public class BsonRequestPropsInjector {
         if (keys != null) {
             if (keys.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    response.setIError(
+                    response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal keys paramenter (empty)");
                     return true;
@@ -288,7 +288,7 @@ public class BsonRequestPropsInjector {
                     BsonValue _keys = JsonUtils.parse(f);
 
                     if (!_keys.isDocument()) {
-                        response.setIError(
+                        response.setInError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal keys paramenter, it is not a json object: "
                                 + f
@@ -316,7 +316,7 @@ public class BsonRequestPropsInjector {
         if (filters != null) {
             if (filters.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    response.setIError(
+                    response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal filter paramenter (empty)");
                     return true;
@@ -326,7 +326,7 @@ public class BsonRequestPropsInjector {
                     BsonValue _filter = JsonUtils.parse(f);
 
                     if (!_filter.isDocument()) {
-                        response.setIError(
+                        response.setInError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal filter paramenter, it is not a json object: "
                                 + f
@@ -334,7 +334,7 @@ public class BsonRequestPropsInjector {
                                 + f.getClass().getSimpleName());
                         return true;
                     } else if (_filter.asDocument().keySet().isEmpty()) {
-                        response.setIError(
+                        response.setInError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal filter paramenter (empty json object)");
                         return true;
@@ -359,7 +359,7 @@ public class BsonRequestPropsInjector {
         if (request.getType() == TYPE.BULK_DOCUMENTS
                 && (request.isDelete() || request.isPatch())
                 && (filters == null || filters.isEmpty())) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_BAD_REQUEST,
                     "filter paramenter is mandatory for bulk write requests");
 
@@ -373,7 +373,7 @@ public class BsonRequestPropsInjector {
             Optional<String> _qvars = avars.stream().findFirst();
 
             if (!_qvars.isPresent()) {
-                response.setIError(
+                response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "Illegal avars paramenter (empty)");
 
@@ -386,7 +386,7 @@ public class BsonRequestPropsInjector {
                 try {
                     qvars = BsonDocument.parse(_qvars.get());
                 } catch (JsonParseException jpe) {
-                    response.setIError(
+                    response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal avars paramenter, it is not a json object: "
                             + _qvars.get());
@@ -425,7 +425,7 @@ public class BsonRequestPropsInjector {
                 try {
                     eager = EAGER_CURSOR_ALLOCATION_POLICY.valueOf(_eager.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    response.setIError(
+                    response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal eager paramenter (must be LINEAR, RANDOM or NONE)");
                     return;
@@ -448,7 +448,7 @@ public class BsonRequestPropsInjector {
                 try {
                     docIdType = DOC_ID_TYPE.valueOf(_docIdType.trim().toUpperCase());
                 } catch (IllegalArgumentException iae) {
-                    response.setIError(
+                    response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal "
                             + DOC_ID_TYPE_QPARAM_KEY
@@ -490,7 +490,7 @@ public class BsonRequestPropsInjector {
             try {
                 request.setHalMode(HAL_MODE.valueOf(_halMode.trim().toUpperCase()));
             } catch (IllegalArgumentException iae) {
-                response.setIError(
+                response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "illegal "
                         + HAL_QPARAM_KEY
@@ -517,7 +517,7 @@ public class BsonRequestPropsInjector {
         if (shardKeys != null) {
             if (shardKeys.stream().anyMatch(f -> {
                 if (f == null || f.isEmpty()) {
-                    response.setIError(
+                    response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
                             "illegal shardkey paramenter (empty)");
 
@@ -528,7 +528,7 @@ public class BsonRequestPropsInjector {
                     BsonDocument _shardKeys = BsonDocument.parse(f);
 
                     if (_shardKeys.keySet().isEmpty()) {
-                        response.setIError(
+                        response.setInError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "illegal shardkey paramenter (empty json object)");
 

@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
@@ -211,7 +212,7 @@ public class DatabaseImpl implements Database {
      *
      */
     @Override
-    public List<BsonDocument> getDatabaseData(
+    public BsonArray getDatabaseData(
             final ClientSession cs,
             final String dbName,
             final List<String> colls,
@@ -236,10 +237,7 @@ public class DatabaseImpl implements Database {
             total_pages = Math.max(1, Math.round(Math.ceil(_size / _pagesize)));
 
             if (page > total_pages) {
-                throw new IllegalQueryParamenterException(
-                        "illegal query paramenter,"
-                        + " page is bigger that total pages which is "
-                        + total_pages);
+                return new BsonArray();
             }
         }
 
@@ -251,7 +249,7 @@ public class DatabaseImpl implements Database {
                         ? _colls.size()
                         : (page - 1) * pagesize + pagesize);
 
-        List<BsonDocument> data = new ArrayList<>();
+        var data = new BsonArray();
 
         _colls.stream().map((collName) -> {
                     BsonDocument properties
@@ -594,7 +592,7 @@ public class DatabaseImpl implements Database {
      * @return
      */
     @Override
-    public ArrayList<BsonDocument> getCollectionData(
+    public BsonArray getCollectionData(
             final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final int page,

@@ -49,7 +49,7 @@ public class CacheInvalidator implements ByteArrayService {
         var exchange = request.getExchange();
 
         if (!MongoServiceConfiguration.get().isLocalCacheEnabled()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_MODIFIED,
                     "caching is off");
             return;
@@ -62,7 +62,7 @@ public class CacheInvalidator implements ByteArrayService {
             Deque<String> _coll = exchange.getQueryParameters().get("coll");
 
             if (_db == null || _db.getFirst() == null) {
-                response.setIError(
+                response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "the db query paramter is mandatory");
             } else {

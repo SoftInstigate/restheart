@@ -36,7 +36,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import static org.restheart.representation.Resource.HAL_JSON_MEDIA_TYPE;
+import org.restheart.exchange.Exchange;
 import static org.restheart.utils.HttpStatus.SC_CREATED;
 import static org.restheart.utils.HttpStatus.SC_OK;
 
@@ -96,7 +96,7 @@ public class PutFileHandlerIT extends FileHandlerAbstractIT {
         Response resp = adminExecutor.execute(Request.Get(fileUrl));
 
         HttpResponse httpResp = this.check("Response is 200 OK", resp, SC_OK);
-        HttpEntity entity = checkContentType(httpResp, HAL_JSON_MEDIA_TYPE);
+        HttpEntity entity = checkContentType(httpResp, Exchange.HAL_JSON_MEDIA_TYPE);
         checkNotNullMetadata(entity);
     }
 
@@ -119,7 +119,7 @@ public class PutFileHandlerIT extends FileHandlerAbstractIT {
         Response resp = adminExecutor.execute(Request.Get(fileUrl));
 
         HttpResponse httpResp = this.check("Response is 200 OK", resp, SC_OK);
-        HttpEntity entity = checkContentType(httpResp, HAL_JSON_MEDIA_TYPE);
+        HttpEntity entity = checkContentType(httpResp, Exchange.HAL_JSON_MEDIA_TYPE);
         checkNotNullMetadata(entity);
     }
 }

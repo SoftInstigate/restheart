@@ -30,6 +30,7 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.BulkOperationResult;
 import org.restheart.mongodb.db.DocumentDAO;
 import org.restheart.mongodb.utils.ResponseHelper;
+import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -125,9 +126,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
 
         BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
 
-        response.setContent(bprf.getRepresentation(
-                exchange, result)
-                .asBsonDocument());
+        response.setContent(bprf.getRepresentation(request.getPath(), result));
 
         next(exchange);
     }
@@ -155,7 +154,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
                         request.getType(),
                         document.asDocument()
                                 .get("_id").asString().getValue())) {
-            MongoResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_FORBIDDEN,
                     "id is reserved: " + document.asDocument()
                             .get("_id").asString().getValue());
@@ -167,7 +166,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
                 && document.asDocument().containsKey("_id")) {
             if (!(request.getDocIdType() == DOC_ID_TYPE.OID
                     || request.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
-                MongoResponse.of(exchange).setIError(
+                MongoResponse.of(exchange).setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "_id in content body is mandatory for documents with id type " + request.getDocIdType().name());
                 next(exchange);

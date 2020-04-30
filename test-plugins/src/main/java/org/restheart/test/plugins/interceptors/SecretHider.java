@@ -54,7 +54,7 @@ public class SecretHider implements MongoInterceptor {
                 .anyMatch(k -> "secret".equals(k)
                 || k.endsWith(".secret"))) {
 
-            response.setIError(HttpStatus.SC_FORBIDDEN,
+            response.setInError(HttpStatus.SC_FORBIDDEN,
                     "cannot write secret");
         }
     }

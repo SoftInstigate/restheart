@@ -19,8 +19,8 @@
  * =========================LICENSE_END==================================
  */
 /**
- * Classes to deal with resource representations
+ * Classes for HAL representation format
  * 
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.mongodb.representation;
+package org.restheart.mongodb.hal;

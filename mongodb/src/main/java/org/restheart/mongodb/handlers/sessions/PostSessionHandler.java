@@ -36,7 +36,6 @@ import org.restheart.mongodb.db.sessions.SessionOptions;
 import org.restheart.mongodb.db.sessions.Sid;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.RepresentationUtils;
-import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +92,7 @@ public class PostSessionHandler extends PipelinedHandler {
                                     URLUtils.getRemappedRequestURL(exchange),
                                     new BsonString(sid.toString())));
 
-            response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+            response.setContentTypeAsJson();
             response.setStatusCode(HttpStatus.SC_CREATED);
         } catch (MongoClientException mce) {
             LOGGER.error("Error {}",
@@ -101,7 +100,7 @@ public class PostSessionHandler extends PipelinedHandler {
 
             // TODO check if server supports sessions
             if (!MongoClientSingleton.getInstance().isReplicaSet()) {
-                response.setIError(
+                response.setInError(
                         HttpStatus.SC_BAD_GATEWAY,
                         mce.getMessage());
             } else {

@@ -32,7 +32,7 @@ import org.junit.Assert;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
-import org.restheart.representation.Resource;
+import org.restheart.exchange.Exchange;
 import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 import static org.restheart.test.integration.AbstactIT.url;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
@@ -64,40 +64,40 @@ public class PutDocumentIT extends HttpClientAbstactIT {
         Response response;
 
         // *** PUT tmpdb
-        response = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+        response = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put db", response, HttpStatus.SC_CREATED);
 
         // *** PUT tmpcoll
-        response = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+        response = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put coll1", response, HttpStatus.SC_CREATED);
 
         // *** PUT tmpdoc
-        response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+        response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put tmp doc", response, HttpStatus.SC_CREATED);
 
         // try to put without etag
-        response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+        response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put tmp doc without etag", response, HttpStatus.SC_OK);
 
         // try to put without etag forcing checkEtag
-        response = adminExecutor.execute(Request.Put(addCheckEtag(documentTmpUri)).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+        response = adminExecutor.execute(Request.Put(addCheckEtag(documentTmpUri)).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put tmp doc without etag forcing checkEtag", response, HttpStatus.SC_CONFLICT);
 
         // try to put with wrong etag
-        response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
+        response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
         check("check put tmp doc with wrong etag", response, HttpStatus.SC_PRECONDITION_FAILED);
 
-        response = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+        response = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
 
         JsonObject content = Json.parse(response.returnContent().asString()).asObject();
 
         String etag = content.get("_etag").asObject().get("$oid").asString();
 
         // try to put with correct etag
-        response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{b:2}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
+        response = adminExecutor.execute(Request.Put(documentTmpUri).bodyString("{b:2}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
         check("check put tmp doc with correct etag", response, HttpStatus.SC_OK);
 
-        response = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+        response = adminExecutor.execute(Request.Get(documentTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
 
         content = Json.parse(response.returnContent().asString()).asObject();
         assertNull("check put content", content.get("a"));

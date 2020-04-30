@@ -103,20 +103,20 @@ public class RequestHelper {
             HttpServerExchange exchange) throws Exception {
         // cannot proceed with no data
         if (content == null) {
-            MongoResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             return true;
         }
         // cannot proceed with an array
         if (!content.isDocument()) {
-            MongoResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             return true;
         }
         if (content.asDocument().isEmpty()) {
-            MongoResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             return true;
@@ -144,7 +144,7 @@ public class RequestHelper {
             ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            MongoResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_CONFLICT,
                     "The ETag must be provided using the '"
                     + Headers.IF_MATCH
@@ -153,7 +153,7 @@ public class RequestHelper {
         }
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            MongoResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_EXPECTATION_FAILED,
                     ResponseHelper.getMessageFromErrorCode(11000));
             return true;
