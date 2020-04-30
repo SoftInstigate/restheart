@@ -28,7 +28,6 @@ import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.exchange.ResponseContentInjector;
 import org.restheart.mongodb.handlers.aggregation.AggregationTransformer;
 import org.restheart.mongodb.handlers.aggregation.GetAggregationHandler;
 import org.restheart.mongodb.handlers.bulk.BulkDeleteDocumentsHandler;
@@ -76,14 +75,6 @@ public class RequestDispatcherHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestDispatcherHandler.class);
 
     /**
-     * the default response tranformer handlers chain
-     */
-    public static PipelinedHandler DEFAULT_RESP_TRANFORMERS
-            = PipelinedHandler.pipe(
-                    new RepresentationTransformer(),
-                    new ResponseContentInjector());
-
-    /**
      *
      * @return
      */
@@ -92,8 +83,6 @@ public class RequestDispatcherHandler extends PipelinedHandler {
     }
 
     private final Map<TYPE, Map<METHOD, PipelinedHandler>> handlersMultimap;
-    private final ResponseContentInjector responseSenderHandler
-            = new ResponseContentInjector(null);
 
     /**
      * Creates a new instance of RequestDispacherHandler
@@ -130,10 +119,10 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.debug(
                     "This is a bad request: returning a <{}> HTTP code",
                     HttpStatus.SC_BAD_REQUEST);
-            MongoResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_BAD_REQUEST,
                     "bad request");
-            responseSenderHandler.handleRequest(exchange);
+            next(exchange);
             return;
         }
 
@@ -141,10 +130,10 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.debug(
                     "This method is not allowed: returning a <{}> HTTP code",
                     HttpStatus.SC_METHOD_NOT_ALLOWED);
-            MongoResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_METHOD_NOT_ALLOWED,
                     "method " + request.getMethod().name() + " not allowed");
-            responseSenderHandler.handleRequest(exchange);
+            next(exchange);
             return;
         }
 
@@ -152,10 +141,10 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.debug(
                     "The resource is reserved: returning a <{}> HTTP code",
                     HttpStatus.SC_FORBIDDEN);
-            MongoResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
-            responseSenderHandler.handleRequest(exchange);
+            next(exchange);
             return;
         }
 
@@ -170,10 +159,10 @@ public class RequestDispatcherHandler extends PipelinedHandler {
             LOGGER.error(
                     "Can't find PipelinedHandler({}, {})",
                     request.getType(), request.getMethod());
-            MongoResponse.of(exchange).setIError(
+            MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_METHOD_NOT_ALLOWED,
                     "method " + request.getMethod().name() + " not allowed");
-            responseSenderHandler.handleRequest(exchange);
+            next(exchange);
         }
     }
 
@@ -214,342 +203,200 @@ public class RequestDispatcherHandler extends PipelinedHandler {
         LOGGER.trace("Initialize default HTTP handlers:");
 
         // *** ROOT handlers
-        putHandler(TYPE.ROOT, METHOD.GET,
-                PipelinedHandler.pipe(
-                        new GetRootHandler(),
-                        new RepresentationTransformer(),
-                        new ResponseContentInjector()));
+        putHandler(TYPE.ROOT, METHOD.GET, new GetRootHandler());
 
         putHandler(TYPE.ROOT_SIZE, METHOD.GET,
                 PipelinedHandler.pipe(
                         new SizeRequestTransformer(true),
                         new GetRootHandler(),
-                        new SizeRequestTransformer(false),
-                        new ResponseContentInjector()));
+                        new SizeRequestTransformer(false)));
 
         // *** DB handlers
         putHandler(TYPE.DB, METHOD.GET,
                 PipelinedHandler.pipe(
                         new GetDBHandler(),
-                        new AggregationTransformer(false),
-                        new RepresentationTransformer(),
-                        new ResponseContentInjector()
+                        new AggregationTransformer(false)
                 ));
 
         putHandler(TYPE.DB_SIZE, METHOD.GET,
                 PipelinedHandler.pipe(
                         new SizeRequestTransformer(true),
                         new GetDBHandler(),
-                        new SizeRequestTransformer(false),
-                        new ResponseContentInjector()));
+                        new SizeRequestTransformer(false)));
 
         putHandler(TYPE.DB_META, METHOD.GET,
                 PipelinedHandler.pipe(
                         new GetDocumentHandler(),
                         new AggregationTransformer(false),
-                        new MetaRequestTransformer(),
-                        new ResponseContentInjector()));
+                        new MetaRequestTransformer()));
 
-        putHandler(TYPE.DB, METHOD.PUT,
-                PipelinedHandler.pipe(
-                        new PutDBHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.DB, METHOD.PUT, new PutDBHandler());
 
-        putHandler(TYPE.DB, METHOD.DELETE,
-                PipelinedHandler.pipe(
-                        new DeleteDBHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.DB, METHOD.DELETE, new DeleteDBHandler());
 
-        putHandler(TYPE.DB, METHOD.PATCH,
-                PipelinedHandler.pipe(
-                        new PatchDBHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.DB, METHOD.PATCH, new PatchDBHandler());
 
         // *** COLLECTION handlers
         putHandler(TYPE.COLLECTION, METHOD.GET,
                 PipelinedHandler.pipe(
                         new GetCollectionHandler(),
-                        new RepresentationTransformer(),
-                        new AggregationTransformer(false),
-                        new ResponseContentInjector()
+                        new AggregationTransformer(false)
                 ));
 
         putHandler(TYPE.COLLECTION_SIZE, METHOD.GET,
                 PipelinedHandler.pipe(
                         new SizeRequestTransformer(true),
                         new GetCollectionHandler(),
-                        new SizeRequestTransformer(false),
-                        new ResponseContentInjector()));
+                        new SizeRequestTransformer(false)));
 
         putHandler(TYPE.COLLECTION_META, METHOD.GET,
                 PipelinedHandler.pipe(
                         new GetDocumentHandler(),
                         new AggregationTransformer(false),
-                        new MetaRequestTransformer(),
-                        new ResponseContentInjector()
+                        new MetaRequestTransformer()
                 ));
 
         putHandler(TYPE.COLLECTION, METHOD.POST,
                 new NormalOrBulkDispatcherHandler(
-                        PipelinedHandler.pipe(
                                 new PostCollectionHandler(),
-                                DEFAULT_RESP_TRANFORMERS
-                        ),
-                        PipelinedHandler.pipe(
-                                new BulkPostCollectionHandler(),
-                                DEFAULT_RESP_TRANFORMERS)
-                ));
+                                new BulkPostCollectionHandler()));
 
         putHandler(TYPE.COLLECTION, METHOD.PUT,
                 PipelinedHandler.pipe(
                         new AggregationTransformer(true),
-                        new PutCollectionHandler(),
-                        DEFAULT_RESP_TRANFORMERS));
+                        new PutCollectionHandler()));
 
-        putHandler(TYPE.COLLECTION, METHOD.DELETE,
-                PipelinedHandler.pipe(
-                        new DeleteCollectionHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.COLLECTION, METHOD.DELETE, new DeleteCollectionHandler());
 
         putHandler(TYPE.COLLECTION, METHOD.PATCH,
                 PipelinedHandler.pipe(
                         new AggregationTransformer(true),
-                        new PatchCollectionHandler(),
-                        DEFAULT_RESP_TRANFORMERS
+                        new PatchCollectionHandler()
                 ));
 
         // *** DOCUMENT handlers
-        putHandler(TYPE.DOCUMENT, METHOD.GET,
-                PipelinedHandler.pipe(
-                        new GetDocumentHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.DOCUMENT, METHOD.GET, new GetDocumentHandler());
 
-        putHandler(TYPE.DOCUMENT, METHOD.PUT,
-                PipelinedHandler.pipe(
-                        new PutDocumentHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.DOCUMENT, METHOD.PUT, new PutDocumentHandler());
 
-        putHandler(TYPE.DOCUMENT, METHOD.DELETE,
-                PipelinedHandler.pipe(
-                        new DeleteDocumentHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.DOCUMENT, METHOD.DELETE, new DeleteDocumentHandler());
 
-        putHandler(TYPE.DOCUMENT, METHOD.PATCH,
-                PipelinedHandler.pipe(
-                        new PatchDocumentHandler(),
-                        DEFAULT_RESP_TRANFORMERS));
+        putHandler(TYPE.DOCUMENT, METHOD.PATCH, new PatchDocumentHandler());
 
         // *** BULK_DOCUMENTS handlers, i.e. bulk operations
-        putHandler(TYPE.BULK_DOCUMENTS, METHOD.DELETE,
-                PipelinedHandler.pipe(
-                        new BulkDeleteDocumentsHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.BULK_DOCUMENTS, METHOD.DELETE, 
+                new BulkDeleteDocumentsHandler());
 
         putHandler(TYPE.BULK_DOCUMENTS, METHOD.PATCH,
-                PipelinedHandler.pipe(
-                        new BulkPatchDocumentsHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+                new BulkPatchDocumentsHandler());
 
         // *** COLLECTION_INDEXES handlers
-        putHandler(TYPE.COLLECTION_INDEXES, METHOD.GET,
-                PipelinedHandler.pipe(
-                        new GetIndexesHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.COLLECTION_INDEXES, METHOD.GET, new GetIndexesHandler());
 
         // *** INDEX handlers
-        putHandler(TYPE.INDEX, METHOD.PUT,
-                PipelinedHandler.pipe(
-                        new PutIndexHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.INDEX, METHOD.PUT, new PutIndexHandler());
 
-        putHandler(TYPE.INDEX, METHOD.DELETE,
-                PipelinedHandler.pipe(
-                        new DeleteIndexHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.INDEX, METHOD.DELETE, new DeleteIndexHandler());
 
         // *** FILES_BUCKET and FILE handlers
-        putHandler(TYPE.FILES_BUCKET, METHOD.GET,
-                PipelinedHandler.pipe(
-                        new GetCollectionHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.FILES_BUCKET, METHOD.GET, new GetCollectionHandler());
 
-        putHandler(TYPE.FILES_BUCKET, METHOD.GET,
-                PipelinedHandler.pipe(
-                        new GetCollectionHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.FILES_BUCKET, METHOD.GET, new GetCollectionHandler());
 
         putHandler(TYPE.FILES_BUCKET_SIZE, METHOD.GET,
                 PipelinedHandler.pipe(
                         new SizeRequestTransformer(true),
                         new GetCollectionHandler(),
-                        new SizeRequestTransformer(false),
-                        new ResponseContentInjector()));
+                        new SizeRequestTransformer(false)));
 
         putHandler(TYPE.FILES_BUCKET_META, METHOD.GET,
                 PipelinedHandler.pipe(
                         new GetDocumentHandler(),
-                        new MetaRequestTransformer(),
-                        new ResponseContentInjector()
+                        new MetaRequestTransformer()
                 ));
 
-        putHandler(TYPE.FILES_BUCKET, METHOD.POST,
-                PipelinedHandler.pipe(
-                        new PostBucketHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.FILES_BUCKET, METHOD.POST, new PostBucketHandler());
 
         putHandler(TYPE.FILE, METHOD.PUT,
                 PipelinedHandler.pipe(
                         new PutFileHandler(),
-                        new FileMetadataHandler(),
-                        DEFAULT_RESP_TRANFORMERS
+                        new FileMetadataHandler()
                 ));
 
-        putHandler(TYPE.FILES_BUCKET, METHOD.PUT,
-                PipelinedHandler.pipe(
-                        new PutBucketHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.FILES_BUCKET, METHOD.PUT, new PutBucketHandler());
 
-        putHandler(TYPE.FILES_BUCKET, METHOD.PATCH,
-                PipelinedHandler.pipe(
-                        new PatchCollectionHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.FILES_BUCKET, METHOD.PATCH, new PatchCollectionHandler());
 
-        putHandler(TYPE.FILES_BUCKET, METHOD.DELETE,
-                PipelinedHandler.pipe(
-                        new DeleteBucketHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.FILES_BUCKET, METHOD.DELETE, new DeleteBucketHandler());
 
-        putHandler(TYPE.FILE, METHOD.GET,
-                PipelinedHandler.pipe(
-                        new GetFileHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.FILE, METHOD.GET, new GetFileHandler());
 
-        putHandler(TYPE.FILE_BINARY, METHOD.GET,
-                PipelinedHandler.pipe(new GetFileBinaryHandler(),
-                        new ResponseContentInjector()
-                ));
+        putHandler(TYPE.FILE_BINARY, METHOD.GET, new GetFileBinaryHandler());
 
-        putHandler(TYPE.FILE, METHOD.DELETE,
-                PipelinedHandler.pipe(
-                        new DeleteFileHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.FILE, METHOD.DELETE, new DeleteFileHandler());
 
         // PUTting or PATCHing a file involves updating the metadata in the
         // xxx.files bucket for an _id. Although the chunks are immutable we
         // can treat the metadata like a regular document.
-        putHandler(TYPE.FILE, METHOD.PATCH,
-                PipelinedHandler.pipe(
-                        new FileMetadataHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.FILE, METHOD.PATCH, new FileMetadataHandler());
 
         // *** AGGREGATION handler
-        putHandler(TYPE.AGGREGATION, METHOD.GET,
-                PipelinedHandler.pipe(
-                        new GetAggregationHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.AGGREGATION, METHOD.GET, new GetAggregationHandler());
 
         // *** Sessions handlers
-        putHandler(TYPE.SESSIONS, METHOD.POST,
-                PipelinedHandler.pipe(
-                        new PostSessionHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.SESSIONS, METHOD.POST, new PostSessionHandler());
 
         // *** SCHEMA handlers
         putHandler(TYPE.SCHEMA_STORE, METHOD.GET,
                 PipelinedHandler.pipe(
                         new GetCollectionHandler(),
-                        new JsonSchemaTransformer(false),
-                        DEFAULT_RESP_TRANFORMERS
+                        new JsonSchemaTransformer(false)
                 ));
 
         putHandler(TYPE.SCHEMA_STORE_SIZE, METHOD.GET,
                 PipelinedHandler.pipe(
                         new SizeRequestTransformer(true),
                         new GetCollectionHandler(),
-                        new SizeRequestTransformer(false),
-                        new ResponseContentInjector()));
+                        new SizeRequestTransformer(false)));
 
         putHandler(TYPE.SCHEMA_STORE_META, METHOD.GET,
                 PipelinedHandler.pipe(
                         new GetDocumentHandler(),
-                        new MetaRequestTransformer(),
-                        new ResponseContentInjector()
+                        new MetaRequestTransformer()
                 ));
 
         putHandler(TYPE.SCHEMA_STORE, METHOD.PUT,
                 PipelinedHandler.pipe(
-                        new PutCollectionHandler(),
-                        DEFAULT_RESP_TRANFORMERS
+                        new PutCollectionHandler()
                 ));
 
-        putHandler(TYPE.SCHEMA_STORE, METHOD.PATCH,
-                PipelinedHandler.pipe(
-                        new PatchCollectionHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.SCHEMA_STORE, METHOD.PATCH, new PatchCollectionHandler());
 
         putHandler(TYPE.SCHEMA_STORE, METHOD.POST,
                 PipelinedHandler.pipe(
                         new JsonMetaSchemaChecker(),
                         new JsonSchemaTransformer(true),
-                        new PostCollectionHandler(),
-                        DEFAULT_RESP_TRANFORMERS
+                        new PostCollectionHandler()
                 ));
 
-        putHandler(TYPE.SCHEMA_STORE, METHOD.DELETE,
-                PipelinedHandler.pipe(
-                        new DeleteCollectionHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.SCHEMA_STORE, METHOD.DELETE, new DeleteCollectionHandler());
 
         putHandler(TYPE.SCHEMA, METHOD.GET,
                 PipelinedHandler.pipe(
                         new GetDocumentHandler(),
-                        new JsonSchemaTransformer(false),
-                        DEFAULT_RESP_TRANFORMERS
+                        new JsonSchemaTransformer(false)
                 ));
 
         putHandler(TYPE.SCHEMA, METHOD.PUT,
                 PipelinedHandler.pipe(
                         new JsonMetaSchemaChecker(),
                         new JsonSchemaTransformer(true),
-                        new PutDocumentHandler(),
-                        DEFAULT_RESP_TRANFORMERS
+                        new PutDocumentHandler()
                 ));
 
-        putHandler(TYPE.SCHEMA, METHOD.DELETE,
-                PipelinedHandler.pipe(
-                        new DeleteDocumentHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.SCHEMA, METHOD.DELETE, new DeleteDocumentHandler());
 
-        putHandler(TYPE.METRICS, METHOD.GET,
-                PipelinedHandler.pipe(new MetricsHandler(),
-                        DEFAULT_RESP_TRANFORMERS
-                ));
+        putHandler(TYPE.METRICS, METHOD.GET, new MetricsHandler());
     }
 
     /**

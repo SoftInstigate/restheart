@@ -24,8 +24,8 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import java.util.ArrayList;
 import java.util.List;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
@@ -114,7 +114,7 @@ public interface Database {
      * @param cursorAllocationPolicy
      * @return Collection Data as ArrayList of BsonDocument
      */
-    ArrayList<BsonDocument> getCollectionData(
+    BsonArray getCollectionData(
             final ClientSession cs,
             final MongoCollection<BsonDocument> collection,
             final int page,
@@ -176,7 +176,7 @@ public interface Database {
      * @throws org.restheart.representation.IllegalQueryParamenterException
      *
      */
-    List<BsonDocument> getDatabaseData(
+    BsonArray getDatabaseData(
             final ClientSession cs,
             final String dbName, List<String> collections,
             final int page,

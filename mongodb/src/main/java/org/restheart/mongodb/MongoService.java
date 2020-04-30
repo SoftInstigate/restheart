@@ -95,7 +95,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
                     + "Make sure that mongoInitializer is enabled "
                     + "and executed successfully";
 
-            response.setIError(500, error);
+            response.setInError(500, error);
             LOGGER.error(error);
         }
     }

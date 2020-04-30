@@ -183,7 +183,7 @@ public class MetricsHandler extends PipelinedHandler {
                             .map(ResponseType::getContentType)
                             .map(x -> "'" + x + "'")
                             .collect(Collectors.joining(","));
-                    response.setIError(
+                    response.setInError(
                             HttpStatus.SC_NOT_ACCEPTABLE,
                             "not acceptable, acceptable content types are: " + acceptableTypes
                     );
@@ -192,7 +192,7 @@ public class MetricsHandler extends PipelinedHandler {
                 response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
         } else {  //no matching registry found
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_FOUND,
                     "not found");
         }

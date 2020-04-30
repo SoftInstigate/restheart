@@ -85,7 +85,7 @@ public class DeleteDBHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_CONFLICT,
                     "The database's ETag must be provided using the '"
                     + Headers.IF_MATCH

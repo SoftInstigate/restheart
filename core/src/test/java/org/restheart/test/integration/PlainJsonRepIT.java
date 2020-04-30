@@ -456,9 +456,9 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertNull(body.asDocument().get("_embedded"));
 
-        Assert.assertNotNull(body.asDocument().get("_exceptions"));
+        Assert.assertNotNull(body.asDocument().get("_exception"));
 
-        Assert.assertTrue(body.asDocument().get("_exceptions").isArray());
+        Assert.assertTrue(body.asDocument().get("_exception").isDocument());
 
         Assert.assertNotNull(body.asDocument().get("message"));
     }
@@ -485,13 +485,13 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(body.isDocument());
 
-        Assert.assertNull(body.asDocument().get("_embedded"));
+        Assert.assertNotNull(body.asDocument().get("_exception"));
 
-        Assert.assertNotNull(body.asDocument().get("_exceptions"));
-
-        Assert.assertTrue(body.asDocument().get("_exceptions").isArray());
+        Assert.assertTrue(body.asDocument().get("_exception").isDocument());
 
         Assert.assertNotNull(body.asDocument().get("message"));
+        
+        Assert.assertTrue(body.asDocument().get("message").isString());
     }
 
     /**
@@ -519,9 +519,9 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertNull(body.asDocument().get("_embedded"));
 
-        Assert.assertNotNull(body.asDocument().get("_exceptions"));
+        Assert.assertNotNull(body.asDocument().get("_exception"));
 
-        Assert.assertTrue(body.asDocument().get("_exceptions").isArray());
+        Assert.assertTrue(body.asDocument().get("_exception").isDocument());
 
         // event if np, in case of error return the props
         Assert.assertNotNull(body.asDocument().get("message"));

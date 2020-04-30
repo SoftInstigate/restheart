@@ -29,9 +29,9 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
-import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonObjectId;
@@ -183,7 +183,7 @@ class CollectionDAO {
                         .getQueryTimeLimit(), TimeUnit.MILLISECONDS);
     }
 
-    ArrayList<BsonDocument> getCollectionData(
+    BsonArray getCollectionData(
             final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final int page,
@@ -195,7 +195,7 @@ class CollectionDAO {
             final EAGER_CURSOR_ALLOCATION_POLICY eager)
             throws JsonParseException {
 
-        ArrayList<BsonDocument> ret = new ArrayList<>();
+        var ret = new BsonArray();
 
         int toskip = pagesize * (page - 1);
 

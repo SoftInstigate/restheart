@@ -101,7 +101,7 @@ public class PostCollectionHandler extends PipelinedHandler {
 
         // cannot POST an array
         if (!_content.isDocument()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             next(exchange);
@@ -115,7 +115,7 @@ public class PostCollectionHandler extends PipelinedHandler {
                 && MongoRequest.isReservedResourceDocument(
                         request.getType(),
                         content.get("_id").asString().getValue())) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");
             next(exchange);
@@ -127,7 +127,7 @@ public class PostCollectionHandler extends PipelinedHandler {
         if (!content.containsKey("_id")) {
             if (!(request.getDocIdType() == DOC_ID_TYPE.OID)
                     && !(request.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
-                response.setIError(
+                response.setInError(
                         HttpStatus.SC_NOT_ACCEPTABLE,
                         "_id in content body is mandatory "
                         + "for documents with id type "
@@ -156,7 +156,7 @@ public class PostCollectionHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '"
                     + Headers.IF_MATCH
@@ -168,7 +168,7 @@ public class PostCollectionHandler extends PipelinedHandler {
         
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_EXPECTATION_FAILED,
                     ResponseHelper.getMessageFromErrorCode(11000));
             next(exchange);

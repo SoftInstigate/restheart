@@ -22,6 +22,7 @@ package org.restheart.mongodb.handlers;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
+import org.bson.BsonInt64;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -52,18 +53,15 @@ public class SizeRequestTransformer extends PipelinedHandler {
     public void handleRequest(final HttpServerExchange exchange) throws Exception {
         // for request phase
         if (phase) {
+            // this avoids the query to be executed, just count
             MongoRequest.of(exchange).setPagesize(0);
         } else {
             var response = MongoResponse.of(exchange);
 
             // for response phase
-            if (response.getContent() != null
-                    && response.getContent().isDocument()
-                    && response.getContent().asDocument().containsKey("_size")) {
-
-                var doc = response.getContent().asDocument();
-
-                response.setContent(new BsonDocument("_size", doc.get("_size")));
+            if (response.getCount() >= 0) {
+                response.setContent(new BsonDocument("_size", 
+                        new BsonInt64(response.getCount())));
             }
         }
 

@@ -94,7 +94,7 @@ public abstract class Response<T> extends Exchange<T> {
      * sets Content-Type=application/json
      */
     public void setContentTypeAsJson() {
-        setContentType("application/json");
+        setContentType(Exchange.JSON_MEDIA_TYPE);
     }
 
     /**
@@ -150,15 +150,6 @@ public abstract class Response<T> extends Exchange<T> {
      */
     public void setInError(int code,
             String message) {
-        setInError(code, message, null);
-    }
-
-    /**
-     *
-     * @param code
-     * @param message
-     */
-    public void setIError(int code, String message) {
         setInError(code, message, null);
     }
 }

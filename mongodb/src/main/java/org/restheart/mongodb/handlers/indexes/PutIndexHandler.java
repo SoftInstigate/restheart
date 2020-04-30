@@ -73,7 +73,7 @@ public class PutIndexHandler extends PipelinedHandler {
         final String id = request.getIndexId();
 
         if (id.startsWith("_")) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "index name cannot start with _");
             next(exchange);
@@ -84,7 +84,7 @@ public class PutIndexHandler extends PipelinedHandler {
         
         // must be an object
         if (!_content.isDocument()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data cannot be an array");
             next(exchange);
@@ -98,7 +98,7 @@ public class PutIndexHandler extends PipelinedHandler {
         
         // must be an object, mandatory
         if (_keys == null || !_keys.isDocument()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "keys must be a json object");
             next(exchange);
@@ -107,7 +107,7 @@ public class PutIndexHandler extends PipelinedHandler {
         
         // must be an object, optional
         if (_ops != null && !_ops.isDocument()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "ops must be a json object");
             next(exchange);

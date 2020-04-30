@@ -73,7 +73,7 @@ public class PutDBHandler extends PipelinedHandler {
 
         if (request.getDBName().isEmpty()
                 || request.getDBName().startsWith("_")) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "db name cannot be empty or start with _");
             next(exchange);
@@ -88,7 +88,7 @@ public class PutDBHandler extends PipelinedHandler {
 
         // cannot PUT an array
         if (!_content.isDocument()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             next(exchange);
@@ -116,7 +116,7 @@ public class PutDBHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_CONFLICT,
                     "The database's ETag must be provided using the '"
                     + Headers.IF_MATCH

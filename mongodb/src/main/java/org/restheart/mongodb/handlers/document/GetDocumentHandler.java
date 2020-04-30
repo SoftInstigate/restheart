@@ -47,8 +47,6 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -202,7 +200,7 @@ public class GetDocumentHandler extends PipelinedHandler {
                 }
             }
 
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_FOUND,
                     errMsg);
             next(exchange);
@@ -234,17 +232,9 @@ public class GetDocumentHandler extends PipelinedHandler {
             return;
         }
 
-        String requestPath = URLUtils.removeTrailingSlashes(
-                exchange.getRequestPath());
+        response.setContent(document);
 
-        response.setContent(new DocumentRepresentationFactory()
-                .getRepresentation(
-                        requestPath,
-                        exchange,
-                        document)
-                .asBsonDocument());
-
-        response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+        response.setContentTypeAsJson();
         response.setStatusCode(HttpStatus.SC_OK);
 
         ResponseHelper.injectEtagHeader(exchange, etag);

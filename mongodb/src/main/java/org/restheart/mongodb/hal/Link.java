@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.representation;
+package org.restheart.mongodb.hal;
 
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
@@ -27,7 +27,7 @@ import org.bson.BsonString;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class Link {
+class Link {
     private final BsonDocument doc = new BsonDocument();
 
     /**

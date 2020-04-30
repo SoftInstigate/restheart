@@ -26,7 +26,7 @@ import io.undertow.util.Headers;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.junit.Test;
-import org.restheart.representation.Resource;
+import org.restheart.exchange.Exchange;
 import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 
@@ -51,11 +51,11 @@ public class DeleteCollectionIT extends HttpClientAbstactIT {
         Response resp;
 
         // *** PUT tmpdb
-        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Put(dbTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put db", resp, HttpStatus.SC_CREATED);
 
         // *** PUT tmpcoll
-        resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Put(collectionTmpUri).bodyString("{a:1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check put coll1", resp, HttpStatus.SC_CREATED);
 
         // try to delete without etag
@@ -66,7 +66,7 @@ public class DeleteCollectionIT extends HttpClientAbstactIT {
         resp = adminExecutor.execute(Request.Delete(collectionTmpUri).addHeader(Headers.IF_MATCH_STRING, "pippoetag"));
         check("check delete tmp doc with wrong etag", resp, HttpStatus.SC_PRECONDITION_FAILED);
 
-        resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         //check("getting etag of tmp doc", resp, HttpStatus.SC_OK);
 
         JsonObject content = Json.parse(resp.returnContent().asString()).asObject();
@@ -77,7 +77,7 @@ public class DeleteCollectionIT extends HttpClientAbstactIT {
         resp = adminExecutor.execute(Request.Delete(collectionTmpUri).addHeader(Headers.IF_MATCH_STRING, etag));
         check("check delete tmp doc with correct etag", resp, HttpStatus.SC_NO_CONTENT);
 
-        resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+        resp = adminExecutor.execute(Request.Get(collectionTmpUri).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
         check("check get deleted tmp doc", resp, HttpStatus.SC_NOT_FOUND);
     }
 }

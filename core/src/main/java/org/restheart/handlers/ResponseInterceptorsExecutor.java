@@ -90,8 +90,7 @@ public class ResponseInterceptorsExecutor
             response = ByteArrayProxyResponse.of(exchange);
         }
 
-        if (!Exchange.isInError(exchange)
-                && !Exchange.responseInterceptorsExecuted(exchange)) {
+        if (!Exchange.responseInterceptorsExecuted(exchange)) {
             Exchange.setResponseInterceptorsExecuted(exchange);
             executeAsyncResponseInterceptor(exchange, handlingService, request, response);
             executeResponseInterceptor(exchange, handlingService, request, response);

@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.representation;
+package org.restheart.mongodb.hal;
 
 import java.util.Objects;
 import org.bson.BsonArray;
@@ -33,7 +33,7 @@ import org.restheart.exchange.MongoRequest;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class Resource {
+class Resource {
 
     /**
      * Supported content types
@@ -249,7 +249,7 @@ public class Resource {
      * @param request
      * @return true if representationFormat == HAL
      */
-    public static boolean isHALRep(MongoRequest request) {
+    public static boolean isHAL(MongoRequest request) {
         return request.getRepresentationFormat() == REPRESENTATION_FORMAT.HAL;
     }
 
@@ -257,7 +257,7 @@ public class Resource {
      * @param request
      * @return true if representationFormat == SHAL or PLAIN_JSON or PJ
      */
-    public static boolean isSHALRep(MongoRequest request) {
+    public static boolean isSHAL(MongoRequest request) {
         return request.getRepresentationFormat() == REPRESENTATION_FORMAT.SHAL
                 || request.getRepresentationFormat()
                 == REPRESENTATION_FORMAT.PLAIN_JSON

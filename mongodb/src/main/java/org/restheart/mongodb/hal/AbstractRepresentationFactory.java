@@ -18,26 +18,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.representation;
+package org.restheart.mongodb.hal;
 
 import io.undertow.server.HttpServerExchange;
 import static java.lang.Math.toIntExact;
-import java.util.List;
 import java.util.TreeMap;
-import org.bson.BsonDocument;
+import org.bson.BsonArray;
 import org.bson.BsonInt32;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.Link;
 import org.restheart.representation.RepresentationUtils;
-import org.restheart.representation.Resource;
 
 /**
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public abstract class AbstractRepresentationFactory {
+abstract class AbstractRepresentationFactory {
 
     /**
      *
@@ -49,7 +46,7 @@ public abstract class AbstractRepresentationFactory {
      */
     public abstract Resource getRepresentation(
             HttpServerExchange exchange,
-            List<BsonDocument> embeddedData,
+            BsonArray embeddedData,
             long size)
             throws IllegalQueryParamenterException;
 
@@ -95,7 +92,7 @@ public abstract class AbstractRepresentationFactory {
      * @param rep
      */
     protected void addReturnedProperty(
-            final List<BsonDocument> embeddedData,
+            final BsonArray embeddedData,
             final Resource rep) {
         long count = embeddedData == null ? 0 : embeddedData.size();
 
@@ -112,7 +109,6 @@ public abstract class AbstractRepresentationFactory {
             final HttpServerExchange exchange,
             final String requestPath) {
         var request = MongoRequest.of(exchange);
-
         String queryString
                 = exchange.getQueryString() == null
                 || exchange.getQueryString().isEmpty()

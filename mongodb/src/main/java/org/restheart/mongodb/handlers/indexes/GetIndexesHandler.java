@@ -22,12 +22,12 @@ package org.restheart.mongodb.handlers.indexes;
 
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -68,20 +68,22 @@ public class GetIndexesHandler extends PipelinedHandler {
             return;
         }
 
-        List<BsonDocument> indexes = dbsDAO
+        List<BsonDocument> _indexes = dbsDAO
                 .getCollectionIndexes(
                         request.getClientSession(),
                         request.getDBName(),
                         request.getCollectionName());
 
-        response.setContent(IndexesRepresentationFactory
-                .getRepresentation(
-                        exchange,
-                        indexes,
-                        indexes.size())
-                .asBsonDocument());
+        final var indexes = new BsonArray();
 
-        response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+        if (_indexes != null) {
+            _indexes.stream().forEachOrdered(indexes::add);
+        }
+
+        response.setContent(indexes);
+        response.setCount(indexes.size());
+
+        response.setContentTypeAsJson();
         response.setStatusCode(HttpStatus.SC_OK);
 
         next(exchange);

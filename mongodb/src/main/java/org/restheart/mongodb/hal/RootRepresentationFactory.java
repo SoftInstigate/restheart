@@ -18,20 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.root;
+package org.restheart.mongodb.hal;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.List;
-import org.bson.BsonDocument;
+import org.bson.BsonArray;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.mongodb.handlers.database.DBRepresentationFactory;
-import org.restheart.mongodb.representation.AbstractRepresentationFactory;
 import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.Link;
-import org.restheart.representation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +34,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RootRepresentationFactory extends AbstractRepresentationFactory {
+class RootRepresentationFactory extends AbstractRepresentationFactory {
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(RootRepresentationFactory.class);
@@ -61,7 +56,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
     @Override
     public Resource getRepresentation(
             HttpServerExchange exchange,
-            List<BsonDocument> embeddedData,
+            BsonArray embeddedData,
             long size)
             throws IllegalQueryParamenterException {
         var request = MongoRequest.of(exchange);
@@ -98,7 +93,7 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
     private void addEmbeddedData(
             MongoRequest request,
-            List<BsonDocument> embeddedData,
+            BsonArray embeddedData,
             final Resource rep,
             final String requestPath) {
         if (embeddedData != null) {
@@ -126,11 +121,15 @@ public class RootRepresentationFactory extends AbstractRepresentationFactory {
 
     private void embeddedDbs(
             MongoRequest request,
-            List<BsonDocument> embeddedData,
+            BsonArray embeddedData,
             boolean trailingSlash,
             String requestPath,
             Resource rep) {
-        embeddedData.stream().filter(d -> d != null).forEach((d) -> {
+        embeddedData.stream()
+                .filter(d -> d != null)
+                .filter(d -> d.isDocument())
+                .map(d -> d.asDocument())
+                .forEach((d) -> {
             BsonValue _id = d.get("_id");
 
             if (_id != null

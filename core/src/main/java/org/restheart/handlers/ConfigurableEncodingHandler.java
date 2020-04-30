@@ -76,7 +76,7 @@ public class ConfigurableEncodingHandler extends EncodingHandler {
             }
 
             Exchange.setInError(exchange);
-            ByteArrayProxyResponse.of(exchange).setIError(
+            ByteArrayProxyResponse.of(exchange).setInError(
                     HttpStatus.SC_BAD_REQUEST,
                     "Accept-Encoding header must include gzip or deflate");
 

@@ -287,7 +287,6 @@ plugins-args:
     enabled: false
     uri: /echo
     secured: false
-
   mongo:
     enabled: true
     uri: /

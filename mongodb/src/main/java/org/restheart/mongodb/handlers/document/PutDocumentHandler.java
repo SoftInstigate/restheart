@@ -89,7 +89,7 @@ public class PutDocumentHandler extends PipelinedHandler {
 
         // cannot PUT an array
         if (!_content.isDocument()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a josn object");
             next(exchange);
@@ -103,7 +103,7 @@ public class PutDocumentHandler extends PipelinedHandler {
         if (content.get("_id") == null) {
             content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "_id in content body is different than id in URL");
             next(exchange);
@@ -132,7 +132,7 @@ public class PutDocumentHandler extends PipelinedHandler {
         }
         
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_CONFLICT,
                     "The document's ETag must be provided using the '"
                     + Headers.IF_MATCH
@@ -143,7 +143,7 @@ public class PutDocumentHandler extends PipelinedHandler {
         
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_EXPECTATION_FAILED,
                     ResponseHelper.getMessageFromErrorCode(11000));
             next(exchange);

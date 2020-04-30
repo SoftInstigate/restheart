@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.exchange.MongoRequest;
@@ -37,7 +38,6 @@ import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.metadata.InvalidMetadataException;
 import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -72,7 +72,7 @@ public class GetAggregationHandler extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
-        
+
         if (request.isInError()) {
             next(exchange);
             return;
@@ -89,18 +89,18 @@ public class GetAggregationHandler extends PipelinedHandler {
                         -> q.getUri().equals(queryUri)).findFirst();
 
         if (!_query.isPresent()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_FOUND, "query does not exist");
             next(exchange);
             return;
         }
 
-        ArrayList<BsonDocument> data = new ArrayList<>();
+        ArrayList<BsonDocument> _data = new ArrayList<>();
 
         AbstractAggregationOperation query = _query.get();
 
         if (null == query.getType()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
             next(exchange);
             return;
@@ -131,7 +131,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                                 .filter(
                                         mapReduce.getResolvedQuery(avars))
                                 .maxTime(MongoServiceConfiguration.get()
-                                        .getAggregationTimeLimit(), 
+                                        .getAggregationTimeLimit(),
                                         TimeUnit.MILLISECONDS);
                     } catch (MongoCommandException | InvalidMetadataException ex) {
                         response.setInError(
@@ -140,7 +140,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
-                        response.setIError(
+                        response.setInError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "error executing mapReduce: "
                                 + qvnbe.getMessage());
@@ -149,7 +149,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                     }
                     // ***** get data
                     for (BsonDocument obj : mrOutput) {
-                        data.add(obj);
+                        _data.add(obj);
                     }
                     break;
                 case AGGREGATION_PIPELINE:
@@ -175,7 +175,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
-                        response.setIError(
+                        response.setInError(
                                 HttpStatus.SC_BAD_REQUEST,
                                 "error executing aggreation pipeline: "
                                 + qvnbe.getMessage());
@@ -184,11 +184,11 @@ public class GetAggregationHandler extends PipelinedHandler {
                     }
                     // ***** get data
                     for (BsonDocument obj : agrOutput) {
-                        data.add(obj);
+                        _data.add(obj);
                     }
                     break;
                 default:
-                    response.setIError(
+                    response.setInError(
                             HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
                     next(exchange);
                     return;
@@ -201,14 +201,14 @@ public class GetAggregationHandler extends PipelinedHandler {
         }
 
         try {
-            response.setContent(new AggregationResultRepresentationFactory()
-                    .getRepresentation(
-                            exchange,
-                            data,
-                            data.size())
-                    .asBsonDocument());
+            var data = new BsonArray();
+            
+            _data.stream().forEachOrdered(data::add);
 
-            response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+            response.setContent(data);
+            response.setCount(data.size());
+            
+            response.setContentTypeAsJson();
             response.setStatusCode(HttpStatus.SC_OK);
 
             // call the ResponseTransformerMetadataHandler if piped in

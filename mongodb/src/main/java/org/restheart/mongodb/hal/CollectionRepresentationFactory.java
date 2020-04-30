@@ -18,11 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.collection;
+package org.restheart.mongodb.hal;
 
 import io.undertow.server.HttpServerExchange;
 import java.time.Instant;
-import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
@@ -35,19 +34,15 @@ import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
 import static org.restheart.exchange.ExchangeKeys._STREAMS;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.handlers.aggregation.AbstractAggregationOperation;
-import org.restheart.mongodb.handlers.document.DocumentRepresentationFactory;
-import org.restheart.mongodb.representation.AbstractRepresentationFactory;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.Link;
 import org.restheart.representation.RepresentationUtils;
-import org.restheart.representation.Resource;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class CollectionRepresentationFactory
+class CollectionRepresentationFactory
         extends AbstractRepresentationFactory {
 
     // TODO this is hardcoded, if name of checker is changed in conf file
@@ -73,7 +68,7 @@ public class CollectionRepresentationFactory
     private static final String RHFILE = "rh:file";
     private static final String RHSCHEMA = "rh:schema";
     private static final String RHDOC = "rh:doc";
-    
+
     private static final String STREAMS_ELEMENT_NAME = "streams";
 
     /**
@@ -117,11 +112,11 @@ public class CollectionRepresentationFactory
     @Override
     public Resource getRepresentation(
             HttpServerExchange exchange,
-            List<BsonDocument> embeddedData,
+            BsonArray embeddedData,
             long size)
             throws IllegalQueryParamenterException {
         var request = MongoRequest.of(exchange);
-        
+
         final String requestPath = buildRequestPath(exchange);
         final Resource rep;
 
@@ -163,7 +158,7 @@ public class CollectionRepresentationFactory
     }
 
     private void addEmbeddedData(
-            List<BsonDocument> embeddedData,
+            BsonArray embeddedData,
             final Resource rep,
             final String requestPath,
             final HttpServerExchange exchange)
@@ -212,7 +207,7 @@ public class CollectionRepresentationFactory
             });
         }
     }
-    
+
     private void addStreamsLinks(
             final MongoRequest request,
             final Resource rep,
@@ -290,80 +285,83 @@ public class CollectionRepresentationFactory
     }
 
     private void embeddedDocuments(
-            List<BsonDocument> embeddedData,
+            BsonArray embeddedData,
             String requestPath,
             HttpServerExchange exchange,
             Resource rep)
             throws IllegalQueryParamenterException {
         var request = MongoRequest.of(exchange);
-        
-        for (BsonDocument d : embeddedData) {
-            BsonValue _id = d.get(_ID);
 
-            if (_id != null
-                    && MongoRequest.isReservedResourceCollection(
-                            _id.toString())) {
-                rep.addWarning("filtered out reserved resource "
-                        + requestPath + "/"
-                        + _id.toString());
-            } else {
-                Resource nrep;
+        for (BsonValue _d : embeddedData) {
+            if (_d != null && _d.isDocument()) {
+                var d = _d.asDocument();
 
-                if (_id == null) {
-                    nrep = new DocumentRepresentationFactory()
-                            .getRepresentation(
-                                    requestPath + "/_null",
-                                    exchange,
-                                    d);
+                BsonValue _id = d.get(_ID);
+
+                if (_id != null
+                        && MongoRequest.isReservedResourceCollection(
+                                _id.toString())) {
+                    rep.addWarning("filtered out reserved resource "
+                            + requestPath + "/"
+                            + _id.toString());
                 } else {
-                    nrep = new DocumentRepresentationFactory()
-                            .getRepresentation(RepresentationUtils.getReferenceLink(requestPath, _id),
-                                    exchange,
-                                    d);
-                }
+                    Resource nrep;
 
-                if (null == request.getType()) {
-                    if (request.isFullHalMode()) {
-                        DocumentRepresentationFactory.addSpecialProperties(
-                                nrep,
-                                TYPE.DOCUMENT,
-                                d);
+                    if (_id == null) {
+                        nrep = new DocumentRepresentationFactory()
+                                .getRepresentation(
+                                        requestPath + "/_null",
+                                        exchange,
+                                        d);
+                    } else {
+                        nrep = new DocumentRepresentationFactory()
+                                .getRepresentation(RepresentationUtils.getReferenceLink(requestPath, _id),
+                                        exchange,
+                                        d);
                     }
 
-                    rep.addChild(RHDOC, nrep);
-                } else {
-                    switch (request.getType()) {
-                        case FILES_BUCKET:
-                            if (request.isFullHalMode()) {
-                                DocumentRepresentationFactory.addSpecialProperties(
-                                        nrep,
-                                        TYPE.FILE,
-                                        d);
-                            }
-                            rep.addChild(RHFILE, nrep);
-                            break;
-                        case SCHEMA_STORE:
-                            if (request.isFullHalMode()) {
-                                DocumentRepresentationFactory.addSpecialProperties(
-                                        nrep,
-                                        TYPE.SCHEMA,
-                                        d);
-                            }
-                            rep.addChild(RHSCHEMA, nrep);
-                            break;
-                        default:
-                            if (request.isFullHalMode()) {
-                                DocumentRepresentationFactory.addSpecialProperties(
-                                        nrep,
-                                        TYPE.DOCUMENT,
-                                        d);
-                            }
-                            rep.addChild(RHDOC, nrep);
-                            break;
+                    if (null == request.getType()) {
+                        if (request.isFullHalMode()) {
+                            DocumentRepresentationFactory.addSpecialProperties(
+                                    nrep,
+                                    TYPE.DOCUMENT,
+                                    d);
+                        }
+
+                        rep.addChild(RHDOC, nrep);
+                    } else {
+                        switch (request.getType()) {
+                            case FILES_BUCKET:
+                                if (request.isFullHalMode()) {
+                                    DocumentRepresentationFactory.addSpecialProperties(
+                                            nrep,
+                                            TYPE.FILE,
+                                            d);
+                                }
+                                rep.addChild(RHFILE, nrep);
+                                break;
+                            case SCHEMA_STORE:
+                                if (request.isFullHalMode()) {
+                                    DocumentRepresentationFactory.addSpecialProperties(
+                                            nrep,
+                                            TYPE.SCHEMA,
+                                            d);
+                                }
+                                rep.addChild(RHSCHEMA, nrep);
+                                break;
+                            default:
+                                if (request.isFullHalMode()) {
+                                    DocumentRepresentationFactory.addSpecialProperties(
+                                            nrep,
+                                            TYPE.DOCUMENT,
+                                            d);
+                                }
+                                rep.addChild(RHDOC, nrep);
+                                break;
+                        }
                     }
                 }
             }
         }
     }
-
 }

@@ -26,14 +26,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.bson.BsonDocument;
+import org.bson.BsonArray;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
-import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -86,7 +85,7 @@ public class GetRootHandler extends PipelinedHandler {
 
         int size = 0;
 
-        List<BsonDocument> data = new ArrayList<>();
+        var data = new BsonArray();
 
         if (request.getPagesize() >= 0) {
             List<String> _dbs = dbsDAO.getDatabaseNames(
@@ -94,7 +93,7 @@ public class GetRootHandler extends PipelinedHandler {
 
             // filter out reserved resources
             List<String> dbs = _dbs.stream()
-                    .filter(db -> MongoRequest.isReservedResourceDb(db))
+                    .filter(db -> !MongoRequest.isReservedResourceDb(db))
                     .collect(Collectors.toList());
 
             if (dbs == null) {
@@ -114,7 +113,7 @@ public class GetRootHandler extends PipelinedHandler {
                         : (request.getPage() - 1) * request.getPagesize()
                         + request.getPagesize());
 
-                dbs.stream().map((db) -> {
+                dbs.stream().map(db -> {
                     if (MetadataCachesSingleton.isEnabled()) {
                         return MetadataCachesSingleton.getInstance()
                                 .getDBProperties(db);
@@ -123,18 +122,14 @@ public class GetRootHandler extends PipelinedHandler {
                                 request.getClientSession(),
                                 db);
                     }
-                }
-                ).forEach((item) -> {
-                    data.add(item);
-                });
+                }).forEachOrdered(db -> data.add(db));
             }
         }
 
-        response.setContent(new RootRepresentationFactory().
-                getRepresentation(exchange, data, size)
-                .asBsonDocument());
+        response.setCount(size);
+        response.setContent(data);
 
-        response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
+        response.setContentTypeAsJson();
         response.setStatusCode(HttpStatus.SC_OK);
 
         next(exchange);

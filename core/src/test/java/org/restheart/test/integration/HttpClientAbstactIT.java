@@ -44,10 +44,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.restheart.exchange.Exchange;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.db.DocumentDAO;
-import org.restheart.representation.Resource;
 
 /**
  *
@@ -383,7 +383,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     /**
      *
      */
-    protected static final ContentType halCT = ContentType.create(Resource.HAL_JSON_MEDIA_TYPE);
+    protected static final ContentType halCT = ContentType.create(Exchange.HAL_JSON_MEDIA_TYPE);
 
     /**
      *

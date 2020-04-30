@@ -101,9 +101,7 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
 
         BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
 
-        response.setContent(bprf.getRepresentation(
-                exchange, result)
-                .asBsonDocument());
+        response.setContent(bprf.getRepresentation(request.getPath(), result));
 
         next(exchange);
     }

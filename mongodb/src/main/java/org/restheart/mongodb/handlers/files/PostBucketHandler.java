@@ -94,7 +94,7 @@ public class PostBucketHandler extends PipelinedHandler {
 
         // must be an object
         if (!_metadata.isDocument()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data cannot be an array");
             next(exchange);
@@ -114,7 +114,7 @@ public class PostBucketHandler extends PipelinedHandler {
                                 metadata,
                                 request.getFilePath());
             } else {
-                response.setIError(
+                response.setInError(
                         HttpStatus.SC_BAD_REQUEST,
                         "POST file request is in a bad format");
                 next(exchange);
@@ -124,7 +124,7 @@ public class PostBucketHandler extends PipelinedHandler {
             // update not supported
             String errMsg = "file resource update is not yet implemented";
             LOGGER.error(errMsg, t);
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_IMPLEMENTED,
                     errMsg);
             next(exchange);

@@ -85,7 +85,7 @@ public class DbPropsInjector implements Interceptor<MongoRequest, MongoResponse>
                     && !(request.isDb()
                     && request.isPut())
                     && !request.isRoot()) {
-                response.setIError(
+                response.setInError(
                         HttpStatus.SC_NOT_FOUND,
                         "Db '" + dbName + "' does not exist");
                 return;

@@ -25,7 +25,7 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.junit.Before;
 import org.junit.Test;
-import org.restheart.representation.Resource;
+import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -72,7 +72,7 @@ public class PostBucketHandlerIT extends FileHandlerAbstractIT {
         Response response = adminExecutor
                 .execute(Request.Post(bucketUrl)
                         .bodyString("{a:1}", halCT)
-                        .addHeader(Headers.CONTENT_TYPE_STRING, Resource.HAL_JSON_MEDIA_TYPE));
+                        .addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE));
 
         this.check("Should return 400 BAD REQUEST", response, HttpStatus.SC_BAD_REQUEST);
     }

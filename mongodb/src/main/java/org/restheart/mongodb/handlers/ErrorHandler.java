@@ -27,11 +27,7 @@ import com.mongodb.MongoTimeoutException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.exchange.ResponseContentInjector;
-import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.representation.Resource;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,10 +40,6 @@ public class ErrorHandler implements HttpHandler {
 
     private final HttpHandler next;
 
-    private final PipelinedHandler sender = PipelinedHandler.pipe(
-    new RepresentationTransformer(),
-    new ResponseContentInjector());
-            
     private final Logger LOGGER = LoggerFactory.getLogger(ErrorHandler.class);
 
     /**
@@ -57,7 +49,7 @@ public class ErrorHandler implements HttpHandler {
     public ErrorHandler() {
         this(null);
     }
-    
+
     /**
      * Creates a new instance of ErrorHandler
      *
@@ -75,35 +67,23 @@ public class ErrorHandler implements HttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var response = MongoResponse.of(exchange);
-        
+
         try {
             next.handleRequest(exchange);
         } catch (MongoTimeoutException nte) {
             response.setInError(
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Timeout connecting to MongoDB, is it running?", nte);
-
-            sender.handleRequest(exchange);
+                    "Timeout connecting to MongoDB, is it running?",
+                    nte);
         } catch (MongoExecutionTimeoutException mete) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_REQUEST_TIMEOUT,
-                    "Operation exceeded time limit"
-            );
-
-            sender.handleRequest(exchange);
+                    "Operation exceeded time limit");
         } catch (MongoBulkWriteException mce) {
-            MongoBulkWriteException bmce = mce;
-
-            BulkResultRepresentationFactory rf = new BulkResultRepresentationFactory();
-
-            Resource rep = rf.getRepresentation(exchange, bmce);
-
-            ResponseHelper.endExchangeWithRepresentation(
-                    exchange,
+            response.setInError(
                     HttpStatus.SC_MULTI_STATUS,
-                    rep);
-
-            sender.handleRequest(exchange);
+                    "Operation exceeded time limit",
+                    mce);
         } catch (MongoException mce) {
             int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
 
@@ -113,24 +93,21 @@ public class ErrorHandler implements HttpHandler {
                     && mce.getMessage() != null
                     && !mce.getMessage().trim().isEmpty()) {
 
-                response.setIError(
+                response.setInError(
                         httpCode,
                         mce.getMessage());
 
             } else {
-                response.setIError(
+                response.setInError(
                         httpCode,
                         ResponseHelper.getMessageFromErrorCode(mce.getCode()));
             }
-
-            sender.handleRequest(exchange);
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
 
             response.setInError(
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Error handling the request, see log for more information", t);
-            sender.handleRequest(exchange);
         }
     }
 }

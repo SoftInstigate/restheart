@@ -72,7 +72,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
         }
 
         if (request.getDBName().isEmpty()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, db name cannot be empty");
             next(exchange);
@@ -82,7 +82,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
         if (request.getCollectionName().isEmpty()
                 || (request.getCollectionName().startsWith("_")
                 && !request.getCollectionName().equals(_SCHEMAS))) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "wrong request, collection name cannot be "
                     + "empty or start with _");
@@ -93,7 +93,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
         BsonValue _content = request.getContent();
 
         if (_content == null) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             next(exchange);
@@ -102,7 +102,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
 
         // cannot PATCH with an array
         if (!_content.isDocument()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "data must be a json object");
             next(exchange);
@@ -110,7 +110,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
         }
 
         if (_content.asDocument().isEmpty()) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
                     "no data provided");
             next(exchange);

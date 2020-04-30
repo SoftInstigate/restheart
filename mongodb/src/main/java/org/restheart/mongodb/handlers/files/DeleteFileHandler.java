@@ -101,7 +101,7 @@ public class DeleteFileHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setIError(
+            response.setInError(
                     HttpStatus.SC_CONFLICT,
                     "The file's ETag must be provided using the '"
                     + Headers.IF_MATCH
