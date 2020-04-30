@@ -29,15 +29,16 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * On write, escapes schema properties ($ prefixed) 
- * On read, unescape schema properties
- * 
+ * On write, escapes schema properties ($ prefixed) On read, unescape schema
+ * properties
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonSchemaTransformer extends PipelinedHandler {
@@ -69,7 +70,7 @@ public class JsonSchemaTransformer extends PipelinedHandler {
             content = request.getContent();
 
         } else { // response
-            var response = MongoRequest.of(exchange);
+            var response = MongoResponse.of(exchange);
             content = response.getContent();
         }
 
@@ -154,32 +155,8 @@ public class JsonSchemaTransformer extends PipelinedHandler {
                 if (null != document) {
                     document.put("_$schema", $SCHEMA);
                 }
-            } else if (request.isGet()) {
-                // apply transformation on embedded schemas
-
-                if (null != document && document.containsKey("_embedded")) {
-
-                    BsonValue _embedded = document
-                            .get("_embedded");
-
-                    if (_embedded.isDocument()
-                            && _embedded.asDocument()
-                                    .containsKey("rh:schema")) {
-
-                        // execute the logic on children documents
-                        BsonValue docs = _embedded
-                                .asDocument()
-                                .get("rh:schema");
-
-                        if (docs.isArray()) {
-                            docs.asArray().stream()
-                                    .filter(BsonValue::isDocument)
-                                    .forEach((doc) -> {
-                                        unescapeSchema(doc.asDocument());
-                                    });
-                        }
-                    }
-                }
+            } else if (request.isGet() && null != document && document.isDocument()) {
+                unescapeSchema(document.asDocument());
             }
         }
     }
