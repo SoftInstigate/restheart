@@ -20,7 +20,6 @@
  */
 package org.restheart.test.plugins.interceptors;
 
-import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.restheart.exchange.MongoRequest;
@@ -38,14 +37,13 @@ public class WriteResultInterceptor implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var responseContent = response.getContent();
-
         final BsonDocument resp;
 
-        if (responseContent != null && responseContent.isDocument()) {
-            resp = responseContent.asDocument();
+        if (response.getContent() != null && response.getContent().isDocument()) {
+            resp = response.getContent().asDocument();
         } else {
             resp = new BsonDocument();
+            response.setContent(resp);
         }
 
         resp.append("oldData", response.getDbOperationResult().getOldData()
@@ -57,25 +55,12 @@ public class WriteResultInterceptor implements MongoInterceptor {
                 == null
                         ? new BsonNull()
                         : response.getDbOperationResult().getNewData());
-
-        // this to deal with POST collection
-        if (request.isCollection() && request.isPost()) {
-            BsonDocument hal = new BsonDocument();
-            BsonDocument embedded = new BsonDocument();
-            BsonArray rhdoc = new BsonArray();
-
-            rhdoc.add(resp);
-            embedded.put("rh:result", rhdoc);
-            hal.put("_embedded", embedded);
-            response.setContent(hal);
-        } else {
-            response.setContent(resp);
-        }
     }
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return request.isHandledBy("mongo")
+                && !request.isGet()
                 && "xcoll".equals(request.getCollectionName())
                 && response.getDbOperationResult() != null;
     }

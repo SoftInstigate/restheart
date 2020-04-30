@@ -93,41 +93,6 @@ public class AggregationTransformer extends PipelinedHandler {
                 _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
                         JsonUtils.unescapeKeys(aggrs));
             }
-        } else if ((request.isDb())
-                && request.isGet()) {
-            // apply transformation on embedded schemas
-
-            if (_contentToTransform.containsKey("_embedded")) {
-                BsonValue _embedded = _contentToTransform.get("_embedded");
-
-                if (_embedded.isDocument()
-                        && _embedded.asDocument().containsKey("rh:coll")
-                        && _embedded.asDocument().get("rh:coll").isArray()) {
-
-                    BsonArray colls = _embedded
-                            .asDocument()
-                            .get("rh:coll")
-                            .asArray();
-
-                    colls.stream()
-                            .filter(coll -> {
-                                return coll.isDocument();
-                            })
-                            .forEach(_coll -> {
-                                BsonDocument coll = _coll.asDocument();
-
-                                BsonArray aggrs = getAggregationMetadata(coll);
-
-                                if (aggrs == null) {
-                                    // nothing to do
-                                    return;
-                                }
-
-                                coll.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
-                                        JsonUtils.unescapeKeys(aggrs));
-                            });
-                }
-            }
         }
     }
 
