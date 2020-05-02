@@ -389,4 +389,41 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>native</id>
+            <properties>
+                <graalvm.version>20.0.0</graalvm.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.graalvm.sdk</groupId>
+                    <artifactId>graal-sdk</artifactId>
+                    <version>${graalvm.version}</version>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.nativeimage</groupId>
+                        <artifactId>native-image-maven-plugin</artifactId>
+                        <version>${graalvm.version}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>native-image</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <skip>false</skip>
+                            <imageName>restheart</imageName>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
