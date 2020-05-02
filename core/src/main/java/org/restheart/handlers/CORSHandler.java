@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -46,35 +46,6 @@ public class CORSHandler extends PipelinedHandler {
 
     public static final String ALL_ORIGINS = "*";
 
-    /**
-     * Creates a new instance of CORSHandler
-     *
-     */
-    public CORSHandler() {
-        super();
-    }
-    
-    /**
-     * Creates a new instance of CORSHandler
-     *
-     * @param next
-     */
-    public CORSHandler(PipelinedHandler next) {
-        super(next);
-    }
-
-    /**
-     *
-     * @param exchange
-     * @throws Exception
-     */
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        injectAccessControlAllowHeaders(exchange);
-
-        next(exchange);
-    }
-
     public static void injectAccessControlAllowHeaders(HttpServerExchange exchange) {
         HeaderMap requestHeaders = exchange.getRequestHeaders();
         HeaderMap responseHeaders = exchange.getResponseHeaders();
@@ -101,6 +72,35 @@ public class CORSHandler extends PipelinedHandler {
                     + AUTH_TOKEN_LOCATION_HEADER.toString() + ", "
                     + HttpHeaders.X_POWERED_BY);
         }
+    }
+
+    /**
+     * Creates a new instance of CORSHandler
+     *
+     */
+    public CORSHandler() {
+        super();
+    }
+
+    /**
+     * Creates a new instance of CORSHandler
+     *
+     * @param next
+     */
+    public CORSHandler(PipelinedHandler next) {
+        super(next);
+    }
+
+    /**
+     *
+     * @param exchange
+     * @throws Exception
+     */
+    @Override
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        injectAccessControlAllowHeaders(exchange);
+
+        next(exchange);
     }
 
     interface CORSHeaders {

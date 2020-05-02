@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -54,14 +54,11 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class RequestContentInjector extends PipelinedHandler {
-    public enum Policy {
-        ALWAYS,
-        ON_REQUIRES_CONTENT_BEFORE_AUTH,
-        ON_REQUIRES_CONTENT_AFTER_AUTH
-    }
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(RequestContentInjector.class);
+    private static final AttachmentKey<Boolean> INJECTED_KEY
+            = AttachmentKey.create(Boolean.class);
 
     private final Policy policy;
 
@@ -142,20 +139,20 @@ public class RequestContentInjector extends PipelinedHandler {
             request = ByteArrayProxyRequest.of(exchange);
             response = ByteArrayProxyResponse.of(exchange);
         }
-        
+
         return PluginsRegistryImpl
                 .getInstance()
                 .getInterceptors().stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
                 .filter(ri -> interceptPoint == interceptPoint(ri))
-                // IMPORTANT: An interceptor can intercept 
-                // - requests handled by a Service when its request and response 
+                // IMPORTANT: An interceptor can intercept
+                // - requests handled by a Service when its request and response
                 //   types are equal to the ones declared by the Service
-                // - request handled by a Proxy when its request and response 
+                // - request handled by a Proxy when its request and response
                 //   are ByteArrayProxyRequest and ByteArrayProxyResponse
-                .filter(ri -> 
-                        (handlingService == null
+                .filter(ri
+                        -> (handlingService == null
                 && ri.requestType().equals(ByteArrayProxyRequest.type())
                 && ri.responseType().equals(ByteArrayProxyResponse.type()))
                 || (handlingService != null
@@ -177,9 +174,6 @@ public class RequestContentInjector extends PipelinedHandler {
                 .anyMatch(ri -> requiresContent(ri));
     }
 
-    private static final AttachmentKey<Boolean> INJECTED_KEY
-            = AttachmentKey.create(Boolean.class);
-
     private void markInjected(HttpServerExchange exchange) {
         exchange
                 .putAttachment(INJECTED_KEY, true);
@@ -188,6 +182,12 @@ public class RequestContentInjector extends PipelinedHandler {
     private boolean isAlreadyInjected(HttpServerExchange exchange) {
         return exchange.getAttachment(INJECTED_KEY) != null
                 && exchange.getAttachment(INJECTED_KEY);
+    }
+
+    public enum Policy {
+        ALWAYS,
+        ON_REQUIRES_CONTENT_BEFORE_AUTH,
+        ON_REQUIRES_CONTENT_AFTER_AUTH
     }
 
 }

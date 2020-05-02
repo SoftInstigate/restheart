@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -111,55 +111,6 @@ public class Configuration {
 
     public static final String DEFAULT_ROUTE = "0.0.0.0";
 
-    private boolean silent = false;
-    private final boolean httpsListener;
-    private final int httpsPort;
-    private final String httpsHost;
-    private final boolean httpListener;
-    private final int httpPort;
-    private final String httpHost;
-    private final boolean ajpListener;
-    private final int ajpPort;
-    private final String ajpHost;
-    private final String instanceName;
-    private final String pluginsDirectory;
-    private final boolean useEmbeddedKeystore;
-    private final String keystoreFile;
-    private final String keystorePassword;
-    private final String certPassword;
-    private final List<Map<String, Object>> proxies;
-    private final List<Map<String, Object>> staticResourcesMounts;
-    private final Map<String, Map<String, Object>> pluginsArgs;
-    private final Map<String, Map<String, Object>> authMechanisms;
-    private final Map<String, Map<String, Object>> authenticators;
-    private final Map<String, Map<String, Object>> authorizers;
-    private final Map<String, Map<String, Object>> tokenManagers;
-    private final String logFilePath;
-    private final Level logLevel;
-    private final boolean logToConsole;
-    private final boolean logToFile;
-    private final List<String> traceHeaders;
-    private final int requestsLimit;
-    private final int ioThreads;
-    private final int workerThreads;
-    private final int bufferSize;
-    private final boolean directBuffers;
-    private final boolean forceGzipEncoding;
-    private final Map<String, Object> connectionOptions;
-    private final Integer logExchangeDump;
-    private final boolean ansiConsole;
-    private final boolean allowUnescapedCharactersInUrl;
-
-    private Map<String, Object> conf;
-
-    /**
-     * Creates a new instance of Configuration with defaults values.
-     */
-    public Configuration() {
-        this(getDefaultConf(), true);
-        this.conf = getDefaultConf();
-    }
-
     private static Map<String, Object> getDefaultConf() {
         var defaultConf = new HashMap<String, Object>();
 
@@ -218,6 +169,201 @@ public class Configuration {
         defaultConf.put(ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
 
         return defaultConf;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
+        Yaml yaml = new Yaml();
+        Map<String, Object> conf = null;
+
+        try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
+            conf = (Map<String, Object>) yaml.load(fis);
+        } catch (FileNotFoundException fne) {
+            throw new ConfigurationException("Configuration file not found", fne);
+        } catch (Throwable t) {
+            throw new ConfigurationException("Error parsing the configuration file", t);
+        }
+
+        return conf;
+    }
+
+    static boolean isParametric(final Path confFilePath) throws IOException {
+        Scanner sc = new Scanner(confFilePath, "UTF-8");
+
+        return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}"))
+                .limit(1)
+                .count() > 0;
+    }
+
+    /**
+     *
+     * @param integers
+     * @return
+     */
+    public static int[] convertListToIntArray(List<Object> integers) {
+        int[] ret = new int[integers.size()];
+        Iterator<Object> iterator = integers.iterator();
+        for (int i = 0; i < ret.length; i++) {
+            Object o = iterator.next();
+
+            if (o instanceof Integer) {
+                ret[i] = (Integer) o;
+            } else {
+                return new int[0];
+            }
+        }
+
+        return ret;
+    }
+
+    /**
+     *
+     * @param <V>
+     * @param conf
+     * @param key
+     * @param defaultValue
+     * @param silent
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public static <V extends Object> V getOrDefault(
+            final Map<String, Object> conf,
+            final String key,
+            final V defaultValue,
+            boolean silent) {
+
+        if (conf == null || conf.get(key) == null) {
+            // if default value is null there is no default value actually
+            if (defaultValue != null && !silent) {
+                LOGGER.warn("Parameter \"{}\" not specified in the configuration file. "
+                        + "using its default value \"{}\"", key, defaultValue);
+            }
+            return defaultValue;
+        }
+
+        try {
+            if (!silent) {
+                LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", key, conf.get(key));
+            }
+            return (V) conf.get(key);
+        } catch (Throwable t) {
+            if (!silent) {
+                LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\". using its default value \"{}\"",
+                        key, conf.get(key), defaultValue);
+            }
+            return defaultValue;
+        }
+    }
+
+    /**
+     *
+     * @param key
+     * @return the environment or java property variable, if found
+     */
+    private static String overriddenValueFromEnv(final String key) {
+        String shellKey = "RESTHEART_SECURITY_" + key.toUpperCase().replaceAll("-", "_");
+        String envValue = System.getProperty(key);
+
+        if (envValue == null) {
+            envValue = System.getProperty(shellKey);
+        }
+
+        if (envValue == null) {
+            envValue = System.getenv(shellKey);
+        }
+        if (null != envValue) {
+            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
+                    shellKey, key, envValue);
+        }
+        return envValue;
+    }
+
+    /**
+     * this checks if an old (< 2.0) configuration is found
+     *
+     * old format:
+     *
+     * <pre>
+     * auth-mechanisms:
+     *  - name: basicAuthMechanism
+     *    class: org.restheart.security.plugins.mechanisms.BasicAuthMechanism
+     *    args:
+     *      argParam1: value
+     *      argParam2: value
+     * </pre>
+     *
+     * new format
+     *
+     * <pre>
+     * auth-mechanisms:
+     *  - basicAuthMechanism:
+     *      argParam1: value
+     *      argParam2: value
+     * </pre>
+     *
+     * @param conf
+     * @return true if an old (< 2.0) configuration is found
+     */
+    private static boolean checkPre20Confs(List<Map<String, Object>> conf) {
+        return conf != null && conf.stream()
+                .anyMatch(e -> e.containsKey("name")
+                || e.containsKey("class")
+                || e.containsKey("args"));
+    }
+
+    private static boolean checkPre20Confs(Map<String, Map<String, Object>> conf) {
+        return conf != null && (conf.containsKey("name")
+                || conf.containsKey("class")
+                || conf.containsKey("args"));
+    }
+
+    private boolean silent = false;
+    private final boolean httpsListener;
+    private final int httpsPort;
+    private final String httpsHost;
+    private final boolean httpListener;
+    private final int httpPort;
+    private final String httpHost;
+    private final boolean ajpListener;
+    private final int ajpPort;
+    private final String ajpHost;
+    private final String instanceName;
+    private final String pluginsDirectory;
+    private final boolean useEmbeddedKeystore;
+    private final String keystoreFile;
+    private final String keystorePassword;
+    private final String certPassword;
+    private final List<Map<String, Object>> proxies;
+    private final List<Map<String, Object>> staticResourcesMounts;
+    private final Map<String, Map<String, Object>> pluginsArgs;
+    private final Map<String, Map<String, Object>> authMechanisms;
+    private final Map<String, Map<String, Object>> authenticators;
+    private final Map<String, Map<String, Object>> authorizers;
+    private final Map<String, Map<String, Object>> tokenManagers;
+    private final String logFilePath;
+    private final Level logLevel;
+    private final boolean logToConsole;
+    private final boolean logToFile;
+    private final List<String> traceHeaders;
+    private final int requestsLimit;
+    private final int ioThreads;
+    private final int workerThreads;
+    private final int bufferSize;
+    private final boolean directBuffers;
+    private final boolean forceGzipEncoding;
+    private final Map<String, Object> connectionOptions;
+    private final Integer logExchangeDump;
+    private final boolean ansiConsole;
+    private final boolean allowUnescapedCharactersInUrl;
+
+    private Map<String, Object> conf;
+
+    /**
+     * Creates a new instance of Configuration with defaults values.
+     */
+    public Configuration() {
+        this(getDefaultConf(), true);
+        this.conf = getDefaultConf();
     }
 
     /**
@@ -378,51 +524,6 @@ public class Configuration {
         allowUnescapedCharactersInUrl = getAsBoolean(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
     }
 
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
-        Yaml yaml = new Yaml();
-        Map<String, Object> conf = null;
-
-        try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
-            conf = (Map<String, Object>) yaml.load(fis);
-        } catch (FileNotFoundException fne) {
-            throw new ConfigurationException("Configuration file not found", fne);
-        } catch (Throwable t) {
-            throw new ConfigurationException("Error parsing the configuration file", t);
-        }
-
-        return conf;
-    }
-
-    static boolean isParametric(final Path confFilePath) throws IOException {
-        Scanner sc = new Scanner(confFilePath, "UTF-8");
-
-        return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}"))
-                .limit(1)
-                .count() > 0;
-    }
-
-    /**
-     *
-     * @param integers
-     * @return
-     */
-    public static int[] convertListToIntArray(List<Object> integers) {
-        int[] ret = new int[integers.size()];
-        Iterator<Object> iterator = integers.iterator();
-        for (int i = 0; i < ret.length; i++) {
-            Object o = iterator.next();
-
-            if (o instanceof Integer) {
-                ret[i] = (Integer) o;
-            } else {
-                return new int[0];
-            }
-        }
-
-        return ret;
-    }
-
     @Override
     public String toString() {
         return "Configuration{"
@@ -467,14 +568,14 @@ public class Configuration {
     }
 
     public Map<String, Object> toMap() {
-        return this.conf;
+        return Collections.unmodifiableMap(this.conf);
     }
 
     /**
      * @return the proxies
      */
     public List<Map<String, Object>> getProxies() {
-        return proxies;
+        return Collections.unmodifiableList(proxies);
     }
 
     /**
@@ -687,21 +788,21 @@ public class Configuration {
      * @return the authMechanisms
      */
     public Map<String, Map<String, Object>> getAuthMechanisms() {
-        return authMechanisms;
+        return Collections.unmodifiableMap(authMechanisms);
     }
 
     /**
      * @return the authenticators
      */
     public Map<String, Map<String, Object>> getAuthenticators() {
-        return authenticators;
+        return Collections.unmodifiableMap(authenticators);
     }
 
     /**
      * @return the authorizers
      */
     public Map<String, Map<String, Object>> getAuthorizers() {
-        return authorizers;
+        return Collections.unmodifiableMap(authorizers);
     }
 
     /**
@@ -715,7 +816,7 @@ public class Configuration {
      * @return the tokenManagers
      */
     public Map<String, Map<String, Object>> getTokenManagers() {
-        return tokenManagers;
+        return Collections.unmodifiableMap(tokenManagers);
     }
 
     /**
@@ -988,68 +1089,6 @@ public class Configuration {
         }
     }
 
-    /**
-     *
-     * @param <V>
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @param silent
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    public static <V extends Object> V getOrDefault(
-            final Map<String, Object> conf,
-            final String key,
-            final V defaultValue,
-            boolean silent) {
-
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.warn("Parameter \"{}\" not specified in the configuration file. "
-                        + "using its default value \"{}\"", key, defaultValue);
-            }
-            return defaultValue;
-        }
-
-        try {
-            if (!silent) {
-                LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", key, conf.get(key));
-            }
-            return (V) conf.get(key);
-        } catch (Throwable t) {
-            if (!silent) {
-                LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\". using its default value \"{}\"",
-                        key, conf.get(key), defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param key
-     * @return the environment or java property variable, if found
-     */
-    private static String overriddenValueFromEnv(final String key) {
-        String shellKey = "RESTHEART_SECURITY_" + key.toUpperCase().replaceAll("-", "_");
-        String envValue = System.getProperty(key);
-
-        if (envValue == null) {
-            envValue = System.getProperty(shellKey);
-        }
-
-        if (envValue == null) {
-            envValue = System.getenv(shellKey);
-        }
-        if (null != envValue) {
-            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
-                    shellKey, key, envValue);
-        }
-        return envValue;
-    }
-
     private Boolean getAsBoolean(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
         String envValue = overriddenValueFromEnv(key);
         if (envValue != null) {
@@ -1082,42 +1121,4 @@ public class Configuration {
         return getOrDefault(conf, key, defaultValue);
     }
 
-    /**
-     * this checks if an old (< 2.0) configuration is found
-     *
-     * old format:
-     *
-     * <pre>
-     * auth-mechanisms:
-     *  - name: basicAuthMechanism
-     *    class: org.restheart.security.plugins.mechanisms.BasicAuthMechanism
-     *    args:
-     *      argParam1: value
-     *      argParam2: value
-     * </pre>
-     *
-     * new format
-     *
-     * <pre>
-     * auth-mechanisms:
-     *  - basicAuthMechanism:
-     *      argParam1: value
-     *      argParam2: value
-     * </pre>
-     *
-     * @param conf
-     * @return true if an old (< 2.0) configuration is found
-     */
-    private static boolean checkPre20Confs(List<Map<String, Object>> conf) {
-        return conf != null && conf.stream()
-                .anyMatch(e -> e.containsKey("name")
-                || e.containsKey("class")
-                || e.containsKey("args"));
-    }
-
-    private static boolean checkPre20Confs(Map<String, Map<String, Object>> conf) {
-        return conf != null && (conf.containsKey("name")
-                || conf.containsKey("class")
-                || conf.containsKey("args"));
-    }
 }

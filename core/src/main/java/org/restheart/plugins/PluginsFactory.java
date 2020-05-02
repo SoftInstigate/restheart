@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -68,7 +68,80 @@ public class PluginsFactory implements AutoCloseable {
 
     private static final PluginsFactory SINGLETON = new PluginsFactory();
 
+    public static PluginsFactory getInstance() {
+        return SINGLETON;
+    }
+
+    private static URL[] findPluginsJars(Path pluginsDirectory) {
+        var urls = new ArrayList<>();
+
+        if (!Files.exists(pluginsDirectory)) {
+            LOGGER.error("Plugin directory {} does not exist", pluginsDirectory);
+            throw new IllegalArgumentException("Plugins directory "
+                    + pluginsDirectory
+                    + " does not exist");
+        }
+
+        if (!Files.isReadable(pluginsDirectory)) {
+            LOGGER.error("Plugin directory {} is not readable", pluginsDirectory);
+            throw new IllegalArgumentException("Plugins directory "
+                    + pluginsDirectory
+                    + " is not readable");
+        }
+
+        try (DirectoryStream<Path> directoryStream = Files
+                .newDirectoryStream(pluginsDirectory, "*.jar")) {
+            for (Path path : directoryStream) {
+                var jar = path.toUri().toURL();
+
+                if (!Files.isReadable(path)) {
+                    LOGGER.error("Plugin jar {} is not readable", jar);
+                    throw new IllegalArgumentException("Plugin jar "
+                            + jar
+                            + " is not readable");
+                }
+
+                urls.add(jar);
+                LOGGER.info("Found plugin jar {}", jar);
+            }
+        } catch (IOException ex) {
+            LOGGER.error("Cannot read jars in plugins directory {}",
+                    Bootstrapper.getConfiguration().getPluginsDirectory(),
+                    ex.getMessage());
+        }
+
+        return urls.toArray(new URL[urls.size()]);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Map<String, Object>> consumePluginsConfiguration() {
+        Map<String, Map<String, Object>> pluginsArgs = Bootstrapper
+                .getConfiguration()
+                .getPluginsArgs();
+
+        Map<String, Map<String, Object>> confs = new HashMap<>();
+
+        pluginsArgs.forEach((name, params) -> {
+            if (params instanceof Map) {
+                confs.put(name, (Map) params);
+            } else {
+                confs.put(name, new HashMap<>());
+            }
+        });
+
+        return confs;
+    }
+
     private final ScanResult scanResult;
+    /**
+     * A deque containing the instantiated plugins than have to be injected
+     * dependecies. this is done after instantiation because using a dependency,
+     * eg the plugin registry, can change the order of plugins instantiation
+     * causing all sort of weird issues
+     */
+    private final Deque<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS
+            = new LinkedList<>();
+    private URLClassLoader PLUGINS_CL_CACHE = null;
 
     private PluginsFactory() {
         this.scanResult = new ClassGraph()
@@ -84,10 +157,6 @@ public class PluginsFactory implements AutoCloseable {
         if (this.scanResult != null) {
             this.scanResult.close();
         }
-    }
-
-    public static PluginsFactory getInstance() {
-        return SINGLETON;
     }
 
     /**
@@ -249,7 +318,7 @@ public class PluginsFactory implements AutoCloseable {
                 LOGGER.error("Error registering {} {}: {}",
                         _type,
                         annotationParam(plugin, "name") != null
-                        ? (String) annotationParam(plugin, "name")
+                        ? annotationParam(plugin, "name")
                         : plugin.getSimpleName(),
                         getRootException(t).getMessage(),
                         t);
@@ -258,15 +327,6 @@ public class PluginsFactory implements AutoCloseable {
 
         return ret;
     }
-
-    /**
-     * A deque containing the instantiated plugins than have to be injected
-     * dependecies. this is done after instantiation because using a dependency,
-     * eg the plugin registry, can change the order of plugins instantiation
-     * causing all sort of weird issues
-     */
-    private final Deque<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS
-            = new LinkedList<>();
 
     private Plugin instantiatePlugin(
             ClassInfo pluginClassInfo,
@@ -515,47 +575,6 @@ public class PluginsFactory implements AutoCloseable {
         return (T) annotationParamVals.getValue(param);
     }
 
-    private static URL[] findPluginsJars(Path pluginsDirectory) {
-        var urls = new ArrayList<>();
-
-        if (!Files.exists(pluginsDirectory)) {
-            LOGGER.error("Plugin directory {} does not exist", pluginsDirectory);
-            throw new IllegalArgumentException("Plugins directory "
-                    + pluginsDirectory
-                    + " does not exist");
-        }
-
-        if (!Files.isReadable(pluginsDirectory)) {
-            LOGGER.error("Plugin directory {} is not readable", pluginsDirectory);
-            throw new IllegalArgumentException("Plugins directory "
-                    + pluginsDirectory
-                    + " is not readable");
-        }
-
-        try (DirectoryStream<Path> directoryStream = Files
-                .newDirectoryStream(pluginsDirectory, "*.jar")) {
-            for (Path path : directoryStream) {
-                var jar = path.toUri().toURL();
-
-                if (!Files.isReadable(path)) {
-                    LOGGER.error("Plugin jar {} is not readable", jar);
-                    throw new IllegalArgumentException("Plugin jar "
-                            + jar
-                            + " is not readable");
-                }
-
-                urls.add(jar);
-                LOGGER.info("Found plugin jar {}", jar);
-            }
-        } catch (IOException ex) {
-            LOGGER.error("Cannot read jars in plugins directory {}",
-                    Bootstrapper.getConfiguration().getPluginsDirectory(),
-                    ex.getMessage());
-        }
-
-        return urls.toArray(new URL[urls.size()]);
-    }
-
     private Path getPluginsDirectory() {
         var pluginsDir = Bootstrapper.getConfiguration().getPluginsDirectory();
 
@@ -566,7 +585,7 @@ public class PluginsFactory implements AutoCloseable {
         if (pluginsDir.startsWith("/")) {
             return Paths.get(pluginsDir);
         } else {
-            // this is to allow specifying the plugins directory path 
+            // this is to allow specifying the plugins directory path
             // relative to the jar (also working when running from classes)
             URL location = PluginsFactory.class.getProtectionDomain()
                     .getCodeSource()
@@ -582,8 +601,6 @@ public class PluginsFactory implements AutoCloseable {
         }
     }
 
-    private URLClassLoader PLUGINS_CL_CACHE = null;
-
     /**
      *
      * @return the URLClassLoader that resolve plugins classes
@@ -598,33 +615,15 @@ public class PluginsFactory implements AutoCloseable {
         return PLUGINS_CL_CACHE;
     }
 
-    @SuppressWarnings("unchecked")
-    private static Map<String, Map<String, Object>> consumePluginsConfiguration() {
-        Map<String, Map<String, Object>> pluginsArgs = Bootstrapper
-                .getConfiguration()
-                .getPluginsArgs();
-
-        Map<String, Map<String, Object>> confs = new HashMap<>();
-
-        pluginsArgs.forEach((name, params) -> {
-            if (params instanceof Map) {
-                confs.put(name, (Map) params);
-            } else {
-                confs.put(name, new HashMap<>());
-            }
-        });
-
-        return confs;
-    }
-
     private static class InstatiatedPlugin {
+
         private final String pluginName;
         private final String pluginType;
         private final ClassInfo pluginClassInfo;
         private final Object pluingInstance;
         private final Map confs;
 
-        public InstatiatedPlugin(String pluginName,
+        InstatiatedPlugin(String pluginName,
                 String pluginType,
                 ClassInfo pluginClassInfo,
                 Object pluingInstance,

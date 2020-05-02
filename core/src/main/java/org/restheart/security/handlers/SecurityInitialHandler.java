@@ -44,10 +44,6 @@ import org.restheart.handlers.PipelinedHandler;
  */
 public class SecurityInitialHandler extends PipelinedHandler {
 
-    private final AuthenticationMode authenticationMode;
-    private final String programaticMechName;
-    private final SecurityContextFactoryImpl contextFactory;
-
     static void setSecurityContext(final HttpServerExchange exchange,
             final SecurityContext securityContext) {
         if (System.getSecurityManager() == null) {
@@ -59,6 +55,10 @@ public class SecurityInitialHandler extends PipelinedHandler {
             });
         }
     }
+
+    private final AuthenticationMode authenticationMode;
+    private final String programaticMechName;
+    private final SecurityContextFactoryImpl contextFactory;
 
     public SecurityInitialHandler(final AuthenticationMode authenticationMode,
             final String programaticMechName,
