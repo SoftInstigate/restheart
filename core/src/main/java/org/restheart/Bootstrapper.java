@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -95,7 +95,6 @@ import org.restheart.exchange.PipelineInfo;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
-import org.restheart.exchange.Response;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
@@ -130,10 +129,8 @@ import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.handlers.SecurityHandler;
 import org.restheart.security.plugins.authorizers.FullAuthorizer;
 import org.restheart.utils.FileUtils;
-import org.restheart.utils.HttpStatus;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
-import org.restheart.utils.PluginUtils;
 import static org.restheart.utils.PluginUtils.defaultURI;
 import static org.restheart.utils.PluginUtils.initPoint;
 import org.restheart.utils.RESTHeartDaemon;
@@ -826,7 +823,7 @@ public class Bootstrapper {
                 authorizers,
                 tokenManager);
 
-        // update buffer size in 
+        // update buffer size in
         Exchange.updateBufferSize(configuration.getBufferSize());
 
         builder = builder

@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -24,6 +24,7 @@ import static io.undertow.Handlers.path;
 import io.undertow.predicate.Predicate;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.util.PathMatcher;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.restheart.ConfigurationException;
@@ -39,6 +40,19 @@ import org.restheart.plugins.security.TokenManager;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PluginsRegistryImpl implements PluginsRegistry {
+
+    private static PluginsRegistryImpl HOLDER;
+    private static final PathHandler ROOT_PATH_HANDLER = path();
+    private static final PathMatcher<PipelineInfo> PIPELINE_INFOS
+            = new PathMatcher<>();
+
+    public static synchronized PluginsRegistryImpl getInstance() {
+        if (HOLDER == null) {
+            HOLDER = new PluginsRegistryImpl();
+        }
+
+        return HOLDER;
+    }
     private Set<PluginRecord<AuthMechanism>> authMechanisms;
 
     private Set<PluginRecord<Authenticator>> authenticators;
@@ -55,16 +69,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private final Set<Predicate> globalSecurityPredicates
             = new LinkedHashSet<>();
-
-    private static PluginsRegistryImpl HOLDER;
-
-    public static synchronized PluginsRegistryImpl getInstance() {
-        if (HOLDER == null) {
-            HOLDER = new PluginsRegistryImpl();
-        }
-
-        return HOLDER;
-    }
 
     private PluginsRegistryImpl() {
     }
@@ -99,7 +103,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                     .authMechanisms());
         }
 
-        return this.authMechanisms;
+        return Collections.unmodifiableSet(this.authMechanisms);
     }
 
     /**
@@ -113,7 +117,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                     .authenticators());
         }
 
-        return this.authenticators;
+        return Collections.unmodifiableSet(this.authenticators);
     }
 
     /**
@@ -164,7 +168,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                     .authorizers();
         }
 
-        return this.authorizers;
+        return Collections.unmodifiableSet(this.authorizers);
     }
 
     /**
@@ -178,7 +182,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                     .initializers());
         }
 
-        return this.initializers;
+        return Collections.unmodifiableSet(this.initializers);
     }
 
     @Override
@@ -189,7 +193,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                     .interceptors());
         }
 
-        return this.interceptors;
+        return Collections.unmodifiableSet(this.interceptors);
     }
 
     /**
@@ -203,7 +207,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                     .services());
         }
 
-        return this.services;
+        return Collections.unmodifiableSet(this.services);
     }
 
     /**
@@ -214,31 +218,26 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      */
     @Override
     public Set<Predicate> getGlobalSecurityPredicates() {
-        return globalSecurityPredicates;
+        return Collections.unmodifiableSet(globalSecurityPredicates);
     }
-
-    private static final PathHandler ROOT_PATH_HANDLER = path();
-    
-    private static final PathMatcher<PipelineInfo> PIPELINE_INFOS 
-            = new PathMatcher<>();
 
     @Override
     public PathHandler getRootPathHandler() {
         return ROOT_PATH_HANDLER;
     }
-    
+
     @Override
-    public void plugPipeline(String path, 
-            PipelinedHandler handler, 
+    public void plugPipeline(String path,
+            PipelinedHandler handler,
             PipelineInfo info) {
         ROOT_PATH_HANDLER.addPrefixPath(path, handler);
         PIPELINE_INFOS.addPrefixPath(path, info);
     }
-    
+
     @Override
     public PipelineInfo getPipelineInfo(String path) {
         var m = PIPELINE_INFOS.match(path);
-        
+
         return m.getValue();
     }
 }

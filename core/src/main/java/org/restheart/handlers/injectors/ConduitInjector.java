@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -62,86 +62,6 @@ public class ConduitInjector extends PipelinedHandler {
             = AttachmentKey.create(HeaderMap.class);
 
     /**
-     * @param next
-     */
-    public ConduitInjector(PipelinedHandler next) {
-        super(next);
-    }
-
-    /**
-     *
-     */
-    public ConduitInjector() {
-        super();
-    }
-
-    /**
-     *
-     * @param exchange
-     * @throws Exception
-     */
-    @Override
-    @SuppressWarnings("unchecked")
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        // of the response buffering it if any interceptor resolvers the request 
-        // and requires the content from the backend
-        exchange.addResponseWrapper((ConduitFactory<StreamSinkConduit> factory,
-                HttpServerExchange cexchange) -> {
-            // restore MDC context
-            // MDC context is put in the thread context
-            // For proxied requests a thread switch in the request handling happens,
-            // loosing the MDC context. TracingInstrumentationHandler adds it to the
-            // exchange as an Attachment
-            var mdcCtx = ByteArrayProxyResponse.of(exchange).getMDCContext();
-            if (mdcCtx != null) {
-                MDC.setContextMap(mdcCtx);
-            }
-
-            if (PluginsRegistryImpl.getInstance()
-                    .getInterceptors()
-                    .stream()
-                    .filter(ri -> ri.isEnabled())
-                    .map(ri -> ri.getInstance())
-                    .filter(ri -> interceptPoint(ri) == RESPONSE
-                    || interceptPoint(ri) == RESPONSE_ASYNC)
-                    // IMPORTANT: An interceptor can intercept 
-                    // - request handled by a Proxy when its request and response 
-                    //   are ByteArrayProxyRequest and ByteArrayProxyResponse
-                    .filter(ri -> ri.requestType().equals(ByteArrayProxyRequest.type())
-                    && ri.responseType().equals(ByteArrayProxyResponse.type()))
-                    .filter(ri -> {
-                        try {
-                            return ri.resolve(
-                                    ByteArrayProxyRequest.of(exchange),
-                                    ByteArrayProxyResponse.of(exchange));
-                        } catch (Exception e) {
-                            LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
-                                    ri.getClass().getSimpleName(),
-                                    exchange.getRequestPath(),
-                                    interceptPoint(ri),
-                                    e);
-
-                            return false;
-                        }
-                    })
-                    .anyMatch(ri -> requiresContent(ri))) {
-
-                var mcsc = new ModifiableContentSinkConduit(factory.create(),
-                        cexchange);
-                cexchange.putAttachment(MCSC_KEY, mcsc);
-                return mcsc;
-            } else {
-                return new ContentStreamSinkConduit(factory.create(),
-                        cexchange);
-            }
-        });
-
-        forceIdentityEncodingForInterceptors(exchange);
-
-        next(exchange);
-    }
-
-    /**
      * if the ModificableContentSinkConduit is set, set the Accept-Encoding
      * header to identity this is required to avoid response interceptors
      * dealing with compressed data
@@ -156,8 +76,8 @@ public class ConduitInjector extends PipelinedHandler {
                 .stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
-                // IMPORTANT: An interceptor can intercept 
-                // - request handled by a Proxy when its request and response 
+                // IMPORTANT: An interceptor can intercept
+                // - request handled by a Proxy when its request and response
                 //   are ByteArrayProxyRequest and ByteArrayProxyResponse
                 .filter(ri -> ri.requestType().equals(ByteArrayProxyRequest.type())
                 && ri.responseType().equals(ByteArrayProxyResponse.type()))
@@ -196,4 +116,85 @@ public class ConduitInjector extends PipelinedHandler {
                     "identity");
         }
     }
+
+    /**
+     * @param next
+     */
+    public ConduitInjector(PipelinedHandler next) {
+        super(next);
+    }
+
+    /**
+     *
+     */
+    public ConduitInjector() {
+        super();
+    }
+
+    /**
+     *
+     * @param exchange
+     * @throws Exception
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        // of the response buffering it if any interceptor resolvers the request
+        // and requires the content from the backend
+        exchange.addResponseWrapper((ConduitFactory<StreamSinkConduit> factory,
+                HttpServerExchange cexchange) -> {
+            // restore MDC context
+            // MDC context is put in the thread context
+            // For proxied requests a thread switch in the request handling happens,
+            // loosing the MDC context. TracingInstrumentationHandler adds it to the
+            // exchange as an Attachment
+            var mdcCtx = ByteArrayProxyResponse.of(exchange).getMDCContext();
+            if (mdcCtx != null) {
+                MDC.setContextMap(mdcCtx);
+            }
+
+            if (PluginsRegistryImpl.getInstance()
+                    .getInterceptors()
+                    .stream()
+                    .filter(ri -> ri.isEnabled())
+                    .map(ri -> ri.getInstance())
+                    .filter(ri -> interceptPoint(ri) == RESPONSE
+                    || interceptPoint(ri) == RESPONSE_ASYNC)
+                    // IMPORTANT: An interceptor can intercept
+                    // - request handled by a Proxy when its request and response
+                    //   are ByteArrayProxyRequest and ByteArrayProxyResponse
+                    .filter(ri -> ri.requestType().equals(ByteArrayProxyRequest.type())
+                    && ri.responseType().equals(ByteArrayProxyResponse.type()))
+                    .filter(ri -> {
+                        try {
+                            return ri.resolve(
+                                    ByteArrayProxyRequest.of(exchange),
+                                    ByteArrayProxyResponse.of(exchange));
+                        } catch (Exception e) {
+                            LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
+                                    ri.getClass().getSimpleName(),
+                                    exchange.getRequestPath(),
+                                    interceptPoint(ri),
+                                    e);
+
+                            return false;
+                        }
+                    })
+                    .anyMatch(ri -> requiresContent(ri))) {
+
+                var mcsc = new ModifiableContentSinkConduit(factory.create(),
+                        cexchange);
+                cexchange.putAttachment(MCSC_KEY, mcsc);
+                return mcsc;
+            } else {
+                return new ContentStreamSinkConduit(factory.create(),
+                        cexchange);
+            }
+        });
+
+        forceIdentityEncodingForInterceptors(exchange);
+
+        next(exchange);
+    }
+
 }

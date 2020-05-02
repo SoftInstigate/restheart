@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -23,7 +23,6 @@ package org.restheart.handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.Version;
-import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.exchange.Response;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
@@ -64,10 +63,10 @@ public class ErrorHandler implements HttpHandler {
             // this occurs executing plugin code compiled
             // with wrong version of restheart-commons
             var pi = PluginUtils.pipelineInfo(exchange);
-            
+
             String version = Version.getInstance().getVersion() == null
-                ? "of correct version"
-                : "v" + Version.getInstance().getVersion();
+                    ? "of correct version"
+                    : "v" + Version.getInstance().getVersion();
 
             var errMsg = "Linkage error handling the request. "
                     + "Check that "
