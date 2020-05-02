@@ -323,7 +323,7 @@
                             <configuration>
                                 <rules>
                                     <requireMavenVersion>
-                                        <version>3.3</version>
+                                        <version>3.6</version>
                                     </requireMavenVersion>
                                     <requireReleaseDeps>
                                         <message>No Snapshots Allowed!</message>
