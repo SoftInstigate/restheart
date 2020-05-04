@@ -221,19 +221,17 @@ public class MongoResponse extends BsonResponse {
                     avoidEscapedChars(message)));
         }
 
-        BsonDocument _exception = new BsonDocument();
-
         if (t != null) {
-            _exception.put(
+            rep.put(
                     "exception",
                     new BsonString(t.getClass().getName()));
 
             if (t.getMessage() != null) {
                 if (t instanceof JsonParseException) {
-                    _exception.put("exception message",
+                    rep.put("exception message",
                             new BsonString("invalid json"));
                 } else {
-                    _exception.put("exception message",
+                    rep.put("exception message",
                             new BsonString(avoidEscapedChars(t.getMessage())));
                 }
             }
@@ -242,11 +240,9 @@ public class MongoResponse extends BsonResponse {
                 BsonArray stackTrace = getStackTrace(t);
 
                 if (stackTrace != null) {
-                    _exception.put("stack trace", stackTrace);
+                    rep.put("stack trace", stackTrace);
                 }
             }
-
-            rep.put("_exception", _exception);
         }
 
         var _warnings = new BsonArray();
