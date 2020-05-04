@@ -101,37 +101,49 @@ public class GetRootHandler extends PipelinedHandler {
             }
 
             size = dbs.size();
+            var page = request.getPage();
+            var pagesize = request.getPagesize();
 
-            if (request.getPagesize() > 0) {
-                Collections.sort(dbs); // sort by id
+            if (size > 0) {
+                float _size = size + 0f;
+                float _pagesize = pagesize + 0f;
 
-                // apply page and pagesize
-                dbs = dbs.subList((request.getPage() - 1) * request.getPagesize(),
-                        (request.getPage() - 1) * request.getPagesize()
-                        + request.getPagesize() > dbs.size()
-                        ? dbs.size()
-                        : (request.getPage() - 1) * request.getPagesize()
-                        + request.getPagesize());
+                var total_pages = Math.max(1, Math.round(Math.ceil(_size / _pagesize)));
 
-                dbs.stream().map(db -> {
-                    if (MetadataCachesSingleton.isEnabled()) {
-                        return MetadataCachesSingleton.getInstance()
-                                .getDBProperties(db);
-                    } else {
-                        return dbsDAO.getDatabaseProperties(
-                                request.getClientSession(),
-                                db);
+                if (page <= total_pages) {
+
+                    if (pagesize > 0) {
+                        Collections.sort(dbs); // sort by id
+
+                        // apply page and pagesize
+                        dbs = dbs.subList((request.getPage() - 1) * pagesize,
+                                (request.getPage() - 1) * pagesize
+                                + pagesize > dbs.size()
+                                ? dbs.size()
+                                : (request.getPage() - 1) * pagesize
+                                + pagesize);
+
+                        dbs.stream().map(db -> {
+                            if (MetadataCachesSingleton.isEnabled()) {
+                                return MetadataCachesSingleton.getInstance()
+                                        .getDBProperties(db);
+                            } else {
+                                return dbsDAO.getDatabaseProperties(
+                                        request.getClientSession(),
+                                        db);
+                            }
+                        }).forEachOrdered(db -> data.add(db));
                     }
-                }).forEachOrdered(db -> data.add(db));
+                }
             }
+
+            response.setCount(size);
+            response.setContent(data);
+
+            response.setContentTypeAsJson();
+            response.setStatusCode(HttpStatus.SC_OK);
+
+            next(exchange);
         }
-
-        response.setCount(size);
-        response.setContent(data);
-
-        response.setContentTypeAsJson();
-        response.setStatusCode(HttpStatus.SC_OK);
-
-        next(exchange);
     }
 }
