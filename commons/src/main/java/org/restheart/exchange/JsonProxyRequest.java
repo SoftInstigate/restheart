@@ -38,10 +38,12 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JsonProxyRequest extends ProxyRequest<JsonElement> {
+    static {
+        LOGGER = LoggerFactory.getLogger(JsonProxyRequest.class);
+    }
 
     protected JsonProxyRequest(HttpServerExchange exchange) {
         super(exchange);
-        LOGGER = LoggerFactory.getLogger(JsonProxyRequest.class);
     }
 
     public static JsonProxyRequest of(HttpServerExchange exchange) {

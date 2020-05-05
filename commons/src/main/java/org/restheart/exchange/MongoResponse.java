@@ -46,6 +46,10 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class MongoResponse extends BsonResponse {
+    static {
+        LOGGER = LoggerFactory.getLogger(MongoResponse.class);
+    }
+
     private OperationResult dbOperationResult;
 
     private final List<String> warnings = new ArrayList<>();
@@ -54,7 +58,6 @@ public class MongoResponse extends BsonResponse {
 
     protected MongoResponse(HttpServerExchange exchange) {
         super(exchange);
-        LOGGER = LoggerFactory.getLogger(MongoResponse.class);
     }
 
     public static MongoResponse init(HttpServerExchange exchange) {
@@ -65,24 +68,24 @@ public class MongoResponse extends BsonResponse {
         return of(exchange, MongoResponse.class);
     }
 
-    public static Type type() {
-        var typeToken = new TypeToken<MongoResponse>(MongoResponse.class) {
-        };
+    private static final Type _TYPE = new TypeToken<MongoResponse>(MongoResponse.class) {
+    }.getType();
 
-        return typeToken.getType();
+    public static Type type() {
+        return _TYPE;
     }
 
     @Override
     public String readContent() {
         var request = MongoRequest.of(wrapped);
         BsonValue tosend;
-        
+
         if (!request.isGet() && (content == null || content.isDocument())) {
             tosend = addWarnings(content == null ? null : content.asDocument());
         } else {
             tosend = content;
         }
-        
+
         if (tosend != null) {
             return JsonUtils.toJson(tosend, request.getJsonMode());
         } else {

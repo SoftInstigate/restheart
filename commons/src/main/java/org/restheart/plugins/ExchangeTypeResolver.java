@@ -25,24 +25,21 @@ import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 
 /**
- * Interface to get the response and request implementation classes at runtime
- * 
+ * Abstract class to get the response and request implementation classes at
+ * runtime
+ *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  * @param <R>
  * @param <S>
  */
 public interface ExchangeTypeResolver<R extends Request<?>, S extends Response<?>> {
     default Type requestType() {
-        var typeToken = new TypeToken<R>(getClass()) {
-        };
-
-        return typeToken.getType();
+        return new TypeToken<R>(getClass()) {
+        }.getType();
     }
 
     default Type responseType() {
-        var typeToken = new TypeToken<S>(getClass()) {
-        };
-
-        return typeToken.getType();
+        return new TypeToken<S>(getClass()) {
+        }.getType();
     }
 }
