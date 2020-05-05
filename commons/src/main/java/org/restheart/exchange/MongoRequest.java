@@ -59,6 +59,10 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class MongoRequest extends BsonRequest {
+    static {
+        LOGGER = LoggerFactory.getLogger(MongoResponse.class);
+    }
+
     private final String whereUri;
     private final String whatUri;
 
@@ -116,7 +120,6 @@ public class MongoRequest extends BsonRequest {
             String requestUri,
             String resourceUri) {
         super(exchange);
-        LOGGER = LoggerFactory.getLogger(MongoResponse.class);
 
         this.whereUri = URLUtils.removeTrailingSlashes(requestUri == null ? null
                 : requestUri.startsWith("/") ? requestUri
@@ -213,11 +216,11 @@ public class MongoRequest extends BsonRequest {
         return of(exchange, MongoRequest.class);
     }
 
-    public static Type type() {
-        var typeToken = new TypeToken<MongoRequest>(MongoRequest.class) {
-        };
+    private static final Type _TYPE = new TypeToken<MongoRequest>(MongoRequest.class) {
+    }.getType();
 
-        return typeToken.getType();
+    public static Type type() {
+        return _TYPE;
     }
 
     /**
@@ -1364,7 +1367,7 @@ public class MongoRequest extends BsonRequest {
     public boolean isFileBinary() {
         return getType() == TYPE.FILE_BINARY;
     }
-    
+
     /**
      * helper method to check request resource type
      *

@@ -56,11 +56,11 @@ public abstract class Response<T> extends Exchange<T> {
         }
     }
     
+    private static final Type _TYPE = new TypeToken<Response>(Response.class) {
+        }.getType();
+    
     public static Type type() {
-        var typeToken = new TypeToken<Response>(Response.class) {
-        };
-
-        return typeToken.getType();
+        return _TYPE;
     }
 
     public static String getContentType(HttpServerExchange exchange) {

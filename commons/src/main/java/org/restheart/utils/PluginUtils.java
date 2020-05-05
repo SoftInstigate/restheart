@@ -20,10 +20,15 @@
 package org.restheart.utils;
 
 import io.undertow.server.HttpServerExchange;
+import java.lang.reflect.Type;
 import java.util.Map;
+import org.restheart.cache.Cache;
+import org.restheart.cache.CacheFactory;
+import org.restheart.cache.LoadingCache;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.PipelineInfo;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
+import org.restheart.plugins.ExchangeTypeResolver;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InterceptPoint;
@@ -70,7 +75,7 @@ public class PluginUtils {
             return a.requiresContent();
         }
     }
-    
+
     /**
      *
      * @param plugin
@@ -101,7 +106,7 @@ public class PluginUtils {
                 ? "/".concat(a.name())
                 : a.defaultURI();
     }
-    
+
     /**
      *
      * @param <P>
@@ -204,5 +209,39 @@ public class PluginUtils {
 
     public static PipelineInfo pipelineInfo(HttpServerExchange exchange) {
         return ByteArrayProxyRequest.of(exchange).getPipelineInfo();
+    }
+
+    private static LoadingCache<ExchangeTypeResolver, Type> RC = CacheFactory
+            .createLocalLoadingCache(
+                    Integer.MAX_VALUE,
+                    Cache.EXPIRE_POLICY.NEVER, 0,
+                    plugin -> plugin.requestType());
+
+    private static LoadingCache<ExchangeTypeResolver, Type> SC = CacheFactory
+            .createLocalLoadingCache(
+                    Integer.MAX_VALUE,
+                    Cache.EXPIRE_POLICY.NEVER, 0,
+                    plugin -> plugin.responseType());
+
+    /**
+     * Plugin.requestType() is heavy. This helper methods speeds up invocation
+     * using a cache
+     *
+     * @param plugin
+     * @return
+     */
+    public static Type cachedRequestType(ExchangeTypeResolver plugin) {
+        return RC.getLoading(plugin).get();
+    }
+
+    /**
+     * Plugin.responseType() is heavy. This helper methods speeds up invocation
+     * using a cache
+     *
+     * @param plugin
+     * @return
+     */
+    public static Type cachedResponseType(ExchangeTypeResolver plugin) {
+        return SC.getLoading(plugin).get();
     }
 }

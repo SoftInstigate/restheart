@@ -35,23 +35,25 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ByteArrayProxyRequest extends ProxyRequest<byte[]> {
+    static {
+        LOGGER = LoggerFactory.getLogger(ByteArrayProxyRequest.class);
+    }
 
     protected ByteArrayProxyRequest(HttpServerExchange exchange) {
         super(exchange);
-        LOGGER = LoggerFactory.getLogger(ByteArrayProxyRequest.class);
     }
 
     public static ByteArrayProxyRequest of(HttpServerExchange exchange) {
         return new ByteArrayProxyRequest(exchange);
     }
-    
-    public static Type type() {
-        var typeToken = new TypeToken<ByteArrayProxyRequest>(ByteArrayProxyRequest.class) {
-        };
 
-        return typeToken.getType();
+    private static final Type _TYPE = new TypeToken<ByteArrayProxyRequest>(ByteArrayProxyRequest.class) {
+    }.getType();
+
+    public static Type type() {
+        return _TYPE;
     }
-    
+
     /**
      * @return the content as Json
      * @throws java.io.IOException
