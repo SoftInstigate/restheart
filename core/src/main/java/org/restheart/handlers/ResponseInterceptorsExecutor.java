@@ -34,6 +34,8 @@ import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.plugins.Service;
 import org.restheart.utils.LambdaUtils;
 import org.restheart.utils.PluginUtils;
+import static org.restheart.utils.PluginUtils.cachedRequestType;
+import static org.restheart.utils.PluginUtils.cachedResponseType;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;
@@ -127,10 +129,10 @@ public class ResponseInterceptorsExecutor
                 // - request handled by a Proxy when its request and response 
                 //   are ByteArrayProxyRequest and ByteArrayProxyResponse
                 .filter(ri -> (handlingService == null
-                && ri.requestType().equals(ByteArrayProxyRequest.type())
-                && ri.responseType().equals(ByteArrayProxyResponse.type()))
-                || (handlingService != null && ri.requestType().equals(handlingService.requestType())
-                && ri.responseType().equals(handlingService.responseType())))
+                && cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
+                && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
+                || (handlingService != null && cachedRequestType(ri).equals(cachedRequestType(handlingService))
+                && cachedResponseType(ri).equals(cachedResponseType(handlingService))))
                 .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
                 .filter(ri -> {
                     try {
@@ -194,10 +196,10 @@ public class ResponseInterceptorsExecutor
                 // - request handled by a Proxy when its request and response 
                 //   are ByteArrayProxyRequest and ByteArrayProxyResponse
                 .filter(ri -> (handlingService == null
-                && ri.requestType().equals(ByteArrayProxyRequest.type())
-                && ri.responseType().equals(ByteArrayProxyResponse.type()))
-                || (handlingService != null && ri.requestType().equals(handlingService.requestType())
-                && ri.responseType().equals(handlingService.responseType())))
+                && cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
+                && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
+                || (handlingService != null && cachedRequestType(ri).equals(cachedRequestType(handlingService))
+                && ri.responseType().equals(cachedResponseType(handlingService))))
                 .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
                 .filter(ri -> {
                     try {
