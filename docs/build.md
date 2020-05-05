@@ -47,7 +47,7 @@ To compile new plugins, add the `restheart-commons` dependency to your POM file:
     <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart-commons</artifactId>
-        <version>5.0.0-RC4</version>
+        <version>5.0.0</version>
     </dependency>
 </dependencies>
 ```
