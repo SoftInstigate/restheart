@@ -34,6 +34,8 @@ import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.LambdaUtils;
 import org.restheart.utils.PluginUtils;
+import static org.restheart.utils.PluginUtils.cachedRequestType;
+import static org.restheart.utils.PluginUtils.cachedResponseType;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,11 +118,11 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 //   are ByteArrayProxyRequest and ByteArrayProxyResponse
                 .filter(ri
                         -> (handlingService == null
-                && ri.requestType().equals(ByteArrayProxyRequest.type())
-                && ri.responseType().equals(ByteArrayProxyResponse.type()))
+                && cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
+                && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
                 || (handlingService != null
-                && ri.requestType().equals(handlingService.requestType())
-                && ri.responseType().equals(handlingService.responseType())))
+                && cachedRequestType(ri).equals(cachedRequestType(handlingService))
+                && cachedResponseType(ri).equals(cachedResponseType(handlingService))))
                 .filter(ri -> interceptPoint == interceptPoint(ri))
                 .filter(ri -> {
                     try {

@@ -33,6 +33,8 @@ import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
 import org.restheart.plugins.PluginsRegistryImpl;
+import static org.restheart.utils.PluginUtils.cachedRequestType;
+import static org.restheart.utils.PluginUtils.cachedResponseType;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;
@@ -71,6 +73,7 @@ public class ConduitInjector extends PipelinedHandler {
     @SuppressWarnings("unchecked")
     private static void forceIdentityEncodingForInterceptors(
             HttpServerExchange exchange) {
+
         if (PluginsRegistryImpl.getInstance()
                 .getInterceptors()
                 .stream()
@@ -79,8 +82,8 @@ public class ConduitInjector extends PipelinedHandler {
                 // IMPORTANT: An interceptor can intercept
                 // - request handled by a Proxy when its request and response
                 //   are ByteArrayProxyRequest and ByteArrayProxyResponse
-                .filter(ri -> ri.requestType().equals(ByteArrayProxyRequest.type())
-                && ri.responseType().equals(ByteArrayProxyResponse.type()))
+                .filter(ri -> cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
+                && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
                 .filter(ri -> {
                     try {
                         return ri.resolve(
@@ -163,8 +166,8 @@ public class ConduitInjector extends PipelinedHandler {
                     // IMPORTANT: An interceptor can intercept
                     // - request handled by a Proxy when its request and response
                     //   are ByteArrayProxyRequest and ByteArrayProxyResponse
-                    .filter(ri -> ri.requestType().equals(ByteArrayProxyRequest.type())
-                    && ri.responseType().equals(ByteArrayProxyResponse.type()))
+                    .filter(ri -> cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
+                    && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
                     .filter(ri -> {
                         try {
                             return ri.resolve(

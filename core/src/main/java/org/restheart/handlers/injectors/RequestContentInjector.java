@@ -38,6 +38,8 @@ import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.PluginUtils;
+import static org.restheart.utils.PluginUtils.cachedRequestType;
+import static org.restheart.utils.PluginUtils.cachedResponseType;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;
@@ -153,11 +155,11 @@ public class RequestContentInjector extends PipelinedHandler {
                 //   are ByteArrayProxyRequest and ByteArrayProxyResponse
                 .filter(ri
                         -> (handlingService == null
-                && ri.requestType().equals(ByteArrayProxyRequest.type())
-                && ri.responseType().equals(ByteArrayProxyResponse.type()))
+                && cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
+                && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
                 || (handlingService != null
-                && ri.requestType().equals(handlingService.requestType())
-                && ri.responseType().equals(handlingService.responseType())))
+                && cachedRequestType(ri).equals(cachedRequestType(handlingService))
+                && cachedResponseType(ri).equals(cachedRequestType(handlingService))))
                 .filter(ri -> {
                     try {
                         return ri.resolve(request, response);
