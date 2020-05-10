@@ -52,9 +52,7 @@ public class BsonRequest extends ServiceRequest<BsonValue> {
     }
 
     public void injectContent() throws IOException {
-        var bson = JsonUtils.parse(ChannelReader
-                .read(wrapped.getRequestChannel()));
-
-        setContent(bson);
+        setContent(JsonUtils.parse(ChannelReader
+                .read(wrapped.getRequestChannel())));
     }
 }

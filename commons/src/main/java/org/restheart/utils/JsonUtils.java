@@ -637,7 +637,7 @@ public class JsonUtils {
      */
     public static BsonValue parse(String json)
             throws JsonParseException {
-        if (json == null) {
+        if (json == null || json.isEmpty()) {
             return null;
         }
 
