@@ -20,16 +20,23 @@
  */
 package org.restheart;
 
+import java.io.IOException;
+import java.net.URL;
 import java.time.Instant;
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
-import org.restheart.utils.FileUtils;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class Version {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Version.class);
 
     /**
      *
@@ -77,7 +84,7 @@ public class Version {
      * present
      */
     private Instant extractBuildTime() {
-        final Set<Map.Entry<Object, Object>> MANIFEST_ENTRIES = FileUtils.findManifestInfo();
+        final Set<Map.Entry<Object, Object>> MANIFEST_ENTRIES = findManifestInfo();
 
         return MANIFEST_ENTRIES == null
                 ? Instant.now()
@@ -103,5 +110,26 @@ public class Version {
 
         private VersionHolder() {
         }
+    }
+    
+    private static Set<Map.Entry<Object, Object>> findManifestInfo() {
+        Set<Map.Entry<Object, Object>> result = null;
+        try {
+            Enumeration<URL> resources = Thread.currentThread().getContextClassLoader()
+                    .getResources("META-INF/MANIFEST.MF");
+            while (resources.hasMoreElements()) {
+                URL manifestUrl = resources.nextElement();
+                Manifest manifest = new Manifest(manifestUrl.openStream());
+                Attributes mainAttributes = manifest.getMainAttributes();
+                String implementationTitle = mainAttributes.getValue("Implementation-Title");
+                if (implementationTitle != null && implementationTitle.toLowerCase().startsWith("restheart")) {
+                    result = mainAttributes.entrySet();
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.warn(e.getMessage());
+        }
+        return result;
     }
 }
