@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.plugins.authenticators;
+package org.restheart.plugins.security;
 
 import com.google.common.collect.Sets;
 import io.undertow.security.idm.Account;

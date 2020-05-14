@@ -45,7 +45,7 @@ import org.restheart.plugins.security.TokenManager;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
-import org.restheart.security.plugins.authenticators.PwdCredentialAccount;
+import org.restheart.plugins.security.PwdCredentialAccount;
 import org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;

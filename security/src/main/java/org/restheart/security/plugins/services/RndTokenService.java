@@ -42,7 +42,7 @@ import org.restheart.plugins.RegisterPlugin;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
-import org.restheart.security.plugins.authenticators.BaseAccount;
+import org.restheart.plugins.security.BaseAccount;
 import org.restheart.utils.HttpStatus;
 
 /**

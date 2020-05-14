@@ -20,6 +20,7 @@
  */
 package org.restheart.security.plugins.authenticators;
 
+import org.restheart.plugins.security.PwdCredentialAccount;
 import com.google.common.collect.Sets;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;

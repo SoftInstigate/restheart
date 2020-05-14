@@ -32,7 +32,7 @@ import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
-import org.restheart.security.plugins.authenticators.BaseAccount;
+import org.restheart.plugins.security.BaseAccount;
 
 /**
  * a simple Auth Mechanism to demonstrate how to plug a custom
