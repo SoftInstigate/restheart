@@ -11,3 +11,4 @@ mongodb_*
 /target/
 /dist/
 /template/etc/*
+/restheart-platform-utils/target/
