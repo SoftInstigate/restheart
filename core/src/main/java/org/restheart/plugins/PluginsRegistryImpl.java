@@ -193,7 +193,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                     .interceptors());
         }
 
-        return Collections.unmodifiableSet(this.interceptors);
+        return this.interceptors;
     }
 
     /**
@@ -218,7 +218,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      */
     @Override
     public Set<Predicate> getGlobalSecurityPredicates() {
-        return Collections.unmodifiableSet(globalSecurityPredicates);
+        return globalSecurityPredicates;
     }
 
     @Override
