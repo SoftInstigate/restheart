@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@RegisterPlugin(name = "filterPredicateInjector",
-        description = "inject the filter set by ACL into the request",
+@RegisterPlugin(name = "userPwdHasher",
+        description = "automatically hashes the user password",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
         requiresContent = true)
 public class UserPwdHasher implements MongoInterceptor {
@@ -44,6 +44,13 @@ public class UserPwdHasher implements MongoInterceptor {
     private Integer complexity;
 
     private boolean enabled = false;
+    
+    UserPwdHasher(String usersUri, String propNamePassword, Integer complexity) {
+        this.usersUri = usersUri;
+        this.propNamePassword = propNamePassword;
+        this.complexity = complexity;
+        this.enabled = true;
+    }
 
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
@@ -52,7 +59,7 @@ public class UserPwdHasher implements MongoInterceptor {
         if (_rhAuth == null || !_rhAuth.isEnabled()) {
             enabled = false;
         } else {
-            var rhAuth = (RHAuthenticator) _rhAuth.getInstance();
+            var rhAuth = (MongoRealmAuthenticator) _rhAuth.getInstance();
             
             this.usersUri = rhAuth.getUsersUri();
             this.propNamePassword = rhAuth.getPropPassword();

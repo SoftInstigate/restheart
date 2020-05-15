@@ -12,7 +12,7 @@
   <packaging>jar</packaging>
     
   <build>
-    <finalName>restheart-platform-utils</finalName>
+    <finalName>platform-utils</finalName>
   </build>
     
   <dependencies>

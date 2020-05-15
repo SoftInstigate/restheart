@@ -13,12 +13,16 @@ package com.restheart.authenticators;
 import com.google.gson.JsonElement;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import io.undertow.server.HttpServerExchange;
-import org.restheart.security.ConfigurationException;
-import org.restheart.security.handlers.exchange.JsonRequest;
-import org.restheart.security.handlers.exchange.JsonResponse;
-import org.restheart.security.plugins.ResponseInterceptor;
-import org.restheart.security.utils.URLUtils;
+import org.restheart.ConfigurationException;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.utils.JsonUtils;
+import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,44 +30,35 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class UserPwdRemover implements ResponseInterceptor {
+@RegisterPlugin(name = "pwdHider",
+        description = "hides the password from the response",
+        interceptPoint = InterceptPoint.RESPONSE,
+        requiresContent = true)
+public class UserPwdRemover implements MongoInterceptor {
     static final Logger LOGGER = LoggerFactory.getLogger(UserPwdRemover.class);
      
-    private final String usersUri;
-    private final String propNamePassword;
+    private String usersUri;
+    private String propNamePassword;
+    private boolean enabled = false;
 
-    /**
-     *
-     * @param usersUri the URI of the users collection resource
-     * @param propPassword the property holding the password
-     * in the user document
-     * @throws org.restheart.security.ConfigurationException
-     */
-    public UserPwdRemover(
-            String usersUri,
-            String propPassword) throws ConfigurationException {
-        
-        if (usersUri == null) {
-            throw new ConfigurationException(
-                    "missing users-collection-uri property");
-        }
-        
-        this.usersUri = URLUtils.removeTrailingSlashes(usersUri);
-        
-        if (propPassword == null ||
-                propPassword.contains(".")) {
-            throw new ConfigurationException("prop-password must be "
-                    + "a root level property and cannot contain the char '.'");
-        }
-        
-        this.propNamePassword = propPassword;
+    @InjectPluginsRegistry
+    public void init(PluginsRegistry registry) {
+        var _rhAuth = registry.getAuthenticator("rhAuthenticator");
+
+        if (_rhAuth == null || !_rhAuth.isEnabled()) {
+            enabled = false;
+        } else {
+            var rhAuth = (MongoRealmAuthenticator) _rhAuth.getInstance();
+            
+            this.usersUri = rhAuth.getUsersUri();
+            this.propNamePassword = rhAuth.getPropPassword();
+            enabled = true;
+        }   
     }
 
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var resp = JsonResponse.wrap(exchange);
-
-        DocumentContext dc = JsonPath.parse(resp.readContent());
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        DocumentContext dc = JsonPath.parse(response.readContent());
 
         JsonElement content = dc.json();
         
@@ -93,21 +88,16 @@ public class UserPwdRemover implements ResponseInterceptor {
             dc.delete("$.".concat(this.propNamePassword));
         }
         
-        resp.writeContent(content);
+        response.setContent(JsonUtils.parse(content.toString()));
     }
 
     @Override
-    public boolean resolve(HttpServerExchange exchange) {
-        var requestPath = URLUtils.removeTrailingSlashes(exchange.
-                getRequestPath());
-
-        return JsonRequest.wrap(exchange).isGet()
+    public boolean resolve(MongoRequest request, MongoResponse response) {
+        var requestPath = URLUtils.removeTrailingSlashes(request.getPath());
+        
+        return enabled &&
+                request.isGet()
                 && (requestPath.equals(usersUri)
                 || requestPath.startsWith(usersUri + "/"));
-    }
-
-    @Override
-    public boolean requiresResponseContent() {
-        return true;
     }
 }

@@ -10,7 +10,6 @@
  */
 package com.restheart.authenticators;
 
-import com.google.common.cache.LoadingCache;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
@@ -19,16 +18,16 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import com.restheart.security.net.Client;
-import com.restheart.security.net.Request;
-import com.restheart.security.predicates.DenyFilterOnUserPwdPredicate;
+import com.mongodb.client.MongoClient;
+import com.restheart.net.Client;
+import com.restheart.net.Request;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.DigestCredential;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.util.HexConverter;
+import io.undertow.util.HttpString;
 import static io.undertow.util.RedirectBuilder.UTF_8;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -39,15 +38,19 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import org.mindrot.jbcrypt.BCrypt;
+import org.restheart.Configuration;
 import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
+import org.restheart.cache.LoadingCache;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.InjectMongoClient;
+import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
-import org.restheart.security.Bootstrapper;
-import org.restheart.security.handlers.GlobalSecurityPredicatesAuthorizer;
-import org.restheart.security.plugins.authenticators.PwdCredentialAccount;
+import org.restheart.plugins.security.PwdCredentialAccount;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -57,14 +60,15 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class RHAuthenticator implements Authenticator {
+@RegisterPlugin(name = "mongoRealmAuthenticator",
+        description = "authenticate requests against credentials stored in mongodb")
+public class MongoRealmAuthenticator implements Authenticator {
     private static final Logger LOGGER
-            = LoggerFactory.getLogger(RHAuthenticator.class);
+            = LoggerFactory.getLogger(MongoRealmAuthenticator.class);
 
     public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
     public static final String X_FORWARDED_ROLE = "RESTHeart";
 
-    private final String name;
     private URI restheartBaseUrl = null;
     private URI dbUrl = null;
     private URI collUrl = null;
@@ -90,18 +94,14 @@ public class RHAuthenticator implements Authenticator {
                     Cache.EXPIRE_POLICY.AFTER_READ,
                     20 * 60 * 1_000l);
 
-    /**
-     *
-     * @param name
-     * @param args
-     * @throws java.io.FileNotFoundException
-     * @throws org.restheart.security.ConfigurationException
-     */
-    public RHAuthenticator(final String name, final Map<String, Object> args)
-            throws FileNotFoundException, ConfigurationException {
-        this.name = name;
-        this.restheartBaseUrl = Bootstrapper.getConfiguration()
-                .getRestheartBaseUrl();
+    private MongoClient mclient;
+    private PluginsRegistry registry;
+
+    @InjectConfiguration
+    public void setConf(Map<String, Object> args) {
+        var conf = new Configuration(args, true);
+
+        this.restheartBaseUrl = conf.getRestheartBaseUrl();
 
         this.usersUri = URLUtils.removeTrailingSlashes(
                 argValue(args, "users-collection-uri"));
@@ -186,30 +186,23 @@ public class RHAuthenticator implements Authenticator {
                 LOGGER.trace("Not creating default user since users exist");
             }
         }
+    }
 
+    @InjectMongoClient
+    public void setMongoClient(MongoClient mclient) {
+        this.mclient = mclient;
+    }
+
+    @InjectPluginsRegistry
+    public void setRegistry(PluginsRegistry registry) {
+        this.registry = registry;
+        
         // add a global security predicate to deny requests
         // to users collection, containing a filter on password property
         // this avoids clients to potentially steal passwords
-        GlobalSecurityPredicatesAuthorizer
-                .getGlobalSecurityPredicates()
-                .add(new DenyFilterOnUserPwdPredicate(
-                        getUsersUri(), getPropPassword()));
-
-        // add a response interceptor to filter out the password property
-        // from the response
-        PluginsRegistry.getInstance()
-                .getResponseInterceptors()
-                .add(new UserPwdRemover(
-                        getUsersUri(), getPropPassword()));
-
-        // add a request interceptor to hash the password property
-        // in the write requests
-        if (this.bcryptHashedPassword) {
-            PluginsRegistry.getInstance()
-                    .getRequestInterceptors()
-                    .add(new UserPwdHasher(
-                            getUsersUri(), getPropPassword(), getBcryptComplexity()));
-        }
+        registry.getGlobalSecurityPredicates()
+                .add(new DenyFilterOnUserPwdPredicate(this.usersUri, 
+                        this.propPassword));
     }
 
     @Override
@@ -237,8 +230,7 @@ public class RHAuthenticator implements Authenticator {
                     ref,
                     (DigestCredential) credential);
         } else {
-            LOGGER.warn("{} does not support credential of type {}",
-                    name,
+            LOGGER.warn("mongoRealmAuthenticator does not support credential of type {}",
                     credential.getClass().getSimpleName());
             verified = false;
         }
@@ -250,7 +242,7 @@ public class RHAuthenticator implements Authenticator {
             return null;
         }
     }
-    
+
     /**
      * @return the bcryptComplexity
      */
@@ -264,6 +256,7 @@ public class RHAuthenticator implements Authenticator {
     public void setBcryptComplexity(Integer bcryptComplexity) {
         this.bcryptComplexity = bcryptComplexity;
     }
+
     /**
      * @return the usersUri
      */
@@ -355,10 +348,10 @@ public class RHAuthenticator implements Authenticator {
             if (username == null || password == null || expected == null) {
                 return false;
             }
-            
+
             var _password = new String(password);
             var _expected = new String(expected);
-            
+
             // speedup bcrypted pwd check if already checked.
             // bcrypt check is very CPU intensive by design.
             var _cachedPwd = USERS_PWDS_CACHE.get(username.concat(_expected));
@@ -762,12 +755,12 @@ public class RHAuthenticator implements Authenticator {
      */
     private void updateAuthTokenCache(PwdCredentialAccount account) {
         try {
-            var tm = PluginsRegistry.getInstance().getTokenManager();
+            var _tm = registry.getTokenManager();
 
-            if (tm != null) {
-                var token = tm.get(account);
-
-                if (token != null) {
+            if (_tm != null) {
+                var tm = _tm.getInstance();
+                
+                if (tm.get(account) != null) {
                     tm.update(account);
                 }
             }
@@ -781,5 +774,17 @@ public class RHAuthenticator implements Authenticator {
      */
     public String getPropPassword() {
         return propPassword;
+    }
+
+    public static HttpString getXForwardedHeaderName(String suffix) {
+        return HttpString.tryFromString("X-Forwarded-".concat(suffix));
+    }
+
+    public static HttpString getXForwardedAccountIdHeaderName() {
+        return getXForwardedHeaderName("Account-Id");
+    }
+
+    public static HttpString getXForwardedRolesHeaderName() {
+        return getXForwardedHeaderName("Account-Roles");
     }
 }

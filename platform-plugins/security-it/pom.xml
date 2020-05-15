@@ -9,16 +9,12 @@
     </parent>
     
     <groupId>com.restheart</groupId>
-    <artifactId>restheart-platform-security</artifactId>
+    <artifactId>security-it</artifactId>
     <packaging>jar</packaging>
     <name>security-it</name>
-    <description>RESTHeart Platform Security - IAM microservice.</description>
+    <description>Integration Test suite for RESTHeart Platform Security Plugins</description>
     <url>http://www.restheart.org</url>
     <inceptionYear>2019</inceptionYear>
-
-    <properties>
-        <mainclass>org.restheart.security.Bootstrapper</mainclass>
-    </properties>
 
     <dependencies>
         <dependency>
