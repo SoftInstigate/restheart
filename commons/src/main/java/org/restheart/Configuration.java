@@ -405,7 +405,7 @@ public class Configuration {
 
         // check if service configuration follows old (<2.0)format
         if (conf.get(SERVICES_KEY) != null) {
-            LOGGER.error("The services configuration section is obsolete. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+            LOGGER.error("The services configuration section is obsolete.");
             throw new ConfigurationException("Wrong Services configuration");
         }
 
@@ -852,7 +852,7 @@ public class Configuration {
      * @throws ConfigurationException
      */
     public URI getRestheartBaseUrl() throws ConfigurationException {
-        var __proxyPass = Bootstrapper.getConfiguration().getProxies().stream()
+        var __proxyPass = getProxies().stream()
                 .filter(e -> e.containsKey(ConfigurationKeys.PROXY_NAME))
                 .filter(e -> "restheart".equals(e.get(ConfigurationKeys.PROXY_NAME)))
                 .map(e -> e.get(ConfigurationKeys.PROXY_PASS_KEY))
@@ -899,7 +899,7 @@ public class Configuration {
      * @throws ConfigurationException
      */
     public URI getRestheartLocation() throws ConfigurationException {
-        var __proxyLocation = Bootstrapper.getConfiguration().getProxies().stream()
+        var __proxyLocation = getProxies().stream()
                 .filter(e -> e.containsKey(ConfigurationKeys.PROXY_NAME))
                 .filter(e -> "restheart".equals(e.get(ConfigurationKeys.PROXY_NAME)))
                 .map(e -> e.get(ConfigurationKeys.PROXY_LOCATION_KEY))

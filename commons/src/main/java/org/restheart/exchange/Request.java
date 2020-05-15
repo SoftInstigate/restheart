@@ -139,7 +139,7 @@ public abstract class Request<T> extends Exchange<T> {
 
     /**
      * Add the header X-Forwarded-[key] to the proxied request; use it to pass
-     * to the bbackend information otherwise lost proxying the request.
+     * to the backend information otherwise lost proxying the request.
      *
      * @param key
      * @param value
