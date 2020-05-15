@@ -13,52 +13,55 @@ package com.restheart.authorizers;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import static com.google.common.collect.Sets.newHashSet;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import com.restheart.security.net.Client;
-import com.restheart.security.net.Request;
-import static com.restheart.rhAuthenticator.RHAuthenticator.X_FORWARDED_ACCOUNT_ID;
-import static com.restheart.rhAuthenticator.RHAuthenticator.X_FORWARDED_ROLE;
-import com.restheart.security.plugins.interceptors.FilterPredicateInjector;
+import com.mongodb.client.MongoClient;
+import com.restheart.net.Client;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import io.undertow.util.HttpString;
 import java.io.IOException;
 import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import org.restheart.Configuration;
+import org.restheart.ConfigurationException;
+import org.restheart.cache.Cache;
+import org.restheart.cache.CacheFactory;
+import org.restheart.cache.LoadingCache;
+import org.restheart.exchange.Request;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.ConfigurationScope;
+import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.security.Authorizer;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.LinkedHashSet;
-import java.util.stream.StreamSupport;
-import org.restheart.security.Bootstrapper;
-import org.restheart.security.ConfigurationException;
-import org.restheart.security.cache.Cache;
-import org.restheart.security.cache.CacheFactory;
-import org.restheart.security.cache.LoadingCache;
-import org.restheart.security.handlers.exchange.ByteArrayRequest;
-import static org.restheart.security.handlers.injectors.XForwardedHeadersInjector.getXForwardedAccountIdHeaderName;
-import static org.restheart.security.handlers.injectors.XForwardedHeadersInjector.getXForwardedRolesHeaderName;
-import org.restheart.plugins.security.Authorizer;
-import static org.restheart.security.plugins.ConfigurablePlugin.argValue;
-import org.restheart.security.plugins.PluginsRegistry;
-import org.restheart.security.utils.HttpStatus;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class RHAuthorizer implements Authorizer {
+@RegisterPlugin(name = "mongoAclAuthorizer",
+        description = "authorizes requests against acl stored in mongodb")
+public class MongoAclAuthorizer implements Authorizer {
     private static final Logger LOGGER
-            = LoggerFactory.getLogger(RHAuthorizer.class);
+            = LoggerFactory.getLogger(MongoAclAuthorizer.class);
+    
+    public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
+    public static final String X_FORWARDED_ROLE = "RESTHeart";
 
     public static final AttachmentKey<FilterPredicate> MATCHING_ACL_PREDICATE = AttachmentKey.create(FilterPredicate.class);
 
@@ -81,13 +84,17 @@ public class RHAuthorizer implements Authorizer {
 
     private LoadingCache<String, LinkedHashSet<FilterPredicate>> acl = null;
 
-    public RHAuthorizer(final String name, final Map<String, Object> args)
-            throws ConfigurationException {
+    private MongoClient mclient;
+    private PluginsRegistry registry;
+
+    @InjectConfiguration(scope = ConfigurationScope.ALL)
+    public void setConf(Map<String, Object> args) {
         this.aclUri = argValue(args, "acl-uri");
         this.rootRole = argValue(args, "root-role");
 
-        this.restheartBaseUrl = Bootstrapper.getConfiguration()
-                .getRestheartBaseUrl();
+        var conf = new Configuration(args, true);
+
+        this.restheartBaseUrl = conf.getRestheartBaseUrl();
 
         this.aclUrl = this.restheartBaseUrl.resolve(this.restheartBaseUrl.getPath()
                 .concat(aclUri));
@@ -125,15 +132,8 @@ public class RHAuthorizer implements Authorizer {
                         return this.findRolePredicates(role);
                     });
         }
-
-        // add a request interceptor to inject the filter eventually specified 
-        // in the appying FilterPredicate
-        PluginsRegistry.getInstance()
-                .getRequestInterceptors()
-                .add(new FilterPredicateInjector());
     }
 
-    
     /**
      * @param request
      * @return
@@ -144,7 +144,9 @@ public class RHAuthorizer implements Authorizer {
         if (request.isOptions()) {
             return true;
         }
-        
+
+        var exchange = request.getExchange();
+
         if (this.rootRole != null
                 && exchange
                         .getSecurityContext() != null
@@ -211,8 +213,7 @@ public class RHAuthorizer implements Authorizer {
                         -> predicatesForRole(role)
                         .stream()
                         .anyMatch(r -> {
-                            if (r.resolve(exchange)
-                                    ) {
+                            if (r.resolve(exchange)) {
                                 predicates.add(r);
                                 return true;
                             } else {
@@ -229,11 +230,13 @@ public class RHAuthorizer implements Authorizer {
     }
 
     @Override
-    public boolean isAuthenticationRequired(final HttpServerExchange exchange) {
+    public boolean isAuthenticationRequired(Request request) {
         // don't require authentication for OPTIONS requests
-        if (ByteArrayRequest.wrap(exchange).isOptions()) {
+        if (request.isOptions()) {
             return false;
         }
+
+        var exchange = request.getExchange();
 
         var ps = getRoleFilterPredicates($UNAUTHENTICATED);
 
@@ -247,7 +250,7 @@ public class RHAuthorizer implements Authorizer {
             // Predicate.resolve() uses getRelativePath() that is the path relative to
             // the last PathHandler we want to check against the full request path
             // see https://issues.jboss.org/browse/UNDERTOW-1317
-            exchange.setRelativePath(exchange.getRequestPath());
+            exchange.setRelativePath(request.getPath());
 
             return !ps.stream().anyMatch(r -> r.resolve(exchange));
         } else {
@@ -319,8 +322,8 @@ public class RHAuthorizer implements Authorizer {
 
         try {
             if (ajp) {
-                var resp = Client.getInstance().execute(new Request(
-                        Request.METHOD.GET, aclUrl)
+                var resp = Client.getInstance().execute(new com.restheart.net.Request(
+                        com.restheart.net.Request.METHOD.GET, aclUrl)
                         .header(getXForwardedAccountIdHeaderName().toString(),
                                 X_FORWARDED_ACCOUNT_ID)
                         .header(getXForwardedRolesHeaderName().toString(),
@@ -372,18 +375,18 @@ public class RHAuthorizer implements Authorizer {
             return null;
         }
 
-        var acl = JsonParser.parseString(_acl);
+        var acl = JsonUtils.parse(_acl);
 
-        if (!acl.isJsonArray()) {
+        if (!acl.isArray()) {
             LOGGER.warn("Response body is not a array", role);
             return null;
         }
 
         LinkedHashSet<FilterPredicate> ret = Sets.newLinkedHashSet();
 
-        StreamSupport.stream(acl.getAsJsonArray().spliterator(), true)
-                .filter(predicateElem -> predicateElem.isJsonObject())
-                .map(predicateElem -> predicateElem.getAsJsonObject())
+        StreamSupport.stream(acl.asArray().spliterator(), true)
+                .filter(predicateElem -> predicateElem.isDocument())
+                .map(predicateElem -> predicateElem.asDocument())
                 .filter(predicateDocument -> {
                     // filter out illegal predicates
                     try {
@@ -400,5 +403,17 @@ public class RHAuthorizer implements Authorizer {
                 });
 
         return ret;
+    }
+    
+    public static HttpString getXForwardedHeaderName(String suffix) {
+        return HttpString.tryFromString("X-Forwarded-".concat(suffix));
+    }
+
+    public static HttpString getXForwardedAccountIdHeaderName() {
+        return getXForwardedHeaderName("Account-Id");
+    }
+
+    public static HttpString getXForwardedRolesHeaderName() {
+        return getXForwardedHeaderName("Account-Roles");
     }
 }

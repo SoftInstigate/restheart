@@ -12,29 +12,29 @@ package com.restheart.initializers;
 
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import com.restheart.security.net.Client;
-import com.restheart.security.net.Request;
-import com.softinstigate.restheart.utils.LogUtils;
-import static com.restheart.rhAuthenticator.RHAuthenticator.X_FORWARDED_ACCOUNT_ID;
-import static com.restheart.rhAuthenticator.RHAuthenticator.X_FORWARDED_ROLE;
-import com.softinstigate.restheart.utils.NetUtils;
+import com.restheart.net.Client;
+import com.restheart.net.Request;
+import com.restheart.utils.LogUtils;
+import com.restheart.utils.NetUtils;
 import static io.undertow.Handlers.path;
 import io.undertow.Undertow;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
 import io.undertow.server.handlers.proxy.ProxyHandler;
+import io.undertow.util.HttpString;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import org.restheart.security.Bootstrapper;
-import org.restheart.security.ConfigurationException;
-import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTP_HOST;
-import static org.restheart.security.ConfigurationKeys.DEFAULT_HTTP_PORT;
-import static org.restheart.security.handlers.injectors.XForwardedHeadersInjector.getXForwardedAccountIdHeaderName;
-import static org.restheart.security.handlers.injectors.XForwardedHeadersInjector.getXForwardedRolesHeaderName;
-import org.restheart.security.plugins.PreStartupInitializer;
-import org.restheart.security.plugins.RegisterPlugin;
+import java.util.Map;
+import org.restheart.Configuration;
+import org.restheart.ConfigurationException;
+import static org.restheart.ConfigurationKeys.DEFAULT_HTTP_HOST;
+import static org.restheart.ConfigurationKeys.DEFAULT_HTTP_PORT;
+import org.restheart.plugins.ConfigurationScope;
+import org.restheart.plugins.Initializer;
+import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,25 +45,43 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(
         name = "rhCoreConnector",
         priority = 100,
-        description = "Connects to RESTHeart Platform Core",
+        description = "Connects a Proxy to RESTHeart Mongo Service",
         enabledByDefault = true)
-public class RHCoreConnector implements PreStartupInitializer {
+public class RHCoreConnector implements Initializer {
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(RHCoreConnector.class);
+    
+    public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
+    public static final String X_FORWARDED_ROLE = "RESTHeart";
+
+    private URI restheartBaseUrl;
+    private Configuration configuration;
+
+    @InjectConfiguration(scope = ConfigurationScope.ALL)
+    public void setConf(Map<String, Object> args) {
+        this.configuration = new Configuration(args, true);
+
+        this.restheartBaseUrl = this.configuration.getRestheartBaseUrl();
+    }
 
     @Override
     public void init() {
-        try {
-            waitForConnection(Bootstrapper.getConfiguration()
-                    .getRestheartBaseUrl());
-        } catch (ConfigurationException ex) {
-            LOGGER.error("Error connecting to RESTHeart Platform Core:",
-                    ex);
-            System.exit(-6060);
-        }
+        if (restheartBaseUrl != null) {
+            try {
+                waitForConnection(restheartBaseUrl);
+            } catch (ConfigurationException ex) {
+                LOGGER.error("Error connecting to RESTHeart Platform Core:",
+                        ex);
+                System.exit(-6060);
+            }
 
-        LOGGER.info("Connected to RESTHeart Platform");
+            LOGGER.info("Connected to RESTHeart Platform");
+        } else {
+            LOGGER.warn("Cannot get RESTHeart base url. "
+                    + "Make sure your proxy configuration specifies "
+                    + "an entry with 'name: restheart'");
+        }
     }
 
     public void waitForConnection(URI restheartBaseUrl) {
@@ -94,12 +112,12 @@ public class RHCoreConnector implements PreStartupInitializer {
                         requestAcceptingLicense();
 
                         undertow = startProxy(restheartBaseUrl,
-                                Bootstrapper.getConfiguration() == null
+                                this.configuration == null
                                 ? DEFAULT_HTTP_HOST
-                                : Bootstrapper.getConfiguration().getHttpHost(),
-                                Bootstrapper.getConfiguration() == null
+                                : this.configuration.getHttpHost(),
+                                this.configuration == null
                                 ? DEFAULT_HTTP_PORT
-                                : Bootstrapper.getConfiguration().getHttpPort());
+                                : this.configuration.getHttpPort());
                     }
 
                     try {
@@ -170,14 +188,14 @@ public class RHCoreConnector implements PreStartupInitializer {
      * however, in this case we have the server always accepting connection at
      * http-host:http-port, since we have started a dedicated server
      */
-    private static void requestAcceptingLicense() {
-        var host = Bootstrapper.getConfiguration() == null
+    private void requestAcceptingLicense() {
+        var host = this.configuration == null
                 ? DEFAULT_HTTP_HOST
-                : Bootstrapper.getConfiguration().getHttpHost();
+                : this.configuration.getHttpHost();
 
-        var port = Bootstrapper.getConfiguration() == null
+        var port = this.configuration == null
                 ? DEFAULT_HTTP_PORT
-                : Bootstrapper.getConfiguration().getHttpPort();
+                : this.configuration.getHttpPort();
 
         if ("127.0.0.1".equals(host)
                 || "localhost".equals(host)) {
@@ -255,5 +273,17 @@ public class RHCoreConnector implements PreStartupInitializer {
         undertow.start();
 
         return undertow;
+    }
+    
+    public static HttpString getXForwardedHeaderName(String suffix) {
+        return HttpString.tryFromString("X-Forwarded-".concat(suffix));
+    }
+
+    public static HttpString getXForwardedAccountIdHeaderName() {
+        return getXForwardedHeaderName("Account-Id");
+    }
+
+    public static HttpString getXForwardedRolesHeaderName() {
+        return getXForwardedHeaderName("Account-Roles");
     }
 }

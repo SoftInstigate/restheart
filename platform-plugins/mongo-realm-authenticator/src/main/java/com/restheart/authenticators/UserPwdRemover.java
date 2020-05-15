@@ -13,7 +13,6 @@ package com.restheart.authenticators;
 import com.google.gson.JsonElement;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import org.restheart.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InjectPluginsRegistry;
@@ -43,12 +42,12 @@ public class UserPwdRemover implements MongoInterceptor {
 
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
-        var _rhAuth = registry.getAuthenticator("rhAuthenticator");
+        var _mra = registry.getAuthenticator("mongoRealmAuthenticator");
 
-        if (_rhAuth == null || !_rhAuth.isEnabled()) {
+        if (_mra == null || !_mra.isEnabled()) {
             enabled = false;
         } else {
-            var rhAuth = (MongoRealmAuthenticator) _rhAuth.getInstance();
+            var rhAuth = (MongoRealmAuthenticator) _mra.getInstance();
             
             this.usersUri = rhAuth.getUsersUri();
             this.propNamePassword = rhAuth.getPropPassword();

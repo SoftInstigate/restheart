@@ -25,16 +25,16 @@
       <artifactId>platform-utils</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.mashape.unirest</groupId>
+      <artifactId>unirest-java</artifactId>
+    </dependency>
+    <dependency>
       <groupId>de.svenkubiak</groupId>
       <artifactId>jBCrypt</artifactId>
     </dependency>
     <dependency>
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.mashape.unirest</groupId>
-      <artifactId>unirest-java</artifactId>
     </dependency>
   </dependencies>
 </project>

@@ -10,19 +10,20 @@
  */
 package com.restheart.authorizers;
 
-import com.google.gson.JsonObject;
-import com.restheart.security.plugins.authorizers.FilterPredicate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@RegisterPlugin(name ="filterPredicateInjector",
+@RegisterPlugin(name = "filterPredicateInjector",
         description = "inject the filter set by ACL into the request",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 public class FilterPredicateInjector implements MongoInterceptor {
@@ -32,17 +33,17 @@ public class FilterPredicateInjector implements MongoInterceptor {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(FilterPredicateInjector.class);
 
-    private void addFilter(final HttpServerExchange exchange, final JsonObject filter) {
-        if (filter == null) {
-            return;
+    private boolean enabled = false;
+
+    @InjectPluginsRegistry
+    public void init(PluginsRegistry registry) {
+        var _maa = registry.getAuthenticator("mongoAclAuthorizer");
+
+        if (_maa == null || !_maa.isEnabled()) {
+            enabled = false;
+        } else {
+            enabled = true;
         }
-
-        // this resolve the filter against the current exchange
-        // eg {'username':'%u'} => {'username':'uji'}
-        var resolvedFilter = FilterPredicate.interpolateFilterVars(exchange, filter);
-
-        exchange.addQueryParam("filter", resolvedFilter.toString());
-        exchange.putAttachment(FILTER_ADDED, true);
     }
 
     @Override
@@ -70,7 +71,21 @@ public class FilterPredicateInjector implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return request.isHandledBy("mongo") && 
-                request.getExchange().getAttachment(FILTER_ADDED) == null;
+        return enabled
+                && request.isHandledBy("mongo")
+                && request.getExchange().getAttachment(FILTER_ADDED) == null;
+    }
+
+    private void addFilter(final HttpServerExchange exchange, final BsonDocument filter) {
+        if (filter == null) {
+            return;
+        }
+
+        // this resolve the filter against the current exchange
+        // eg {'username':'%u'} => {'username':'uji'}
+        var resolvedFilter = FilterPredicate.interpolateFilterVars(exchange, filter);
+
+        exchange.addQueryParam("filter", resolvedFilter.toString());
+        exchange.putAttachment(FILTER_ADDED, true);
     }
 }

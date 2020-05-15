@@ -15,3 +15,5 @@ mongodb_*
 /platform-utils/target/
 /mongo-realm-authenticator/target/
 /jwt-auth-mechanism/target/
+/mongo-acl-authorizer/target/
+/proxy-connector/target/

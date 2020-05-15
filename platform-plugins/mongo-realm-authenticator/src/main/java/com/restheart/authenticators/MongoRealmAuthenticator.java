@@ -44,6 +44,7 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InjectPluginsRegistry;
@@ -97,7 +98,7 @@ public class MongoRealmAuthenticator implements Authenticator {
     private MongoClient mclient;
     private PluginsRegistry registry;
 
-    @InjectConfiguration
+    @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void setConf(Map<String, Object> args) {
         var conf = new Configuration(args, true);
 

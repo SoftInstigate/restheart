@@ -10,9 +10,9 @@
  */
 package com.restheart.authorizers;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import static com.restheart.authorizers.MongoAclAuthorizer.MATCHING_ACL_PREDICATE;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;
@@ -22,31 +22,32 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.restheart.authorizers.RHAuthorizer.MATCHING_ACL_PREDICATE;
-import com.softinstigate.restheart.utils.JsonUtils;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class FilterPredicate {
-    private final JsonElement _id;
+    private final BsonValue _id;
     private final Set<String> roles;
     private final Predicate predicate;
-    private final JsonObject readFilter;
-    private final JsonObject writeFilter;
+    private final BsonDocument readFilter;
+    private final BsonDocument writeFilter;
     private final int priority;
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(FilterPredicate.class);
 
-    FilterPredicate(JsonElement _id,
+    FilterPredicate(BsonValue _id,
             Set<String> roles,
             Predicate predicate,
-            JsonObject readFilter,
-            JsonObject writeFilter,
+            BsonDocument readFilter,
+            BsonDocument writeFilter,
             int priority) {
         this._id = _id;
         this.roles = roles;
@@ -56,40 +57,38 @@ public class FilterPredicate {
         this.priority = priority;
     }
 
-    FilterPredicate(JsonObject doc) {
+    FilterPredicate(BsonDocument doc) {
         this._id = doc.get("_id");
 
         var _roles = doc.get("roles");
 
         if (_roles == null
-                || !_roles.isJsonArray()
-                || _roles.getAsJsonArray().size() == 0) {
+                || !_roles.isArray()
+                || _roles.asArray().isEmpty()) {
             throw new IllegalArgumentException("roles must be an not empty array of strings");
         }
 
-        if (StreamSupport.stream(_roles.getAsJsonArray().spliterator(), true)
+        if (StreamSupport.stream(_roles.asArray().spliterator(), true)
                 .anyMatch(el -> el == null
-                || !el.isJsonPrimitive()
-                || !el.getAsJsonPrimitive().isString())) {
+                || !el.isString())) {
             throw new IllegalArgumentException("roles must be an not empty array of strings");
         }
 
         this.roles
-                = StreamSupport.stream(_roles.getAsJsonArray().spliterator(), true)
-                        .map(role -> role.getAsString())
+                = StreamSupport.stream(_roles.asArray().spliterator(), true)
+                        .map(role -> role.asString())
+                        .map(role -> role.getValue())
                         .collect(Collectors.toSet());
 
         var _predicate = doc.get("predicate");
 
-        if (_predicate == null
-                || !_predicate.isJsonPrimitive()
-                || !_predicate.getAsJsonPrimitive().isString()) {
+        if (_predicate == null || !_predicate.isString()) {
             throw new IllegalArgumentException("_predicate must be a string");
         }
 
         try {
             this.predicate = PredicateParser.parse(
-                    _predicate.getAsString(),
+                    _predicate.asString().getValue(),
                     this.getClass().getClassLoader());
         } catch (Throwable t) {
             throw new IllegalArgumentException("wrong predicate " + _predicate, t);
@@ -97,41 +96,41 @@ public class FilterPredicate {
 
         var _readFilter = doc.get("readFilter");
 
-        if (!(_readFilter == null || _readFilter.isJsonNull())
-                && !_readFilter.isJsonObject()) {
+        if (!(_readFilter == null || _readFilter.isNull())
+                && !_readFilter.isDocument()) {
             throw new IllegalArgumentException("readFilter must be a JSON object or null");
         }
 
         this.readFilter = _readFilter == null
                 ? null
-                : _readFilter.isJsonNull()
-                ? null : JsonUtils.escapeKeys(_readFilter.getAsJsonObject(), true)
-                        .getAsJsonObject();
+                : _readFilter.isNull()
+                ? null : JsonUtils.escapeKeys(_readFilter.asDocument(), true)
+                        .asDocument();
 
         var _writeFilter = doc.get("writeFilter");
 
-        if (!(_writeFilter == null || _writeFilter.isJsonNull())
-                && !_writeFilter.isJsonObject()) {
+        if (!(_writeFilter == null || _writeFilter.isNull())
+                && !_writeFilter.isDocument()) {
             throw new IllegalArgumentException("writeFilter must be a JSON object or null");
         }
 
         this.writeFilter = _writeFilter == null
                 ? null
-                : _writeFilter.isJsonNull()
-                ? null : JsonUtils.escapeKeys(_writeFilter.getAsJsonObject(), true)
-                        .getAsJsonObject();
+                : _writeFilter.isNull()
+                ? null : JsonUtils.escapeKeys(_writeFilter.asDocument(), true)
+                        .asDocument();
 
         var _priority = doc.get("priority");
 
         if (_priority == null
-                || _priority.isJsonNull()
-                || !_priority.getAsJsonPrimitive().isNumber()) {
-            this.priority = _priority.getAsNumber().intValue();
+                || _priority.isNull()
+                || !_priority.isNumber()) {
+            this.priority = Integer.MAX_VALUE; // very low priority
 
             LOGGER.warn("predicate {} doesn't have priority; setting it to 0",
                     this._id);
         } else {
-            this.priority = _priority.getAsInt();
+            this.priority = _priority.asNumber().intValue();
         }
     }
 
@@ -152,19 +151,19 @@ public class FilterPredicate {
     /**
      * @return the readFilter
      */
-    public JsonObject getReadFilter() {
-        return readFilter == null || readFilter.isJsonNull()
+    public BsonDocument getReadFilter() {
+        return readFilter == null || readFilter.isNull()
                 ? null
-                : JsonUtils.unescapeKeys(readFilter).getAsJsonObject();
+                : JsonUtils.unescapeKeys(readFilter).asDocument();
     }
 
     /**
      * @return the writeFilter
      */
-    public JsonObject getWriteFilter() {
-        return writeFilter == null || writeFilter.isJsonNull()
+    public BsonDocument getWriteFilter() {
+        return writeFilter == null || writeFilter.isNull()
                 ? writeFilter
-                : JsonUtils.unescapeKeys(writeFilter).getAsJsonObject();
+                : JsonUtils.unescapeKeys(writeFilter).asDocument();
     }
 
     /**
@@ -177,7 +176,7 @@ public class FilterPredicate {
     /**
      * @return the _id
      */
-    public JsonElement getId() {
+    public BsonValue getId() {
         return _id;
     }
 
@@ -206,8 +205,8 @@ public class FilterPredicate {
      * @return the filter with interpolated variables
      */
     public static JsonObject interpolateFilterVars(final HttpServerExchange exchange,
-            final JsonObject filter) {
-        if (Objects.isNull(filter) || filter.isJsonNull()) {
+            final BsonDocument filter) {
+        if (Objects.isNull(filter) || filter.isNull()) {
             return null;
         }
 
