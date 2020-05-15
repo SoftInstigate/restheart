@@ -19,6 +19,7 @@
  */
 package org.restheart.exchange;
 
+import org.restheart.mongodb.db.sessions.ClientSessionImpl;
 import com.google.common.reflect.TypeToken;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
