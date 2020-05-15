@@ -10,6 +10,8 @@
  */
 package com.restheart.handlers.sessions.txns;
 
+import static com.restheart.db.txns.Txn.TransactionStatus.NONE;
+import com.restheart.db.txns.TxnsUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import org.bson.BsonDocument;
@@ -17,14 +19,10 @@ import org.bson.BsonInt32;
 import org.bson.BsonInt64;
 import org.bson.BsonNull;
 import org.bson.BsonString;
-import org.restheart.db.Database;
-import org.restheart.db.DatabaseImpl;
-import static com.restheart.db.txns.Txn.TransactionStatus.NONE;
-import com.restheart.db.txns.TxnsUtils;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.ResponseHelper;
 
 /**
  *
@@ -32,59 +30,40 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetTxnHandler extends PipedHttpHandler {
-    /**
-     * Creates a new instance of PatchTxnHandler
-     */
-    public GetTxnHandler() {
-        super();
-    }
-
-    public GetTxnHandler(PipedHttpHandler next) {
-        super(next, new DatabaseImpl());
-    }
-
-    public GetTxnHandler(PipedHttpHandler next, Database dbsDAO) {
-        super(next, dbsDAO);
-    }
-
+public class GetTxnHandler extends PipelinedHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
+    public void handleRequest(HttpServerExchange exchange)
             throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
         
-        String _sid = context.getSid();
+        String _sid = request.getSid();
 
         UUID sid;
 
         try {
             sid = UUID.fromString(_sid);
         } catch (IllegalArgumentException iae) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE,
                     "Invalid session id");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
         var txn = TxnsUtils.getTxnServerStatus(sid);
 
         if (txn.getStatus() == NONE) {
-            context.setResponseContent(
-                    new BsonDocument("currentTxn", new BsonNull()));
+            response.setContent(new BsonDocument("currentTxn", new BsonNull()));
         } else {
             var currentTxn = new BsonDocument();
 
@@ -97,12 +76,12 @@ public class GetTxnHandler extends PipedHttpHandler {
 
             currentTxn.append("status", new BsonString(txn.getStatus().name()));
             
-            context.setResponseContent(resp);
+            response.setContent(resp);
         }
 
-        context.setResponseStatusCode(HttpStatus.SC_OK);
+        response.setContentTypeAsJson();
+        response.setStatusCode(HttpStatus.SC_OK);
 
-        next(exchange, context);
+        next(exchange);
     }
-
 }

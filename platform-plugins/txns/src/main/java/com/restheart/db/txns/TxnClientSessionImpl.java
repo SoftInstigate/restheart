@@ -20,19 +20,17 @@ import com.mongodb.client.internal.MongoClientDelegate;
 import com.mongodb.internal.session.ServerSessionPool;
 import com.mongodb.operation.AbortTransactionOperation;
 import com.mongodb.operation.CommitTransactionOperation;
+import com.restheart.db.txns.Txn.TransactionStatus;
 import static org.bson.assertions.Assertions.isTrue;
 import static org.bson.assertions.Assertions.notNull;
-import com.restheart.db.txns.Txn.TransactionStatus;
-import org.restheart.db.sessions.ClientSessionImpl;
-import org.restheart.db.sessions.ServerSessionImpl;
+import org.restheart.mongodb.sessions.ClientSessionImpl;
+import org.restheart.mongodb.db.sessions.ServerSessionImpl;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class TxnClientSessionImpl
-        extends
-        ClientSessionImpl {
+public class TxnClientSessionImpl extends ClientSessionImpl {
     private final MongoClientDelegate delegate;
     private TransactionStatus transactionState = TransactionStatus.NONE;
     private boolean commitInProgress;

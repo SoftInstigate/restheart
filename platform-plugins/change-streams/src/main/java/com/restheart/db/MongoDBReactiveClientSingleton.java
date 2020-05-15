@@ -13,7 +13,6 @@ package com.restheart.db;
 import com.mongodb.MongoClientURI;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
-
 import java.net.UnknownHostException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +32,7 @@ public class MongoDBReactiveClientSingleton {
 
     /**
      *
-     * @param conf
+     * @param uri
      */
     public static void init(MongoClientURI uri) {
         mongoUri = uri;

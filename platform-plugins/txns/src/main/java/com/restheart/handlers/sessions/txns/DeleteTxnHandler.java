@@ -15,13 +15,10 @@ import com.restheart.db.txns.TxnClientSessionFactory;
 import com.restheart.db.txns.TxnClientSessionImpl;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
-import org.restheart.db.Database;
-import org.restheart.db.DatabaseImpl;
-import org.restheart.representation.Resource;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
+import org.restheart.handlers.PipelinedHandler;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.ResponseHelper;
 
 /**
  *
@@ -29,69 +26,47 @@ import org.restheart.utils.ResponseHelper;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DeleteTxnHandler extends PipedHttpHandler {
-    /**
-     * Creates a new instance of DeleteTxnHandler
-     */
-    public DeleteTxnHandler() {
-        super();
-    }
-
-    public DeleteTxnHandler(PipedHttpHandler next) {
-        super(next, new DatabaseImpl());
-    }
-
-    public DeleteTxnHandler(PipedHttpHandler next, Database dbsDAO) {
-        super(next, dbsDAO);
-    }
-
+public class DeleteTxnHandler extends PipelinedHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
-            throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
         
         UUID sid;
         
         try {
-            sid = UUID.fromString(context.getSid());
+            sid = UUID.fromString(request.getSid());
         } catch (IllegalArgumentException iae) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "Invalid session id");
-            next(exchange, context);
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid session id");
+            next(exchange);
             return;
         }
 
         TxnClientSessionImpl cs = TxnClientSessionFactory.getInstance()
                 .getTxnClientSession(sid);
 
-        if (cs.getTxnServerStatus().getTxnId() != context.getTxnId()
+        if (cs.getTxnServerStatus().getTxnId() != request.getTxnId()
                 || cs.getTxnServerStatus().getStatus() != Txn.TransactionStatus.IN) {
-            ResponseHelper.endExchangeWithMessage(exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE,
                     "The given transaction is not in-progress");
         } else {
             cs.setMessageSentInCurrentTransaction(true);
             cs.abortTransaction();
-
-            context.setResponseContentType(Resource.HAL_JSON_MEDIA_TYPE);
-            context.setResponseStatusCode(HttpStatus.SC_NO_CONTENT);
+            
+            response.setContentTypeAsJson();
+            response.setStatusCode(HttpStatus.SC_NO_CONTENT);
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 }

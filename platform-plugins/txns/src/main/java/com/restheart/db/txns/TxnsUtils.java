@@ -15,17 +15,21 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoQueryException;
 import static com.mongodb.client.model.Filters.eq;
 import java.util.UUID;
-import static org.restheart.db.DAOUtils.LOGGER;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.db.sessions.ClientSessionImpl;
-import org.restheart.db.sessions.ServerSessionImpl;
-import org.restheart.db.sessions.Sid;
+import org.restheart.mongodb.db.sessions.ServerSessionImpl;
+import org.restheart.mongodb.db.sessions.Sid;
+import org.restheart.mongodb.sessions.ClientSessionImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class TxnsUtils {
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(TxnsUtils.class);
+    
     private static final MongoClient MCLIENT = MongoDBClientSingleton
             .getInstance().getClient();
     

@@ -15,17 +15,18 @@ import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
+import static com.restheart.db.txns.Txn.TransactionStatus.IN;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import static org.bson.assertions.Assertions.notNull;
-import org.restheart.db.sessions.ClientSessionFactory;
-import static com.restheart.db.txns.Txn.TransactionStatus.IN;
-import org.restheart.db.sessions.ClientSessionImpl;
-import org.restheart.db.sessions.ServerSessionImpl;
-import org.restheart.db.sessions.SessionsUtils;
-import org.restheart.db.sessions.Sid;
-import org.restheart.db.sessions.SimpleServerSessionPool;
-import org.restheart.handlers.RequestContext;
+import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
+import static org.restheart.exchange.ExchangeKeys.TXNID_KEY;
+import org.restheart.mongodb.db.sessions.ClientSessionFactory;
+import org.restheart.mongodb.db.sessions.ServerSessionImpl;
+import org.restheart.mongodb.db.sessions.SessionsUtils;
+import org.restheart.mongodb.db.sessions.Sid;
+import org.restheart.mongodb.db.sessions.SimpleServerSessionPool;
+import org.restheart.mongodb.sessions.ClientSessionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +60,7 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
     public ClientSessionImpl getClientSession(HttpServerExchange exchange)
             throws IllegalArgumentException {
         String _sid = exchange.getQueryParameters()
-                .get(RequestContext.CLIENT_SESSION_KEY).getFirst();
+                .get(CLIENT_SESSION_KEY).getFirst();
 
         UUID sid;
         
@@ -70,9 +71,9 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
         }
 
         if (exchange.getQueryParameters()
-                .containsKey(RequestContext.TXNID_KEY)) {
+                .containsKey(TXNID_KEY)) {
             String _txnId = exchange.getQueryParameters()
-                    .get(RequestContext.TXNID_KEY).getFirst();
+                    .get(TXNID_KEY).getFirst();
 
             long txnId = -1;
 

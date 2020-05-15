@@ -11,22 +11,20 @@
 package com.restheart.handlers.sessions.txns;
 
 import com.restheart.db.txns.Txn;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
-import java.util.UUID;
-import org.bson.BsonString;
-import org.restheart.db.Database;
-import org.restheart.db.DatabaseImpl;
 import static com.restheart.db.txns.Txn.TransactionStatus.ABORTED;
 import static com.restheart.db.txns.Txn.TransactionStatus.COMMITTED;
 import static com.restheart.db.txns.Txn.TransactionStatus.NONE;
 import com.restheart.db.txns.TxnClientSessionFactory;
 import com.restheart.db.txns.TxnsUtils;
-import org.restheart.handlers.PipedHttpHandler;
-import org.restheart.handlers.RequestContext;
-import org.restheart.representation.RepUtils;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
+import java.util.UUID;
+import org.bson.BsonString;
+import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.MongoResponse;
+import org.restheart.handlers.PipelinedHandler;
+import org.restheart.representation.RepresentationUtils;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.ResponseHelper;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -35,51 +33,33 @@ import org.restheart.utils.URLUtils;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PostTxnsHandler extends PipedHttpHandler {
-    /**
-     * Creates a new instance of PostTxnsHandler
-     */
-    public PostTxnsHandler() {
-        super();
-    }
-
-    public PostTxnsHandler(PipedHttpHandler next) {
-        super(next, new DatabaseImpl());
-    }
-
-    public PostTxnsHandler(PipedHttpHandler next, Database dbsDAO) {
-        super(next, dbsDAO);
-    }
-
+public class PostTxnsHandler extends PipelinedHandler {
     /**
      *
      * @param exchange
-     * @param context
      * @throws Exception
      */
     @Override
-    public void handleRequest(
-            HttpServerExchange exchange,
-            RequestContext context)
+    public void handleRequest(HttpServerExchange exchange)
             throws Exception {
-        if (context.isInError()) {
-            next(exchange, context);
+        var request = MongoRequest.of(exchange);
+        var response = MongoResponse.of(exchange);
+        
+        if (request.isInError()) {
+            next(exchange);
             return;
         }
         
-        String _sid = context.getSid();
+        String _sid = request.getSid();
 
         UUID sid;
 
         try {
             sid = UUID.fromString(_sid);
         } catch (IllegalArgumentException iae) {
-            ResponseHelper.endExchangeWithMessage(
-                    exchange,
-                    context,
-                    HttpStatus.SC_NOT_ACCEPTABLE,
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE,
                     "Invalid session id");
-            next(exchange, context);
+            next(exchange);
             return;
         }
 
@@ -106,16 +86,15 @@ public class PostTxnsHandler extends PipedHttpHandler {
 
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
-                            RepUtils.getReferenceLink(
-                                    context,
+                            RepresentationUtils.getReferenceLink(
                                     URLUtils.getRemappedRequestURL(exchange),
                                     new BsonString("" + nextTxnId)));
 
-            context.setResponseStatusCode(HttpStatus.SC_CREATED);
+            response.setStatusCode(HttpStatus.SC_CREATED);
         } else {
-            context.setResponseStatusCode(HttpStatus.SC_NOT_MODIFIED);
+            response.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
         }
 
-        next(exchange, context);
+        next(exchange);
     }
 }

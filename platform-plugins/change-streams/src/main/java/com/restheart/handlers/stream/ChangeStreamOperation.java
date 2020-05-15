@@ -15,7 +15,7 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.handlers.metadata.InvalidMetadataException;
+import org.restheart.representation.InvalidMetadataException;
 import org.restheart.utils.JsonUtils;
 
 /**
@@ -109,7 +109,7 @@ public class ChangeStreamOperation {
     /**
      *
      * @param properties
-     * @throws org.restheart.handlers.metadata.InvalidMetadataException
+     * @throws org.restheart.representation.InvalidMetadataException
      */
     public ChangeStreamOperation(BsonDocument properties)
             throws InvalidMetadataException {
@@ -125,7 +125,7 @@ public class ChangeStreamOperation {
         BsonValue _stages = properties.get(STAGES_ELEMENT_NAME);
 
         if (_stages == null || !_stages.isArray()) {
-            throw new InvalidMetadataException("query /" + getUri()
+            throw new InvalidMetadataException("query /" + this.uri
                     + "has invalid '" + STAGES_ELEMENT_NAME
                     + "': " + _stages
                     + "; must be an array of stage objects");
@@ -134,7 +134,7 @@ public class ChangeStreamOperation {
         // chekcs that the _stages array elements are all documents
         if (_stages.asArray().stream()
                 .anyMatch(s -> !s.isDocument())) {
-            throw new InvalidMetadataException("query /" + getUri()
+            throw new InvalidMetadataException("query /" + this.uri
                     + "has invalid '" + STAGES_ELEMENT_NAME
                     + "': " + _stages
                     + "; must be an array of stage objects");
@@ -161,7 +161,7 @@ public class ChangeStreamOperation {
     /**
      * @param vars RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables
-     * @throws org.restheart.handlers.metadata.InvalidMetadataException
+     * @throws org.restheart.representation.InvalidMetadataException
      * @throws com.restheart.handlers.stream.QueryVariableNotBoundException
      */
     public List<BsonDocument> getResolvedStagesAsList(BsonDocument vars)
@@ -186,7 +186,7 @@ public class ChangeStreamOperation {
      * @param aVars RequestContext.getAggregationVars()
      * @return the json object where the variables ({"_$var": "var") are
      * replaced with the values defined in the avars URL query parameter
-     * @throws org.restheart.handlers.metadata.InvalidMetadataException
+     * @throws org.restheart.representation.InvalidMetadataException
      * @throws com.restheart.handlers.stream.QueryVariableNotBoundException
      */
     protected BsonValue bindAggregationVariables(

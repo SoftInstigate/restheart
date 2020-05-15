@@ -8,4 +8,15 @@
     </parent>
     <artifactId>txns</artifactId>
     <packaging>jar</packaging>
+    
+    <dependencies>
+      <dependency>
+        <groupId>org.restheart</groupId>
+        <artifactId>restheart-commons</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>org.restheart</groupId>
+        <artifactId>restheart-mongodb</artifactId>
+      </dependency>
+    </dependencies>
 </project>

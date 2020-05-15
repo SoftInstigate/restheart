@@ -13,7 +13,7 @@
   <inceptionYear>2019</inceptionYear>
 
   <properties>
-    <restheart-commons.version>5.0.1-SNAPSHOT</restheart-commons.version>
+    <restheart-os.version>5.0.1-SNAPSHOT</restheart-os.version>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>11</maven.compiler.source>
@@ -152,7 +152,12 @@
       <dependency>
         <groupId>org.restheart</groupId>
         <artifactId>restheart-commons</artifactId>
-        <version>${restheart-commons.version}</version>
+        <version>${restheart-os.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.restheart</groupId>
+        <artifactId>restheart-mongodb</artifactId>
+        <version>${restheart-os.version}</version>
       </dependency>
       <dependency>
         <groupId>com.auth0</groupId>

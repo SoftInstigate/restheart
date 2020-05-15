@@ -17,3 +17,5 @@ mongodb_*
 /jwt-auth-mechanism/target/
 /mongo-acl-authorizer/target/
 /proxy-connector/target/
+/txns/target/
+/change-streams/target/

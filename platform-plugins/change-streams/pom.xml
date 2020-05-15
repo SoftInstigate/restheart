@@ -15,5 +15,9 @@
       <groupId>org.restheart</groupId>
       <artifactId>restheart-commons</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>mongodb-driver-reactivestreams</artifactId>
+    </dependency>
   </dependencies>
 </project>
