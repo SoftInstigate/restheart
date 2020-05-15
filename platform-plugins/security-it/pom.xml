@@ -11,7 +11,7 @@
     <groupId>com.restheart</groupId>
     <artifactId>restheart-platform-security</artifactId>
     <packaging>jar</packaging>
-    <name>restheart-security-it</name>
+    <name>security-it</name>
     <description>RESTHeart Platform Security - IAM microservice.</description>
     <url>http://www.restheart.org</url>
     <inceptionYear>2019</inceptionYear>

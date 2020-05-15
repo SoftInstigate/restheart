@@ -11,7 +11,7 @@
     <groupId>com.restheart</groupId>
     <artifactId>restheart-mongo-it</artifactId>
     <packaging>jar</packaging>
-    <name>restheart-mongo-it</name>
+    <name>mongo-it</name>
     <description>RESTHeart Platform Core - API microservice for MongoDB.</description>
     <url>http://www.restheart.org</url>
     <inceptionYear>2019</inceptionYear>
