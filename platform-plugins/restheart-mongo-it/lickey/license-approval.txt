@@ -1,0 +1,5 @@
+{
+  'timestamp': '2020-05-14T15:50:12.296950Z',
+  'licenseKeyId': null,
+  'installationId': '4ohcvrk0vgvs1rvfcdlczclr7on33tubzmg63bp1m72b3137df'
+}

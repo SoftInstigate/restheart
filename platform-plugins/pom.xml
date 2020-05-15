@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.softinstigate.restheart</groupId>
+  <groupId>com.restheart</groupId>
   <artifactId>restheart-platform</artifactId>
   <version>5.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
@@ -26,9 +26,15 @@
 
   <modules>
     <module>si-lka</module>
-    <module>restheart-platform-core</module>
     <module>restheart-platform-security</module>
-    <module>restheart-platform-utils</module>
+    <module>mongo-realm-authenticator</module>
+    <module>jwt-auth-mechanism</module>
+    <module>platform-utils</module>
+    <module>mongo-acl-authorizer</module>
+    <module>proxy-connector</module>
+    <module>txns</module>
+    <module>change-streams</module>
+    <module>restheart-mongo-it</module>
   </modules>
 
   <!-- Project Information -->

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.restheart</groupId>
+    <artifactId>restheart-platform</artifactId>
+    <version>5.0.0-SNAPSHOT</version>
+  </parent>
+  
+  <groupId>com.restheart</groupId>
+  <artifactId>jwt-auth-mechanism</artifactId>
+  <packaging>jar</packaging>
+  
+  <name>jwt-auth-mechanism</name>
+    
+  <build>
+    <finalName>jwt-auth-mechanism</finalName>
+  </build>
+    
+  <dependencies>
+    <dependency>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-commons</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.auth0</groupId>
+      <artifactId>java-jwt</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.14</version>
+    </dependency>
+  </dependencies>
+</project>

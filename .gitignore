@@ -12,3 +12,6 @@ mongodb_*
 /dist/
 /template/etc/*
 /restheart-platform-utils/target/
+/platform-utils/target/
+/mongo-realm-authenticator/target/
+/jwt-auth-mechanism/target/
