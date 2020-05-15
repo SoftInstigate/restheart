@@ -35,7 +35,6 @@ import org.bson.UuidRepresentation;
 import static org.bson.assertions.Assertions.notNull;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.UuidCodec;
-import org.restheart.exchange.ClientSessionImpl;
 import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
