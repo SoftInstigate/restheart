@@ -20,6 +20,7 @@
  */
 package org.restheart.mongodb.metadata;
 
+import org.restheart.representation.InvalidMetadataException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
