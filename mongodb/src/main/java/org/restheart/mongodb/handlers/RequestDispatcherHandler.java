@@ -23,7 +23,7 @@ package org.restheart.mongodb.handlers;
 import io.undertow.server.HttpServerExchange;
 import java.util.HashMap;
 import java.util.Map;
-import org.restheart.exchange.Exchange.METHOD;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;

@@ -33,6 +33,7 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.restheart.exchange.Exchange;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.interceptors.CollectionPropsInjector;
@@ -100,7 +101,7 @@ public class CollectionPropsInjectorHandlerTest {
         var context = createRequest("/db/collection", "PUT");
 
         assertEquals(TYPE.COLLECTION, context.getType());
-        assertEquals(Exchange.METHOD.PUT, context.getMethod());
+        assertEquals(METHOD.PUT, context.getMethod());
         assertEquals(false, CollectionPropsInjector.checkCollection(context));
     }
 
@@ -112,7 +113,7 @@ public class CollectionPropsInjectorHandlerTest {
         var context = createRequest("/db/fs.files", "POST");
 
         assertEquals(TYPE.FILES_BUCKET, context.getType());
-        assertEquals(Exchange.METHOD.POST, context.getMethod());
+        assertEquals(METHOD.POST, context.getMethod());
         assertEquals(true, CollectionPropsInjector.checkCollection(context));
     }
 
@@ -124,7 +125,7 @@ public class CollectionPropsInjectorHandlerTest {
         var context = createRequest("/", "PUT");
 
         assertEquals(TYPE.ROOT, context.getType());
-        assertEquals(Exchange.METHOD.PUT, context.getMethod());
+        assertEquals(METHOD.PUT, context.getMethod());
         assertEquals(false, CollectionPropsInjector.checkCollection(context));
     }
 

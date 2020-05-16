@@ -75,10 +75,6 @@ public abstract class Exchange<T> {
         MAX_BUFFERS = 1 + (MAX_CONTENT_SIZE / bufferSize);
     }
 
-    public enum METHOD {
-        GET, POST, PUT, DELETE, PATCH, OPTIONS, OTHER
-    }
-
     protected final HttpServerExchange wrapped;
 
     public Exchange(HttpServerExchange exchange) {

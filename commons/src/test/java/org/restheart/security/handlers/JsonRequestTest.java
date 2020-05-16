@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.JsonProxyRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,12 +77,12 @@ public class JsonRequestTest {
         var request = JsonProxyRequest.of(exchange);
 
         exchange.setRequestMethod(new HttpString("UNKNOWN"));
-        assertEquals(JsonProxyRequest.METHOD.OTHER, request.getMethod());
+        assertEquals(METHOD.OTHER, request.getMethod());
 
         exchange.setRequestMethod(new HttpString("GET"));
-        assertEquals(JsonProxyRequest.METHOD.GET, request.getMethod());
+        assertEquals(METHOD.GET, request.getMethod());
 
         exchange.setRequestMethod(new HttpString("PATCH"));
-        assertEquals(JsonProxyRequest.METHOD.PATCH, request.getMethod());
+        assertEquals(METHOD.PATCH, request.getMethod());
     }
 }
