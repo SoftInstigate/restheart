@@ -90,7 +90,7 @@ import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
 import org.restheart.exchange.Exchange;
 import static org.restheart.exchange.Exchange.MAX_CONTENT_SIZE;
-import org.restheart.exchange.Exchange.METHOD;
+import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
@@ -935,12 +935,12 @@ public class Bootstrapper {
                                                                 .getInstance()
                                                                 .getRootPathHandler()))),
                                 // allowed methods
-                                HttpString.tryFromString(METHOD.GET.name()),
-                                HttpString.tryFromString(METHOD.POST.name()),
-                                HttpString.tryFromString(METHOD.PUT.name()),
-                                HttpString.tryFromString(METHOD.DELETE.name()),
-                                HttpString.tryFromString(METHOD.PATCH.name()),
-                                HttpString.tryFromString(METHOD.OPTIONS.name()))));
+                                HttpString.tryFromString(ExchangeKeys.METHOD.GET.name()),
+                                HttpString.tryFromString(ExchangeKeys.METHOD.POST.name()),
+                                HttpString.tryFromString(ExchangeKeys.METHOD.PUT.name()),
+                                HttpString.tryFromString(ExchangeKeys.METHOD.DELETE.name()),
+                                HttpString.tryFromString(ExchangeKeys.METHOD.PATCH.name()),
+                                HttpString.tryFromString(ExchangeKeys.METHOD.OPTIONS.name()))));
     }
 
     /**
