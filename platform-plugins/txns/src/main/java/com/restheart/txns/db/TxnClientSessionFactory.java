@@ -8,25 +8,25 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.db.txns;
+package com.restheart.txns.db;
 
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
-import static com.restheart.db.txns.Txn.TransactionStatus.IN;
+import static com.restheart.txns.db.Txn.TransactionStatus.IN;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import static org.bson.assertions.Assertions.notNull;
 import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 import static org.restheart.exchange.ExchangeKeys.TXNID_KEY;
 import org.restheart.mongodb.db.sessions.ClientSessionFactory;
+import org.restheart.mongodb.db.sessions.ClientSessionImpl;
 import org.restheart.mongodb.db.sessions.ServerSessionImpl;
 import org.restheart.mongodb.db.sessions.SessionsUtils;
 import org.restheart.mongodb.db.sessions.Sid;
 import org.restheart.mongodb.db.sessions.SimpleServerSessionPool;
-import org.restheart.mongodb.sessions.ClientSessionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

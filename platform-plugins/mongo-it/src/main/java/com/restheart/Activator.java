@@ -19,18 +19,11 @@ import com.restheart.handlers.sessions.txns.PostTxnsHandler;
 import com.restheart.handlers.stream.GetChangeStreamHandler;
 import com.softinstigate.lickeys.CommLicense;
 import com.softinstigate.lickeys.CommLicense.STATUS;
-import java.util.Map;
-import org.restheart.Bootstrapper;
 import org.restheart.db.MongoDBClientSingleton;
-import org.restheart.handlers.RequestContext;
-import org.restheart.handlers.RequestDispatcherHandler;
-import static org.restheart.handlers.RequestDispatcherHandler.DEFAULT_RESP_TRANFORMERS;
-import org.restheart.handlers.ResponseSenderHandler;
 import org.restheart.handlers.injectors.ClientSessionInjectorHandler;
 import org.restheart.handlers.metadata.RequestTransformerHandler;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.utils.LogUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +38,7 @@ public class Activator implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(Activator.class);
 
     @Override
-    public void init(Map<String, Object> confArgs) {
+    public void init() {
         if (CommLicense.getStatus() == STATUS.OK) {
             if (!MongoDBClientSingleton.isReplicaSet()) {
                 LogUtils.boxedWarn(LOGGER,
@@ -88,22 +81,22 @@ public class Activator implements Initializer {
         dispatcher.putPipedHttpHandler(RequestContext.TYPE.TRANSACTIONS,
                 RequestContext.METHOD.POST,
                 new RequestTransformerHandler(
-                        new PostTxnsHandler(DEFAULT_RESP_TRANFORMERS)));
+                        new PostTxnsHandler()));
 
         dispatcher.putPipedHttpHandler(RequestContext.TYPE.TRANSACTIONS,
                 RequestContext.METHOD.GET,
                 new RequestTransformerHandler(
-                        new GetTxnHandler(DEFAULT_RESP_TRANFORMERS)));
+                        new GetTxnHandler()));
 
         dispatcher.putPipedHttpHandler(RequestContext.TYPE.TRANSACTION,
                 RequestContext.METHOD.DELETE,
                 new RequestTransformerHandler(
-                        new DeleteTxnHandler(DEFAULT_RESP_TRANFORMERS)));
+                        new DeleteTxnHandler()));
 
         dispatcher.putPipedHttpHandler(RequestContext.TYPE.TRANSACTION,
                 RequestContext.METHOD.PATCH,
                 new RequestTransformerHandler(
-                        new PatchTxnHandler(DEFAULT_RESP_TRANFORMERS)));
+                        new PatchTxnHandler()));
     }
 
     private void enableChangeStreams() {

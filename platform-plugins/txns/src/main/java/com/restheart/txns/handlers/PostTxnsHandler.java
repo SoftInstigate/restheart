@@ -8,14 +8,14 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.handlers.sessions.txns;
+package com.restheart.txns.handlers;
 
-import com.restheart.db.txns.Txn;
-import static com.restheart.db.txns.Txn.TransactionStatus.ABORTED;
-import static com.restheart.db.txns.Txn.TransactionStatus.COMMITTED;
-import static com.restheart.db.txns.Txn.TransactionStatus.NONE;
-import com.restheart.db.txns.TxnClientSessionFactory;
-import com.restheart.db.txns.TxnsUtils;
+import com.restheart.txns.db.Txn;
+import static com.restheart.txns.db.Txn.TransactionStatus.ABORTED;
+import static com.restheart.txns.db.Txn.TransactionStatus.COMMITTED;
+import static com.restheart.txns.db.Txn.TransactionStatus.NONE;
+import com.restheart.txns.db.TxnClientSessionFactory;
+import com.restheart.txns.db.TxnsUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.UUID;
@@ -87,7 +87,7 @@ public class PostTxnsHandler extends PipelinedHandler {
             exchange.getResponseHeaders()
                     .add(HttpString.tryFromString("Location"),
                             RepresentationUtils.getReferenceLink(
-                                    URLUtils.getRemappedRequestURL(exchange),
+                                    request.getMappedRequestUri(), //URLUtils.getRemappedRequestURL(exchange),
                                     new BsonString("" + nextTxnId)));
 
             response.setStatusCode(HttpStatus.SC_CREATED);

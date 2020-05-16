@@ -8,17 +8,13 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.handlers.sessions.txns;
+package com.restheart.txns.handlers;
 
-import static com.restheart.db.txns.Txn.TransactionStatus.NONE;
-import com.restheart.db.txns.TxnsUtils;
+import com.restheart.txns.db.Txn;
+import com.restheart.txns.db.TxnClientSessionFactory;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
-import org.bson.BsonDocument;
-import org.bson.BsonInt32;
-import org.bson.BsonInt64;
-import org.bson.BsonNull;
-import org.bson.BsonString;
+import org.restheart.exchange.BsonResponse;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -30,7 +26,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GetTxnHandler extends PipelinedHandler {
+public class PatchTxnHandler extends PipelinedHandler {
     /**
      *
      * @param exchange
@@ -48,6 +44,7 @@ public class GetTxnHandler extends PipelinedHandler {
         }
         
         String _sid = request.getSid();
+        long txnId = request.getTxnId();
 
         UUID sid;
 
@@ -60,25 +57,19 @@ public class GetTxnHandler extends PipelinedHandler {
             return;
         }
 
-        var txn = TxnsUtils.getTxnServerStatus(sid);
+        // assume optimistically txn in progress, we get an error eventually
+        var cs = TxnClientSessionFactory.getInstance()
+                .getTxnClientSession(sid, new Txn(txnId,
+                        Txn.TransactionStatus.IN));
 
-        if (txn.getStatus() == NONE) {
-            response.setContent(new BsonDocument("currentTxn", new BsonNull()));
-        } else {
-            var currentTxn = new BsonDocument();
+        cs.setMessageSentInCurrentTransaction(true);
 
-            var resp = new BsonDocument("currentTxn", currentTxn);
-
-            currentTxn.append("id",
-                    txn.getTxnId() > Integer.MAX_VALUE
-                    ? new BsonInt64(txn.getTxnId())
-                    : new BsonInt32((int) txn.getTxnId()));
-
-            currentTxn.append("status", new BsonString(txn.getStatus().name()));
-            
-            response.setContent(resp);
+        if (!cs.hasActiveTransaction()) {
+            cs.startTransaction();
         }
 
+        cs.commitTransaction();
+        
         response.setContentTypeAsJson();
         response.setStatusCode(HttpStatus.SC_OK);
 

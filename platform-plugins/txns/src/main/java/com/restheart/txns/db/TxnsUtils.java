@@ -8,17 +8,17 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.db.txns;
+package com.restheart.txns.db;
 
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoQueryException;
 import static com.mongodb.client.model.Filters.eq;
 import java.util.UUID;
-import org.restheart.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoClientSingleton;
+import org.restheart.mongodb.db.sessions.ClientSessionImpl;
 import org.restheart.mongodb.db.sessions.ServerSessionImpl;
 import org.restheart.mongodb.db.sessions.Sid;
-import org.restheart.mongodb.sessions.ClientSessionImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +30,7 @@ public class TxnsUtils {
     private static final Logger LOGGER = LoggerFactory
             .getLogger(TxnsUtils.class);
     
-    private static final MongoClient MCLIENT = MongoDBClientSingleton
+    private static final MongoClient MCLIENT = MongoClientSingleton
             .getInstance().getClient();
     
     /**
