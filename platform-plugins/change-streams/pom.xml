@@ -9,11 +9,53 @@
     
   <artifactId>change-streams</artifactId>
   <packaging>jar</packaging>
+  
+  <build>
+    <finalName>change-streams</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.1.2</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <!-- use includeGroupIds to list all external dependencies, 
+              comma separated, to copy to target/lib -->
+              <!-- TODO must be refined to select only the following jars:
+                - mongodb-driver-reactivestreams-1.12.0.jar
+                - mongodb-driver-async-3.11.0.jar
+                - reactive-streams-1.0.2.jar
+              -->
+              <includeGroupIds>org.mongodb,org.reactivestreams</includeGroupIds>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
     
   <dependencies>
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-commons</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-mongodb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.restheart</groupId>
+      <artifactId>platform-utils</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.softinstigate.lickeys</groupId>
+      <artifactId>si-lka</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>

@@ -8,10 +8,10 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.handlers.stream;
+package com.restheart.changestreams.handlers;
 
 import com.mongodb.client.model.changestream.FullDocument;
-import com.restheart.db.MongoDBReactiveClientSingleton;
+import com.restheart.changestreams.db.MongoDBReactiveClientSingleton;
 import io.undertow.Handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;

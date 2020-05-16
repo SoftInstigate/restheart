@@ -8,22 +8,23 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.txns;
+package com.restheart.changestreams;
 
-import com.restheart.txns.db.TxnClientSessionFactory;
-import com.restheart.txns.handlers.DeleteTxnHandler;
-import com.restheart.txns.handlers.GetTxnHandler;
-import com.restheart.txns.handlers.PatchTxnHandler;
-import com.restheart.txns.handlers.PostTxnsHandler;
+import com.mongodb.MongoClientURI;
+import com.restheart.changestreams.db.MongoDBReactiveClientSingleton;
+import com.restheart.changestreams.handlers.GetChangeStreamHandler;
 import com.restheart.utils.LogUtils;
 import com.softinstigate.lickeys.CommLicense;
 import com.softinstigate.lickeys.CommLicense.STATUS;
+import java.util.Map;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
-import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.Initializer;
+import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,13 @@ import org.slf4j.LoggerFactory;
 public class Activator implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(Activator.class);
 
+    MongoClientURI mongoURI;
+    
+    @InjectConfiguration(scope = ConfigurationScope.ALL)
+    public void setConf(Map<String, Object> args) {
+        this.mongoURI = new MongoClientURI(argValue(args, "mongo-uri"));
+    }
+    
     @Override
     public void init() {
         if (CommLicense.getStatus() == STATUS.OK) {
@@ -45,11 +53,11 @@ public class Activator implements Initializer {
                 LogUtils.boxedWarn(LOGGER,
                         "MongoDB is a standalone instance.",
                         "",
-                        "Transactions require a Replica Set.",
+                        "Change Streams require a Replica Set.",
                         "",
                         "More information at https://restheart.org/docs/setup/");
             } else {
-                enableTxns();
+                enableChangeStreams();
             }
         } else {
             LOGGER.warn("License key has not been activated. "
@@ -57,24 +65,21 @@ public class Activator implements Initializer {
         }
     }
 
-    private void enableTxns() {
+    private void enableChangeStreams() {
         var dispatcher = RequestDispatcherHandler.getInstance();
 
-        ClientSessionInjector.getInstance()
-                .setClientSessionFactory(TxnClientSessionFactory
-                        .getInstance());
+        // *** init MongoDBReactiveClient
+        try {
+            MongoDBReactiveClientSingleton.init(this.mongoURI);
+            // force setup
+            MongoDBReactiveClientSingleton.getInstance();
 
-        // *** Txns handlers
-        dispatcher.putHandler(TYPE.TRANSACTIONS, METHOD.POST,
-                        new PostTxnsHandler());
-
-        dispatcher.putHandler(TYPE.TRANSACTIONS, METHOD.GET,
-                        new GetTxnHandler());
-
-        dispatcher.putHandler(TYPE.TRANSACTION, METHOD.DELETE,
-                        new DeleteTxnHandler());
-
-        dispatcher.putHandler(TYPE.TRANSACTION, METHOD.PATCH,
-                        new PatchTxnHandler());
+            // *** Change Stream handler
+            dispatcher.putHandler(TYPE.CHANGE_STREAM, METHOD.GET,
+                    new GetChangeStreamHandler());
+        } catch (Throwable t) {
+            LOGGER.error("Change streams disabled due to error "
+                    + "in MongoDB reactive client : {}", t.getMessage());
+        }
     }
 }

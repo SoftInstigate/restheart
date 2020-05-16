@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.db;
+package com.restheart.changestreams.db;
 
 import com.mongodb.MongoClientURI;
 import com.mongodb.reactivestreams.client.MongoClient;
