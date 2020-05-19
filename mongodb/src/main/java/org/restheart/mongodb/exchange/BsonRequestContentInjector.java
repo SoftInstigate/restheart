@@ -149,47 +149,6 @@ public class BsonRequestContentInjector {
         return null;
     }
 
-    /**
-     * Clean-up the JSON content, filtering out reserved keys
-     *
-     * @param content
-     * @param ctx
-     */
-    private static void filterJsonContent(
-            final BsonDocument content,
-            final MongoResponse response) {
-        filterOutReservedKeys(content, response);
-    }
-
-    /**
-     * Filter out reserved keys, removing them from request
-     *
-     * The _ prefix is reserved for RESTHeart-generated properties (_id is
-     * allowed)
-     *
-     * @param content
-     * @param request
-     */
-    private static void filterOutReservedKeys(
-            final BsonDocument content,
-            final MongoResponse response) {
-        final HashSet<String> keysToRemove = new HashSet<>();
-        content.keySet().stream()
-                .filter(key -> key.startsWith("_") && !key.equals(_ID))
-                .forEach(key -> {
-                    keysToRemove.add(key);
-                });
-
-        keysToRemove.stream().map(keyToRemove -> {
-            content.remove(keyToRemove);
-            return keyToRemove;
-        }).forEach(keyToRemove -> {
-            response.addWarning("Reserved field "
-                    + keyToRemove
-                    + " was filtered out from the request");
-        });
-    }
-
     private static void injectContentTypeFromFile(
             final BsonDocument content,
             final File file)
@@ -456,7 +415,6 @@ public class BsonRequestContentInjector {
 
                         return false;
                     }
-                    filterJsonContent(_doc.asDocument(), response);
                     return true;
                 } else {
                     String errMsg = "request data must be either "
@@ -486,8 +444,6 @@ public class BsonRequestContentInjector {
                         errMsg);
                 return;
             }
-
-            filterJsonContent(_content, response);
         }
 
         if (request.isPost() || request.isPut()) {

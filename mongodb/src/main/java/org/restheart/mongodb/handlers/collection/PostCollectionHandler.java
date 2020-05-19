@@ -112,9 +112,8 @@ public class PostCollectionHandler extends PipelinedHandler {
 
         if (content.containsKey("_id")
                 && content.get("_id").isString()
-                && MongoRequest.isReservedResourceDocument(
-                        request.getType(),
-                        content.get("_id").asString().getValue())) {
+                && MongoRequest.isReservedDocumentId(request.getType(),
+                        content.get("_id"))) {
             response.setInError(
                     HttpStatus.SC_FORBIDDEN,
                     "reserved resource");

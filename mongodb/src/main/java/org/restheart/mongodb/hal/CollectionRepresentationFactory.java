@@ -299,8 +299,7 @@ class CollectionRepresentationFactory
                 BsonValue _id = d.get(_ID);
 
                 if (_id != null
-                        && MongoRequest.isReservedResourceCollection(
-                                _id.toString())) {
+                        && MongoRequest.isReservedCollectionName(_id.toString())) {
                     rep.addWarning("filtered out reserved resource "
                             + requestPath + "/"
                             + _id.toString());

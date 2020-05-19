@@ -151,9 +151,9 @@ public class DatabaseImpl implements Database {
             db.listCollectionNames(cs).into(_colls);
         }
 
-        // filter out reserved dbs
+        // filter out reserved collections
         return _colls.stream().filter(coll -> !MongoRequest
-                .isReservedResourceCollection(coll))
+                .isReservedCollectionName(coll))
                 .sorted()
                 .collect(Collectors.toList());
     }
@@ -168,7 +168,7 @@ public class DatabaseImpl implements Database {
         // filter out reserved resources
         List<String> _colls = colls.stream()
                 .filter(coll -> !MongoRequest
-                .isReservedResourceCollection(coll))
+                .isReservedCollectionName(coll))
                 .collect(Collectors.toList());
 
         return _colls.size();
@@ -222,7 +222,7 @@ public class DatabaseImpl implements Database {
         // filter out reserved resources
         List<String> _colls = colls.stream()
                 .filter(coll -> !MongoRequest
-                .isReservedResourceCollection(coll))
+                .isReservedCollectionName(coll))
                 .collect(Collectors.toList());
 
         int size = _colls.size();

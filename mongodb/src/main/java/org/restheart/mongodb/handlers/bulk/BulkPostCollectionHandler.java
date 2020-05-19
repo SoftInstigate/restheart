@@ -30,7 +30,6 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.BulkOperationResult;
 import org.restheart.mongodb.db.DocumentDAO;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -150,10 +149,9 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
         if (document.isDocument()
                 && document.asDocument().containsKey("_id")
                 && document.asDocument().get("_id").isString()
-                && MongoRequest.isReservedResourceDocument(
+                && MongoRequest.isReservedDocumentId(
                         request.getType(),
-                        document.asDocument()
-                                .get("_id").asString().getValue())) {
+                        document.asDocument().get("_id"))) {
             MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_FORBIDDEN,
                     "id is reserved: " + document.asDocument()

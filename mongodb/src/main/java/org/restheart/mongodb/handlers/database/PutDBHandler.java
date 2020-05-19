@@ -71,11 +71,10 @@ public class PutDBHandler extends PipelinedHandler {
             return;
         }
 
-        if (request.getDBName().isEmpty()
-                || request.getDBName().startsWith("_")) {
+        if (request.getDBName().isEmpty()) {
             response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
-                    "db name cannot be empty or start with _");
+                    "db name cannot be empty");
             next(exchange);
             return;
         }
