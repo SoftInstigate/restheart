@@ -33,6 +33,7 @@
                 - reactive-streams-1.0.2.jar
               -->
               <includeGroupIds>org.mongodb,org.reactivestreams</includeGroupIds>
+              <excludeArtifactIds>mongodb-driver,mongodb-driver-core,bson</excludeArtifactIds>
             </configuration>
           </execution>
         </executions>

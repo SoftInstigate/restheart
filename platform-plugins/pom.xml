@@ -14,7 +14,6 @@
 
   <properties>
     <restheart-os.version>5.0.1-SNAPSHOT</restheart-os.version>
-
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
@@ -23,10 +22,9 @@
     <!-- By default skip integration tests. Use 'mvn verify -DskipITs=false' to run them. -->
     <skipITs>true</skipITs>
   </properties>
-
+  
   <modules>
     <module>si-lka</module>
-    
     <module>mongo-realm-authenticator</module>
     <module>jwt-auth-mechanism</module>
     <module>platform-utils</module>
@@ -123,17 +121,7 @@
   </repositories>
 
   <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>com.restheart</groupId>
-        <artifactId>restheart-platform-core</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.restheart</groupId>
-        <artifactId>restheart-platform-security</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+    <dependencies> 
       <dependency>
         <groupId>com.softinstigate.lickeys</groupId>
         <artifactId>si-lka</artifactId>
