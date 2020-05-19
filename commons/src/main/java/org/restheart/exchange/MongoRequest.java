@@ -19,7 +19,6 @@
  */
 package org.restheart.exchange;
 
-import org.restheart.mongodb.db.sessions.ClientSessionImpl;
 import com.google.common.reflect.TypeToken;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
@@ -48,6 +47,7 @@ import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.ExchangeKeys.HAL_MODE;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.exchange.ExchangeKeys.TYPE;
+import org.restheart.mongodb.db.sessions.ClientSessionImpl;
 import org.restheart.utils.URLUtils;
 import org.slf4j.LoggerFactory;
 
@@ -229,16 +229,14 @@ public class MongoRequest extends BsonRequest {
      * @param dbName
      * @return true if the dbName is a reserved resource
      */
-    public static boolean isReservedResourceDb(String dbName) {
-        return !dbName.equalsIgnoreCase(_METRICS)
-                && !dbName.equalsIgnoreCase(_SIZE)
-                && !dbName.equalsIgnoreCase(_SESSIONS)
-                && (dbName.equals(ADMIN)
-                || dbName.equals(CONFIG)
-                || dbName.equals(LOCAL)
-                || dbName.startsWith(SYSTEM)
-                || dbName.startsWith(UNDERSCORE)
-                || dbName.equals(RESOURCES_WILDCARD_KEY));
+    public static boolean isReservedDbName(String dbName) {
+        return dbName == null
+                ? false
+                : dbName.equalsIgnoreCase(ADMIN)
+                || dbName.equalsIgnoreCase(CONFIG)
+                || dbName.equalsIgnoreCase(LOCAL)
+                || dbName.equalsIgnoreCase(_SIZE)
+                || dbName.startsWith(SYSTEM);
     }
 
     /**
@@ -246,55 +244,42 @@ public class MongoRequest extends BsonRequest {
      * @param collectionName
      * @return true if the collectionName is a reserved resource
      */
-    public static boolean isReservedResourceCollection(String collectionName) {
-        return collectionName != null
-                && !collectionName.equalsIgnoreCase(_SCHEMAS)
-                && !collectionName.equalsIgnoreCase(_METRICS)
-                && !collectionName.equalsIgnoreCase(_META)
-                && !collectionName.equalsIgnoreCase(_SIZE)
-                && (collectionName.startsWith(SYSTEM)
-                || collectionName.startsWith(UNDERSCORE)
+    public static boolean isReservedCollectionName(String collectionName) {
+        return collectionName == null
+                ? false
+                : collectionName.startsWith(SYSTEM)
                 || collectionName.endsWith(FS_CHUNKS_SUFFIX)
-                || collectionName.equals(RESOURCES_WILDCARD_KEY));
+                || collectionName.equals(META_COLLNAME)
+                || collectionName.equalsIgnoreCase(_SIZE);
     }
 
     /**
      *
      * @param type
-     * @param documentIdRaw
+     * @param documentId
      * @return true if the documentIdRaw is a reserved resource
      */
-    public static boolean isReservedResourceDocument(
-            TYPE type,
-            String documentIdRaw) {
-        if (documentIdRaw == null) {
+    public static boolean isReservedDocumentId(TYPE type, BsonValue documentId) {
+        if (documentId == null || !documentId.isString()) {
             return false;
         }
 
-        return (documentIdRaw.startsWith(UNDERSCORE)
-                || (type != TYPE.AGGREGATION
-                && _AGGREGATIONS.equalsIgnoreCase(documentIdRaw)))
-                && (type == TYPE.TRANSACTION
-                || !_TRANSACTIONS.equalsIgnoreCase(documentIdRaw))
-                && (documentIdRaw.startsWith(UNDERSCORE)
-                || (type != TYPE.CHANGE_STREAM
-                && _STREAMS.equalsIgnoreCase(documentIdRaw)))
-                && !documentIdRaw.equalsIgnoreCase(_METRICS)
-                && !documentIdRaw.equalsIgnoreCase(_SIZE)
-                && !documentIdRaw.equalsIgnoreCase(_INDEXES)
-                && !documentIdRaw.equalsIgnoreCase(_META)
-                && !documentIdRaw.equalsIgnoreCase(DB_META_DOCID)
-                && !documentIdRaw.startsWith(COLL_META_DOCID_PREFIX)
-                && !documentIdRaw.equalsIgnoreCase(MIN_KEY_ID)
-                && !documentIdRaw.equalsIgnoreCase(MAX_KEY_ID)
-                && !documentIdRaw.equalsIgnoreCase(NULL_KEY_ID)
-                && !documentIdRaw.equalsIgnoreCase(TRUE_KEY_ID)
-                && !documentIdRaw.equalsIgnoreCase(FALSE_KEY_ID)
-                && !(type == TYPE.AGGREGATION)
-                && !(type == TYPE.CHANGE_STREAM)
-                && !(type == TYPE.TRANSACTION)
-                || (documentIdRaw.equals(RESOURCES_WILDCARD_KEY)
-                && !(type == TYPE.BULK_DOCUMENTS));
+        var sdi = documentId.asString().getValue();
+
+        if ((type == TYPE.COLLECTION_META && sdi.startsWith(COLL_META_DOCID_PREFIX))
+                || (type == TYPE.DB_META && sdi.startsWith(DB_META_DOCID))
+                || (type == TYPE.BULK_DOCUMENTS && RESOURCES_WILDCARD_KEY.equals(sdi))
+                || (type == TYPE.METRICS && _METRICS.equalsIgnoreCase(sdi))
+                || (type == TYPE.COLLECTION_SIZE && _SIZE.equalsIgnoreCase(sdi))
+                || (type == TYPE.INDEX && _INDEXES.equalsIgnoreCase(sdi))
+                || (type == TYPE.COLLECTION_META && _META.equalsIgnoreCase(sdi))
+                || (type == TYPE.INVALID && _AGGREGATIONS.equalsIgnoreCase(sdi))
+                || (type == TYPE.INVALID && _STREAMS.equalsIgnoreCase(sdi))) {
+            return false;
+        } else {
+            return DB_META_DOCID.equalsIgnoreCase(sdi)
+                    || sdi.startsWith(COLL_META_DOCID_PREFIX);
+        }
     }
 
     /**
@@ -712,9 +697,9 @@ public class MongoRequest extends BsonRequest {
             return false;
         }
 
-        return isReservedResourceDb(getDBName())
-                || isReservedResourceCollection(getCollectionName())
-                || isReservedResourceDocument(getType(), getDocumentIdRaw());
+        return isReservedDbName(getDBName())
+                || isReservedCollectionName(getCollectionName())
+                || isReservedDocumentId(getType(), getDocumentId());
     }
 
     /**

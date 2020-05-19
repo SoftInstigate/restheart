@@ -91,16 +91,5 @@ public class PatchCollectionIT extends HttpClientAbstactIT {
         assertNotNull("check patched content", content.get("a"));
         assertNotNull("check patched content", content.get("b"));
         assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
-        etag = content.get("_etag").asObject().get("$oid").asString();
-
-        // try to patch reserved field name
-        resp = adminExecutor.execute(Request.Patch(collectionTmpUri).bodyString("{'_embedded':'a', 'a': 1}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
-        var body = resp.returnContent();
-        
-        content = Json.parse(body.asString()).asObject();
-        assertNotNull("check patched content containing warning", content.get("_warnings"));
-        assertTrue("check patched content containing warning array", content.get("_warnings").isArray());
-        assertTrue("check patched content containing warning array with 1 element", content.get("_warnings").asArray().size() == 1);
-
     }
 }

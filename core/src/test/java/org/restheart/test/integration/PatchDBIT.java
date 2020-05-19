@@ -83,12 +83,5 @@ public class PatchDBIT extends HttpClientAbstactIT {
         assertNotNull("check patched content", content.get("a"));
         assertNotNull("check patched content", content.get("b"));
         assertTrue("check patched content", content.get("a").asInt() == 1 && content.get("b").asInt() == 2);
-        etag = content.get("_etag").asObject().get("$oid").asString();
-
-        // try to patch reserved field name
-        resp = adminExecutor.execute(Request.Patch(dbTmpUri).bodyString("{_embedded:\"a\"}", halCT).addHeader(Headers.CONTENT_TYPE_STRING, Exchange.HAL_JSON_MEDIA_TYPE).addHeader(Headers.IF_MATCH_STRING, etag));
-        content = Json.parse(resp.returnContent().asString()).asObject();
-        assertNotNull("check patched content to have _warnings", content.get("_warnings"));
-        assertTrue("check patched content _warnings to be an array", content.get("_warnings").isArray());
     }
 }

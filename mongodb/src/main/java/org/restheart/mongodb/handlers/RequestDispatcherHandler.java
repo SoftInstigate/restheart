@@ -115,35 +115,14 @@ public class RequestDispatcherHandler extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
 
-        if (request.getType() == TYPE.INVALID) {
-            LOGGER.debug(
-                    "This is a bad request: returning a <{}> HTTP code",
-                    HttpStatus.SC_BAD_REQUEST);
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_BAD_REQUEST,
-                    "bad request");
-            next(exchange);
-            return;
-        }
-
-        if (request.getMethod() == METHOD.OTHER) {
+        if (request.getMethod() == METHOD.OTHER 
+                || request.getType() == TYPE.INVALID) {
             LOGGER.debug(
                     "This method is not allowed: returning a <{}> HTTP code",
                     HttpStatus.SC_METHOD_NOT_ALLOWED);
             MongoResponse.of(exchange).setInError(
                     HttpStatus.SC_METHOD_NOT_ALLOWED,
                     "method " + request.getMethod().name() + " not allowed");
-            next(exchange);
-            return;
-        }
-
-        if (request.isReservedResource()) {
-            LOGGER.debug(
-                    "The resource is reserved: returning a <{}> HTTP code",
-                    HttpStatus.SC_FORBIDDEN);
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_FORBIDDEN,
-                    "reserved resource");
             next(exchange);
             return;
         }

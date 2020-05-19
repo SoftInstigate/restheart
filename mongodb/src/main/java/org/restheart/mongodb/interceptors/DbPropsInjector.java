@@ -28,7 +28,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
@@ -45,7 +45,7 @@ import org.restheart.utils.HttpStatus;
         description = "Injects the db properties into the BsonRequest",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         priority = Integer.MIN_VALUE)
-public class DbPropsInjector implements Interceptor<MongoRequest, MongoResponse> {
+public class DbPropsInjector implements MongoInterceptor {
     private DatabaseImpl dbsDAO = null;
 
     /**

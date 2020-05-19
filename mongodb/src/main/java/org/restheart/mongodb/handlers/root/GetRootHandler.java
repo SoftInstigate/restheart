@@ -93,7 +93,7 @@ public class GetRootHandler extends PipelinedHandler {
 
             // filter out reserved resources
             List<String> dbs = _dbs.stream()
-                    .filter(db -> !MongoRequest.isReservedResourceDb(db))
+                    .filter(db -> !MongoRequest.isReservedDbName(db))
                     .collect(Collectors.toList());
 
             if (dbs == null) {

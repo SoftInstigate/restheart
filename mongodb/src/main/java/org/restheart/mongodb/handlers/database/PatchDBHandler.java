@@ -73,11 +73,10 @@ public class PatchDBHandler extends PipelinedHandler {
             return;
         }
 
-        if (request.getDBName().isEmpty()
-                || request.getDBName().startsWith("_")) {
+        if (request.getDBName().isEmpty()) {
             response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
-                    "wrong request, db name cannot be empty or start with _");
+                    "wrong request, db name cannot be empty");
             next(exchange);
             return;
         }

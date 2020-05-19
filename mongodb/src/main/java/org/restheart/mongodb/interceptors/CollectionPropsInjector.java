@@ -30,7 +30,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InterceptPoint;
-import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
@@ -46,7 +46,7 @@ import org.restheart.utils.HttpStatus;
         description = "Injects the collection properties into the BsonRequest",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         priority = Integer.MIN_VALUE + 1)
-public class CollectionPropsInjector implements Interceptor<MongoRequest, MongoResponse> {
+public class CollectionPropsInjector implements MongoInterceptor {
     private DatabaseImpl dbsDAO = null;
 
     private static final String RESOURCE_DOES_NOT_EXIST = "Resource does not exist";
@@ -112,6 +112,8 @@ public class CollectionPropsInjector implements Interceptor<MongoRequest, MongoR
         return dbsDAO != null
                 && request.isHandledBy("mongo")
                 && !(request.isInError()
+                || request.isMetrics()
+                || request.isDbSize()
                 || request.isTxn()
                 || request.isTxns());
     }
