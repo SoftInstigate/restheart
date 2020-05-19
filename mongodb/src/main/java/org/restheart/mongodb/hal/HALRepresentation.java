@@ -49,12 +49,10 @@ public class HALRepresentation implements MongoInterceptor {
         var content = response.getContent();
 
         BsonDocument hal;
-
-        if (content != null
-                && (request.isGet() || request.isBulkDocuments()
+        
+        if (request.isGet() || request.isBulkDocuments()
                 || (request.isCollection()
-                && request.getContent() != null
-                && request.getContent().isArray()))) {
+                && request.isPost() && request.getContent().isArray())) {
             hal = std2HAL(request, response, content);
         } else {
             return;
@@ -77,10 +75,11 @@ public class HALRepresentation implements MongoInterceptor {
         return !request.isInError()
                 && !request.isDbMeta()
                 && !request.isCollectionMeta()
+                && !request.isCollectionSize()
+                && !request.isDbSize()
                 && request.isHandledBy("mongo")
                 && request.getRepresentationFormat() != null
-                && (Resource.isSHAL(request) || Resource.isHAL(request))
-                && response.getContent() != null;
+                && (Resource.isSHAL(request) || Resource.isHAL(request));
     }
 
     /**
@@ -152,7 +151,7 @@ public class HALRepresentation implements MongoInterceptor {
             try {
                 return factory
                         .getRepresentation(request.getExchange(),
-                                content.asArray(),
+                                content == null ? null : content.asArray(),
                                 response.getCount())
                         .asBsonDocument();
             } catch (IllegalQueryParamenterException iqpe) {
