@@ -508,7 +508,36 @@ public class Bootstrapper {
         }
 
         // force instantiation of all plugins singletons
-        PluginsRegistryImpl.getInstance().instantiateAll();
+        try {
+            PluginsRegistryImpl.getInstance().instantiateAll();
+        } catch (IllegalArgumentException iae) {
+            // this occurs instatiaitng plugin missing external dependencies
+            // unfortunatly Classgraph wraps it to IllegalArgumentException
+
+            if (iae.getMessage() != null
+                    && iae.getMessage().startsWith("Could not load class")) {
+
+                logErrorAndExit("Error instantiting plugins: "
+                        + "an external dependency is missing. "
+                        + "Copy the missing dependency jar to the plugins directory to add it to the classpath",
+                        iae, false, -112);
+            } else {
+                logErrorAndExit("Error instantiating plugins", iae, false, -110);
+            }
+        } catch (LinkageError le) {
+            // this occurs executing plugin code compiled
+            // with wrong version of restheart-commons
+
+            String version = Version.getInstance().getVersion() == null
+                    ? "of correct version"
+                    : "v" + Version.getInstance().getVersion();
+
+            logErrorAndExit("Linkage error instantiting plugins "
+                    + "Check that all plugins were compiled against restheart-commons "
+                    + version, le, false, -111);
+        } catch (Throwable t) {
+            logErrorAndExit("Error instantiating plugins", t, false, -110);
+        }
 
         // run pre startup initializers
         PluginsRegistryImpl.getInstance()
@@ -518,6 +547,13 @@ public class Bootstrapper {
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
+                    } catch (NoClassDefFoundError iae) {
+                        // this occurs executing interceptors missing external dependencies
+
+                        LOGGER.error("Error executing initializer {} "
+                                + "An external dependency is missing. "
+                                + "Copy the missing dependency jar to the plugins directory to add it to the classpath",
+                                i.getName(), iae);
                     } catch (LinkageError le) {
                         // this occurs executing plugin code compiled
                         // with wrong version of restheart-commons
@@ -533,7 +569,6 @@ public class Bootstrapper {
                         LOGGER.error("Error executing initializer {}", i.getName());
                     }
                 });
-
         try {
             startCoreSystem();
         } catch (Throwable t) {
@@ -543,20 +578,24 @@ public class Bootstrapper {
                     !pidFileAlreadyExists, -2);
         }
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                stopServer(false);
-            }
-        });
+        Runtime.getRuntime()
+                .addShutdownHook(new Thread() {
+                    @Override
+                    public void run() {
+                        stopServer(false);
+                    }
+                }
+                );
 
         // create pid file on supported OSes
-        if (!OSChecker.isWindows() && pidFilePath != null) {
+        if (!OSChecker.isWindows()
+                && pidFilePath != null) {
             FileUtils.createPidFile(pidFilePath);
         }
 
         // log pid file path on supported OSes
-        if (!OSChecker.isWindows() && pidFilePath != null) {
+        if (!OSChecker.isWindows()
+                && pidFilePath != null) {
             LOGGER.info("Pid file {}", pidFilePath);
         }
 
@@ -568,6 +607,13 @@ public class Bootstrapper {
                 .forEach(i -> {
                     try {
                         i.getInstance().init();
+                    } catch (NoClassDefFoundError iae) {
+                        // this occurs executing interceptors missing external dependencies
+
+                        LOGGER.error("Error executing initializer {} "
+                                + "An external dependency is missing. "
+                                + "Copy the missing dependency jar to the plugins directory to add it to the classpath",
+                                i.getName(), iae);
                     } catch (LinkageError le) {
                         // this occurs executing plugin code compiled
                         // with wrong version of restheart-commons
@@ -726,7 +772,8 @@ public class Bootstrapper {
 
                 String storename = "sskeystore.jks";
 
-                ks.load(Bootstrapper.class.getClassLoader()
+                ks.load(Bootstrapper.class
+                        .getClassLoader()
                         .getResourceAsStream(storename), storepass);
                 kmf.init(ks, keypass);
             } else if (configuration.getKeystoreFile() != null
@@ -1013,7 +1060,8 @@ public class Bootstrapper {
                         "fullAuthorizer",
                         "authorize any operation to any user",
                         true,
-                        FullAuthorizer.class.getName(),
+                        FullAuthorizer.class
+                                .getName(),
                         new FullAuthorizer(false),
                         null
                 );
