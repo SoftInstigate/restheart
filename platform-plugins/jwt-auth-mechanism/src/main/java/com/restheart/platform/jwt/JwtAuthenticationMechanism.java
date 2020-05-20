@@ -41,6 +41,8 @@ import java.util.function.Consumer;
 import org.apache.commons.codec.binary.StringUtils;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
+import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,29 +52,27 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
+@RegisterPlugin(name="jwtAuthenticationMechanism",
+        description = "handle JSON Web Token authentication")
 public class JwtAuthenticationMechanism implements AuthMechanism {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationMechanism.class);
 
     public static final String JWT_AUTH_HEADER_PREFIX = "Bearer ";
-    private final JWTVerifier jwtVerifier;
+    private JWTVerifier jwtVerifier;
     private Consumer<DecodedJWT> extraJwtVerifier = null;
 
-    private final String mechanismName;
-    private final boolean base64Encoded;
-    private final String algorithm;
-    private final String key;
-    private final String usernameClaim;
-    private final String rolesClaim;
-    private final List<String> fixedRoles;
-    private final String issuer;
-    private final String audience;
+    private boolean base64Encoded;
+    private String algorithm;
+    private String key;
+    private String usernameClaim;
+    private String rolesClaim;
+    private List<String> fixedRoles;
+    private String issuer;
+    private String audience;
 
-    public JwtAuthenticationMechanism(final String mechanismName,
-            final Map<String, Object> args) throws ConfigurationException {
-
-        this.mechanismName = mechanismName;
-
+    @InjectConfiguration
+    public void init(Map<String, Object> args) throws ConfigurationException {
         // get configuration arguments
         base64Encoded = (boolean) args.getOrDefault("base64Encoded", false);
         algorithm = (String) args.get("algorithm");
@@ -200,11 +200,6 @@ public class JwtAuthenticationMechanism implements AuthMechanism {
     public ChallengeResult sendChallenge(final HttpServerExchange exchange,
             final SecurityContext securityContext) {
         return new AuthenticationMechanism.ChallengeResult(true, 200);
-    }
-
-    @Override
-    public String getMechanismName() {
-        return mechanismName;
     }
 
     /**

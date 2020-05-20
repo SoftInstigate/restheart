@@ -15,6 +15,27 @@
     
   <build>
     <finalName>jwt-auth-mechanism</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.1.2</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <!-- use includeGroupIds to list all external dependencies, 
+              comma separated, to copy to target/lib -->
+              <includeGroupIds>com.auth0,com.fasterxml.jackson.core</includeGroupIds>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
     
   <dependencies>
