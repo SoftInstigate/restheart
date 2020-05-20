@@ -77,14 +77,14 @@ public class PluginsFactory implements AutoCloseable {
 
         if (!Files.exists(pluginsDirectory)) {
             LOGGER.error("Plugin directory {} does not exist", pluginsDirectory);
-            throw new IllegalArgumentException("Plugins directory "
+            throw new IllegalStateException("Plugins directory "
                     + pluginsDirectory
                     + " does not exist");
         }
 
         if (!Files.isReadable(pluginsDirectory)) {
             LOGGER.error("Plugin directory {} is not readable", pluginsDirectory);
-            throw new IllegalArgumentException("Plugins directory "
+            throw new IllegalStateException("Plugins directory "
                     + pluginsDirectory
                     + " is not readable");
         }
@@ -96,7 +96,7 @@ public class PluginsFactory implements AutoCloseable {
 
                 if (!Files.isReadable(path)) {
                     LOGGER.error("Plugin jar {} is not readable", jar);
-                    throw new IllegalArgumentException("Plugin jar "
+                    throw new IllegalStateException("Plugin jar "
                             + jar
                             + " is not readable");
                 }

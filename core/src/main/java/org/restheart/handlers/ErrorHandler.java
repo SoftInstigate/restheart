@@ -59,27 +59,56 @@ public class ErrorHandler implements HttpHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         try {
             next.handleRequest(exchange);
+        } catch (NoClassDefFoundError ncdfe) {
+            // this occurs with plugins missing external dependencies
+
+            Response.of(exchange).setInError(
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "Error handling the request, see logs for more information");
+
+            var pi = PluginUtils.pipelineInfo(exchange);
+
+            if (pi != null) {
+                var errMsg = "Error handling the request. "
+                        + "An external dependency is missing for "
+                        + pi.getType().name().toLowerCase()
+                        + " "
+                        + pi.getName()
+                        + ". Copy the missing dependency jar to the plugins directory "
+                        + "to add it to the classpath";
+
+                LOGGER.error(errMsg, ncdfe);
+            } else {
+                LOGGER.error("Error handling the request", ncdfe);
+            }
+
+            sender.handleRequest(exchange);
         } catch (LinkageError le) {
             // this occurs executing plugin code compiled
             // with wrong version of restheart-commons
             var pi = PluginUtils.pipelineInfo(exchange);
 
-            String version = Version.getInstance().getVersion() == null
-                    ? "of correct version"
-                    : "v" + Version.getInstance().getVersion();
+            if (pi != null) {
+                String version = Version.getInstance().getVersion() == null
+                        ? "of correct version"
+                        : "v" + Version.getInstance().getVersion();
 
-            var errMsg = "Linkage error handling the request. "
-                    + "Check that "
-                    + pi.getType().name().toLowerCase()
-                    + " "
-                    + pi.getName()
-                    + " was compiled against restheart-commons "
-                    + version;
+                var errMsg = "Linkage error handling the request. "
+                        + "Check that "
+                        + pi.getType().name().toLowerCase()
+                        + " "
+                        + pi.getName()
+                        + " was compiled against restheart-commons "
+                        + version;
 
-            LOGGER.error(errMsg, le);
+                LOGGER.error(errMsg, le);
+            } else {
+                LOGGER.error("Error handling the request", le);
+            }
 
-            Response.of(exchange).setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    errMsg);
+            Response.of(exchange).setInError(
+                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                    "Error handling the request, see logs for more information", le);
 
             sender.handleRequest(exchange);
         } catch (Throwable t) {
