@@ -369,10 +369,28 @@ public class PluginsFactory implements AutoCloseable {
 
             try {
                 invokeInjectMethods(ip);
-            } catch (ConfigurationException
+            } catch(InvocationTargetException ite) {
+                if (ite.getCause() != null 
+                        && ite.getCause() instanceof NoClassDefFoundError) {
+                    var errMsg = "Error handling the request. "
+                        + "An external dependency is missing for "
+                        + ip.pluginType
+                        + " "
+                        + ip.pluginName
+                        + ". Copy the missing dependency jar to the plugins directory "
+                        + "to add it to the classpath";
+                    
+                    LOGGER.error(errMsg, ite);
+                }  else {
+                    LOGGER.error("Error injecting dependency to {} {}: {}",
+                        ip.pluginType,
+                        ip.pluginName,
+                        getRootException(ite).getMessage(),
+                        ite);
+                }
+            }catch (ConfigurationException
                     | InstantiationException
-                    | IllegalAccessException
-                    | InvocationTargetException ex) {
+                    | IllegalAccessException ex) {
                 LOGGER.error("Error injecting dependency to {} {}: {}",
                         ip.pluginType,
                         ip.pluginName,
