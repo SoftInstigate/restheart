@@ -511,20 +511,28 @@ public class Bootstrapper {
         try {
             PluginsRegistryImpl.getInstance().instantiateAll();
         } catch (IllegalArgumentException iae) {
-            // this occurs instatiaitng plugin missing external dependencies
+            // this occurs instatiating plugin missing external dependencies
             // unfortunatly Classgraph wraps it to IllegalArgumentException
 
             if (iae.getMessage() != null
                     && iae.getMessage().startsWith("Could not load class")) {
 
-                logErrorAndExit("Error instantiting plugins: "
+                logErrorAndExit("Error instantiating plugins: "
                         + "an external dependency is missing. "
                         + "Copy the missing dependency jar to the plugins directory to add it to the classpath",
                         iae, false, -112);
             } else {
                 logErrorAndExit("Error instantiating plugins", iae, false, -110);
             }
-        } catch (LinkageError le) {
+        } catch (NoClassDefFoundError ncdfe) {
+            // this occurs instatiating plugin missing external dependencies
+            // unfortunatly Classgraph wraps it to IllegalArgumentException
+
+                logErrorAndExit("Error instantiating plugins: "
+                        + "an external dependency is missing. "
+                        + "Copy the missing dependency jar to the plugins directory to add it to the classpath",
+                        ncdfe, false, -112);
+        }catch (LinkageError le) {
             // this occurs executing plugin code compiled
             // with wrong version of restheart-commons
 
@@ -532,7 +540,7 @@ public class Bootstrapper {
                     ? "of correct version"
                     : "v" + Version.getInstance().getVersion();
 
-            logErrorAndExit("Linkage error instantiting plugins "
+            logErrorAndExit("Linkage error instantiating plugins "
                     + "Check that all plugins were compiled against restheart-commons "
                     + version, le, false, -111);
         } catch (Throwable t) {
