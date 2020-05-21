@@ -31,7 +31,7 @@ import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.restheart.db.MongoDBClientSingleton;
+import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +59,7 @@ public abstract class AbstactIT {
     static {
         LOG.info("BASE_URL={}", HTTP_HOST.toURI());
         LOG.info("mongo-uri={}", "mongodb://127.0.0.1");
-        MongoDBClientSingleton.init(new MongoClientURI("mongodb://127.0.0.1"));
+        MongoClientSingleton.init(new MongoClientURI("mongodb://127.0.0.1"), null);
     }
 
     @BeforeClass
@@ -138,7 +138,7 @@ public abstract class AbstactIT {
     private static void deleteTestData() {
         ArrayList<String> dbNames = new ArrayList<>();
 
-        MongoDBClientSingleton.getInstance()
+        MongoClientSingleton.getInstance()
                 .getClient()
                 .listDatabaseNames()
                 .into(dbNames);
@@ -149,7 +149,7 @@ public abstract class AbstactIT {
                 .stream()
                 .filter(db -> db.startsWith(TEST_DB_PREFIX))
                 .forEach(dbToDelete -> {
-                    MongoDBClientSingleton.getInstance().getClient().dropDatabase(dbToDelete);
+                    MongoClientSingleton.getInstance().getClient().dropDatabase(dbToDelete);
                     deleted.add(dbToDelete);
                 });
 

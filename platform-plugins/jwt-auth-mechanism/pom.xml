@@ -29,8 +29,15 @@
             <configuration>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
               <!-- use includeGroupIds to list all external dependencies, 
-              comma separated, to copy to target/lib -->
-              <includeGroupIds>com.auth0,com.fasterxml.jackson.core</includeGroupIds>
+              comma separated, to copy them to target/lib -->
+              <!-- required extra deps:
+                - java-jwt-3.8.3.jar
+                - commons-codec-1.14.jar
+                - jackson-databind-2.10.0.pr3.jar
+                - jackson-annotations-2.10.0.pr3.jar 
+                - jackson-core-2.10.0.pr3.jar
+              -->
+              <includeGroupIds>com.auth0,com.fasterxml.jackson.core,commons-codec</includeGroupIds>
             </configuration>
           </execution>
         </executions>
