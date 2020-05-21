@@ -10,17 +10,9 @@
  */
 package com.restheart.authenticators;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
-import com.mongodb.client.MongoClient;
-import com.restheart.net.Client;
-import com.restheart.net.Request;
+import com.mongodb.MongoClient;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.DigestCredential;
@@ -28,15 +20,13 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.util.HexConverter;
 import io.undertow.util.HttpString;
 import static io.undertow.util.RedirectBuilder.UTF_8;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
+import org.bson.BsonDocument;
 import org.mindrot.jbcrypt.BCrypt;
 import org.restheart.Configuration;
 import org.restheart.ConfigurationException;
@@ -52,7 +42,6 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.PwdCredentialAccount;
-import org.restheart.utils.HttpStatus;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "mongoRealmAuthenticator",
-        description = "authenticate requests against credentials stored in mongodb")
+        description = "authenticate requests against client credentials stored in mongodb")
 public class MongoRealmAuthenticator implements Authenticator {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(MongoRealmAuthenticator.class);
@@ -70,10 +59,7 @@ public class MongoRealmAuthenticator implements Authenticator {
     public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
     public static final String X_FORWARDED_ROLE = "RESTHeart";
 
-    private URI restheartBaseUrl = null;
-    private URI dbUrl = null;
-    private URI collUrl = null;
-    String usersUri = null;
+    private String usersUri;
     private String propId = "_id";
     String propPassword = "password";
     private String jsonPathRoles = "$.roles";
@@ -95,30 +81,27 @@ public class MongoRealmAuthenticator implements Authenticator {
                     Cache.EXPIRE_POLICY.AFTER_READ,
                     20 * 60 * 1_000l);
 
-    private MongoClient mclient;
+    private Map<String, Object> ownArgs;
     private PluginsRegistry registry;
+    private MongoDelegate delegate;
+
+    private enum MODE {
+        DIRECT, PROXY
+    };
+
+    private MODE mode;
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void setConf(Map<String, Object> args) {
         var conf = new Configuration(args, true);
 
-        this.restheartBaseUrl = conf.getRestheartBaseUrl();
+        this.ownArgs = conf.getAuthenticators().get("mongoRealmAuthenticator");
 
-        this.usersUri = URLUtils.removeTrailingSlashes(
-                argValue(args, "users-collection-uri"));
+        this.cacheEnabled = argValue(ownArgs, "cache-enabled");
+        this.cacheSize = argValue(ownArgs, "cache-size");
+        this.cacheTTL = argValue(ownArgs, "cache-ttl");
 
-        this.dbUrl = this.restheartBaseUrl
-                .resolve(restheartBaseUrl.getPath()
-                        .concat(usersUri.substring(0, usersUri.lastIndexOf("/"))));
-
-        this.collUrl = this.restheartBaseUrl.resolve(this.restheartBaseUrl.getPath()
-                .concat(usersUri));
-
-        this.cacheEnabled = argValue(args, "cache-enabled");
-        this.cacheSize = argValue(args, "cache-size");
-        this.cacheTTL = argValue(args, "cache-ttl");
-
-        String _cacheExpirePolicy = argValue(args, "cache-expire-policy");
+        String _cacheExpirePolicy = argValue(ownArgs, "cache-expire-policy");
         if (_cacheExpirePolicy != null) {
             try {
                 this.cacheExpirePolicy = Cache.EXPIRE_POLICY
@@ -131,12 +114,12 @@ public class MongoRealmAuthenticator implements Authenticator {
             }
         }
 
-        this.bcryptHashedPassword = argValue(args, "bcrypt-hashed-password");
+        this.bcryptHashedPassword = argValue(ownArgs, "bcrypt-hashed-password");
 
-        this.bcryptComplexity = argValue(args, "bcrypt-complexity");
+        this.bcryptComplexity = argValue(ownArgs, "bcrypt-complexity");
 
-        this.createUser = argValue(args, "create-user");
-        this.createUserDocument = argValue(args, "create-user-document");
+        this.createUser = argValue(ownArgs, "create-user");
+        this.createUserDocument = argValue(ownArgs, "create-user-document");
 
         // check createUserDocument
         try {
@@ -147,7 +130,7 @@ public class MongoRealmAuthenticator implements Authenticator {
                     + "create-user-document must be a json document", ex);
         }
 
-        this.propId = argValue(args, "prop-id");
+        this.propId = argValue(ownArgs, "prop-id");
 
         if (this.propId.startsWith("$")) {
             throw new ConfigurationException("prop-id must be "
@@ -155,54 +138,119 @@ public class MongoRealmAuthenticator implements Authenticator {
                     + "It can use the dot notation.");
         }
 
-        this.propPassword = argValue(args, "prop-password");
+        this.propPassword = argValue(ownArgs, "prop-password");
 
         if (this.propPassword.contains(".")) {
             throw new ConfigurationException("prop-password must be "
                     + "a root level property and cannot contain the char '.'");
         }
 
-        this.jsonPathRoles = argValue(args, "json-path-roles");
+        this.jsonPathRoles = argValue(ownArgs, "json-path-roles");
 
-        if (this.cacheEnabled) {
-            this.USERS_CACHE = CacheFactory.createLocalLoadingCache(
-                    this.cacheSize,
-                    this.cacheExpirePolicy,
-                    this.cacheTTL, (String key) -> {
-                        return this.findAccount(key);
-                    });
+        try {
+            this.mode = MODE.valueOf(argValue(ownArgs, "mode"));
+        } catch (Throwable t) {
+            LOGGER.warn("Wrong mode, either 'direct' or 'proxy', assuming it as 'direct'");
+            this.mode = MODE.DIRECT;
         }
 
-        if (!checkUserCollection()) {
-            LOGGER.error("Users collection does not exist and could not be created");
-        } else if (this.createUser) {
-            LOGGER.trace("Create user option enabled");
+        this.usersUri = URLUtils.removeTrailingSlashes(
+                argValue(ownArgs, "users-collection-uri"));
 
-            if (countAccounts() < 1) {
-                createDefaultAccount();
-                LOGGER.info("No user found. Created default user with _id {}",
-                        JsonParser.parseString(this.createUserDocument)
-                                .getAsJsonObject().get(this.propId));
-            } else {
-                LOGGER.trace("Not creating default user since users exist");
+        if (mode == MODE.PROXY) {
+            var restheartBaseUrl = conf.getRestheartBaseUrl();
+
+            var dbUrl = restheartBaseUrl
+                    .resolve(restheartBaseUrl.getPath()
+                            .concat(usersUri.substring(0, usersUri.lastIndexOf("/"))));
+
+            var collUrl = restheartBaseUrl.resolve(restheartBaseUrl.getPath()
+                    .concat(usersUri));
+
+            this.delegate = new ProxyMongoDelegate(restheartBaseUrl,
+                    dbUrl,
+                    collUrl,
+                    createUserDocument,
+                    propId,
+                    propPassword,
+                    jsonPathRoles);
+
+            if (this.cacheEnabled) {
+                this.USERS_CACHE = CacheFactory.createLocalLoadingCache(
+                        this.cacheSize,
+                        this.cacheExpirePolicy,
+                        this.cacheTTL, (String key) -> {
+                            return delegate.findAccount(accountIdTrasformer(key));
+                        });
+            }
+
+            if (!delegate.checkUserCollection()) {
+                LOGGER.error("Users collection does not exist and could not be created");
+            } else if (this.createUser) {
+                LOGGER.trace("Create user option enabled");
+
+                if (delegate.countAccounts() < 1) {
+                    this.delegate.createDefaultAccount();
+                    LOGGER.info("No user found. Created default user with _id {}",
+                            JsonParser.parseString(this.createUserDocument)
+                                    .getAsJsonObject().get(this.propId));
+                } else {
+                    LOGGER.trace("Not creating default user since users exist");
+                }
             }
         }
     }
 
     @InjectMongoClient
     public void setMongoClient(MongoClient mclient) {
-        this.mclient = mclient;
+        if (mode == MODE.DIRECT) {
+            String usersDb = argValue(ownArgs, "users-db");
+            String usersColl = argValue(ownArgs, "users-collection");
+
+            this.delegate = new DirectMongoDelegate(mclient,
+                    usersDb,
+                    usersColl,
+                    propId, propPassword,
+                    jsonPathRoles,
+                    BsonDocument.parse(createUserDocument));
+
+            if (this.cacheEnabled) {
+                this.USERS_CACHE = CacheFactory.createLocalLoadingCache(
+                        this.cacheSize,
+                        this.cacheExpirePolicy,
+                        this.cacheTTL, (String key) -> {
+                            return delegate.findAccount(accountIdTrasformer(key));
+                        });
+            }
+
+            if (!delegate.checkUserCollection()) {
+                LOGGER.error("Users collection does not exist and could not be created");
+            } else if (this.createUser) {
+                LOGGER.trace("Create user option enabled");
+
+                if (delegate.countAccounts() < 1) {
+                    this.delegate.createDefaultAccount();
+                    LOGGER.info("No user found. Created default user with _id {}",
+                            JsonParser.parseString(this.createUserDocument)
+                                    .getAsJsonObject().get(this.propId));
+                } else {
+                    LOGGER.trace("Not creating default user since users exist");
+                }
+            }
+        } else {
+            LOGGER.warn("Service mongo is enabled, mode should be 'direct' but is {}", mode);
+        }
     }
 
     @InjectPluginsRegistry
     public void setRegistry(PluginsRegistry registry) {
         this.registry = registry;
-        
+
         // add a global security predicate to deny requests
         // to users collection, containing a filter on password property
         // this avoids clients to potentially steal passwords
         registry.getGlobalSecurityPredicates()
-                .add(new DenyFilterOnUserPwdPredicate(this.usersUri, 
+                .add(new DenyFilterOnUserPwdPredicate(this.usersUri,
                         this.propPassword));
     }
 
@@ -384,7 +432,7 @@ public class MongoRealmAuthenticator implements Authenticator {
 
     private PwdCredentialAccount getAccount(String id) {
         if (USERS_CACHE == null) {
-            return findAccount(id);
+            return this.delegate.findAccount(this.accountIdTrasformer(id));
         } else {
             Optional<PwdCredentialAccount> _account = USERS_CACHE.getLoading(id);
 
@@ -409,344 +457,6 @@ public class MongoRealmAuthenticator implements Authenticator {
     }
 
     /**
-     * check if specified user collection exists; if not, create it
-     *
-     * @return true if user collection exists or has been created
-     */
-    private boolean checkUserCollection() {
-        var ajp = "ajp".equalsIgnoreCase(restheartBaseUrl.getScheme());
-
-        try {
-            var dbStatus = ajp
-                    ? Client.getInstance().execute(new Request(
-                            Request.METHOD.GET, dbUrl.resolve(dbUrl.getPath()
-                                    .concat("/_size")))
-                            .header(getXForwardedAccountIdHeaderName().toString(),
-                                    X_FORWARDED_ACCOUNT_ID)
-                            .header(getXForwardedRolesHeaderName().toString(),
-                                    X_FORWARDED_ROLE)).getStatusCode()
-                    : Unirest.get(dbUrl.resolve(dbUrl.getPath().concat("/_size"))
-                            .toString())
-                            .header(getXForwardedAccountIdHeaderName().toString(),
-                                    X_FORWARDED_ACCOUNT_ID)
-                            .header(getXForwardedRolesHeaderName().toString(),
-                                    X_FORWARDED_ROLE)
-                            .asString()
-                            .getStatus();
-
-            if (dbStatus == HttpStatus.SC_NOT_FOUND) {
-                if (ajp) {
-                    Client.getInstance().execute(new Request(
-                            Request.METHOD.PUT, dbUrl)
-                            .header(getXForwardedAccountIdHeaderName().toString(),
-                                    X_FORWARDED_ACCOUNT_ID)
-                            .header(getXForwardedRolesHeaderName().toString(),
-                                    X_FORWARDED_ROLE));
-
-                    LOGGER.info("Users db created");
-                    Client.getInstance().execute(new Request(
-                            Request.METHOD.PUT, collUrl)
-                            .header(getXForwardedAccountIdHeaderName().toString(),
-                                    X_FORWARDED_ACCOUNT_ID)
-                            .header(getXForwardedRolesHeaderName().toString(),
-                                    X_FORWARDED_ROLE));
-                    LOGGER.info("Users collection created");
-                } else {
-                    Unirest.put(dbUrl.toString())
-                            .header(getXForwardedAccountIdHeaderName().toString(),
-                                    X_FORWARDED_ACCOUNT_ID)
-                            .header(getXForwardedRolesHeaderName().toString(),
-                                    X_FORWARDED_ROLE)
-                            .asString();
-                    LOGGER.info("Users db created");
-                    Unirest.put(collUrl.toString())
-                            .header(getXForwardedAccountIdHeaderName().toString(),
-                                    X_FORWARDED_ACCOUNT_ID)
-                            .header(getXForwardedRolesHeaderName().toString(),
-                                    X_FORWARDED_ROLE)
-                            .asString();
-                    LOGGER.info("Users collection created");
-                }
-
-                return true;
-            } else if (dbStatus == HttpStatus.SC_OK) {
-                if (ajp) {
-                    var collStatus = Client.getInstance().execute(new Request(
-                            Request.METHOD.GET, collUrl
-                                    .resolve(collUrl.getPath().concat("/_size")))
-                            .header(getXForwardedAccountIdHeaderName().toString(),
-                                    X_FORWARDED_ACCOUNT_ID)
-                            .header(getXForwardedRolesHeaderName().toString(),
-                                    X_FORWARDED_ROLE))
-                            .getStatusCode();
-
-                    if (collStatus == HttpStatus.SC_NOT_FOUND) {
-                        Client.getInstance().execute(new Request(
-                                Request.METHOD.PUT, collUrl)
-                                .header(getXForwardedAccountIdHeaderName().toString(),
-                                        X_FORWARDED_ACCOUNT_ID)
-                                .header(getXForwardedRolesHeaderName().toString(),
-                                        X_FORWARDED_ROLE));
-                        LOGGER.info("Users collection created");
-                    }
-                } else {
-                    var collStatus = Unirest.get(collUrl
-                            .resolve(collUrl.getPath().concat("/_size"))
-                            .toString())
-                            .asString()
-                            .getStatus();
-
-                    if (collStatus == HttpStatus.SC_NOT_FOUND) {
-                        Unirest.put(collUrl.toString())
-                                .header(getXForwardedAccountIdHeaderName().toString(),
-                                        X_FORWARDED_ACCOUNT_ID)
-                                .header(getXForwardedRolesHeaderName().toString(),
-                                        X_FORWARDED_ROLE)
-                                .asString();
-                        LOGGER.info("Users collection created");
-                    }
-                }
-
-                return true;
-            }
-
-            return false;
-        } catch (UnirestException | IOException ure) {
-            return false;
-        }
-    }
-
-    private int countAccounts() {
-        var ajp = "ajp".equalsIgnoreCase(restheartBaseUrl.getScheme());
-
-        JsonElement body;
-
-        try {
-            if (ajp) {
-                var resp = Client.getInstance().execute(new Request(
-                        Request.METHOD.GET, collUrl
-                                .resolve(collUrl.getPath().concat("/_size")))
-                        .header(getXForwardedAccountIdHeaderName().toString(),
-                                X_FORWARDED_ACCOUNT_ID)
-                        .header(getXForwardedRolesHeaderName().toString(),
-                                X_FORWARDED_ROLE));
-
-                if (resp.getStatusCode() == HttpStatus.SC_OK) {
-                    body = resp.getBodyAsJson();
-                } else {
-                    LOGGER.error("Error counting accounts; "
-                            + "response status code {}", resp.getStatus());
-                    return 1;
-                }
-            } else {
-                var resp = Unirest
-                        .get(collUrl.resolve(collUrl.getPath().concat("/_size"))
-                                .toString())
-                        .header(getXForwardedAccountIdHeaderName().toString(),
-                                X_FORWARDED_ACCOUNT_ID)
-                        .header(getXForwardedRolesHeaderName().toString(),
-                                X_FORWARDED_ROLE)
-                        .asString();
-
-                if (resp.getStatus() == HttpStatus.SC_OK) {
-                    body = JsonParser.parseString(resp.getBody());
-                } else {
-                    LOGGER.error("Error counting accounts; "
-                            + "response status code {}", resp.getStatus());
-                    return 1;
-                }
-            }
-
-            if (body.isJsonObject()
-                    && body.getAsJsonObject().keySet().contains("_size")
-                    && body.getAsJsonObject().get("_size").isJsonPrimitive()
-                    && body.getAsJsonObject().get("_size").getAsJsonPrimitive().isNumber()) {
-
-                return body.getAsJsonObject().get("_size")
-                        .getAsJsonPrimitive()
-                        .getAsInt();
-            } else {
-                LOGGER.error("No _size property in the response "
-                        + "of count accounts");
-                return 1;
-            }
-
-        } catch (UnirestException | IOException | JsonParseException ex) {
-            LOGGER.error("Error counting account", ex);
-            return 1;
-        }
-
-    }
-
-    private void createDefaultAccount() {
-        var ajp = "ajp".equalsIgnoreCase(restheartBaseUrl.getScheme());
-
-        try {
-            if (ajp) {
-                var resp = Client.getInstance().execute(new Request(
-                        Request.METHOD.POST, collUrl)
-                        .header("content-type", "application/json")
-                        .header(getXForwardedAccountIdHeaderName().toString(),
-                                X_FORWARDED_ACCOUNT_ID)
-                        .header(getXForwardedRolesHeaderName().toString(),
-                                X_FORWARDED_ROLE)
-                        .body(this.createUserDocument));
-
-                if (resp.getStatusCode() == HttpStatus.SC_CREATED) {
-                    return;
-                } else {
-                    LOGGER.error("Error creating default account; "
-                            + "response status code {}", resp.getStatus());
-                }
-            } else {
-                var resp = Unirest.post(collUrl.toString())
-                        .header("content-type", "application/json")
-                        .header(getXForwardedAccountIdHeaderName().toString(),
-                                X_FORWARDED_ACCOUNT_ID)
-                        .header(getXForwardedRolesHeaderName().toString(),
-                                X_FORWARDED_ROLE)
-                        .body(this.createUserDocument)
-                        .asString();
-
-                if (resp.getStatus() == HttpStatus.SC_CREATED) {
-                    return;
-                } else {
-                    LOGGER.error("Error creating default account; "
-                            + "response status code {}", resp.getStatus());
-                }
-            }
-        } catch (UnirestException | IOException ex) {
-            LOGGER.error("Error creating default account", ex);
-            return;
-        }
-
-    }
-
-    private PwdCredentialAccount findAccount(final String accountId) {
-        final String transformedId = accountIdTrasformer(accountId);
-
-        var ajp = "ajp".equalsIgnoreCase(restheartBaseUrl.getScheme());
-
-        String accounts;
-
-        try {
-            if (ajp) {
-                var resp = Client.getInstance().execute(new Request(
-                        Request.METHOD.GET, collUrl)
-                        .header(getXForwardedAccountIdHeaderName().toString(),
-                                X_FORWARDED_ACCOUNT_ID)
-                        .header(getXForwardedRolesHeaderName().toString(),
-                                X_FORWARDED_ROLE)
-                        .parameter("np", "true")
-                        .parameter("filter", "{\""
-                                .concat(this.propId)
-                                .concat("\":\"")
-                                .concat(transformedId)
-                                .concat("\"}"))
-                        .parameter("pagesize", "" + 1)
-                        .parameter("rep", "STANDARD"));
-
-                if (resp.getStatusCode() != HttpStatus.SC_OK) {
-                    LOGGER.warn("Wrong response finding the account with id: {}. "
-                            + "Response status: {}",
-                            transformedId,
-                            resp.getStatus());
-                    return null;
-                } else {
-                    accounts = resp.getBody();
-                }
-            } else {
-                var resp = Unirest.get(collUrl.toString())
-                        .header(getXForwardedAccountIdHeaderName().toString(),
-                                X_FORWARDED_ACCOUNT_ID)
-                        .header(getXForwardedRolesHeaderName().toString(),
-                                X_FORWARDED_ROLE)
-                        .queryString("np", true)
-                        .queryString("filter", "{\""
-                                .concat(this.propId)
-                                .concat("\":\"")
-                                .concat(transformedId)
-                                .concat("\"}"))
-                        .queryString("pagesize", 1)
-                        .queryString("rep", "STANDARD")
-                        .asString();
-
-                if (resp.getStatus() != HttpStatus.SC_OK) {
-                    LOGGER.warn("Wrong response finding the account with id: {}. "
-                            + "Response status: {}",
-                            transformedId,
-                            resp.getStatus());
-                    return null;
-                } else {
-                    accounts = resp.getBody();
-                }
-            }
-        } catch (UnirestException | IOException ex) {
-            LOGGER.warn("Error requesting {}: {}", collUrl, ex.getMessage());
-            return null;
-        }
-
-        JsonElement account;
-
-        try {
-            account = JsonPath.read(accounts, "$.[0]");
-        } catch (IllegalArgumentException | PathNotFoundException pnfe) {
-            LOGGER.warn("Cannot find account {}", accountId);
-            return null;
-        }
-
-        if (!account.isJsonObject()) {
-            LOGGER.warn("Retrived document for account {} is not an object", accountId);
-            return null;
-        }
-
-        JsonElement _password;
-
-        try {
-            _password = JsonPath.read(account, "$.".concat(this.getPropPassword()));
-        } catch (PathNotFoundException pnfe) {
-            LOGGER.warn("Cannot find pwd property '{}' for account {}", this.getPropPassword(),
-                    accountId);
-            return null;
-        }
-
-        if (!_password.isJsonPrimitive()
-                || !_password.getAsJsonPrimitive().isString()) {
-            LOGGER.warn("Pwd property of account {} is not a string", accountId);
-            return null;
-        }
-
-        JsonElement _roles;
-
-        try {
-            _roles = JsonPath.read(account, this.jsonPathRoles);
-        } catch (PathNotFoundException pnfe) {
-            LOGGER.warn("Account with id: {} does not have roles");
-            _roles = new JsonArray();
-        }
-
-        if (!_roles.isJsonArray()) {
-            LOGGER.warn("Roles property of account {} is not an array", accountId);
-            return null;
-        }
-
-        var roles = new LinkedHashSet();
-
-        _roles.getAsJsonArray().forEach(role -> {
-            if (role != null && role.isJsonPrimitive()
-                    && role.getAsJsonPrimitive().isString()) {
-                roles.add(role.getAsJsonPrimitive().getAsString());
-            } else {
-                LOGGER.warn("A role of account {} is not a string", accountId);
-            }
-        });
-
-        return new PwdCredentialAccount(transformedId,
-                _password.getAsJsonPrimitive().getAsString().toCharArray(),
-                roles);
-    }
-
-    /**
      * if client authenticates passing the real credentials, update the account
      * in the auth-token cache, otherwise the client authenticating with the
      * auth-token will not see roles updates until the cache expires (by default
@@ -760,7 +470,7 @@ public class MongoRealmAuthenticator implements Authenticator {
 
             if (_tm != null) {
                 var tm = _tm.getInstance();
-                
+
                 if (tm.get(account) != null) {
                     tm.update(account);
                 }

@@ -45,13 +45,6 @@ public class UserPwdHasher implements MongoInterceptor {
 
     private boolean enabled = false;
     
-    UserPwdHasher(String usersUri, String propNamePassword, Integer complexity) {
-        this.usersUri = usersUri;
-        this.propNamePassword = propNamePassword;
-        this.complexity = complexity;
-        this.enabled = true;
-    }
-
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
         var _mra = registry.getAuthenticator("mongoRealmAuthenticator");
@@ -71,10 +64,12 @@ public class UserPwdHasher implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var content = request.getContent();
-
-        if (content.isArray() && request.isPost()) {
+        
+        if (content == null) {
+            return;
+        } else if (content.isArray() && request.isPost()) {
             // POST collection with array of documents
-            JsonArray passwords = JsonPath.read(content,
+            JsonArray passwords = JsonPath.read(content.toString(),
                     "$.[*].".concat(this.propNamePassword));
 
             int[] iarr = {0};
@@ -96,7 +91,7 @@ public class UserPwdHasher implements MongoInterceptor {
             // PUT/PATCH document or bulk PATCH
             JsonElement plain;
             try {
-                plain = JsonPath.read(content,
+                plain = JsonPath.read(content.toString(),
                         "$.".concat(this.propNamePassword));
 
                 if (plain != null && plain.isJsonPrimitive()
