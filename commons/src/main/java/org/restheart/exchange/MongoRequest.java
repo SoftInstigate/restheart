@@ -235,7 +235,6 @@ public class MongoRequest extends BsonRequest {
                 : dbName.equalsIgnoreCase(ADMIN)
                 || dbName.equalsIgnoreCase(CONFIG)
                 || dbName.equalsIgnoreCase(LOCAL)
-                || dbName.equalsIgnoreCase(_SIZE)
                 || dbName.startsWith(SYSTEM);
     }
 
@@ -249,8 +248,7 @@ public class MongoRequest extends BsonRequest {
                 ? false
                 : collectionName.startsWith(SYSTEM)
                 || collectionName.endsWith(FS_CHUNKS_SUFFIX)
-                || collectionName.equals(META_COLLNAME)
-                || collectionName.equalsIgnoreCase(_SIZE);
+                || collectionName.equals(META_COLLNAME);
     }
 
     /**
