@@ -226,7 +226,7 @@ public class MongoClientSingleton {
                         LOGGER.error("Cannot set MongoClient to "
                                 + plugin.getClass().getName()
                                 + "." + mi.getName()
-                                + "()");
+                                + "()", t);
                     }
                 }
             }
