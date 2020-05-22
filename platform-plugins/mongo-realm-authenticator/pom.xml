@@ -13,34 +13,6 @@
     
   <build>
     <finalName>mongo-realm-authenticator</finalName>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.1.2</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/lib</outputDirectory>
-              <!-- use includeGroupIds to list all external dependencies, 
-              comma separated, to copy them to target/lib -->
-              <!-- required extra deps:
-                - java-jwt-3.8.3.jar
-                - commons-codec-1.14.jar
-                - jackson-databind-2.10.0.pr3.jar
-                - jackson-annotations-2.10.0.pr3.jar 
-                - jackson-core-2.10.0.pr3.jar
-              -->
-              <includeGroupIds>com.mashape.unirest,org.apache.httpcomponents</includeGroupIds>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
   </build>
     
   <dependencies>
@@ -49,20 +21,14 @@
       <artifactId>restheart-commons</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.restheart</groupId>
-      <artifactId>platform-utils</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.mashape.unirest</groupId>
-      <artifactId>unirest-java</artifactId>
-    </dependency>
-    <dependency>
       <groupId>de.svenkubiak</groupId>
       <artifactId>jBCrypt</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 </project>

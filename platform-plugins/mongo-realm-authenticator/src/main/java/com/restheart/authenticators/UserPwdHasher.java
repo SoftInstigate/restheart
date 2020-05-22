@@ -26,6 +26,7 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +95,7 @@ public class UserPwdHasher implements MongoInterceptor {
             return;
         } else if (content.isArray() && request.isPost()) {
             // POST collection with array of documents
-            JsonArray passwords = JsonPath.read(content.toString(),
+            JsonArray passwords = JsonPath.read(JsonUtils.toJson(content),
                     "$.[*].".concat(this.propNamePassword));
 
             int[] iarr = {0};
@@ -116,7 +117,7 @@ public class UserPwdHasher implements MongoInterceptor {
             // PUT/PATCH document or bulk PATCH
             JsonElement plain;
             try {
-                plain = JsonPath.read(content.toString(),
+                plain = JsonPath.read(JsonUtils.toJson(content),
                         "$.".concat(this.propNamePassword));
 
                 if (plain != null && plain.isJsonPrimitive()
