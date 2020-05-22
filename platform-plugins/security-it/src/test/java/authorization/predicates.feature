@@ -1,4 +1,4 @@
-Feature: test rhAuthorizer
+Feature: test mongo-acl-authorizer
 
 Background:
 * url 'http://localhost:8080'

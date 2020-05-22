@@ -10,9 +10,14 @@
  */
 package com.restheart.authenticators;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCursor;
+import static com.mongodb.client.model.Filters.eq;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.DigestCredential;
@@ -24,9 +29,11 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import org.bson.BsonDocument;
+import org.bson.Document;
 import org.mindrot.jbcrypt.BCrypt;
 import org.restheart.Configuration;
 import org.restheart.ConfigurationException;
@@ -42,7 +49,6 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.PwdCredentialAccount;
-import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,14 +65,15 @@ public class MongoRealmAuthenticator implements Authenticator {
     public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
     public static final String X_FORWARDED_ROLE = "RESTHeart";
 
-    private String usersUri;
     private String propId = "_id";
+    String usersDb;
+    String usersCollection;
     String propPassword = "password";
     private String jsonPathRoles = "$.roles";
     private Boolean bcryptHashedPassword = false;
     Integer bcryptComplexity = 12;
     private Boolean createUser = false;
-    private String createUserDocument = null;
+    private BsonDocument createUserDocument = null;
     private Boolean cacheEnabled = false;
     private Integer cacheSize = 1_000; // 1000 entries
     private Integer cacheTTL = 60 * 1_000; // 1 minute
@@ -81,22 +88,17 @@ public class MongoRealmAuthenticator implements Authenticator {
                     Cache.EXPIRE_POLICY.AFTER_READ,
                     20 * 60 * 1_000l);
 
-    private Map<String, Object> ownArgs;
     private PluginsRegistry registry;
-    private MongoDelegate delegate;
-
-    private enum MODE {
-        DIRECT, PROXY
-    };
-
-    private MODE mode;
+    private MongoClient mclient;
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void setConf(Map<String, Object> args) {
         var conf = new Configuration(args, true);
 
-        this.ownArgs = conf.getAuthenticators().get("mongoRealmAuthenticator");
+        var ownArgs = conf.getAuthenticators().get("mongoRealmAuthenticator");
 
+        this.setUsersDb(argValue(ownArgs, "users-db"));
+        this.usersCollection = argValue(ownArgs, "users-collection");
         this.cacheEnabled = argValue(ownArgs, "cache-enabled");
         this.cacheSize = argValue(ownArgs, "cache-size");
         this.cacheTTL = argValue(ownArgs, "cache-ttl");
@@ -119,11 +121,11 @@ public class MongoRealmAuthenticator implements Authenticator {
         this.bcryptComplexity = argValue(ownArgs, "bcrypt-complexity");
 
         this.createUser = argValue(ownArgs, "create-user");
-        this.createUserDocument = argValue(ownArgs, "create-user-document");
+        String _createUserDocument = argValue(ownArgs, "create-user-document");
 
         // check createUserDocument
         try {
-            JsonParser.parseString(this.createUserDocument);
+            this.createUserDocument = BsonDocument.parse(_createUserDocument);
         } catch (JsonParseException ex) {
             throw new ConfigurationException(
                     "wrong configuration file format. "
@@ -146,112 +148,39 @@ public class MongoRealmAuthenticator implements Authenticator {
         }
 
         this.jsonPathRoles = argValue(ownArgs, "json-path-roles");
-
-        try {
-            this.mode = MODE.valueOf(argValue(ownArgs, "mode"));
-        } catch (Throwable t) {
-            LOGGER.warn("Wrong mode, either 'direct' or 'proxy', assuming it as 'direct'");
-            this.mode = MODE.DIRECT;
-        }
-
-        this.usersUri = URLUtils.removeTrailingSlashes(
-                argValue(ownArgs, "users-collection-uri"));
-
-        if (mode == MODE.PROXY) {
-            var restheartBaseUrl = conf.getRestheartBaseUrl();
-
-            var dbUrl = restheartBaseUrl
-                    .resolve(restheartBaseUrl.getPath()
-                            .concat(usersUri.substring(0, usersUri.lastIndexOf("/"))));
-
-            var collUrl = restheartBaseUrl.resolve(restheartBaseUrl.getPath()
-                    .concat(usersUri));
-
-            this.delegate = new ProxyMongoDelegate(restheartBaseUrl,
-                    dbUrl,
-                    collUrl,
-                    createUserDocument,
-                    propId,
-                    propPassword,
-                    jsonPathRoles);
-
-            if (this.cacheEnabled) {
-                this.USERS_CACHE = CacheFactory.createLocalLoadingCache(
-                        this.cacheSize,
-                        this.cacheExpirePolicy,
-                        this.cacheTTL, (String key) -> {
-                            return delegate.findAccount(accountIdTrasformer(key));
-                        });
-            }
-
-            if (!delegate.checkUserCollection()) {
-                LOGGER.error("Users collection does not exist and could not be created");
-            } else if (this.createUser) {
-                LOGGER.trace("Create user option enabled");
-
-                if (delegate.countAccounts() < 1) {
-                    this.delegate.createDefaultAccount();
-                    LOGGER.info("No user found. Created default user with _id {}",
-                            JsonParser.parseString(this.createUserDocument)
-                                    .getAsJsonObject().get(this.propId));
-                } else {
-                    LOGGER.trace("Not creating default user since users exist");
-                }
-            }
-        }
     }
 
     @InjectMongoClient
     public void setMongoClient(MongoClient mclient) {
-        if (mode == MODE.DIRECT) {
-            String usersDb = argValue(ownArgs, "users-db");
-            String usersColl = argValue(ownArgs, "users-collection");
+        this.mclient = mclient;
 
-            this.delegate = new DirectMongoDelegate(mclient,
-                    usersDb,
-                    usersColl,
-                    propId, propPassword,
-                    jsonPathRoles,
-                    BsonDocument.parse(createUserDocument));
+        if (this.cacheEnabled) {
+            this.USERS_CACHE = CacheFactory.createLocalLoadingCache(
+                    this.cacheSize,
+                    this.cacheExpirePolicy,
+                    this.cacheTTL, (String key) -> {
+                        return findAccount(accountIdTrasformer(key));
+                    });
+        }
 
-            if (this.cacheEnabled) {
-                this.USERS_CACHE = CacheFactory.createLocalLoadingCache(
-                        this.cacheSize,
-                        this.cacheExpirePolicy,
-                        this.cacheTTL, (String key) -> {
-                            return delegate.findAccount(accountIdTrasformer(key));
-                        });
+        if (!checkUserCollection()) {
+            LOGGER.error("Users collection does not exist and could not be created");
+        } else if (this.createUser) {
+            LOGGER.trace("Create user option enabled");
+
+            if (countAccounts() < 1) {
+                createDefaultAccount();
+                LOGGER.info("No user found. Created default user with _id {}",
+                        this.createUserDocument.get(this.propId));
+            } else {
+                LOGGER.trace("Not creating default user since users exist");
             }
-
-            if (!delegate.checkUserCollection()) {
-                LOGGER.error("Users collection does not exist and could not be created");
-            } else if (this.createUser) {
-                LOGGER.trace("Create user option enabled");
-
-                if (delegate.countAccounts() < 1) {
-                    this.delegate.createDefaultAccount();
-                    LOGGER.info("No user found. Created default user with _id {}",
-                            JsonParser.parseString(this.createUserDocument)
-                                    .getAsJsonObject().get(this.propId));
-                } else {
-                    LOGGER.trace("Not creating default user since users exist");
-                }
-            }
-        } else {
-            LOGGER.warn("Service mongo is enabled, mode should be 'direct' but is {}", mode);
         }
     }
 
     @InjectPluginsRegistry
     public void setRegistry(PluginsRegistry registry) {
         this.registry = registry;
-
-        // add a global security predicate to deny requests
-        // to users collection, containing a filter on password property
-        // this avoids clients to potentially steal passwords
-        registry.getGlobalSecurityPredicates()
-                .add(new DenyFilterOnUserPwdPredicate(this.usersUri,
-                        this.propPassword));
     }
 
     @Override
@@ -304,13 +233,6 @@ public class MongoRealmAuthenticator implements Authenticator {
      */
     public void setBcryptComplexity(Integer bcryptComplexity) {
         this.bcryptComplexity = bcryptComplexity;
-    }
-
-    /**
-     * @return the usersUri
-     */
-    public String getUsersUri() {
-        return usersUri;
     }
 
     /**
@@ -431,8 +353,13 @@ public class MongoRealmAuthenticator implements Authenticator {
     }
 
     private PwdCredentialAccount getAccount(String id) {
+        if (this.mclient == null) {
+            LOGGER.error("Cannot find account: mongo service is not enabled.");
+            return null;
+        }
+
         if (USERS_CACHE == null) {
-            return this.delegate.findAccount(this.accountIdTrasformer(id));
+            return findAccount(this.accountIdTrasformer(id));
         } else {
             Optional<PwdCredentialAccount> _account = USERS_CACHE.getLoading(id);
 
@@ -497,5 +424,162 @@ public class MongoRealmAuthenticator implements Authenticator {
 
     public static HttpString getXForwardedRolesHeaderName() {
         return getXForwardedHeaderName("Account-Roles");
+    }
+
+    public boolean checkUserCollection() {
+        if (this.mclient == null) {
+            LOGGER.error("Cannot find account: mongo service is not enabled.");
+            return false;
+        }
+        
+        var db = mclient.getDatabase(this.getUsersDb());
+
+        MongoCursor<String> dbCollections = db
+                .listCollectionNames()
+                .iterator();
+
+        while (dbCollections.hasNext()) {
+            String dbCollection = dbCollections.next();
+
+            if (this.getUsersCollection().equals(dbCollection)) {
+                return true;
+            }
+        }
+
+        try {
+            db.createCollection(this.getUsersCollection());
+
+            return true;
+        } catch (Throwable t) {
+            LOGGER.error("Error creating users collection", t);
+            return false;
+        }
+    }
+
+    public long countAccounts() {
+        try {
+            return mclient.getDatabase(this.getUsersDb())
+                    .getCollection(this.getUsersCollection())
+                    .estimatedDocumentCount();
+        } catch (Throwable t) {
+            LOGGER.error("Error counting accounts", t);
+            return 1;
+        }
+    }
+
+    public void createDefaultAccount() {
+        if (this.mclient == null) {
+            LOGGER.error("Cannot find account: mongo service is not enabled.");
+            return;
+        }
+        
+        if (this.createUserDocument != null) {
+            try {
+                mclient.getDatabase(this.getUsersDb())
+                        .getCollection(this.getUsersCollection(), BsonDocument.class)
+                        .insertOne(this.createUserDocument);
+            } catch (Throwable t) {
+                LOGGER.error("Error creating default account", t);
+            }
+        }
+    }
+
+    public PwdCredentialAccount findAccount(String accountId) {
+        var coll = mclient
+                .getDatabase(this.getUsersDb())
+                .getCollection(this.getUsersCollection());
+
+        Document _account;
+
+        try {
+            _account = coll.find(eq(propId, accountId)).first();
+        } catch (Throwable t) {
+            LOGGER.error("Error finding account {}", propId, t);
+            return null;
+        }
+
+        if (_account == null) {
+            return null;
+        }
+
+        JsonElement account;
+
+        try {
+            account = JsonPath.read(_account.toJson(), "$");
+        } catch (IllegalArgumentException | PathNotFoundException pnfe) {
+            LOGGER.warn("Cannot find account {}", accountId);
+            return null;
+        }
+
+        if (!account.isJsonObject()) {
+            LOGGER.warn("Retrived document for account {} is not an object", accountId);
+            return null;
+        }
+
+        JsonElement _password;
+
+        try {
+            _password = JsonPath.read(account, "$.".concat(this.propPassword));
+        } catch (PathNotFoundException pnfe) {
+            LOGGER.warn("Cannot find pwd property '{}' for account {}", this.propPassword,
+                    accountId);
+            return null;
+        }
+
+        if (!_password.isJsonPrimitive()
+                || !_password.getAsJsonPrimitive().isString()) {
+            LOGGER.warn("Pwd property of account {} is not a string", accountId);
+            return null;
+        }
+
+        JsonElement _roles;
+
+        try {
+            _roles = JsonPath.read(account, this.jsonPathRoles);
+        } catch (PathNotFoundException pnfe) {
+            LOGGER.warn("Account with id: {} does not have roles");
+            _roles = new JsonArray();
+        }
+
+        if (!_roles.isJsonArray()) {
+            LOGGER.warn("Roles property of account {} is not an array", accountId);
+            return null;
+        }
+
+        var roles = new LinkedHashSet();
+
+        _roles.getAsJsonArray().forEach(role -> {
+            if (role != null && role.isJsonPrimitive()
+                    && role.getAsJsonPrimitive().isString()) {
+                roles.add(role.getAsJsonPrimitive().getAsString());
+            } else {
+                LOGGER.warn("A role of account {} is not a string", accountId);
+            }
+        });
+
+        return new PwdCredentialAccount(accountId,
+                _password.getAsJsonPrimitive().getAsString().toCharArray(),
+                roles);
+    }
+
+    /**
+     * @return the usersDb
+     */
+    public String getUsersDb() {
+        return usersDb;
+    }
+
+    /**
+     * @param usersDb the usersDb to set
+     */
+    public void setUsersDb(String usersDb) {
+        this.usersDb = usersDb;
+    }
+
+    /**
+     * @return the usersCollection
+     */
+    public String getUsersCollection() {
+        return usersCollection;
     }
 }

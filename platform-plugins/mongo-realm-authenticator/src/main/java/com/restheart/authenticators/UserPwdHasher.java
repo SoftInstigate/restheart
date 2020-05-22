@@ -16,14 +16,16 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import org.bson.BsonString;
 import org.mindrot.jbcrypt.BCrypt;
+import org.restheart.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.utils.URLUtils;
+import org.restheart.plugins.security.Authenticator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,32 +41,55 @@ public class UserPwdHasher implements MongoInterceptor {
 
     static final Logger LOGGER = LoggerFactory.getLogger(UserPwdHasher.class);
 
-    private String usersUri;
+    private String usersDb;
+    private String usersCollection;
     private String propNamePassword;
     private Integer complexity;
 
     private boolean enabled = false;
-    
+
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
-        var _mra = registry.getAuthenticator("mongoRealmAuthenticator");
+        PluginRecord<Authenticator> _mra;
+        
+        try {
+            _mra = registry.getAuthenticator("mongoRealmAuthenticator");
+        } catch (ConfigurationException ce) {
+            enabled = false;
+            return;
+        }
 
         if (_mra == null || !_mra.isEnabled()) {
             enabled = false;
         } else {
             var rhAuth = (MongoRealmAuthenticator) _mra.getInstance();
-            
-            this.usersUri = rhAuth.getUsersUri();
+
+            this.usersDb = rhAuth.getUsersDb();
+            this.usersCollection = rhAuth.getUsersCollection();
             this.propNamePassword = rhAuth.getPropPassword();
             this.complexity = rhAuth.getBcryptComplexity();
-            enabled = true;
-        }   
+
+            if (usersDb == null
+                    || usersCollection == null
+                    || propNamePassword == null
+                    || complexity == null) {
+                LOGGER.error("Wrong configuration of mongoRealmAuthenticator! "
+                        + "Password field of users documents "
+                        + "is not automatically entcrypted: "
+                        + "{usersDb: {}, usersCollection: {}, "
+                        + "propNamePassword: {}, complexity: {}})",
+                        usersDb, usersCollection, propNamePassword, complexity);
+                enabled = false;
+            } else {
+                enabled = true;
+            }
+        }
     }
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var content = request.getContent();
-        
+
         if (content == null) {
             return;
         } else if (content.isArray() && request.isPost()) {
@@ -111,17 +136,11 @@ public class UserPwdHasher implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        var requestPath = URLUtils.removeTrailingSlashes(
-                request.getPath());
-
         return enabled
-                && (request.isHandledBy("mongo")
-                && request.isPost()
+                && request.isHandledBy("mongo")
+                && request.isWriteDocument()
                 && request.isContentTypeJson()
-                && (requestPath.equals(usersUri)
-                || requestPath.equals(usersUri.concat("/"))))
-                || ((request.isPatch() || request.isPut())
-                && (requestPath.startsWith(usersUri.concat("/"))
-                && requestPath.length() > usersUri.concat("/").length()));
+                && this.usersDb.equalsIgnoreCase(request.getDBName())
+                && this.usersCollection.equalsIgnoreCase(request.getCollectionName());
     }
 }
