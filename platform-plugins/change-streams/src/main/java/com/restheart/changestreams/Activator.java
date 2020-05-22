@@ -33,8 +33,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@RegisterPlugin(name = "txnsActivator",
-        description = "activates support for transactions",
+@RegisterPlugin(name = "changeStreamActivator",
+        description = "activates support for change streams",
         priority = Integer.MIN_VALUE + 1)
 public class Activator implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(Activator.class);
