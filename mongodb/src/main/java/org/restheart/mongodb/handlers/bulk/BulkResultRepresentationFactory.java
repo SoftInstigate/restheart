@@ -38,7 +38,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-class BulkResultRepresentationFactory {
+public class BulkResultRepresentationFactory {
 
     /**
      *
@@ -48,13 +48,11 @@ class BulkResultRepresentationFactory {
 
     /**
      *
-     * @param exchange
+     * @param requestPath
      * @param result
      * @return
-     * @throws IllegalQueryParamenterException
      */
-    public BsonDocument getRepresentation(String requestPath, BulkOperationResult result)
-            throws IllegalQueryParamenterException {
+    public BsonDocument getRepresentation(String requestPath, BulkOperationResult result) {
         var rep = new BsonDocument();
 
         addBulkResult(result, requestPath, rep);
@@ -64,13 +62,12 @@ class BulkResultRepresentationFactory {
 
     /**
      *
-     * @param exchange
+     * @param requestPath
      * @param mbwe
      * @return
-     * @throws IllegalQueryParamenterException
      */
-    public BsonDocument getRepresentation(String requestPath, MongoBulkWriteException mbwe)
-            throws IllegalQueryParamenterException {
+    public BsonDocument getRepresentation(String requestPath,
+            MongoBulkWriteException mbwe) {
 
         var rep = new BsonDocument();
 
@@ -103,7 +100,7 @@ class BulkResultRepresentationFactory {
                                                     requestPath,
                                                     update.getId())));
                         });
-                
+
                 rep.put("links", links);
             }
 
@@ -138,7 +135,7 @@ class BulkResultRepresentationFactory {
                                                     requestPath,
                                                     update.getId())));
                         });
-                
+
                 rep.put("links", links);
             }
 
@@ -156,43 +153,53 @@ class BulkResultRepresentationFactory {
     private void addWriteErrors(
             final List<BulkWriteError> wes,
             final BsonDocument rep) {
+        var errors = new BsonArray();
+
         wes.stream().forEach(error -> {
+            var errorDoc = new BsonDocument();
             // error 11000 is duplicate key error
             // happens when the _id and a filter are specified,
             // the document exists but does not match the filter
             if (error.getCode() == 11000
                     && error.getMessage().contains("_id_ dup key")) {
-                rep.put("index",
+                errorDoc.put("index",
                         new BsonInt32(error.getIndex()));
-                rep.put("httpStatus",
+                errorDoc.put("httpStatus",
                         new BsonInt32(
                                 ResponseHelper.getHttpStatusFromErrorCode(
                                         error.getCode())));
             } else if (error.getCode() == 2) {
-                rep.put("index",
+                errorDoc.put("index",
                         new BsonInt32(error.getIndex()));
-                rep.put("httpStatus",
+                errorDoc.put("httpStatus",
                         new BsonInt32(
                                 ResponseHelper.getHttpStatusFromErrorCode(
                                         error.getCode())));
-                rep.put("message",
+                errorDoc.put("message",
                         new BsonString(
                                 ResponseHelper.getMessageFromErrorCode(
                                         error.getCode())
                                 + ": "
                                 + error.getMessage()));
             } else {
-                rep.put("index",
+                errorDoc.put("index",
                         new BsonInt32(error.getIndex()));
-                rep.put("mongodbErrorCode",
+                errorDoc.put("mongodbErrorCode",
                         new BsonInt32(error.getCode()));
-                rep.put("httpStatus",
+                errorDoc.put("httpStatus",
                         new BsonInt32(HttpStatus.SC_NOT_FOUND));
-                rep.put("message",
+                errorDoc.put("message",
                         new BsonString(
                                 ResponseHelper.getMessageFromErrorCode(
                                         error.getCode())));
             }
+
+            errors.add(errorDoc);
+
         });
+
+        if (errors.size() > 0) {
+            rep.put("errors", errors);
+        }
     }
 }

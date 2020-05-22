@@ -26,7 +26,10 @@ import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.MongoTimeoutException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonDocument;
+import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -80,10 +83,12 @@ public class ErrorHandler implements HttpHandler {
                     HttpStatus.SC_REQUEST_TIMEOUT,
                     "Operation exceeded time limit");
         } catch (MongoBulkWriteException mce) {
-            response.setInError(
-                    HttpStatus.SC_MULTI_STATUS,
-                    "Operation exceeded time limit",
-                    mce);
+            var error = new BulkResultRepresentationFactory()
+                    .getRepresentation(MongoRequest.of(exchange).getPath(),
+                            mce);
+
+            response.setStatusCode(HttpStatus.SC_MULTI_STATUS);
+            response.setContent(error);
         } catch (MongoException mce) {
             int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
 
@@ -109,5 +114,13 @@ public class ErrorHandler implements HttpHandler {
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Error handling the request, see log for more information", t);
         }
+    }
+
+    private BsonDocument getBulkWriteError(MongoBulkWriteException mce,
+            String requestPath) {
+        var bprf = new BulkResultRepresentationFactory();
+
+        return bprf.getRepresentation(requestPath, mce);
+
     }
 }
