@@ -30,7 +30,6 @@
 -   [Build it yourself](#Build-it-yourself)
 -   [User guide](#user-guide)
 -   [Book a chat](#book-a-chat)
--   [Commercial Editions](#commercial-editions)
 
 <p align="center">
    <a href="https://restheart.org">
@@ -294,20 +293,6 @@ Please open a issue [here](https://github.com/SoftInstigate/restheart/issues) if
 ## Book a chat
 
 If you have any question about RESTHeart and want to talk directly with the core development team, you can also [book a free video chat](https://calendly.com/restheart/restheart-free-chat) with us.
-
-## Commercial Editions
-
-RESTHeart v5 is a open source project distributed under a [open-core model](https://en.wikipedia.org/wiki/Open-core_model). It means that its main features are free to use under the OSI-approved open source licenses, but some enterprise-level features are distributed with a business-friendly commercial license. We hope this model will allow us to finance the continuous development and improvement of this product, which has become too large to be handled like a side project.
-
-This is a list of commercial-only features:
-
--   [Transactions](https://restheart.org/docs/transactions/)
--   [Change Streams](https://restheart.org/docs/change-streams)
--   [JWT Authentication](https://restheart.org/docs/security/authentication/#jwt-authentication)
--   [RESTHeart Authenticator](https://restheart.org/docs/security/authentication/#restheart-authenticator) with users defined in the database
--   [RESTHeart Authorizer](https://restheart.org/docs/security/authorization/#restheart-authorizer) with ACL defined in the database and role-based data filter capabilities
-
-Check the [editions matrix](https://restheart.org/editions) for more information.
 
 ---
 
