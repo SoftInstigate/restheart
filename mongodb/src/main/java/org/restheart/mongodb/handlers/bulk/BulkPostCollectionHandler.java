@@ -123,7 +123,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
 
         response.setStatusCode(result.getHttpCode());
 
-        BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
+        var bprf = new BulkResultRepresentationFactory();
 
         response.setContent(bprf.getRepresentation(request.getPath(), result));
 
