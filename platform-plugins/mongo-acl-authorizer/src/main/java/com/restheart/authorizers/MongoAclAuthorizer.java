@@ -13,17 +13,12 @@ package com.restheart.authorizers;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import static com.google.common.collect.Sets.newHashSet;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
-import com.mongodb.client.MongoClient;
-import com.restheart.net.Client;
+import com.mongodb.MongoClient;
+import static com.mongodb.client.model.Filters.eq;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
-import io.undertow.util.HttpString;
-import java.io.IOException;
-import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,20 +28,17 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.restheart.Configuration;
+import org.bson.BsonDocument;
 import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.exchange.Request;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +51,7 @@ import org.slf4j.LoggerFactory;
 public class MongoAclAuthorizer implements Authorizer {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(MongoAclAuthorizer.class);
-    
+
     public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
     public static final String X_FORWARDED_ROLE = "RESTHeart";
 
@@ -71,48 +63,36 @@ public class MongoAclAuthorizer implements Authorizer {
 
     public static final String $UNAUTHENTICATED = "$unauthenticated";
 
-    private URI restheartBaseUrl = null;
-    private URI aclUrl = null;
-
-    private String aclUri = null;
+    String aclDb;
+    String aclCollection;
     private String rootRole = null;
-    private Boolean CACHE_ENABLED = false;
-    private Long CACHE_SIZE = 1_000l; // 1000 entries
-    private Long CACHE_TTL = 10 * 1_000l; // 10 seconds
-    private Cache.EXPIRE_POLICY CACHE_EXPIRE_POLICY
-            = Cache.EXPIRE_POLICY.AFTER_WRITE;
+    private boolean cacheEnabled = false;
+    private Integer cacheSize = 1_000; // 1000 entries
+    private Integer cacheTTL = 60 * 1_000; // 1 minute
+    private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
 
     private LoadingCache<String, LinkedHashSet<FilterPredicate>> acl = null;
 
     private MongoClient mclient;
-    private PluginsRegistry registry;
 
-    @InjectConfiguration(scope = ConfigurationScope.ALL)
+    @InjectConfiguration
     public void setConf(Map<String, Object> args) {
-        this.aclUri = argValue(args, "acl-uri");
+        this.aclDb = argValue(args, "acl-db");
+        this.aclCollection = argValue(args, "acl-collection");
         this.rootRole = argValue(args, "root-role");
 
-        var conf = new Configuration(args, true);
-
-        this.restheartBaseUrl = conf.getRestheartBaseUrl();
-
-        this.aclUrl = this.restheartBaseUrl.resolve(this.restheartBaseUrl.getPath()
-                .concat(aclUri));
-
         if (args != null && args.containsKey("cache-enabled")) {
-            this.CACHE_ENABLED = argValue(args, "cache-enabled");
+            this.cacheEnabled = argValue(args, "cache-enabled");
 
-            if (this.CACHE_ENABLED) {
-                Number _size = argValue(args, "cache-size");
-                Number _ttl = argValue(args, "cache-ttl");
-                this.CACHE_SIZE = _size.longValue();
-                this.CACHE_TTL = _ttl.longValue();
+            if (this.cacheEnabled) {
+                this.cacheSize = argValue(args, "cache-size");
+                this.cacheTTL = argValue(args, "cache-ttl");
 
                 String _cacheExpirePolicy = argValue(args, "cache-expire-policy");
 
                 if (_cacheExpirePolicy != null) {
                     try {
-                        this.CACHE_EXPIRE_POLICY = Cache.EXPIRE_POLICY
+                        this.cacheExpirePolicy = Cache.EXPIRE_POLICY
                                 .valueOf((String) _cacheExpirePolicy);
                     } catch (IllegalArgumentException iae) {
                         throw new ConfigurationException(
@@ -121,17 +101,20 @@ public class MongoAclAuthorizer implements Authorizer {
                                 + Arrays.toString(Cache.EXPIRE_POLICY.values()));
                     }
                 }
+
+                this.acl = CacheFactory.createLocalLoadingCache(
+                        this.cacheSize,
+                        this.cacheExpirePolicy,
+                        this.cacheTTL, (String role) -> {
+                            return this.findRolePredicates(role);
+                        });
             }
         }
+    }
 
-        if (this.CACHE_ENABLED) {
-            this.acl = CacheFactory.createLocalLoadingCache(
-                    CACHE_SIZE,
-                    CACHE_EXPIRE_POLICY,
-                    CACHE_TTL, (String role) -> {
-                        return this.findRolePredicates(role);
-                    });
-        }
+    @InjectMongoClient
+    public void setMongoClient(MongoClient mclient) {
+        this.mclient = mclient;
     }
 
     /**
@@ -148,12 +131,10 @@ public class MongoAclAuthorizer implements Authorizer {
         var exchange = request.getExchange();
 
         if (this.rootRole != null
-                && exchange
-                        .getSecurityContext() != null
-                && exchange
-                        .getSecurityContext().getAuthenticatedAccount() != null
-                && exchange
-                        .getSecurityContext()
+                && exchange.getSecurityContext() != null
+                && exchange.getSecurityContext()
+                        .getAuthenticatedAccount() != null
+                && exchange.getSecurityContext()
                         .getAuthenticatedAccount()
                         .getRoles().contains(this.rootRole)) {
             LOGGER.debug("allow request for root user {}", exchange
@@ -286,7 +267,7 @@ public class MongoAclAuthorizer implements Authorizer {
      * @return the acl
      */
     public LinkedHashSet<FilterPredicate> getRoleFilterPredicates(String role) {
-        if (CACHE_ENABLED) {
+        if (this.cacheEnabled) {
             var _roleFilterPredicates = this.acl.getLoading(role);
 
             if (_roleFilterPredicates != null && _roleFilterPredicates.isPresent()) {
@@ -312,108 +293,45 @@ public class MongoAclAuthorizer implements Authorizer {
         }
     }
 
-    private static String PROJECTION = "{\"_id\":1,\"roles\":1,\"predicate\":1,\"writeFilter\":1,\"readFilter\":1,\"priority\":1}";
-    private static String SORT = "{\"priority\":-1,\"_id\":-1}";
+    private static final BsonDocument PROJECTION = BsonDocument.parse("{\"_id\":1,\"roles\":1,\"predicate\":1,\"writeFilter\":1,\"readFilter\":1,\"priority\":1}");
+    private static final BsonDocument SORT = BsonDocument.parse("{\"priority\":-1,\"_id\":-1}");
 
     private LinkedHashSet<FilterPredicate> findRolePredicates(final String role) {
-        var ajp = "ajp".equalsIgnoreCase(restheartBaseUrl.getScheme());
+        if (this.mclient == null) {
+            LOGGER.error("Cannot find acl: mongo service is not enabled.");
+            return null;
+        } else {
+            var predicates = this.mclient.getDatabase(this.aclDb)
+                    .getCollection(this.aclCollection, BsonDocument.class)
+                    .find(eq("roles", role))
+                    .projection(PROJECTION)
+                    .sort(SORT);
 
-        String _acl;
-
-        try {
-            if (ajp) {
-                var resp = Client.getInstance().execute(new com.restheart.net.Request(
-                        com.restheart.net.Request.METHOD.GET, aclUrl)
-                        .header(getXForwardedAccountIdHeaderName().toString(),
-                                X_FORWARDED_ACCOUNT_ID)
-                        .header(getXForwardedRolesHeaderName().toString(),
-                                X_FORWARDED_ROLE)
-                        .parameter("filter", "{\""
-                                .concat("roles\":\"")
-                                .concat(role)
-                                .concat("\"}"))
-                        .parameter("sort", SORT)
-                        .parameter("keys", PROJECTION)
-                        .parameter("rep", "STANDARD"));
-
-                if (resp.getStatusCode() != HttpStatus.SC_OK) {
-                    LOGGER.warn("Wrong response finding acl for role: {}. "
-                            + "Response status: {}",
-                            role,
-                            resp.getStatus());
-                    return null;
-                } else {
-                    _acl = resp.getBody();
-                }
+            if (predicates == null) {
+                return new LinkedHashSet<>();
             } else {
-                var resp = Unirest.get(aclUrl.toString())
-                        .header(getXForwardedAccountIdHeaderName().toString(),
-                                X_FORWARDED_ACCOUNT_ID)
-                        .header(getXForwardedRolesHeaderName().toString(),
-                                X_FORWARDED_ROLE)
-                        .queryString("filter", "{\""
-                                .concat("roles\":\"")
-                                .concat(role)
-                                .concat("\"}"))
-                        .queryString("sort", SORT)
-                        .queryString("keys", PROJECTION)
-                        .queryString("rep", "STANDARD")
-                        .asString();
+                LinkedHashSet<FilterPredicate> ret = Sets.newLinkedHashSet();
 
-                if (resp.getStatus() != HttpStatus.SC_OK) {
-                    LOGGER.warn("Wrong response finding the acl for role: {}. "
-                            + "Response status: {}",
-                            role,
-                            resp.getStatus());
-                    return null;
-                } else {
-                    _acl = resp.getBody();
-                }
+                StreamSupport.stream(predicates.spliterator(), true)
+                        .filter(predicateElem -> predicateElem.isDocument())
+                        .map(predicateElem -> predicateElem.asDocument())
+                        .filter(predicateDocument -> {
+                            // filter out illegal predicates
+                            try {
+                                new FilterPredicate(predicateDocument);
+                                return true;
+                            } catch (IllegalArgumentException iae) {
+                                LOGGER.warn("invalid predicate _id={}", predicateDocument.get("_id"));
+                                return false;
+                            }
+                        })
+                        .map(predicateDocument -> new FilterPredicate(predicateDocument))
+                        .forEachOrdered(p -> {
+                            ret.add(p);
+                        });
+
+                return ret;
             }
-        } catch (UnirestException | IOException ex) {
-            LOGGER.warn("Error requesting {}: {}", aclUrl, ex.getMessage());
-            return null;
         }
-
-        var acl = JsonUtils.parse(_acl);
-
-        if (!acl.isArray()) {
-            LOGGER.warn("Response body is not a array", role);
-            return null;
-        }
-
-        LinkedHashSet<FilterPredicate> ret = Sets.newLinkedHashSet();
-
-        StreamSupport.stream(acl.asArray().spliterator(), true)
-                .filter(predicateElem -> predicateElem.isDocument())
-                .map(predicateElem -> predicateElem.asDocument())
-                .filter(predicateDocument -> {
-                    // filter out illegal predicates
-                    try {
-                        new FilterPredicate(predicateDocument);
-                        return true;
-                    } catch (IllegalArgumentException iae) {
-                        LOGGER.warn("invalid predicate _id={}", predicateDocument.get("_id"));
-                        return false;
-                    }
-                })
-                .map(predicateDocument -> new FilterPredicate(predicateDocument))
-                .forEachOrdered(p -> {
-                    ret.add(p);
-                });
-
-        return ret;
-    }
-    
-    public static HttpString getXForwardedHeaderName(String suffix) {
-        return HttpString.tryFromString("X-Forwarded-".concat(suffix));
-    }
-
-    public static HttpString getXForwardedAccountIdHeaderName() {
-        return getXForwardedHeaderName("Account-Id");
-    }
-
-    public static HttpString getXForwardedRolesHeaderName() {
-        return getXForwardedHeaderName("Account-Roles");
     }
 }

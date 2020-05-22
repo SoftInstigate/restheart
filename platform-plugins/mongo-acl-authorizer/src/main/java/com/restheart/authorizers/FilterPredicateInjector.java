@@ -10,8 +10,7 @@
  */
 package com.restheart.authorizers;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.AttachmentKey;
+import java.util.ArrayDeque;
 import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -27,9 +26,6 @@ import org.slf4j.LoggerFactory;
         description = "inject the filter set by ACL into the request",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 public class FilterPredicateInjector implements MongoInterceptor {
-    public static final AttachmentKey<Boolean> FILTER_ADDED
-            = AttachmentKey.create(Boolean.class);
-
     private static final Logger LOGGER = LoggerFactory
             .getLogger(FilterPredicateInjector.class);
 
@@ -37,12 +33,17 @@ public class FilterPredicateInjector implements MongoInterceptor {
 
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
-        var _maa = registry.getAuthenticator("mongoAclAuthorizer");
+        var __maa = registry.getAuthorizers()
+                .stream()
+                .filter(a -> "mongoAclAuthorizer".equals(a.getName()))
+                .findFirst();
 
-        if (_maa == null || !_maa.isEnabled()) {
+        if (__maa == null || !__maa.isPresent()) {
             enabled = false;
-        } else {
+        } else if (__maa.get().isEnabled()) {
             enabled = true;
+        } else {
+            enabled = false;
         }
     }
 
@@ -52,18 +53,16 @@ public class FilterPredicateInjector implements MongoInterceptor {
         var predicate = FilterPredicate.from(exchange);
 
         if (request.isGet()
-                && predicate != null
                 && predicate.getReadFilter() != null) {
             LOGGER.debug("read filter: {}", predicate.getReadFilter());
-            addFilter(exchange, predicate.getReadFilter());
+            addFilter(request, predicate.getReadFilter());
         } else if ((request.isPatch()
                 || request.isPut()
                 || request.isPost()
                 || request.isDelete())
-                && predicate != null
                 && predicate.getWriteFilter() != null) {
             LOGGER.debug("write filter to add: {}", predicate.getWriteFilter());
-            addFilter(exchange, predicate.getWriteFilter());
+            addFilter(request, predicate.getWriteFilter());
         } else {
             LOGGER.trace("predicate specifies no filter");
         }
@@ -73,19 +72,23 @@ public class FilterPredicateInjector implements MongoInterceptor {
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return enabled
                 && request.isHandledBy("mongo")
-                && request.getExchange().getAttachment(FILTER_ADDED) == null;
+                && FilterPredicate.from(request.getExchange()) != null;
     }
 
-    private void addFilter(final HttpServerExchange exchange, final BsonDocument filter) {
+    private void addFilter(final MongoRequest request, final BsonDocument filter) {
         if (filter == null) {
             return;
         }
 
         // this resolve the filter against the current exchange
         // eg {'username':'%u'} => {'username':'uji'}
-        var resolvedFilter = FilterPredicate.interpolateFilterVars(exchange, filter);
+        var resolvedFilter = FilterPredicate
+                .interpolateFilterVars(request.getExchange(), filter);
 
-        exchange.addQueryParam("filter", resolvedFilter.toString());
-        exchange.putAttachment(FILTER_ADDED, true);
+        if (request.getFilter() == null) {
+            request.setFilter(new ArrayDeque<>());
+        }
+
+        request.getFilter().add(resolvedFilter.toString());
     }
 }

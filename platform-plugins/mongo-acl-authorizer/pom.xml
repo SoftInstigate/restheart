@@ -19,13 +19,5 @@
       <groupId>org.restheart</groupId>
       <artifactId>restheart-commons</artifactId>
     </dependency>
-    <dependency>
-      <groupId>com.restheart</groupId>
-      <artifactId>platform-utils</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.mashape.unirest</groupId>
-      <artifactId>unirest-java</artifactId>
-    </dependency>
   </dependencies>
 </project>
