@@ -61,27 +61,29 @@ jobs:
                   GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
                   GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-            - name: Get the tag
+            - name: Get the version
               id: vars
-              run: echo "::set-output name=TAG::$(echo ${GITHUB_REF:10})"
+              run: |
+                echo "::set-output name=VERSION::$(echo ${GITHUB_REF:10})"
+                echo "VERSION=${{steps.vars.outputs.VERSION}}"
 
             - name: Build default Docker image
-              #if: ${{ startsWith(github.ref, 'refs/tags/') }}
+              if: ${{ startsWith(github.ref, 'refs/tags/') }}
               run: |
                   echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-                  docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.TAG}} ./core/.
+                  docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}} ./core/.
 
             - name: Push default Docker image
               if: ${{ startsWith(github.ref, 'refs/tags/') }}
               run: |
-                  docker tag softinstigate/restheart:${{steps.vars.outputs.TAG}} softinstigate/restheart:latest
-                  docker push softinstigate/restheart:${{steps.vars.outputs.TAG}}
+                  docker tag softinstigate/restheart:${{steps.vars.outputs.VERSION}} softinstigate/restheart:latest
+                  docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}
                   docker push softinstigate/restheart:latest
 
             - name: Build and push distroless Docker image
               if: ${{ startsWith(github.ref, 'refs/tags/') }}
               run: |
-                  docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.TAG}}-distroless ./core/.
-                  docker tag softinstigate/restheart:${{steps.vars.outputs.TAG}}-distroless softinstigate/restheart:distroless
-                  docker push softinstigate/restheart:${{steps.vars.outputs.TAG}}-distroless
+                  docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless ./core/.
+                  docker tag softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless softinstigate/restheart:distroless
+                  docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
                   docker push softinstigate/restheart:distroless
