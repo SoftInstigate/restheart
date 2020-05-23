@@ -61,12 +61,14 @@ jobs:
                   GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
                   GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-            - name: Build default Docker image
-              if: ${{ startsWith(github.ref, 'refs/tags/') }}
+            - name: Get the tag
               id: vars
+              run: echo "::set-output name=TAG::$(echo ${GITHUB_REF:10})"
+
+            - name: Build default Docker image
+              #if: ${{ startsWith(github.ref, 'refs/tags/') }}
               run: |
                   echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-                  echo ::set-output name=TAG::$(echo ${GITHUB_REF:10})
                   docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.TAG}} ./core/.
 
             - name: Push default Docker image
