@@ -1,12 +1,22 @@
-/*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
+/*-
+ * ========================LICENSE_START=================================
+ * restheart-mongodb
+ * %%
+ * Copyright (C) 2014 - 2020 SoftInstigate
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * =========================LICENSE_END==================================
  */
 package org.restheart.mongodb.db.sessions;
 
@@ -15,18 +25,12 @@ import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
-import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.IN;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import static org.bson.assertions.Assertions.notNull;
 import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 import static org.restheart.exchange.ExchangeKeys.TXNID_KEY;
-import org.restheart.mongodb.db.sessions.ClientSessionFactory;
-import org.restheart.mongodb.db.sessions.ClientSessionImpl;
-import org.restheart.mongodb.db.sessions.ServerSessionImpl;
-import org.restheart.mongodb.db.sessions.SessionsUtils;
-import org.restheart.mongodb.db.sessions.Sid;
-import org.restheart.mongodb.db.sessions.SimpleServerSessionPool;
+import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.IN;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
