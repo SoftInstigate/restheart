@@ -2,6 +2,7 @@
 Feature: Test Change Streams
 
 Background:
+* def adminAuthHeader = 'Basic YWRtaW46c2VjcmV0'
 * url 'http://localhost:8080'
 * def db = '/test-change-streams'
 * def coll = db + '/coll'
