@@ -8,7 +8,7 @@
 .history
 
 mongodb_*
-/target/
+platform-plugins/target/
 /dist/
 /template/etc/*
 /restheart-platform-utils/target/
@@ -19,3 +19,9 @@ mongodb_*
 /proxy-connector/target/
 /txns/target/
 /change-streams/target/
+/platform-plugins/change-streams/target/
+/platform-plugins/jwt-auth-mechanism/target/
+/platform-plugins/mongo-acl-authorizer/target/
+/platform-plugins/mongo-realm-authenticator/target/
+/platform-plugins/platform-utils/target/
+/platform-plugins/txns/target/
