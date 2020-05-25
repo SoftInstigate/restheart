@@ -48,9 +48,7 @@ public class TxnsActivator implements Initializer {
             LogUtils.boxedWarn(LOGGER,
                     "MongoDB is a standalone instance.",
                     "",
-                    "Transactions require a Replica Set.",
-                    "",
-                    "More information at https://restheart.org/docs/setup/");
+                    "Transactions require a Replica Set.");
         } else {
             enableTxns();
         }

@@ -29,6 +29,7 @@ import org.bson.BsonDocument;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class ServerSessionImpl implements ServerSession {
+    
     interface Clock {
         long millis();
     }
@@ -40,6 +41,7 @@ public class ServerSessionImpl implements ServerSession {
         }
     };
 
+    private boolean dirty = false;
     private final BsonDocument identifier;
     private long transactionNumber = 0;
     private volatile long lastUsedAtMillis = clock.millis();
@@ -64,6 +66,16 @@ public class ServerSessionImpl implements ServerSession {
     @Override
     public long getTransactionNumber() {
         return transactionNumber;
+    }
+    
+    @Override
+    public void markDirty() {
+        this.dirty = true;
+    }
+
+    @Override
+    public boolean isMarkedDirty() {
+        return this.dirty;
     }
 
     /**

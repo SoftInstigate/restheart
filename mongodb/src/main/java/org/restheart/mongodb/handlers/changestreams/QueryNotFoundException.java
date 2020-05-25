@@ -8,19 +8,19 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.changestreams.handlers;
+package org.restheart.mongodb.handlers.changestreams;
 
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class QueryVariableNotBoundException extends Exception {
+public class QueryNotFoundException extends Exception {
 
     /**
      *
      */
-    public QueryVariableNotBoundException() {
+    public QueryNotFoundException() {
         super();
     }
 
@@ -28,7 +28,7 @@ public class QueryVariableNotBoundException extends Exception {
      *
      * @param message
      */
-    public QueryVariableNotBoundException(String message) {
+    public QueryNotFoundException(String message) {
         super(message);
     }
 
@@ -37,7 +37,7 @@ public class QueryVariableNotBoundException extends Exception {
      * @param message
      * @param cause
      */
-    public QueryVariableNotBoundException(String message, Throwable cause) {
+    public QueryNotFoundException(String message, Throwable cause) {
         super(message, cause);
     }
 }

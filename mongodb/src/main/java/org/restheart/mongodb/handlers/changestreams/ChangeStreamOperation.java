@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.changestreams.handlers;
+package org.restheart.mongodb.handlers.changestreams;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -162,7 +162,7 @@ public class ChangeStreamOperation {
      * @param vars RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables
      * @throws org.restheart.representation.InvalidMetadataException
-     * @throws com.restheart.changestreams.handlers.QueryVariableNotBoundException
+     * @throws org.restheart.mongodb.handlers.changestreams.QueryVariableNotBoundException
      */
     public List<BsonDocument> getResolvedStagesAsList(BsonDocument vars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
@@ -187,7 +187,7 @@ public class ChangeStreamOperation {
      * @return the json object where the variables ({"_$var": "var") are
      * replaced with the values defined in the avars URL query parameter
      * @throws org.restheart.representation.InvalidMetadataException
-     * @throws com.restheart.changestreams.handlers.QueryVariableNotBoundException
+     * @throws org.restheart.mongodb.handlers.changestreams.QueryVariableNotBoundException
      */
     protected BsonValue bindAggregationVariables(
             BsonValue obj,

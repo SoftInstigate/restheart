@@ -56,6 +56,7 @@ public class SessionsUtils {
 
         DELEGATE = new MongoClientDelegate(
                 getCluster(),
+                null,
                 credentialsList,
                 MCLIENT,
                 null);

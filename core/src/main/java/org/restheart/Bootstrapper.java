@@ -706,7 +706,9 @@ public class Bootstrapper {
         }
         TMP_EXTRACTED_FILES.keySet().forEach(k -> {
             try {
-                ResourcesExtractor.deleteTempDir(k, TMP_EXTRACTED_FILES.get(k));
+                ResourcesExtractor.deleteTempDir(Bootstrapper.class.getName(), 
+                        k, 
+                        TMP_EXTRACTED_FILES.get(k));
             } catch (URISyntaxException | IOException ex) {
                 LOGGER.error("Error cleaning up temporary directory {}",
                         TMP_EXTRACTED_FILES.get(k).toString(), ex);
@@ -1307,9 +1309,11 @@ public class Bootstrapper {
                         }
 
                         try {
-                            file = ResourcesExtractor.extract(path);
+                            file = ResourcesExtractor.extract(Bootstrapper.class.getName(), 
+                                    path);
 
-                            if (ResourcesExtractor.isResourceInJar(path)) {
+                            if (ResourcesExtractor.isResourceInJar(Bootstrapper.class.getName(), 
+                                    path)) {
                                 TMP_EXTRACTED_FILES.put(path, file);
                                 LOGGER.info("Embedded static resources {} extracted in {}", path, file.toString());
                             }

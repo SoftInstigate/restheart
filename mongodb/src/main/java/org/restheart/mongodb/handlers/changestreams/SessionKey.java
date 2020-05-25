@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.changestreams.handlers;
+package org.restheart.mongodb.handlers.changestreams;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.websockets.spi.WebSocketHttpExchange;

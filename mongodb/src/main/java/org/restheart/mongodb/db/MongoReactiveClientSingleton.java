@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.changestreams.db;
+package org.restheart.mongodb.db;
 
 import com.mongodb.MongoClientURI;
 import com.mongodb.reactivestreams.client.MongoClient;
@@ -22,13 +22,13 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class MongoDBReactiveClientSingleton {
+public class MongoReactiveClientSingleton {
 
     private static boolean initialized = false;
 
     private static MongoClientURI mongoUri;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MongoDBReactiveClientSingleton.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoReactiveClientSingleton.class);
 
     /**
      *
@@ -43,7 +43,7 @@ public class MongoDBReactiveClientSingleton {
      *
      * @return
      */
-    public static MongoDBReactiveClientSingleton getInstance() {
+    public static MongoReactiveClientSingleton getInstance() {
         return MongoDBClientSingletonHolder.INSTANCE;
     }
 
@@ -56,7 +56,7 @@ public class MongoDBReactiveClientSingleton {
 
     private MongoClient mongoClient;
 
-    private MongoDBReactiveClientSingleton() {
+    private MongoReactiveClientSingleton() {
         if (!initialized) {
             throw new IllegalStateException("not initialized");
         }
@@ -90,7 +90,7 @@ public class MongoDBReactiveClientSingleton {
 
     private static class MongoDBClientSingletonHolder {
 
-        private static final MongoDBReactiveClientSingleton INSTANCE = new MongoDBReactiveClientSingleton();
+        private static final MongoReactiveClientSingleton INSTANCE = new MongoReactiveClientSingleton();
 
         private MongoDBClientSingletonHolder() {
         }

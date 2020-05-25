@@ -8,10 +8,10 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.changestreams.handlers;
+package org.restheart.mongodb.handlers.changestreams;
 
 import com.mongodb.client.model.changestream.FullDocument;
-import com.restheart.changestreams.db.MongoDBReactiveClientSingleton;
+import org.restheart.mongodb.db.MongoReactiveClientSingleton;
 import io.undertow.Handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -160,7 +160,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         List<BsonDocument> resolvedStages = getResolvedStagesAsList(request);
 
         if (OPENED_STREAMS.add(streamKey)) {
-            MongoDBReactiveClientSingleton
+            MongoReactiveClientSingleton
                     .getInstance()
                     .getClient()
                     .getDatabase(request.getDBName())

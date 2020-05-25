@@ -29,7 +29,6 @@
     <module>jwt-auth-mechanism</module>
     <module>mongo-acl-authorizer</module>
     <module>change-streams</module>
-    <module>mongo-it</module>
     <module>security-it</module>
   </modules>
 

@@ -6,7 +6,7 @@ Background:
 * url 'http://localhost:8080'
 * def db = '/test-change-streams'
 * def coll = db + '/coll'
-* callonce read('./features/set_up_test_environment.feature')
+* callonce read('./streams-setup.feature')
 * def parseResponse = 
 """
 function(json) {
@@ -16,7 +16,7 @@ return JSON.parse(json)
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: Performing a simple GET request on a Change Stream resource (Expected 400 Bad Request)
-
+    * header Authorization = authHeader
     Given path coll + '/_streams/changeStream'
     When method get
     Then status 400
@@ -25,12 +25,14 @@ Scenario: Performing a simple GET request on a Change Stream resource (Expected 
 Scenario: test insert (POST) new document (without avars)
 
     # Establish WebSocket connection to get notified.
+    * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:8080'
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
     
+    * header Authorization = authHeader
     Given path coll
     And request {"a":1, "b":2, "c":"test"}
     When method POST
@@ -46,6 +48,7 @@ Scenario: test insert (POST) new document (without avars)
 Scenario: test insert (POST) new document (with avars)
 
     # Establish WebSocket connection to get notified.
+    * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
     And def baseUrl = 'http://localhost:8080'
     And def handler = function(notification) { karate.signal(notification) }
@@ -53,12 +56,14 @@ Scenario: test insert (POST) new document (with avars)
     Then def socket = karate.webSocket(host, handler)
     
     # This POST is shouldn't be notified
+    * header Authorization = authHeader
     Given path coll
     And request {"anotherProp": 1}
     When method POST
     And def firstPostResult = karate.listen(1000)
     Then match firstPostResult == '#null'
     
+    * header Authorization = authHeader
     Given path coll
     And request {"targettedProperty": "test", "anotherProp": 1}
     When method POST
@@ -73,18 +78,21 @@ Scenario: test insert (POST) new document (with avars)
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PATCH on inserted document (without avars)
     
+    * header Authorization = authHeader
     Given path coll
     And request {"a":1, "b":2, "c":"test"}
     When method POST
     Then def location = responseHeaders['Location'][0]
     
     # Establish WebSocket connection to get notified.
+    * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:8080'
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * header Authorization = authHeader
     Given url location
     And request {"moreProp": "test", "anotherProp": 1, "$unset": {"b":1}}
     When method PATCH
@@ -99,18 +107,21 @@ Scenario: test PATCH on inserted document (without avars)
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PATCH on inserted document (with avars)
     
+    * header Authorization = authHeader
     Given path coll
     And request {"targettedProperty": "test", "toBeRemoved": null}
     When method POST
     Then def location = responseHeaders['Location'][0]
     
     # Establish WebSocket connection to get notified.
+    * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
     And def baseUrl = 'http://localhost:8080'
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * header Authorization = authHeader
     Given url location
     And request {"moreProp": "test", "anotherProp": 1, "$unset": {"toBeRemoved":1}}
     When method PATCH
@@ -126,12 +137,14 @@ Scenario: test PATCH on inserted document (with avars)
 Scenario: test PUT upserting notifications (without avars)
 
     # Establish WebSocket connection to get notified.
+    * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:8080'
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * header Authorization = authHeader
     Given path coll + '/testput'
     And request {"a":1, "b":2, "c":"test"}
     When method PUT
@@ -144,12 +157,14 @@ Scenario: test PUT upserting notifications (without avars)
     And match parsedInsertingMsg.fullDocument.c == 'test'
 
     # Establish WebSocket connection to get notified.
+    * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:8080'
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * header Authorization = authHeader
     Given path coll + '/testput'
     And request {"moreProp": "test", "anotherProp": 1}
     When method PUT
@@ -163,12 +178,15 @@ Scenario: test PUT upserting notifications (without avars)
 Scenario: test PUT upserting notifications (with avars)
 
     # Establish WebSocket connection to get notified.
+    * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
     And def baseUrl = 'http://localhost:8080'
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    
+    * header Authorization = authHeader
     Given path coll + '/testputwithavars'
     And request {"targettedProperty": "test"}
     When method PUT
@@ -179,12 +197,14 @@ Scenario: test PUT upserting notifications (with avars)
     And match parsedInsertingMsg.fullDocument.targettedProperty == 'test'
 
     # Establish WebSocket connection to get notified.
+    * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:8080'
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * header Authorization = authHeader
     Given path coll + '/testputwithavars'
     And request {"moreProp": "test", "anotherProp": 1}
     When method PUT
@@ -197,12 +217,14 @@ Scenario: test PUT upserting notifications (with avars)
 Scenario: https://github.com/SoftInstigate/restheart/issues/373
 
     # Connect to "cs" stream.
+    * header Authorization = authHeader
     Given def streamPath = '/_streams/cs'
     And def baseUrl = 'http://localhost:8080'
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
     
+    * header Authorization = authHeader
     Given path coll
     When request {"name": "testname"}
     And method POST
@@ -210,12 +232,14 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     Then match result == '#notnull'
 
     # Connect to "ud" stream.
+    * header Authorization = authHeader
     Given def streamPath = '/_streams/ud'
     And def baseUrl = 'http://localhost:8080'
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * header Authorization = authHeader
     Given path coll
     When request {"name": "testname"}
     And method POST
@@ -223,6 +247,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     Then match result == '#null'
     And def location = responseHeaders['Location'][0]
 
+    * header Authorization = authHeader
     Given url location
     And request {"a": "inserted"}
     When method PATCH
@@ -232,6 +257,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     And match parsedInsertedTargettedPropertyMsg.operationType == 'update'
     And match parsedInsertedTargettedPropertyMsg.updateDescription.updatedFields.a == 'inserted'
 
+    * header Authorization = authHeader
     Given url location
     And request {"b": "inserted"}
     When method PATCH
@@ -240,12 +266,14 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     Then match firstPatchResult == '#null'
 
     # Connect to "cs" stream.
+    * header Authorization = authHeader
     Given def streamPath = '/_streams/cs'
     And def baseUrl = 'http://localhost:8080'
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * header Authorization = authHeader
     Given url location
     And request {"b": "inserted"}
     When method PATCH
