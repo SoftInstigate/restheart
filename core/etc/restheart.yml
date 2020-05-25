@@ -170,19 +170,9 @@ auth-mechanisms:
     enabled: true
   basicAuthMechanism:
     enabled: true
-    authenticator: simpleFileAuthenticator
-  digestAuthMechanism:
-    enabled: true
-    realm: RESTHeart Realm
-    domain: localhost
-    authenticator: simpleFileAuthenticator
-  identityAuthMechanism:
+    authenticator: fileRealmAuthenticator
+  jwtAuthenticationMechanism:
     enabled: false
-    username: admin
-    roles:
-      - admin
-      - user
-  jwtAuthenticationMechanism
     algorithm: HS256
     key: secret
     base64Encoded: false
@@ -192,6 +182,17 @@ auth-mechanisms:
 #            - admin
     issuer: myIssuer
     audience: myAudience
+  digestAuthMechanism:
+    enabled: true
+    realm: RESTHeart Realm
+    domain: localhost
+    authenticator: fileRealmAuthenticator
+  identityAuthMechanism:
+    enabled: false
+    username: admin
+    roles:
+      - admin
+      - user
 
 ## Authenticators
 
@@ -201,11 +202,12 @@ auth-mechanisms:
  # See README.md for the list of available Authenticators
 
 authenticators:
-  simpleFileAuthenticator:
+  fileRealmAuthenticator:
     enabled: true
     conf-file: {{{users-conf-file}}}
-  rhAuthenticator
-    users-collection-uri: /users
+  mongoRealmAuthenticator:
+    users-db: restheart
+    users-collection: users
     prop-id: _id
     prop-password: password
     json-path-roles: $.roles
@@ -224,25 +226,25 @@ authenticators:
 
  # As an in-bound request is received and authenticated the isAllowed() method is
  # called on each authenticator in turn until one of the following occurs:
- # an authenticator allows the incoming request or the list of authenticators is
  # exhausted. In the latter case, the request ends and 403 Forbidden is returned.
 
  # See README.md for the list of available Authorizers
 
 authorizers:
-  requestPredicatesAuthorizer:
+  fileAclAuthorizer:
     enabled: true
     conf-file: {{{acl-conf-file}}}
-  fullAuthorizer:
-    enabled: false
-    authentication-required: true
-  rhAuthorizer
-    acl-uri: /acl
+  mongoAclAuthorizer:
+    acl-db: restheart
+    acl-collection: acl
     root-role: admin
     cache-enabled: true
     cache-size: 1000
     cache-ttl: 5000
     cache-expire-policy: AFTER_WRITE
+  fullAuthorizer:
+    enabled: false
+    authentication-required: true
 
 ## Token Manager
 

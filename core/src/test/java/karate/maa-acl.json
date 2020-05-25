@@ -1,5 +1,5 @@
 [{
-    "predicate": "path[/test-authorization] and method[GET]",
+    "predicate": "path[/test-db/test-authorization] and method[GET]",
     "roles": ["$unauthenticated"],
     "writeFilter": null,
     "_id": {
@@ -8,7 +8,7 @@
     "priority": 1,
     "readFilter": { "status": { "_$eq": "public"} }
 }, {
-    "predicate": "path-prefix[/test-authorization]",
+    "predicate": "path-prefix[/test-db/test-authorization]",
     "roles": ["full"],
     "writeFilter": null,
     "_id": {
@@ -17,7 +17,7 @@
     "priority": 1,
     "readFilter": null
 }, {
-    "predicate": "path-prefix[/test-authorization]",
+    "predicate": "path-prefix[/test-db/test-authorization]",
     "roles": ["filtered"],
     "writeFilter": { "status": { "_$eq": "public"} },
     "_id": {
@@ -26,7 +26,7 @@
     "priority": 2,
     "readFilter": { "status": { "_$eq": "public"} }
 },{
-    "predicate": "path-prefix[/test-authorization] and method[GET]",
+    "predicate": "path-prefix[/test-db/test-authorization] and method[GET]",
     "roles": ["filtered"],
     "writeFilter": null,
     "_id": {

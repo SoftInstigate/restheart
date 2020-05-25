@@ -76,18 +76,28 @@ auth-mechanisms:
     enabled: true
   basicAuthMechanism:
     enabled: true
-    authenticator: simpleFileAuthenticator
+    authenticator: fileRealmAuthenticator
   digestAuthMechanism:
     enabled: true
     realm: RESTHeart Realm
     domain: localhost
-    authenticator: simpleFileAuthenticator
+    authenticator: fileRealmAuthenticator
   identityAuthMechanism:
     enabled: false
     username: admin
     roles:
       - admin
       - user
+  jwtAuthenticationMechanism:
+    algorithm: HS256
+    key: secret
+    base64Encoded: false
+    usernameClaim: sub
+    rolesClaim: roles
+    fixedRoles:
+    #  - admin
+    issuer: myIssuer
+    audience: myAudience
 
 ## Authenticators
 
@@ -97,9 +107,23 @@ auth-mechanisms:
  # See README.md for the list of available Authenticators
 
 authenticators:
-  simpleFileAuthenticator:
+  fileRealmAuthenticator:
     enabled: true
     conf-file: ../../etc/test/users.yml
+  mongoRealmAuthenticator:
+    users-db: test-db
+    users-collection: users
+    prop-id: _id
+    prop-password: password
+    json-path-roles: $.roles
+    bcrypt-hashed-password: true
+    bcrypt-complexity: 12
+    create-user: true
+    create-user-document: '{"_id": "admin", "password": "secret", "roles": ["admin"]}'
+    cache-enabled: false
+    cache-size: 1000
+    cache-ttl: 60000
+    cache-expire-policy: AFTER_WRITE
 
 ## Authorizers
 
@@ -113,9 +137,17 @@ authenticators:
  # See README.md for the list of available Authorizers
 
 authorizers:
-  requestPredicatesAuthorizer:
+  fileAclAuthorizer:
     enabled: true
     conf-file: ../../etc/test/acl.yml
+  mongoAclAuthorizer:
+    acl-db: test-db
+    acl-collection: acl
+    root-role: admin
+    cache-enabled: true
+    cache-size: 1000
+    cache-ttl: 5000
+    cache-expire-policy: AFTER_WRITE
   fullAuthorizer:
     enabled: false
     authentication-required: true

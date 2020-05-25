@@ -55,10 +55,10 @@ import org.restheart.utils.LambdaUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-        name = "simpleFileAuthenticator",
+        name = "fileRealmAuthenticator",
         description = "authenticates clients credentials defined in a configuration file",
         enabledByDefault = false)
-public class SimpleFileAuthenticator
+public class FileRealmAuthenticator
         extends FileConfigurablePlugin
         implements Authenticator {
 

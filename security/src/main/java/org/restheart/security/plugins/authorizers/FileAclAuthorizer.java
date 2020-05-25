@@ -47,10 +47,10 @@ import org.restheart.utils.LambdaUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
-        name = "requestPredicatesAuthorizer",
+        name = "fileAclAuthorizer",
         description = "authorizes requests according to acl defined in a configuration file",
         enabledByDefault = false)
-public class RequestPredicatesAuthorizer
+public class FileAclAuthorizer
         extends FileConfigurablePlugin
         implements Authorizer {
 

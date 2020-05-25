@@ -14,6 +14,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import static com.google.common.collect.Sets.newHashSet;
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCursor;
 import static com.mongodb.client.model.Filters.eq;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 import io.undertow.security.idm.Account;
@@ -115,6 +116,10 @@ public class MongoAclAuthorizer implements Authorizer {
     @InjectMongoClient
     public void setMongoClient(MongoClient mclient) {
         this.mclient = mclient;
+        
+        if (!checkAclCollection()) {
+            LOGGER.error("ACL collection does not exist and could not be created");
+        }
     }
 
     /**
@@ -332,6 +337,36 @@ public class MongoAclAuthorizer implements Authorizer {
 
                 return ret;
             }
+        }
+    }
+    
+    public boolean checkAclCollection() {
+        if (this.mclient == null) {
+            LOGGER.error("Cannot check acl collection: mongo service is not enabled.");
+            return false;
+        }
+        
+        var db = mclient.getDatabase(this.aclDb);
+
+        MongoCursor<String> dbCollections = db
+                .listCollectionNames()
+                .iterator();
+
+        while (dbCollections.hasNext()) {
+            String dbCollection = dbCollections.next();
+
+            if (this.aclCollection.equals(dbCollection)) {
+                return true;
+            }
+        }
+
+        try {
+            db.createCollection(this.aclCollection);
+
+            return true;
+        } catch (Throwable t) {
+            LOGGER.error("Error creating acl collection", t);
+            return false;
         }
     }
 }

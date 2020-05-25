@@ -13,7 +13,7 @@
   <packaging>jar</packaging>
 
   <name>restheart-mongodb</name>
-  <description>RESTHeart MongoDB - MongoDB plugin for RESTHeart.</description>
+  <description>RESTHeart MongoDB - MongoDB plugin</description>
   <url>http://www.restheart.org</url>
   <inceptionYear>2014</inceptionYear>
 

@@ -16,3 +16,15 @@ users:
     - userid: noroles
       password: secret
       roles: []
+    
+    - userid: full
+      password: secret
+      roles: [ full ]
+      
+    - userid: filtered
+      password: secret
+      roles: [ filtered ]
+    
+    - userid: both
+      password: secret
+      roles: [ filtered, full ]

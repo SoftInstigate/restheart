@@ -10,6 +10,7 @@
  */
 package org.restheart.test.plugins.initializers;
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
@@ -20,26 +21,17 @@ import org.restheart.security.plugins.mechanisms.JwtAuthenticationMechanism;
 /**
  * Demonstrate how to add an extra verification step to the
  * jwtAuthenticationMechanism.
- * 
- * It is not enabledByDefault; to enable it add to
- * configuration file:<br>
- * <pre>
- * plugins-args:
- *     extraJwtVerificator:
- *         enabled: true
- * </pre>
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(
-        name = "extraJwtVerificator", 
-        priority = 100, 
-        description = "Demonstrate how to add an extra verifictation step "
-                + "to the jwtAuthenticationMechanism",
-        enabledByDefault = false)
+        name = "extraJwtVerificator",
+        priority = 100,
+        description = "Adds an extra verifictation step "
+        + "to the jwtAuthenticationMechanism")
 public class ExtraJwtVerificator implements Initializer {
     private PluginsRegistry registry;
-    
+
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
         this.registry = registry;
@@ -54,7 +46,7 @@ public class ExtraJwtVerificator implements Initializer {
                     .stream()
                     .filter(_am -> "jwtAuthenticationMechanism".equals(_am.getName()))
                     .findFirst();
-            
+
             if (pr.isPresent()) {
                 am = (JwtAuthenticationMechanism) pr.get().getInstance();
             } else {
@@ -68,21 +60,20 @@ public class ExtraJwtVerificator implements Initializer {
             var extraClaim = token.getClaim("extra");
 
             if (extraClaim == null || extraClaim.isNull()) {
-                throw new SecurityException("missing extra claim");
+                throw new JWTVerificationException("missing extra claim");
             }
 
             var extra = extraClaim.asMap();
 
             if (!extra.containsKey("a")) {
-                throw new SecurityException("extra claim does not have "
+                throw new JWTVerificationException("extra claim does not have "
                         + "'a' property");
             }
 
             if (!extra.containsKey("b")) {
-                throw new SecurityException("extra claim does not have "
+                throw new JWTVerificationException("extra claim does not have "
                         + "'b' property");
             }
         });
     }
-
 }

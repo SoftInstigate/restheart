@@ -13,7 +13,7 @@
   <packaging>jar</packaging>
     
   <name>restheart-test-plugins</name>
-  <description>RESTHeart Test Plugins - RESTHeart plugins used for testing</description>
+  <description>RESTHeart Test Plugins - Plugins used for testing</description>
   <url>https://restheart.org</url>
   <inceptionYear>2020</inceptionYear>
     
