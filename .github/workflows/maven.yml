@@ -28,8 +28,30 @@ jobs:
               with:
                   java-version: 11
 
+            - name: Set the version
+              id: vars
+              run: echo "::set-output name=VERSION::$(echo ${GITHUB_REF:10})"
+
+            - name: Print the version
+              run: echo "VERSION=${{steps.vars.outputs.VERSION}}"
+
             - name: Build and test
               run: mvn -B clean install
+
+            - name: Upload GitHub release
+              if: ${{ startsWith(github.ref, 'refs/tags/') }}
+              uses: softprops/action-gh-release@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  body: |
+                      Release ${{ github.ref }}
+                  files: |
+                      core/target/restheart.tar.gz
+                      core/target/restheart.zip
+                      core/target/restheart.jar
+                  draft: true
+                  prerelease: false
 
             - name: Import private gpg key
               run: |
@@ -46,30 +68,23 @@ jobs:
                   GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
                   GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-            - name: Build and push docker image
-              # run only when the event that kicked off the workflow was a push of a git tag
+            - name: Build default Docker image
               if: ${{ startsWith(github.ref, 'refs/tags/') }}
-              uses: docker/build-push-action@v1
-              with:
-                  path: ./core
-                  username: ${{ secrets.DOCKER_USERNAME }}
-                  password: ${{ secrets.DOCKER_PASSWORD }}
-                  repository: softinstigate/restheart
-                  tag_with_ref: true
-                  tags: latest
-                  push: ${{ startsWith(github.ref, 'refs/tags/') }}
+              run: |
+                  echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+                  docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}} ./core/.
 
-            - name: Upload GitHub release
+            - name: Push default Docker image
               if: ${{ startsWith(github.ref, 'refs/tags/') }}
-              uses: softprops/action-gh-release@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  body: |
-                      Release ${{ github.ref }}
-                  files: |
-                      core/target/restheart.tar.gz
-                      core/target/restheart.zip
-                      core/target/restheart.jar
-                  draft: true
-                  prerelease: false
+              run: |
+                  docker tag softinstigate/restheart:${{steps.vars.outputs.VERSION}} softinstigate/restheart:latest
+                  docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+                  docker push softinstigate/restheart:latest
+
+            - name: Build and push distroless Docker image
+              if: ${{ startsWith(github.ref, 'refs/tags/') }}
+              run: |
+                  docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless ./core/.
+                  docker tag softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless softinstigate/restheart:distroless
+                  docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
+                  docker push softinstigate/restheart:distroless

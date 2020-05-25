@@ -1,4 +1,4 @@
-FROM adoptopenjdk:11-jre-hotspot-bionic
+FROM gcr.io/distroless/java:11
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
