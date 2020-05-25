@@ -182,6 +182,16 @@ auth-mechanisms:
     roles:
       - admin
       - user
+  jwtAuthenticationMechanism
+    algorithm: HS256
+    key: secret
+    base64Encoded: false
+    usernameClaim: sub
+    rolesClaim: roles
+#          fixedRoles:
+#            - admin
+    issuer: myIssuer
+    audience: myAudience
 
 ## Authenticators
 
@@ -194,6 +204,19 @@ authenticators:
   simpleFileAuthenticator:
     enabled: true
     conf-file: {{{users-conf-file}}}
+  rhAuthenticator
+    users-collection-uri: /users
+    prop-id: _id
+    prop-password: password
+    json-path-roles: $.roles
+    bcrypt-hashed-password: true
+    bcrypt-complexity: 12
+    create-user: true
+    create-user-document: '{"_id": "admin", "password": "secret", "roles": ["admin"]}'
+    cache-enabled: false
+    cache-size: 1000
+    cache-ttl: 60000
+    cache-expire-policy: AFTER_WRITE
 
 ## Authorizers
 
@@ -213,6 +236,13 @@ authorizers:
   fullAuthorizer:
     enabled: false
     authentication-required: true
+  rhAuthorizer
+    acl-uri: /acl
+    root-role: admin
+    cache-enabled: true
+    cache-size: 1000
+    cache-ttl: 5000
+    cache-expire-policy: AFTER_WRITE
 
 ## Token Manager
 

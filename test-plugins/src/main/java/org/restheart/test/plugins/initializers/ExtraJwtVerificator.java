@@ -8,15 +8,14 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.platform.jwt;
+package org.restheart.test.plugins.initializers;
 
-import com.auth0.jwt.exceptions.JWTVerificationException;
-import com.auth0.jwt.interfaces.Claim;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.plugins.mechanisms.JwtAuthenticationMechanism;
 
 /**
  * Demonstrate how to add an extra verification step to the
@@ -66,21 +65,21 @@ public class ExtraJwtVerificator implements Initializer {
         }
 
         am.setExtraJwtVerifier(token -> {
-            Claim extraClaim = token.getClaim("extra");
+            var extraClaim = token.getClaim("extra");
 
             if (extraClaim == null || extraClaim.isNull()) {
-                throw new JWTVerificationException("missing extra claim");
+                throw new SecurityException("missing extra claim");
             }
 
             var extra = extraClaim.asMap();
 
             if (!extra.containsKey("a")) {
-                throw new JWTVerificationException("extra claim does not have "
+                throw new SecurityException("extra claim does not have "
                         + "'a' property");
             }
 
             if (!extra.containsKey("b")) {
-                throw new JWTVerificationException("extra claim does not have "
+                throw new SecurityException("extra claim does not have "
                         + "'b' property");
             }
         });

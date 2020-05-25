@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.platform.jwt;
+package org.restheart.security.plugins.mechanisms;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
@@ -41,6 +41,7 @@ import java.util.function.Consumer;
 import org.apache.commons.codec.binary.StringUtils;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
@@ -74,14 +75,14 @@ public class JwtAuthenticationMechanism implements AuthMechanism {
     @InjectConfiguration
     public void init(Map<String, Object> args) throws ConfigurationException {
         // get configuration arguments
-        base64Encoded = (boolean) args.getOrDefault("base64Encoded", false);
-        algorithm = (String) args.get("algorithm");
-        key = (String) args.get("key");
-        usernameClaim = (String) args.getOrDefault("usernameClaim", "sub");
-        rolesClaim = (String) args.get("rolesClaim");
-        fixedRoles = (List<String>) args.get("fixedRoles");
-        issuer = (String) args.get("issuer");
-        audience = (String) args.get("audience");
+        base64Encoded = argValue(args, "base64Encoded");
+        algorithm = argValue(args, "algorithm");
+        key = argValue(args, "key");
+        usernameClaim = argValue(args, "usernameClaim");
+        rolesClaim = argValue(args, "rolesClaim");
+        fixedRoles = argValue(args, "fixedRoles");
+        issuer = argValue(args, "issuer");
+        audience = argValue(args, "audience");
 
         Algorithm _algorithm;
 

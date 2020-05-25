@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.authorizers;
+package org.restheart.security.plugins.authorizers;
 
 import java.util.ArrayDeque;
 import org.bson.BsonDocument;

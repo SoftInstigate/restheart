@@ -45,7 +45,7 @@
     <module>security</module>
     <module>mongodb</module>
     <module>test-plugins</module>
-<!--    <module>platform-plugins</module>-->
+    <!--    <module>platform-plugins</module>-->
   </modules>
 
   <!-- Project Information -->
@@ -195,6 +195,16 @@
         <groupId>de.svenkubiak</groupId>
         <artifactId>jBCrypt</artifactId>
         <version>0.4.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.auth0</groupId>
+        <artifactId>java-jwt</artifactId>
+        <version>3.10.3</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.14</version>
       </dependency>
       <dependency>
         <groupId>org.yaml</groupId>

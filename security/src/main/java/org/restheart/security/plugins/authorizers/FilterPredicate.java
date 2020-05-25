@@ -8,11 +8,11 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.authorizers;
+package org.restheart.security.plugins.authorizers;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import static com.restheart.authorizers.MongoAclAuthorizer.MATCHING_ACL_PREDICATE;
+import static org.restheart.security.plugins.authorizers.MongoAclAuthorizer.MATCHING_ACL_PREDICATE;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;

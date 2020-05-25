@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.platform.jwt;
+package org.restheart.security.plugins.mechanisms;
 
 import java.util.Set;
 import org.restheart.plugins.security.BaseAccount;

@@ -8,8 +8,8 @@ Background:
 * def filteredAuthHeader = 'Basic ZmlsdGVyZWQ6c2VjcmV0'
 * def bothAuthHeader = 'Basic Ym90aDpzZWNyZXQ='
 * def users = 
-* def acl = read('acl.json')
-* def data = read('data.json')
+* def acl = read('maa-acl.json')
+* def data = read('maa-data.json')
 # credentials is admin:secret
 
 Scenario: request with valid Authorization header
@@ -27,21 +27,21 @@ Scenario: request with wrong Authorization header
 Scenario: create test users
     * header Authorization = adminAuthHeader
     Given path '/users'
-    And request read('users.json')
+    And request read('maa-users.json')
     When method POST
     Then status 200
 
 Scenario: create test acl
     * header Authorization = adminAuthHeader
     Given path '/acl'
-    And request read('acl.json')
+    And request read('maa-acl.json')
     When method POST
     Then status 200
 
 Scenario: create test coll
     * header Authorization = adminAuthHeader
     Given path '/acl'
-    And request read('acl.json')
+    And request read('maa-acl.json')
     When method POST
     Then assert responseStatus == 201 || responseStatus == 200
 
@@ -61,7 +61,7 @@ Scenario: create test coll
 Scenario: create test coll
     * header Authorization = adminAuthHeader
     Given path '/test-authorization'
-    And request read('data.json')
+    And request read('maa-data.json')
     When method POST
     Then assert responseStatus == 201 || responseStatus == 200
 

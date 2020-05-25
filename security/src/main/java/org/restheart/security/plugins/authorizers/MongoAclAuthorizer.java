@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.authorizers;
+package org.restheart.security.plugins.authorizers;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -160,7 +160,7 @@ public class MongoAclAuthorizer implements Authorizer {
         if (LOGGER.isDebugEnabled()) {
             roles(exchange).forEachOrdered(role
                     -> {
-                ArrayList matched = Lists.newArrayListWithCapacity(1);
+                ArrayList<FilterPredicate> matched = Lists.newArrayListWithCapacity(1);
 
                 predicatesForRole(role)
                         .stream().anyMatch(predicate -> {

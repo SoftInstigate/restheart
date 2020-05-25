@@ -24,12 +24,11 @@
   </properties>
   
   <modules>
-    <module>si-lka</module>
     <module>mongo-realm-authenticator</module>
     <module>jwt-auth-mechanism</module>
     <module>mongo-acl-authorizer</module>
-    <module>change-streams</module>
     <module>security-it</module>
+    <module>restheart-license</module>
   </modules>
 
   <!-- Project Information -->

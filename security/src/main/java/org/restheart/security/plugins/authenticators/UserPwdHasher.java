@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.authenticators;
+package org.restheart.security.plugins.authenticators;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
