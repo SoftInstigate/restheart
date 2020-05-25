@@ -1,0 +1,18 @@
+[
+    {
+        "_id": "x",
+        "status": "public"
+    },
+    {
+        "_id": "y",
+        "status": "public"
+    },
+    {
+        "_id": "z",
+        "status": "public"
+    },
+    {
+        "_id": "secret",
+        "status": "private"
+    }
+]

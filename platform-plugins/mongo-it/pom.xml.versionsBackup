@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.restheart</groupId>
+    <artifactId>restheart-platform-core</artifactId>
+    <version>4.1.5</version>
+    <packaging>jar</packaging>
+    <name>restheart-platform-core</name>
+    <description>RESTHeart Platform Core - API microservice for MongoDB.</description>
+    <url>http://www.restheart.org</url>
+    <inceptionYear>2019</inceptionYear>
+
+    <parent>
+        <groupId>com.softinstigate.restheart</groupId>
+        <artifactId>restheart-platform</artifactId>
+        <version>4.1.8</version>
+    </parent>
+
+    <properties>
+        <mainclass>org.restheart.Bootstrapper</mainclass>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.restheart</groupId>
+            <artifactId>restheart</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.softinstigate.lickeys</groupId>
+            <artifactId>si-lka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-reactivestreams</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mashape.unirest</groupId>
+            <artifactId>unirest-java</artifactId>
+        </dependency>
+        <!-- BEGIN Test dependencies -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>fluent-hc</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.eclipsesource.minimal-json</groupId>
+            <artifactId>minimal-json</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-apache</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-junit4</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- END Test dependencies -->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>start-server</id>
+                        <!--
+                        NOTE: in order to execute the integration test suite you need to be on
+                        Linux, OSX or Solaris and have MongoDB started on default port without authentication.
+                        Simpler alternative:
+                            1) Start Docker
+                            2) Execute the bash script ./bin/integration-tests.sh
+                        -->
+                        <phase>pre-integration-test</phase>
+                        <configuration>
+                            <skip>${skipITs}</skip>
+                            <target>
+                                <echo>Running integration tests against a forked RESTHeart's instance...</echo>
+                                <exec dir="${basedir}" executable="${basedir}/bin/start.sh">
+                                    <arg value="${basedir}/etc/restheart-platform-core.yml"/>
+                                    <arg value="-e ${basedir}/etc/test/test.properties"/>
+                                    <arg value="-Dlk-dir=./lickey"/>
+                                    <arg value="-DACCEPT_LICENSE_AGREEMENT=true"/>
+                                    <arg value="--fork"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop-server</id>
+                        <phase>post-integration-test</phase>
+                        <configuration>
+                            <skip>${skipITs}</skip>
+                            <target>
+                                <echo>Stopping forked RESTHeart's instance...</echo>
+                                <exec dir="${basedir}" executable="${basedir}/bin/stop.sh">
+                                    <arg value="${basedir}/etc/restheart-platform-core.yml"/>
+                                    <arg value="-e ${basedir}/etc/test/test.properties"/>
+                                </exec>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
