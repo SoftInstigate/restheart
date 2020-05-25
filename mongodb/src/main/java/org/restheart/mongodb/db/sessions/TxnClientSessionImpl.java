@@ -30,11 +30,9 @@ import com.mongodb.client.internal.MongoClientDelegate;
 import com.mongodb.internal.session.ServerSessionPool;
 import com.mongodb.operation.AbortTransactionOperation;
 import com.mongodb.operation.CommitTransactionOperation;
-import org.restheart.mongodb.db.sessions.Txn.TransactionStatus;
 import static org.bson.assertions.Assertions.isTrue;
 import static org.bson.assertions.Assertions.notNull;
-import org.restheart.mongodb.db.sessions.ClientSessionImpl;
-import org.restheart.mongodb.db.sessions.ServerSessionImpl;
+import org.restheart.mongodb.db.sessions.Txn.TransactionStatus;
 
 /**
  *

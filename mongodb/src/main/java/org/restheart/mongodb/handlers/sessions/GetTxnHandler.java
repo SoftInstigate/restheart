@@ -20,8 +20,6 @@
  */
 package org.restheart.mongodb.handlers.sessions;
 
-import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.NONE;
-import org.restheart.mongodb.db.sessions.TxnsUtils;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import org.bson.BsonDocument;
@@ -32,6 +30,8 @@ import org.bson.BsonString;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
+import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.NONE;
+import org.restheart.mongodb.db.sessions.TxnsUtils;
 import org.restheart.utils.HttpStatus;
 
 /**

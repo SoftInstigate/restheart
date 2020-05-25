@@ -26,9 +26,6 @@ import com.mongodb.MongoQueryException;
 import static com.mongodb.client.model.Filters.eq;
 import java.util.UUID;
 import org.restheart.mongodb.db.MongoClientSingleton;
-import org.restheart.mongodb.db.sessions.ClientSessionImpl;
-import org.restheart.mongodb.db.sessions.ServerSessionImpl;
-import org.restheart.mongodb.db.sessions.Sid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -30,9 +30,9 @@ import org.bson.Document;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
-import org.restheart.utils.JsonUtils;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

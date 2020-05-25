@@ -21,7 +21,6 @@
 package org.restheart.mongodb.handlers.changestreams;
 
 import com.mongodb.client.model.changestream.FullDocument;
-import org.restheart.mongodb.db.MongoReactiveClientSingleton;
 import io.undertow.Handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -36,6 +35,7 @@ import org.bson.json.JsonMode;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.mongodb.db.MongoReactiveClientSingleton;
 import org.restheart.representation.InvalidMetadataException;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;

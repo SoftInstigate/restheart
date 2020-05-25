@@ -20,14 +20,13 @@
  */
 package org.restheart.mongodb.handlers.sessions;
 
-import org.restheart.mongodb.db.sessions.Txn;
-import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
-import org.restheart.exchange.BsonResponse;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.mongodb.db.sessions.Txn;
+import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.utils.HttpStatus;
 
 /**

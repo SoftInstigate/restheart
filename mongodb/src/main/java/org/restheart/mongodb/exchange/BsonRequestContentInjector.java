@@ -30,7 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Iterator;
 import org.apache.tika.Tika;
 import org.bson.BsonArray;

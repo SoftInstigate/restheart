@@ -20,7 +20,6 @@
  */
 package org.restheart.security.plugins.authenticators;
 
-import org.restheart.plugins.security.PwdCredentialAccount;
 import com.google.common.collect.Sets;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
@@ -44,6 +43,7 @@ import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
+import org.restheart.plugins.security.PwdCredentialAccount;
 import org.restheart.utils.LambdaUtils;
 
 /**

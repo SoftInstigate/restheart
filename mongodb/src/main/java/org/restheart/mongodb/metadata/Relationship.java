@@ -20,7 +20,6 @@
  */
 package org.restheart.mongodb.metadata;
 
-import org.restheart.representation.InvalidMetadataException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +29,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.representation.InvalidMetadataException;
 import org.restheart.representation.UnsupportedDocumentIdException;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;

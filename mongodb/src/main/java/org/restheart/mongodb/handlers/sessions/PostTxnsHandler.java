@@ -20,12 +20,6 @@
  */
 package org.restheart.mongodb.handlers.sessions;
 
-import org.restheart.mongodb.db.sessions.Txn;
-import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.ABORTED;
-import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.COMMITTED;
-import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.NONE;
-import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
-import org.restheart.mongodb.db.sessions.TxnsUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.UUID;
@@ -33,9 +27,14 @@ import org.bson.BsonString;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.mongodb.db.sessions.Txn;
+import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.ABORTED;
+import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.COMMITTED;
+import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.NONE;
+import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
+import org.restheart.mongodb.db.sessions.TxnsUtils;
 import org.restheart.representation.RepresentationUtils;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.URLUtils;
 
 /**
  *
