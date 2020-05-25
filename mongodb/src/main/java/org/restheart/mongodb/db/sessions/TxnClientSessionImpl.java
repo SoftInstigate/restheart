@@ -8,7 +8,7 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.txns.db;
+package org.restheart.mongodb.db.sessions;
 
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.MongoClientException;
@@ -20,7 +20,7 @@ import com.mongodb.client.internal.MongoClientDelegate;
 import com.mongodb.internal.session.ServerSessionPool;
 import com.mongodb.operation.AbortTransactionOperation;
 import com.mongodb.operation.CommitTransactionOperation;
-import com.restheart.txns.db.Txn.TransactionStatus;
+import org.restheart.mongodb.db.sessions.Txn.TransactionStatus;
 import static org.bson.assertions.Assertions.isTrue;
 import static org.bson.assertions.Assertions.notNull;
 import org.restheart.mongodb.db.sessions.ClientSessionImpl;

@@ -8,13 +8,13 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.txns.handlers;
+package org.restheart.mongodb.handlers.sessions;
 
-import com.restheart.txns.db.Txn;
-import com.restheart.txns.db.TxnClientSessionFactory;
-import com.restheart.txns.db.TxnClientSessionImpl;
+import org.restheart.mongodb.db.sessions.Txn;
+import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
+import org.restheart.exchange.BsonResponse;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -22,18 +22,19 @@ import org.restheart.utils.HttpStatus;
 
 /**
  *
- * aborts transaction of the session
+ * commits the transaction of the session
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DeleteTxnHandler extends PipelinedHandler {
+public class PatchTxnHandler extends PipelinedHandler {
     /**
      *
      * @param exchange
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handleRequest(HttpServerExchange exchange)
+            throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
         
@@ -42,30 +43,35 @@ public class DeleteTxnHandler extends PipelinedHandler {
             return;
         }
         
+        String _sid = request.getSid();
+        long txnId = request.getTxnId();
+
         UUID sid;
-        
+
         try {
-            sid = UUID.fromString(request.getSid());
+            sid = UUID.fromString(_sid);
         } catch (IllegalArgumentException iae) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid session id");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE,
+                    "Invalid session id");
             next(exchange);
             return;
         }
 
-        TxnClientSessionImpl cs = TxnClientSessionFactory.getInstance()
-                .getTxnClientSession(sid);
+        // assume optimistically txn in progress, we get an error eventually
+        var cs = TxnClientSessionFactory.getInstance()
+                .getTxnClientSession(sid, new Txn(txnId,
+                        Txn.TransactionStatus.IN));
 
-        if (cs.getTxnServerStatus().getTxnId() != request.getTxnId()
-                || cs.getTxnServerStatus().getStatus() != Txn.TransactionStatus.IN) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE,
-                    "The given transaction is not in-progress");
-        } else {
-            cs.setMessageSentInCurrentTransaction(true);
-            cs.abortTransaction();
-            
-            response.setContentTypeAsJson();
-            response.setStatusCode(HttpStatus.SC_NO_CONTENT);
+        cs.setMessageSentInCurrentTransaction(true);
+
+        if (!cs.hasActiveTransaction()) {
+            cs.startTransaction();
         }
+
+        cs.commitTransaction();
+        
+        response.setContentTypeAsJson();
+        response.setStatusCode(HttpStatus.SC_OK);
 
         next(exchange);
     }

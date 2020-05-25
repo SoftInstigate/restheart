@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package com.restheart.utils;
+package org.restheart.utils;
 
 import java.io.File;
 import java.io.IOException;

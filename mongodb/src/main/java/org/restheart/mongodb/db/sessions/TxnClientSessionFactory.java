@@ -8,14 +8,14 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.txns.db;
+package org.restheart.mongodb.db.sessions;
 
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
-import static com.restheart.txns.db.Txn.TransactionStatus.IN;
+import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.IN;
 import io.undertow.server.HttpServerExchange;
 import java.util.UUID;
 import static org.bson.assertions.Assertions.notNull;

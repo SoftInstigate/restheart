@@ -8,14 +8,14 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package com.restheart.txns.handlers;
+package org.restheart.mongodb.handlers.sessions;
 
-import com.restheart.txns.db.Txn;
-import static com.restheart.txns.db.Txn.TransactionStatus.ABORTED;
-import static com.restheart.txns.db.Txn.TransactionStatus.COMMITTED;
-import static com.restheart.txns.db.Txn.TransactionStatus.NONE;
-import com.restheart.txns.db.TxnClientSessionFactory;
-import com.restheart.txns.db.TxnsUtils;
+import org.restheart.mongodb.db.sessions.Txn;
+import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.ABORTED;
+import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.COMMITTED;
+import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.NONE;
+import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
+import org.restheart.mongodb.db.sessions.TxnsUtils;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.UUID;

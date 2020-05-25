@@ -27,9 +27,7 @@
     <module>si-lka</module>
     <module>mongo-realm-authenticator</module>
     <module>jwt-auth-mechanism</module>
-    <module>platform-utils</module>
     <module>mongo-acl-authorizer</module>
-    <module>txns</module>
     <module>change-streams</module>
     <module>mongo-it</module>
     <module>security-it</module>
