@@ -47,13 +47,13 @@ public class ResourcesExtractor {
 
     /**
      *
-     * @param className the class to get the classloader from
+     * @param clazz the class to get the classloader from
      * @param resourcePath
      * @return
      * @throws URISyntaxException
      */
-    public static boolean isResourceInJar(String className, String resourcePath) throws URISyntaxException {
-        return getClassLoader(className)
+    public static boolean isResourceInJar(Class clazz, String resourcePath) throws URISyntaxException {
+        return getClassLoader(clazz)
                 .getResource(resourcePath)
                 .toURI().toString()
                 .startsWith("jar:");
@@ -61,14 +61,14 @@ public class ResourcesExtractor {
 
     /**
      *
-     * @param className the class to get the classloader from
+     * @param clazz the class to get the classloader from
      * @param resourcePath
      * @param tempDir
      * @throws URISyntaxException
      * @throws IOException
      */
-    public static void deleteTempDir(String className, String resourcePath, File tempDir) throws URISyntaxException, IOException {
-        if (isResourceInJar(className, resourcePath) && tempDir.exists()) {
+    public static void deleteTempDir(Class clazz, String resourcePath, File tempDir) throws URISyntaxException, IOException {
+        if (isResourceInJar(clazz, resourcePath) && tempDir.exists()) {
             delete(tempDir);
         }
     }
@@ -81,17 +81,17 @@ public class ResourcesExtractor {
      * @throws URISyntaxException
      * @throws IllegalStateException
      */
-    public static File extract(String className, String resourcePath) throws IOException, URISyntaxException, IllegalStateException {
+    public static File extract(Class clazz, String resourcePath) throws IOException, URISyntaxException, IllegalStateException {
         //File jarFile = new File(ResourcesExtractor.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
-        if (getClassLoader(className).getResource(resourcePath) == null) {
+        if (getClassLoader(clazz).getResource(resourcePath) == null) {
             LOG.warn("no resource to extract from path  {}", resourcePath);
             throw new IllegalStateException("no resource to extract from path " + resourcePath);
         }
 
-        URI uri = getClassLoader(className).getResource(resourcePath).toURI();
+        URI uri = getClassLoader(clazz).getResource(resourcePath).toURI();
 
-        if (isResourceInJar(className, resourcePath)) {
+        if (isResourceInJar(clazz, resourcePath)) {
             FileSystem fs = null;
             File ret = null;
 
@@ -184,11 +184,7 @@ public class ResourcesExtractor {
         }
     }
 
-    private static ClassLoader getClassLoader(String className) {
-        try {
-            return Class.forName(className).getClassLoader();
-        } catch (ClassNotFoundException cnfe) {
-            throw new IllegalStateException("Cannot find class " + className, cnfe);
-        }
+    private static ClassLoader getClassLoader(Class clazz) {
+        return clazz.getClassLoader();
     }
 }
