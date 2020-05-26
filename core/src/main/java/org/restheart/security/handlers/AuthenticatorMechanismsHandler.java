@@ -20,7 +20,6 @@
  */
 package org.restheart.security.handlers;
 
-
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
@@ -56,7 +55,7 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
         final SecurityContext sc = exchange.getSecurityContext();
 
         if (sc != null) {
-            authenticatorMechanisms.forEach((mechanism) -> {
+            authenticatorMechanisms.stream().forEachOrdered((mechanism) -> {
                 sc.addAuthenticationMechanism(
                         new AuthenticatorMechanismWrapper(
                                 mechanism.getInstance()));
