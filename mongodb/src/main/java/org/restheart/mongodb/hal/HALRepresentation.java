@@ -156,7 +156,6 @@ public class HALRepresentation implements MongoInterceptor {
             } else if (request.isGet() && request.isAggregation()) {
                 factory = new AggregationResultRepresentationFactory();
             } else {
-                LOGGER.
                 throw new IllegalStateException("Cannot transform response "
                         + "to HAL format, not managed request type");
             }
