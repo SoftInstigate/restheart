@@ -45,7 +45,6 @@
     <module>security</module>
     <module>mongodb</module>
     <module>test-plugins</module>
-    <module>license-manager</module>
   </modules>
 
   <!-- Project Information -->

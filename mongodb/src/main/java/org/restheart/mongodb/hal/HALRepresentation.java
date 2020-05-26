@@ -20,11 +20,13 @@
  */
 package org.restheart.mongodb.hal;
 
+import java.nio.channels.IllegalSelectorException;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.mongodb.MongoService;
 import org.restheart.mongodb.db.BulkOperationResult;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.InterceptPoint;
@@ -32,6 +34,8 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.representation.IllegalQueryParamenterException;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Transform the response content to HAL or SHAL format when required (e.g. when
@@ -44,16 +48,24 @@ import org.restheart.utils.HttpStatus;
         interceptPoint = InterceptPoint.RESPONSE,
         priority = Integer.MAX_VALUE)
 public class HALRepresentation implements MongoInterceptor {
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(MongoService.class);
+
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var content = response.getContent();
 
         BsonDocument hal;
-        
+
         if (request.isGet() || request.isBulkDocuments()
                 || (request.isCollection()
                 && request.isPost() && request.getContent().isArray())) {
-            hal = std2HAL(request, response, content);
+            try {
+                hal = std2HAL(request, response, content);
+            } catch (IllegalSelectorException ise) {
+                LOGGER.warn("Cannot transform response to HAL", ise);
+                return;
+            }
         } else {
             return;
         }
@@ -144,6 +156,7 @@ public class HALRepresentation implements MongoInterceptor {
             } else if (request.isGet() && request.isAggregation()) {
                 factory = new AggregationResultRepresentationFactory();
             } else {
+                LOGGER.
                 throw new IllegalStateException("Cannot transform response "
                         + "to HAL format, not managed request type");
             }
