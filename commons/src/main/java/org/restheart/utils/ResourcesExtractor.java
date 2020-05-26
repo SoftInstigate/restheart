@@ -188,7 +188,7 @@ public class ResourcesExtractor {
         try {
             return Class.forName(className).getClassLoader();
         } catch (ClassNotFoundException cnfe) {
-            throw new IllegalStateException("Cannot find class org.restheart.Bootrapper", cnfe);
+            throw new IllegalStateException("Cannot find class " + className, cnfe);
         }
     }
 }
