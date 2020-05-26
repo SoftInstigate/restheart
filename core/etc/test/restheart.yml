@@ -144,7 +144,7 @@ authorizers:
     acl-db: test-db
     acl-collection: acl
     root-role: admin
-    cache-enabled: true
+    cache-enabled: false
     cache-size: 1000
     cache-ttl: 5000
     cache-expire-policy: AFTER_WRITE
