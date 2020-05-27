@@ -38,7 +38,7 @@ Scenario: test insert (POST) new document (without avars)
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
     
-    * callonce sleep 3
+    * callonce sleep 1
     * header Authorization = authHeader
     Given path coll
     And request {"a":1, "b":2, "c":"test"}
@@ -62,7 +62,8 @@ Scenario: test insert (POST) new document (with avars)
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
     
-    # This POST is shouldn't be notified
+    # This POST shouldn't be notified
+    * callonce sleep 1
     * header Authorization = authHeader
     Given path coll
     And request {"anotherProp": 1}
@@ -99,6 +100,7 @@ Scenario: test PATCH on inserted document (without avars)
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * callonce sleep 1
     * header Authorization = authHeader
     Given url location
     And request {"moreProp": "test", "anotherProp": 1, "$unset": {"b":1}}
@@ -128,6 +130,7 @@ Scenario: test PATCH on inserted document (with avars)
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * callonce sleep 1
     * header Authorization = authHeader
     Given url location
     And request {"moreProp": "test", "anotherProp": 1, "$unset": {"toBeRemoved":1}}
@@ -151,6 +154,7 @@ Scenario: test PUT upserting notifications (without avars)
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * callonce sleep 1
     * header Authorization = authHeader
     Given path coll + '/testput'
     And request {"a":1, "b":2, "c":"test"}
@@ -171,6 +175,7 @@ Scenario: test PUT upserting notifications (without avars)
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * callonce sleep 1
     * header Authorization = authHeader
     Given path coll + '/testput'
     And request {"moreProp": "test", "anotherProp": 1}
@@ -192,7 +197,7 @@ Scenario: test PUT upserting notifications (with avars)
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
-    
+    * callonce sleep 1
     * header Authorization = authHeader
     Given path coll + '/testputwithavars'
     And request {"targettedProperty": "test"}
@@ -211,6 +216,7 @@ Scenario: test PUT upserting notifications (with avars)
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * callonce sleep 1
     * header Authorization = authHeader
     Given path coll + '/testputwithavars'
     And request {"moreProp": "test", "anotherProp": 1}
@@ -231,6 +237,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
     
+    * callonce sleep 1
     * header Authorization = authHeader
     Given path coll
     When request {"name": "testname"}
@@ -246,6 +253,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * callonce sleep 1
     * header Authorization = authHeader
     Given path coll
     When request {"name": "testname"}
@@ -280,6 +288,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
 
+    * callonce sleep 1
     * header Authorization = authHeader
     Given url location
     And request {"b": "inserted"}
