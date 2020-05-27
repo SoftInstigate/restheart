@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongodb
+ * restheart-commons
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2020 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
+
 package org.restheart.exchange;
 
 /**
