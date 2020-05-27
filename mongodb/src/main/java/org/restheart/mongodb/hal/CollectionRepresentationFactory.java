@@ -35,8 +35,8 @@ import static org.restheart.exchange.ExchangeKeys._STREAMS;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.handlers.aggregation.AbstractAggregationOperation;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.RepresentationUtils;
+import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.utils.RepresentationUtils;
 
 /**
  *

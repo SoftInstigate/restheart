@@ -31,8 +31,8 @@ import org.bson.BsonString;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.BulkOperationResult;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.RepresentationUtils;
+import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.utils.RepresentationUtils;
 import org.restheart.utils.HttpStatus;
 
 /**

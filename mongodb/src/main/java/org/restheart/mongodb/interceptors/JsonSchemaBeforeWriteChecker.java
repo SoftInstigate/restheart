@@ -37,7 +37,7 @@ import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.representation.UnsupportedDocumentIdException;
+import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;

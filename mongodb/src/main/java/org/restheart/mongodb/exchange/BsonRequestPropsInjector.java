@@ -50,7 +50,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.aggregation.AggregationPipeline;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.representation.UnsupportedDocumentIdException;
+import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;

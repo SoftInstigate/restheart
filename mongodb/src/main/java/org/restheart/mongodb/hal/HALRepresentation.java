@@ -32,7 +32,7 @@ import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

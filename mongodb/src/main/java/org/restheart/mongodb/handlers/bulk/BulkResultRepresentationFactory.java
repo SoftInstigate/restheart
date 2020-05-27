@@ -30,7 +30,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.restheart.mongodb.db.BulkOperationResult;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.representation.RepresentationUtils;
+import org.restheart.utils.RepresentationUtils;
 import org.restheart.utils.HttpStatus;
 
 /**

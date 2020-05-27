@@ -26,7 +26,8 @@ import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.representation.InvalidMetadataException;
+import org.restheart.exchange.InvalidMetadataException;
+import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.utils.JsonUtils;
 
 /**
@@ -72,7 +73,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
      *     ]
      * }]
      * </code>
-     * @throws org.restheart.representation.InvalidMetadataException
+     * @throws org.restheart.exchange.InvalidMetadataException
      */
     public AggregationPipeline(BsonDocument properties)
             throws InvalidMetadataException {
@@ -122,7 +123,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
     /**
      * @param avars RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables
-     * @throws org.restheart.representation.InvalidMetadataException
+     * @throws org.restheart.exchange.InvalidMetadataException
      * @throws org.restheart.mongodb.handlers.aggregation.QueryVariableNotBoundException
      */
     public List<BsonDocument> getResolvedStagesAsList(BsonDocument avars)

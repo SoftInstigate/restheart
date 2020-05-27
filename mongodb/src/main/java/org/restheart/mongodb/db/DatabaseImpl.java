@@ -44,7 +44,7 @@ import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.OperationResult;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
-import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -208,7 +208,7 @@ public class DatabaseImpl implements Database {
      * @param page
      * @param pagesize
      * @return the db data
-     * @throws org.restheart.representation.IllegalQueryParamenterException
+     * @throws org.restheart.exchange.IllegalQueryParamenterException
      *
      */
     @Override

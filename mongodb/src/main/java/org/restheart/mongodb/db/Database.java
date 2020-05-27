@@ -30,7 +30,7 @@ import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.OperationResult;
-import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParamenterException;
 
 /**
  *
@@ -173,7 +173,7 @@ public interface Database {
      * @param page
      * @param pagesize
      * @return the db data
-     * @throws org.restheart.representation.IllegalQueryParamenterException
+     * @throws org.restheart.exchange.IllegalQueryParamenterException
      *
      */
     BsonArray getDatabaseData(

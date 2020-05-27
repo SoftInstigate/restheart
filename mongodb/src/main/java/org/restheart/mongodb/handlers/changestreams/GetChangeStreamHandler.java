@@ -20,6 +20,8 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
+import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.exchange.QueryNotFoundException;
 import com.mongodb.client.model.changestream.FullDocument;
 import io.undertow.Handlers;
 import io.undertow.server.HttpHandler;
@@ -36,7 +38,7 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.MongoReactiveClientSingleton;
-import org.restheart.representation.InvalidMetadataException;
+import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

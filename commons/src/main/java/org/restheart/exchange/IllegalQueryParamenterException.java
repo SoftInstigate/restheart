@@ -17,43 +17,28 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.representation;
+package org.restheart.exchange;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class UnsupportedDocumentIdException extends Exception {
+public class IllegalQueryParamenterException extends Exception {
 
     /**
      *
-     */
-    public UnsupportedDocumentIdException() {
-        super();
-    }
-    
-    /**
-     *
      * @param message
      */
-    public UnsupportedDocumentIdException(String message) {
+    public IllegalQueryParamenterException(String message) {
         super(message);
     }
-    
+
     /**
      *
      * @param message
      * @param cause
      */
-    public UnsupportedDocumentIdException(String message, Throwable cause) {
+    public IllegalQueryParamenterException(String message, Throwable cause) {
         super(message, cause);
-    }
-    
-    /**
-     *
-     * @param cause
-     */
-    public UnsupportedDocumentIdException(Throwable cause) {
-        super(cause);
     }
 }

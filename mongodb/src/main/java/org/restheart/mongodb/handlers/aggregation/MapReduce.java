@@ -23,7 +23,8 @@ package org.restheart.mongodb.handlers.aggregation;
 import java.util.regex.Matcher;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.representation.InvalidMetadataException;
+import org.restheart.exchange.InvalidMetadataException;
+import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.utils.JsonUtils;
 
 /**
@@ -77,7 +78,7 @@ public class MapReduce extends AbstractAggregationOperation {
      *   "query": {"name":{"_$exists":true}}
      * }]
      * </code>
-     * @throws org.restheart.representation.InvalidMetadataException
+     * @throws org.restheart.exchange.InvalidMetadataException
      */
     public MapReduce(BsonDocument properties)
             throws InvalidMetadataException {
@@ -137,8 +138,8 @@ public class MapReduce extends AbstractAggregationOperation {
     /**
      * @param aVars RequestContext.getAggregationVars()
      * @return the query with unescaped operators and bound variables
-     * @throws org.restheart.representation.InvalidMetadataException
-     * @throws org.restheart.mongodb.handlers.aggregation.QueryVariableNotBoundException
+     * @throws org.restheart.exchange.InvalidMetadataException
+     * @throws org.restheart.exchange.QueryVariableNotBoundException
      */
     public BsonDocument getResolvedQuery(BsonDocument aVars)
             throws InvalidMetadataException, QueryVariableNotBoundException {

@@ -24,7 +24,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.Deque;
 import org.bson.BsonValue;
-import org.restheart.representation.UnsupportedDocumentIdException;
+import org.restheart.exchange.UnsupportedDocumentIdException;
 
 /**
  *

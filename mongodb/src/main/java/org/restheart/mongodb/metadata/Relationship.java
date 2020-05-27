@@ -29,8 +29,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.representation.InvalidMetadataException;
-import org.restheart.representation.UnsupportedDocumentIdException;
+import org.restheart.exchange.InvalidMetadataException;
+import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -280,7 +280,7 @@ public class Relationship {
      * @param data
      * @return
      * @throws IllegalArgumentException
-     * @throws org.restheart.representation.UnsupportedDocumentIdException
+     * @throws org.restheart.exchange.UnsupportedDocumentIdException
      */
     public String getRelationshipLink(
             MongoRequest request,

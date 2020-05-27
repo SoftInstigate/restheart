@@ -31,13 +31,14 @@ import java.util.concurrent.TimeUnit;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.InvalidMetadataException;
 import org.restheart.utils.HttpStatus;
 
 /**

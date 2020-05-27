@@ -27,7 +27,9 @@ import java.util.Set;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.representation.InvalidMetadataException;
+import org.restheart.exchange.InvalidMetadataException;
+import org.restheart.exchange.QueryVariableNotBoundException;
+
 public abstract class AbstractAggregationOperation {
 
     private static final Set<String> MAP_REDUCE_ALIASES
@@ -165,7 +167,7 @@ public abstract class AbstractAggregationOperation {
     /**
      *
      * @param properties
-     * @throws org.restheart.representation.InvalidMetadataException
+     * @throws org.restheart.exchange.InvalidMetadataException
      */
     public AbstractAggregationOperation(BsonDocument properties)
             throws InvalidMetadataException {
@@ -229,8 +231,8 @@ public abstract class AbstractAggregationOperation {
      * @param aVars RequestContext.getAggregationVars()
      * @return the json object where the variables ({"_$var": "var") are
      * replaced with the values defined in the avars URL query parameter
-     * @throws org.restheart.representation.InvalidMetadataException
-     * @throws org.restheart.mongodb.handlers.aggregation.QueryVariableNotBoundException
+     * @throws org.restheart.exchange.InvalidMetadataException
+     * @throws org.restheart.exchange.QueryVariableNotBoundException
      */
     protected BsonValue bindAggregationVariables(
             BsonValue obj,

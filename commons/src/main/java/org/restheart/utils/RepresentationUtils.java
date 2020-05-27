@@ -17,8 +17,10 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.representation;
+package org.restheart.utils;
 
+import org.restheart.exchange.UnsupportedDocumentIdException;
+import org.restheart.exchange.IllegalQueryParamenterException;
 import io.undertow.server.HttpServerExchange;
 import java.util.Date;
 import java.util.TreeMap;

@@ -33,10 +33,10 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.metadata.Relationship;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.InvalidMetadataException;
-import org.restheart.representation.RepresentationUtils;
-import org.restheart.representation.UnsupportedDocumentIdException;
+import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.InvalidMetadataException;
+import org.restheart.utils.RepresentationUtils;
+import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

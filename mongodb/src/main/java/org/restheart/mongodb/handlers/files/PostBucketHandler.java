@@ -33,7 +33,7 @@ import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.db.GridFsDAO;
 import org.restheart.mongodb.db.GridFsRepository;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.representation.RepresentationUtils;
+import org.restheart.utils.RepresentationUtils;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-commons
+ * restheart-mongodb
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2020 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,26 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.representation;
+package org.restheart.exchange;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class IllegalQueryParamenterException extends Exception {
+public class InvalidMetadataException extends Exception {
+
+    /**
+     *
+     */
+    public InvalidMetadataException() {
+        super();
+    }
 
     /**
      *
      * @param message
      */
-    public IllegalQueryParamenterException(String message) {
+    public InvalidMetadataException(String message) {
         super(message);
     }
 
@@ -38,7 +45,7 @@ public class IllegalQueryParamenterException extends Exception {
      * @param message
      * @param cause
      */
-    public IllegalQueryParamenterException(String message, Throwable cause) {
+    public InvalidMetadataException(String message, Throwable cause) {
         super(message, cause);
     }
 }

@@ -33,7 +33,7 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.representation.IllegalQueryParamenterException;
+import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

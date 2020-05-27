@@ -18,19 +18,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.changestreams;
+package org.restheart.exchange;
 
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class QueryVariableNotBoundException extends Exception {
+public class QueryNotFoundException extends Exception {
 
     /**
      *
      */
-    public QueryVariableNotBoundException() {
+    public QueryNotFoundException() {
         super();
     }
 
@@ -38,7 +38,7 @@ public class QueryVariableNotBoundException extends Exception {
      *
      * @param message
      */
-    public QueryVariableNotBoundException(String message) {
+    public QueryNotFoundException(String message) {
         super(message);
     }
 
@@ -47,7 +47,7 @@ public class QueryVariableNotBoundException extends Exception {
      * @param message
      * @param cause
      */
-    public QueryVariableNotBoundException(String message, Throwable cause) {
+    public QueryNotFoundException(String message, Throwable cause) {
         super(message, cause);
     }
 }

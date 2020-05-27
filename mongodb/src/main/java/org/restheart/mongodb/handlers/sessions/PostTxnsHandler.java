@@ -33,7 +33,7 @@ import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.COMMITTED;
 import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.NONE;
 import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.mongodb.db.sessions.TxnsUtils;
-import org.restheart.representation.RepresentationUtils;
+import org.restheart.utils.RepresentationUtils;
 import org.restheart.utils.HttpStatus;
 
 /**

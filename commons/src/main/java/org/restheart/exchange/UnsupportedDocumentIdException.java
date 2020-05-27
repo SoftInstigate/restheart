@@ -17,9 +17,43 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
+package org.restheart.exchange;
+
 /**
- * Classes to deal with MongoService resource representations
- * 
-* @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.representation;
+public class UnsupportedDocumentIdException extends Exception {
+
+    /**
+     *
+     */
+    public UnsupportedDocumentIdException() {
+        super();
+    }
+    
+    /**
+     *
+     * @param message
+     */
+    public UnsupportedDocumentIdException(String message) {
+        super(message);
+    }
+    
+    /**
+     *
+     * @param message
+     * @param cause
+     */
+    public UnsupportedDocumentIdException(String message, Throwable cause) {
+        super(message, cause);
+    }
+    
+    /**
+     *
+     * @param cause
+     */
+    public UnsupportedDocumentIdException(Throwable cause) {
+        super(cause);
+    }
+}

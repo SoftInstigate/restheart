@@ -27,8 +27,8 @@ import org.bson.BsonArray;
 import org.bson.BsonInt32;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.representation.IllegalQueryParamenterException;
-import org.restheart.representation.RepresentationUtils;
+import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.utils.RepresentationUtils;
 
 /**
  *

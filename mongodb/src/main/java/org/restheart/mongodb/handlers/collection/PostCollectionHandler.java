@@ -33,7 +33,7 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DocumentDAO;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.representation.RepresentationUtils;
+import org.restheart.utils.RepresentationUtils;
 import org.restheart.utils.HttpStatus;
 
 /**
