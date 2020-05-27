@@ -25,9 +25,9 @@ import static java.lang.Math.toIntExact;
 import java.util.TreeMap;
 import org.bson.BsonArray;
 import org.bson.BsonInt32;
+import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.utils.RepresentationUtils;
 
 /**

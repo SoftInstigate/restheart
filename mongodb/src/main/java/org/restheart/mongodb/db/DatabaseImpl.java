@@ -41,10 +41,10 @@ import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
+import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.OperationResult;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
-import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.utils.HttpStatus;
 
 /**

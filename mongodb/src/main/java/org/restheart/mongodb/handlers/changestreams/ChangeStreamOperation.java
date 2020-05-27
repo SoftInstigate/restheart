@@ -20,13 +20,13 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
-import org.restheart.exchange.QueryVariableNotBoundException;
 import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
+import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.utils.JsonUtils;
 
 /**

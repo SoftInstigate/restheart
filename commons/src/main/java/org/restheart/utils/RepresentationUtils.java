@@ -19,8 +19,6 @@
  */
 package org.restheart.utils;
 
-import org.restheart.exchange.UnsupportedDocumentIdException;
-import org.restheart.exchange.IllegalQueryParamenterException;
 import io.undertow.server.HttpServerExchange;
 import java.util.Date;
 import java.util.TreeMap;
@@ -41,9 +39,10 @@ import org.bson.types.MinKey;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
+import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.utils.URLUtils;
+import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

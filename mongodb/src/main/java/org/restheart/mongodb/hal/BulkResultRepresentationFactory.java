@@ -28,12 +28,12 @@ import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
+import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.BulkOperationResult;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.exchange.IllegalQueryParamenterException;
-import org.restheart.utils.RepresentationUtils;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.RepresentationUtils;
 
 /**
  *

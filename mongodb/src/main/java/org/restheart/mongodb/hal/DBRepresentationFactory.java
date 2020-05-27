@@ -31,9 +31,9 @@ import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
+import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.exchange.IllegalQueryParamenterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

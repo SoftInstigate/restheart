@@ -28,9 +28,9 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
+import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.exchange.IllegalQueryParamenterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -39,8 +39,8 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.exchange.UnsupportedDocumentIdException;
+import org.restheart.mongodb.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

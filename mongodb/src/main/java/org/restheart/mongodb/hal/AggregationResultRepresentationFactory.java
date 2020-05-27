@@ -23,9 +23,9 @@ package org.restheart.mongodb.hal;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
 import org.bson.BsonInt32;
+import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.exchange.IllegalQueryParamenterException;
 
 /**
  *

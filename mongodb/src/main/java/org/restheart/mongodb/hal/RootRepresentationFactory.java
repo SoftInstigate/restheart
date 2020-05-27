@@ -25,8 +25,8 @@ import org.bson.BsonArray;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.exchange.ExchangeKeys.TYPE;
-import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.IllegalQueryParamenterException;
+import org.restheart.exchange.MongoRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

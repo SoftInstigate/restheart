@@ -35,8 +35,8 @@ import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.db.sessions.SessionOptions;
 import org.restheart.mongodb.db.sessions.Sid;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.utils.RepresentationUtils;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.RepresentationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
