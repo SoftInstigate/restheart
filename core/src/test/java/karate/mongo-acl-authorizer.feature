@@ -14,6 +14,12 @@ Background:
 
 Scenario: create test acl
     * header Authorization = adminAuthHeader
+    Given path '/test-db'
+    And request {}
+    When method PUT
+    Then assert responseStatus == 201 || responseStatus == 200
+
+    * header Authorization = adminAuthHeader
     Given path '/test-db/acl'
     And request read('maa-acl.json')
     When method POST
