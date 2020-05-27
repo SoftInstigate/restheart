@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-/*
+ /*
  * Copyright SoftInstigate srl. All Rights Reserved.
  *
  *
@@ -36,7 +36,6 @@ import com.google.gson.JsonParseException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCursor;
 import static com.mongodb.client.model.Filters.eq;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
@@ -67,6 +66,7 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.PwdCredentialAccount;
+import org.restheart.security.utils.MongoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -445,29 +445,23 @@ public class MongoRealmAuthenticator implements Authenticator {
             LOGGER.error("Cannot find account: mongo service is not enabled.");
             return false;
         }
-        
-        var db = mclient.getDatabase(this.getUsersDb());
-
-        MongoCursor<String> dbCollections = db
-                .listCollectionNames()
-                .iterator();
-
-        while (dbCollections.hasNext()) {
-            String dbCollection = dbCollections.next();
-
-            if (this.getUsersCollection().equals(dbCollection)) {
-                return true;
-            }
-        }
 
         try {
-            db.createCollection(this.getUsersCollection());
+            var mu = new MongoUtils(this.mclient);
 
-            return true;
+            if (!mu.doesDbExist(this.usersDb)) {
+                mu.createDb(this.usersDb);
+            }
+
+            if (!mu.doesCollectionExist(this.usersDb, this.usersCollection)) {
+                mu.createCollection(this.usersDb, this.usersCollection);
+            }
         } catch (Throwable t) {
             LOGGER.error("Error creating users collection", t);
             return false;
         }
+        
+        return true;
     }
 
     public long countAccounts() {
@@ -486,7 +480,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             LOGGER.error("Cannot find account: mongo service is not enabled.");
             return;
         }
-        
+
         if (this.createUserDocument != null) {
             try {
                 mclient.getDatabase(this.getUsersDb())

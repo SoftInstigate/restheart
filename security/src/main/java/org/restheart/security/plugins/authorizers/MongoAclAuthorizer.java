@@ -60,6 +60,7 @@ import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
+import org.restheart.security.utils.MongoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -366,27 +367,21 @@ public class MongoAclAuthorizer implements Authorizer {
             return false;
         }
         
-        var db = mclient.getDatabase(this.aclDb);
-
-        MongoCursor<String> dbCollections = db
-                .listCollectionNames()
-                .iterator();
-
-        while (dbCollections.hasNext()) {
-            String dbCollection = dbCollections.next();
-
-            if (this.aclCollection.equals(dbCollection)) {
-                return true;
-            }
-        }
-
         try {
-            db.createCollection(this.aclCollection);
+            var mu = new MongoUtils(this.mclient);
 
-            return true;
+            if (!mu.doesDbExist(this.aclDb)) {
+                mu.createDb(this.aclDb);
+            }
+
+            if (!mu.doesCollectionExist(this.aclDb, this.aclCollection)) {
+                mu.createCollection(this.aclDb, this.aclCollection);
+            }
         } catch (Throwable t) {
             LOGGER.error("Error creating acl collection", t);
             return false;
         }
+        
+        return true;
     }
 }

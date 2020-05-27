@@ -111,7 +111,7 @@ authenticators:
     enabled: true
     conf-file: ../../etc/test/users.yml
   mongoRealmAuthenticator:
-    users-db: test-db
+    users-db: restheart-test
     users-collection: users
     prop-id: _id
     prop-password: password
@@ -141,7 +141,7 @@ authorizers:
     enabled: true
     conf-file: ../../etc/test/acl.yml
   mongoAclAuthorizer:
-    acl-db: test-db
+    acl-db: restheart-test
     acl-collection: acl
     root-role: admin
     cache-enabled: false
