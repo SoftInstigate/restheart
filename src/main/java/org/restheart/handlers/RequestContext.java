@@ -79,6 +79,7 @@ public class RequestContext {
     public static final String CLIENT_SESSION_KEY = "sid";
     public static final String TXNID_KEY = "txn";
     public static final String JSON_MODE_QPARAM_KEY = "jsonMode";
+    public static final String NOCACHE_QPARAM_KEY = "nocache";
 
     // matadata
     public static final String ETAG_DOC_POLICY_METADATA_KEY = "etagDocPolicy";
@@ -408,6 +409,8 @@ public class RequestContext {
     private final PathTemplateMatch pathTemplateMatch;
 
     private final JsonMode jsonMode;
+    
+    final boolean noCache;
 
     /**
      *
@@ -495,6 +498,8 @@ public class RequestContext {
         } else {
             this.jsonMode = null;
         }
+        
+        this.noCache = exchange.getQueryParameters().get(NOCACHE_QPARAM_KEY) != null;
     }
 
     /**
@@ -1986,5 +1991,12 @@ public class RequestContext {
         REQUIRED, // always requires the etag, return PRECONDITION FAILED if missing
         REQUIRED_FOR_DELETE, // only requires the etag for DELETE, return PRECONDITION FAILED if missing
         OPTIONAL                // checks the etag only if provided by client via If-Match header
+    }
+
+    /**
+     * @return the noCache
+     */
+    public boolean isNoCache() {
+        return noCache;
     }
 }

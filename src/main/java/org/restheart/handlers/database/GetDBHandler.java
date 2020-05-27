@@ -78,7 +78,8 @@ public class GetDBHandler extends PipedHttpHandler {
                     context.getDBName(),
                     colls,
                     context.getPage(),
-                    context.getPagesize());
+                    context.getPagesize(),
+                    context.isNoCache());
         }
 
         context.setResponseContent(new DBRepresentationFactory()

@@ -82,8 +82,7 @@ public class CollectionPropsInjectorHandler extends PipedHttpHandler {
         if (dbName != null && collName != null && !context.isDbMeta()) {
             BsonDocument collProps;
 
-            if (!LocalCachesSingleton.isEnabled() 
-                    || context.getClientSession() != null) {
+            if (!LocalCachesSingleton.isEnabled() || context.isNoCache()) {
                 collProps = getDatabase().
                         getCollectionProperties(
                                 context.getClientSession(),

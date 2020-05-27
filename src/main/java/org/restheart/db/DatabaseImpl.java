@@ -205,7 +205,8 @@ public class DatabaseImpl implements Database {
             final String dbName,
             final List<String> colls,
             final int page,
-            final int pagesize)
+            final int pagesize,
+            final boolean noCache)
             throws IllegalQueryParamenterException {
         // filter out reserved resources
         List<String> _colls = colls.stream()
@@ -249,7 +250,7 @@ public class DatabaseImpl implements Database {
 
                     BsonDocument collProperties;
 
-                    if (LocalCachesSingleton.isEnabled()) {
+                    if (LocalCachesSingleton.isEnabled() && !noCache) {
                         collProperties = LocalCachesSingleton.getInstance()
                                 .getCollectionProperties(dbName, collName);
                     } else {

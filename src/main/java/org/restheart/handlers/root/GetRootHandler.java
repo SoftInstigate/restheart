@@ -86,7 +86,7 @@ public class GetRootHandler extends PipedHttpHandler {
                         + context.getPagesize() > dbs.size() ? dbs.size() : (context.getPage() - 1) * context.getPagesize() + context.getPagesize());
 
                 dbs.stream().map((db) -> {
-                    if (LocalCachesSingleton.isEnabled()) {
+                    if (LocalCachesSingleton.isEnabled() || context.isNoCache()) {
                         return LocalCachesSingleton.getInstance()
                                 .getDBProperties(db);
                     } else {
