@@ -120,6 +120,11 @@ public interface ExchangeKeys {
      *
      */
     public static final String JSON_MODE_QPARAM_KEY = "jsonMode";
+    
+    /**
+     *
+     */
+    public static final String NO_CACHE_QPARAM_KEY = "nocache";
 
     // matadata
 

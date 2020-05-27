@@ -70,8 +70,7 @@ public class DbPropsInjector implements MongoInterceptor {
         if (dbName != null) {
             BsonDocument dbProps;
 
-            if (!MetadataCachesSingleton.isEnabled()
-                    || request.getClientSession() != null) {
+            if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
                 dbProps = dbsDAO.getDatabaseProperties(
                         request.getClientSession(),
                         dbName);

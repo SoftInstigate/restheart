@@ -90,7 +90,8 @@ public class GetDBHandler extends PipelinedHandler {
                     request.getDBName(),
                     colls,
                     request.getPage(),
-                    request.getPagesize());
+                    request.getPagesize(),
+                    request.isNoCache());
             response.setContent(data);
         } else {
             response.setContent(new BsonArray());

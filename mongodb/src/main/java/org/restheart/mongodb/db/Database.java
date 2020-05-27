@@ -172,6 +172,7 @@ public interface Database {
      * @param collections the collections list as got from getCollectionNames()
      * @param page
      * @param pagesize
+     * @param noCache true to avoid using caching
      * @return the db data
      * @throws org.restheart.exchange.IllegalQueryParamenterException
      *
@@ -180,7 +181,8 @@ public interface Database {
             final ClientSession cs,
             final String dbName, List<String> collections,
             final int page,
-            final int pagesize)
+            final int pagesize,
+            final boolean noCache)
             throws IllegalQueryParamenterException;
 
     /**

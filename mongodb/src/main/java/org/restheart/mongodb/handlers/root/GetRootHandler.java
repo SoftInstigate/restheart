@@ -124,7 +124,8 @@ public class GetRootHandler extends PipelinedHandler {
                                 + pagesize);
 
                         dbs.stream().map(db -> {
-                            if (MetadataCachesSingleton.isEnabled()) {
+                            if (MetadataCachesSingleton.isEnabled()
+                                    && !request.isNoCache()) {
                                 return MetadataCachesSingleton.getInstance()
                                         .getDBProperties(db);
                             } else {

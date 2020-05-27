@@ -116,6 +116,8 @@ public class MongoRequest extends BsonRequest {
     private final PathTemplateMatch pathTemplateMatch;
 
     private final JsonMode jsonMode;
+    
+    final boolean noCache;
 
     protected MongoRequest(HttpServerExchange exchange,
             String requestUri,
@@ -177,6 +179,8 @@ public class MongoRequest extends BsonRequest {
         } else {
             this.jsonMode = null;
         }
+        
+        this.noCache = exchange.getQueryParameters().get(NO_CACHE_QPARAM_KEY) != null;
     }
 
     /**
@@ -1542,5 +1546,12 @@ public class MongoRequest extends BsonRequest {
      */
     public boolean isForceEtagCheck() {
         return forceEtagCheck;
+    }
+
+    /**
+     * @return the noCache
+     */
+    public boolean isNoCache() {
+        return noCache;
     }
 }

@@ -79,8 +79,7 @@ public class CollectionPropsInjector implements MongoInterceptor {
         if (dbName != null && collName != null && !request.isDbMeta()) {
             BsonDocument collProps;
 
-            if (!MetadataCachesSingleton.isEnabled()
-                    || request.getClientSession() != null) {
+            if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
                 collProps = dbsDAO.
                         getCollectionProperties(
                                 request.getClientSession(),
