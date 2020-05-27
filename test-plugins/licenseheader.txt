@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-core
+ * restheart-test-plugins
  * %%
  * Copyright (C) 2018 - 2020 SoftInstigate
  * %%

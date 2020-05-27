@@ -1,6 +1,6 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-security
+ * restheart-mongodb
  * %%
  * Copyright (C) 2018 - 2020 SoftInstigate
  * %%
