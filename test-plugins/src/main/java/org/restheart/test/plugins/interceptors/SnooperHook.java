@@ -1,8 +1,8 @@
 /*-
  * ========================LICENSE_START=================================
- * restheart-mongodb
+ * restheart-test-plugins
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2020 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
+
 package org.restheart.test.plugins.interceptors;
 
 import java.util.Map;
