@@ -178,8 +178,8 @@ auth-mechanisms:
     base64Encoded: false
     usernameClaim: sub
     rolesClaim: roles
-#          fixedRoles:
-#            - admin
+    fixedRoles:
+#      - admin
     issuer: myIssuer
     audience: myAudience
   digestAuthMechanism:
@@ -237,6 +237,7 @@ authorizers:
   mongoAclAuthorizer:
     acl-db: restheart
     acl-collection: acl
+    # clients with root-role can execute any request
     root-role: admin
     cache-enabled: true
     cache-size: 1000
@@ -314,7 +315,6 @@ plugins-args:
     enabled: true
     uri: /roles
     secured: true
-    enabled: true
   echo:
     enabled: false
     uri: /echo
