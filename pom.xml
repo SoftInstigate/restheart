@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.restheart</groupId>
     <artifactId>restheart</artifactId>
-    <version>4.1.11</version>
+    <version>4.1.12-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>restheart</name>
     <description>
