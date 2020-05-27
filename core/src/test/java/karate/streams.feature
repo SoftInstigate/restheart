@@ -13,6 +13,12 @@ function(json) {
 return JSON.parse(json)
 }
 """
+* def sleep =
+"""
+function(seconds){
+    java.lang.Thread.sleep(seconds*1000);
+}
+"""
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: Performing a simple GET request on a Change Stream resource (Expected 400 Bad Request)
@@ -32,11 +38,12 @@ Scenario: test insert (POST) new document (without avars)
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
     
+    * callonce sleep 3
     * header Authorization = authHeader
     Given path coll
     And request {"a":1, "b":2, "c":"test"}
     When method POST
-    And def result = karate.listen(1000)
+    And def result = karate.listen(5000)
     Then def parsedMsg = parseResponse(result)
     * print parsedMsg
     And match parsedMsg.operationType == 'insert'
@@ -60,14 +67,14 @@ Scenario: test insert (POST) new document (with avars)
     Given path coll
     And request {"anotherProp": 1}
     When method POST
-    And def firstPostResult = karate.listen(1000)
+    And def firstPostResult = karate.listen(5000)
     Then match firstPostResult == '#null'
     
     * header Authorization = authHeader
     Given path coll
     And request {"targettedProperty": "test", "anotherProp": 1}
     When method POST
-    And def result = karate.listen(1000)
+    And def result = karate.listen(5000)
     Then def parsedMsg = parseResponse(result)
     * print parsedMsg
     And match parsedMsg.operationType == 'insert'
@@ -96,7 +103,7 @@ Scenario: test PATCH on inserted document (without avars)
     Given url location
     And request {"moreProp": "test", "anotherProp": 1, "$unset": {"b":1}}
     When method PATCH
-    And def result = karate.listen(1000)
+    And def result = karate.listen(5000)
     Then def parsedMsg = parseResponse(result)
     * print parsedMsg
     And match parsedMsg.operationType == 'update'
@@ -125,7 +132,7 @@ Scenario: test PATCH on inserted document (with avars)
     Given url location
     And request {"moreProp": "test", "anotherProp": 1, "$unset": {"toBeRemoved":1}}
     When method PATCH
-    And def result = karate.listen(1000)
+    And def result = karate.listen(5000)
     Then def parsedMsg = parseResponse(result)
     * print parsedMsg
     And match parsedMsg.operationType == 'update'
@@ -148,7 +155,7 @@ Scenario: test PUT upserting notifications (without avars)
     Given path coll + '/testput'
     And request {"a":1, "b":2, "c":"test"}
     When method PUT
-    And def firstResult = karate.listen(1000)
+    And def firstResult = karate.listen(5000)
     Then def parsedInsertingMsg = parseResponse(firstResult)
     And print parsedInsertingMsg
     And match parsedInsertingMsg.operationType == 'insert'
@@ -168,7 +175,7 @@ Scenario: test PUT upserting notifications (without avars)
     Given path coll + '/testput'
     And request {"moreProp": "test", "anotherProp": 1}
     When method PUT
-    And def secondResult = karate.listen(1000)
+    And def secondResult = karate.listen(5000)
     Then def parsedEditMsg = parseResponse(secondResult)
     And print parsedEditMsg
     And match parsedEditMsg.operationType == 'replace'
@@ -190,7 +197,7 @@ Scenario: test PUT upserting notifications (with avars)
     Given path coll + '/testputwithavars'
     And request {"targettedProperty": "test"}
     When method PUT
-    And def firstResult = karate.listen(1000)
+    And def firstResult = karate.listen(5000)
     Then def parsedInsertingMsg = parseResponse(firstResult)
     And print parsedInsertingMsg
     And match parsedInsertingMsg.operationType == 'insert'
@@ -208,7 +215,7 @@ Scenario: test PUT upserting notifications (with avars)
     Given path coll + '/testputwithavars'
     And request {"moreProp": "test", "anotherProp": 1}
     When method PUT
-    And def secondResult = karate.listen(1000)
+    And def secondResult = karate.listen(5000)
     Then def parsedEditMsg = parseResponse(secondResult)
     And print parsedEditMsg
     And match parsedEditMsg.operationType == 'replace'
@@ -228,7 +235,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     Given path coll
     When request {"name": "testname"}
     And method POST
-    And def result = karate.listen(1000)
+    And def result = karate.listen(5000)
     Then match result == '#notnull'
 
     # Connect to "ud" stream.
@@ -243,7 +250,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     Given path coll
     When request {"name": "testname"}
     And method POST
-    And def result = karate.listen(1000)
+    And def result = karate.listen(5000)
     Then match result == '#null'
     And def location = responseHeaders['Location'][0]
 
@@ -251,7 +258,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     Given url location
     And request {"a": "inserted"}
     When method PATCH
-    And def firstPatchResult = karate.listen(1000)
+    And def firstPatchResult = karate.listen(5000)
     Then def parsedInsertedTargettedPropertyMsg = parseResponse(firstPatchResult)
     And print parsedInsertedTargettedPropertyMsg  
     And match parsedInsertedTargettedPropertyMsg.operationType == 'update'
@@ -261,7 +268,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     Given url location
     And request {"b": "inserted"}
     When method PATCH
-    And def firstPatchResult = karate.listen(1000)
+    And def firstPatchResult = karate.listen(5000)
     Then def parsedInsertedPropertyMsg = parseResponse(firstPatchResult)
     Then match firstPatchResult == '#null'
 
@@ -277,7 +284,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     Given url location
     And request {"b": "inserted"}
     When method PATCH
-    And def secondPatchResult = karate.listen(1000)
+    And def secondPatchResult = karate.listen(5000)
     Then def parsedInsertedPropertyMsg = parseResponse(firstPatchResult)
     And print parsedInsertedPropertyMsg
     And match secondPatchResult == '#notnull'
