@@ -105,6 +105,9 @@
           <includes>
             <includes>**/*.java</includes>
           </includes>
+          <excludes>
+            <excludes>**/Minify.java</excludes>
+          </excludes>
         </configuration>
         <executions>
           <execution>
