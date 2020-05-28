@@ -30,7 +30,7 @@ services:
     mongodb:
         image: mongo:4.2
         container_name: restheart-mongo
-        command: --bind_ip_all --auth
+        command: ["--bind_ip_all", "--auth", "--replSet", "rs0"]
         environment:
             MONGO_INITDB_ROOT_USERNAME: restheart
             MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
@@ -38,3 +38,12 @@ services:
             - restheart-mongo-volume:/data/db
         networks:
             - restheart-backend
+
+### Initiate MongoDB as a single node replica set
+    mongodb-initiate:
+      image: mongo:4.2
+      networks:
+         - restheart-backend
+      depends_on:
+         - mongodb
+      entrypoint: bash -c "for i in {1..100}; do mongo  --host mongodb --username restheart --password 'R3ste4rt!' --eval 'if (!rs.status().ok) rs.initiate();' && break || sleep 2; done"
