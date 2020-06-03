@@ -146,8 +146,7 @@ public class JsonSchemaCacheSingleton {
             String schemaStoreDb,
             BsonValue schemaId)
             throws JsonSchemaNotFoundException {
-        BsonDocument document = dbsDAO
-                .getCollection(schemaStoreDb, _SCHEMAS)
+        var document = dbsDAO.getCollection(schemaStoreDb, _SCHEMAS)
                 .find(eq("_id", schemaId))
                 .first();
 

@@ -52,10 +52,11 @@ class IndexDAO {
         FIELDS_TO_RETURN_INDEXES.put("key", new BsonInt32(1));
         FIELDS_TO_RETURN_INDEXES.put("name", new BsonInt32(1));
     }
-    private final MongoClient client;
+    
+    private final CollectionDAO collectionDAO;
 
     IndexDAO(MongoClient client) {
-        this.client = client;
+        this.collectionDAO = new CollectionDAO(client);
     }
 
     /**
@@ -72,11 +73,9 @@ class IndexDAO {
         List<BsonDocument> ret = new ArrayList<>();
 
         ListIndexesIterable<Document> indexes = cs == null
-                ? client.getDatabase(dbName)
-                        .getCollection(collName, BsonDocument.class)
+                ? collectionDAO.getCollection(dbName, collName)
                         .listIndexes()
-                : client.getDatabase(dbName)
-                        .getCollection(collName, BsonDocument.class)
+                : collectionDAO.getCollection(dbName, collName)
                         .listIndexes(cs);
 
         indexes.iterator().forEachRemaining(
@@ -108,22 +107,18 @@ class IndexDAO {
             final BsonDocument options) {
         if (options == null) {
             if (cs == null) {
-                client.getDatabase(dbName)
-                        .getCollection(collection)
+                collectionDAO.getCollection(dbName, collection)
                         .createIndex(keys);
             } else {
-                client.getDatabase(dbName)
-                        .getCollection(collection)
+                collectionDAO.getCollection(dbName, collection)
                         .createIndex(cs, keys);
             }
         } else {
             if (cs == null) {
-                client.getDatabase(dbName)
-                        .getCollection(collection)
+                collectionDAO.getCollection(dbName, collection)
                         .createIndex(keys, getIndexOptions(options));
             } else {
-                client.getDatabase(dbName)
-                        .getCollection(collection)
+                collectionDAO.getCollection(dbName, collection)
                         .createIndex(cs, keys, getIndexOptions(options));
             }
         }
@@ -143,12 +138,10 @@ class IndexDAO {
             final String collection,
             final String indexId) {
         if (cs == null) {
-            client.getDatabase(dbName)
-                    .getCollection(collection)
+            collectionDAO.getCollection(dbName, collection)
                     .dropIndex(indexId);
         } else {
-            client.getDatabase(dbName)
-                    .getCollection(collection)
+            collectionDAO.getCollection(dbName, collection)
                     .dropIndex(cs, indexId);
         }
 

@@ -27,6 +27,7 @@ import com.mongodb.client.MongoDatabase;
 import java.util.List;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
 import org.bson.json.JsonParseException;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.IllegalQueryParamenterException;
@@ -51,7 +52,7 @@ public interface Database {
             final ClientSession cs,
             final String dbName,
             final String collectionName,
-            final String requestEtag,
+            final BsonObjectId requestEtag,
             final boolean checkEtag);
 
     /**
@@ -65,7 +66,7 @@ public interface Database {
     OperationResult deleteDatabase(
             final ClientSession cs,
             final String dbName,
-            final String requestEtag,
+            final BsonObjectId requestEtag,
             final boolean checkEtag);
 
     /**

@@ -23,7 +23,6 @@ package org.restheart.mongodb.db;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import java.util.Objects;
 import org.bson.BsonDocument;
@@ -43,12 +42,14 @@ import org.restheart.utils.HttpStatus;
 public class FileMetadataDAO implements FileMetadataRepository {
 
     private final MongoClient client;
+    private final CollectionDAO collectionDAO;
 
     /**
      *
      */
     public FileMetadataDAO() {
         client = MongoClientSingleton.getInstance().getClient();
+        collectionDAO = new CollectionDAO(client);
     }
 
     /**
@@ -77,9 +78,7 @@ public class FileMetadataDAO implements FileMetadataRepository {
             final String requestEtag,
             final boolean patching,
             final boolean checkEtag) {
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll = mdb
-                .getCollection(collName, BsonDocument.class);
+        var mcoll = collectionDAO.getCollection(dbName, collName);
 
         // genereate new etag
         ObjectId newEtag = new ObjectId();

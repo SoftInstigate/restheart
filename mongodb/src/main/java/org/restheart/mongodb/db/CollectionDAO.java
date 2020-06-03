@@ -20,14 +20,12 @@
  */
 package org.restheart.mongodb.db;
 
-import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCommandException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +35,6 @@ import org.bson.BsonInt32;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.bson.Document;
 import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
@@ -82,22 +79,6 @@ class CollectionDAO {
     }
 
     /**
-     * Returns the mongodb DBCollection object for the collection in db dbName.
-     *
-     * @deprecated
-     * @param dbName the database name of the collection the database name of
-     * the collection
-     * @param collName the collection name
-     * @return the mongodb DBCollection object for the collection in db dbName
-     */
-    @Deprecated
-    DBCollection getCollectionLegacy(
-            final String dbName,
-            final String collName) {
-        return client.getDB(dbName).getCollection(collName);
-    }
-
-    /**
      * Returns the MongoCollection object for the collection in db dbName.
      *
      * @param dbName the database name of the collection the database name of
@@ -108,8 +89,7 @@ class CollectionDAO {
     MongoCollection<BsonDocument> getCollection(
             final String dbName,
             final String collName) {
-        return client
-                .getDatabase(dbName)
+        return client.getDatabase(dbName)
                 .getCollection(collName, BsonDocument.class);
     }
 
@@ -285,8 +265,7 @@ class CollectionDAO {
             final ClientSession cs,
             final String dbName,
             final String collName) {
-        MongoCollection<BsonDocument> propsColl
-                = getCollection(dbName, META_COLLNAME);
+        var propsColl = getCollection(dbName, META_COLLNAME);
 
         var query = new BsonDocument("_id",
                 new BsonString("_properties.".concat(collName)));
@@ -389,9 +368,7 @@ class CollectionDAO {
         content.put("_etag", new BsonObjectId(newEtag));
         content.remove("_id"); // make sure we don't change this field
 
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll
-                = mdb.getCollection(META_COLLNAME, BsonDocument.class);
+        var mcoll = getCollection(dbName, META_COLLNAME);
 
         if (checkEtag && updating) {
             var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
@@ -519,30 +496,26 @@ class CollectionDAO {
             final ClientSession cs,
             final String dbName,
             final String collName,
-            final String requestEtag,
+            final BsonObjectId requestEtag,
             final boolean checkEtag) {
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<Document> mcoll = mdb.getCollection(META_COLLNAME);
+        var mcoll = getCollection(dbName, META_COLLNAME);
 
         var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
 
         if (checkEtag) {
-
-            Document properties = cs == null
+            BsonDocument properties = cs == null
                     ? mcoll.find(query).projection(FIELDS_TO_RETURN).first()
                     : mcoll.find(cs, query).projection(FIELDS_TO_RETURN).first();
 
             if (properties != null) {
-                Object oldEtag = properties.get("_etag");
+                BsonValue oldEtag = properties.get("_etag");
 
                 if (oldEtag != null) {
                     if (requestEtag == null) {
                         return new OperationResult(
                                 HttpStatus.SC_CONFLICT,
                                 oldEtag);
-                    } else if (!Objects.equals(
-                            oldEtag.toString(),
-                            requestEtag)) {
+                    } else if (!requestEtag.equals(oldEtag)) {
                         return new OperationResult(
                                 HttpStatus.SC_PRECONDITION_FAILED,
                                 oldEtag);
@@ -551,7 +524,7 @@ class CollectionDAO {
             }
         }
 
-        MongoCollection<Document> collToDelete = mdb.getCollection(collName);
+        var collToDelete = getCollection(dbName, collName);
 
         if (cs == null) {
             collToDelete.drop();

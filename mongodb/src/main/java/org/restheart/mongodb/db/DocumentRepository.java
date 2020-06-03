@@ -23,7 +23,6 @@ package org.restheart.mongodb.db;
 import com.mongodb.client.ClientSession;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.bson.Document;
 import org.restheart.exchange.OperationResult;
 
 /**
@@ -162,7 +161,7 @@ public interface DocumentRepository {
      * @param documentId
      * @return Document containing _etag property
      */
-    Document getDocumentEtag(
+    BsonDocument getDocumentEtag(
             final ClientSession cs,
             final String dbName, 
             final String collName, 

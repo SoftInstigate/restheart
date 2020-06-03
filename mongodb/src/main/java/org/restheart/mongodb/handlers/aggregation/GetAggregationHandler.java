@@ -123,8 +123,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                     MapReduceIterable<BsonDocument> mrOutput;
                     MapReduce mapReduce = (MapReduce) query;
                     try {
-                        mrOutput = dbsDAO
-                                .getCollection(request.getDBName(),
+                        mrOutput = dbsDAO.getCollection(request.getDBName(),
                                         request.getCollectionName())
                                 .mapReduce(
                                         mapReduce.getResolvedMap(avars),
@@ -157,8 +156,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                     AggregateIterable<BsonDocument> agrOutput;
                     AggregationPipeline pipeline = (AggregationPipeline) query;
                     try {
-                        agrOutput = dbsDAO
-                                .getCollection(
+                        agrOutput = dbsDAO.getCollection(
                                         request.getDBName(),
                                         request.getCollectionName())
                                 .aggregate(

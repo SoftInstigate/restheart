@@ -21,6 +21,8 @@
 package org.restheart.mongodb.handlers.collection;
 
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonObjectId;
+import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.OperationResult;
@@ -35,7 +37,7 @@ import org.restheart.mongodb.utils.RequestHelper;
  */
 public class DeleteCollectionHandler extends PipelinedHandler {
     private final DatabaseImpl dbsDAO = new DatabaseImpl();
-    
+
     /**
      * Creates a new instance of DeleteCollectionHandler
      */
@@ -61,17 +63,23 @@ public class DeleteCollectionHandler extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
-        
+
         if (request.isInError()) {
             next(exchange);
             return;
         }
 
+        var etag = request.getETag() == null 
+                ? null
+                : ObjectId.isValid(request.getETag())
+                ? new BsonObjectId(new ObjectId(request.getETag()))
+                : new BsonObjectId();
+
         OperationResult result = dbsDAO.deleteCollection(
                 request.getClientSession(),
-                request.getDBName(), 
+                request.getDBName(),
                 request.getCollectionName(),
-                request.getETag(), 
+                etag,
                 request.isETagCheckRequired());
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {

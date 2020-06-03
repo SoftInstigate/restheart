@@ -184,8 +184,7 @@ public class DatabaseImpl implements Database {
     @Override
     public BsonDocument getDatabaseProperties(
             final ClientSession cs, final String dbName) {
-        MongoCollection<BsonDocument> propsColl
-                = collectionDAO.getCollection(dbName, META_COLLNAME);
+        var propsColl = getCollection(dbName, META_COLLNAME);
 
         BsonDocument props = cs == null
                 ? propsColl.find(PROPS_QUERY).limit(1).first()
@@ -253,27 +252,27 @@ public class DatabaseImpl implements Database {
         var data = new BsonArray();
 
         _colls.stream().map((collName) -> {
-                    BsonDocument properties
+            BsonDocument properties
                     = new BsonDocument("_id", new BsonString(collName));
 
-                    BsonDocument collProperties;
+            BsonDocument collProperties;
 
-                    if (MetadataCachesSingleton.isEnabled() && !noCache) {
-                        collProperties = MetadataCachesSingleton.getInstance()
-                                .getCollectionProperties(dbName, collName);
-                    } else {
-                        collProperties = collectionDAO.getCollectionProps(
-                                cs,
-                                dbName,
-                                collName);
-                    }
+            if (MetadataCachesSingleton.isEnabled() && !noCache) {
+                collProperties = MetadataCachesSingleton.getInstance()
+                        .getCollectionProperties(dbName, collName);
+            } else {
+                collProperties = collectionDAO.getCollectionProps(
+                        cs,
+                        dbName,
+                        collName);
+            }
 
-                    if (collProperties != null) {
-                        properties.putAll(collProperties);
-                    }
+            if (collProperties != null) {
+                properties.putAll(collProperties);
+            }
 
-                    return properties;
-                }
+            return properties;
+        }
         ).forEach((item) -> {
             data.add(item);
         });
@@ -312,9 +311,7 @@ public class DatabaseImpl implements Database {
         content.put("_etag", new BsonObjectId(newEtag));
         content.remove("_id"); // make sure we don't change this field
 
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll
-                = mdb.getCollection(META_COLLNAME, BsonDocument.class);
+        var mcoll = getCollection(dbName, META_COLLNAME);
 
         if (checkEtag && updating) {
             BsonDocument oldProperties = cs == null
@@ -426,35 +423,33 @@ public class DatabaseImpl implements Database {
      * @param cs the client session
      * @param dbName
      * @param requestEtag
+     * @param checkEtag
      * @return
      */
     @Override
     public OperationResult deleteDatabase(
             final ClientSession cs,
             final String dbName,
-            final String requestEtag,
+            final BsonObjectId requestEtag,
             final boolean checkEtag) {
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<Document> mcoll = mdb.getCollection(META_COLLNAME);
+        var mcoll = getCollection(dbName, META_COLLNAME);
 
         if (checkEtag) {
             var query = eq("_id", DB_META_DOCID);
-            Document properties = cs == null
+            var properties = cs == null
                     ? mcoll.find(query)
                             .projection(FIELDS_TO_RETURN).first()
                     : mcoll.find(cs, query)
                             .projection(FIELDS_TO_RETURN).first();
 
             if (properties != null) {
-                Object oldEtag = properties.get("_etag");
+                var oldEtag = properties.get("_etag");
 
                 if (oldEtag != null) {
                     if (requestEtag == null) {
                         return new OperationResult(
                                 HttpStatus.SC_CONFLICT, oldEtag);
-                    } else if (!Objects.equals(
-                            oldEtag.toString(),
-                            requestEtag)) {
+                    } else if (!requestEtag.equals(oldEtag)) {
                         return new OperationResult(
                                 HttpStatus.SC_PRECONDITION_FAILED,
                                 oldEtag);
@@ -464,9 +459,9 @@ public class DatabaseImpl implements Database {
         }
 
         if (cs == null) {
-            mdb.drop();
+            getDatabase(dbName).drop();
         } else {
-            mdb.drop(cs);
+            getDatabase(dbName).drop(cs);
         }
 
         return new OperationResult(HttpStatus.SC_NO_CONTENT);
@@ -500,11 +495,7 @@ public class DatabaseImpl implements Database {
     public MongoCollection<BsonDocument> getCollection(
             final String dbName,
             final String collName) {
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll = mdb.getCollection(
-                collName,
-                BsonDocument.class);
-        return mcoll;
+        return collectionDAO.getCollection(dbName, collName);
     }
 
     /**
@@ -554,7 +545,7 @@ public class DatabaseImpl implements Database {
             final ClientSession cs,
             final String dbName,
             final String collectionName,
-            final String requestEtag,
+            final BsonObjectId requestEtag,
             final boolean checkEtag) {
         return collectionDAO.deleteCollection(
                 cs,

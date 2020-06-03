@@ -22,6 +22,8 @@ package org.restheart.mongodb.handlers.database;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import org.bson.BsonObjectId;
+import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.OperationResult;
@@ -69,7 +71,11 @@ public class DeleteDBHandler extends PipelinedHandler {
             return;
         }
 
-        String etag = request.getETag();
+        var etag = request.getETag() == null
+                ? null
+                : ObjectId.isValid(request.getETag())
+                ? new BsonObjectId(new ObjectId(request.getETag()))
+                : new BsonObjectId();
 
         OperationResult result = dbsDAO.deleteDatabase(
                 request.getClientSession(),

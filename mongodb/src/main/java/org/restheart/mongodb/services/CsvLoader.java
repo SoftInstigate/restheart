@@ -141,7 +141,7 @@ public class CsvLoader implements ByteArrayService {
                             try {
                                 final String content = ChannelReader.read(exchange.getRequestChannel());
 
-                                List<BsonDocument> documents = parseCsv(exchange, request, response, params, content);
+                                List<BsonDocument> documents = parseCsv(params, content);
 
                                 if (documents != null && documents.size() > 0) {
                                     MongoCollection<BsonDocument> mcoll = MongoClientSingleton.getInstance().getClient()
@@ -204,10 +204,7 @@ public class CsvLoader implements ByteArrayService {
         }
     }
 
-    private List<BsonDocument> parseCsv(HttpServerExchange exchange,
-            ByteArrayRequest request,
-            ByteArrayResponse response,
-            CsvRequestParams params,
+    private List<BsonDocument> parseCsv(CsvRequestParams params,
             String rawContent) throws IOException {
         List<BsonDocument> listOfBsonDocuments = new ArrayList<>();
 

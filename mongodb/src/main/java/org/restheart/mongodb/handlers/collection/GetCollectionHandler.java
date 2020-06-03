@@ -22,10 +22,8 @@ package org.restheart.mongodb.handlers.collection;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.MongoException;
-import com.mongodb.client.MongoCollection;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
-import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
@@ -89,10 +87,8 @@ public class GetCollectionHandler extends PipelinedHandler {
             return;
         }
 
-        MongoCollection<BsonDocument> coll = dbsDAO
-                .getCollection(
-                        request.getDBName(),
-                        request.getCollectionName());
+        var coll = dbsDAO.getCollection(request.getDBName(), 
+                request.getCollectionName());
 
         long size = -1;
 

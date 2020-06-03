@@ -21,12 +21,9 @@
 package org.restheart.mongodb.db;
 
 import com.mongodb.MongoBulkWriteException;
-import com.mongodb.MongoClient;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.DeleteManyModel;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
@@ -38,34 +35,30 @@ import java.util.Objects;
 import java.util.Optional;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.OperationResult;
 import static org.restheart.mongodb.db.DAOUtils.BAD_VALUE_KEY_ERROR;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DocumentDAO implements DocumentRepository {
-
-    private final Logger LOGGER = LoggerFactory.getLogger(DocumentDAO.class);
-
-    private final MongoClient client;
-
+    private final CollectionDAO collectionDAO;
+    
     /**
      *
      */
     public DocumentDAO() {
-        client = MongoClientSingleton.getInstance().getClient();
+        collectionDAO = new CollectionDAO(MongoClientSingleton.getInstance()
+                .getClient());
     }
 
     /**
@@ -77,20 +70,19 @@ public class DocumentDAO implements DocumentRepository {
      * @return
      */
     @Override
-    public Document getDocumentEtag(
+    public BsonDocument getDocumentEtag(
             final ClientSession cs,
             final String dbName,
             final String collName,
             final Object documentId) {
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<Document> mcoll = mdb.getCollection(collName);
+        var mcoll = collectionDAO.getCollection(dbName,collName);
 
         var query = eq("_id", documentId);
-        FindIterable<Document> documents = cs == null
+        var documents = cs == null
                 ? mcoll.find(query)
-                        .projection(new Document("_etag", 1))
+                        .projection(new BsonDocument("_etag", new BsonInt32(1)))
                 : mcoll.find(cs, query)
-                        .projection(new Document("_etag", 1));
+                        .projection(new BsonDocument("_etag", new BsonInt32(1)));
 
         return documents.iterator().tryNext();
     }
@@ -121,10 +113,8 @@ public class DocumentDAO implements DocumentRepository {
             final String requestEtag,
             final boolean patching,
             final boolean checkEtag) {
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll
-                = mdb.getCollection(collName, BsonDocument.class);
-
+        var mcoll = collectionDAO.getCollection(dbName, collName);
+        
         // genereate new etag
         ObjectId newEtag = new ObjectId();
 
@@ -222,9 +212,7 @@ public class DocumentDAO implements DocumentRepository {
             final BsonDocument newContent,
             final String requestEtag,
             final boolean checkEtag) {
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll
-                = mdb.getCollection(collName, BsonDocument.class);
+        var mcoll = collectionDAO.getCollection(dbName, collName);
 
         ObjectId newEtag = new ObjectId();
 
@@ -300,9 +288,7 @@ public class DocumentDAO implements DocumentRepository {
             final BsonDocument shardKeys) {
         Objects.requireNonNull(documents);
 
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll
-                = mdb.getCollection(collName, BsonDocument.class);
+        var mcoll = collectionDAO.getCollection(dbName, collName);
 
         BsonObjectId newEtag = new BsonObjectId(new ObjectId());
 
@@ -346,9 +332,7 @@ public class DocumentDAO implements DocumentRepository {
             final String requestEtag,
             final boolean checkEtag
     ) {
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll
-                = mdb.getCollection(collName, BsonDocument.class);
+        var mcoll = collectionDAO.getCollection(dbName, collName);
 
         BsonDocument oldDocument = cs == null
                 ? mcoll.findOneAndDelete(
@@ -406,9 +390,7 @@ public class DocumentDAO implements DocumentRepository {
             final String collName,
             final BsonDocument filter,
             final BsonDocument shardedKeys) {
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll
-                = mdb.getCollection(collName, BsonDocument.class);
+        var mcoll = collectionDAO.getCollection(dbName, collName);
 
         List<WriteModel<BsonDocument>> deletes = new ArrayList<>();
 
@@ -447,9 +429,7 @@ public class DocumentDAO implements DocumentRepository {
             final BsonDocument filter,
             final BsonDocument shardedKeys,
             final BsonDocument data) {
-        MongoDatabase mdb = client.getDatabase(dbName);
-        MongoCollection<BsonDocument> mcoll
-                = mdb.getCollection(collName, BsonDocument.class);
+        var mcoll = collectionDAO.getCollection(dbName, collName);
 
         List<WriteModel<BsonDocument>> patches = new ArrayList<>();
 

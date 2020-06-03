@@ -58,6 +58,7 @@ public class GridFsDAO implements GridFsRepository {
     }
 
     private final MongoClient client;
+    private final CollectionDAO collectionDAO;
 
     private final Lock deleteLock = new ReentrantLock();
 
@@ -66,6 +67,7 @@ public class GridFsDAO implements GridFsRepository {
      */
     public GridFsDAO() {
         client = MongoClientSingleton.getInstance().getClient();
+        collectionDAO = new CollectionDAO(client);
     }
 
     /**
@@ -287,7 +289,7 @@ public class GridFsDAO implements GridFsRepository {
             final String bucketName
     ) {
         String chunksCollName = extractBucketName(bucketName).concat(".chunks");
-        client.getDatabase(dbName).getCollection(chunksCollName).drop();
+        collectionDAO.getCollection(dbName, chunksCollName).drop();
     }
 
 }
