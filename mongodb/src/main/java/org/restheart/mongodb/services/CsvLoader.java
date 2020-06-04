@@ -20,35 +20,25 @@
  */
 package org.restheart.mongodb.services;
 
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderValues;
-import io.undertow.util.Headers;
-import java.io.IOException;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Deque;
-import java.util.List;
-import java.util.Scanner;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import org.restheart.exchange.ByteArrayRequest;
-import org.restheart.exchange.ByteArrayResponse;
+import org.restheart.exchange.BsonFromCsvRequest;
+import org.restheart.exchange.BsonResponse;
 import org.restheart.mongodb.db.MongoClientSingleton;
-import org.restheart.plugins.ByteArrayService;
-import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.utils.ChannelReader;
+import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * service to upload a csv file in a collection
@@ -64,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * - values=&lt;values&gt; optional (default: no values) values of additional
  * props to add to each row<br>
  * defined in conf file) of a tranformer to apply to imported data - update
- * optional (default: no). use data to update matching documents");
+ * optional (default: no).use data to update matching documents");
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
@@ -72,26 +62,11 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(name = "csvLoader",
         description = "Uploads a csv file in a collection",
         defaultURI = "/csv")
-public class CsvLoader implements ByteArrayService {
-
-    private PluginsRegistry pluginsRegistry;
-
-    @InjectPluginsRegistry
-    public void init(PluginsRegistry pluginsRegistry) {
-        this.pluginsRegistry = pluginsRegistry;
-    }
-
-    /**
-     *
-     */
-    public static final String CVS_CONTENT_TYPE = "text/csv";
-
+public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
     /**
      *
      */
     public static final String FILTER_PROPERTY = "_filter";
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(CsvLoader.class);
 
     private static final String ERROR_QPARAM = "query parameters: " + "db=<db_name> *required, "
             + "coll=<collection_name> *required, "
@@ -120,8 +95,7 @@ public class CsvLoader implements ByteArrayService {
      * @throws Exception
      */
     @Override
-    public void handle(ByteArrayRequest request,
-            ByteArrayResponse response) throws Exception {
+    public void handle(BsonFromCsvRequest request, BsonResponse response) throws Exception {
         var exchange = request.getExchange();
 
         if (request.isOptions()) {
@@ -129,74 +103,81 @@ public class CsvLoader implements ByteArrayService {
         } else {
             response.setContentTypeAsJson();
             if (doesApply(request)) {
-                if (checkContentType(exchange)) {
-                    try {
-                        CsvRequestParams params = new CsvRequestParams(exchange,
-                                pluginsRegistry);
+                try {
+                    CsvRequestParams params = new CsvRequestParams(exchange);
 
-                        if (params.update && params.idIdx < 0) {
-                            response.setInError(HttpStatus.SC_BAD_REQUEST,
-                                    ERROR_NO_ID);
-                        } else {
-                            try {
-                                final String content = ChannelReader.read(exchange.getRequestChannel());
+                    if (params.db == null) {
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "db qparam is mandatory");
+                        return;
+                    }
 
-                                List<BsonDocument> documents = parseCsv(params, content);
+                    if (params.coll == null) {
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "coll qparam is mandatory");
+                        return;
+                    }
 
-                                if (documents != null && documents.size() > 0) {
-                                    MongoCollection<BsonDocument> mcoll = MongoClientSingleton.getInstance().getClient()
-                                            .getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
+                    if (params.update && params.idIdx < 0) {
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, ERROR_NO_ID);
+                    } else {
+                        BsonArray documents = request.getContent();
 
-                                    if (params.update && !params.upsert) {
-                                        documents.stream().forEach(document -> {
-                                            BsonDocument updateQuery = new BsonDocument("_id", document.remove("_id"));
+                        if (documents != null && documents.size() > 0) {
+                            var mcoll = MongoClientSingleton.getInstance().getClient()
+                                    .getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
+
+                            if (params.update && !params.upsert) {
+                                documents.stream()
+                                        .map(doc -> doc.asDocument())
+                                        // add props specified via keys and values qparams
+                                        .map(doc -> addProps(params, doc))
+                                        .forEach(doc -> {
+                                            BsonDocument updateQuery = new BsonDocument("_id", doc.remove("_id"));
 
                                             // for upate import, take _filter property into account
                                             // for instance, a filter allows to use $ positional array operator
-                                            BsonValue _filter = document.remove(FILTER_PROPERTY);
+                                            BsonValue _filter = doc.remove(FILTER_PROPERTY);
 
                                             if (_filter != null && _filter.isDocument()) {
                                                 updateQuery.putAll(_filter.asDocument());
                                             }
                                             if (params.upsert) {
-                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", document),
+                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc),
                                                         FAU_WITH_UPSERT_OPS);
                                             } else {
 
-                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", document),
+                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc),
                                                         FAU_NO_UPSERT_OPS);
                                             }
                                         });
-                                    } else if (params.update && params.upsert) {
-                                        documents.stream().forEach(document -> {
-                                            BsonDocument updateQuery = new BsonDocument("_id", document.remove("_id"));
+                            } else if (params.update && params.upsert) {
+                                documents.stream()
+                                        .map(doc -> doc.asDocument())
+                                        // add props specified via keys and values qparams
+                                        .map(doc -> addProps(params, doc))
+                                        .forEach(doc -> {
+                                            var updateQuery = new BsonDocument("_id", doc.remove("_id"));
 
-                                            mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", document),
+                                            mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc),
                                                     FAU_WITH_UPSERT_OPS);
                                         });
-                                    } else {
-                                        mcoll.insertMany(documents);
-                                    }
-                                    response.setStatusCode(HttpStatus.SC_OK);
-                                } else {
-                                    response.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
-                                }
-                            } catch (IOException ex) {
-                                LOGGER.debug("error parsing CSV data", ex);
-                                response.setInError(HttpStatus.SC_BAD_REQUEST,
-                                        ERROR_PARSING_DATA);
+                            } else {
+                                var docList = documents.stream()
+                                        .map(doc -> doc.asDocument())
+                                        // add props specified via keys and values qparams
+                                        .map(doc -> addProps(params, doc))
+                                        .collect(Collectors.toList());
 
+                                mcoll.insertMany(docList);
                             }
+                            response.setStatusCode(HttpStatus.SC_OK);
+                        } else {
+                            response.setStatusCode(HttpStatus.SC_NOT_MODIFIED);
                         }
-                    } catch (IllegalArgumentException iae) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST,
-                                ERROR_QPARAM);
                     }
-                } else {
+                } catch (IllegalArgumentException iae) {
                     response.setInError(HttpStatus.SC_BAD_REQUEST,
-                            ERROR_CONTENT_TYPE);
+                            ERROR_QPARAM);
                 }
-
             } else {
                 response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
                         ERROR_WRONG_METHOD);
@@ -204,60 +185,12 @@ public class CsvLoader implements ByteArrayService {
         }
     }
 
-    private List<BsonDocument> parseCsv(CsvRequestParams params,
-            String rawContent) throws IOException {
-        List<BsonDocument> listOfBsonDocuments = new ArrayList<>();
-
-        boolean isHeader = true;
-
-        List<String> cols = null;
-
-        try (Scanner scanner = new Scanner(rawContent)) {
-            while (scanner.hasNext()) {
-                String line = scanner.nextLine();
-
-                // split on the separator only if that comma has zero,
-                // or an even number of quotes ahead of it.
-                List<String> vals = Arrays.asList(line.split(params.sep + "(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1));
-
-                if (isHeader) {
-                    cols = vals;
-                } else {
-                    BsonDocument doc = new BsonDocument("_etag", new BsonObjectId());
-
-                    int unnamedProps = 0;
-
-                    for (int idx = 0; idx < vals.size(); idx++) {
-                        if (idx == params.idIdx) {
-                            doc.append("_id", getBsonValue(vals.get(params.idIdx)));
-                        } else {
-                            String propname;
-
-                            if (cols == null || cols.size() <= idx) {
-                                propname = "unnamed_" + unnamedProps;
-                                unnamedProps++;
-                            } else {
-                                propname = cols.get(idx);
-                            }
-
-                            doc.append(propname, getBsonValue(vals.get(idx)));
-                        }
-                    }
-
-                    // add props specified via keys and values qparams
-                    addProps(params, doc);
-
-                    listOfBsonDocuments.add(doc);
-                }
-
-                isHeader = false;
-            }
-        }
-
-        return listOfBsonDocuments;
+    private boolean doesApply(BsonFromCsvRequest request) {
+        return request.isPost();
     }
 
-    private void addProps(CsvRequestParams params, BsonDocument doc) {
+    @SuppressWarnings("unchecked")
+    private BsonDocument addProps(CsvRequestParams params, BsonDocument doc) {
         if (params.props != null && params.values != null) {
             Deque<String> _props = new ArrayDeque(params.props);
             Deque<String> _values = new ArrayDeque(params.values);
@@ -266,6 +199,8 @@ public class CsvLoader implements ByteArrayService {
                 doc.append(_props.pop(), getBsonValue(_values.poll()));
             }
         }
+
+        return doc;
     }
 
     private BsonValue getBsonValue(String raw) {
@@ -276,23 +211,28 @@ public class CsvLoader implements ByteArrayService {
         }
     }
 
-    private boolean doesApply(ByteArrayRequest request) {
-        return request.isPost();
+    @Override
+    public Consumer<HttpServerExchange> requestInitializer() {
+        return e -> BsonFromCsvRequest.init(e);
     }
 
-    private boolean checkContentType(HttpServerExchange exchange) {
-        HeaderValues contentType = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
+    @Override
+    public Consumer<HttpServerExchange> responseInitializer() {
+        return e -> BsonResponse.init(e);
+    }
 
-        return contentType != null
-                && contentType.stream()
-                        .anyMatch(ct
-                                -> ct.equals(CVS_CONTENT_TYPE)
-                        || ct.startsWith(CVS_CONTENT_TYPE.concat(";")));
+    @Override
+    public Function<HttpServerExchange, BsonFromCsvRequest> request() {
+        return e -> BsonFromCsvRequest.of(e);
+    }
+
+    @Override
+    public Function<HttpServerExchange, BsonResponse> response() {
+        return e -> BsonResponse.of(e);
     }
 }
 
 class CsvRequestParams {
-
     private static final String ID_IDX_QPARAM_NAME = "id";
     private static final String SEPARATOR_QPARAM_NAME = "sep";
     private static final String DB_QPARAM_NAME = "db";
@@ -312,7 +252,7 @@ class CsvRequestParams {
     public final Deque<String> props;
     public final Deque<String> values;
 
-    CsvRequestParams(HttpServerExchange exchange, PluginsRegistry pluginsRegistry) {
+    CsvRequestParams(HttpServerExchange exchange) {
         Deque<String> _db = exchange.getQueryParameters().get(DB_QPARAM_NAME);
         Deque<String> _coll = exchange.getQueryParameters().get(COLL_QPARAM_NAME);
         Deque<String> _sep = exchange.getQueryParameters().get(SEPARATOR_QPARAM_NAME);
@@ -325,14 +265,6 @@ class CsvRequestParams {
 
         db = _db != null ? _db.size() > 0 ? _db.getFirst() : null : null;
         coll = _coll != null ? _coll.size() > 0 ? _coll.getFirst() : null : null;
-
-        if (db == null) {
-            throw new IllegalArgumentException("db qparam is mandatory");
-        }
-
-        if (coll == null) {
-            throw new IllegalArgumentException("db qparam is mandatory");
-        }
 
         sep = _sep != null ? _sep.size() > 0 ? _sep.getFirst() : "" : ",";
         String _idIdx = _id != null ? _id.size() > 0 ? _id.getFirst() : "-1" : "-1";
