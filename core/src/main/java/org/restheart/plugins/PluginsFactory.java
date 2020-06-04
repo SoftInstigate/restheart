@@ -110,7 +110,7 @@ public class PluginsFactory implements AutoCloseable {
                     ex.getMessage());
         }
 
-        return urls.toArray(new URL[urls.size()]);
+        return urls.isEmpty() ? null: urls.toArray(new URL[urls.size()]);
     }
 
     @SuppressWarnings("unchecked")
@@ -144,12 +144,18 @@ public class PluginsFactory implements AutoCloseable {
     private URLClassLoader PLUGINS_CL_CACHE = null;
 
     private PluginsFactory() {
-        this.scanResult = new ClassGraph()
-                .addClassLoader(getPluginsClassloader())
-                .enableAnnotationInfo()
-                .enableMethodInfo()
-                .initializeLoadedClasses()
-                .scan();
+        var jars = findPluginsJars(getPluginsDirectory());
+
+        if (jars != null) {
+            this.scanResult = new ClassGraph()
+                    .addClassLoader(getPluginsClassloader(jars))
+                    .enableAnnotationInfo()
+                    .enableMethodInfo()
+                    .initializeLoadedClasses()
+                    .scan();
+        } else {
+            this.scanResult = null;
+        }
     }
 
     @Override
@@ -237,13 +243,18 @@ public class PluginsFactory implements AutoCloseable {
     private <T extends Plugin> Set<PluginRecord<T>> createPlugins(
             Class type, Map<String, Map<String, Object>> confs) {
         Set<PluginRecord<T>> ret = new LinkedHashSet<>();
+        
+        // scanResult is null if the plugins directory is empty
+        if (this.scanResult == null) {
+            return ret;
+        }
 
         var _type = type.getSimpleName();
 
         ClassInfoList registeredPlugins;
 
         try {
-            registeredPlugins = scanResult
+            registeredPlugins = this.scanResult
                     .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
         } catch (Throwable t) {
             LOGGER.error("Error deploying plugins: {}", t.getMessage());
@@ -369,26 +380,26 @@ public class PluginsFactory implements AutoCloseable {
 
             try {
                 invokeInjectMethods(ip);
-            } catch(InvocationTargetException ite) {
-                if (ite.getCause() != null 
+            } catch (InvocationTargetException ite) {
+                if (ite.getCause() != null
                         && ite.getCause() instanceof NoClassDefFoundError) {
                     var errMsg = "Error handling the request. "
-                        + "An external dependency is missing for "
-                        + ip.pluginType
-                        + " "
-                        + ip.pluginName
-                        + ". Copy the missing dependency jar to the plugins directory "
-                        + "to add it to the classpath";
-                    
+                            + "An external dependency is missing for "
+                            + ip.pluginType
+                            + " "
+                            + ip.pluginName
+                            + ". Copy the missing dependency jar to the plugins directory "
+                            + "to add it to the classpath";
+
                     LOGGER.error(errMsg, ite);
-                }  else {
+                } else {
                     LOGGER.error("Error injecting dependency to {} {}: {}",
-                        ip.pluginType,
-                        ip.pluginName,
-                        getRootException(ite).getMessage(),
-                        ite);
+                            ip.pluginType,
+                            ip.pluginName,
+                            getRootException(ite).getMessage(),
+                            ite);
                 }
-            }catch (ConfigurationException
+            } catch (ConfigurationException
                     | InstantiationException
                     | IllegalAccessException ex) {
                 LOGGER.error("Error injecting dependency to {} {}: {}",
@@ -623,11 +634,9 @@ public class PluginsFactory implements AutoCloseable {
      *
      * @return the URLClassLoader that resolve plugins classes
      */
-    private URLClassLoader getPluginsClassloader() {
+    private URLClassLoader getPluginsClassloader(URL[] jars) {
         if (PLUGINS_CL_CACHE == null) {
-            PLUGINS_CL_CACHE = new URLClassLoader(
-                    findPluginsJars(
-                            getPluginsDirectory()));
+            PLUGINS_CL_CACHE = new URLClassLoader(jars);
         }
 
         return PLUGINS_CL_CACHE;
