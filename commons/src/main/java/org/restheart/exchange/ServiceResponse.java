@@ -76,8 +76,8 @@ public abstract class ServiceResponse<T> extends Response<T> {
         } else {
             throw new IllegalStateException("Response bound to exchange is not "
                     + "of the specified type,"
-                    + " expected " + type.getClass().getSimpleName()
-                    + " got" + ret.getClass().getSimpleName());
+                    + " expected " + type.getSimpleName()
+                    + " got " + ret.getClass().getSimpleName());
         }
     }
 

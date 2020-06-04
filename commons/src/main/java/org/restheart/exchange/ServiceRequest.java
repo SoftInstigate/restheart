@@ -77,8 +77,8 @@ public abstract class ServiceRequest<T> extends Request<T> {
         } else {
             throw new IllegalStateException("Request bound to exchange is not "
                     + "of the specified type,"
-                    + " expected " + type.getClass().getSimpleName()
-                    + " got" + ret.getClass().getSimpleName());
+                    + " expected " + type.getSimpleName()
+                    + " got " + ret.getClass().getSimpleName());
         }
     }
 
