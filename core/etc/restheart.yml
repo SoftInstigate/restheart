@@ -303,6 +303,12 @@ plugins-directory: {{{plugins-directory}}}
 # i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false)
 
 plugins-args:
+  mongo:
+    enabled: true
+    uri: /
+    secured: true
+  csvLoader:
+    secured: true
   rndTokenService:
     enabled: true
     uri: /tokens
@@ -319,10 +325,6 @@ plugins-args:
     enabled: false
     uri: /echo
     secured: false
-  mongo:
-    enabled: true
-    uri: /
-    secured: true
 
 #### Logging
 

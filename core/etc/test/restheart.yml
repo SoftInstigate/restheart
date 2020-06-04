@@ -233,6 +233,8 @@ plugins-args:
     mongo:
         enabled: true
         secured: true
+    csvLoader:
+        secured: true
     testInitializer:
         enabled: true
     rndTokenService:
