@@ -18,7 +18,7 @@ services:
         image: softinstigate/restheart:5.1.0
         container_name: restheart
         environment:
-            MONGO_URI: mongodb://restheart:R3ste4rt!@mongodb
+            MONGO_URI: mongodb://restheart:R3ste4rt!@restheart-mongo
         command: ["--envFile", "/opt/restheart/etc/default.properties"]
         depends_on:
             - mongodb
@@ -30,7 +30,7 @@ services:
     mongodb:
         image: mongo:4.2
         container_name: restheart-mongo
-        command: ["--bind_ip_all", "--auth", "--replSet", "rs0"]
+        command: ["--bind_ip", "restheart-mongo", "--auth", "--replSet", "rs0"]
         environment:
             MONGO_INITDB_ROOT_USERNAME: restheart
             MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
