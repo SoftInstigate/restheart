@@ -20,18 +20,29 @@
 package org.restheart.exchange;
 
 import com.google.common.reflect.TypeToken;
+import com.mongodb.MongoClient;
+import com.mongodb.client.ClientSession;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
+import com.mongodb.client.model.ReplaceOptions;
+import com.mongodb.client.result.UpdateResult;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.bson.conversions.Bson;
 import org.bson.json.JsonParseException;
 import static org.restheart.exchange.Exchange.LOGGER;
 import org.restheart.utils.HttpStatus;
@@ -46,6 +57,9 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class MongoResponse extends BsonResponse {
+    private final static ReplaceOptions R_NOT_UPSERT_OPS = new ReplaceOptions()
+            .upsert(false);
+    
     static {
         LOGGER = LoggerFactory.getLogger(MongoResponse.class);
     }
@@ -287,5 +301,113 @@ public class MongoResponse extends BsonResponse {
                 : s
                         .replaceAll("\"", "'")
                         .replaceAll("\t", "  ");
+    }
+    
+    /**
+     * Helper method to restore a modified document. rollback() can be used when
+     * verifing a document after being updated to rollback changes. A common use
+     * case is when the request body contains update operators and an
+     * Interceptor cannot verify it at InterceptPoint.REQUEST time; it can check
+     * it at InterceptPoint.RESPONSE time and restore data if the updated
+     * document doest not fullfil the required conditions.
+     *
+     * Note: rollback() does not support bulk updates.
+     *
+     * @param mclient
+     * @param request
+     * @param response
+     * @throws Exception
+     */
+    public void rollback(MongoClient mclient)
+            throws Exception {
+        var request = MongoRequest.of(getExchange());
+        
+        if (request.isBulkDocuments()
+                || (request.isPost() && request.getContent() != null
+                && request.getContent().isArray())) {
+            throw new UnsupportedOperationException("rollback() does not support "
+                    + "bulk updates");
+        }
+
+        var exchange = request.getExchange();
+
+        MongoDatabase mdb = mclient.getDatabase(request.getDBName());
+
+        MongoCollection<BsonDocument> coll = mdb.getCollection(
+                request.getCollectionName(),
+                BsonDocument.class);
+
+        BsonDocument oldData = getDbOperationResult().getOldData();
+
+        Object newEtag = getDbOperationResult().getEtag();
+
+        if (oldData != null) {
+            // document was updated, restore old one
+            restoreDocument(
+                    request.getClientSession(),
+                    coll,
+                    oldData.get("_id"),
+                    request.getShardKey(),
+                    oldData,
+                    newEtag,
+                    "_etag");
+
+            // add to response old etag
+            if (oldData.get("$set") != null
+                    && oldData.get("$set").isDocument()
+                    && oldData.get("$set")
+                            .asDocument()
+                            .get("_etag") != null) {
+                exchange.getResponseHeaders().put(Headers.ETAG,
+                        oldData.get("$set")
+                                .asDocument()
+                                .get("_etag")
+                                .asObjectId()
+                                .getValue()
+                                .toString());
+            } else {
+                exchange.getResponseHeaders().remove(Headers.ETAG);
+            }
+
+        } else {
+            // document was created, delete it
+            Object newId = getDbOperationResult().getNewData().get("_id");
+
+            coll.deleteOne(and(eq("_id", newId), eq("_etag", newEtag)));
+        }
+    }
+
+    private static boolean restoreDocument(
+            final ClientSession cs,
+            final MongoCollection<BsonDocument> coll,
+            final Object documentId,
+            final BsonDocument shardKeys,
+            final BsonDocument data,
+            final Object etag,
+            final String etagLocation) {
+        Objects.requireNonNull(coll);
+        Objects.requireNonNull(documentId);
+        Objects.requireNonNull(data);
+
+        Bson query;
+
+        if (etag == null) {
+            query = eq("_id", documentId);
+        } else {
+            query = and(eq("_id", documentId), eq(
+                    etagLocation != null && !etagLocation.isEmpty()
+                    ? etagLocation
+                    : "_etag", etag));
+        }
+
+        if (shardKeys != null) {
+            query = and(query, shardKeys);
+        }
+
+        UpdateResult result = cs == null
+                ? coll.replaceOne(query, data, R_NOT_UPSERT_OPS)
+                : coll.replaceOne(cs, query, data, R_NOT_UPSERT_OPS);
+
+        return result.getModifiedCount() == 1;
     }
 }

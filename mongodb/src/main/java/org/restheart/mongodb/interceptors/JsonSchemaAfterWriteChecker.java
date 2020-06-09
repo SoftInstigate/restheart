@@ -65,7 +65,7 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
         super.handle(request, response);
 
         if (request.isInError()) {
-            rollback(request, response);
+            response.rollback(MongoClientSingleton.getInstance().getClient());
         }
     }
 
@@ -101,65 +101,5 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
         ret.add(new JSONObject(content.asDocument().toJson()));
 
         return ret;
-    }
-
-    private void rollback(MongoRequest request, MongoResponse response)
-            throws Exception {
-        var exchange = request.getExchange();
-
-        // restore old data
-        MongoClient client = MongoClientSingleton
-                .getInstance()
-                .getClient();
-
-        MongoDatabase mdb = client
-                .getDatabase(request.getDBName());
-
-        MongoCollection<BsonDocument> coll = mdb
-                .getCollection(
-                        request.getCollectionName(),
-                        BsonDocument.class);
-
-        BsonDocument oldData = response
-                .getDbOperationResult()
-                .getOldData();
-
-        Object newEtag = response.getDbOperationResult().getEtag();
-
-        if (oldData != null) {
-            // document was updated, restore old one
-            DAOUtils.restoreDocument(
-                    request.getClientSession(),
-                    coll,
-                    oldData.get("_id"),
-                    request.getShardKey(),
-                    oldData,
-                    newEtag,
-                    "_etag");
-
-            // add to response old etag
-            if (oldData.get("$set") != null
-                    && oldData.get("$set").isDocument()
-                    && oldData.get("$set")
-                            .asDocument()
-                            .get("_etag") != null) {
-                exchange.getResponseHeaders().put(Headers.ETAG,
-                        oldData.get("$set")
-                                .asDocument()
-                                .get("_etag")
-                                .asObjectId()
-                                .getValue()
-                                .toString());
-            } else {
-                exchange.getResponseHeaders().remove(Headers.ETAG);
-            }
-
-        } else {
-            // document was created, delete it
-            Object newId = response.getDbOperationResult()
-                    .getNewData().get("_id");
-
-            coll.deleteOne(and(eq("_id", newId), eq("_etag", newEtag)));
-        }
     }
 }
