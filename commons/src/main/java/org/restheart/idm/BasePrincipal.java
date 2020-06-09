@@ -17,41 +17,33 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.plugins.security;
+package org.restheart.idm;
 
-import io.undertow.security.idm.PasswordCredential;
-import java.util.Set;
+import java.security.Principal;
 
 /**
- * Account implementation that holds PasswordCredential
+ * Base concrete Principal implmentation
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class PwdCredentialAccount extends BaseAccount {
-    private static final long serialVersionUID = -5840334837968478775L;
-    final transient private PasswordCredential credential;
+public class BasePrincipal implements Principal {
+
+    private String name;
 
     /**
      *
      * @param name
-     * @param password
-     * @param roles
      */
-    public PwdCredentialAccount(final String name, final char[] password, final Set<String> roles) {
-        super(name, roles);
-
-        if (password == null) {
-            throw new IllegalArgumentException("argument password cannot be null");
+    public BasePrincipal(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("argument name cannot be null");
         }
 
-        this.credential = new PasswordCredential(password);
+        this.name = name;
     }
 
-    /**
-     *
-     * @return
-     */
-    public PasswordCredential getCredentials() {
-        return credential;
+    @Override
+    public String getName() {
+        return name;
     }
 }

@@ -39,7 +39,7 @@ import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.security.BaseAccount;
+import org.restheart.idm.BaseAccount;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;

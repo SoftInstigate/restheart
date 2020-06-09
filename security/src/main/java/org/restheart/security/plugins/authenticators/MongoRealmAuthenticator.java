@@ -65,7 +65,7 @@ import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
-import org.restheart.plugins.security.PwdCredentialAccount;
+import org.restheart.idm.PwdCredentialAccount;
 import org.restheart.security.utils.MongoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -43,7 +43,7 @@ import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
-import org.restheart.plugins.security.PwdCredentialAccount;
+import org.restheart.idm.PwdCredentialAccount;
 import org.restheart.utils.LambdaUtils;
 
 /**

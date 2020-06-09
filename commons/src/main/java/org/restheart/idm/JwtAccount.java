@@ -28,10 +28,10 @@
  * terms and conditions stipulated in the agreement/contract under which the
  * program(s) have been supplied. This copyright notice must not be removed.
  */
-package org.restheart.security.plugins.mechanisms;
+package org.restheart.idm;
 
 import java.util.Set;
-import org.restheart.plugins.security.BaseAccount;
+import org.restheart.idm.BaseAccount;
 
 
 /**

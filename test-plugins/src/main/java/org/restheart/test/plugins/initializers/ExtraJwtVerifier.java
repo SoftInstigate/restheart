@@ -35,11 +35,11 @@ import org.restheart.security.plugins.mechanisms.JwtAuthenticationMechanism;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RegisterPlugin(
-        name = "extraJwtVerificator",
+        name = "extraJwtVerifier",
         priority = 100,
         description = "Adds an extra verifictation step "
         + "to the jwtAuthenticationMechanism")
-public class ExtraJwtVerificator implements Initializer {
+public class ExtraJwtVerifier implements Initializer {
     private PluginsRegistry registry;
 
     @InjectPluginsRegistry
