@@ -1,11 +1,6 @@
-<p>
-    <a href="https://restheart.org">
-        <img src="https://restheart.org/images/rh.png" width="400px" height="auto" class="image-center img-responsive" alt="RESTHeart - REST API Microservice for MongoDB"/>
-    </a>
-</p>
-
 # RESTHeart - The REST API for MongoDB.
 
+[![Donate](https://img.shields.io/badge/Donate-Patreon-orange.svg?colorB=F96854)](https://www.patreon.com/restheart)
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Build](https://github.com/SoftInstigate/restheart/workflows/Build/badge.svg)](https://github.com/SoftInstigate/restheart/actions?query=workflow%3A%22Build%22)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
@@ -17,7 +12,8 @@
 
 ## Table of Contents
 
--   [Summary](#summary)
+-   [Sponsors](#sponsors)
+-   [Introduction](#introduction)
 -   [Download and Run](#download-and-run)
     -   [Prerequisites](#Prerequisites)
     -   [Get the latest release](#Get-the-latest-release)
@@ -37,21 +33,33 @@
    </a>
 </p>
 
-## Summary
 
-There are some features every developer in the world always need to implement:
 
-1. Data persistence.
-1. Authentication and Authorization.
-1. API.
+## Sponsors
+
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="middle">
+        <a href="https://www.softinstigate.com" target="_blank">
+          <img width="222px" src="https://www.softinstigate.com/images/softinstigate-logo-lg.png">
+        </a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+Big thanks to our sponsors! You can join them by supporting RESTHeart on [Patreon](https://www.patreon.com/restheart).
+
+## Introduction
+
+RESTHeart is a **REST API for MongoDB** which provides server-side Data, Identity and Access Management for Web and Mobile applications.
 
 RESTHeart provides out-of-the-box:
 
 1. Data persistence via MongoDB.
 1. Secure Identity and Access Management.
 1. REST API with JSON messages.
-
-RESTHeart is a **REST API for MongoDB** which provides server-side Data, Identity and Access Management for Web and Mobile applications.
 
 RESTHeart is:
 
