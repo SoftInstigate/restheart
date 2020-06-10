@@ -123,7 +123,7 @@ public class LogUtils {
     }
 
     private static String pad(String s, int length) {
-        var ret = new String(s);
+        var ret = s;
         while (ret.length() < length) {
             ret = ret.concat(" ");
         }
