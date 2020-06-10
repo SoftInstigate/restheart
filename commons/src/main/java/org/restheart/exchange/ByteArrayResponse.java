@@ -21,6 +21,7 @@ package org.restheart.exchange;
 
 import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
+import java.nio.charset.StandardCharsets;
 
 /**
  *
@@ -42,7 +43,7 @@ public class ByteArrayResponse extends ServiceResponse<byte[]> {
     @Override
     public String readContent() {
         if (content != null) {
-            return new String(content);
+            return new String(content, StandardCharsets.UTF_8);
         } else {
             return null;
         }

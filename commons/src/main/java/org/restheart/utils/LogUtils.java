@@ -123,10 +123,9 @@ public class LogUtils {
     }
 
     private static String pad(String s, int length) {
-        var ret = s;
-        while (ret.length() < length) {
-            ret = ret.concat(" ");
+        while (s.length() < length) {
+            s = s.concat(" ");
         }
-        return ret;
+        return s;
     }
 }
