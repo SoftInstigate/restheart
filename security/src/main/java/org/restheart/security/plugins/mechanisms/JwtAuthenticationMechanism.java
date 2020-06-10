@@ -18,19 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-/*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
- */
 package org.restheart.security.plugins.mechanisms;
 
-import org.restheart.idm.JwtAccount;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -62,7 +51,9 @@ import java.util.function.Consumer;
 import org.apache.commons.codec.binary.StringUtils;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
+import org.restheart.idm.JwtAccount;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.restheart.plugins.ConsumingPlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
@@ -76,7 +67,7 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(name="jwtAuthenticationMechanism",
         description = "handle JSON Web Token authentication")
-public class JwtAuthenticationMechanism implements AuthMechanism {
+public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugin<DecodedJWT> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtAuthenticationMechanism.class);
 
@@ -223,14 +214,15 @@ public class JwtAuthenticationMechanism implements AuthMechanism {
             final SecurityContext securityContext) {
         return new AuthenticationMechanism.ChallengeResult(true, 200);
     }
-
+    
     /**
      * set an extra verification step via a Consumer that can throw
      * JWTVerificationException to make the verification failing
      *
      * @param extraJwtVerifier
      */
-    public void setExtraJwtVerifier(Consumer<DecodedJWT> extraJwtVerifier) {
+    @Override
+    public void addConsumer(Consumer<DecodedJWT> extraJwtVerifier) {
         this.extraJwtVerifier = extraJwtVerifier;
     }
 

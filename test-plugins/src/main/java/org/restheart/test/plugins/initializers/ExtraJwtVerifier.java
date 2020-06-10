@@ -21,12 +21,15 @@
 package org.restheart.test.plugins.initializers;
 
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.restheart.ConfigurationException;
+import org.restheart.plugins.ConsumingPlugin;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.plugins.mechanisms.JwtAuthenticationMechanism;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Demonstrate how to add an extra verification step to the
@@ -40,6 +43,8 @@ import org.restheart.security.plugins.mechanisms.JwtAuthenticationMechanism;
         description = "Adds an extra verifictation step "
         + "to the jwtAuthenticationMechanism")
 public class ExtraJwtVerifier implements Initializer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExtraJwtVerifier.class);
+    
     private PluginsRegistry registry;
 
     @InjectPluginsRegistry
@@ -49,7 +54,8 @@ public class ExtraJwtVerifier implements Initializer {
 
     @Override
     public void init() {
-        JwtAuthenticationMechanism am;
+        ConsumingPlugin<DecodedJWT> am;
+        
         try {
             var pr = registry
                     .getAuthMechanisms()
@@ -58,15 +64,16 @@ public class ExtraJwtVerifier implements Initializer {
                     .findFirst();
 
             if (pr.isPresent()) {
-                am = (JwtAuthenticationMechanism) pr.get().getInstance();
+                am = (ConsumingPlugin<DecodedJWT>) pr.get().getInstance();
             } else {
-                throw new IllegalStateException("cannot get jwtAuthenticationMechanism");
+                LOGGER.debug("Skipping, jwtAuthenticationMechanism is disabled");
+                return;
             }
         } catch (ConfigurationException | ClassCastException ex) {
             throw new IllegalStateException("cannot get jwtAuthenticationMechanism", ex);
         }
 
-        am.setExtraJwtVerifier(token -> {
+        am.addConsumer(token -> {
             var extraClaim = token.getClaim("extra");
 
             if (extraClaim == null || extraClaim.isNull()) {
