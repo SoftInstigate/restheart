@@ -40,11 +40,6 @@ instance-name: {{{instance-name}}}
  # connections-ttl (optional, default -1) Connections Time to Live in seconds.
  # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
 #proxies:
-#   - location: /
-#     proxy-pass: ajp://127.0.0.1:8089
-#     rewrite-host-header: true
-#     connections-per-thread: 20
-#     name: restheart
 #   - location: /anything
 #     proxy-pass: https://httpbin.org/anything
 #     name: anything
