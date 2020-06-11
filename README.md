@@ -96,7 +96,7 @@ For more information on how to install and run MongoDB check the [Installation T
 
 Two alternatives:
 
--   Download the [ZIP](https://github.com/SoftInstigate/restheart/releases/download/5.1.0/restheart.zip) or [TAR.GZ](https://github.com/SoftInstigate/restheart/releases/download/5.1.0/restheart.tar.gz) archive.
+-   Download the [ZIP](https://github.com/SoftInstigate/restheart/releases/download/5.1.1/restheart.zip) or [TAR.GZ](https://github.com/SoftInstigate/restheart/releases/download/5.1.1/restheart.tar.gz) archive.
 -   If you know Maven, you can even [build the source code](docs/build.md) by yourself.
 
 If you choose to download either the zip or tar archive:
