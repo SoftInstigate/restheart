@@ -53,6 +53,7 @@ public class ExtraJwtVerifier implements Initializer {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void init() {
         ConsumingPlugin<DecodedJWT> am;
         

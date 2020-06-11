@@ -163,8 +163,6 @@ use-embedded-keystore: true
  # successfully authenticates the incoming request or the list of mechanisms is
  # exhausted.
 
- # See README.md for the list of available Authentication Mechanisms
-
 auth-mechanisms:
   tokenBasicAuthMechanism:
     enabled: true
@@ -199,8 +197,6 @@ auth-mechanisms:
  # An Authenticator verify user credential and are used by one or more
  # AuthMachanisms
 
- # See README.md for the list of available Authenticators
-
 authenticators:
   fileRealmAuthenticator:
     enabled: true
@@ -228,8 +224,6 @@ authenticators:
  # called on each authenticator in turn until one of the following occurs:
  # exhausted. In the latter case, the request ends and 403 Forbidden is returned.
 
- # See README.md for the list of available Authorizers
-
 authorizers:
   fileAclAuthorizer:
     enabled: true
@@ -254,8 +248,6 @@ authorizers:
  # If more than one token-manager are defined, the first one will be used
  # The token is returned to the caller via auth-token header when the user
  # autheticates succesfully. The token can be used by Authentication Mechanisms.
-
- # See README.md for the list of available Token Managers.
 
 token-manager:
   rndTokenManager:
