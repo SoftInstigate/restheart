@@ -32,7 +32,7 @@ RESTHeart comes with complete functionalities out of the box, but you can extend
 
 ## Documentation
 
-The full documentation is available [here](http://restheart.org/docs/).
+The full documentation is available [here](https://restheart.org/docs/).
 
 ## Sponsors
 
