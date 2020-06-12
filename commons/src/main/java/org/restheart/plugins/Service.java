@@ -28,7 +28,7 @@ import org.restheart.exchange.ServiceResponse;
 import org.restheart.utils.HttpStatus;
 
 /**
- * Interface to implement services
+ * Services allow to extend the API adding web services
  * 
  * @param <R> the request type
  * @param <S> the response type

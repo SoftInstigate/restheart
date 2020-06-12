@@ -20,6 +20,8 @@
 package org.restheart.plugins;
 
 /**
+ * Initializer allow to execute initialization logic at system startup time
+ * 
  * @see https://restheart.org/docs/plugins/core-plugins/#initializers
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
