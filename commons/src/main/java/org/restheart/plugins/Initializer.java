@@ -20,7 +20,7 @@
 package org.restheart.plugins;
 
 /**
- * @see https://restheart.org/docs/develop/security-plugins/#initializers
+ * @see https://restheart.org/docs/plugins/core-plugins/#initializers
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface Initializer extends ConfigurablePlugin {

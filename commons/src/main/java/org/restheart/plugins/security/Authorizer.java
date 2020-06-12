@@ -23,7 +23,7 @@ import org.restheart.exchange.Request;
 import org.restheart.plugins.ConfigurablePlugin;
 
 /**
- * @see https://restheart.org/docs/develop/security-plugins/#authorizers
+ * @see https://restheart.org/docs/plugins/security-plugins/#authorizers
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface Authorizer extends ConfigurablePlugin {

@@ -28,7 +28,7 @@ import org.restheart.plugins.ConfigurablePlugin;
 /**
  * Interface for token managers
  *
- * @see https://restheart.org/docs/develop/security-plugins/#token-managers
+ * @see https://restheart.org/docs/plugins/security-plugins/#token-managers
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public interface TokenManager extends Authenticator, ConfigurablePlugin {

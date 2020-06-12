@@ -20,20 +20,16 @@
 package org.restheart.plugins.security;
 
 import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.AuthenticationMechanism.AuthenticationMechanismOutcome;
-import io.undertow.security.api.AuthenticationMechanism.ChallengeResult;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.utils.PluginUtils;
 
 /**
- * @see https://restheart.org/docs/develop/security-plugins/#authentication-mechanisms
+ * @see https://restheart.org/docs/plugins/security-plugins/#authentication-mechanisms
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public interface AuthMechanism extends
-        AuthenticationMechanism,
-        ConfigurablePlugin {
+public interface AuthMechanism extends AuthenticationMechanism, ConfigurablePlugin {
     @Override
     public AuthenticationMechanismOutcome authenticate(
             final HttpServerExchange exchange,

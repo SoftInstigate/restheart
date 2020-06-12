@@ -36,6 +36,7 @@ import org.restheart.exchange.Response;
  * An interceptor can intercept a proxied request, when its request and response
  * types extends BufferedRequest and BufferedResponse.
  *
+ * @see https://restheart.org/docs/plugins/core-plugins/#interceptors
  * @param <R> the request type
  * @param <S> the response type
  *

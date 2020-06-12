@@ -32,7 +32,7 @@ import org.restheart.utils.HttpStatus;
  * 
  * @param <R> the request type
  * @param <S> the response type
- * @see https://restheart.org/docs/develop/security-plugins/#services
+ * @see https://restheart.org/docs/plugins/core-plugins/#services
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface Service<R extends ServiceRequest<?>, S extends ServiceResponse<?>>
