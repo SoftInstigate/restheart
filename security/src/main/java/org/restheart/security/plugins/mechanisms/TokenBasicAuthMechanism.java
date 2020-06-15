@@ -22,7 +22,6 @@ package org.restheart.security.plugins.mechanisms;
 
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
-import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpServerExchange;
@@ -41,6 +40,7 @@ import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
+import org.restheart.plugins.security.TokenManager;
 
 /**
  *
@@ -56,7 +56,7 @@ import org.restheart.plugins.security.AuthMechanism;
  */
 @RegisterPlugin(
         name = "tokenBasicAuthMechanism",
-        description = "authenticates the requests using authTokenIdentityManager",
+        description = "authenticates the requests using the configured Token Manager",
         enabledByDefault = false)
 public class TokenBasicAuthMechanism
         extends BasicAuthenticationMechanism
@@ -68,7 +68,7 @@ public class TokenBasicAuthMechanism
     private static final int PREFIX_LENGTH = BASIC_PREFIX.length();
     private static final String COLON = ":";
 
-    private IdentityManager identityManager = null;
+    private TokenManager tokenManager = null;
 
     private static void clear(final char[] array) {
         for (int i = 0; i < array.length; i++) {
@@ -90,7 +90,7 @@ public class TokenBasicAuthMechanism
     public void init(final Map<String, Object> args,
             PluginsRegistry pluginsRegistry)
             throws ConfigurationException {
-        this.identityManager = pluginsRegistry.getTokenManager() != null
+        this.tokenManager = pluginsRegistry.getTokenManager() != null
                 ? pluginsRegistry.getTokenManager().getInstance()
                 : null;
     }
@@ -119,7 +119,7 @@ public class TokenBasicAuthMechanism
                         try {
                             final AuthenticationMechanismOutcome result;
                             // this is where the token cache comes into play
-                            Account account = identityManager.verify(userName, credential);
+                            Account account = tokenManager.verify(userName, credential);
                             if (account != null) {
                                 securityContext.authenticationComplete(account, getMechanismName(), false);
                                 result = AuthenticationMechanismOutcome.AUTHENTICATED;

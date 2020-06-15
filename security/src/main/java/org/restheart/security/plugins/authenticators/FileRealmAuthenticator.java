@@ -38,12 +38,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.restheart.ConfigurationException;
+import org.restheart.idm.PwdCredentialAccount;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
-import org.restheart.idm.PwdCredentialAccount;
 import org.restheart.utils.LambdaUtils;
 
 /**

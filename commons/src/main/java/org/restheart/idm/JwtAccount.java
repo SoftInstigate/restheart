@@ -31,7 +31,6 @@
 package org.restheart.idm;
 
 import java.util.Set;
-import org.restheart.idm.BaseAccount;
 
 
 /**

@@ -28,11 +28,11 @@ import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.Map;
 import org.restheart.ConfigurationException;
+import org.restheart.idm.BaseAccount;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
-import org.restheart.idm.BaseAccount;
 
 /**
  * a simple Auth Mechanism to demonstrate how to plug a custom

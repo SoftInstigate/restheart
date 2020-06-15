@@ -21,22 +21,10 @@
 package org.restheart.security.utils;
 
 import com.mongodb.MongoClient;
-import com.mongodb.MongoCommandException;
-import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.MongoDatabase;
-import static com.mongodb.client.model.Filters.eq;
-import java.util.Objects;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
-import org.bson.BsonValue;
-import org.bson.types.ObjectId;
-import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
-import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
-import org.restheart.exchange.OperationResult;
-import org.restheart.utils.HttpStatus;
 
 /**
  *

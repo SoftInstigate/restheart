@@ -34,7 +34,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import static com.google.common.collect.Sets.newHashSet;
 import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCursor;
 import static com.mongodb.client.model.Filters.eq;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 import io.undertow.security.idm.Account;

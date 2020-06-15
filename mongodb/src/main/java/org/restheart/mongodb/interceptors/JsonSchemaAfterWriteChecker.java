@@ -20,19 +20,12 @@
  */
 package org.restheart.mongodb.interceptors;
 
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
-import io.undertow.util.Headers;
 import java.util.ArrayList;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.json.JSONObject;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.mongodb.db.DAOUtils;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;

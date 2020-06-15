@@ -47,8 +47,6 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
-    private IdentityManager identityManager;
-
     public BasicAuthMechanism()
             throws ConfigurationException {
         super("RESTHeart Realm", "basicAuthMechanism", false);
