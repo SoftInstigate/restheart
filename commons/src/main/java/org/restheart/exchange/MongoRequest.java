@@ -101,8 +101,6 @@ public class MongoRequest extends BsonRequest {
 
     private boolean noProps = false;
 
-    private Account authenticatedAccount = null;
-
     private ClientSessionImpl clientSession = null;
 
     /**
@@ -116,7 +114,7 @@ public class MongoRequest extends BsonRequest {
     private final PathTemplateMatch pathTemplateMatch;
 
     private final JsonMode jsonMode;
-    
+
     final boolean noCache;
 
     protected MongoRequest(HttpServerExchange exchange,
@@ -179,7 +177,7 @@ public class MongoRequest extends BsonRequest {
         } else {
             this.jsonMode = null;
         }
-        
+
         this.noCache = exchange.getQueryParameters().get(NO_CACHE_QPARAM_KEY) != null;
     }
 
@@ -1258,21 +1256,6 @@ public class MongoRequest extends BsonRequest {
      */
     public void setNoProps(boolean noProps) {
         this.noProps = noProps;
-    }
-
-    /**
-     * @return the authenticatedAccount
-     */
-    @Override
-    public Account getAuthenticatedAccount() {
-        return authenticatedAccount;
-    }
-
-    /**
-     * @param authenticatedAccount the authenticatedAccount to set
-     */
-    public void setAuthenticatedAccount(Account authenticatedAccount) {
-        this.authenticatedAccount = authenticatedAccount;
     }
 
     /**

@@ -115,12 +115,4 @@ public class ErrorHandler implements HttpHandler {
                     "Error handling the request, see log for more information", t);
         }
     }
-
-    private BsonDocument getBulkWriteError(MongoBulkWriteException mce,
-            String requestPath) {
-        var bprf = new BulkResultRepresentationFactory();
-
-        return bprf.getRepresentation(requestPath, mce);
-
-    }
 }

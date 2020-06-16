@@ -45,7 +45,6 @@ import org.restheart.mongodb.handlers.CORSHandler;
 import org.restheart.mongodb.handlers.ErrorHandler;
 import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
-import org.restheart.mongodb.handlers.injectors.AccountInjector;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
 import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
@@ -115,7 +114,6 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
                                 new MetricsInstrumentationHandler(),
                                 new CORSHandler(),
                                 new OptionsHandler(),
-                                new AccountInjector(),
                                 ClientSessionInjector.build(),
                                 new ETagPolicyInjector(),
                                 RequestDispatcherHandler.getInstance())));

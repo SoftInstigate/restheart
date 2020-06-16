@@ -135,7 +135,10 @@ public abstract class Request<T> extends Exchange<T> {
      * @return the authenticatedAccount
      */
     public Account getAuthenticatedAccount() {
-        return getWrappedExchange().getSecurityContext().getAuthenticatedAccount();
+        return getWrappedExchange().getSecurityContext() != null
+                ? getWrappedExchange().getSecurityContext()
+                        .getAuthenticatedAccount()
+                : null;
     }
 
     /**
