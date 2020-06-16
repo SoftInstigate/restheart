@@ -38,6 +38,26 @@ jobs:
             - name: Build and test
               run: mvn -B clean install
 
+            - name: Push latest Docker image
+              run: |
+                  echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+                  docker build --file ./core/Dockerfile -t softinstigate/restheart:latest ./core/.
+                  docker push softinstigate/restheart:latest
+
+            - name: Push stable Docker image
+              if: ${{ startsWith(github.ref, 'refs/tags/') }}
+              run: |
+                  docker tag softinstigate/restheart:latest softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+                  docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+
+            - name: Push distroless Docker image
+              if: ${{ startsWith(github.ref, 'refs/tags/') }}
+              run: |
+                  docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless ./core/.
+                  docker tag softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless softinstigate/restheart:distroless
+                  docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
+                  docker push softinstigate/restheart:distroless
+
             - name: Upload GitHub release
               if: ${{ startsWith(github.ref, 'refs/tags/') }}
               uses: softprops/action-gh-release@v1
@@ -67,24 +87,3 @@ jobs:
                   OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
                   GPG_KEY_NAME: ${{ secrets.GPG_KEY_NAME }}
                   GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-
-            - name: Build default Docker image
-              if: ${{ startsWith(github.ref, 'refs/tags/') }}
-              run: |
-                  echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-                  docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}} ./core/.
-
-            - name: Push default Docker image
-              if: ${{ startsWith(github.ref, 'refs/tags/') }}
-              run: |
-                  docker tag softinstigate/restheart:${{steps.vars.outputs.VERSION}} softinstigate/restheart:latest
-                  docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}
-                  docker push softinstigate/restheart:latest
-
-            - name: Build and push distroless Docker image
-              if: ${{ startsWith(github.ref, 'refs/tags/') }}
-              run: |
-                  docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless ./core/.
-                  docker tag softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless softinstigate/restheart:distroless
-                  docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
-                  docker push softinstigate/restheart:distroless
