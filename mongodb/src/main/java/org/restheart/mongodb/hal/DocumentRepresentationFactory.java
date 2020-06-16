@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.util.List;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.BINARY_CONTENT;
 import org.restheart.exchange.ExchangeKeys.TYPE;
@@ -59,22 +58,25 @@ class DocumentRepresentationFactory {
             BsonDocument data) {
         rep.addProperty("_type", new BsonString(type.name()));
 
-        Object etag = data.get("_etag");
+        if (data != null) {
+            var etag = data.get("_etag");
 
-        if (etag != null && etag instanceof ObjectId) {
-            if (data.get("_lastupdated_on") == null) {
-                // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
-                rep.addProperty("_lastupdated_on",
-                        new BsonString(Instant.ofEpochSecond(((ObjectId) etag).getTimestamp()).toString()));
+            if (etag != null && etag.isObjectId()) {
+                if (data.get("_lastupdated_on") == null) {
+                    // add the _lastupdated_on in case the _etag field is present and its value is an ObjectId
+                    rep.addProperty("_lastupdated_on",
+                            new BsonString(Instant.ofEpochSecond(etag.asObjectId()
+                                    .getValue().getTimestamp()).toString()));
+                }
             }
-        }
 
-        Object id = data.get("_id");
+            Object id = data.get("_id");
 
-        // generate the _created_on timestamp from the _id if this is an instance of ObjectId
-        if (data.get("_created_on") == null && id != null && id instanceof ObjectId) {
-            rep.addProperty("_created_on",
-                    new BsonString(Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString()));
+            // generate the _created_on timestamp from the _id if this is an instance of ObjectId
+            if (data.get("_created_on") == null && id != null && id instanceof ObjectId) {
+                rep.addProperty("_created_on",
+                        new BsonString(Instant.ofEpochSecond(((ObjectId) id).getTimestamp()).toString()));
+            }
         }
     }
 
@@ -82,7 +84,6 @@ class DocumentRepresentationFactory {
             HttpServerExchange exchange,
             BsonDocument data) {
         var request = MongoRequest.of(exchange);
-        var response = MongoResponse.of(exchange);
 
         List<Relationship> rels = null;
 
@@ -97,7 +98,7 @@ class DocumentRepresentationFactory {
         if (rels != null) {
             for (Relationship rel : rels) {
                 try {
-                    String link = rel.getRelationshipLink(request, 
+                    String link = rel.getRelationshipLink(request,
                             request.getDBName(),
                             request.getCollectionName(), data);
 
@@ -126,27 +127,26 @@ class DocumentRepresentationFactory {
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public Resource getRepresentation(String href, 
+    public Resource getRepresentation(String href,
             HttpServerExchange exchange,
             BsonDocument data)
             throws IllegalQueryParamenterException {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 
-        Resource rep;
+        var rep = request.isFullHalMode() && data != null
+                ? new Resource(RepresentationUtils
+                        .getReferenceLink(response,
+                                URLUtils.getParentPath(href),
+                                data.get("_id")))
+                : new Resource();
 
-        BsonValue id = data.get("_id");
+        if (data != null) {
+            data.keySet()
+                    .stream().forEach((key) -> rep.addProperty(key, data.get(key)));
 
-        if (request.isFullHalMode()) {
-            rep = new Resource(RepresentationUtils.getReferenceLink(response, URLUtils.getParentPath(href), id));
-        } else {
-            rep = new Resource();
+            addRelationshipsLinks(rep, exchange, data);
         }
-
-        data.keySet()
-                .stream().forEach((key) -> rep.addProperty(key, data.get(key)));
-
-        addRelationshipsLinks(rep, exchange, data);
 
         // link templates and curies
         String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
@@ -164,7 +164,7 @@ class DocumentRepresentationFactory {
             parentPath = URLUtils.getParentPath(requestPath);
         }
 
-        if (isBinaryFile(data)) {
+        if (data != null && isBinaryFile(data)) {
             rep.addLink(new Link("rh:data",
                     String.format("%s/%s", href, BINARY_CONTENT)));
         }
@@ -174,7 +174,7 @@ class DocumentRepresentationFactory {
 
             addSpecialProperties(rep, request.getType(), data);
 
-            if (isBinaryFile(data)) {
+            if (data != null && isBinaryFile(data)) {
                 if (request.isParentAccessible()) {
                     rep.addLink(new Link("rh:bucket", parentPath));
                 }

@@ -71,7 +71,8 @@ class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public Resource getRepresentation(HttpServerExchange exchange, MongoBulkWriteException mbwe)
+    public Resource getRepresentation(HttpServerExchange exchange, 
+            MongoBulkWriteException mbwe)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Resource rep = createRepresentation(exchange, exchange.getRequestPath());
