@@ -85,6 +85,7 @@ public class HALRepresentation implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return !request.isInError()
+                && response.getContent() != null
                 && !request.isDbMeta()
                 && !request.isCollectionMeta()
                 && !request.isCollectionSize()
