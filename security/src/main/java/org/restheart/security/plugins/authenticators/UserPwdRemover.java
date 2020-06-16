@@ -136,6 +136,7 @@ public class UserPwdRemover implements MongoInterceptor {
         return enabled
                 && request.isGet()
                 && this.usersDb.equalsIgnoreCase(request.getDBName())
-                && this.usersCollection.equalsIgnoreCase(request.getCollectionName());
+                && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
+                && response.getContent() != null;
     }
 }
