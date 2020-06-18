@@ -71,8 +71,10 @@ public class ResponseSender extends PipelinedHandler {
                 var response = (ServiceResponse) srv.get().getInstance()
                         .response().apply(exchange);
 
-                exchange.setStatusCode(response.getStatusCode());
-
+                if (response.getStatusCode() > 0) {
+                    exchange.setStatusCode(response.getStatusCode());
+                }
+                
                 var content = response.readContent();
 
                 if (content != null) {
