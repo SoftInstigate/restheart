@@ -17,9 +17,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonNull;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -115,7 +117,11 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
 
                     for (int idx = 0; idx < vals.size(); idx++) {
                         if (idx == params.idIdx) {
-                            doc.append("_id", getBsonValue(vals.get(params.idIdx)));
+                            var _v = vals.get(params.idIdx);
+                            
+                            if (_v != null) {
+                                doc.append("_id", getBsonValue(_v));
+                            }
                         } else {
                             String propname;
 
@@ -125,8 +131,12 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
                             } else {
                                 propname = cols.get(idx);
                             }
-
-                            doc.append(propname, getBsonValue(vals.get(idx)));
+                            
+                            var _v = vals.get(idx);
+                            
+                            if (_v != null) {
+                                 doc.append(propname, getBsonValue(_v));
+                            }
                         }
                     }
 
