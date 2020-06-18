@@ -35,6 +35,7 @@ import org.restheart.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
@@ -77,6 +78,13 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
     private PipelinedHandler pipeline;
 
+    /**
+     * PathMatcher is used by the root PathHandler to route the call. Here we
+     * use the same logic to identify the correct MongoMount in order to
+     * correctly init the BsonRequest
+     */
+    private final PathMatcher<MongoMount> mongoMounts = new PathMatcher<>();
+
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
         this.myURI = myURI();
@@ -89,6 +97,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        // see method javadoc for more information
+        resetRelativePath(request);
+
         if (MongoClientSingleton.isInitialized()) {
             this.pipeline.handleRequest(request.getExchange());
         } else {
@@ -214,13 +225,6 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         return e -> MongoResponse.of(e);
     }
 
-    /**
-     * PathMatcher is used by the root PathHandler to route the call. Here we
-     * use the same logic to identify the correct MongoMount in order to
-     * correctly init the BsonRequest
-     */
-    private final PathMatcher<MongoMount> mongoMounts = new PathMatcher<>();
-
     @SuppressWarnings("unchecked")
     private Set<MongoMount> getMongoMounts() {
         final var ret = new LinkedHashSet<MongoMount>();
@@ -312,5 +316,19 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         public String toString() {
             return "MongoMount(" + uri + " -> " + resource + ")";
         }
+    }
+    
+    /**
+     * reset the exchange relative path to the request path
+     *
+     * this is needed because undertow PathHandler first uses the relative path
+     * to match the request and then updates it. MongoService uses a second
+     * instance of PathHandler that will fail matching the relative path that
+     * was updated by restheart-core's root PathHandler
+     *
+     * @param request
+     */
+    private void resetRelativePath(Request request) {
+        request.getExchange().setRelativePath(request.getPath());
     }
 }
