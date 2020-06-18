@@ -21,7 +21,15 @@
 package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
+import org.restheart.exchange.BadRequestException;
+import org.restheart.exchange.Exchange;
 import org.restheart.plugins.PluginsRegistryImpl;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
 
 /**
  * Initializes the Request and the Response invoking requestInitializer() and
@@ -30,7 +38,6 @@ import org.restheart.plugins.PluginsRegistryImpl;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class ServiceExchangeInitializer extends PipelinedHandler {
-
     /**
      * Creates a new instance of RequestInitializer
      *
@@ -52,15 +59,45 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                 .findAny();
 
         if (srv.isPresent()) {
-            srv.get().getInstance()
-                    .requestInitializer()
-                    .accept(exchange);
+            try {
+                srv.get().getInstance()
+                        .requestInitializer()
+                        .accept(exchange);
 
-            srv.get().getInstance()
-                    .responseInitializer()
-                    .accept(exchange);
+                srv.get().getInstance()
+                        .responseInitializer()
+                        .accept(exchange);
+
+            } catch (BadRequestException bre) {
+                exchange.setStatusCode(bre.getStatusCode());
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
+                        Exchange.JSON_MEDIA_TYPE);
+                exchange.getResponseSender().send(JsonUtils.toJson(
+                        getErrorDocument(bre.getStatusCode(),
+                                bre.getMessage())));
+                return;
+            } catch (Throwable t) {
+                exchange.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+                return;
+            }
         }
 
         next(exchange);
+    }
+
+    private BsonDocument getErrorDocument(int statusCode, String msg) {
+        var rep = new BsonDocument();
+
+        rep.put("http status code", new BsonInt32(statusCode));
+        var text = HttpStatus.getStatusText(statusCode);
+        if (text != null) {
+            rep.put("http status description", new BsonString(HttpStatus.getStatusText(statusCode)));
+        }
+
+        if (msg != null) {
+            rep.put("message", new BsonString(msg));
+        }
+
+        return rep;
     }
 }

@@ -20,7 +20,6 @@
 package org.restheart.exchange;
 
 import com.google.common.reflect.TypeToken;
-import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
@@ -122,7 +121,8 @@ public class MongoRequest extends BsonRequest {
             String resourceUri) {
         super(exchange);
 
-        this.whereUri = URLUtils.removeTrailingSlashes(requestUri == null ? null
+        this.whereUri = URLUtils.removeTrailingSlashes(requestUri == null 
+                ? null
                 : requestUri.startsWith("/") ? requestUri
                 : "/" + requestUri);
 

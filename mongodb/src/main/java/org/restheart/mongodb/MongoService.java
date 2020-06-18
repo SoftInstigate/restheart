@@ -32,6 +32,7 @@ import java.util.function.Function;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.ConfigurationException;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -53,6 +54,7 @@ import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
+import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +80,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
         this.myURI = myURI();
-        this.pipeline = getBasePipeline(registry);
+        this.pipeline = getBasePipeline();
 
         // init mongoMounts
         getMongoMounts().stream().forEachOrdered(mm
@@ -104,7 +106,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
      *
      * @return a GracefulShutdownHandler
      */
-    private PipelinedHandler getBasePipeline(PluginsRegistry registry)
+    private PipelinedHandler getBasePipeline()
             throws ConfigurationException {
         var rootHandler = path();
 
@@ -165,8 +167,6 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
                 : url.contains("{") && url.contains("}");
     }
 
-    private final MongoMount DEFAULT_MONGO_MOUNT = new MongoMount("*", "/");
-
     /**
      * Return the MongoRequest initializer
      *
@@ -182,13 +182,12 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
             if (mmm != null && mmm.getValue() != null) {
                 var mm = mmm.getValue();
 
-                MongoRequest.init(e,
-                        mm.uri,
-                        mm.resource);
+                MongoRequest.init(e, mm.uri, mm.resource);
             } else {
-                MongoRequest.init(e,
-                        DEFAULT_MONGO_MOUNT.uri,
-                        DEFAULT_MONGO_MOUNT.resource);
+                LOGGER.warn("No MongoDb resource bound for {}. "
+                        + "Check mongo service configuration: "
+                        + "'mongo-mounts' and plugin arg 'uri'", path);
+                throw new BadRequestException(HttpStatus.SC_BAD_GATEWAY);
             }
         };
     }
