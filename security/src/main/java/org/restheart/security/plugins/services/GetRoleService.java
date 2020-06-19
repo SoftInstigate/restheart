@@ -51,14 +51,14 @@ import org.restheart.utils.URLUtils;
         defaultURI = "/roles")
 public class GetRoleService implements JsonService {
     Map<String, Object> confArgs = null;
-    
+
     /**
      * init the service
      *
      * @param confArgs
      */
     @InjectConfiguration
-    public void init (Map<String, Object> confArgs) {
+    public void init(Map<String, Object> confArgs) {
         this.confArgs = confArgs;
     }
 
@@ -70,7 +70,7 @@ public class GetRoleService implements JsonService {
     @Override
     public void handle(JsonRequest request, JsonResponse response) throws Exception {
         var exchange = request.getExchange();
-        
+
         if (request.isOptions()) {
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
             exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"),
@@ -81,8 +81,6 @@ public class GetRoleService implements JsonService {
             exchange.setStatusCode(HttpStatus.SC_OK);
             exchange.endExchange();
         } else if (request.isGet()) {
-            exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, "application/json");
-
             if ((exchange.getSecurityContext() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount() == null
                     || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null)
@@ -128,11 +126,10 @@ public class GetRoleService implements JsonService {
         if (confArgs == null) {
             return "/roles";
         }
-        
+
         try {
             return ConfigurablePlugin.argValue(confArgs, "uri");
-        }
-        catch (ConfigurationException ex) {
+        } catch (ConfigurationException ex) {
             return "/roles";
         }
     }

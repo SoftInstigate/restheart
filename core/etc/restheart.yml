@@ -311,7 +311,7 @@ plugins-args:
   roles:
     enabled: true
     uri: /roles
-    secured: true
+    secured: false
   echo:
     enabled: false
     uri: /echo
