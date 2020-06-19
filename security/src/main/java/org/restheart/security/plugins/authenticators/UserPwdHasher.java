@@ -84,11 +84,17 @@ public class UserPwdHasher implements MongoInterceptor {
             enabled = false;
         } else {
             var rhAuth = (MongoRealmAuthenticator) _mra.getInstance();
+            
+            if (!rhAuth.isBcryptHashedPassword()) {
+                this.enabled = false;
+                return;
+            }
 
             this.usersDb = rhAuth.getUsersDb();
             this.usersCollection = rhAuth.getUsersCollection();
             this.propNamePassword = rhAuth.getPropPassword();
             this.complexity = rhAuth.getBcryptComplexity();
+            
 
             if (usersDb == null
                     || usersCollection == null

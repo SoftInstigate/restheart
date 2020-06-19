@@ -241,12 +241,9 @@ public class MongoRealmAuthenticator implements Authenticator {
     public Integer getBcryptComplexity() {
         return bcryptComplexity;
     }
-
-    /**
-     * @param bcryptComplexity the bcryptComplexity to set
-     */
-    public void setBcryptComplexity(Integer bcryptComplexity) {
-        this.bcryptComplexity = bcryptComplexity;
+    
+    public boolean isBcryptHashedPassword() {
+        return bcryptHashedPassword;
     }
 
     /**
