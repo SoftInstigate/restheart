@@ -169,6 +169,13 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
             }
 
+            // if this is a service, handle OPTIONS
+            // otherwise requests with bad content receive CORS errors
+            if (handlingService != null && request.isOptions()) {
+                handlingService.handleOptions(ServiceRequest.of(exchange,
+                        ServiceRequest.class));
+            }
+            
             sender.handleRequest(exchange);
         } else {
             next(exchange);

@@ -29,7 +29,7 @@ import org.restheart.utils.HttpStatus;
 
 /**
  * Services allow to extend the API adding web services
- * 
+ *
  * @param <R> the request type
  * @param <S> the response type
  * @see https://restheart.org/docs/plugins/core-plugins/#services
@@ -47,25 +47,25 @@ public interface Service<R extends ServiceRequest<?>, S extends ServiceResponse<
     public void handle(final R request, final S response) throws Exception;
 
     /**
-     * 
+     *
      * @return the function used to instantiate the request object
      */
     public Consumer<HttpServerExchange> requestInitializer();
 
     /**
-     * 
+     *
      * @return the function used to instantiate the response object
      */
     public Consumer<HttpServerExchange> responseInitializer();
 
     /**
-     * 
+     *
      * @return the function used to retrieve the request object
      */
     public Function<HttpServerExchange, R> request();
 
     /**
-     * 
+     *
      * @return the function used to retrieve the response object
      */
     public Function<HttpServerExchange, S> response();
@@ -78,10 +78,16 @@ public interface Service<R extends ServiceRequest<?>, S extends ServiceResponse<
      */
     default void handleOptions(final R request) throws Exception {
         var exchange = request.getExchange();
-        
+
         exchange.getResponseHeaders()
-                .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
-                .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
+                .put(HttpString.tryFromString("Access-Control-Allow-Methods"),
+                        "GET, PUT, POST, PATCH, DELETE, OPTIONS")
+                .put(HttpString.tryFromString("Access-Control-Allow-Headers"),
+                        "Accept, Accept-Encoding, Authorization, "
+                        + "Content-Length, Content-Type, Host, "
+                        + "If-Match, Origin, X-Requested-With, "
+                        + "User-Agent, No-Auth-Challenge");
+        
         exchange.setStatusCode(HttpStatus.SC_OK);
         exchange.endExchange();
     }

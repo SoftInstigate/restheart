@@ -104,9 +104,9 @@ public class CORSHandler extends PipelinedHandler {
     }
 
     interface CORSHeaders {
-
         HttpString ACCESS_CONTROL_EXPOSE_HEADERS = HttpString.tryFromString("Access-Control-Expose-Headers");
         HttpString ACCESS_CONTROL_ALLOW_CREDENTIAL = HttpString.tryFromString("Access-Control-Allow-Credentials");
         HttpString ACCESS_CONTROL_ALLOW_ORIGIN = HttpString.tryFromString("Access-Control-Allow-Origin");
+        HttpString ACCESS_CONTROL_ALLOW_METHODS = HttpString.tryFromString("Access-Control-Allow-Methods");
     }
 }
