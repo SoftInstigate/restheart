@@ -118,8 +118,13 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
                     for (int idx = 0; idx < vals.size(); idx++) {
                         if (idx == params.idIdx) {
                             var _v = vals.get(params.idIdx);
-                            
+
                             if (_v != null) {
+                                // quote empty string
+                                if ("".equals(_v.trim())) {
+                                    _v = "\"".concat(_v).concat("\"");
+                                }
+
                                 doc.append("_id", getBsonValue(_v));
                             }
                         } else {
@@ -131,11 +136,16 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
                             } else {
                                 propname = cols.get(idx);
                             }
-                            
+
                             var _v = vals.get(idx);
-                            
+
+                            // quote empty string
+                            if ("".equals(_v.trim())) {
+                                _v = "\"".concat(_v).concat("\"");
+                            }
+
                             if (_v != null) {
-                                 doc.append(propname, getBsonValue(_v));
+                                doc.append(propname, getBsonValue(_v));
                             }
                         }
                     }

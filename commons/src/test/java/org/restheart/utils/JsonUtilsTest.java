@@ -27,6 +27,7 @@ import java.util.Optional;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.BsonNull;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.junit.After;
@@ -612,7 +613,7 @@ public class JsonUtilsTest {
             Assert.fail(ex.toString());
         }
     }
-
+    
     /**
      *
      */
@@ -666,6 +667,28 @@ public class JsonUtilsTest {
 
         Assert.assertTrue(parsed.isNumber());
         Assert.assertEquals(parsed.asDouble(), new BsonDouble(3.1415));
+    }
+    
+    /**
+     *
+     */
+    @Test
+    public void testParseString() {
+        BsonValue parsed = JsonUtils.parse("'hello'");
+
+        Assert.assertTrue(parsed.isString());
+        Assert.assertEquals(parsed.asString(), new BsonString("hello"));
+    }
+    
+    /**
+     *
+     */
+    @Test
+    public void testParseEmptyString() {
+        BsonValue parsed = JsonUtils.parse("''");
+
+        Assert.assertTrue(parsed.isString());
+        Assert.assertEquals(parsed.asString(), new BsonString(""));
     }
 
     /**

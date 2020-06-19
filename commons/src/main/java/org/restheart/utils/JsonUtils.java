@@ -642,8 +642,10 @@ public class JsonUtils {
         }
 
         String trimmed = json.trim();
-
-        if (trimmed.startsWith("{")) {
+        
+        if (trimmed.isEmpty()) {
+            return null;
+        } else if (trimmed.startsWith("{")) {
             try {
                 return BsonDocument.parse(json);
             } catch (BsonInvalidOperationException ex) {
