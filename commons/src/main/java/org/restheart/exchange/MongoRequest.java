@@ -84,6 +84,7 @@ public class MongoRequest extends BsonRequest {
     private Deque<String> sortBy = null;
     private Deque<String> hint = null;
     private DOC_ID_TYPE docIdType = DOC_ID_TYPE.STRING_OID;
+    private final TYPE type;
 
     private REPRESENTATION_FORMAT representationFormat;
 
@@ -145,6 +146,8 @@ public class MongoRequest extends BsonRequest {
 
         // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
         this.pathTokens = this.unmappedUri.split(SLASH);
+        
+        this.type = selectRequestType(pathTokens);
 
         // etag
         HeaderValues etagHvs = exchange.getRequestHeaders() == null
@@ -287,7 +290,7 @@ public class MongoRequest extends BsonRequest {
      * @return type
      */
     public TYPE getType() {
-        return selectRequestType(pathTokens);
+        return type;
     }
 
     static TYPE selectRequestType(String[] pathTokens) {
@@ -300,7 +303,7 @@ public class MongoRequest extends BsonRequest {
                 type = TYPE.DB_SIZE;
             } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
                 type = TYPE.FILES_BUCKET_SIZE;
-            } else if (pathTokens.length == 4 && pathTokens[2].endsWith(_SCHEMAS)) {
+            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(_SCHEMAS)) {
                 type = TYPE.SCHEMA_STORE_SIZE;
             } else if (pathTokens.length == 4) {
                 type = TYPE.COLLECTION_SIZE;
@@ -312,7 +315,7 @@ public class MongoRequest extends BsonRequest {
                 type = TYPE.DB_META;
             } else if (pathTokens.length == 4 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
                 type = TYPE.FILES_BUCKET_META;
-            } else if (pathTokens.length == 4 && pathTokens[2].endsWith(_SCHEMAS)) {
+            } else if (pathTokens.length == 4 && pathTokens[2].equalsIgnoreCase(_SCHEMAS)) {
                 type = TYPE.SCHEMA_STORE_META;
             } else if (pathTokens.length == 4) {
                 type = TYPE.COLLECTION_META;
@@ -372,9 +375,11 @@ public class MongoRequest extends BsonRequest {
                 type = TYPE.DOCUMENT;
             }
         } else if (pathTokens.length >= 3
-                && pathTokens[2].endsWith(_SCHEMAS)) {
+                && pathTokens[2].equalsIgnoreCase(_SCHEMAS)) {
             if (pathTokens.length == 3) {
                 type = TYPE.SCHEMA_STORE;
+            } else if (pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
+                type = TYPE.BULK_DOCUMENTS;
             } else {
                 type = TYPE.SCHEMA;
             }
