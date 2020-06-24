@@ -246,7 +246,7 @@ authorizers:
  # and verify auth tokens.
  # If more than one token-manager are defined, the first one will be used
  # The token is returned to the caller via auth-token header when the user
- # autheticates succesfully. The token can be used by Authentication Mechanisms.
+ # autheticates successfully. The token can be used by Authentication Mechanisms.
 
 token-manager:
   rndTokenManager:
@@ -416,9 +416,6 @@ eager-cursor-allocation-random-slice-min-width: 1000
  # In order to save bandwitdth RESTHeart Security can force requests to support the giz encoding (if not, requests will be rejected)
 force-gzip-encoding: false
 
- # Limit for the maximum number of concurrent requests being served
-requests-limit: 1000
-
  # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
 io-threads: {{{io-threads}}}
 
@@ -432,12 +429,6 @@ buffers-per-region: 20
 direct-buffers: true
 
 #### Connetction Options
-
- # Allow unescaped characters in URL
-
-allow-unescaped-characters-in-url: true
-
- # see http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
 
 connection-options:
   # The maximum size of a HTTP header block, in bytes.
