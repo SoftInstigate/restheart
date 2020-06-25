@@ -515,7 +515,7 @@ public class Bootstrapper {
             // unfortunatly Classgraph wraps it to IllegalArgumentException
 
             if (iae.getMessage() != null
-                    && iae.getMessage().startsWith("Could not load class")) {
+                    && iae.getMessage().contains("NoClassDefFoundError")) {
 
                 logErrorAndExit("Error instantiating plugins: "
                         + "an external dependency is missing. "
@@ -528,11 +528,11 @@ public class Bootstrapper {
             // this occurs instatiating plugin missing external dependencies
             // unfortunatly Classgraph wraps it to IllegalArgumentException
 
-                logErrorAndExit("Error instantiating plugins: "
-                        + "an external dependency is missing. "
-                        + "Copy the missing dependency jar to the plugins directory to add it to the classpath",
-                        ncdfe, false, -112);
-        }catch (LinkageError le) {
+            logErrorAndExit("Error instantiating plugins: "
+                    + "an external dependency is missing. "
+                    + "Copy the missing dependency jar to the plugins directory to add it to the classpath",
+                    ncdfe, false, -112);
+        } catch (LinkageError le) {
             // this occurs executing plugin code compiled
             // with wrong version of restheart-commons
 
@@ -706,8 +706,8 @@ public class Bootstrapper {
         }
         TMP_EXTRACTED_FILES.keySet().forEach(k -> {
             try {
-                ResourcesExtractor.deleteTempDir(Bootstrapper.class, 
-                        k, 
+                ResourcesExtractor.deleteTempDir(Bootstrapper.class,
+                        k,
                         TMP_EXTRACTED_FILES.get(k));
             } catch (URISyntaxException | IOException ex) {
                 LOGGER.error("Error cleaning up temporary directory {}",
@@ -1309,10 +1309,10 @@ public class Bootstrapper {
                         }
 
                         try {
-                            file = ResourcesExtractor.extract(Bootstrapper.class, 
+                            file = ResourcesExtractor.extract(Bootstrapper.class,
                                     path);
 
-                            if (ResourcesExtractor.isResourceInJar(Bootstrapper.class, 
+                            if (ResourcesExtractor.isResourceInJar(Bootstrapper.class,
                                     path)) {
                                 TMP_EXTRACTED_FILES.put(path, file);
                                 LOGGER.info("Embedded static resources {} extracted in {}", path, file.toString());
