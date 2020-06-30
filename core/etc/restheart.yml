@@ -197,6 +197,7 @@ authenticators:
     enabled: true
     conf-file: {{{users-conf-file}}}
   mongoRealmAuthenticator:
+    enabled: true
     users-db: restheart
     users-collection: users
     prop-id: _id
@@ -228,6 +229,7 @@ authorizers:
     enabled: true
     conf-file: {{{acl-conf-file}}}
   mongoAclAuthorizer:
+    enabled: true
     acl-db: restheart
     acl-collection: acl
     # clients with root-role can execute any request
