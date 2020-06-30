@@ -33,9 +33,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.Map;
 import org.restheart.ConfigurationException;
-import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
@@ -85,10 +83,8 @@ public class TokenBasicAuthMechanism
         super("RESTHeart Realm", "tokenBasicAuthMechanism", true);
     }
 
-    @InjectConfiguration
     @InjectPluginsRegistry
-    public void init(final Map<String, Object> args,
-            PluginsRegistry pluginsRegistry)
+    public void init(PluginsRegistry pluginsRegistry)
             throws ConfigurationException {
         this.tokenManager = pluginsRegistry.getTokenManager() != null
                 ? pluginsRegistry.getTokenManager().getInstance()

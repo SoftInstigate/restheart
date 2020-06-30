@@ -26,6 +26,7 @@ import io.undertow.server.handlers.PathHandler;
 import io.undertow.util.PathMatcher;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.PipelineInfo;
@@ -59,7 +60,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private Set<PluginRecord<Authorizer>> authorizers;
 
-    private PluginRecord<TokenManager> tokenManager;
+    private Optional<PluginRecord<TokenManager>> tokenManager;
 
     private Set<PluginRecord<Service>> services;
 
@@ -151,11 +152,16 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public PluginRecord<TokenManager> getTokenManager() {
         if (this.tokenManager == null) {
-            this.tokenManager = PluginsFactory.getInstance()
-                    .tokenManager();
+            var tm = PluginsFactory.getInstance().tokenManager();
+            
+            this.tokenManager = tm == null 
+                    ? Optional.empty()
+                    : Optional.of(tm);
         }
 
-        return this.tokenManager;
+        return this.tokenManager.isPresent() 
+                ? this.tokenManager.get()
+                : null;
     }
 
     /**
