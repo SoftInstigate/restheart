@@ -20,9 +20,10 @@
  */
 package org.restheart;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;
 import com.github.mustachejava.MustacheNotFoundException;
@@ -182,12 +183,13 @@ public class Bootstrapper {
 
     private static void parseCommandLineParameters(final String[] args) {
         Args parameters = new Args();
-        JCommander cmd = JCommander.newBuilder().addObject(parameters).build();
-        cmd.setProgramName("java -Dfile.encoding=UTF-8 -jar -server restheart.jar");
+        CommandLine cmd = new CommandLine(parameters);
+        //JCommander cmd = JCommander.newBuilder().addObject(parameters).build();
+        //cmd.setProgramName("java -Dfile.encoding=UTF-8 -jar -server restheart.jar");
         try {
-            cmd.parse(args);
-            if (parameters.help) {
-                cmd.usage();
+            cmd.parseArgs(args);
+            if (cmd.isUsageHelpRequested()) {
+                cmd.usage(System.out);
                 System.exit(0);
             }
 
@@ -204,9 +206,9 @@ public class Bootstrapper {
                     : parameters.envFile;
 
             PROPERTIES_FILE = FileUtils.getFileAbsolutePath(propFilePath);
-        } catch (com.beust.jcommander.ParameterException ex) {
+        } catch (Exception ex) {
             LOGGER.error(ex.getMessage());
-            cmd.usage();
+            cmd.usage(System.out);
             System.exit(1);
         }
     }
@@ -1380,19 +1382,19 @@ public class Bootstrapper {
     private Bootstrapper() {
     }
 
-    @Parameters
+    @Command(name="java -Dfile.encoding=UTF-8 -jar -server restheart.jar")
     private static class Args {
 
-        @Parameter(description = "<Configuration file>")
+        @Parameters(index = "0", paramLabel = "FILE", description = "Main configuration file")
         private String configPath = null;
 
-        @Parameter(names = "--fork", description = "Fork the process")
+        @Option(names = "--fork", description = "Fork the process in background")
         private boolean isForked = false;
 
-        @Parameter(names = {"--envFile", "--envfile", "-e"}, description = "Environment file name")
+        @Option(names = {"-e", "--envFile", "--envfile"}, description = "Environment file name")
         private String envFile = null;
 
-        @Parameter(names = {"--help", "-?"}, help = true, description = "This help message")
-        private boolean help;
+        @Option(names = {"-h", "--help"}, usageHelp = true, description = "This help message")
+        private boolean help = false;
     }
 }
