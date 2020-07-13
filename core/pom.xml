@@ -420,7 +420,7 @@
     <profile>
       <id>native</id>
       <properties>
-        <graalvm.version>20.0.0</graalvm.version>
+        <graalvm.version>20.1.0</graalvm.version>
       </properties>
       <dependencies>
         <dependency>
@@ -447,6 +447,7 @@
             <configuration>
               <skip>false</skip>
               <imageName>restheart</imageName>
+              <buildArgs>--no-fallback --allow-incomplete-classpath --report-unsupported-elements-at-runtime</buildArgs>
             </configuration>
           </plugin>
         </plugins>
