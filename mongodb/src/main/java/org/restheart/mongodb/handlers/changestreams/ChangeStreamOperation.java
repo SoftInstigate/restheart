@@ -173,7 +173,7 @@ public class ChangeStreamOperation {
      * @param vars RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables
      * @throws org.restheart.exchange.InvalidMetadataException
-     * @throws org.restheart.mongodb.handlers.changestreams.QueryVariableNotBoundException
+     * @throws org.restheart.exchange.QueryVariableNotBoundException
      */
     public List<BsonDocument> getResolvedStagesAsList(BsonDocument vars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
@@ -198,7 +198,7 @@ public class ChangeStreamOperation {
      * @return the json object where the variables ({"_$var": "var") are
      * replaced with the values defined in the avars URL query parameter
      * @throws org.restheart.exchange.InvalidMetadataException
-     * @throws org.restheart.mongodb.handlers.changestreams.QueryVariableNotBoundException
+     * @throws org.restheart.exchange.QueryVariableNotBoundException
      */
     protected BsonValue bindAggregationVariables(
             BsonValue obj,
