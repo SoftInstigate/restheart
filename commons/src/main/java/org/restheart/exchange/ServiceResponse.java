@@ -37,6 +37,7 @@ public abstract class ServiceResponse<T> extends Response<T> {
             = AttachmentKey.create(ServiceResponse.class);
 
     protected T content;
+    private Runnable customSender = null;
 
     protected ServiceResponse(HttpServerExchange exchange) {
         super(exchange);
@@ -51,7 +52,7 @@ public abstract class ServiceResponse<T> extends Response<T> {
 
         exchange.putAttachment(RESPONSE_KEY, this);
     }
-    
+
     @SuppressWarnings("unchecked")
     public static ServiceResponse<?> of(HttpServerExchange exchange) {
         var ret = exchange.getAttachment(RESPONSE_KEY);
@@ -96,6 +97,26 @@ public abstract class ServiceResponse<T> extends Response<T> {
      * @return the content as string
      */
     public abstract String readContent();
+
+    /**
+     * If a customSender is set (not null), the handler ResponseSender will
+     * delegate to customSender.run() the responsability to send the response
+     * content to the client
+     *
+     * @param customSender
+     */
+    public void setCustomerSender(Runnable customSender) {
+        this.customSender = customSender;
+    }
+
+    /**
+     * @see setCustomerSender()
+     * @return the customSender 
+     *
+     */
+    public Runnable getCustomerSender() {
+        return this.customSender;
+    }
 
     /**
      *

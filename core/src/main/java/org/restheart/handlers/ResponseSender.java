@@ -74,10 +74,10 @@ public class ResponseSender extends PipelinedHandler {
                 if (response.getStatusCode() > 0) {
                     exchange.setStatusCode(response.getStatusCode());
                 }
-                
-                var content = response.readContent();
 
-                if (content != null) {
+                if (response.getCustomerSender() != null) {
+                    response.getCustomerSender().run();
+                } else if (response.readContent() != null) {
                     exchange.getResponseSender().send(response.readContent());
                 }
             }
