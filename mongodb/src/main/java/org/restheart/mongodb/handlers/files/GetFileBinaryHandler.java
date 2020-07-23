@@ -90,7 +90,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
-        
+
         if (request.isInError()) {
             next(exchange);
             return;
@@ -100,7 +100,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         final String bucket = extractBucketName(request.getCollectionName());
 
         GridFSBucket gridFSBucket = GridFSBuckets.create(MongoClientSingleton.getInstance().getClient()
-                        .getDatabase(request.getDBName()),
+                .getDatabase(request.getDBName()),
                 bucket);
 
         GridFSFile dbsfile = gridFSBucket
@@ -110,7 +110,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         if (dbsfile == null) {
             fileNotFound(request, exchange);
         } else if (!checkEtag(exchange, dbsfile)) {
-            sendBinaryContent(response, gridFSBucket, dbsfile, exchange);
+            sendBinaryContent(request, response, gridFSBucket, dbsfile, exchange);
         }
 
         next(exchange);
@@ -158,7 +158,8 @@ public class GetFileBinaryHandler extends PipelinedHandler {
     }
 
     private void sendBinaryContent(
-            final MongoResponse request,
+            final MongoRequest request,
+            final MongoResponse response,
             final GridFSBucket gridFSBucket,
             final GridFSFile file,
             final HttpServerExchange exchange)
@@ -195,11 +196,20 @@ public class GetFileBinaryHandler extends PipelinedHandler {
 
         ResponseHelper.injectEtagHeader(exchange, file.getMetadata());
 
-        request.setStatusCode(HttpStatus.SC_OK);
+        response.setStatusCode(HttpStatus.SC_OK);
 
-        gridFSBucket.downloadToStream(
-                file.getId(),
-                exchange.getOutputStream());
+        response.setCustomerSender(() -> {
+            if (request.getClientSession() != null) {
+                gridFSBucket.downloadToStream(
+                        request.getClientSession(),
+                        file.getId(),
+                        exchange.getOutputStream());
+            } else {
+                gridFSBucket.downloadToStream(
+                        file.getId(),
+                        exchange.getOutputStream());
+            }
+        });
     }
 
     private String extractFilename(final GridFSFile dbsfile) {
@@ -207,5 +217,4 @@ public class GetFileBinaryHandler extends PipelinedHandler {
                 ? dbsfile.getFilename()
                 : dbsfile.getId().toString();
     }
-
 }
