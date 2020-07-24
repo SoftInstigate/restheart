@@ -75,9 +75,12 @@ public class ResponseSender extends PipelinedHandler {
                     exchange.setStatusCode(response.getStatusCode());
                 }
 
+                // send the content to the client
                 if (response.getCustomerSender() != null) {
+                    // use the custom sender if it has been set
                     response.getCustomerSender().run();
                 } else if (response.readContent() != null) {
+                    // send the content via default exchange response sender
                     exchange.getResponseSender().send(response.readContent());
                 }
             }
