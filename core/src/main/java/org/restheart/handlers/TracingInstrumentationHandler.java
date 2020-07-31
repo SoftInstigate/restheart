@@ -44,9 +44,9 @@ public class TracingInstrumentationHandler extends PipelinedHandler {
                             .ifPresent(value -> {
                                 // saves the MDC Context
                                 // @see Response.getMDCContext() javadoc
+                                MDC.put(traceIdHeader, value);
                                 ByteArrayProxyResponse.of(exchange)
                                         .setMDCContext(MDC.getCopyOfContextMap());
-                                MDC.put(traceIdHeader, value);
                                 exchange.getResponseHeaders()
                                         .put(HttpString
                                                 .tryFromString(traceIdHeader),

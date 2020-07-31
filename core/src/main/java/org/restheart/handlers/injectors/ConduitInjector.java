@@ -64,6 +64,20 @@ public class ConduitInjector extends PipelinedHandler {
             = AttachmentKey.create(HeaderMap.class);
 
     /**
+     *
+     */
+    public ConduitInjector() {
+        super();
+    }
+
+    /**
+     * @param next
+     */
+    public ConduitInjector(PipelinedHandler next) {
+        super(next);
+    }
+
+    /**
      * if the ModificableContentSinkConduit is set, set the Accept-Encoding
      * header to identity this is required to avoid response interceptors
      * dealing with compressed data
@@ -83,7 +97,7 @@ public class ConduitInjector extends PipelinedHandler {
                 // - request handled by a Proxy when its request and response
                 //   are ByteArrayProxyRequest and ByteArrayProxyResponse
                 .filter(ri -> cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
-                && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
+                        && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
                 .filter(ri -> {
                     try {
                         return ri.resolve(
@@ -118,20 +132,6 @@ public class ConduitInjector extends PipelinedHandler {
                     Headers.ACCEPT_ENCODING,
                     "identity");
         }
-    }
-
-    /**
-     * @param next
-     */
-    public ConduitInjector(PipelinedHandler next) {
-        super(next);
-    }
-
-    /**
-     *
-     */
-    public ConduitInjector() {
-        super();
     }
 
     /**

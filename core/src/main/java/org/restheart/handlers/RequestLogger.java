@@ -38,10 +38,12 @@ import static org.fusesource.jansi.Ansi.Color.RED;
 import static org.fusesource.jansi.Ansi.ansi;
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
+import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.JsonProxyRequest;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  *
@@ -209,6 +211,16 @@ public class RequestLogger extends PipelinedHandler {
                 (final HttpServerExchange exchange1, final ExchangeCompletionListener.NextListener nextListener) -> {
                     if (logLevel < 1) {
                         return;
+                    }
+
+                    // restore MDC context
+                    // MDC context is put in the thread context
+                    // A thread switch in the request handling pipeline loses the MDC context.
+                    // TracingInstrumentationHandler adds it to the
+                    // exchange as an Attachment
+                    var mdcCtx = ByteArrayProxyResponse.of(exchange).getMDCContext();
+                    if (mdcCtx != null) {
+                        MDC.setContextMap(mdcCtx);
                     }
 
                     // note sc is always null if this handler is chained before
