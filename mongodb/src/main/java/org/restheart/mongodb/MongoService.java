@@ -49,7 +49,6 @@ import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
-import org.restheart.mongodb.handlers.metrics.MetricsInstrumentationHandler;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
@@ -124,7 +123,6 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         var _pipeline = PipelinedWrappingHandler.wrap(
                 new ErrorHandler(
                         PipelinedHandler.pipe(
-                                new MetricsInstrumentationHandler(),
                                 new CORSHandler(),
                                 new OptionsHandler(),
                                 ClientSessionInjector.build(),

@@ -23,15 +23,22 @@ package org.restheart.mongodb.handlers.metrics;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
-import java.util.concurrent.TimeUnit;
-import static org.restheart.exchange.ExchangeKeys._METRICS;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.handlers.PipelinedHandler;
+import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.COLLECTION;
-import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.DATABASE;
-import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT;
-public class MetricsInstrumentationHandler extends PipelinedHandler {
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.RegisterPlugin;
+
+import java.util.concurrent.TimeUnit;
+
+import static org.restheart.exchange.ExchangeKeys._METRICS;
+import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.*;
+
+@RegisterPlugin(name = "metricsInstrumentationInterceptor",
+        description = "collects metrics for requests handled by mongo service",
+        interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH)
+public class MetricsInstrumentationInterceptor implements MongoInterceptor {
 
     @VisibleForTesting
     static boolean isFilledAndNotMetrics(String dbOrCollectionName) {
@@ -44,35 +51,15 @@ public class MetricsInstrumentationHandler extends PipelinedHandler {
      * Writable in unit tests to make testing easier
      */
     @VisibleForTesting
-    MongoServiceConfiguration configuration = MongoServiceConfiguration.get();
+    MongoServiceConfiguration configuration = null;
 
     @VisibleForTesting
     SharedMetricRegistryProxy metrics = new SharedMetricRegistryProxy();
 
-    /**
-     *
-     */
-    public MetricsInstrumentationHandler() {
-        this(null);
-    }
-    
-    /**
-     *
-     * @param next
-     */
-    public MetricsInstrumentationHandler(PipelinedHandler next) {
-        super(next);
-    }
-
-    /**
-     *
-     * @param exchange
-     * @throws Exception
-     */
     @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = MongoRequest.of(exchange);
-        
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        var exchange = request.getExchange();
+
         final long requestStartTime = request.getRequestStartTime();
 
         if (!exchange.isComplete()) {
@@ -82,10 +69,15 @@ public class MetricsInstrumentationHandler extends PipelinedHandler {
                 nextListener.proceed();
             });
         }
+    }
 
-        if (!exchange.isResponseComplete() && getNext() != null) {
-            next(exchange);
+    @Override
+    public boolean resolve(MongoRequest request, MongoResponse response) {
+        if (configuration == null) {
+            configuration = MongoServiceConfiguration.get();
         }
+
+        return configuration != null && request.isHandledBy("mongo");
     }
 
     private void addDefaultMetrics(MetricRegistry registry, long duration, HttpServerExchange exchange) {

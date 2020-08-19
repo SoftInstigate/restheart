@@ -29,7 +29,7 @@ import org.junit.Test;
 import static org.mockito.Mockito.*;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.MongoServiceConfiguration;
-public class MetricsInstrumentationHandlerTest {
+public class MetricsInstrumentationInterceptorTest {
 
     /**
      *
@@ -44,12 +44,12 @@ public class MetricsInstrumentationHandlerTest {
      */
     @Test
     public void testIfFilledAndNotMetrics() throws Exception {
-        assertTrue(MetricsInstrumentationHandler.isFilledAndNotMetrics("foobar"));
-        assertTrue(MetricsInstrumentationHandler.isFilledAndNotMetrics("rainbow"));
-        assertFalse(MetricsInstrumentationHandler.isFilledAndNotMetrics("_metrics"));
-        assertFalse(MetricsInstrumentationHandler.isFilledAndNotMetrics(""));
-        assertFalse(MetricsInstrumentationHandler.isFilledAndNotMetrics("  "));
-        assertFalse(MetricsInstrumentationHandler.isFilledAndNotMetrics(null));
+        assertTrue(MetricsInstrumentationInterceptor.isFilledAndNotMetrics("foobar"));
+        assertTrue(MetricsInstrumentationInterceptor.isFilledAndNotMetrics("rainbow"));
+        assertFalse(MetricsInstrumentationInterceptor.isFilledAndNotMetrics("_metrics"));
+        assertFalse(MetricsInstrumentationInterceptor.isFilledAndNotMetrics(""));
+        assertFalse(MetricsInstrumentationInterceptor.isFilledAndNotMetrics("  "));
+        assertFalse(MetricsInstrumentationInterceptor.isFilledAndNotMetrics(null));
     }
 
     /**
@@ -84,7 +84,7 @@ public class MetricsInstrumentationHandlerTest {
             }
         };
 
-        MetricsInstrumentationHandler mih = new MetricsInstrumentationHandler(null);
+        MetricsInstrumentationInterceptor mih = new MetricsInstrumentationInterceptor();
         mih.configuration = config;
         mih.metrics = proxy;
         
