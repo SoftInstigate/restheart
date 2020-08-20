@@ -45,6 +45,7 @@
         <module>security</module>
         <module>mongodb</module>
         <module>test-plugins</module>
+        <module>graphql</module>
     </modules>
 
     <!-- Project Information -->
