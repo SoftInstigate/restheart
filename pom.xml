@@ -162,6 +162,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.restheart</groupId>
+                <artifactId>restheart-graphql</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver</artifactId>
                 <version>3.12.4</version>
@@ -257,6 +262,11 @@
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
                 <version>4.8.62</version>
+            </dependency>
+            <dependency>
+                <groupId>com.graphql-java</groupId>
+                <artifactId>graphql-java</artifactId>
+                <version>15.0</version>
             </dependency>
 
             <!-- BEGIN Test dependencies -->

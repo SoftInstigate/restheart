@@ -13,6 +13,11 @@
     <artifactId>restheart-graphql</artifactId>
     <packaging>jar</packaging>
 
+    <name>restheart-graphql</name>
+    <description>RESTHeart MongoDB - GraphQL plugin</description>
+    <url>http://www.restheart.org</url>
+    <inceptionYear>2020</inceptionYear>
+
     <licenses>
         <license>
             <name>GNU Affero General Public License (AGPL) version 3.0</name>
@@ -26,12 +31,51 @@
         <dependency>
             <groupId>org.restheart</groupId>
             <artifactId>restheart-commons</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java</artifactId>
-            <version>15.0</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <verbose>true</verbose>
+                    <includes>
+                        <includes>**/*.java</includes>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-license-headers</id>
+                        <goals>
+                            <goal>update-file-header</goal>
+                        </goals>
+                        <phase>process-sources</phase>
+                        <configuration>
+                            <licenseName>agpl_v3</licenseName>
+                            <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
+                            <skipUpdateLicense>${skipUpdateLicense}</skipUpdateLicense>
+                            <processStartTag>========================LICENSE_START=================================
+                            </processStartTag>
+                            <processEndTag>=========================LICENSE_END==================================
+                            </processEndTag>
+                            <roots>
+                                <root>src/main/java</root>
+                                <root>src/test</root>
+                            </roots>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
