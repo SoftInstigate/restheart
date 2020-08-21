@@ -24,12 +24,17 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.result.UpdateResult;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import org.bson.*;
+import org.bson.conversions.Bson;
+import org.bson.json.JsonParseException;
+import org.restheart.utils.HttpStatus;
+import org.restheart.utils.JsonUtils;
+import org.slf4j.LoggerFactory;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
@@ -37,17 +42,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import org.bson.BsonArray;
-import org.bson.BsonDocument;
-import org.bson.BsonInt32;
-import org.bson.BsonString;
-import org.bson.BsonValue;
-import org.bson.conversions.Bson;
-import org.bson.json.JsonParseException;
-import static org.restheart.exchange.Exchange.LOGGER;
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
-import org.slf4j.LoggerFactory;
+
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
 
 /**
  *
@@ -91,7 +88,7 @@ public class MongoResponse extends BsonResponse {
 
     @Override
     public String readContent() {
-        var request = MongoRequest.of(wrapped);
+        var request = Request.of(wrapped);
         BsonValue tosend;
 
         if (!request.isGet() && (content == null || content.isDocument())) {
@@ -101,7 +98,11 @@ public class MongoResponse extends BsonResponse {
         }
 
         if (tosend != null) {
-            return JsonUtils.toJson(tosend, request.getJsonMode());
+            if (request instanceof MongoRequest) {
+                return JsonUtils.toJson(tosend, ((MongoRequest) request).getJsonMode());
+            } else {
+                return JsonUtils.toJson(tosend);
+            }
         } else {
             return null;
         }
