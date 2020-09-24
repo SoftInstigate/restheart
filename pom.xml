@@ -135,7 +135,6 @@
         <url>https://github.com/SoftInstigate/restheart</url>
         <connection>scm:git:git@github.com:SoftInstigate/restheart.git</connection>
         <developerConnection>scm:git:git@github.com:SoftInstigate/restheart.git</developerConnection>
-        <tag>5.1.1</tag>
     </scm>
 
     <dependencyManagement>
