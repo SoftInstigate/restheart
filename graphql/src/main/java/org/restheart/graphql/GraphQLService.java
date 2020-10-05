@@ -21,6 +21,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+// Inserito commento prova
+
 @RegisterPlugin(name= "graphql",
         description = "handles GraphQL requests")
 public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> {
