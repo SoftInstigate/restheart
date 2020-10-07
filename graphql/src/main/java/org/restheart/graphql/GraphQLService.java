@@ -1,10 +1,9 @@
 package org.restheart.graphql;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
 import com.mongodb.MongoClient;
 import graphql.GraphQL;
 import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
@@ -21,16 +20,10 @@ import org.restheart.plugins.Service;
 import org.restheart.utils.JsonUtils;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -74,11 +67,10 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
     }
 
     private RuntimeWiring buildWiring(){
-
         return RuntimeWiring.newRuntimeWiring()
                 .type(newTypeWiring("Query")
                         .dataFetcher("first", this.graphQLDataFetchers.getFirstDataFetcher())
-                        .dataFetcher("all", this.graphQLDataFetchers.getAllDataFetcher()))
+                        .dataFetcher("all", new TestDynamicDataFetcher(graphQLDataFetchers.mclient)))
                 .build();
     }
 
@@ -211,6 +203,36 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
 
                 return ret;
             };
+        }
+    }
+
+    private class TestDynamicDataFetcher implements DataFetcher<List<Document>> {
+        private MongoClient mclient;
+
+        TestDynamicDataFetcher(MongoClient mclient) {
+            this.mclient = mclient;
+        }
+        public List<Document> get(DataFetchingEnvironment env) throws Exception {
+            var queryName = env.getField().getName();
+
+            // get the query from mapping
+
+            String db = env.getArgument("db");
+            String coll = env.getArgument("coll");
+
+            var query = this.mclient.getDatabase(db)
+                    .getCollection(coll, Document.class)
+                    .find();
+
+            // interpolate the argument in the mapping query {"$var": "arg" } from evn.getArguments()
+
+            // execute the query
+
+            var ret = new ArrayList<Document>();
+
+            query.into(ret);
+
+            return ret;
         }
     }
 
