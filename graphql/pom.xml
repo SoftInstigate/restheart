@@ -34,9 +34,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.graphql-java-kickstart</groupId>
-            <artifactId>graphql-java-tools</artifactId>
-            <scope>provided</scope>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java</artifactId>
+            <version>15.0</version>
         </dependency>
     </dependencies>
 

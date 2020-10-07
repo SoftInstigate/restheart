@@ -264,9 +264,9 @@
                 <version>4.8.62</version>
             </dependency>
             <dependency>
-                <groupId>com.graphql-java-kickstart</groupId>
-                <artifactId>graphql-java-tools</artifactId>
-                <version>6.0.2</version>
+                <groupId>com.graphql-java</groupId>
+                <artifactId>graphql-java</artifactId>
+                <version>15.0</version>
             </dependency>
 
             <!-- BEGIN Test dependencies -->
