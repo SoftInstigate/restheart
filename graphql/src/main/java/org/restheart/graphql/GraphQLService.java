@@ -18,12 +18,10 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.JsonUtils;
 
+import javax.print.Doc;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -34,38 +32,21 @@ import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
         description = "handles GraphQL requests", defaultURI = "/graphql")
 public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> {
     private GraphQL gql;
-    GraphQLApp app;
-    MongoClient mongoClient;
+    private GraphQLApp app;
+    private MongoClient mongoClient;
+    private String sdl;
 
     @InjectMongoClient
     public void init(MongoClient mclient) throws IOException, URISyntaxException {
         this.mongoClient = mclient;
-        var sdl = "type Document { _id: Int msg: String } " +
-                "type Query { " +
-                "first(db: String = \"restheart\"" +
-                "coll: String!, " +
-                "query: String = \"{}\", " +
-                "sort: String, = \"{'_id': -1}\"," +
-                "keys: String = \"{}\"): Document " +
-
-                "all(db: String = \"restheart\", " +
-                "coll: String!," +
-                "query: String = \"{}\", " +
-                "sort: String = \"{'_id': -1}\"," +
-                "keys: String = \"{}\", " +
-                "skip: Int = 0, " +
-                "limit: Int = 100): [Document]" +
+        this.sdl ="type Query { " +
+                "first(_id: Int!): Document" +
+                "}" +
+                "type Document { " +
+                "_id: Int " +
+                "msg: String " +
                 "}";
-        this.app = new GraphQLApp("Test APP");
-        Map<String, Query> queries = null;
-        Query firstQuery = QueryBuilder.newBuilder("restheart","first", "collection").first(true).build();
-        Query allQuery = QueryBuilder.newBuilder("restheart", "all", "collection").build();
-        queries.put(firstQuery.getName(), firstQuery);
-        queries.put(allQuery.getName(), allQuery);
-        app.setQueries(queries);
-        GraphQLSchema graphQLSchema = buildSchema(sdl);
-        this.app.setSchema(graphQLSchema);
-        this.gql = GraphQL.newGraphQL(graphQLSchema).build();
+
     }
 
     private GraphQLSchema buildSchema(String sdl){
@@ -78,9 +59,9 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
     private RuntimeWiring buildWiring(){
 
         TypeRuntimeWiring.Builder obj = newTypeWiring("Query");
+        //for each app query, create a dedicated data fetcher
         for (String queryName : this.app.getQueries().keySet()) {
             obj.dataFetcher(queryName, new GraphQLDataFetcher(this.mongoClient, this.app));
-
         }
 
         return RuntimeWiring.newRuntimeWiring().type(obj).build();
@@ -93,6 +74,34 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
             response.setInError(400, "RICHIESTA ERRATA");
             return;
         }
+
+        //create APP
+        this.app = new GraphQLApp("Test APP");
+        Map<String, Query> queries = new HashMap<>();
+
+        //retrieve query definition
+        Document res = this.mongoClient.getDatabase("restheart")
+                .getCollection("queries").find().first();
+
+        //create Query Object by query definition
+        Query firstQuery = QueryBuilder.newBuilder(res.getString("db"),
+                res.getString("name"), res.getString("collection"))
+                .filter((Document) res.get("filter"))
+                .sort((Document) res.get("sort"))
+                .skip((Document) res.get("skip"))
+                .limit((Document) res.get("limit"))
+                .first((Document) res.get("first"))
+                .build();
+
+        //add query to app queries
+        queries.put(firstQuery.getName(), firstQuery);
+        app.setQueries(queries);
+
+        //assign and build app schema
+        GraphQLSchema graphQLSchema = buildSchema(sdl);
+        this.app.setSchema(graphQLSchema);
+        this.gql = GraphQL.newGraphQL(graphQLSchema).build();
+
 
         var query = new String(request.getContent());
 

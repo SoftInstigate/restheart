@@ -2,8 +2,10 @@ package org.restheart.graphql;
 
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import javax.print.Doc;
 import java.util.Collection;
 
 
@@ -13,14 +15,14 @@ public class Query {
     private String db;
     private String name;
     private String collection;
-    private BsonDocument filter;
-    private BsonDocument sort;
-    private Integer skip;
-    private Integer limit;
-    private boolean first;
+    private Document filter;
+    private Document sort;
+    private Document skip;
+    private Document limit;
+    private Document first;
 
-    public Query(String db, String name, String collection, BsonDocument filter, BsonDocument sort, Integer skip, Integer limit, boolean first) {
-        this.name = db;
+    public Query(String db, String name, String collection, Document filter, Document sort, Document skip, Document limit, Document first) {
+        this.db = db;
         this.name = name;
         this.collection = collection;
         this.filter = filter;
@@ -55,43 +57,43 @@ public class Query {
         this.collection = collection;
     }
 
-    public BsonDocument getFilter() {
+    public Document getFilter() {
         return filter;
     }
 
-    public void setFilter(BsonDocument filter) {
+    public void setFilter(Document filter) {
         this.filter = filter;
     }
 
-    public BsonDocument getSort() {
+    public Document getSort() {
         return sort;
     }
 
-    public void setSort(BsonDocument sort) {
+    public void setSort(Document sort) {
         this.sort = sort;
     }
 
-    public Integer getSkip() {
+    public Document getSkip() {
         return skip;
     }
 
-    public void setSkip(Integer skip) {
+    public void setSkip(Document skip) {
         this.skip = skip;
     }
 
-    public Integer getLimit() {
+    public Document getLimit() {
         return limit;
     }
 
-    public void setLimit(Integer limit) {
+    public void setLimit(Document limit) {
         this.limit = limit;
     }
 
-    public boolean isFirst() {
+    public Document isFirst() {
         return first;
     }
 
-    public void setFirst(boolean first) {
+    public void setFirst(Document first) {
         this.first = first;
     }
 }

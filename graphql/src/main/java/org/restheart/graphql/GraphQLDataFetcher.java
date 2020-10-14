@@ -3,8 +3,6 @@ package org.restheart.graphql;
 import com.mongodb.MongoClient;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.bson.Document;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
@@ -12,6 +10,9 @@ import org.restheart.exchange.QueryVariableNotBoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static com.mongodb.client.model.Projections.fields;
+import static com.mongodb.client.model.Projections.include;
 
 public class GraphQLDataFetcher implements DataFetcher<List<Document>>{
     private MongoClient mclient;
@@ -22,53 +23,50 @@ public class GraphQLDataFetcher implements DataFetcher<List<Document>>{
         this.app = app;
     }
 
-    public MongoClient getMclient() {
-        return mclient;
-    }
-
-    public void setMclient(MongoClient mclient) {
-        this.mclient = mclient;
-    }
-
-    public GraphQLApp getApp() {
-        return app;
-    }
-
-    public void setApp(GraphQLApp app) {
-        this.app = app;
-    }
-
     @Override
-    public List<Document> get(DataFetchingEnvironment env) throws NullPointerException {
+    public List<Document> get(DataFetchingEnvironment env) {
         String queryName = env.getField().getName();
         try{
+            // try to retrieve query with name queryName from app queries
             Query queryDef = this.app.getQueryByName(queryName);
-            BsonDocument filter = queryDef.getFilter();
+            // get query's filter
+            Document filter = queryDef.getFilter();
+            // get graphql query's arguments
             Map<String, Object> graphQLQueryArguments = env.getArguments();
-            BsonDocument intQuery = this.interpolate(filter, graphQLQueryArguments).asDocument();
+            // interpolate filter of query definition with graphql query
+            Document intQuery = this.interpolate(filter, graphQLQueryArguments);
 
+            // build mongodb query
             var query = this.mclient.getDatabase(queryDef.getDb())
                     .getCollection(queryDef.getCollection(), Document.class)
-                    .find(intQuery);
-
+                    .find();
+            /**
             if(queryDef.isFirst()){
-                query.first();
+                query = query.first();
             }
 
             if(queryDef.getSort() != null){
-                query.sort(queryDef.getSort());
+                query = query.sort(queryDef.getSort());
             }
 
             if(queryDef.getSkip() != null){
-                query.skip(queryDef.getSkip());
+                query = query.skip(queryDef.getSkip());
             }
 
             if(queryDef.getLimit() != null){
-                query.limit(queryDef.getLimit());
+                query = query.limit(queryDef.getLimit());
             }
 
-            ArrayList<Document> result = new ArrayList<Document>();
+            // find projection fields
+            List<String> projField = new LinkedList<String>();
+            for (SelectedField field: env.getSelectionSet().getFields()) {
+                projField.add(field.getQualifiedName());
+            }
+            // do the projection
+            query.projection(fields(include(projField)));
+            **/
 
+            ArrayList<Document> result = new ArrayList<Document>();
             query.into(result);
 
             return result;
@@ -86,33 +84,29 @@ public class GraphQLDataFetcher implements DataFetcher<List<Document>>{
     }
 
 
-    public BsonValue interpolate(BsonValue obj, Map<String, Object> arguments) throws InvalidMetadataException, QueryVariableNotBoundException {
+    public Document interpolate(Document obj, Map<String, Object> arguments) throws InvalidMetadataException, QueryVariableNotBoundException {
 
         if(obj == null){
             return  null;
         }
 
-        BsonDocument _obj = obj.asDocument();
+        if (obj.size() == 1 && obj.get("$arg") !=null){
+            String varName = (String) obj.get("$arg");
 
-        if (_obj.size() == 1 && _obj.get("$arg") !=null){
-            BsonValue varName = _obj.get("$arg");
 
-            if(!(varName.isString())){
-                throw new InvalidMetadataException("wrong variable name " + varName.toString());
+            if(arguments == null || arguments.get(varName) == null){
+                throw new QueryVariableNotBoundException("variable " + varName + " not bound");
             }
 
-            if(arguments == null || arguments.get(varName.asString().getValue()) == null){
-                throw new QueryVariableNotBoundException("variable " + varName.asString().getValue() + " not bound");
-            }
-
-            BsonValue value = (BsonValue) arguments.get(varName.asString().getValue());
+            Document value = new Document();
+            value.put(varName, arguments.get(varName));
 
             return value;
         } else {
-            BsonDocument resQuery = new BsonDocument();
+            Document resQuery = new Document();
 
-            for (String key : _obj.keySet()) {
-                resQuery.put(key, interpolate(_obj.get(key), arguments));
+            for (String key : obj.keySet()) {
+                resQuery.put(key, interpolate((Document) obj.get(key), arguments));
             }
             return resQuery;
         }

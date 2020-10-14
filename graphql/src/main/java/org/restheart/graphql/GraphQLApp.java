@@ -41,7 +41,7 @@ public class GraphQLApp {
         Queries = queries;
     }
 
-    public Query getQueryByName(String name) throws NullPointerException{
+    public Query getQueryByName(String name){
         return this.Queries.get(name);
     }
 
