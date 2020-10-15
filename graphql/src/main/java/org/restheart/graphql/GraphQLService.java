@@ -2,14 +2,9 @@ package org.restheart.graphql;
 
 import com.mongodb.MongoClient;
 import graphql.GraphQL;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.*;
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
-import org.bson.BsonElement;
-import org.bson.BsonValue;
 import org.bson.Document;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.MongoResponse;
@@ -18,7 +13,6 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.JsonUtils;
 
-import javax.print.Doc;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -34,18 +28,39 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
     private GraphQL gql;
     private GraphQLApp app;
     private MongoClient mongoClient;
-    private String sdl;
 
     @InjectMongoClient
     public void init(MongoClient mclient) throws IOException, URISyntaxException {
         this.mongoClient = mclient;
-        this.sdl ="type Query { " +
-                "first(_id: Int!): Document" +
-                "}" +
-                "type Document { " +
-                "_id: Int " +
-                "msg: String " +
-                "}";
+
+        //fetching APP definition from database
+        this.app = new GraphQLApp("Test APP");
+        Document appDesc = this.mongoClient.getDatabase("restheart")
+                .getCollection("apps").find().first();
+
+
+        Map<String, Query> queryDefinitions = new HashMap<>();
+
+        //creating queries definitions and putting them inside App definition
+        for (Document query: appDesc.getList("queries", Document.class)) {
+            String queryName = query.getString("name");
+            queryDefinitions.put(queryName,
+                    QueryBuilder.newBuilder(query.getString("db"), queryName, query.getString("collection")
+                            , query.getBoolean("multiple"))
+                            .filter((Document) query.get("filter"))
+                            .sort((Document) query.get("sort"))
+                            .skip((Document) query.get("skip"))
+                            .limit((Document) query.get("limit"))
+                            .first((Document) query.get("first"))
+                            .build());
+        }
+        this.app.setQueries(queryDefinitions);
+
+
+        //making executable the schema
+        GraphQLSchema graphQLSchema = buildSchema(appDesc.getString("schema"));
+        this.app.setSchema(graphQLSchema);
+        this.gql = GraphQL.newGraphQL(graphQLSchema).build();
 
     }
 
@@ -59,49 +74,35 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
     private RuntimeWiring buildWiring(){
 
         TypeRuntimeWiring.Builder obj = newTypeWiring("Query");
-        //for each app query, create a dedicated data fetcher
         for (String queryName : this.app.getQueries().keySet()) {
-            obj.dataFetcher(queryName, new GraphQLDataFetcher(this.mongoClient, this.app));
+            boolean isMultiple = this.app.getQueryByName(queryName).isMultiple();
+            //TODO: create a null pointer exception for isMultiple --> it is mandatory!
+            if (isMultiple){
+                obj.dataFetcher(queryName, MultipleGraphQLDataFetcher.getInstance());
+            }
+            else{
+                obj.dataFetcher(queryName, SingleGraphQLDataFetcher.getInstance());
+            }
         }
-
+        MultipleGraphQLDataFetcher.setCurrentApp(this.app);
+        MultipleGraphQLDataFetcher.setMongoClient(this.mongoClient);
+        SingleGraphQLDataFetcher.setCurrentApp(this.app);
+        SingleGraphQLDataFetcher.setMongoClient(this.mongoClient);
         return RuntimeWiring.newRuntimeWiring().type(obj).build();
     }
 
     @Override
     public void handle(ByteArrayRequest request, MongoResponse response) throws Exception {
 
+        if (this.mongoClient == null) {
+            response.setInError(500, "MongoClient not initialized");
+            return;
+        }
+
         if (!check(request)) {
             response.setInError(400, "RICHIESTA ERRATA");
             return;
         }
-
-        //create APP
-        this.app = new GraphQLApp("Test APP");
-        Map<String, Query> queries = new HashMap<>();
-
-        //retrieve query definition
-        Document res = this.mongoClient.getDatabase("restheart")
-                .getCollection("queries").find().first();
-
-        //create Query Object by query definition
-        Query firstQuery = QueryBuilder.newBuilder(res.getString("db"),
-                res.getString("name"), res.getString("collection"))
-                .filter((Document) res.get("filter"))
-                .sort((Document) res.get("sort"))
-                .skip((Document) res.get("skip"))
-                .limit((Document) res.get("limit"))
-                .first((Document) res.get("first"))
-                .build();
-
-        //add query to app queries
-        queries.put(firstQuery.getName(), firstQuery);
-        app.setQueries(queries);
-
-        //assign and build app schema
-        GraphQLSchema graphQLSchema = buildSchema(sdl);
-        this.app.setSchema(graphQLSchema);
-        this.gql = GraphQL.newGraphQL(graphQLSchema).build();
-
 
         var query = new String(request.getContent());
 
