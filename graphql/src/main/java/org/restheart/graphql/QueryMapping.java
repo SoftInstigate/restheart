@@ -1,24 +1,16 @@
 package org.restheart.graphql;
 
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 
-import javax.print.Doc;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
+public class QueryMapping extends Mapping {
 
-public class Query {
-
-
-    private String db;
-    private String name;
-    private String collection;
     private boolean multiple;
     private Document filter;
     private Document sort;
@@ -26,41 +18,15 @@ public class Query {
     private Document limit;
     private Document first;
 
-    public Query(String db, String name, String collection, boolean multiple, Document filter, Document sort, Document skip, Document limit, Document first) {
-        this.db = db;
-        this.name = name;
-        this.collection = collection;
+    public QueryMapping(String name, String target_db, String target_collection, boolean multiple,
+                        Document filter, Document sort, Document skip, Document limit, Document first) {
+        super(name, target_db, target_collection);
         this.multiple = multiple;
         this.filter = filter;
         this.sort = sort;
         this.skip = skip;
         this.limit = limit;
         this.first = first;
-    }
-
-
-    public String getDb() {
-        return db;
-    }
-
-    public void setDb(String db) {
-        this.db = db;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getCollection() {
-        return collection;
-    }
-
-    public void setCollection(String collection) {
-        this.collection = collection;
     }
 
     public boolean isMultiple() {
@@ -111,7 +77,6 @@ public class Query {
         this.first = first;
     }
 
-
     public Map<String, Document> interpolate(Map<String, Object> arguments) throws InvalidMetadataException, QueryVariableNotBoundException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
 
         Map<String, Document> result = new HashMap<>();
@@ -155,5 +120,60 @@ public class Query {
             result.put(fieldName, value);
         }
     }
-}
 
+
+    public static class Builder{
+        String name;
+        String target_db;
+        String target_collection;
+        private boolean multiple;
+        private Document filter;
+        private Document sort;
+        private Document skip;
+        private Document limit;
+        private Document first;
+
+        public Builder(String name, String db, String collection, boolean multiple){
+            this.name = name;
+            this.target_db = db;
+            this.target_collection = collection;
+            this.multiple = multiple;
+        }
+
+        public Builder newBuilder(String db, String name, String collection, boolean multiple){
+            return new Builder(db, name, collection, multiple);
+        }
+
+        public Builder filter(Document filter){
+            this.filter = filter;
+            return this;
+        }
+
+        public Builder sort(Document sort){
+            this.sort = sort;
+            return this;
+        }
+
+        public Builder skip(Document skip){
+            this.skip = skip;
+            return this;
+        }
+
+        public Builder limit(Document limit){
+            this.limit = limit;
+            return this;
+        }
+
+        public Builder first(Document first){
+            this.first = first;
+            return this;
+        }
+
+        public QueryMapping build(){
+            return new QueryMapping(this.name, this.target_db, this.target_collection, this.multiple, this.filter,
+                    this.sort, this.skip, this.limit, this.first);
+        }
+
+
+    }
+}

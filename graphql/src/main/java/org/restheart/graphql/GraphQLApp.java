@@ -1,17 +1,14 @@
 package org.restheart.graphql;
 
-import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
-import org.bson.BsonDocument;
-
 import java.util.Map;
 
 public class GraphQLApp {
 
     private String descriptor;
     private GraphQLSchema schema;
-    private Map<String, Query> Queries;
-
+    private Map<String, QueryMapping> queryMappings;
+    private Map<String, Map<String, AssociationMapping>> associationMappings;
 
     public GraphQLApp(String descriptor) {
         this.descriptor = descriptor;
@@ -33,16 +30,27 @@ public class GraphQLApp {
         this.schema = schema;
     }
 
-    public Map<String, Query> getQueries() {
-        return Queries;
+    public Map<String, QueryMapping> getQueryMappings() {
+        return this.queryMappings;
     }
 
-    public void setQueries(Map<String, Query> queries) {
-        Queries = queries;
+    public void setQueryMappings(Map<String, QueryMapping> queryMappings) {
+        this.queryMappings = queryMappings;
     }
 
-    public Query getQueryByName(String name){
-        return this.Queries.get(name);
+    public Map<String, Map<String, AssociationMapping>> getAssociationMappings() {
+        return associationMappings;
     }
 
+    public void setAssociationMappings(Map<String, Map<String, AssociationMapping>> associationMappings) {
+        this.associationMappings = associationMappings;
+    }
+
+    public QueryMapping getQueryMappingByName(String name){
+        return this.getQueryMappings().get(name);
+    }
+
+    public Map<String, AssociationMapping> getAssociationMappingByType(String type){
+        return this.associationMappings.get(type);
+    }
 }

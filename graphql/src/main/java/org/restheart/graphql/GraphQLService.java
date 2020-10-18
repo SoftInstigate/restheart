@@ -12,9 +12,6 @@ import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.JsonUtils;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -30,38 +27,55 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
     private MongoClient mongoClient;
 
     @InjectMongoClient
-    public void init(MongoClient mclient) throws IOException, URISyntaxException {
+    public void init(MongoClient mclient){
         this.mongoClient = mclient;
+        appDefinition("Test App");
+        this.gql = GraphQL.newGraphQL(this.app.getSchema()).build();
+    }
+
+
+    public void appDefinition(String appName){
 
         //fetching APP definition from database
-        this.app = new GraphQLApp("Test APP");
+        GraphQLApp newApp = new GraphQLApp(appName);
         Document appDesc = this.mongoClient.getDatabase("restheart")
                 .getCollection("apps").find().first();
 
-
-        Map<String, Query> queryDefinitions = new HashMap<>();
+        Map<String, Map<String, AssociationMapping>> associationsDef = new HashMap<>();
+        Map<String, QueryMapping> queryDef = new HashMap<>();
 
         //creating queries definitions and putting them inside App definition
         for (Document query: appDesc.getList("queries", Document.class)) {
             String queryName = query.getString("name");
-            queryDefinitions.put(queryName,
-                    QueryBuilder.newBuilder(query.getString("db"), queryName, query.getString("collection")
-                            , query.getBoolean("multiple"))
+            queryDef.put(queryName,
+                    new QueryMapping.Builder(queryName, query.getString("db"), query.getString("collection"),
+                            query.getBoolean("multiple"))
                             .filter((Document) query.get("filter"))
                             .sort((Document) query.get("sort"))
                             .skip((Document) query.get("skip"))
-                            .limit((Document) query.get("limit"))
-                            .first((Document) query.get("first"))
+                            .limit((Document) query.get("skip"))
+                            .first((Document) query.get("skip"))
                             .build());
         }
-        this.app.setQueries(queryDefinitions);
+        Document associationsByTypes = appDesc.get("associations", Document.class);
+        for (String type:  associationsByTypes.keySet()){
+            Map<String, AssociationMapping> ass = new HashMap<>();
+            for (Document association: associationsByTypes.getList(type, Document.class) ) {
+                String associationName = association.getString("name");
+                ass.put(associationName, new AssociationMapping(associationName, association.getString("target_db"),
+                        association.getString("target_collection"), association.getString("type"),
+                        association.getString("role"), association.getString("key"),
+                        association.getString("ref_field")));
+            }
+            associationsDef.put(type, ass);
+        }
 
-
+        newApp.setQueryMappings(queryDef);
+        newApp.setAssociationMappings(associationsDef);
+        this.app = newApp;
         //making executable the schema
         GraphQLSchema graphQLSchema = buildSchema(appDesc.getString("schema"));
-        this.app.setSchema(graphQLSchema);
-        this.gql = GraphQL.newGraphQL(graphQLSchema).build();
-
+        newApp.setSchema(graphQLSchema);
     }
 
     private GraphQLSchema buildSchema(String sdl){
@@ -73,26 +87,61 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
 
     private RuntimeWiring buildWiring(){
 
-        TypeRuntimeWiring.Builder obj = newTypeWiring("Query");
-        for (String queryName : this.app.getQueries().keySet()) {
-            boolean isMultiple = this.app.getQueryByName(queryName).isMultiple();
-            //TODO: create a null pointer exception for isMultiple --> it is mandatory!
-            if (isMultiple){
-                obj.dataFetcher(queryName, MultipleGraphQLDataFetcher.getInstance());
+        Map<String, QueryMapping> queries = this.app.getQueryMappings();
+        if (queries.size() >0) {
+            TypeRuntimeWiring.Builder queryTypeBuilder = newTypeWiring("Query");
+            for (String queryName : queries.keySet()) {
+                boolean isMultiple = this.app.getQueryMappingByName(queryName).isMultiple();
+                if (isMultiple) {
+                    queryTypeBuilder.dataFetcher(queryName, MultipleGraphQLDataFetcher.getInstance());
+                } else {
+                    queryTypeBuilder.dataFetcher(queryName, SingleGraphQLDataFetcher.getInstance());
+                }
             }
-            else{
-                obj.dataFetcher(queryName, SingleGraphQLDataFetcher.getInstance());
+            MultipleGraphQLDataFetcher.setCurrentApp(this.app);
+            MultipleGraphQLDataFetcher.setMongoClient(this.mongoClient);
+            SingleGraphQLDataFetcher.setCurrentApp(this.app);
+            SingleGraphQLDataFetcher.setMongoClient(this.mongoClient);
+
+            Map<String, Map<String, AssociationMapping>> associationByType = this.app.getAssociationMappings();
+            if (associationByType.size()>0){
+                TypeRuntimeWiring.Builder associationTypeBuilder = new TypeRuntimeWiring.Builder();
+                for (String type: associationByType.keySet()) {
+                    associationTypeBuilder = newTypeWiring(type);
+                    Map<String, AssociationMapping> associations = this.app.getAssociationMappingByType(type);
+                    for (String key: associations.keySet()){
+                        AssociationMapping ass = associations.get(key);
+                        String relType = ass.getType();
+                        String role = ass.getRole();
+                        //TODO: Adapt MultipleGraphQLDataFetcher to manage relations
+                        if(relType.equals("ONE-TO-ONE")){
+                            associationTypeBuilder.dataFetcher(ass.getName(), SingleGraphQLDataFetcher.getInstance());
+                        }
+                        else if(relType.equals("MANY-TO-MANY")){
+                            associationTypeBuilder.dataFetcher(ass.getName(), MultipleGraphQLDataFetcher.getInstance());
+                        }
+                        else{
+                            if(role.equals("OWNING")){
+                                associationTypeBuilder.dataFetcher(ass.getName(), MultipleGraphQLDataFetcher.getInstance());
+                            }
+                            else{
+                                associationTypeBuilder.dataFetcher(ass.getName(), SingleGraphQLDataFetcher.getInstance());
+                            }
+                        }
+
+                    }
+
+                }
+                return RuntimeWiring.newRuntimeWiring().type(queryTypeBuilder).type(associationTypeBuilder).build();
             }
+
+            return RuntimeWiring.newRuntimeWiring().type(queryTypeBuilder).build();
         }
-        MultipleGraphQLDataFetcher.setCurrentApp(this.app);
-        MultipleGraphQLDataFetcher.setMongoClient(this.mongoClient);
-        SingleGraphQLDataFetcher.setCurrentApp(this.app);
-        SingleGraphQLDataFetcher.setMongoClient(this.mongoClient);
-        return RuntimeWiring.newRuntimeWiring().type(obj).build();
+        else return null;
     }
 
     @Override
-    public void handle(ByteArrayRequest request, MongoResponse response) throws Exception {
+    public void handle(ByteArrayRequest request, MongoResponse response){
 
         if (this.mongoClient == null) {
             response.setInError(500, "MongoClient not initialized");
