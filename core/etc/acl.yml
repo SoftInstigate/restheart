@@ -10,7 +10,7 @@ permissions:
     # admin role can do everything
     - role: admin
       predicate: path-prefix[path="/"]
-      
+
     # user role can do everything on /{username}
     - role: user
       predicate: path-template[value="/{username}"] and equals[%u, "${username}"]

@@ -69,7 +69,7 @@ use-embedded-keystore: true
  # successfully authenticates the incoming request or the list of mechanisms is
  # exhausted.
 
- # See README.md for the list of available Authentication Mechanisms
+ # See README.md for the list of available Authentication Mechanisms
 
 auth-mechanisms:
   tokenBasicAuthMechanism:
@@ -99,12 +99,12 @@ auth-mechanisms:
     issuer: myIssuer
     audience: myAudience
 
-## Authenticators
+## Authenticators
 
  # An Authenticator verify user credential and are used by one or more
  # AuthMachanisms
 
- # See README.md for the list of available Authenticators
+ # See README.md for the list of available Authenticators
 
 authenticators:
   fileRealmAuthenticator:
@@ -125,16 +125,16 @@ authenticators:
     cache-ttl: 60000
     cache-expire-policy: AFTER_WRITE
 
-## Authorizers
+## Authorizers
 
  # Authorizers verify if a request is allowed.
 
  # As an in-bound request is received and authenticated the isAllowed() method is
- # called on each authenticator in turn until one of the following occurs:
+ # called on each authenticator in turn until one of the following occurs:
  # an authenticator allows the incoming request or the list of authenticators is
  # exhausted. In the latter case, the request ends and 403 Forbidden is returned.
 
- # See README.md for the list of available Authorizers
+ # See README.md for the list of available Authorizers
 
 authorizers:
   fileAclAuthorizer:
@@ -160,7 +160,7 @@ authorizers:
  # The token is returned to the caller via auth-token header when the user
  # autheticates succesfully. The token can be used by Authentication Mechanisms.
 
- # See README.md for the list of available Token Managers.
+ # See README.md for the list of available Token Managers.
 
 token-manager:
   rndTokenManager:
@@ -190,7 +190,7 @@ mongo-mounts:
 
 #### Default representation format https://restheart.org/docs/representation-format/
 
-## STANDARD  root and dbs as an array of children's ids
+## STANDARD  root and dbs as an array of children's ids
 ##           collection as arrays of document objects and documents as objects
 ## HAL       Hypertext Application Language
 ## SHAL      Simplified HAL with children as direct elements of _embedded array
@@ -200,7 +200,7 @@ mongo-mounts:
 
 default-representation-format: HAL
 
-#### Static Web Resources
+#### Static Web Resources
 
 # Static web resources to bind to the URL specified by the 'where' property.
 # The 'what' property is the path of the directory containing the resources.
@@ -216,7 +216,7 @@ static-resources-mounts:
 #### Plugins configuration
 
 # The directory containing the plugins jars.
-# The path is either absolute (starts with /) or relative to the restheart.jar file
+# The path is either absolute (starts with /) or relative to the restheart.jar file
 # Just add the plugins jar to plugins-directory and they will be automatically
 # added to the classpath and registered.
 
@@ -282,8 +282,8 @@ plugins-args:
 
 ## Aggregations variables
 
-# Check if aggregation variables use operators. allowing operators in aggregation variables
-# is risky. requester can inject operators modifying the query
+# Check if aggregation variables use operators. allowing operators in aggregation variables
+# is risky. requester can inject operators modifying the query
 
 aggregation-check-operators: true
 
@@ -315,7 +315,7 @@ etag-check-policy:
 # ansi-console: use Ansi console for logging.
 # requests-log-trace-headers: add the HTTP headers you want to be put on the MDC for logback. Use with %X{header-name} in logback.xml.
 #      Useful for tracing support in the logs. Leave empty to deactivate this feature.
-# WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
+# WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
 enable-log-file: true
 log-file-path: /var/log/restheart.log
@@ -413,7 +413,7 @@ connection-options:
     # The idle timeout in milliseconds after which the channel will be closed.
     # If the underlying channel already has a read or write timeout set
     # the smaller of the two values will be used for read/write timeouts.
-    # Defaults to unlimited (-1).
+    # Defaults to unlimited (-1).
     IDLE_TIMEOUT: -1
 
     # The maximum allowed time of reading HTTP request in milliseconds.
@@ -422,7 +422,7 @@ connection-options:
 
     # The amount of time the connection can be idle with no current requests
     # before it is closed;
-    # Defaults to unlimited (-1).
+    # Defaults to unlimited (-1).
     NO_REQUEST_TIMEOUT: -1
 
     # The maximum number of query parameters that are permitted in a request.
