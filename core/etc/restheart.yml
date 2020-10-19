@@ -64,14 +64,14 @@ mongo-uri: {{{mongo-uri}}}
 
 # Use mongo-mounts to expose MongoDb resources binding them to API URIs.
 #
-# The parameter 'what' identifies the MongoDb resource to expose.
-# The format is /db[/coll[/docid]]
+# The parameter 'what' identifies the MongoDb resource to expose.
+# The format is /db[/coll[/docid]]
 # Use the wildcard '*' to expose all dbs.
 #
 # The parameter 'where' defines the URI to bind the resource to.
 # It can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*).
-# The values of the path templates properties are available:
-# - in the 'what' property (e.g. what: /{foo}_db/coll)
+# The values of the path templates properties are available:
+# - in the 'what' property (e.g. what: /{foo}_db/coll)
 # - programmatically from RequestContext.getPathTemplateParamenters() method.
 #
 # It is not possible to mix absolute paths and path templates: 'where' URIs
@@ -102,7 +102,7 @@ mongo-mounts:
 
 #### Default representation format https://restheart.org/docs/representation-format/
 
-## STANDARD  root and dbs as an array of children's ids
+## STANDARD  root and dbs as an array of children's ids
 ##           collection as arrays of document objects and documents as objects
 ## HAL       Hypertext Application Language
 ## SHAL      Simplified HAL with children as direct elements of _embedded array
@@ -112,7 +112,7 @@ mongo-mounts:
 
 default-representation-format: {{{default-representation-format}}}
 
-#### Static Web Resources
+#### Static Web Resources
 
 # Static web resources to bind to the URL specified by the 'where' property.
 # The 'what' property is the path of the directory containing the resources.
@@ -187,7 +187,7 @@ auth-mechanisms:
       - admin
       - user
 
-## Authenticators
+## Authenticators
 
  # An Authenticator verify user credential and are used by one or more
  # AuthMachanisms
@@ -215,12 +215,12 @@ authenticators:
     cache-ttl: 60000
     cache-expire-policy: AFTER_WRITE
 
-## Authorizers
+## Authorizers
 
  # Authorizers verify if a request is allowed.
- 
+
  # As an in-bound request is received and authenticated the isAllowed() method is
- # called on each authenticator in turn until one of the following occurs:
+ # called on each authenticator in turn until one of the following occurs:
  # an authenticator allows the incoming request or the list of authenticators is
  # exhausted. In the latter case, the request ends and 403 Forbidden is returned.
 
@@ -258,8 +258,8 @@ token-manager:
 
 ## Aggregations variables
 
-# Check if aggregation variables use operators. allowing operators in aggregation variables
-# is risky. requester can inject operators modifying the query
+# Check if aggregation variables use operators. allowing operators in aggregation variables
+# is risky. requester can inject operators modifying the query
 
 aggregation-check-operators: true
 
@@ -284,7 +284,7 @@ etag-check-policy:
 #### Plugins configuration
 
 # The directory containing the plugins jars.
-# The path is either absolute (starts with /) or relative to the restheart.jar file
+# The path is either absolute (starts with /) or relative to the restheart.jar file
 # Just add the plugins jar to plugins-directory and they will be automatically
 # added to the classpath and registered.
 
@@ -450,7 +450,7 @@ connection-options:
   # The idle timeout in milliseconds after which the channel will be closed.
   # If the underlying channel already has a read or write timeout set
   # the smaller of the two values will be used for read/write timeouts.
-  # Defaults to unlimited (-1).
+  # Defaults to unlimited (-1).
   IDLE_TIMEOUT: -1
 
   # The maximum allowed time of reading HTTP request in milliseconds.
@@ -459,7 +459,7 @@ connection-options:
 
   # The amount of time the connection can be idle with no current requests
   # before it is closed;
-  # Defaults to unlimited (-1).
+  # Defaults to unlimited (-1).
   NO_REQUEST_TIMEOUT: -1
 
   # The maximum number of query parameters that are permitted in a request.
