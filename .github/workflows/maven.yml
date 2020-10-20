@@ -37,6 +37,14 @@ jobs:
 
             - name: Build and test
               run: mvn -B clean install
+              
+            - uses: actions/checkout@master
+            - uses: codecov/codecov-action@v1
+              with:
+                flags: unittests # optional
+                name: restheart # optional
+                fail_ci_if_error: true # optional (default = false)
+                verbose: true # optional (default = false)
 
             - name: Push snapshot Docker image
               run: |
