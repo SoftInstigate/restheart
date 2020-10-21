@@ -52,47 +52,43 @@ public class SingleGraphQLDataFetcher implements DataFetcher<Document>{
     @Override
     public Document get(DataFetchingEnvironment dataFetchingEnvironment) throws InvocationTargetException,
             QueryVariableNotBoundException, InvalidMetadataException, NoSuchMethodException, IllegalAccessException {
-        String fieldName = dataFetchingEnvironment.getField().getName();
+
+        String typeName = ((GraphQLObjectType) dataFetchingEnvironment.getParentType()).getName(); //User
+        String fieldName = dataFetchingEnvironment.getField().getName(); //sender
+
         String database;
         String collection;
         Document filter;
         FindIterable<Document> query;
-        GraphQLObjectType parentType = (GraphQLObjectType) dataFetchingEnvironment.getParentType();
-        // if fieldName is related to a query...
-        if(currentApp.getQueryMappings().containsKey(fieldName)){
-            //retrieve the query mappings from app definition
-            QueryMapping queryMapping = currentApp.getQueryMappingByName(fieldName);
-            database = queryMapping.getTarget_db();
-            collection = queryMapping.getTarget_collection();
-            Map<String, Object> graphQLQueryArguments = dataFetchingEnvironment.getArguments();
-            Map<String, Document> interpolatedArguments = queryMapping.interpolate(graphQLQueryArguments);
-            if (interpolatedArguments.containsKey("filter")){
-                filter = interpolatedArguments.get("filter");
-            }
-            else{
-                filter = new Document();
-            }
-        }
-        // else, if fieldName is related to an association
-        else if(currentApp.getAssociationMappingByType(((GraphQLObjectType) dataFetchingEnvironment.getParentType()).getName()).containsKey(fieldName)) {
-            // retrieve association mappings from app definition
-            AssociationMapping associationMapping =
-                    currentApp.getAssociationMappingByType(((GraphQLObjectType) dataFetchingEnvironment.getParentType()).getName())
-                            .get(fieldName);
-            database = associationMapping.getTarget_db();
-            collection = associationMapping.getTarget_collection();
-            filter = new Document();
-            // in order to find correct data, the ref_field in target collection must be equal to the value of
-            // the foreign key
-            filter.put(associationMapping.getRef_field(), ((Document) dataFetchingEnvironment.getSource()).get(associationMapping.getKey()));
-        }
-        else{
-            return  null;
-        }
+        if (currentApp.getQueryMappings().containsKey(typeName)) {
+            Map<String, QueryMapping> queryMappings = currentApp.getQueryMappingByType(typeName);
+            if (queryMappings.containsKey(fieldName)) {
+                QueryMapping queryMapping = queryMappings.get(fieldName);
+                database = queryMapping.getTarget_db();
+                collection = queryMapping.getTarget_collection();
+                Document parentDocument = dataFetchingEnvironment.getSource();
+                Map<String, Object> graphQLQueryArguments = dataFetchingEnvironment.getArguments();
+                Document interpolatedArguments = queryMapping.interpolate(graphQLQueryArguments, parentDocument);
 
-        query = mongoClient.getDatabase(database)
-                .getCollection(collection)
-                .find(filter);
+                if (interpolatedArguments.containsKey("filter")) {
+                    filter = (Document) interpolatedArguments.get("filter");
+                } else {
+                    filter = new Document();
+                }
+
+                query = mongoClient.getDatabase(database)
+                        .getCollection(collection)
+                        .find(filter);
+
+                return query.first();
+
+            }
+
+        }
+        return null;
+    }
+
+
 
         /**
         List<String> projField = new LinkedList<String>();
@@ -103,8 +99,6 @@ public class SingleGraphQLDataFetcher implements DataFetcher<Document>{
         return query.projection(fields(include(projField))).first();
          **/
 
-        return query.first();
-    }
 
 
 }

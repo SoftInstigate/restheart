@@ -7,8 +7,7 @@ public class GraphQLApp {
 
     private String descriptor;
     private GraphQLSchema schema;
-    private Map<String, QueryMapping> queryMappings;
-    private Map<String, Map<String, AssociationMapping>> associationMappings;
+    private Map<String, Map<String,QueryMapping>> queryMappings;
 
     public GraphQLApp(String descriptor) {
         this.descriptor = descriptor;
@@ -30,27 +29,17 @@ public class GraphQLApp {
         this.schema = schema;
     }
 
-    public Map<String, QueryMapping> getQueryMappings() {
+    public Map<String, Map<String,QueryMapping>> getQueryMappings() {
         return this.queryMappings;
     }
 
-    public void setQueryMappings(Map<String, QueryMapping> queryMappings) {
+    public void setQueryMappings(Map<String, Map<String, QueryMapping>> queryMappings) {
         this.queryMappings = queryMappings;
     }
 
-    public Map<String, Map<String, AssociationMapping>> getAssociationMappings() {
-        return associationMappings;
+    public Map<String,QueryMapping> getQueryMappingByType(String type){
+        return this.getQueryMappings().get(type);
     }
 
-    public void setAssociationMappings(Map<String, Map<String, AssociationMapping>> associationMappings) {
-        this.associationMappings = associationMappings;
-    }
 
-    public QueryMapping getQueryMappingByName(String name){
-        return this.getQueryMappings().get(name);
-    }
-
-    public Map<String, AssociationMapping> getAssociationMappingByType(String type){
-        return this.associationMappings.get(type);
-    }
 }

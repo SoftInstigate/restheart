@@ -1,15 +1,25 @@
 package org.restheart.graphql;
 
 public abstract class Mapping {
+    String type;
     String name;
     String target_db;
     String target_collection;
 
 
-    public Mapping(String name, String target_db, String target_collection) {
+    public Mapping(String type, String name, String target_db, String target_collection) {
+        this.type = type;
         this.name = name;
         this.target_db = target_db;
         this.target_collection = target_collection;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getName() {
