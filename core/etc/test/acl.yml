@@ -6,7 +6,7 @@ permissions:
 
   - role: $unauthenticated
     predicate: path-prefix[path="/testdb/refcoll1"] and method[value="GET"]
-    
+
   - role: $unauthenticated
     predicate: path-prefix[path="/test-change-streams/coll/_streams"]
 
