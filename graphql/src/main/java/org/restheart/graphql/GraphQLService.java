@@ -2,104 +2,33 @@ package org.restheart.graphql;
 
 import com.mongodb.MongoClient;
 import graphql.GraphQL;
-import graphql.schema.GraphQLSchema;
-import graphql.schema.idl.*;
 import io.undertow.server.HttpServerExchange;
-import org.bson.Document;
+import org.restheart.ConfigurationException;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.InjectMongoClient;
-import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.Service;
+import org.restheart.mongodb.db.MongoClientSingleton;
+import org.restheart.plugins.*;
 import org.restheart.utils.JsonUtils;
-import java.util.*;
+
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 
 
 @RegisterPlugin(name= "graphql",
         description = "handles GraphQL requests", defaultURI = "/graphql")
 public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> {
     private GraphQL gql;
-    private GraphQLApp app;
     private MongoClient mongoClient;
 
-    @InjectMongoClient
-    public void init(MongoClient mclient){
-        this.mongoClient = mclient;
-        appDefinition("Test App");
-        this.gql = GraphQL.newGraphQL(this.app.getSchema()).build();
+    @InjectConfiguration
+    public void init(Map<String, Object> args) throws ConfigurationException {
+        String db = ConfigurablePlugin.argValue(args, "db");
+        String collection = ConfigurablePlugin.argValue(args, "collection");
+        AppDefinitionLoader.setup(db, collection);
+        this.mongoClient = MongoClientSingleton.getInstance().getClient();
     }
 
-
-    public void appDefinition(String appName){
-
-        //fetching APP definition from database
-        GraphQLApp newApp = new GraphQLApp(appName);
-        Document appDesc = this.mongoClient.getDatabase("restheart")
-                .getCollection("apps").find().first();
-
-        Map<String, Map<String,QueryMapping>> mappings = new HashMap<>();
-
-        for (String type: ((Document) appDesc.get("mappings")).keySet()){
-            Map<String, QueryMapping> typeMappings = new HashMap<>();
-            for (Document mapping: ((Document) appDesc.get("mappings")).getList(type, Document.class)){
-                String name = mapping.getString("name");
-                typeMappings.put(name, new QueryMapping.Builder(type,name, mapping.getString("db"), mapping.getString("collection"),
-                        mapping.getBoolean("multiple"))
-                        .filter((Document) mapping.get("filter"))
-                        .sort((Document) mapping.get("sort"))
-                        .skip((Document) mapping.get("skip"))
-                        .limit((Document) mapping.get("limit"))
-                        .first((Document) mapping.get("first"))
-                        .build());
-            }
-            mappings.put(type, typeMappings);
-        }
-
-
-        newApp.setQueryMappings(mappings);
-        this.app = newApp;
-        //making executable the schema
-        GraphQLSchema graphQLSchema = buildSchema(appDesc.getString("schema"));
-        newApp.setSchema(graphQLSchema);
-    }
-
-    private GraphQLSchema buildSchema(String sdl){
-        TypeDefinitionRegistry typeRegistry = new SchemaParser().parse(sdl);
-        RuntimeWiring runtimeWiring = buildWiring();
-        SchemaGenerator schemaGenerator = new SchemaGenerator();
-        return schemaGenerator.makeExecutableSchema(typeRegistry, runtimeWiring);
-    }
-
-    private RuntimeWiring buildWiring(){
-
-        Map<String, Map<String, QueryMapping>> queries = this.app.getQueryMappings();
-        if (queries.size() >0) {
-            RuntimeWiring.Builder runWire = RuntimeWiring.newRuntimeWiring();
-            for (String type: queries.keySet()){
-                TypeRuntimeWiring.Builder queryTypeBuilder = newTypeWiring(type);
-                for (String queryName : queries.get(type).keySet()) {
-                    boolean isMultiple = this.app.getQueryMappingByType(type).get(queryName).isMultiple();
-                    if (isMultiple) {
-                        queryTypeBuilder.dataFetcher(queryName, MultipleGraphQLDataFetcher.getInstance());
-                    } else {
-                        queryTypeBuilder.dataFetcher(queryName, SingleGraphQLDataFetcher.getInstance());
-                    }
-                }
-                runWire.type(queryTypeBuilder);
-            }
-
-            MultipleGraphQLDataFetcher.setCurrentApp(this.app);
-            MultipleGraphQLDataFetcher.setMongoClient(this.mongoClient);
-            SingleGraphQLDataFetcher.setCurrentApp(this.app);
-            SingleGraphQLDataFetcher.setMongoClient(this.mongoClient);
-            return runWire.build();
-        }
-        else return null;
-    }
 
     @Override
     public void handle(ByteArrayRequest request, MongoResponse response){
@@ -110,21 +39,32 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
         }
 
         if (!check(request)) {
-            response.setInError(400, "RICHIESTA ERRATA");
+            response.setInError(400, "Bad Request");
             return;
         }
 
-        var query = new String(request.getContent());
+        String appName = request.getPath().substring(9);
+        AppDefinitionLoadingCache appCache = AppDefinitionLoadingCache.getInstance();
+        GraphQLApp appDefinition = appCache.get(appName);
+        if (appDefinition != null){
+            this.gql = GraphQL.newGraphQL(appDefinition.getSchema()).build();
+            MultipleGraphQLDataFetcher.setCurrentApp(appDefinition);
+            SingleGraphQLDataFetcher.setCurrentApp(appDefinition);
+            var query = new String(request.getContent());
+            var result = this.gql.execute(query);
 
-        var result = this.gql.execute(query);
-
-        if (result.getErrors() != null && !result.getErrors().isEmpty()) {
-            var error = new StringBuilder();
-            result.getErrors().forEach(e -> error.append(e.getMessage()).append(";"));
-            response.setInError(400, error.toString());
+            if (result.getErrors() != null && !result.getErrors().isEmpty()) {
+                var error = new StringBuilder();
+                result.getErrors().forEach(e -> error.append(e.getMessage()).append(";"));
+                response.setInError(400, error.toString());
+                return;
+            } else if (result.isDataPresent()) {
+                response.setContent(JsonUtils.toBsonDocument(result.getData()));
+            }
+        }
+        else{
+            response.setInError(400, "Bad Request");
             return;
-        } else if (result.isDataPresent()) {
-            response.setContent(JsonUtils.toBsonDocument(result.getData()));
         }
 
     }

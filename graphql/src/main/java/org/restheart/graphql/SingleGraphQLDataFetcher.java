@@ -7,6 +7,7 @@ import graphql.schema.*;
 import org.bson.Document;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.mongodb.db.MongoClientSingleton;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
@@ -30,7 +31,6 @@ public class SingleGraphQLDataFetcher implements DataFetcher<Document>{
 
 
     private static GraphQLApp currentApp = null;
-    private static MongoClient mongoClient = null;
 
 
     public static GraphQLApp getCurrentApp() {
@@ -41,17 +41,12 @@ public class SingleGraphQLDataFetcher implements DataFetcher<Document>{
         currentApp = app;
     }
 
-    public static MongoClient getMongoClient() {
-        return mongoClient;
-    }
-
-    public static void setMongoClient(MongoClient mclient) {
-        mongoClient = mclient;
-    }
 
     @Override
     public Document get(DataFetchingEnvironment dataFetchingEnvironment) throws InvocationTargetException,
             QueryVariableNotBoundException, InvalidMetadataException, NoSuchMethodException, IllegalAccessException {
+
+        MongoClient mongoClient = MongoClientSingleton.getInstance().getClient();
 
         String typeName = ((GraphQLObjectType) dataFetchingEnvironment.getParentType()).getName(); //User
         String fieldName = dataFetchingEnvironment.getField().getName(); //sender

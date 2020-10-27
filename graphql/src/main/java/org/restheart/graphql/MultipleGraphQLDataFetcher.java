@@ -6,8 +6,10 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.SelectedField;
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.restheart.mongodb.db.MongoClientSingleton;
 
 import java.util.*;
 
@@ -28,7 +30,6 @@ public class MultipleGraphQLDataFetcher implements DataFetcher<List<Document>> {
 
 
     private static GraphQLApp currentApp = null;
-    private static MongoClient mongoClient = null;
 
 
     public static GraphQLApp getCurrentApp() {
@@ -39,17 +40,11 @@ public class MultipleGraphQLDataFetcher implements DataFetcher<List<Document>> {
         currentApp = app;
     }
 
-    public static MongoClient getMongoClient() {
-        return mongoClient;
-    }
-
-    public static void setMongoClient(MongoClient mclient) {
-        mongoClient = mclient;
-    }
 
     @Override
     public List<Document> get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
 
+        MongoClient mongoClient = MongoClientSingleton.getInstance().getClient();
         String typeName = ((GraphQLObjectType) dataFetchingEnvironment.getParentType()).getName();
         String fieldName = dataFetchingEnvironment.getField().getName(); //sender
 
@@ -79,7 +74,7 @@ public class MultipleGraphQLDataFetcher implements DataFetcher<List<Document>> {
 
                 if(!interpolatedArguments.isEmpty()){
                     if (interpolatedArguments.containsKey("sort")){
-                        query = query.sort((Bson) interpolatedArguments.get("sort"));
+                        query = query.sort(BsonDocument.parse((String) interpolatedArguments.get("sort")));
                     }
 
                     if (interpolatedArguments.containsKey("skip")){

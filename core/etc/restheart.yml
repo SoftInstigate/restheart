@@ -318,6 +318,12 @@ plugins-args:
     enabled: false
     uri: /echo
     secured: false
+  graphql:
+    enabled: true
+      uri: /graphql
+      secured: false
+      db: restheart
+      collection: apps
 
 #### Logging
 
