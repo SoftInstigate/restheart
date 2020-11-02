@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -114,7 +114,7 @@ public class LoadGetPT extends AbstractPT {
                     dbcoll,
                     page,
                     pagesize,
-                    null,                    
+                    null,
                     BsonDocument.parse(filter),
                     null,
                     null,
@@ -322,12 +322,3 @@ public class LoadGetPT extends AbstractPT {
         this.eager = eager;
     }
 }
-/**
- * install ldt from https://github.com/bazhenov/load-test-tool run it from
- * target/class directory (current directory is added to classpath) as follows:
- * <PATH_TO_ldt-assembly-1.1>/bin/ldt.sh -z
- * org.restheart.test.performance.LoadGetPT#get -c 20 -n 500 -w 5 -p
- * "url=http://127.0.0.1:8080/testdb/testcoll?page=10&pagesize=5,id=a,pwd=a"
- *
- * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- */
