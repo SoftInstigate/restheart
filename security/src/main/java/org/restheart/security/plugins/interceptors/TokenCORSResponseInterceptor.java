@@ -37,12 +37,11 @@ import static org.restheart.plugins.security.TokenManager.ACCESS_CONTROL_EXPOSE_
         description = "helper interceptor to add token headers to "
                 + "Access-Control-Expose-Headers to handle CORS request",
         interceptPoint = RESPONSE,
-        enabledByDefault = true
-)
+        enabledByDefault = true)
 public class TokenCORSResponseInterceptor implements MongoInterceptor {
 
     private String[] headers;
-    
+
     public TokenCORSResponseInterceptor() {
         this.headers = new String[0];
     }
@@ -54,24 +53,24 @@ public class TokenCORSResponseInterceptor implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var exchange = request.getExchange();
-        
+
         var hs = exchange
                 .getResponseHeaders()
                 .get(ACCESS_CONTROL_EXPOSE_HEADERS);
-        
+
         if (hs == null || hs.isEmpty()) {
             exchange
                 .getResponseHeaders()
                 .put(ACCESS_CONTROL_EXPOSE_HEADERS, headers());
         } else {
             var v0 = hs.getFirst();
-            
+
             for (var h : this.headers) {
                 if (!v0.contains(h)) {
                     v0 = v0.concat(", ").concat(h);
                 }
             }
-            
+
             exchange
                 .getResponseHeaders()
                 .put(ACCESS_CONTROL_EXPOSE_HEADERS, v0);
@@ -82,11 +81,11 @@ public class TokenCORSResponseInterceptor implements MongoInterceptor {
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return true;
     }
-    
+
     private String headers() {
         var ret = "";
         var first = true;
-        
+
         for (var h : this.headers) {
             if (first) {
                 ret = ret.concat(h);
@@ -95,7 +94,7 @@ public class TokenCORSResponseInterceptor implements MongoInterceptor {
                 ret = ret.concat(", ").concat(h);
             }
         }
-        
+
         return ret;
     }
 

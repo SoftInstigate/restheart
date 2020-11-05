@@ -1,0 +1,70 @@
+{
+    "checkers": [
+        {
+            "name": "checkContent",
+            "args": [
+                {
+                    "mandatoryFields": [
+                        "_id",
+                        "name",
+                        "password",
+                        "roles"
+                    ],
+                    "optionalFields": [
+                        "details",
+                        "_etag"
+                    ],
+                    "path": "$",
+                    "type": "object"
+                },
+                {
+                    "path": "$._id",
+                    "type": "string",
+                    "regex": "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$"
+                },
+                {
+                    "path": "$.password",
+                    "type": "string"
+                },
+                {
+                    "path": "$.roles",
+                    "type": "array"
+                },
+                {
+                    "path": "$.roles.[*]",
+                    "type": "string",
+                    "nullable": true
+                },
+                {
+                    "path": "$.name",
+                    "type": "string"
+                },
+                {
+                    "path": "$.details",
+                    "type": "object",
+                    "mandatoryFields": [
+                        "country",
+                        "city",
+                        "address"
+                    ],
+                    "optional": true
+                },
+                {
+                    "path": "$.details.country",
+                    "type": "string",
+                    "nullable": true
+                },
+                {
+                    "path": "$.details.city",
+                    "type": "string",
+                    "nullable": true
+                },
+                {
+                    "path": "$.details.address",
+                    "type": "string",
+                    "nullable": true
+                }
+            ]
+        }
+    ]
+}

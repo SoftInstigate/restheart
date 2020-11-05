@@ -315,7 +315,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
             return "MongoMount(" + uri + " -> " + resource + ")";
         }
     }
-    
+
     /**
      * reset the exchange relative path to the request path
      *

@@ -1,0 +1,36 @@
+[
+    {
+        "name": "jsonSchema",
+        "args": {
+            "schemaId": "test"
+        },
+        "ifNotSupports": {
+            "fail": false,
+            "delegateTo": {
+                "name": "or",
+                "args": [ {}, {} ],
+                
+                "name": "checkContent",
+                "ifNotSupports": {
+                    "fail": true
+                },
+                "args": [
+                    {
+                        "mandatoryFields": [
+                            "n"
+                        ],
+                        "optionalFields": [
+                            "_id", "_etag"
+                        ],
+                        "path": "$",
+                        "type": "object"
+                    },
+                    {
+                        "path": "$.n",
+                        "type": "number"
+                    }
+                ]
+            }
+        }
+    }
+]

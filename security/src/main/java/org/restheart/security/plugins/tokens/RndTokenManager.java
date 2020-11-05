@@ -43,9 +43,6 @@ import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.TokenManager;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
-import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
 import org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -74,7 +71,7 @@ public class RndTokenManager implements TokenManager {
         this.ttl = ConfigurablePlugin.argValue(confArgs, "ttl");
 
         this.srvURI = ConfigurablePlugin.argValue(confArgs, "srv-uri");
-        
+
         CACHE = CacheFactory.createLocalCache(Long.MAX_VALUE,
                 Cache.EXPIRE_POLICY.AFTER_READ,
                 ttl * 60 * 1_000);

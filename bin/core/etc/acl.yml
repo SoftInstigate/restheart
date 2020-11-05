@@ -1,0 +1,19 @@
+## configuration file for requestPredicatesAuthorizer
+permissions:
+    # OPTIONS is always allowed
+    - role: $unauthenticated
+      predicate: path-prefix[path="/"] and method[value="OPTIONS"]
+
+    - role: user
+      predicate: path-prefix[path="/"] and method[value="OPTIONS"]
+
+    # admin role can do everything
+    - role: admin
+      predicate: path-prefix[path="/"]
+
+    # user role can do everything on /{username}
+    - role: user
+      predicate: path-template[value="/{username}"] and equals[%u, "${username}"]
+
+    - role: user
+      predicate: path-template[value="/{username}/{subpath}"] and equals[%u, "${username}"]

@@ -1,0 +1,496 @@
+## RESTHeart Configuration File.
+---
+#### Listeners
+
+ # Listeners allow to specify the protocol, ip, port and to use.
+ # The supported protocols are: http and https.
+ # You can setup a listener per protocol (up to 2).
+
+ # WARNING: Using the http listener is not secure with basic authentication:
+ # credentials can be sniffed by a man-in-the-middle attack.
+
+https-listener: {{{https-listener}}}
+https-host: {{{https-host}}}
+https-port: {{{https-port}}}
+
+http-listener: {{{http-listener}}}
+http-host: {{{http-host}}}
+http-port: {{{http-port}}}
+
+ajp-listener: {{{ajp-listener}}}
+ajp-host: {{{ajp-host}}}
+ajp-port: {{{ajp-port}}}
+
+#### Instance name
+
+ # The name of this instance.
+ # Displayed in log, also allows to implement instance specific custom code
+
+instance-name: {{{instance-name}}}
+
+### Proxied resources
+
+ # location (required) The location URI to bound to the HTTP proxied server.
+ # proxy-pass (required) The URL of the HTTP proxied server. It can be an array of URLs for load balancing.
+ # name (optional) The name of the proxy. It is required to identify 'restheart'.
+ # rewrite-host-header (optional, default true) should the HOST header be rewritten to use the target host of the call.
+ # connections-per-thread (optional, default 10) Controls the number of connections to create per thread.
+ # soft-max-connections-per-thread (optional, default 5) Controls the number of connections to create per thread.
+ # max-queue-size (optional, default 0) Controls the number of connections to create per thread.
+ # connections-ttl (optional, default -1) Connections Time to Live in seconds.
+ # problem-server-retry (optional, default 10) Time in seconds between retries for problem server.
+#proxies:
+#   - location: /anything
+#     proxy-pass: https://httpbin.org/anything
+#     name: anything
+
+#### MongoDB
+
+##  MongoDb Connection
+
+# Set the MongoDb connection using a Mongo Client URI.
+#
+# The format of the URI is:
+#    mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+#
+# Use The URI query parameter 'authSource' to specify the authetication database:
+# mongodb://user:secret@127.0.0.1/?authSource=authdb
+#
+# More information at http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
+
+mongo-uri: {{{mongo-uri}}}
+
+## MongoDb resources
+
+# Use mongo-mounts to expose MongoDb resources binding them to API URIs.
+#
+# The parameter 'what' identifies the MongoDb resource to expose.
+# The format is /db[/coll[/docid]]
+# Use the wildcard '*' to expose all dbs.
+#
+# The parameter 'where' defines the URI to bind the resource to.
+# It can be an absolute path (eg. /api) or path template (eg. /{foo}/bar/*).
+# The values of the path templates properties are available:
+# - in the 'what' property (e.g. what: /{foo}_db/coll)
+# - programmatically from RequestContext.getPathTemplateParamenters() method.
+#
+# It is not possible to mix absolute paths and path templates: 'where' URIs
+# need to be either all absolute paths or all path templates.
+#
+# Examples:
+# The following exposes all MongoDb resources.
+# In this case the URI of a document is /db/coll/docid
+#
+#   - what: "*"
+#     where: /
+#
+# The following binds the URI /database to the db 'db'
+# In this case the URI of a document is /database/coll/docid
+#
+#   - what: /db/coll
+#     where: /database
+#
+# The following binds the URI /api to the collection 'db.coll'
+# In this case the URI of a document is /api/docid
+#
+#   - what: /db/coll
+#     where: /api
+
+mongo-mounts:
+  - what: {{{root-mongo-resource}}}
+    where: /
+
+#### Default representation format https://restheart.org/docs/representation-format/
+
+## STANDARD  root and dbs as an array of children's ids
+##           collection as arrays of document objects and documents as objects
+## HAL       Hypertext Application Language
+## SHAL      Simplified HAL with children as direct elements of _embedded array
+
+## PLAIN_JSON or HAL are aliases for SHAL
+## S is an alias for STANDARD
+
+default-representation-format: {{{default-representation-format}}}
+
+#### Static Web Resources
+
+# Static web resources to bind to the URL specified by the 'where' property.
+# The 'what' property is the path of the directory containing the resources.
+# The path is either absolute (starts with /) or relative to the restheart.jar file
+# If embedded is true, the resources are either included in the restheart.jar or
+
+static-resources-mounts:
+#  - what: /path/to/resources
+#    where: /static
+#    welcome-file: index.html
+#    embedded: false
+
+### Security
+
+## SSL Configuration
+
+ # Configure the keystore to enable the https listener.
+
+ # RESTHeart Security comes with a self-signed certificate that makes
+ # straightforward enabling https.
+ # Specify use-embedded-keystore: true to use it (this is the default setting).
+ # Using the self-signed certificate leads to issues with some clients;
+ # for instance, with curl you need to specify the "--insecure" option or you'll get an error message.
+
+use-embedded-keystore: true
+
+ # To use your own certificate you need to import it (and eventually the CA certificates chain) into a java keystore
+ # and specify use-embedded-keystore: false and the keystore-file,keystore-password and certpassword configuration properties.
+ # Refer to the java keystore documentation for that.
+
+#keystore-file: /path/to/keystore/file
+#keystore-password: password
+#certpassword: password
+
+ # RESTHeart Security security is pluggable, you can provide you own
+ # implementations of Authenticator Mechanisms, Authenticator, Authorizer
+ # and Token Manager
+
+## Authentication Mechanisms
+
+ # As an in-bound request is received the authenticate method is called on each
+ # mechanism in turn until one of the following occurs: A mechanism
+ # successfully authenticates the incoming request or the list of mechanisms is
+ # exhausted.
+
+auth-mechanisms:
+  tokenBasicAuthMechanism:
+    enabled: true
+  basicAuthMechanism:
+    enabled: true
+    authenticator: fileRealmAuthenticator
+  jwtAuthenticationMechanism:
+    enabled: false
+    algorithm: HS256
+    key: secret
+    base64Encoded: false
+    usernameClaim: sub
+    rolesClaim: roles
+    fixedRoles:
+#      - admin
+    issuer: myIssuer
+    audience: myAudience
+  digestAuthMechanism:
+    enabled: true
+    realm: RESTHeart Realm
+    domain: localhost
+    authenticator: fileRealmAuthenticator
+  identityAuthMechanism:
+    enabled: false
+    username: admin
+    roles:
+      - admin
+      - user
+
+## Authenticators
+
+ # An Authenticator verify user credential and are used by one or more
+ # AuthMachanisms
+
+authenticators:
+  fileRealmAuthenticator:
+    enabled: true
+    conf-file: {{{users-conf-file}}}
+  mongoRealmAuthenticator:
+    enabled: true
+    users-db: restheart
+    users-collection: users
+    prop-id: _id
+    prop-password: password
+    json-path-roles: $.roles
+    bcrypt-hashed-password: true
+    bcrypt-complexity: 12
+    create-user: true
+    create-user-document: '{"_id": "admin", "password": "$2a$12$lZiMMNJ6pkyg4uq/I1cF5uxzUbU25aXHtg7W7sD2ED7DG1wzUoo6u", "roles": ["admin"]}'
+    # create-user-document.password must be hashed when bcrypt-hashed-password=true
+    # default password is 'secret'
+    # see https://bcrypt-generator.com but replace initial '$2y' with '$2a'
+    cache-enabled: false
+    cache-size: 1000
+    cache-ttl: 60000
+    cache-expire-policy: AFTER_WRITE
+
+## Authorizers
+
+ # Authorizers verify if a request is allowed.
+
+ # As an in-bound request is received and authenticated the isAllowed() method is
+ # called on each authenticator in turn until one of the following occurs:
+ # an authenticator allows the incoming request or the list of authenticators is
+ # exhausted. In the latter case, the request ends and 403 Forbidden is returned.
+
+authorizers:
+  fileAclAuthorizer:
+    enabled: true
+    conf-file: {{{acl-conf-file}}}
+  mongoAclAuthorizer:
+    enabled: true
+    acl-db: restheart
+    acl-collection: acl
+    # clients with root-role can execute any request
+    root-role: admin
+    cache-enabled: true
+    cache-size: 1000
+    cache-ttl: 5000
+    cache-expire-policy: AFTER_WRITE
+  fullAuthorizer:
+    enabled: false
+    authentication-required: true
+
+## Token Manager
+
+ # If a token-manager is configured, RESTHeart Security will use it to generate
+ # and verify auth tokens.
+ # If more than one token-manager are defined, the first one will be used
+ # The token is returned to the caller via auth-token header when the user
+ # autheticates successfully. The token can be used by Authentication Mechanisms.
+
+token-manager:
+  rndTokenManager:
+    enabled: true
+    ttl: 15
+    srv-uri: /tokens
+
+## Aggregations variables
+
+# Check if aggregation variables use operators. allowing operators in aggregation variables
+# is risky. requester can inject operators modifying the query
+
+aggregation-check-operators: true
+
+## Allow unescaped characters in URL
+
+# Starting with Undertow 1.4.23 URLs validation became much stricter.
+# However, this is breaking existing clients. Now you can decide which behaviour you prefer
+
+allow-unescaped-characters-in-url: true
+
+## ETag policy
+
+# the following configuration defines the default etag check policy
+# the policy applies for dbs, collections (also applies to file buckets) and documents
+# valid values are REQUIRED, REQUIRED_FOR_DELETE, OPTIONAL
+
+etag-check-policy:
+  db: REQUIRED_FOR_DELETE
+  coll: REQUIRED_FOR_DELETE
+  doc: OPTIONAL
+
+#### Plugins configuration
+
+# The directory containing the plugins jars.
+# The path is either absolute (starts with /) or relative to the restheart.jar file
+# Just add the plugins jar to plugins-directory and they will be automatically
+# added to the classpath and registered.
+
+plugins-directory: {{{plugins-directory}}}
+
+# All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object
+# with the same name of the plugin (as defined in its @RegisterPlugin annotation).
+# The property 'enabled' allows enabling plugins that are not enabled by default,
+# i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false)
+
+plugins-args:
+  mongo:
+    enabled: true
+    uri: /
+    secured: true
+  csvLoader:
+    secured: true
+  rndTokenService:
+    enabled: true
+    uri: /tokens
+    secured: false
+  ping:
+    enabled: true
+    secured: false
+    msg: Greetings from RESTHeart!
+  roles:
+    enabled: true
+    uri: /roles
+    secured: false
+  echo:
+    enabled: false
+    uri: /echo
+    secured: false
+
+#### Logging
+
+# enable-log-console: true => log messages to the console (default value: true)
+# enable-log-file: true => log messages to a file (default value: true)
+# log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
+# log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
+# ansi-console: use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
+# requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
+# requests-log-trace-headers: add the HTTP headers you want to be put on the MDC for logback. Use with %X{header-name} in logback.xml.
+#                             Useful for tracing support in the logs. Leave empty to deactivate this feature.
+# metrics-gathering-level: metrics gathering for which level? OFF => no gathering, ROOT => gathering at root level,
+#                          DATABASE => at db level, COLLECTION => at collection level
+# WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
+
+
+enable-log-file: {{{enable-log-file}}}
+log-file-path: {{{log-file-path}}}
+enable-log-console: {{{enable-log-console}}}
+log-level: {{{log-level}}}
+requests-log-level: 1
+ansi-console: true
+metrics-gathering-level: DATABASE
+requests-log-trace-headers:
+#  - x-b3-traceid      # vv Zipkin headers, see https://github.com/openzipkin/b3-propagation
+#  - x-b3-spanid
+#  - x-b3-parentspanid
+#  - x-b3-sampled      # ^^
+#  - uber-trace-id     # jaeger header, see https://www.jaegertracing.io/docs/client-libraries/#trace-span-identity
+#  - traceparent       # vv opencensus.io headers, see https://github.com/w3c/distributed-tracing/blob/master/trace_context/HTTP_HEADER_FORMAT.md
+#  - tracestate        # ^^
+
+#### Performance Options
+
+## Read Performance
+
+# default-pagesize is the number of documents returned when the pagesize query
+# parameter is not specified
+# see https://restheart.org/docs/read-docs#paging
+default-pagesize: 100
+
+# max-pagesize sets the maximum allowed value of the pagesize query parameter
+# generally, the greater the pagesize, the more json serializan overhead occurs
+# the rule of thumb is not exeeding 1000
+max-pagesize: 1000
+
+# cursor-batch-size sets the mongodb cursor batchSize
+# see https://docs.mongodb.com/manual/reference/method/cursor.batchSize/
+# cursor-batch-size should be smaller or equal to the max-pagesize
+# the rule of thumb is setting cursor-batch-size equal to max-pagesize
+# a small cursor-batch-size (e.g. 101, the default mongodb batchSize)
+# speeds up requests with small pagesize
+cursor-batch-size: 1000
+
+## Caches
+
+# local-cache allows to cache the db and collection properties to drammatically
+# improve performaces. Without caching, a GET on a document would requires
+# two additional queries to retrieve the db and the collection properties.
+# Pay attention to local caching only in case of multi-node deployments (horizontal scalability).
+# In this case a change in a db or collection properties would reflect on other
+# nodes at worst after TTL milliseconds (cache entries time to live).
+# In most of the cases Dbs and collections properties only change at development time.
+
+local-cache-enabled: true
+# TTL in milliseconds; specify a value < 0 to never expire cached entries
+local-cache-ttl: 60000
+
+schema-cache-enabled: true
+# TTL in milliseconds; specify a value < 0 to never expire cached entries
+schema-cache-ttl: 60000
+
+## Limits
+
+# Limit for the maximum number of concurrent requests being served
+requests-limit: 1000
+
+# Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
+query-time-limit: {{{query-time-limit}}}
+
+# Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
+aggregation-time-limit: {{{aggregation-time-limit}}}
+
+## Eager DB Cursor Preallocation Policy
+
+# In big collections, reading a far page involves skipping the db cursor for many documents resulting in a performance bottleneck
+# For instance, with default pagesize of 100, a GET with page=50.000 involves 500.000 skips on the db cursor.
+# The eager db cursor preallocation engine boosts up performaces (in some use cases, up to 1000%). the following options control its behavior.
+
+eager-cursor-allocation-pool-size: 100
+
+eager-cursor-allocation-linear-slice-width: 1000
+eager-cursor-allocation-linear-slice-delta: 100
+eager-cursor-allocation-linear-slice-heights: [4, 2, 1]
+eager-cursor-allocation-random-max-cursors: 20
+eager-cursor-allocation-random-slice-min-width: 1000
+
+ # In order to save bandwitdth RESTHeart Security can force requests to support the giz encoding (if not, requests will be rejected)
+force-gzip-encoding: false
+
+ # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
+io-threads: {{{io-threads}}}
+
+ # Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
+worker-threads: {{{worker-threads}}}
+
+ # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
+buffer-size: 16384
+buffers-per-region: 20
+ # Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
+direct-buffers: true
+
+#### Connetction Options
+
+connection-options:
+  # The maximum size of a HTTP header block, in bytes.
+  # If a client sends more data that this as part of the request header then the connection will be closed.
+  # Defaults to 1Mbyte.
+  MAX_HEADER_SIZE: 1048576
+
+  # The default maximum size of a request entity.
+  # Defaults to unlimited.
+  MAX_ENTITY_SIZE: -1
+
+  #The default maximum size of the HTTP entity body when using the mutiltipart parser.
+  # Generall this will be larger than MAX_ENTITY_SIZE
+  # If this is not specified it will be the same as MAX_ENTITY_SIZE
+  MULTIPART_MAX_ENTITY_SIZE: -1
+
+  # The idle timeout in milliseconds after which the channel will be closed.
+  # If the underlying channel already has a read or write timeout set
+  # the smaller of the two values will be used for read/write timeouts.
+  # Defaults to unlimited (-1).
+  IDLE_TIMEOUT: -1
+
+  # The maximum allowed time of reading HTTP request in milliseconds.
+  # -1 or missing value disables this functionality.
+  REQUEST_PARSE_TIMEOUT: -1
+
+  # The amount of time the connection can be idle with no current requests
+  # before it is closed;
+  # Defaults to unlimited (-1).
+  NO_REQUEST_TIMEOUT: -1
+
+  # The maximum number of query parameters that are permitted in a request.
+  # If a client sends more than this number the connection will be closed.
+  # This limit is necessary to protect against hash based denial of service attacks.
+  # Defaults to 1000.
+  MAX_PARAMETERS: 1000
+
+  # The maximum number of headers that are permitted in a request.
+  # If a client sends more than this number the connection will be closed.
+  # This limit is necessary to protect against hash based denial of service attacks.
+  # Defaults to 200.
+  MAX_HEADERS: 200
+
+  # The maximum number of cookies that are permitted in a request.
+  # If a client sends more than this number the connection will be closed.
+  # This limit is necessary to protect against hash based denial of service attacks.
+  # Defaults to 200.
+  MAX_COOKIES: 200
+
+  # The charset to use to decode the URL and query parameters.
+  # Defaults to UTF-8.
+  URL_CHARSET: UTF-8
+
+  # If this is true then a Connection: keep-alive header will be added to responses,
+  # even when it is not strictly required by the specification.
+  # Defaults to true
+  ALWAYS_SET_KEEP_ALIVE: true
+
+  # If this is true then a Date header will be added to all responses.
+  # The HTTP spec says this header should be added to all responses,
+  # unless the server does not have an accurate clock.
+  # Defaults to true
+  ALWAYS_SET_DATE: true

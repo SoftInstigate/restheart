@@ -1,0 +1,36 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "_id": {
+            "type": "object",
+            "properties": {
+                "_$oid": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "$oid"
+            ],
+            "additionalProperties": false
+        },
+        "n": {
+            "type": "number"
+        },
+        "_etag": {
+            "type": "object",
+            "properties": {
+                "_$oid": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "_$oid"
+            ]
+        }
+    },
+    "required": [
+        "n"
+    ]
+}

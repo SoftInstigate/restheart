@@ -1,0 +1,34 @@
+{
+  "_id": "SchemaWithDollarAsObjectPropertyPrefix",
+  "id": "http://schema-store/test/mongo#",
+  "_$schema": "http://json-schema.org/draft-04/schema#",
+  "definitions": {
+    "date": {
+      "type": "object",
+      "properties": {
+        "_$date": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "_id": {
+      "type": "object",
+      "properties": {
+        "_$oid": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "foo": {
+      "type": "object",
+      "properties": {
+        "$foo": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

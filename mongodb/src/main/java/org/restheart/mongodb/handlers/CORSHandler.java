@@ -24,6 +24,7 @@ import com.google.common.net.HttpHeaders;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+
 import static io.undertow.util.Headers.LOCATION_STRING;
 import static io.undertow.util.Headers.ORIGIN;
 import io.undertow.util.HttpString;
@@ -40,7 +41,7 @@ import static org.restheart.mongodb.handlers.CORSHandler.CORSHeaders.ACCESS_CONT
  * The Access-Control-Expose-Headers header indicates which headers are safe to
  * expose to the API of a CORS API specification.
  *
- * IT also injects the X-Powered-By response header
+ * It also injects the X-Powered-By response header
  */
 public class CORSHandler extends PipelinedHandler {
 
@@ -57,7 +58,7 @@ public class CORSHandler extends PipelinedHandler {
     public CORSHandler() {
         this(null);
     }
-    
+
     /**
      * Creates a new instance of CORSHandler
      *

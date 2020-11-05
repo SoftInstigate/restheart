@@ -1,0 +1,7 @@
+use-embedded-keystore: true
+
+mongo-uri: mongodb://{{{mongo-uri}}}
+
+mongo-mounts:
+    - what: "{{{mongo-mounts.what}}}"
+      where: /
