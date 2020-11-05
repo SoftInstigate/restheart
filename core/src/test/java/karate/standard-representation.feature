@@ -9,7 +9,7 @@ Background:
 * def doc2 = '/test-std-rep/coll/doc2'
 * def authHeader = 'Basic YWRtaW46c2VjcmV0'
 * def isArray =
-""" 
+"""
 function(resp) {
   return resp && JSON.parse(resp).isArray();
 }
@@ -47,9 +47,9 @@ Scenario: Get root
     When method GET
     Then status 200
     And match responseType == 'json'
-    # should be an array of strings 
+    # should be an array of strings
     And match response == '#[] #string'
-    # containing 'test-std-rep' 
+    # containing 'test-std-rep'
     And match response contains "test-std-rep"
 
 Scenario: Get root page=100
@@ -60,7 +60,7 @@ Scenario: Get root page=100
     When method GET
     Then status 200
     And match responseType == 'json'
-    # should be an empty array of strings 
+    # should be an empty array of strings
     And match response == '#[0]'
 
 Scenario: Get db
@@ -70,7 +70,7 @@ Scenario: Get db
     When method GET
     Then status 200
     And match responseType == 'json'
-    # should be an array of strings 
+    # should be an array of strings
     And match response == '#[] #string'
     # containing 'coll'
     And match response contains "coll"
@@ -83,7 +83,7 @@ Scenario: Get db page=100
     When method GET
     Then status 200
     And match responseType == 'json'
-    # should be an empty array of strings 
+    # should be an empty array of strings
     And match response == '#[0]'
 
 Scenario: Get coll default sort (-_id)
@@ -96,7 +96,7 @@ Scenario: Get coll default sort (-_id)
     # should be an array of size 2
     And match response == '#[2]'
     # should contain doc1 and doc2
-    And match response[0] ===
+    And match response[0] ==
 """
 {
     _id: 'doc2',
@@ -104,7 +104,7 @@ Scenario: Get coll default sort (-_id)
     _etag: { $oid: #string },
 }
 """
-    And match response[1] ===
+    And match response[1] ==
 """
 {
     _id: 'doc1',
@@ -124,7 +124,7 @@ Scenario: Get coll sort=+_id
     # should be an array of size 2
     And match response == '#[2]'
     # should contain doc1 and doc2
-    And match response[0] ===
+    And match response[0] ==
 """
 {
     _id: 'doc1',
@@ -132,7 +132,7 @@ Scenario: Get coll sort=+_id
     _etag: { $oid: #string },
 }
 """
-    And match response[1] ===
+    And match response[1] ==
 """
 {
     _id: 'doc2',
@@ -154,7 +154,7 @@ Scenario: Get coll with pagesize=1 and page=1
     # should contain doc1
     And match response == '#[1]'
     # should containing one objects with _id, int and _etag properties
-    And match response[0] ===
+    And match response[0] ==
 """
 {
     _id: 'doc1',
@@ -176,7 +176,7 @@ Scenario: Get coll with pagesize=1 and page=2
     # should contain doc2
     And match response == '#[1]'
     # should containing one objects with _id, int and _etag properties
-    And match response[0] ===
+    And match response[0] ==
 """
 {
     _id: 'doc2',
@@ -206,7 +206,7 @@ Scenario: Get doc
     Then status 200
     And match responseType == 'json'
     # should be an object with _id, int and _etag properties
-    And match response ===
+    And match response ==
 """
 {
     _id: 'doc1',
@@ -224,9 +224,9 @@ Scenario: Bulk POST coll
     Then status 200
     And match responseType == 'json'
     # should be an empty array
-    And match response == 
+    And match response ==
 """
-{ 
+{
     "inserted": 2,
     "links": #[] #string,
     "deleted": 0,
@@ -244,7 +244,7 @@ Scenario: Errored request
     Then status 400
     And match responseType == 'json'
     # should be an empty array
-    And match response == 
+    And match response ==
 """
 {
     "http status code": 400,

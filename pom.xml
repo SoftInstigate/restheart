@@ -162,22 +162,23 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver</artifactId>
-                <version>3.12.4</version>
+                <version>3.12.7</version>
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-reactivestreams</artifactId>
+                <!-- TODO: fails from 4.0.0 -->
                 <version>1.13.1</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-core</artifactId>
-                <version>2.1.0.Final</version>
+                <version>2.2.2.Final</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <!-- WARNING: v 27.0.1-jre fails integration tests, don't upgrade! -->
+                <!-- TODO: fails from 27.0.1-jre -->
                 <version>27.0-jre</version>
             </dependency>
             <dependency>
@@ -203,12 +204,12 @@
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.14</version>
+                <version>1.15</version>
             </dependency>
             <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
-                <version>1.25</version>
+                <version>1.27</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
@@ -223,7 +224,7 @@
             <dependency>
                 <groupId>org.fusesource.jansi</groupId>
                 <artifactId>jansi</artifactId>
-                <version>1.18</version>
+                <version>2.0.1</version>
             </dependency>
             <dependency>
                 <groupId>com.github.everit-org.json-schema</groupId>
@@ -233,28 +234,29 @@
             <dependency>
                 <groupId>org.apache.tika</groupId>
                 <artifactId>tika-core</artifactId>
-                <version>1.23</version>
+                <version>1.24.1</version>
             </dependency>
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
-                <version>4.1.2</version>
+                <version>4.1.14</version>
             </dependency>
             <dependency>
                 <groupId>info.picocli</groupId>
                 <artifactId>picocli</artifactId>
-                <version>4.4.0</version>
+                <version>4.5.2</version>
             </dependency>
             <dependency>
                 <groupId>com.github.spullara.mustache.java</groupId>
                 <artifactId>compiler</artifactId>
-                <version>0.9.6</version>
+                <version>0.9.7</version>
                 <type>jar</type>
             </dependency>
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.62</version>
+                <!-- TODO: fails from 4.8.67! -->
+                <version>4.8.66</version>
             </dependency>
 
             <!-- BEGIN Test dependencies -->
@@ -267,25 +269,25 @@
             <dependency>
                 <groupId>com.intuit.karate</groupId>
                 <artifactId>karate-apache</artifactId>
-                <version>0.9.5</version>
+                <version>0.9.6</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>com.intuit.karate</groupId>
                 <artifactId>karate-junit4</artifactId>
-                <version>0.9.5</version>
+                <version>0.9.6</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>3.2.4</version>
+                <version>3.6.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>fluent-hc</artifactId>
-                <version>4.5.11</version>
+                <version>4.5.13</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
