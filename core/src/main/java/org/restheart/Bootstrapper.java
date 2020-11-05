@@ -779,8 +779,8 @@ public class Bootstrapper {
             KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
 
             if (getConfiguration().isUseEmbeddedKeystore()) {
-                char[] storepass = "uiamuiam".toCharArray();
-                char[] keypass = "uiamuiam".toCharArray();
+                char[] storepass = "restheart".toCharArray();
+                char[] keypass = "restheart".toCharArray();
 
                 String storename = "sskeystore.jks";
 
