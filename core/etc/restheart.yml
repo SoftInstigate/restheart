@@ -6,13 +6,14 @@
  # The supported protocols are: http and https.
  # You can setup a listener per protocol (up to 2).
 
- # WARNING: Using the http listener is not secure with basic authentication:
- # credentials can be sniffed by a man-in-the-middle attack.
-
+ # To enable HTTPS, configure a certificate. See https://restheart.org/docs/security/tls/
+ # The self signed certificate embedded in RESTHeart is insecure and only for testing purpose
 https-listener: {{{https-listener}}}
 https-host: {{{https-host}}}
 https-port: {{{https-port}}}
 
+ # WARNING: Using the http listener is not secure. E.g. with basic authentication
+ # credentials can be sniffed by a man-in-the-middle attack.
 http-listener: {{{http-listener}}}
 http-host: {{{http-host}}}
 http-port: {{{http-port}}}
