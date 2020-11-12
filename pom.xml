@@ -170,6 +170,18 @@
                 <!-- TODO: fails from 4.0.0 -->
                 <version>1.13.1</version>
             </dependency>
+            <!-- downgraded for native-image. From version ? org.jboss.threads.EnhancedQueueExecutor uses unsupported Unsafe operations -->
+            <dependency>
+                <groupId>org.jboss.xnio</groupId>
+                <artifactId>xnio-api</artifactId>
+                <version>3.3.8.Final</version>
+            </dependency>
+            <!-- downgraded for native-image. From version ? org.jboss.threads.EnhancedQueueExecutor uses unsupported Unsafe operations -->
+            <dependency>
+                <groupId>org.jboss.xnio</groupId>
+                <artifactId>xnio-nio</artifactId>
+                <version>3.3.8.Final</version>
+            </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-core</artifactId>

@@ -148,6 +148,10 @@ public class PluginsFactory implements AutoCloseable {
 
         if (jars != null) {
             this.scanResult = new ClassGraph()
+                    .disableModuleScanning()              // added for GraalVM
+                    .disableDirScanning()                 // added for GraalVM
+                    .disableNestedJarScanning()           // added for GraalVM
+                    .disableRuntimeInvisibleAnnotations() // added for GraalVM
                     .addClassLoader(getPluginsClassloader(jars))
                     .enableAnnotationInfo()
                     .enableMethodInfo()
@@ -243,7 +247,7 @@ public class PluginsFactory implements AutoCloseable {
     private <T extends Plugin> Set<PluginRecord<T>> createPlugins(
             Class type, Map<String, Map<String, Object>> confs) {
         Set<PluginRecord<T>> ret = new LinkedHashSet<>();
-        
+
         // scanResult is null if the plugins directory is empty
         if (this.scanResult == null) {
             return ret;
@@ -289,12 +293,9 @@ public class PluginsFactory implements AutoCloseable {
             Object i;
 
             try {
-                String name = annotationParam(plugin,
-                        "name");
-                String description = annotationParam(plugin,
-                        "description");
-                Boolean enabledByDefault = annotationParam(plugin,
-                        "enabledByDefault");
+                String name = annotationParam(plugin, "name");
+                String description = annotationParam(plugin, "description");
+                Boolean enabledByDefault = annotationParam(plugin, "enabledByDefault");
 
                 var enabled = PluginRecord.isEnabled(enabledByDefault,
                         confs != null ? confs.get(name) : null);
@@ -595,12 +596,25 @@ public class PluginsFactory implements AutoCloseable {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Object> T annotationParam(ClassInfo ci,
-            String param) {
+    private <T extends Object> T annotationParam(ClassInfo ci, String param) {
         var annotationInfo = ci.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME);
         var annotationParamVals = annotationInfo.getParameterValues();
 
-        // The Route annotation has a parameter named "path"
+        // TO BE REMOVED!!!!
+        if (annotationParamVals.getValue(param) == null) {
+            // Added to debug GraalVM
+            LOGGER.warn("****** {}.RegisterPlugin.{}=null (returning a test value)", ci.getSimpleName(), param);
+            if ("enabledByDefault".equals(param)) {
+                return  (T) Boolean.TRUE;
+            } else if ("priority".equals(param)) {
+                return(T) Integer.valueOf(0);
+            } else {
+                return (T) "Ops";
+            }
+        } else {
+            LOGGER.debug("****** {}.RegisterPlugin.{}={}", ci.getSimpleName(), param, annotationParamVals.getValue(param));
+        }
+
         return (T) annotationParamVals.getValue(param);
     }
 

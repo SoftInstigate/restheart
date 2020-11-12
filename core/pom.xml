@@ -27,6 +27,18 @@
   </licenses>
 
   <dependencies>
+    <!-- https://mvnrepository.com/artifact/com.oracle.substratevm/svm -->
+    <dependency>
+      <groupId>com.oracle.substratevm</groupId>
+      <artifactId>svm</artifactId>
+      <version>19.2.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>mongodb-driver-core</artifactId>
+      <version>3.12.7</version>
+    </dependency>
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-commons</artifactId>

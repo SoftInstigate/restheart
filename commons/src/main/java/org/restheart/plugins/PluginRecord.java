@@ -80,13 +80,13 @@ public class PluginRecord<T extends Plugin> {
     public boolean isEnabled() {
         return isEnabled(enabledByDefault, getConfArgs());
     }
-    
+
     /**
      * @param enabledByDefault
      * @param confArgs
      * @return the disabled
      */
-    public static boolean isEnabled(boolean enabledByDefault, 
+    public static boolean isEnabled(boolean enabledByDefault,
             Map<String, Object> confArgs) {
         return confArgs == null
                 ? enabledByDefault

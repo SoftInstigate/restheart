@@ -52,7 +52,7 @@ public @interface RegisterPlugin {
     int priority() default 10;
 
     /**
-     * Set to true to enable the plugin by default.Otherwise it can be enabled
+     * Set to true to enable the plugin by default. Otherwise it can be enabled
      * setting the configuration argument 'enabled'
      *
      * @return true if enabled by default

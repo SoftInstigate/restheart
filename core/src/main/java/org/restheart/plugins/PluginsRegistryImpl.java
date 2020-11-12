@@ -153,8 +153,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public PluginRecord<TokenManager> getTokenManager() {
         if (this.tokenManager == null) {
             var tm = PluginsFactory.getInstance().tokenManager();
-            
-            this.tokenManager = tm == null 
+
+            this.tokenManager = tm == null
                     ? Optional.empty()
                     : Optional.of(tm);
         }
