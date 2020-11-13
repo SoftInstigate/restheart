@@ -7,8 +7,7 @@ We are able to build native image and start RESTHeart **without** plugins.
 ## build native image
 
 ```bash
-$ mvn clean package
-$ $GRAALVM_HOME/bin/native-image -jar core/target/restheart.jar
+$ mvn clean package -Pnative
 ```
 
 native-image arguments are defined in file `core/src/main/resources/META-INF/native-image/org.restheart/restheart/native-image.properties`
