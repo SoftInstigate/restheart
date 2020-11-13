@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.plugins.services;
+package org.restheart.graal;
 
 import java.util.Map;
 import org.restheart.ConfigurationException;
@@ -53,7 +53,7 @@ public class PingService implements ByteArrayService {
      * @throws Exception
      */
     @Override
-    public void handle(ByteArrayRequest request, 
+    public void handle(ByteArrayRequest request,
             ByteArrayResponse response) throws Exception {
         if (request.isGet()) {
             response.setStatusCode(HttpStatus.SC_OK);

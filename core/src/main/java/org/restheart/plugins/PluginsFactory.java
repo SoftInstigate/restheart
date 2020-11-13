@@ -153,12 +153,22 @@ public class PluginsFactory implements AutoCloseable {
                     .disableNestedJarScanning()           // added for GraalVM
                     .disableRuntimeInvisibleAnnotations() // added for GraalVM
                     .addClassLoader(getPluginsClassloader(jars))
+                    .addClassLoader(this.getClass().getClassLoader())
                     .enableAnnotationInfo()
                     .enableMethodInfo()
                     .initializeLoadedClasses()
                     .scan();
         } else {
-            this.scanResult = null;
+            this.scanResult = new ClassGraph()
+                    .disableModuleScanning()              // added for GraalVM
+                    .disableDirScanning()                 // added for GraalVM
+                    .disableNestedJarScanning()           // added for GraalVM
+                    .disableRuntimeInvisibleAnnotations() // added for GraalVM
+                    .addClassLoader(this.getClass().getClassLoader())
+                    .enableAnnotationInfo()
+                    .enableMethodInfo()
+                    .initializeLoadedClasses()
+                    .scan();
         }
     }
 
