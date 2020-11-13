@@ -37,6 +37,7 @@ Start RESTHeart
 Start RESTHeart with test configuration and the `native-image-agent`
 
 ```
+$ mvn clean package
 $ cp test-plugins/target/restheart-test-plugins.jar core/target/plugins
 $ java -agentlib:native-image-agent=config-merge-dir=core/src/main/resources/META-INF/native-image/org.restheart/restheart/ -jar core/target/restheart.jar core/etc/test/restheart.yml
 ```
@@ -44,6 +45,7 @@ $ java -agentlib:native-image-agent=config-merge-dir=core/src/main/resources/MET
 Execute tests, this makes the `native-image-agent` collecting all needed configuration
 
 ```
+$ cd core
 $ mvn -Dtest=karate.RunnerIT surefire:test
 ```
 
@@ -101,6 +103,12 @@ WARNING: Could not resolve org.restheart.mongodb.interceptors.NamespacesResponse
 WARNING: Could not resolve org.restheart.mongodb.services.CacheInvalidator for reflection configuration.
 WARNING: Could not resolve org.restheart.mongodb.services.CsvLoader for reflection configuration.
 WARNING: Could not resolve org.xnio.nio.NioXnioWorker$NioWorkerMetrics for reflection configuration.
+```
+
+### no version logged from native image
+
+```
+ 10:41:54.204 [main] INFO  org.restheart.Bootstrapper - Version unknown, not packaged
 ```
 
 ### Need to downgrade org.jboss.xnio

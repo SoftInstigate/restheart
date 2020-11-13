@@ -862,6 +862,13 @@
   "allDeclaredMethods":true
 },
 {
+  "name":"org.restheart.services.PingService",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["java.util.Map"] }
+  ]
+},
+{
   "name":"org.restheart.mongodb.MongoService",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
@@ -1030,13 +1037,6 @@
 },
 {
   "name":"org.restheart.security.plugins.services.GetRoleService",
-  "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"init","parameterTypes":["java.util.Map"] }
-  ]
-},
-{
-  "name":"org.restheart.security.plugins.services.PingService",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map"] }
