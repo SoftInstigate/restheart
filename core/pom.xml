@@ -35,13 +35,18 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver-core</artifactId>
-      <version>3.12.7</version>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-commons</artifactId>
     </dependency>
     <dependency>
       <groupId>org.restheart</groupId>
-      <artifactId>restheart-commons</artifactId>
+      <artifactId>restheart-security</artifactId>
+      <!-- <scope>provided</scope> -->
+    </dependency>
+    <dependency>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-mongodb</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.undertow</groupId>
@@ -133,16 +138,16 @@
       <artifactId>minimal-json</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
+    <!-- <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-mongodb</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
+    </dependency> -->
+    <!-- <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-security</artifactId>
       <scope>test</scope>
-    </dependency>
+    </dependency> -->
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-test-plugins</artifactId>
@@ -224,6 +229,20 @@
                 <exclude>com/google/common/util/concurrent/internal/InternalFutures.class</exclude>
               </excludes>
             </filter>
+            <!-- for native-image force include restheart-security in uber-jar -->
+            <filter>
+              <artifact>org.restheart:restheart-security</artifact>
+              <includes>
+                <include>**</include>
+              </includes>
+            </filter>
+            <!-- for native-image force include restheart-security in uber-jar -->
+            <filter>
+              <artifact>org.restheart:restheart-mongodb</artifact>
+              <includes>
+                <include>**</include>
+              </includes>
+            </filter>
           </filters>
         </configuration>
         <executions>
@@ -232,13 +251,6 @@
             <goals>
               <goal>shade</goal>
             </goals>
-            <configuration>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>org.restheart.Bootstrapper</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
           </execution>
         </executions>
       </plugin>

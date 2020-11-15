@@ -776,6 +776,14 @@
   ]
 },
 {
+  "name":"nonapi.io.github.classgraph.classloaderhandler.UnoOneJarClassLoaderHandler",
+  "methods":[
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
+  ]
+},
+{
   "name":"nonapi.io.github.classgraph.classloaderhandler.WeblogicClassLoaderHandler",
   "methods":[
     {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
@@ -860,13 +868,6 @@
   "name":"org.restheart.Bootstrapper$Args",
   "allDeclaredFields":true,
   "allDeclaredMethods":true
-},
-{
-  "name":"org.restheart.services.PingService",
-  "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"init","parameterTypes":["java.util.Map"] }
-  ]
 },
 {
   "name":"org.restheart.mongodb.MongoService",
@@ -1055,6 +1056,13 @@
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
+  "name":"org.restheart.services.PingService",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["java.util.Map"] }
   ]
 },
 {

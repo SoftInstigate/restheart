@@ -51,9 +51,17 @@ $ mvn -Dtest=karate.RunnerIT surefire:test
 
 The generated configuration are merged into the existing ones in directory `core/src/main/resources/META-INF/native-image/org.restheart/restheart`
 
-> some files need to be manually edited. For instance, remote all references to classes of package`org.restheart.test` from `reflect-config.json`
+> some files need to be manually edited. For instance, remote all references to classes of package`org.restheart.test` and `org.graalvm` from `reflect-config.json`
 
 ## issues
+
+### update classpath to latest version
+
+but test fails! MongoRealAuthorizer is not enabled (doesn't find MongoService)
+
+### check bundled resources
+
+See [substratevm/Resources.md](https://github.com/oracle/graal/blob/master/substratevm/Resources.md)
 
 ### RegisterPlugin annotation parameter (with default value) are null
 
@@ -105,6 +113,50 @@ WARNING: Could not resolve org.restheart.mongodb.services.CsvLoader for reflecti
 WARNING: Could not resolve org.xnio.nio.NioXnioWorker$NioWorkerMetrics for reflection configuration.
 ```
 
+### classpath not resolved
+
+`native-image.properties` specifies the following classpath.
+
+```
+-cp mongodb/target/restheart-mongodb.jar:security/target/restheart-security.jar
+```
+
+but `-cp` is ingored with `-jar`
+
+probably need to build uber-jar with shade plugin
+
+see https://stackoverflow.com/questions/61212087/working-graalvm-native-image-command-line-with-custom-classpath
+
+### Failure in building native image of `restheart-mongodb.jar` plugin
+
+To reproduce
+
+```
+$ $GRAALVM_HOME/bin/native-image -cp core/target/restheart.jar:security/target/restheart-security.jar:mongodb/target/restheart-mongodb.jar org.restheart.Bootstrapper
+```
+
+error
+
+```
+Fatal error:java.lang.NoClassDefFoundError
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
+	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:490)
+	at java.base/java.util.concurrent.ForkJoinTask.getThrowableException(ForkJoinTask.java:603)
+	at java.base/java.util.concurrent.ForkJoinTask.get(ForkJoinTask.java:1006)
+	at com.oracle.svm.hosted.NativeImageGenerator.run(NativeImageGenerator.java:480)
+	at com.oracle.svm.hosted.NativeImageGeneratorRunner.buildImage(NativeImageGeneratorRunner.java:349)
+	at com.oracle.svm.hosted.NativeImageGeneratorRunner.build(NativeImageGeneratorRunner.java:508)
+	at com.oracle.svm.hosted.NativeImageGeneratorRunner.main(NativeImageGeneratorRunner.java:114)
+	at com.oracle.svm.hosted.NativeImageGeneratorRunner$JDK9Plus.main(NativeImageGeneratorRunner.java:537)
+Caused by: java.lang.NoClassDefFoundError: jnr/unixsocket/UnixSocketAddress
+```
+
+Adding dependency leads to same error with ?? Mongo Crypto class
+
+Adding `mongodb/target/restheart-mongodb.jar` leads to error.
+
 ### no version logged from native image
 
 ```
@@ -141,14 +193,6 @@ static {
         }
     }
 ```
-
-### Failure in building native image of `restheart-mongodb.jar` plugin (RESOLVED)
-
-`native-image.properties` specifies the following classpath.
-
-```-cp commons/target/restheart-commons.jar:security/target/restheart-security.jar```
-
-Adding `commons/target/restheart-mongodb.jar` leads to error.
 
 ### Fails to dynamically load plugins from plugins directory (RESOLVED)
 
