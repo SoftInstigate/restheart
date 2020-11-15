@@ -255,8 +255,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <!-- TODO: fails from 4.8.67! -->
-                <version>4.8.66</version>
+                <version>4.8.90</version>
             </dependency>
 
             <!-- BEGIN Test dependencies -->

@@ -73,6 +73,10 @@ public class PluginsFactory implements AutoCloseable {
     }
 
     private static URL[] findPluginsJars(Path pluginsDirectory) {
+        if (pluginsDirectory == null) {
+            return new URL[0];
+        }
+
         var urls = new ArrayList<>();
 
         if (!Files.exists(pluginsDirectory)) {
@@ -149,12 +153,18 @@ public class PluginsFactory implements AutoCloseable {
         if (jars != null) {
             this.scanResult = new ClassGraph()
                     .addClassLoader(getPluginsClassloader(jars))
+                    .addClassLoader(ClassLoader.getSystemClassLoader())
                     .enableAnnotationInfo()
                     .enableMethodInfo()
                     .initializeLoadedClasses()
-                    .scan();
+                    .scan(8);
         } else {
-            this.scanResult = null;
+            this.scanResult = new ClassGraph()
+                    .enableAnnotationInfo()
+                    .enableMethodInfo()
+                    .addClassLoader(ClassLoader.getSystemClassLoader())
+                    .initializeLoadedClasses()
+                    .scan(8);
         }
     }
 
@@ -243,7 +253,7 @@ public class PluginsFactory implements AutoCloseable {
     private <T extends Plugin> Set<PluginRecord<T>> createPlugins(
             Class type, Map<String, Map<String, Object>> confs) {
         Set<PluginRecord<T>> ret = new LinkedHashSet<>();
-        
+
         // scanResult is null if the plugins directory is empty
         if (this.scanResult == null) {
             return ret;
