@@ -139,36 +139,40 @@ public class PluginsFactory implements AutoCloseable {
      * eg the plugin registry, can change the order of plugins instantiation
      * causing all sort of weird issues
      */
-    private final Deque<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS
-            = new LinkedList<>();
+    private final Deque<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS = new LinkedList<>();
     private URLClassLoader PLUGINS_CL_CACHE = null;
 
     private PluginsFactory() {
         var jars = findPluginsJars(getPluginsDirectory());
 
-        if (jars != null) {
+        // LOGGER.debug("****** ClassLoader.getSystemClassLoader() {}", ClassLoader.getSystemClassLoader());
+        // LOGGER.debug("****** this.getClass().getClassLoader() {}", this.getClass().getClassLoader());
+        // LOGGER.debug("****** Thread.currentThread().getContextClassLoader() {}", Thread.currentThread().getContextClassLoader());
+        // LOGGER.debug("****** Bootstrapper.class.getClassLoader() {}", Bootstrapper.class.getClassLoader());
+
+        if (jars != null && jars.length != 0) {
             this.scanResult = new ClassGraph()
                     .disableModuleScanning()              // added for GraalVM
                     .disableDirScanning()                 // added for GraalVM
                     .disableNestedJarScanning()           // added for GraalVM
                     .disableRuntimeInvisibleAnnotations() // added for GraalVM
                     .addClassLoader(getPluginsClassloader(jars))
-                    .addClassLoader(this.getClass().getClassLoader())
+                    .addClassLoader(ClassLoader.getSystemClassLoader()) // see https://github.com/oracle/graal/issues/470#issuecomment-401022008
                     .enableAnnotationInfo()
                     .enableMethodInfo()
                     .initializeLoadedClasses()
-                    .scan();
+                    .scan(8); // use parallel scan for better startup time
         } else {
             this.scanResult = new ClassGraph()
                     .disableModuleScanning()              // added for GraalVM
                     .disableDirScanning()                 // added for GraalVM
                     .disableNestedJarScanning()           // added for GraalVM
                     .disableRuntimeInvisibleAnnotations() // added for GraalVM
-                    .addClassLoader(this.getClass().getClassLoader())
+                    //.addClassLoader(ClassLoader.getSystemClassLoader()) // see https://github.com/oracle/graal/issues/470#issuecomment-401022008
                     .enableAnnotationInfo()
                     .enableMethodInfo()
                     .initializeLoadedClasses()
-                    .scan();
+                    .scan(8); // use parallel scan for better startup time
         }
     }
 
@@ -242,6 +246,20 @@ public class PluginsFactory implements AutoCloseable {
         return createPlugins(Interceptor.class, PLUGINS_CONFS);
     }
 
+    private ClassInfoList getRegisteredPlugins(Class type) {
+        // scanResult is null if the plugins directory is empty
+        if (this.scanResult == null) {
+            return null;
+        }
+
+        try {
+            return this.scanResult.getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
+        } catch (Throwable t) {
+            LOGGER.error("Error deploying plugins: {}", t.getMessage());
+            throw t;
+        }
+    }
+
     /**
      * creates the services
      */
@@ -258,21 +276,10 @@ public class PluginsFactory implements AutoCloseable {
             Class type, Map<String, Map<String, Object>> confs) {
         Set<PluginRecord<T>> ret = new LinkedHashSet<>();
 
-        // scanResult is null if the plugins directory is empty
-        if (this.scanResult == null) {
+        ClassInfoList registeredPlugins = getRegisteredPlugins(type);
+
+        if (registeredPlugins == null || registeredPlugins.isEmpty()) {
             return ret;
-        }
-
-        var _type = type.getSimpleName();
-
-        ClassInfoList registeredPlugins;
-
-        try {
-            registeredPlugins = this.scanResult
-                    .getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
-        } catch (Throwable t) {
-            LOGGER.error("Error deploying plugins: {}", t.getMessage());
-            throw t;
         }
 
         ClassInfoList listOfType;
@@ -291,6 +298,10 @@ public class PluginsFactory implements AutoCloseable {
             listOfType = scanResult.getSubclasses(type.getName());
         }
 
+        LOGGER.debug("***** registeredPlugins of type {}: {}",
+            type.getSimpleName(),
+            listOfType.getNames());
+
         var plugins = registeredPlugins.intersect(listOfType);
 
         // sort by priority
@@ -301,6 +312,7 @@ public class PluginsFactory implements AutoCloseable {
 
         plugins.stream().forEachOrdered(plugin -> {
             Object i;
+            var _type = type.getSimpleName();
 
             try {
                 String name = annotationParam(plugin, "name");
@@ -622,7 +634,7 @@ public class PluginsFactory implements AutoCloseable {
                 return (T) "Ops";
             }
         } else {
-            LOGGER.debug("****** {}.RegisterPlugin.{}={}", ci.getSimpleName(), param, annotationParamVals.getValue(param));
+            LOGGER.trace("****** {}.RegisterPlugin.{}={}", ci.getSimpleName(), param, annotationParamVals.getValue(param));
         }
 
         return (T) annotationParamVals.getValue(param);
