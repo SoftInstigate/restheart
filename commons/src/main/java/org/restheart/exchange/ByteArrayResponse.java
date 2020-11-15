@@ -66,4 +66,12 @@ public class ByteArrayResponse extends ServiceResponse<byte[]> {
         setContentTypeAsJson();
         setContent(resp.toString().getBytes());
     }
+
+    public void setContent(String content) {
+        if (content != null) {
+            setContent(content.getBytes());
+        } else {
+            setContent((byte[])null);
+        }
+    }
 }

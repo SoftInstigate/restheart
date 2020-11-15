@@ -32,6 +32,7 @@ import io.undertow.util.PathTemplateMatcher;
 
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -155,7 +156,7 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
-     * get path parameters from a template
+     * get path parameters using a template
      *
      * eg pathTemplate=/foo/{id} and URI=/foo/bar => returns a map with id=bar
      * @param pathTemplate the path template
@@ -170,7 +171,23 @@ public abstract class Request<T> extends Exchange<T> {
             throw new IllegalArgumentException("wrong path template", t);
         }
 
-        return ptm.match(getPath()).getParameters();
+        var match = ptm.match(getPath());
+
+        return match != null ? ptm.match(getPath()).getParameters() : new HashMap<>();
+    }
+
+    /**
+     * get a path parameter using a path template
+     *
+     * eg pathTemplate=/foo/{id}, paramName=id and URI=/foo/bar => returns bar
+     * @param pathTemplate the path template
+     * @param parameter name
+     * @return the path parameter
+     */
+    public String getPathParam(String pathTemplate, String paramName) {
+        var params = getPathParams(pathTemplate);
+
+        return params != null ? params.get(paramName) : null;
     }
 
     /**
