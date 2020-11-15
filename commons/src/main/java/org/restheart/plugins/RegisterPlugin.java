@@ -70,6 +70,16 @@ public @interface RegisterPlugin {
     String defaultURI() default "";
 
     /**
+     * Only used by Services
+     *
+     * Sets the URI match policy of the Service.
+     *
+     * @return the URI match policy of the Service.
+     */
+    MATCH_POLICY uriMatchPolicy() default MATCH_POLICY.PREFIX;
+
+    public enum MATCH_POLICY { EXACT, PREFIX };
+    /**
      * Only used by Interceptors
      *
      * @return the intercept point of the Interceptor

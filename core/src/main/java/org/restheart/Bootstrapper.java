@@ -124,6 +124,7 @@ import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistryImpl;
+import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
@@ -133,6 +134,7 @@ import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
 import static org.restheart.utils.PluginUtils.defaultURI;
+import static org.restheart.utils.PluginUtils.uriMatchPolicy;
 import static org.restheart.utils.PluginUtils.initPoint;
 import org.restheart.utils.RESTHeartDaemon;
 import org.restheart.utils.ResourcesExtractor;
@@ -1018,6 +1020,7 @@ public class Bootstrapper {
             var srvConfArgs = srv.getConfArgs();
 
             String uri;
+            MATCH_POLICY mp = uriMatchPolicy(srv.getInstance());
 
             if (srvConfArgs == null
                     || !srvConfArgs.containsKey("uri")
@@ -1068,7 +1071,7 @@ public class Bootstrapper {
             } else {
                 var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
 
-                PluginRecord<Authorizer> _fauthorizer = new PluginRecord(
+                PluginRecord<Authorizer> _fauthorizer = new PluginRecord<>(
                         "fullAuthorizer",
                         "authorize any operation to any user",
                         true,
@@ -1109,11 +1112,11 @@ public class Bootstrapper {
             PluginsRegistryImpl
                     .getInstance()
                     .plugPipeline(uri, _srv,
-                            new PipelineInfo(SERVICE, uri, srv.getName()));
+                            new PipelineInfo(SERVICE, uri, mp, srv.getName()));
 
             LOGGER.info(ansi().fg(GREEN)
-                    .a("URI {} bound to service {}, secured: {}")
-                    .reset().toString(), uri, srv.getName(), secured);
+                    .a("URI {} bound to service {}, secured: {}, uri match {}")
+                    .reset().toString(), uri, srv.getName(), secured, mp);
         });
     }
 

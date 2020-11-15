@@ -31,6 +31,7 @@ import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
@@ -44,8 +45,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private static PluginsRegistryImpl HOLDER;
     private static final PathHandler ROOT_PATH_HANDLER = path();
-    private static final PathMatcher<PipelineInfo> PIPELINE_INFOS
-            = new PathMatcher<>();
+    private static final PathMatcher<PipelineInfo> PIPELINE_INFOS = new PathMatcher<>();
 
     public static synchronized PluginsRegistryImpl getInstance() {
         if (HOLDER == null) {
@@ -54,6 +54,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
         return HOLDER;
     }
+
     private Set<PluginRecord<AuthMechanism>> authMechanisms;
 
     private Set<PluginRecord<Authenticator>> authenticators;
@@ -68,8 +69,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private Set<PluginRecord<Interceptor>> interceptors;
 
-    private final Set<Predicate> globalSecurityPredicates
-            = new LinkedHashSet<>();
+    private final Set<Predicate> globalSecurityPredicates = new LinkedHashSet<>();
 
     private PluginsRegistryImpl() {
     }
@@ -100,8 +100,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<AuthMechanism>> getAuthMechanisms() {
         if (this.authMechanisms == null) {
             this.authMechanisms = new LinkedHashSet<>();
-            this.authMechanisms.addAll(PluginsFactory.getInstance()
-                    .authMechanisms());
+            this.authMechanisms.addAll(PluginsFactory.getInstance().authMechanisms());
         }
 
         return Collections.unmodifiableSet(this.authMechanisms);
@@ -114,8 +113,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<Authenticator>> getAuthenticators() {
         if (this.authenticators == null) {
             this.authenticators = new LinkedHashSet<>();
-            this.authenticators.addAll(PluginsFactory.getInstance()
-                    .authenticators());
+            this.authenticators.addAll(PluginsFactory.getInstance().authenticators());
         }
 
         return Collections.unmodifiableSet(this.authenticators);
@@ -128,20 +126,14 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      * @throws org.restheart.ConfigurationException
      */
     @Override
-    public PluginRecord<Authenticator> getAuthenticator(String name) throws
-            ConfigurationException {
+    public PluginRecord<Authenticator> getAuthenticator(String name) throws ConfigurationException {
 
-        var auth = getAuthenticators()
-                .stream()
-                .filter(p -> name.equals(p.getName()))
-                .findFirst();
+        var auth = getAuthenticators().stream().filter(p -> name.equals(p.getName())).findFirst();
 
         if (auth != null && auth.isPresent()) {
             return auth.get();
         } else {
-            throw new ConfigurationException("Authenticator "
-                    + name
-                    + " not found");
+            throw new ConfigurationException("Authenticator " + name + " not found");
 
         }
     }
@@ -153,15 +145,11 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public PluginRecord<TokenManager> getTokenManager() {
         if (this.tokenManager == null) {
             var tm = PluginsFactory.getInstance().tokenManager();
-            
-            this.tokenManager = tm == null 
-                    ? Optional.empty()
-                    : Optional.of(tm);
+
+            this.tokenManager = tm == null ? Optional.empty() : Optional.of(tm);
         }
 
-        return this.tokenManager.isPresent() 
-                ? this.tokenManager.get()
-                : null;
+        return this.tokenManager.isPresent() ? this.tokenManager.get() : null;
     }
 
     /**
@@ -170,8 +158,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public Set<PluginRecord<Authorizer>> getAuthorizers() {
         if (this.authorizers == null) {
-            this.authorizers = PluginsFactory.getInstance()
-                    .authorizers();
+            this.authorizers = PluginsFactory.getInstance().authorizers();
         }
 
         return Collections.unmodifiableSet(this.authorizers);
@@ -184,8 +171,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<Initializer>> getInitializers() {
         if (this.initializers == null) {
             this.initializers = new LinkedHashSet<>();
-            this.initializers.addAll(PluginsFactory.getInstance()
-                    .initializers());
+            this.initializers.addAll(PluginsFactory.getInstance().initializers());
         }
 
         return Collections.unmodifiableSet(this.initializers);
@@ -195,8 +181,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<Interceptor>> getInterceptors() {
         if (this.interceptors == null) {
             this.interceptors = new LinkedHashSet<>();
-            this.interceptors.addAll(PluginsFactory.getInstance()
-                    .interceptors());
+            this.interceptors.addAll(PluginsFactory.getInstance().interceptors());
         }
 
         return this.interceptors;
@@ -209,8 +194,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public Set<PluginRecord<Service>> getServices() {
         if (this.services == null) {
             this.services = new LinkedHashSet<>();
-            this.services.addAll(PluginsFactory.getInstance()
-                    .services());
+            this.services.addAll(PluginsFactory.getInstance().services());
         }
 
         return Collections.unmodifiableSet(this.services);
@@ -219,8 +203,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     /**
      * global security predicates must all resolve to true to allow the request
      *
-     * @return the globalSecurityPredicates allow to get and set the global
-     * security predicates to apply to all requests
+     * @return the globalSecurityPredicates allow to get and set the global security
+     *         predicates to apply to all requests
      */
     @Override
     public Set<Predicate> getGlobalSecurityPredicates() {
@@ -233,11 +217,14 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     }
 
     @Override
-    public void plugPipeline(String path,
-            PipelinedHandler handler,
-            PipelineInfo info) {
-        ROOT_PATH_HANDLER.addPrefixPath(path, handler);
-        PIPELINE_INFOS.addPrefixPath(path, info);
+    public void plugPipeline(String path, PipelinedHandler handler, PipelineInfo info) {
+        if (info.getUriMatchPolicy() == MATCH_POLICY.PREFIX) {
+            ROOT_PATH_HANDLER.addPrefixPath(path, handler);
+            PIPELINE_INFOS.addPrefixPath(path, info);
+        } else {
+            ROOT_PATH_HANDLER.addExactPath(path, handler);
+            PIPELINE_INFOS.addExactPath(path, info);
+        }
     }
 
     @Override

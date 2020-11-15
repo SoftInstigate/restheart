@@ -37,6 +37,7 @@ import org.restheart.plugins.Plugin;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
+import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 
 /**
  *
@@ -105,6 +106,16 @@ public class PluginUtils {
                 : a.defaultURI() == null || "".equals(a.defaultURI())
                 ? "/".concat(a.name())
                 : a.defaultURI();
+    }
+
+    /**
+     *
+     * @param service
+     * @return uri match policy.
+     */
+    public static MATCH_POLICY uriMatchPolicy(Service service) {
+        return service.getClass()
+                .getDeclaredAnnotation(RegisterPlugin.class).uriMatchPolicy();
     }
 
     /**
