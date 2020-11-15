@@ -31,6 +31,8 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.xnio.channels.StreamSourceChannel;
+
 /**
  * A mock for io.undertow.server.HttpServerExchange The original class is final
  * so it can't be mocked directly. Then use Mockito:
@@ -150,7 +152,9 @@ public class HttpServerExchange extends AbstractAttachable {
     }
 
     public HeaderMap getRequestHeaders() {
-        return null;
+        var ret = new HeaderMap();
+        ret.put(HttpString.tryFromString("header"), "value");
+        return ret;
     }
 
     public SecurityContext getSecurityContext() {
@@ -169,5 +173,9 @@ public class HttpServerExchange extends AbstractAttachable {
      */
     public void setRelativePath(String relativePath) {
         this.relativePath = relativePath;
+    }
+
+    public StreamSourceChannel getRequestChannel() {
+        return null;
     }
 }

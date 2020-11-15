@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 public abstract class Exchange<T> {
 
     protected static Logger LOGGER;
-    
+
     /**
      * Supported content types
      */
@@ -61,11 +61,9 @@ public abstract class Exchange<T> {
      */
     public static final String MULTIPART_FORM_DATA_TYPE = "multipart/form-data";
 
-    protected static final AttachmentKey<Boolean> IN_ERROR_KEY
-            = AttachmentKey.create(Boolean.class);
+    protected static final AttachmentKey<Boolean> IN_ERROR_KEY = AttachmentKey.create(Boolean.class);
 
-    private static final AttachmentKey<Boolean> RESPONSE_INTERCEPTOR_EXECUTED
-            = AttachmentKey.create(Boolean.class);
+    private static final AttachmentKey<Boolean> RESPONSE_INTERCEPTOR_EXECUTED = AttachmentKey.create(Boolean.class);
 
     public static final int MAX_CONTENT_SIZE = 16 * 1024 * 1024; // 16Mbyte
 
@@ -89,13 +87,11 @@ public abstract class Exchange<T> {
     }
 
     public static boolean isInError(HttpServerExchange exchange) {
-        return exchange.getAttachment(IN_ERROR_KEY) != null
-                && exchange.getAttachment(IN_ERROR_KEY);
+        return exchange.getAttachment(IN_ERROR_KEY) != null && exchange.getAttachment(IN_ERROR_KEY);
     }
 
     public static boolean isAuthenticated(HttpServerExchange exchange) {
-        return exchange.getSecurityContext() != null
-                && exchange.getSecurityContext().getAuthenticatedAccount() != null;
+        return exchange.getSecurityContext() != null && exchange.getSecurityContext().getAuthenticatedAccount() != null;
     }
 
     public static void setInError(HttpServerExchange exchange) {
@@ -110,7 +106,7 @@ public abstract class Exchange<T> {
     public static void setResponseInterceptorsExecuted(HttpServerExchange exchange) {
         exchange.putAttachment(RESPONSE_INTERCEPTOR_EXECUTED, true);
     }
-    
+
     public HttpServerExchange getExchange() {
         return wrapped;
     }
@@ -124,10 +120,9 @@ public abstract class Exchange<T> {
      */
     public boolean isContentTypeJson() {
         return "application/json".equals(getContentType())
-                || (getContentType() != null
-                && getContentType().startsWith("application/json;"));
+                || (getContentType() != null && getContentType().startsWith("application/json;"));
     }
-    
+
     /**
      * @return ttrue if request is errored
      */
@@ -136,7 +131,7 @@ public abstract class Exchange<T> {
                 && (boolean) getWrappedExchange().getAttachment(IN_ERROR_KEY);
 
     }
-    
+
     /**
      * @param inError the inError to set
      */
@@ -147,16 +142,13 @@ public abstract class Exchange<T> {
     /**
      * helper method to check if the request content is Xm
      *
-     * @return true if Content-Type request header is application/xml or
-     * text/xml
+     * @return true if Content-Type request header is application/xml or text/xml
      */
     public boolean isContentTypeXml() {
         return "text/xml".equals(getContentType())
-                || (getContentType() != null
-                && getContentType().startsWith("text/xml;"))
+                || (getContentType() != null && getContentType().startsWith("text/xml;"))
                 || "application/xml".equals(getContentType())
-                || (getContentType() != null
-                && getContentType().startsWith("application/xml;"));
+                || (getContentType() != null && getContentType().startsWith("application/xml;"));
     }
 
     /**
@@ -165,8 +157,7 @@ public abstract class Exchange<T> {
      * @return true if Content-Type request header starts with text/
      */
     public boolean isContentTypeText() {
-        return getContentType() != null
-                && getContentType().startsWith("text/");
+        return getContentType() != null && getContentType().startsWith("text/");
     }
 
     /**
@@ -176,8 +167,7 @@ public abstract class Exchange<T> {
      */
     public boolean isAuthenticated() {
         return getWrappedExchange().getSecurityContext() != null
-                && getWrappedExchange().getSecurityContext()
-                        .getAuthenticatedAccount() != null;
+                && getWrappedExchange().getSecurityContext().getAuthenticatedAccount() != null;
     }
 
     /**
@@ -189,14 +179,10 @@ public abstract class Exchange<T> {
     public boolean isAccountInRole(String role) {
         if (!isAuthenticated()) {
             return false;
-        } else if (getWrappedExchange().getSecurityContext()
-                .getAuthenticatedAccount()
-                .getRoles() == null) {
+        } else if (getWrappedExchange().getSecurityContext().getAuthenticatedAccount().getRoles() == null) {
             return false;
         } else {
-            return getWrappedExchange().getSecurityContext()
-                    .getAuthenticatedAccount()
-                    .getRoles().contains(role);
+            return getWrappedExchange().getSecurityContext().getAuthenticatedAccount().getRoles().contains(role);
         }
     }
 }
