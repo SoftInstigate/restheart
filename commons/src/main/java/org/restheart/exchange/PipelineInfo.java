@@ -20,6 +20,8 @@
 package org.restheart.exchange;
 
 import java.util.Objects;
+
+import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.utils.URLUtils;
 
 /**
@@ -34,17 +36,29 @@ public class PipelineInfo {
     public enum PIPELINE_TYPE {
         SERVICE, PROXY, STATIC_RESOURCE
     };
-    
+
     private final PIPELINE_TYPE type;
     private final String uri;
+    private final MATCH_POLICY matchPolicy;
     private final String name;
+
+    public PipelineInfo(PIPELINE_TYPE type, String uri, MATCH_POLICY matchPolicy, String name) {
+        Objects.requireNonNull(type, "argument 'branch' cannot be null");
+        Objects.requireNonNull(uri, "argument 'uri' cannot be null");
+
+        this.type = type;
+        this.uri = URLUtils.removeTrailingSlashes(uri);
+        this.matchPolicy = matchPolicy;
+        this.name = name;
+    }
 
     public PipelineInfo(PIPELINE_TYPE type, String uri, String name) {
         Objects.requireNonNull(type, "argument 'branch' cannot be null");
         Objects.requireNonNull(uri, "argument 'uri' cannot be null");
-        
+
         this.type = type;
         this.uri = URLUtils.removeTrailingSlashes(uri);
+        this.matchPolicy = MATCH_POLICY.PREFIX;
         this.name = name;
     }
 
@@ -52,6 +66,7 @@ public class PipelineInfo {
     public String toString() {
         return "PipelineInfo(type: " + getType()
                 + ", uri: " + getUri()
+                + ", matchPolicy: " + getUriMatchPolicy()
                 + ", name: " + getName() + ")";
     }
 
@@ -67,6 +82,13 @@ public class PipelineInfo {
      */
     public String getUri() {
         return uri;
+    }
+
+    /**
+     * @return the uri
+     */
+    public MATCH_POLICY getUriMatchPolicy() {
+        return matchPolicy;
     }
 
     /**

@@ -136,7 +136,7 @@ public class MongoAclAuthorizer implements Authorizer {
     @InjectMongoClient
     public void setMongoClient(MongoClient mclient) {
         this.mclient = mclient;
-        
+
         if (!checkAclCollection()) {
             LOGGER.error("ACL collection does not exist and could not be created");
         }

@@ -21,11 +21,18 @@ package org.restheart.exchange;
 
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.Cookie;
 import io.undertow.util.AttachmentKey;
+import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
+import io.undertow.util.PathTemplate;
+import io.undertow.util.PathTemplateMatcher;
+
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,36 +57,52 @@ public abstract class Request<T> extends Exchange<T> {
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
 
-    private static final AttachmentKey<PipelineInfo> PIPELINE_INFO_KEY
-            = AttachmentKey.create(PipelineInfo.class);
+    private static final AttachmentKey<PipelineInfo> PIPELINE_INFO_KEY = AttachmentKey.create(PipelineInfo.class);
 
-    private static final AttachmentKey<Long> START_TIME_KEY
-            = AttachmentKey.create(Long.class);
+    private static final AttachmentKey<Long> START_TIME_KEY = AttachmentKey.create(Long.class);
 
-    private static final AttachmentKey<Map<String, List<String>>> XFORWARDED_HEADERS
-            = AttachmentKey.create(Map.class);
+    private static final AttachmentKey<Map<String, List<String>>> XFORWARDED_HEADERS = AttachmentKey.create(Map.class);
 
     protected Request(HttpServerExchange exchange) {
         super(exchange);
     }
-    
+
     public static Request of(HttpServerExchange exchange) {
         var pi = PluginUtils.pipelineInfo(exchange);
-        
+
         if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
             return ServiceRequest.of(exchange);
         } else {
             return ByteArrayProxyRequest.of(exchange);
         }
     }
-    
+
     public static String getContentType(HttpServerExchange exchange) {
-        return exchange.getRequestHeaders()
-                .getFirst(Headers.CONTENT_TYPE);
+        return exchange.getRequestHeaders().getFirst(Headers.CONTENT_TYPE);
     }
-    
+
+    /**
+     *
+     * @return the request path
+     */
     public String getPath() {
         return wrapped.getRequestPath();
+    }
+
+    /**
+     *
+     * @return the request URL
+     */
+    public String getURL() {
+        return wrapped.getRequestURL();
+    }
+
+    /**
+     *
+     * @return the query string
+     */
+    public String getQueryString() {
+        return wrapped.getQueryString();
     }
 
     /**
@@ -88,6 +111,83 @@ public abstract class Request<T> extends Exchange<T> {
      */
     public METHOD getMethod() {
         return selectMethod(getWrappedExchange().getRequestMethod());
+    }
+
+    /**
+     *
+     * @return a content lenght
+     */
+    public long getRequestContentLength() {
+        return wrapped.getRequestContentLength();
+    }
+
+    /**
+     *
+     * @return a mutable map of query parameters
+     */
+    public Map<String, Deque<String>> getQueryParameters() {
+        return wrapped.getQueryParameters();
+    }
+
+    /**
+     *
+     * @return the request headers
+     */
+    public HeaderMap getHeaders() {
+        return wrapped.getRequestHeaders();
+    }
+
+    /**
+     * note: an header can have multiple values. This only returns the first one.
+     * use getHeaders() to get all the header's values
+     * @param name the name of the header to return
+     * @return the first value of the header
+     */
+    public String getHeader(String name) {
+        return wrapped.getRequestHeaders().getFirst(name);
+    }
+
+    /**
+     * @param name the name of the cookie to return
+     * @return a the cookie
+     */
+    public Cookie getCookie(String name) {
+        return wrapped.getRequestCookie(name);
+    }
+
+    /**
+     * get path parameters using a template
+     *
+     * eg pathTemplate=/foo/{id} and URI=/foo/bar => returns a map with id=bar
+     * @param pathTemplate the path template
+     * @return the path parameters
+     */
+    public Map<String, String> getPathParams(String pathTemplate) {
+        var ptm = new PathTemplateMatcher<String>();
+
+        try {
+            ptm.add(PathTemplate.create(pathTemplate), "");
+        } catch (Throwable t ) {
+            throw new IllegalArgumentException("wrong path template", t);
+        }
+
+        var match = ptm.match(getPath());
+
+        return match != null ? ptm.match(getPath()).getParameters() : new HashMap<>();
+    }
+
+    /**
+     * get a path parameter using a path template
+     *
+     * eg pathTemplate=/foo/{id}, paramName=id and URI=/foo/bar => returns bar
+     * @param pathTemplate the path template
+     * @param parameter name
+     * @return the path parameter
+     */
+    public String getPathParam(String pathTemplate, String paramName) {
+        var params = getPathParams(pathTemplate);
+
+        return params != null ? params.get(paramName) : null;
     }
 
     /**
@@ -102,8 +202,7 @@ public abstract class Request<T> extends Exchange<T> {
      * @param responseContentType the responseContentType to set
      */
     public void setContentType(String responseContentType) {
-        getWrappedExchange().getRequestHeaders().put(Headers.CONTENT_TYPE,
-                responseContentType);
+        getWrappedExchange().getRequestHeaders().put(Headers.CONTENT_TYPE, responseContentType);
     }
 
     /**
@@ -136,14 +235,13 @@ public abstract class Request<T> extends Exchange<T> {
      */
     public Account getAuthenticatedAccount() {
         return getWrappedExchange().getSecurityContext() != null
-                ? getWrappedExchange().getSecurityContext()
-                        .getAuthenticatedAccount()
+                ? getWrappedExchange().getSecurityContext().getAuthenticatedAccount()
                 : null;
     }
 
     /**
-     * Add the header X-Forwarded-[key] to the proxied request; use it to pass
-     * to the backend information otherwise lost proxying the request.
+     * Add the header X-Forwarded-[key] to the proxied request; use it to pass to
+     * the backend information otherwise lost proxying the request.
      *
      * @param key
      * @param value
@@ -170,8 +268,8 @@ public abstract class Request<T> extends Exchange<T> {
 
     /**
      *
-     * @return the PipelineInfo that allows to know which pipeline (service,
-     * proxy or static resource) is handling the exchange
+     * @return the PipelineInfo that allows to know which pipeline (service, proxy
+     *         or static resource) is handling the exchange
      */
     public PipelineInfo getPipelineInfo() {
         return getWrappedExchange().getAttachment(PIPELINE_INFO_KEY);
@@ -195,8 +293,7 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     public static boolean isContentTypeFormOrMultipart(HttpServerExchange exchange) {
-        return getContentType(exchange) != null
-                && (getContentType(exchange).startsWith(FORM_URLENCODED)
+        return getContentType(exchange) != null && (getContentType(exchange).startsWith(FORM_URLENCODED)
                 || getContentType(exchange).startsWith(MULTIPART));
     }
 
@@ -257,7 +354,7 @@ public abstract class Request<T> extends Exchange<T> {
     public boolean isPut() {
         return getMethod() == METHOD.PUT;
     }
-    
+
     private static METHOD selectMethod(HttpString _method) {
         if (Methods.GET.equals(_method)) {
             return METHOD.GET;

@@ -195,7 +195,7 @@ public class MongoClientSingleton {
                     try {
                         injectMongoClient(p, client);
                     } catch (Throwable t) {
-
+                        LOGGER.error("Error injecting MongoClient to {}", p.getName());
                     }
                 });
     }
@@ -210,8 +210,9 @@ public class MongoClientSingleton {
                 .enableClassInfo()
                 .enableAnnotationInfo()
                 .enableMethodInfo()
-                .whitelistClasses(plugin.getClass().getName())
-                .scan()) {
+                .addClassLoader(plugin.getClass().getClassLoader())
+                .acceptClasses(plugin.getClass().getName())
+                .scan(8)) {
             var classInfo = result.getClassInfo(plugin.getClass().getName());
 
             var mis = classInfo.getDeclaredMethodInfo();

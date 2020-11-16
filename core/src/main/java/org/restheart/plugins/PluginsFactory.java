@@ -73,6 +73,10 @@ public class PluginsFactory implements AutoCloseable {
     }
 
     private static URL[] findPluginsJars(Path pluginsDirectory) {
+        if (pluginsDirectory == null) {
+            return new URL[0];
+        }
+
         var urls = new ArrayList<>();
 
         if (!Files.exists(pluginsDirectory)) {
@@ -168,7 +172,7 @@ public class PluginsFactory implements AutoCloseable {
                     .disableDirScanning()                 // added for GraalVM
                     .disableNestedJarScanning()           // added for GraalVM
                     .disableRuntimeInvisibleAnnotations() // added for GraalVM
-                    //.addClassLoader(ClassLoader.getSystemClassLoader()) // see https://github.com/oracle/graal/issues/470#issuecomment-401022008
+                    .addClassLoader(ClassLoader.getSystemClassLoader()) // see https://github.com/oracle/graal/issues/470#issuecomment-401022008
                     .enableAnnotationInfo()
                     .enableMethodInfo()
                     .initializeLoadedClasses()
@@ -275,6 +279,11 @@ public class PluginsFactory implements AutoCloseable {
     private <T extends Plugin> Set<PluginRecord<T>> createPlugins(
             Class type, Map<String, Map<String, Object>> confs) {
         Set<PluginRecord<T>> ret = new LinkedHashSet<>();
+
+        // scanResult is null if the plugins directory is empty
+        if (this.scanResult == null) {
+            return ret;
+        }
 
         ClassInfoList registeredPlugins = getRegisteredPlugins(type);
 

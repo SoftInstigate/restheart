@@ -78,7 +78,7 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                 return;
             } catch (Throwable t) {
                 exchange.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-                return;
+                throw t;
             }
         }
 

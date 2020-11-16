@@ -432,7 +432,7 @@ public class Configuration {
 
         staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, new ArrayList<>());
 
-        pluginsDirectory = getAsString(conf, PLUGINS_DIRECTORY_PATH_KEY, "plugins");
+        pluginsDirectory = getAsString(conf, PLUGINS_DIRECTORY_PATH_KEY, null);
 
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
 
