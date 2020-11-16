@@ -207,6 +207,10 @@ public class MongoClientSingleton {
         MongoClientSingleton.getInstance().getClient();
 
         try (ScanResult result = new ClassGraph()
+                .disableModuleScanning()              // added for GraalVM
+                .disableDirScanning()                 // added for GraalVM
+                .disableNestedJarScanning()           // added for GraalVM
+                .disableRuntimeInvisibleAnnotations() // added for GraalVM
                 .enableClassInfo()
                 .enableAnnotationInfo()
                 .enableMethodInfo()

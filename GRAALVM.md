@@ -55,10 +55,6 @@ The generated configuration are merged into the existing ones in directory `core
 
 ## issues
 
-### update classpath to latest version
-
-but test fails! MongoRealAuthorizer is not enabled (doesn't find MongoService)
-
 ### check bundled resources
 
 See [substratevm/Resources.md](https://github.com/oracle/graal/blob/master/substratevm/Resources.md)
