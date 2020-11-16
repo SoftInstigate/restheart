@@ -34,6 +34,10 @@ RESTHeart comes with complete functionalities out of the box, but you can extend
 
 The full documentation is available [here](https://restheart.org/docs/).
 
+You can also have a look at our [introductory video](https://youtu.be/9KroH-RvjS0) on Youtube:
+
+[![Watch the video!](https://img.youtube.com/vi/9KroH-RvjS0/hqdefault.jpg)](https://youtu.be/9KroH-RvjS0)
+
 ## Sponsors
 
 <table>
