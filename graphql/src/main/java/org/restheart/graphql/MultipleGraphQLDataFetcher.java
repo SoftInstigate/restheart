@@ -10,13 +10,14 @@ import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.restheart.mongodb.db.MongoClientSingleton;
+import org.restheart.utils.JsonUtils;
 
 import java.util.*;
 
 import static com.mongodb.client.model.Projections.fields;
 import static com.mongodb.client.model.Projections.include;
 
-public class MultipleGraphQLDataFetcher implements DataFetcher<List<Document>> {
+public class MultipleGraphQLDataFetcher implements DataFetcher<List<BsonDocument>> {
 
     private static MultipleGraphQLDataFetcher instance = null;
 
@@ -42,7 +43,7 @@ public class MultipleGraphQLDataFetcher implements DataFetcher<List<Document>> {
 
 
     @Override
-    public List<Document> get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
+    public List<BsonDocument> get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
 
         MongoClient mongoClient = MongoClientSingleton.getInstance().getClient();
         String typeName = ((GraphQLObjectType) dataFetchingEnvironment.getParentType()).getName();
@@ -50,43 +51,43 @@ public class MultipleGraphQLDataFetcher implements DataFetcher<List<Document>> {
 
         String database;
         String collection;
-        Document filter;
-        FindIterable<Document> query;
+        BsonDocument filter;
+        FindIterable<BsonDocument> query;
         if (currentApp.getQueryMappings().containsKey(typeName)) {
             Map<String, QueryMapping> queryMappings = currentApp.getQueryMappingByType(typeName);
             if (queryMappings.containsKey(fieldName)) {
                 QueryMapping queryMapping = queryMappings.get(fieldName);
                 database = queryMapping.getTarget_db();
                 collection = queryMapping.getTarget_collection();
-                Document parentDocument = dataFetchingEnvironment.getSource();
+                BsonDocument parentDocument = dataFetchingEnvironment.getSource();
                 Map<String, Object> graphQLQueryArguments = dataFetchingEnvironment.getArguments();
-                Document interpolatedArguments = queryMapping.interpolate(graphQLQueryArguments, parentDocument);
+                BsonDocument interpolatedArguments = queryMapping.interpolate(JsonUtils.toBsonDocument(graphQLQueryArguments), parentDocument);
 
                 if (interpolatedArguments.containsKey("filter")) {
-                    filter = (Document) interpolatedArguments.get("filter");
+                    filter = (BsonDocument) interpolatedArguments.get("filter");
                 } else {
-                    filter = new Document();
+                    filter = new BsonDocument();
                 }
 
                 query = mongoClient.getDatabase(database)
-                        .getCollection(collection)
+                        .getCollection(collection, BsonDocument.class)
                         .find(filter);
 
                 if(!interpolatedArguments.isEmpty()){
                     if (interpolatedArguments.containsKey("sort")){
-                        query = query.sort(BsonDocument.parse((String) interpolatedArguments.get("sort")));
+                        query = query.sort(BsonDocument.parse(interpolatedArguments.getString("sort").getValue()));
                     }
 
                     if (interpolatedArguments.containsKey("skip")){
-                        query = query.skip((int) interpolatedArguments.get("skip"));
+                        query = query.skip(interpolatedArguments.get("skip").asInt32().getValue());
                     }
 
                     if (interpolatedArguments.containsKey("limit")){
-                        query = query.limit((int) interpolatedArguments.get("limit"));
+                        query = query.limit(interpolatedArguments.get("limit").asInt32().getValue());
                     }
                 }
 
-                ArrayList<Document> result = new ArrayList<Document>();
+                ArrayList<BsonDocument> result = new ArrayList<BsonDocument>();
                 query.into(result);
                 return result;
 

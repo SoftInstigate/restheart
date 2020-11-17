@@ -1,8 +1,11 @@
 package org.restheart.graphql;
 
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.bson.Document;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.utils.JsonUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -12,14 +15,14 @@ import java.util.Map;
 public class QueryMapping extends Mapping {
 
     private boolean multiple;
-    private Document filter;
-    private Document sort;
-    private Document skip;
-    private Document limit;
-    private Document first;
+    private BsonDocument filter;
+    private BsonDocument sort;
+    private BsonDocument skip;
+    private BsonDocument limit;
+    private BsonDocument first;
 
     public QueryMapping(String type, String name, String target_db, String target_collection, boolean multiple,
-                        Document filter, Document sort, Document skip, Document limit, Document first) {
+                        BsonDocument filter, BsonDocument sort, BsonDocument skip, BsonDocument limit, BsonDocument first) {
         super(type, name, target_db, target_collection);
         this.multiple = multiple;
         this.filter = filter;
@@ -37,64 +40,64 @@ public class QueryMapping extends Mapping {
         this.multiple = multiple;
     }
 
-    public Document getFilter() {
+    public BsonDocument getFilter() {
         return filter;
     }
 
-    public void setFilter(Document filter) {
+    public void setFilter(BsonDocument filter) {
         this.filter = filter;
     }
 
-    public Document getSort() {
+    public BsonDocument getSort() {
         return sort;
     }
 
-    public void setSort(Document sort) {
+    public void setSort(BsonDocument sort) {
         this.sort = sort;
     }
 
-    public Document getSkip() {
+    public BsonDocument getSkip() {
         return skip;
     }
 
-    public void setSkip(Document skip) {
+    public void setSkip(BsonDocument skip) {
         this.skip = skip;
     }
 
-    public Document getLimit() {
+    public BsonDocument getLimit() {
         return limit;
     }
 
-    public void setLimit(Document limit) {
+    public void setLimit(BsonDocument limit) {
         this.limit = limit;
     }
 
-    public Document getFirst() {
+    public BsonDocument getFirst() {
         return first;
     }
 
-    public void setFirst(Document first) {
+    public void setFirst(BsonDocument first) {
         this.first = first;
     }
 
 
-    public Document interpolate(Map<String, Object> arguments, Document parentDocument) throws InvalidMetadataException,
+    public BsonDocument interpolate(BsonDocument arguments, BsonDocument parentDocument) throws InvalidMetadataException,
             QueryVariableNotBoundException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
 
-        Document result = new Document();
+        BsonDocument result = new BsonDocument();
         Class cls = this.getClass();
         //get all the declared fields of query object
         Field[] fields = cls.getDeclaredFields();
         for (Field field: fields) {
             //if the current field is a Document, we have to interpolate
-            if (field.getType() == Document.class){
+            if (field.getType() == BsonDocument.class){
                 //find the name of the argument to search in the arguments of the GraphQL query...
                 String fieldName = field.getName();
                 String fieldNameUpper = fieldName.substring(0,1).toUpperCase()+fieldName.substring(1);
                 Object obj = (cls.getDeclaredMethod("get"+fieldNameUpper)).invoke(this);
                 if (obj != null){
-                    Document doc = (Document) obj;
-                    Document fieldResult = searchMetaChars(new String[]{"$arg", "$fk"}, doc, parentDocument, arguments, fieldName);
+                    BsonDocument doc = (BsonDocument) obj;
+                    BsonDocument fieldResult = searchMetaChars(new String[]{"$arg", "$fk"}, doc, parentDocument, arguments, fieldName);
                     result.put(fieldName, fieldResult.get(fieldName));
                 }
             }
@@ -102,7 +105,7 @@ public class QueryMapping extends Mapping {
         return result;
     } 
 
-    private Document searchMetaChars(String[] metaChars, Document doc, Document parentDocument, Map<String, Object> arguments
+    private BsonDocument searchMetaChars(String[] metaChars, BsonDocument doc, BsonDocument parentDocument, BsonDocument arguments
             , String prevKey) throws QueryVariableNotBoundException {
         boolean find = false;
         //searching metacharacters..
@@ -117,17 +120,17 @@ public class QueryMapping extends Mapping {
         if (!find) {
             for (String key : doc.keySet()) {
                 //if there are sub-documents...
-                if (doc.get(key).getClass() == Document.class) {
+                if (doc.get(key).getClass() == BsonDocument.class) {
                     //recall recursively the method...
-                    return new Document(prevKey, searchMetaChars(metaChars, (Document) doc.get(key), parentDocument, arguments, key));
+                    return new BsonDocument(prevKey, searchMetaChars(metaChars, (BsonDocument) doc.get(key), parentDocument, arguments, key));
                 }
             }
         } else {
             //if at least one metacharacter is present...
             for (String key: metaChars){
                 if(doc.containsKey(key)){
-                    String valueName = (String) doc.get(key);
-                    Document value = new Document();
+                    String valueName = doc.get(key).asString().getValue();
+                    BsonDocument value = new BsonDocument();
                     if(key == "$arg") {
                         if (arguments == null || arguments.get(valueName) == null) {
                             throw new QueryVariableNotBoundException("variable " + valueName + " not bound");
@@ -155,11 +158,11 @@ public class QueryMapping extends Mapping {
         String target_db;
         String target_collection;
         private boolean multiple;
-        private Document filter;
-        private Document sort;
-        private Document skip;
-        private Document limit;
-        private Document first;
+        private BsonDocument filter;
+        private BsonDocument sort;
+        private BsonDocument skip;
+        private BsonDocument limit;
+        private BsonDocument first;
 
         public Builder(String type, String name, String db, String collection, boolean multiple){
             this.type = type;
@@ -173,27 +176,27 @@ public class QueryMapping extends Mapping {
             return new Builder(type, db, name, collection, multiple);
         }
 
-        public Builder filter(Document filter){
+        public Builder filter(BsonDocument filter){
             this.filter = filter;
             return this;
         }
 
-        public Builder sort(Document sort){
+        public Builder sort(BsonDocument sort){
             this.sort = sort;
             return this;
         }
 
-        public Builder skip(Document skip){
+        public Builder skip(BsonDocument skip){
             this.skip = skip;
             return this;
         }
 
-        public Builder limit(Document limit){
+        public Builder limit(BsonDocument limit){
             this.limit = limit;
             return this;
         }
 
-        public Builder first(Document first){
+        public Builder first(BsonDocument first){
             this.first = first;
             return this;
         }

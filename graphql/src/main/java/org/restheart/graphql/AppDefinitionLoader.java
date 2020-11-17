@@ -3,11 +3,9 @@ package org.restheart.graphql;
 import com.mongodb.MongoClient;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.*;
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.restheart.mongodb.db.MongoClientSingleton;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectMongoClient;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,7 +15,6 @@ public class AppDefinitionLoader {
 
     private static final String APP_NAME_FIELD = "descriptor";
     private static final String MAPPINGS_FIELD = "mappings";
-    private static final String QUERY_NAME_FIELD = "name";
     private static final String DB_FIELD = "db";
     private static final String COLL_FIELD = "collection";
     private static final String MULTI_FIELD = "multiple";
@@ -40,29 +37,33 @@ public class AppDefinitionLoader {
         MongoClient mongoClient = MongoClientSingleton.getInstance().getClient();
 
         GraphQLApp newApp = new GraphQLApp(appName);
-        Document appDesc = mongoClient.getDatabase(appDB)
-                .getCollection(appCollection).find(new Document(APP_NAME_FIELD, appName)).first();
+        BsonDocument appDesc = mongoClient.getDatabase(appDB)
+                .getCollection(appCollection, BsonDocument.class).find(new Document(APP_NAME_FIELD, appName)).first();
 
         Map<String, Map<String,QueryMapping>> mappings = new HashMap<>();
 
-        for (String type: ((Document) appDesc.get(MAPPINGS_FIELD)).keySet()){
+        BsonDocument mappingsData = (BsonDocument) appDesc.get(MAPPINGS_FIELD);
+
+        for (String type: mappingsData.keySet()){
             Map<String, QueryMapping> typeMappings = new HashMap<>();
-            for (Document mapping: ((Document) appDesc.get(MAPPINGS_FIELD)).getList(type, Document.class)){
-                String name = mapping.getString(QUERY_NAME_FIELD);
-                typeMappings.put(name, new QueryMapping.Builder(type,name, mapping.getString(DB_FIELD), mapping.getString(COLL_FIELD),
-                        mapping.getBoolean(MULTI_FIELD))
-                        .filter((Document) mapping.get(FILTER_FIELD))
-                        .sort((Document) mapping.get(SORT_FIELD))
-                        .skip((Document) mapping.get(SKIP_FIELD))
-                        .limit((Document) mapping.get(LIMIT_FIELD))
-                        .first((Document) mapping.get(FIRST_FIELD))
+            BsonDocument typeMapping = (BsonDocument) mappingsData.get(type);
+            for (String name: typeMapping.keySet()){
+                BsonDocument mapping = (BsonDocument) typeMapping.get(name);
+                typeMappings.put(name, new QueryMapping.Builder(type,name,
+                        mapping.getString(DB_FIELD).asString().getValue(),
+                        mapping.getString(COLL_FIELD).asString().getValue(),
+                        mapping.getBoolean(MULTI_FIELD).asBoolean().getValue())
+                        .filter((BsonDocument) mapping.get(FILTER_FIELD))
+                        .sort((BsonDocument) mapping.get(SORT_FIELD))
+                        .skip((BsonDocument) mapping.get(SKIP_FIELD))
+                        .limit((BsonDocument) mapping.get(LIMIT_FIELD))
+                        .first((BsonDocument) mapping.get(FIRST_FIELD))
                         .build());
             }
             mappings.put(type, typeMappings);
         }
-
         newApp.setQueryMappings(mappings);
-        GraphQLSchema graphQLSchema = buildSchema(appDesc.getString(SCHEMA_FIELD), newApp);
+        GraphQLSchema graphQLSchema = buildSchema(appDesc.getString(SCHEMA_FIELD).asString().getValue(), newApp);
         newApp.setSchema(graphQLSchema);
         return newApp;
     }
@@ -79,7 +80,7 @@ public class AppDefinitionLoader {
 
         Map<String, Map<String, QueryMapping>> queries = app.getQueryMappings();
         if (queries.size() > 0) {
-            RuntimeWiring.Builder runWire = RuntimeWiring.newRuntimeWiring();
+            RuntimeWiring.Builder runWire = RuntimeWiring.newRuntimeWiring().scalar(BSONScalar.GraphQLObjectId);
             for (String type: queries.keySet()){
                 TypeRuntimeWiring.Builder queryTypeBuilder = newTypeWiring(type);
                 for (String queryName : queries.get(type).keySet()) {
