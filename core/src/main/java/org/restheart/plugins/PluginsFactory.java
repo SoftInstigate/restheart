@@ -88,48 +88,6 @@ public class PluginsFactory implements AutoCloseable {
         }
     }
 
-    private static ScanResult fromCache(Path pluginsDirectory) {
-        if (pluginsDirectory == null) {
-            return null;
-        } else {
-            checkPluginDirectory(pluginsDirectory);
-        }
-
-        var cache = pluginsDirectory.resolve(".cache.json");
-
-        LOGGER.debug("getting plugins from cache {}", cache);
-
-        if (Files.exists(cache)) {
-            try {
-                return ScanResult.fromJSON(Files.readString(cache));
-            } catch(IOException ioe) {
-                LOGGER.warn("error scanning plugins from cache", ioe);
-            }
-        }
-
-        return null;
-    }
-
-    private static void toCache(Path pluginsDirectory, ScanResult sr) {
-        if (pluginsDirectory == null) {
-            return;
-        } else {
-            checkPluginDirectory(pluginsDirectory);
-        }
-
-        var cache = pluginsDirectory.resolve(".cache.json");
-
-        LOGGER.debug("caching plugins to cache {}", cache);
-
-        if (!Files.exists(cache)) {
-            try {
-                Files.write(cache, sr.toJSON(2).getBytes());
-            } catch(IOException ioe) {
-                LOGGER.warn("error caching plugins", ioe);
-            }
-        }
-    }
-
     private static URL[] findPluginsJars(Path pluginsDirectory) {
         if (pluginsDirectory == null) {
             return new URL[0];
@@ -196,17 +154,7 @@ public class PluginsFactory implements AutoCloseable {
         var pdir = getPluginsDirectory();
         var jars = findPluginsJars(pdir);
 
-        // LOGGER.debug("****** ClassLoader.getSystemClassLoader() {}", ClassLoader.getSystemClassLoader());
-        // LOGGER.debug("****** this.getClass().getClassLoader() {}", this.getClass().getClassLoader());
-        // LOGGER.debug("****** Thread.currentThread().getContextClassLoader() {}", Thread.currentThread().getContextClassLoader());
-        // LOGGER.debug("****** Bootstrapper.class.getClassLoader() {}", Bootstrapper.class.getClassLoader());
-
-        var csc = fromCache(pdir);
-
-        if (csc != null) {
-            this.scanResult = csc;
-            return;
-        } else if (jars != null && jars.length != 0) {
+        if (jars != null && jars.length != 0) {
             this.scanResult = new ClassGraph()
                     .disableModuleScanning()              // added for GraalVM
                     .disableDirScanning()                 // added for GraalVM
@@ -218,8 +166,6 @@ public class PluginsFactory implements AutoCloseable {
                     .enableMethodInfo()
                     .initializeLoadedClasses()
                     .scan(8); // use parallel scan for better startup time
-
-            toCache(pdir, this.scanResult);
         } else {
             this.scanResult = new ClassGraph()
                     .disableModuleScanning()              // added for GraalVM
@@ -231,8 +177,6 @@ public class PluginsFactory implements AutoCloseable {
                     .enableMethodInfo()
                     .initializeLoadedClasses()
                     .scan(8); // use parallel scan for better startup time
-
-            toCache(pdir, this.scanResult);
         }
     }
 
@@ -362,10 +306,6 @@ public class PluginsFactory implements AutoCloseable {
         } else {
             listOfType = scanResult.getSubclasses(type.getName());
         }
-
-        LOGGER.debug("***** registeredPlugins of type {}: {}",
-            type.getSimpleName(),
-            listOfType.getNames());
 
         var plugins = registeredPlugins.intersect(listOfType);
 
@@ -686,21 +626,6 @@ public class PluginsFactory implements AutoCloseable {
     private <T extends Object> T annotationParam(ClassInfo ci, String param) {
         var annotationInfo = ci.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME);
         var annotationParamVals = annotationInfo.getParameterValues();
-
-        // TO BE REMOVED!!!!
-        if (annotationParamVals.getValue(param) == null) {
-            // Added to debug GraalVM
-            LOGGER.warn("****** {}.RegisterPlugin.{}=null (returning a test value)", ci.getSimpleName(), param);
-            if ("enabledByDefault".equals(param)) {
-                return  (T) Boolean.TRUE;
-            } else if ("priority".equals(param)) {
-                return(T) Integer.valueOf(0);
-            } else {
-                return (T) "Ops";
-            }
-        } else {
-            LOGGER.trace("****** {}.RegisterPlugin.{}={}", ci.getSimpleName(), param, annotationParamVals.getValue(param));
-        }
 
         return (T) annotationParamVals.getValue(param);
     }
