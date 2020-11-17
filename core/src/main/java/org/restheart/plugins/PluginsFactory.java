@@ -72,13 +72,7 @@ public class PluginsFactory implements AutoCloseable {
         return SINGLETON;
     }
 
-    private static URL[] findPluginsJars(Path pluginsDirectory) {
-        if (pluginsDirectory == null) {
-            return new URL[0];
-        }
-
-        var urls = new ArrayList<>();
-
+    private static void checkPluginDirectory(Path pluginsDirectory) {
         if (!Files.exists(pluginsDirectory)) {
             LOGGER.error("Plugin directory {} does not exist", pluginsDirectory);
             throw new IllegalStateException("Plugins directory "
@@ -92,6 +86,58 @@ public class PluginsFactory implements AutoCloseable {
                     + pluginsDirectory
                     + " is not readable");
         }
+    }
+
+    private static ScanResult fromCache(Path pluginsDirectory) {
+        if (pluginsDirectory == null) {
+            return null;
+        } else {
+            checkPluginDirectory(pluginsDirectory);
+        }
+
+        var cache = pluginsDirectory.resolve(".cache.json");
+
+        LOGGER.debug("getting plugins from cache {}", cache);
+
+        if (Files.exists(cache)) {
+            try {
+                return ScanResult.fromJSON(Files.readString(cache));
+            } catch(IOException ioe) {
+                LOGGER.warn("error scanning plugins from cache", ioe);
+            }
+        }
+
+        return null;
+    }
+
+    private static void toCache(Path pluginsDirectory, ScanResult sr) {
+        if (pluginsDirectory == null) {
+            return;
+        } else {
+            checkPluginDirectory(pluginsDirectory);
+        }
+
+        var cache = pluginsDirectory.resolve(".cache.json");
+
+        LOGGER.debug("caching plugins to cache {}", cache);
+
+        if (!Files.exists(cache)) {
+            try {
+                Files.write(cache, sr.toJSON(2).getBytes());
+            } catch(IOException ioe) {
+                LOGGER.warn("error caching plugins", ioe);
+            }
+        }
+    }
+
+    private static URL[] findPluginsJars(Path pluginsDirectory) {
+        if (pluginsDirectory == null) {
+            return new URL[0];
+        } else {
+            checkPluginDirectory(pluginsDirectory);
+        }
+
+        var urls = new ArrayList<>();
 
         try (DirectoryStream<Path> directoryStream = Files
                 .newDirectoryStream(pluginsDirectory, "*.jar")) {
@@ -147,14 +193,20 @@ public class PluginsFactory implements AutoCloseable {
     private URLClassLoader PLUGINS_CL_CACHE = null;
 
     private PluginsFactory() {
-        var jars = findPluginsJars(getPluginsDirectory());
+        var pdir = getPluginsDirectory();
+        var jars = findPluginsJars(pdir);
 
         // LOGGER.debug("****** ClassLoader.getSystemClassLoader() {}", ClassLoader.getSystemClassLoader());
         // LOGGER.debug("****** this.getClass().getClassLoader() {}", this.getClass().getClassLoader());
         // LOGGER.debug("****** Thread.currentThread().getContextClassLoader() {}", Thread.currentThread().getContextClassLoader());
         // LOGGER.debug("****** Bootstrapper.class.getClassLoader() {}", Bootstrapper.class.getClassLoader());
 
-        if (jars != null && jars.length != 0) {
+        var csc = fromCache(pdir);
+
+        if (csc != null) {
+            this.scanResult = csc;
+            return;
+        } else if (jars != null && jars.length != 0) {
             this.scanResult = new ClassGraph()
                     .disableModuleScanning()              // added for GraalVM
                     .disableDirScanning()                 // added for GraalVM
@@ -166,6 +218,8 @@ public class PluginsFactory implements AutoCloseable {
                     .enableMethodInfo()
                     .initializeLoadedClasses()
                     .scan(8); // use parallel scan for better startup time
+
+            toCache(pdir, this.scanResult);
         } else {
             this.scanResult = new ClassGraph()
                     .disableModuleScanning()              // added for GraalVM
@@ -177,6 +231,8 @@ public class PluginsFactory implements AutoCloseable {
                     .enableMethodInfo()
                     .initializeLoadedClasses()
                     .scan(8); // use parallel scan for better startup time
+
+            toCache(pdir, this.scanResult);
         }
     }
 

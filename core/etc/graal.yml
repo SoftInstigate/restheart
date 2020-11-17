@@ -198,7 +198,7 @@ authenticators:
     enabled: true
     conf-file: {{{users-conf-file}}}
   mongoRealmAuthenticator:
-    enabled: true
+    enabled: false
     users-db: restheart
     users-collection: users
     prop-id: _id
@@ -230,7 +230,7 @@ authorizers:
     enabled: true
     conf-file: {{{acl-conf-file}}}
   mongoAclAuthorizer:
-    enabled: true
+    enabled: false
     acl-db: restheart
     acl-collection: acl
     # clients with root-role can execute any request
@@ -289,7 +289,7 @@ etag-check-policy:
 # Just add the plugins jar to plugins-directory and they will be automatically
 # added to the classpath and registered.
 
-plugins-directory: {{{plugins-directory}}}
+plugins-directory: plugins
 
 # All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).

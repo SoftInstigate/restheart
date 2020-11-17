@@ -182,6 +182,94 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"io.github.classgraph.AnnotationClassRef",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.AnnotationEnumValue",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.AnnotationInfo",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.AnnotationInfoList",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.AnnotationInfo[]"
+},
+{
+  "name":"io.github.classgraph.AnnotationInfo[][]"
+},
+{
+  "name":"io.github.classgraph.AnnotationParameterValue",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.AnnotationParameterValueList",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.ClassInfo",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.ClassInfoList",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.FieldInfoList",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.MethodInfo",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.MethodInfoList",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.ModuleInfo",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.ModulePathInfo",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.ObjectTypedValueWrapper",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.ObjectTypedValueWrapper[]"
+},
+{
+  "name":"io.github.classgraph.PackageInfo",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.ScanResult$SerializationFormat",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"io.github.classgraph.ScanResultObject",
+  "allDeclaredFields":true
+},
+{
   "name":"io.undertow.UndertowLogger_$logger",
   "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
 },
@@ -316,7 +404,8 @@
   "methods":[{"name":"getDeclaringClass","parameterTypes":[] }]
 },
 {
-  "name":"java.lang.String"
+  "name":"java.lang.String",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"java.lang.String[]"
@@ -423,7 +512,8 @@
 },
 {
   "name":"java.lang.reflect.AccessibleObject",
-  "fields":[{"name":"override"}]
+  "fields":[{"name":"override"}],
+  "methods":[{"name":"trySetAccessible","parameterTypes":[] }]
 },
 {
   "name":"java.lang.reflect.Method",
@@ -572,7 +662,19 @@
   "name":"java.time.format.DateTimeFormatter"
 },
 {
+  "name":"java.util.ArrayList",
+  "methods":[{"name":"<init>","parameterTypes":["int"] }]
+},
+{
   "name":"java.util.Date"
+},
+{
+  "name":"java.util.HashMap",
+  "methods":[{"name":"<init>","parameterTypes":["int"] }]
+},
+{
+  "name":"java.util.HashSet",
+  "methods":[{"name":"<init>","parameterTypes":["int"] }]
 },
 {
   "name":"java.util.Map",
@@ -808,8 +910,32 @@
   ]
 },
 {
-  "name":"nonapi.io.github.classgraph.scanspec.ScanSpec",
+  "name":"nonapi.io.github.classgraph.json.ClassFieldCache$NoConstructor",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"nonapi.io.github.classgraph.scanspec.AcceptReject",
   "allDeclaredFields":true
+},
+{
+  "name":"nonapi.io.github.classgraph.scanspec.AcceptReject$AcceptRejectLeafname",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"nonapi.io.github.classgraph.scanspec.AcceptReject$AcceptRejectPrefix",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"nonapi.io.github.classgraph.scanspec.AcceptReject$AcceptRejectWholeString",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"nonapi.io.github.classgraph.scanspec.ScanSpec",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"org.bson.json.DateTimeFormatter$Java8DateTimeFormatter",

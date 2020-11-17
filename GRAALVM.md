@@ -6,6 +6,8 @@ We are able to build native image and start RESTHeart **without** plugins.
 
 ## build native image
 
+> need to use Graal VM as JDK (https://www.graalvm.org/downloads/)
+
 ```bash
 $ mvn clean package -Pnative
 ```

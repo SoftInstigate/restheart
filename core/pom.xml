@@ -236,7 +236,7 @@
                 <include>**</include>
               </includes>
             </filter>
-            <!-- for native-image force include restheart-security in uber-jar -->
+            <!-- for native-image force include restheart-mongodb in uber-jar -->
             <filter>
               <artifact>org.restheart:restheart-mongodb</artifact>
               <includes>

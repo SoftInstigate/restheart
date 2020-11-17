@@ -33,7 +33,7 @@ public class PluginRecord<T extends Plugin> {
     private final String className;
     private final T instance;
     private final Map<String, Object> confArgs;
-    
+
     /**
      * The key to enable plugins
      */
