@@ -80,7 +80,12 @@ public class AppDefinitionLoader {
 
         Map<String, Map<String, QueryMapping>> queries = app.getQueryMappings();
         if (queries.size() > 0) {
-            RuntimeWiring.Builder runWire = RuntimeWiring.newRuntimeWiring().scalar(BSONScalar.GraphQLObjectId);
+            RuntimeWiring.Builder runWire = RuntimeWiring.newRuntimeWiring()
+                    .scalar(BSONScalar.GraphQLBsonObjectId)
+                    .scalar(BSONScalar.GraphQLBsonString)
+                    .scalar(BSONScalar.GraphQLBsonDocument)
+                    .scalar(BSONScalar.GraphQLBsonInt32)
+                    .scalar(BSONScalar.GraphQLBsonInt64);
             for (String type: queries.keySet()){
                 TypeRuntimeWiring.Builder queryTypeBuilder = newTypeWiring(type);
                 for (String queryName : queries.get(type).keySet()) {

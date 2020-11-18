@@ -75,7 +75,7 @@ public class MultipleGraphQLDataFetcher implements DataFetcher<List<BsonDocument
 
                 if(!interpolatedArguments.isEmpty()){
                     if (interpolatedArguments.containsKey("sort")){
-                        query = query.sort(BsonDocument.parse(interpolatedArguments.getString("sort").getValue()));
+                        query = query.sort((BsonDocument) interpolatedArguments.get("sort"));
                     }
 
                     if (interpolatedArguments.containsKey("skip")){

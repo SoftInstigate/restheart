@@ -1,5 +1,6 @@
 package org.restheart.graphql.BSONScalars;
 
+import graphql.GraphQL;
 import graphql.language.StringValue;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
@@ -7,11 +8,10 @@ import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
-import org.json.JSONObject;
 
 import static org.restheart.graphql.BSONScalars.CoercingUtils.typeName;
 
-public class GraphQLObjectIdCoercing implements Coercing<ObjectId, ObjectId> {
+public class GraphQLBsonObjectIdCoercing implements Coercing<ObjectId, ObjectId> {
 
     private ObjectId convertImpl(Object input){
         if(input instanceof String){
