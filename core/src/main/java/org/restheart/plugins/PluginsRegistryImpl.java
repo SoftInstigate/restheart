@@ -78,19 +78,17 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      * force plugin objects instantiation
      */
     public void instantiateAll() {
-        try (var pluginFactory = PluginsFactory.getInstance()) {
-            getInitializers();
+        var factory = PluginsFactory.getInstance();
 
-            getAuthMechanisms();
-            getAuthorizers();
-            getTokenManager();
-            getAuthenticators();
+        factory.initializers();
+        factory.authMechanisms();
+        factory.authorizers();
+        factory.tokenManager();
+        factory.authenticators();
+        factory.interceptors();
+        factory.services();
 
-            getInterceptors();
-            getServices();
-
-            pluginFactory.injectDependencies();
-        }
+        // pluginFactory.injectDependencies();
     }
 
     /**

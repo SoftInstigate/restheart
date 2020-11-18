@@ -55,16 +55,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-public class PluginsFactory implements AutoCloseable {
+public class PluginsFactory {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(PluginsFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PluginsFactory.class);
 
-    private static final String REGISTER_PLUGIN_CLASS_NAME = RegisterPlugin.class
-            .getName();
-
-    private static final Map<String, Map<String, Object>> PLUGINS_CONFS
-            = consumePluginsConfiguration();
+    private static final Map<String, Map<String, Object>> PLUGINS_CONFS = consumePluginsConfiguration();
 
     private static final PluginsFactory SINGLETON = new PluginsFactory();
 
@@ -72,60 +67,9 @@ public class PluginsFactory implements AutoCloseable {
         return SINGLETON;
     }
 
-    private static void checkPluginDirectory(Path pluginsDirectory) {
-        if (!Files.exists(pluginsDirectory)) {
-            LOGGER.error("Plugin directory {} does not exist", pluginsDirectory);
-            throw new IllegalStateException("Plugins directory "
-                    + pluginsDirectory
-                    + " does not exist");
-        }
-
-        if (!Files.isReadable(pluginsDirectory)) {
-            LOGGER.error("Plugin directory {} is not readable", pluginsDirectory);
-            throw new IllegalStateException("Plugins directory "
-                    + pluginsDirectory
-                    + " is not readable");
-        }
-    }
-
-    private static URL[] findPluginsJars(Path pluginsDirectory) {
-        if (pluginsDirectory == null) {
-            return new URL[0];
-        } else {
-            checkPluginDirectory(pluginsDirectory);
-        }
-
-        var urls = new ArrayList<>();
-
-        try (DirectoryStream<Path> directoryStream = Files
-                .newDirectoryStream(pluginsDirectory, "*.jar")) {
-            for (Path path : directoryStream) {
-                var jar = path.toUri().toURL();
-
-                if (!Files.isReadable(path)) {
-                    LOGGER.error("Plugin jar {} is not readable", jar);
-                    throw new IllegalStateException("Plugin jar "
-                            + jar
-                            + " is not readable");
-                }
-
-                urls.add(jar);
-                LOGGER.info("Found plugin jar {}", jar);
-            }
-        } catch (IOException ex) {
-            LOGGER.error("Cannot read jars in plugins directory {}",
-                    Bootstrapper.getConfiguration().getPluginsDirectory(),
-                    ex.getMessage());
-        }
-
-        return urls.isEmpty() ? null: urls.toArray(new URL[urls.size()]);
-    }
-
     @SuppressWarnings("unchecked")
     private static Map<String, Map<String, Object>> consumePluginsConfiguration() {
-        Map<String, Map<String, Object>> pluginsArgs = Bootstrapper
-                .getConfiguration()
-                .getPluginsArgs();
+        Map<String, Map<String, Object>> pluginsArgs = Bootstrapper.getConfiguration().getPluginsArgs();
 
         Map<String, Map<String, Object>> confs = new HashMap<>();
 
@@ -140,51 +84,7 @@ public class PluginsFactory implements AutoCloseable {
         return confs;
     }
 
-    private final ScanResult scanResult;
-    /**
-     * A deque containing the instantiated plugins than have to be injected
-     * dependecies. this is done after instantiation because using a dependency,
-     * eg the plugin registry, can change the order of plugins instantiation
-     * causing all sort of weird issues
-     */
-    private final Deque<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS = new LinkedList<>();
-    private URLClassLoader PLUGINS_CL_CACHE = null;
-
     private PluginsFactory() {
-        var pdir = getPluginsDirectory();
-        var jars = findPluginsJars(pdir);
-
-        if (jars != null && jars.length != 0) {
-            this.scanResult = new ClassGraph()
-                    .disableModuleScanning()              // added for GraalVM
-                    .disableDirScanning()                 // added for GraalVM
-                    .disableNestedJarScanning()           // added for GraalVM
-                    .disableRuntimeInvisibleAnnotations() // added for GraalVM
-                    .addClassLoader(getPluginsClassloader(jars))
-                    .addClassLoader(ClassLoader.getSystemClassLoader()) // see https://github.com/oracle/graal/issues/470#issuecomment-401022008
-                    .enableAnnotationInfo()
-                    .enableMethodInfo()
-                    .initializeLoadedClasses()
-                    .scan(8); // use parallel scan for better startup time
-        } else {
-            this.scanResult = new ClassGraph()
-                    .disableModuleScanning()              // added for GraalVM
-                    .disableDirScanning()                 // added for GraalVM
-                    .disableNestedJarScanning()           // added for GraalVM
-                    .disableRuntimeInvisibleAnnotations() // added for GraalVM
-                    .addClassLoader(ClassLoader.getSystemClassLoader()) // see https://github.com/oracle/graal/issues/470#issuecomment-401022008
-                    .enableAnnotationInfo()
-                    .enableMethodInfo()
-                    .initializeLoadedClasses()
-                    .scan(8); // use parallel scan for better startup time
-        }
-    }
-
-    @Override
-    public void close() {
-        if (this.scanResult != null) {
-            this.scanResult.close();
-        }
     }
 
     /**
@@ -192,7 +92,7 @@ public class PluginsFactory implements AutoCloseable {
      * @return the AuthenticationMechanisms
      */
     Set<PluginRecord<AuthMechanism>> authMechanisms() {
-        return createPlugins(AuthMechanism.class,
+        return createPlugins(PluginsScanner.AUTH_MECHANISMS, "Authentication Mechanism",
                 Bootstrapper.getConfiguration().getAuthMechanisms());
     }
 
@@ -201,7 +101,7 @@ public class PluginsFactory implements AutoCloseable {
      * @return the Authenticators
      */
     Set<PluginRecord<Authenticator>> authenticators() {
-        return createPlugins(Authenticator.class,
+        return createPlugins(PluginsScanner.AUTHENTICATORS, "Authenticators",
                 Bootstrapper.getConfiguration().getAuthenticators());
     }
 
@@ -210,7 +110,7 @@ public class PluginsFactory implements AutoCloseable {
      * @return the Authorizers
      */
     Set<PluginRecord<Authorizer>> authorizers() {
-        return createPlugins(Authorizer.class,
+        return createPlugins(PluginsScanner.AUTHORIZERS, "Authorizer",
                 Bootstrapper.getConfiguration().getAuthorizers());
     }
 
@@ -219,7 +119,7 @@ public class PluginsFactory implements AutoCloseable {
      * @return the Token Manager
      */
     PluginRecord<TokenManager> tokenManager() {
-        Set<PluginRecord<TokenManager>> tkms = createPlugins(TokenManager.class,
+        Set<PluginRecord<TokenManager>> tkms = createPlugins(PluginsScanner.TOKEN_MANAGERS, "Token Manager",
                 Bootstrapper.getConfiguration().getTokenManagers());
 
         if (tkms != null) {
@@ -239,7 +139,7 @@ public class PluginsFactory implements AutoCloseable {
      * create the initializers
      */
     Set<PluginRecord<Initializer>> initializers() {
-        return createPlugins(Initializer.class, PLUGINS_CONFS);
+        return createPlugins(PluginsScanner.INITIALIZERS, "Initializer", PLUGINS_CONFS);
     }
 
     /**
@@ -247,21 +147,7 @@ public class PluginsFactory implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     Set<PluginRecord<Interceptor>> interceptors() {
-        return createPlugins(Interceptor.class, PLUGINS_CONFS);
-    }
-
-    private ClassInfoList getRegisteredPlugins(Class type) {
-        // scanResult is null if the plugins directory is empty
-        if (this.scanResult == null) {
-            return null;
-        }
-
-        try {
-            return this.scanResult.getClassesWithAnnotation(REGISTER_PLUGIN_CLASS_NAME);
-        } catch (Throwable t) {
-            LOGGER.error("Error deploying plugins: {}", t.getMessage());
-            throw t;
-        }
+        return createPlugins(PluginsScanner.INTERCEPTORS, "Interceptor", PLUGINS_CONFS);
     }
 
     /**
@@ -269,208 +155,124 @@ public class PluginsFactory implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     Set<PluginRecord<Service>> services() {
-        return createPlugins(Service.class, PLUGINS_CONFS);
+        return createPlugins(PluginsScanner.SERVICES, "Service", PLUGINS_CONFS);
     }
 
     /**
      * @param type the class of the plugin , e.g. Initializer.class
      */
     @SuppressWarnings("unchecked")
-    private <T extends Plugin> Set<PluginRecord<T>> createPlugins(
-            Class type, Map<String, Map<String, Object>> confs) {
+    private <T extends Plugin> Set<PluginRecord<T>> createPlugins(ArrayList<PluginDescriptor> pluginDescriptors,
+            String type, Map<String, Map<String, Object>> confs) {
         Set<PluginRecord<T>> ret = new LinkedHashSet<>();
 
-        // scanResult is null if the plugins directory is empty
-        if (this.scanResult == null) {
-            return ret;
-        }
-
-        ClassInfoList registeredPlugins = getRegisteredPlugins(type);
-
-        if (registeredPlugins == null || registeredPlugins.isEmpty()) {
-            return ret;
-        }
-
-        ClassInfoList listOfType;
-
-        if (type.isInterface()) {
-            if (type.equals(Authenticator.class)) {
-                var tms = scanResult.getClassesImplementing(TokenManager.class.getName());
-
-                listOfType = scanResult
-                        .getClassesImplementing(type.getName())
-                        .exclude(tms);
-            } else {
-                listOfType = scanResult.getClassesImplementing(type.getName());
-            }
-        } else {
-            listOfType = scanResult.getSubclasses(type.getName());
-        }
-
-        var plugins = registeredPlugins.intersect(listOfType);
-
         // sort by priority
-        plugins.sort((ClassInfo ci1, ClassInfo ci2) -> {
-            return Integer.compare(annotationParam(ci1, "priority"),
-                    annotationParam(ci2, "priority"));
-        });
-
-        plugins.stream().forEachOrdered(plugin -> {
-            Object i;
-            var _type = type.getSimpleName();
+        pluginDescriptors.sort((PluginDescriptor cd1, PluginDescriptor cd2) -> {
 
             try {
-                String name = annotationParam(plugin, "name");
-                String description = annotationParam(plugin, "description");
-                Boolean enabledByDefault = annotationParam(plugin, "enabledByDefault");
+                var clazz1 = loadPluginClass(cd1);
+                var clazz2 = loadPluginClass(cd2);
+                return Integer.compare(priority(clazz1), priority(clazz2));
+            } catch (ClassNotFoundException cnfe) {
+                LOGGER.error("error sorting {} plugins by priority", type, cnfe);
+                return -1;
+            }
+        });
 
-                var enabled = PluginRecord.isEnabled(enabledByDefault,
-                        confs != null ? confs.get(name) : null);
+        pluginDescriptors.stream().forEachOrdered(plugin -> {
+            try {
+                var clazz = loadPluginClass(plugin);
+                Plugin i;
+
+                var name = name(clazz);
+                var description = description(clazz);
+                var enabledByDefault = enabledByDefault(clazz);
+                var enabled = PluginRecord.isEnabled(enabledByDefault, confs != null ? confs.get(name) : null);
 
                 if (enabled) {
-                    i = instantiatePlugin(plugin, _type, name, confs);
+                    i = instantiatePlugin(clazz, type, name, confs);
 
-                    var pr = new PluginRecord(
-                            name,
-                            description,
-                            enabledByDefault,
-                            plugin.getName(),
-                            (T) i,
-                            confs != null
-                                    ? confs.get(name)
-                                    : null);
+                    var pr = new PluginRecord<>(name, description, enabledByDefault, name, (T) i,
+                            confs != null ? confs.get(name) : null);
 
                     if (pr.isEnabled()) {
                         ret.add(pr);
-                        LOGGER.debug("Registered {} {}: {}",
-                                _type,
-                                name,
-                                description);
+                        LOGGER.debug("Registered {} {}: {}", type, name, description);
                     }
                 } else {
-                    LOGGER.debug("{} {} is disabled", _type, name);
+                    LOGGER.debug("{} {} is disabled", type, name);
                 }
-            } catch (ConfigurationException
-                    | InstantiationException
-                    | IllegalAccessException
-                    | InvocationTargetException t) {
-                LOGGER.error("Error registering {} {}: {}",
-                        _type,
-                        annotationParam(plugin, "name") != null
-                        ? annotationParam(plugin, "name")
-                        : plugin.getSimpleName(),
-                        getRootException(t).getMessage(),
-                        t);
+            } catch (ClassNotFoundException | ConfigurationException | InstantiationException | IllegalAccessException
+                    | InvocationTargetException e) {
+                LOGGER.error("Error registering {} {}: {}", type, plugin.getClass().getSimpleName(), getRootException(e).getMessage(), e);
             }
         });
 
         return ret;
     }
 
-    private Plugin instantiatePlugin(
-            ClassInfo pluginClassInfo,
-            String pluginType,
-            String pluginName,
-            Map confs)
-            throws ConfigurationException,
-            InstantiationException,
-            IllegalAccessException,
-            InvocationTargetException {
-        final Plugin plugin;
+    private Class<Plugin> loadPluginClass(PluginDescriptor plugin) throws ClassNotFoundException {
+        return (Class<Plugin>) Class.forName(plugin.clazz);
+    }
 
+    private Plugin instantiatePlugin(Class<Plugin> pc, String pluginType, String pluginName, Map confs)
+            throws InstantiationException, IllegalAccessException, InvocationTargetException, IllegalArgumentException,
+            SecurityException, ClassNotFoundException {
         try {
-            plugin = (Plugin) pluginClassInfo.loadClass(false)
-                    .getDeclaredConstructor()
-                    .newInstance();
+            return pc.getDeclaredConstructor().newInstance();
 
-            PLUGINS_TO_INJECT_DEPS.add(
-                    new InstatiatedPlugin(pluginName,
-                            pluginType,
-                            pluginClassInfo,
-                            plugin,
-                            confs));
         } catch (NoSuchMethodException nme) {
             throw new ConfigurationException(
-                    pluginType
-                    + " " + pluginName
-                    + " does not have default constructor "
-                    + pluginClassInfo.getSimpleName()
-                    + "()");
-        }
-
-        return plugin;
-    }
-
-    public void injectDependencies() {
-        for (Iterator<InstatiatedPlugin> it = PLUGINS_TO_INJECT_DEPS.iterator();
-                it.hasNext();) {
-            var ip = it.next();
-
-            try {
-                invokeInjectMethods(ip);
-            } catch (InvocationTargetException ite) {
-                if (ite.getCause() != null
-                        && ite.getCause() instanceof NoClassDefFoundError) {
-                    var errMsg = "Error handling the request. "
-                            + "An external dependency is missing for "
-                            + ip.pluginType
-                            + " "
-                            + ip.pluginName
-                            + ". Copy the missing dependency jar to the plugins directory "
-                            + "to add it to the classpath";
-
-                    LOGGER.error(errMsg, ite);
-                } else {
-                    LOGGER.error("Error injecting dependency to {} {}: {}",
-                            ip.pluginType,
-                            ip.pluginName,
-                            getRootException(ite).getMessage(),
-                            ite);
-                }
-            } catch (ConfigurationException
-                    | InstantiationException
-                    | IllegalAccessException ex) {
-                LOGGER.error("Error injecting dependency to {} {}: {}",
-                        ip.pluginType,
-                        ip.pluginName,
-                        getRootException(ex).getMessage(),
-                        ex);
-            }
-
-            it.remove();
+                    pluginType + " " + pluginName + " does not have default constructor " + pc.getSimpleName() + "()");
         }
     }
 
-    private void invokeInjectMethods(InstatiatedPlugin ip) throws ConfigurationException,
-            InstantiationException,
-            IllegalAccessException,
-            InvocationTargetException {
-        invokeInjectConfigurationMethods(ip.pluginName,
-                ip.pluginType,
-                ip.pluginClassInfo,
-                ip.pluingInstance,
-                ip.confs);
+    // public void injectDependencies() {
+    // for (Iterator<InstatiatedPlugin> it = PLUGINS_TO_INJECT_DEPS.iterator();
+    // it.hasNext();) {
+    // var ip = it.next();
 
-        invokeInjectPluginsRegistryMethods(ip.pluginName,
-                ip.pluginType,
-                ip.pluginClassInfo,
-                ip.pluingInstance);
+    // try {
+    // invokeInjectMethods(ip);
+    // } catch (InvocationTargetException ite) {
+    // if (ite.getCause() != null && ite.getCause() instanceof NoClassDefFoundError)
+    // {
+    // var errMsg = "Error handling the request. " + "An external dependency is
+    // missing for "
+    // + ip.pluginType + " " + ip.pluginName
+    // + ". Copy the missing dependency jar to the plugins directory "
+    // + "to add it to the classpath";
 
-        invokeInjectConfigurationAndPluginsRegistryMethods(ip.pluginName,
-                ip.pluginType,
-                ip.pluginClassInfo,
-                ip.pluingInstance,
-                ip.confs);
+    // LOGGER.error(errMsg, ite);
+    // } else {
+    // LOGGER.error("Error injecting dependency to {} {}: {}", ip.pluginType,
+    // ip.pluginName,
+    // getRootException(ite).getMessage(), ite);
+    // }
+    // } catch (ConfigurationException | InstantiationException |
+    // IllegalAccessException ex) {
+    // LOGGER.error("Error injecting dependency to {} {}: {}", ip.pluginType,
+    // ip.pluginName,
+    // getRootException(ex).getMessage(), ex);
+    // }
+
+    // it.remove();
+    // }
+    // }
+
+    private void invokeInjectMethods(InstatiatedPlugin ip)
+            throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        invokeInjectConfigurationMethods(ip.pluginName, ip.pluginType, ip.pluginClassInfo, ip.pluingInstance, ip.confs);
+
+        invokeInjectPluginsRegistryMethods(ip.pluginName, ip.pluginType, ip.pluginClassInfo, ip.pluingInstance);
+
+        invokeInjectConfigurationAndPluginsRegistryMethods(ip.pluginName, ip.pluginType, ip.pluginClassInfo,
+                ip.pluingInstance, ip.confs);
     }
 
-    private void invokeInjectConfigurationMethods(String pluginName,
-            String pluginType,
-            ClassInfo pluginClassInfo,
-            Object pluingInstance,
-            Map confs) throws ConfigurationException,
-            InstantiationException,
-            IllegalAccessException,
-            InvocationTargetException {
+    private void invokeInjectConfigurationMethods(String pluginName, String pluginType, ClassInfo pluginClassInfo,
+            Object pluingInstance, Map confs)
+            throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
 
         // finds @InjectConfiguration methods
         var mil = pluginClassInfo.getDeclaredMethodInfo();
@@ -483,50 +285,34 @@ public class PluginsFactory implements AutoCloseable {
                 // check configuration scope
                 var allConfScope = ai.getParameterValues().stream()
                         .anyMatch(p -> "scope".equals(p.getName())
-                        && (ConfigurationScope.class.getName()
-                                + "." + ConfigurationScope.ALL.name()).equals(
-                                p.getValue().toString()));
+                                && (ConfigurationScope.class.getName() + "." + ConfigurationScope.ALL.name())
+                                        .equals(p.getValue().toString()));
 
-                var scopedConf = (Map) (allConfScope
-                        ? Bootstrapper.getConfiguration().toMap()
-                        : confs != null
-                                ? confs.get(pluginName)
-                                : null);
+                var scopedConf = (Map) (allConfScope ? Bootstrapper.getConfiguration().toMap()
+                        : confs != null ? confs.get(pluginName) : null);
 
                 if (scopedConf == null) {
-                    LOGGER.warn("{} {} defines method {} with @InjectConfiguration "
-                            + "but no configuration found for it",
-                            pluginType,
-                            pluginName,
-                            mi.getName());
+                    LOGGER.warn(
+                            "{} {} defines method {} with @InjectConfiguration " + "but no configuration found for it",
+                            pluginType, pluginName, mi.getName());
                 }
 
                 // try to inovke @InjectConfiguration method
                 try {
-                    pluginClassInfo.loadClass(false)
-                            .getDeclaredMethod(mi.getName(),
-                                    Map.class)
-                            .invoke(pluingInstance, scopedConf);
+                    pluginClassInfo.loadClass(false).getDeclaredMethod(mi.getName(), Map.class).invoke(pluingInstance,
+                            scopedConf);
                 } catch (NoSuchMethodException nme) {
-                    throw new ConfigurationException(
-                            pluginType
-                            + " " + pluginName
-                            + " has an invalid method with @InjectConfiguration. "
-                            + "Method signature must be "
-                            + mi.getName()
-                            + "(Map<String, Object> configuration)");
+                    throw new ConfigurationException(pluginType + " " + pluginName
+                            + " has an invalid method with @InjectConfiguration. " + "Method signature must be "
+                            + mi.getName() + "(Map<String, Object> configuration)");
                 }
             }
         }
     }
 
-    private void invokeInjectPluginsRegistryMethods(String pluginName,
-            String pluginType,
-            ClassInfo pluginClassInfo,
-            Object pluingInstance) throws ConfigurationException,
-            InstantiationException,
-            IllegalAccessException,
-            InvocationTargetException {
+    private void invokeInjectPluginsRegistryMethods(String pluginName, String pluginType, ClassInfo pluginClassInfo,
+            Object pluingInstance)
+            throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
 
         // finds @InjectPluginRegistry methods
         var mil = pluginClassInfo.getDeclaredMethodInfo();
@@ -536,32 +322,20 @@ public class PluginsFactory implements AutoCloseable {
                     && !mi.hasAnnotation(InjectConfiguration.class.getName())) {
                 // try to inovke @InjectPluginRegistry method
                 try {
-                    pluginClassInfo.loadClass(false)
-                            .getDeclaredMethod(mi.getName(),
-                                    PluginsRegistry.class)
-                            .invoke(pluingInstance,
-                                    PluginsRegistryImpl.getInstance());
+                    pluginClassInfo.loadClass(false).getDeclaredMethod(mi.getName(), PluginsRegistry.class)
+                            .invoke(pluingInstance, PluginsRegistryImpl.getInstance());
                 } catch (NoSuchMethodException nme) {
                     throw new ConfigurationException(
-                            pluginType
-                            + " " + pluginName
-                            + " has an invalid method with @InjectPluginsRegistry. "
-                            + "Method signature must be "
-                            + mi.getName()
-                            + "(PluginsRegistry pluginsRegistry)");
+                            pluginType + " " + pluginName + " has an invalid method with @InjectPluginsRegistry. "
+                                    + "Method signature must be " + mi.getName() + "(PluginsRegistry pluginsRegistry)");
                 }
             }
         }
     }
 
-    private void invokeInjectConfigurationAndPluginsRegistryMethods(String pluginName,
-            String pluginType,
-            ClassInfo pluginClassInfo,
-            Object pluingInstance,
-            Map confs) throws ConfigurationException,
-            InstantiationException,
-            IllegalAccessException,
-            InvocationTargetException {
+    private void invokeInjectConfigurationAndPluginsRegistryMethods(String pluginName, String pluginType,
+            ClassInfo pluginClassInfo, Object pluingInstance, Map confs)
+            throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
 
         // finds @InjectConfiguration methods
         var mil = pluginClassInfo.getDeclaredMethodInfo();
@@ -574,41 +348,27 @@ public class PluginsFactory implements AutoCloseable {
                 // check configuration scope
                 var allConfScope = ai.getParameterValues().stream()
                         .anyMatch(p -> "scope".equals(p.getName())
-                        && (ConfigurationScope.class.getName()
-                                + "." + ConfigurationScope.ALL.name()).equals(
-                                p.getValue().toString()));
+                                && (ConfigurationScope.class.getName() + "." + ConfigurationScope.ALL.name())
+                                        .equals(p.getValue().toString()));
 
-                var scopedConf = (Map) (allConfScope
-                        ? Bootstrapper.getConfiguration().toMap()
-                        : confs != null
-                                ? confs.get(pluginName)
-                                : null);
+                var scopedConf = (Map) (allConfScope ? Bootstrapper.getConfiguration().toMap()
+                        : confs != null ? confs.get(pluginName) : null);
 
                 if (scopedConf == null) {
-                    LOGGER.warn("{} {} defines method {} with @InjectConfiguration "
-                            + "but no configuration found for it",
-                            pluginType,
-                            pluginName,
-                            mi.getName());
+                    LOGGER.warn(
+                            "{} {} defines method {} with @InjectConfiguration " + "but no configuration found for it",
+                            pluginType, pluginName, mi.getName());
                 }
 
                 // try to inovke @InjectConfiguration method
                 try {
-                    pluginClassInfo.loadClass(false)
-                            .getDeclaredMethod(mi.getName(),
-                                    Map.class, PluginsRegistry.class)
-                            .invoke(pluingInstance, scopedConf,
-                                    PluginsRegistryImpl.getInstance());
+                    pluginClassInfo.loadClass(false).getDeclaredMethod(mi.getName(), Map.class, PluginsRegistry.class)
+                            .invoke(pluingInstance, scopedConf, PluginsRegistryImpl.getInstance());
                 } catch (NoSuchMethodException nme) {
                     throw new ConfigurationException(
-                            pluginType
-                            + " " + pluginName
-                            + " has an invalid method with @InjectConfiguration"
-                            + " and @InjectPluginsRegistry."
-                            + " Method signature must be "
-                            + mi.getName()
-                            + "(Map<String, Object> configuration,"
-                            + " PluginsRegistry pluginsRegistry)");
+                            pluginType + " " + pluginName + " has an invalid method with @InjectConfiguration"
+                                    + " and @InjectPluginsRegistry." + " Method signature must be " + mi.getName()
+                                    + "(Map<String, Object> configuration," + " PluginsRegistry pluginsRegistry)");
                 }
             }
         }
@@ -622,50 +382,20 @@ public class PluginsFactory implements AutoCloseable {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private <T extends Object> T annotationParam(ClassInfo ci, String param) {
-        var annotationInfo = ci.getAnnotationInfo(REGISTER_PLUGIN_CLASS_NAME);
-        var annotationParamVals = annotationInfo.getParameterValues();
-
-        return (T) annotationParamVals.getValue(param);
+    private int priority(Class<Plugin> p) {
+        return p.getAnnotation(RegisterPlugin.class).priority();
     }
 
-    private Path getPluginsDirectory() {
-        var pluginsDir = Bootstrapper.getConfiguration().getPluginsDirectory();
-
-        if (pluginsDir == null) {
-            return null;
-        }
-
-        if (pluginsDir.startsWith("/")) {
-            return Paths.get(pluginsDir);
-        } else {
-            // this is to allow specifying the plugins directory path
-            // relative to the jar (also working when running from classes)
-            URL location = PluginsFactory.class.getProtectionDomain()
-                    .getCodeSource()
-                    .getLocation();
-
-            File locationFile = new File(location.getPath());
-
-            pluginsDir = locationFile.getParent()
-                    + File.separator
-                    + pluginsDir;
-
-            return FileSystems.getDefault().getPath(pluginsDir);
-        }
+    private String name(Class<Plugin> p) {
+        return p.getAnnotation(RegisterPlugin.class).name();
     }
 
-    /**
-     *
-     * @return the URLClassLoader that resolve plugins classes
-     */
-    private URLClassLoader getPluginsClassloader(URL[] jars) {
-        if (PLUGINS_CL_CACHE == null) {
-            PLUGINS_CL_CACHE = new URLClassLoader(jars);
-        }
+    private String description(Class<Plugin> p) {
+        return p.getAnnotation(RegisterPlugin.class).description();
+    }
 
-        return PLUGINS_CL_CACHE;
+    private Boolean enabledByDefault(Class<Plugin> p) {
+        return p.getAnnotation(RegisterPlugin.class).enabledByDefault();
     }
 
     private static class InstatiatedPlugin {
@@ -676,10 +406,7 @@ public class PluginsFactory implements AutoCloseable {
         private final Object pluingInstance;
         private final Map confs;
 
-        InstatiatedPlugin(String pluginName,
-                String pluginType,
-                ClassInfo pluginClassInfo,
-                Object pluingInstance,
+        InstatiatedPlugin(String pluginName, String pluginType, ClassInfo pluginClassInfo, Object pluingInstance,
                 Map confs) {
             this.pluginName = pluginName;
             this.pluginType = pluginType;

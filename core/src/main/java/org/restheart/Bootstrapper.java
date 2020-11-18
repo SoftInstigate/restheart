@@ -31,6 +31,9 @@ import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
+import com.oracle.svm.core.heap.NativeImageInfo;
+import com.oracle.svm.hosted.server.NativeImageBuildClient;
+
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.resource;
 import io.undertow.Undertow;
@@ -93,6 +96,8 @@ import org.restheart.exchange.Exchange;
 import static org.restheart.exchange.Exchange.MAX_CONTENT_SIZE;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
+import org.restheart.graal.NativeImageBuildTimeChecker;
+
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
@@ -249,6 +254,9 @@ public class Bootstrapper {
     }
 
     private static void run() {
+        // we are at runtime. this is used for building native image
+        NativeImageBuildTimeChecker.atRuntime();
+
         if (!configuration.isAnsiConsole()) {
             AnsiConsole.systemInstall();
         }
