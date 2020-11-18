@@ -72,6 +72,8 @@ public class PluginsScanner {
 
     public static final ArrayList<InjectionDescriptor> INJECTIONS = new ArrayList<>();
 
+    static URL[] jars = null;
+
     // ClassGraph.scan() at class initialization time to support native image
     // generation with GraalVM
     // see https://github.com/SoftInstigate/classgraph-on-graalvm
@@ -93,7 +95,9 @@ public class PluginsScanner {
             System.out.println("*******************************************");
             System.out.println("we are at run time");
             System.out.println("*******************************************");
-            classGraph = (new RuntimeClassGraph()).get();
+            var rtcg = new RuntimeClassGraph();
+            classGraph = rtcg.get();
+            jars = rtcg.jars;
         }
 
         try (var scanResult = classGraph.scan(8)) {
@@ -111,10 +115,6 @@ public class PluginsScanner {
         System.out.println(PluginsScanner.SERVICES);
 
         System.out.println("*******************************************");
-    }
-
-    public static boolean nativeImage() {
-        return false;
     }
 
     /**
@@ -178,9 +178,11 @@ public class PluginsScanner {
 
         private ClassGraph classGraph;
 
+        URL[] jars = null;
+
         public RuntimeClassGraph() {
             var pdir = getPluginsDirectory();
-            var jars = findPluginsJars(pdir);
+            this.jars = findPluginsJars(pdir);
 
             if (jars != null && jars.length != 0) {
                 this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()

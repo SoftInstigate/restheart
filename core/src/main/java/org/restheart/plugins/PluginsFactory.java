@@ -84,7 +84,15 @@ public class PluginsFactory {
         return confs;
     }
 
+    private ArrayList<ClassLoader> classLoaders = new ArrayList<>();
+
     private PluginsFactory() {
+        classLoaders.add(this.getClass().getClassLoader());
+
+        // take classloaders from PluginsScanner into account
+        if (PluginsScanner.jars != null) {
+            classLoaders.add(new URLClassLoader(PluginsScanner.jars));
+        }
     }
 
     /**
@@ -211,8 +219,25 @@ public class PluginsFactory {
         return ret;
     }
 
+    Map<String, Class<Plugin>> PC_CACHE = new HashMap<>();
+    @SuppressWarnings("unchecked")
     private Class<Plugin> loadPluginClass(PluginDescriptor plugin) throws ClassNotFoundException {
-        return (Class<Plugin>) Class.forName(plugin.clazz);
+        if (PC_CACHE.containsKey(plugin.clazz)) {
+            return PC_CACHE.get(plugin.clazz);
+        }
+
+        for (var classLoader : this.classLoaders) {
+            try {
+                var pluginc = (Class<Plugin>) classLoader.loadClass(plugin.clazz);
+
+                PC_CACHE.put(plugin.clazz, pluginc);
+                return pluginc;
+            } catch (ClassNotFoundException cnfe) {
+                // nothing to do
+            }
+        }
+
+        throw new ClassNotFoundException("plugin class not found " + plugin.clazz);
     }
 
     private Plugin instantiatePlugin(Class<Plugin> pc, String pluginType, String pluginName, Map confs)
