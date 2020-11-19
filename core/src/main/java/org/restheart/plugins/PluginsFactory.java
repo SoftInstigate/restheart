@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.mongodb.MongoClient;
+
 import org.restheart.Bootstrapper;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.security.AuthMechanism;
@@ -286,12 +288,10 @@ public class PluginsFactory {
 
     private ArrayList<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS = new ArrayList<>();
 
-    public void injectDependencies() {
-        for (Iterator<InstatiatedPlugin> it = PLUGINS_TO_INJECT_DEPS.iterator(); it.hasNext();) {
-            var ip = it.next();
-
+    void injectCoreDependencies() {
+        for (var ip: PLUGINS_TO_INJECT_DEPS) {
             try {
-                invokeInjectMethods(ip);
+                invokeCoreInjectMethods(ip);
             } catch (InvocationTargetException ite) {
                 if (ite.getCause() != null && ite.getCause() instanceof NoClassDefFoundError) {
                     var errMsg = "Error handling the request. " + "An external dependency is missing for " + ip.type
@@ -307,12 +307,32 @@ public class PluginsFactory {
                 LOGGER.error("Error injecting dependency to {} {}: {}", ip.type, ip.name,
                         getRootException(ex).getMessage(), ex);
             }
-
-            it.remove();
         }
     }
 
-    private void invokeInjectMethods(InstatiatedPlugin ip)
+    void injectMongoDbDependencies(MongoClient mclient) {
+        for (var ip: PLUGINS_TO_INJECT_DEPS) {
+            try {
+                invokeInjectMongoClientMethods(ip, mclient);
+            } catch (InvocationTargetException ite) {
+                if (ite.getCause() != null && ite.getCause() instanceof NoClassDefFoundError) {
+                    var errMsg = "Error handling the request. " + "An external dependency is missing for " + ip.type
+                            + " " + ip.name + ". Copy the missing dependency jar to the plugins directory "
+                            + "to add it to the classpath";
+
+                    LOGGER.error(errMsg, ite);
+                } else {
+                    LOGGER.error("Error injecting dependency to {} {}: {}", ip.type, ip.name,
+                            getRootException(ite).getMessage(), ite);
+                }
+            } catch (ConfigurationException | InstantiationException | IllegalAccessException ex) {
+                LOGGER.error("Error injecting dependency to {} {}: {}", ip.type, ip.name,
+                        getRootException(ex).getMessage(), ex);
+            }
+        }
+    }
+
+    private void invokeCoreInjectMethods(InstatiatedPlugin ip)
             throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
         invokeInjectConfigurationMethods(ip);
 
@@ -431,6 +451,27 @@ public class PluginsFactory {
                                 + "(Map<String, Object> configuration," + " PluginsRegistry pluginsRegistry)");
             }
 
+        }
+    }
+
+    private void invokeInjectMongoClientMethods(InstatiatedPlugin ip, MongoClient mclient)
+            throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        // finds @InjectMongoClient methods
+
+        for (var injection : ip.descriptor.injections) {
+            if (InjectMongoClient.class.equals(injection.clazz)) {
+
+                // try to inovke @InjectMongoClient method
+                try {
+                    ip.clazz.getDeclaredMethod(injection.method, MongoClient.class).invoke(ip.instance, mclient);
+                    LOGGER.trace("Injected MongoClient into {}.{}()", ip.clazz.getSimpleName(),
+                            injection.method);
+                } catch (NoSuchMethodException nme) {
+                    throw new ConfigurationException(ip.type + " " + ip.name
+                            + " has an invalid method with @InjectMongoClient. " + "Method signature must be "
+                            + injection.method + "(MongoClient mclient)");
+                }
+            }
         }
     }
 

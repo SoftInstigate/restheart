@@ -4,6 +4,12 @@ Work in progress.
 
 We are able to build native image and start RESTHeart **without** plugins.
 
+## TODOS
+
+- make shade plugin including plugins jars only for native profile
+- resolve issue with building restheart-mongodb
+- downgrade of Xnio
+
 ## build native image
 
 > need to use Graal VM as JDK (https://www.graalvm.org/downloads/)

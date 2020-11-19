@@ -28,6 +28,9 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
+
+import com.mongodb.MongoClient;
+
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.handlers.PipelinedHandler;
@@ -88,7 +91,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         factory.interceptors();
         factory.services();
 
-        factory.injectDependencies();
+        factory.injectCoreDependencies();
     }
 
     /**
@@ -207,6 +210,15 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public Set<Predicate> getGlobalSecurityPredicates() {
         return globalSecurityPredicates;
+    }
+
+    @Override
+    public void injectDependency(Object mclient) {
+        if (mclient instanceof MongoClient) {
+            PluginsFactory.getInstance().injectMongoDbDependencies((MongoClient) mclient);
+        } else {
+            throw new IllegalArgumentException("Unkwnown dependency type");
+        }
     }
 
     @Override

@@ -20,24 +20,18 @@
  */
 package org.restheart.mongodb.db;
 
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.Color.MAGENTA;
+import static org.fusesource.jansi.Ansi.Color.RED;
+
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoCommandException;
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ScanResult;
-import java.util.LinkedHashSet;
-import java.util.Set;
+
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.Document;
-import static org.fusesource.jansi.Ansi.Color.MAGENTA;
-import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.fusesource.jansi.Ansi.ansi;
-import org.restheart.plugins.InjectMongoClient;
-import org.restheart.plugins.Plugin;
-import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
-import org.restheart.plugins.security.TokenManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,17 +108,7 @@ public class MongoClientSingleton {
         // invoke Plugins methods annotated with @InjectMongoClient
         // passing them the MongoClient
         if (pluginsRegistry != null) {
-            injectMongoClient(pluginsRegistry.getAuthMechanisms());
-            injectMongoClient(pluginsRegistry.getAuthenticators());
-            injectMongoClient(pluginsRegistry.getAuthorizers());
-
-            var tms = new LinkedHashSet<PluginRecord<TokenManager>>();
-            tms.add(pluginsRegistry.getTokenManager());
-            injectMongoClient(tms);
-
-            injectMongoClient(pluginsRegistry.getInterceptors());
-            injectMongoClient(pluginsRegistry.getServices());
-            injectMongoClient(pluginsRegistry.getInitializers());
+            pluginsRegistry.injectDependency(mongoClient);
         }
 
         LOGGER.info("Connecting to MongoDB...");
@@ -184,57 +168,6 @@ public class MongoClientSingleton {
                     + "is set properly");
             serverVersion = "?";
             replicaSet = false;
-        }
-    }
-
-    private <P extends Plugin> void injectMongoClient(Set<PluginRecord<P>> plugins) {
-        var client = MongoClientSingleton.getInstance().getClient();
-
-        plugins.stream()
-                .forEach(p -> {
-                    try {
-                        injectMongoClient(p, client);
-                    } catch (Throwable t) {
-                        LOGGER.error("Error injecting MongoClient to {}", p.getName());
-                    }
-                });
-    }
-
-    private void injectMongoClient(PluginRecord pluginRecord,
-            MongoClient mongoClient) {
-        var plugin = pluginRecord.getInstance();
-
-        MongoClientSingleton.getInstance().getClient();
-
-        try (ScanResult result = new ClassGraph()
-                .disableModuleScanning()              // added for GraalVM
-                .disableDirScanning()                 // added for GraalVM
-                .disableNestedJarScanning()           // added for GraalVM
-                .disableRuntimeInvisibleAnnotations() // added for GraalVM
-                .enableClassInfo()
-                .enableAnnotationInfo()
-                .enableMethodInfo()
-                .addClassLoader(plugin.getClass().getClassLoader())
-                .acceptClasses(plugin.getClass().getName())
-                .scan(8)) {
-            var classInfo = result.getClassInfo(plugin.getClass().getName());
-
-            var mis = classInfo.getDeclaredMethodInfo();
-
-            for (var mi : mis) {
-                if (mi.hasAnnotation(InjectMongoClient.class.getName())) {
-                    try {
-                        plugin.getClass()
-                                .getDeclaredMethod(mi.getName(), MongoClient.class)
-                                .invoke(plugin, mongoClient);
-                    } catch (Throwable t) {
-                        LOGGER.error("Cannot set MongoClient to "
-                                + plugin.getClass().getName()
-                                + "." + mi.getName()
-                                + "()", t);
-                    }
-                }
-            }
         }
     }
 

@@ -51,8 +51,7 @@ public interface PluginsRegistry {
      * @return the authenticator
      * @throws org.restheart.ConfigurationException
      */
-    public PluginRecord<Authenticator> getAuthenticator(String name) throws
-            ConfigurationException;
+    public PluginRecord<Authenticator> getAuthenticator(String name) throws ConfigurationException;
 
     /**
      * @return the authenticators
@@ -79,8 +78,8 @@ public interface PluginsRegistry {
     /**
      * global security predicates must all resolve to true to allow the request
      *
-     * @return the globalSecurityPredicates allow to get and set the global
-     * security predicates to apply to all requests
+     * @return the globalSecurityPredicates allow to get and set the global security
+     *         predicates to apply to all requests
      */
     public Set<Predicate> getGlobalSecurityPredicates();
 
@@ -96,12 +95,12 @@ public interface PluginsRegistry {
     public PathHandler getRootPathHandler();
 
     /**
-     * Plugs a pipeline into the root handler binding it to the path; also sets
-     * its PipelineInfo.
+     * Plugs a pipeline into the root handler binding it to the path; also sets its
+     * PipelineInfo.
      *
-     * @param path If the request contains this path, run the pipeline
+     * @param path    If the request contains this path, run the pipeline
      * @param handler The handler which is activated upon match
-     * @param info The PipelineInfo describing the handling pipeline
+     * @param info    The PipelineInfo describing the handling pipeline
      */
     public void plugPipeline(String path, PipelinedHandler handler, PipelineInfo info);
 
@@ -110,4 +109,12 @@ public interface PluginsRegistry {
      * @return the PipelineInfo of the pipeline handling the request
      */
     public PipelineInfo getPipelineInfo(String path);
+
+    /**
+     * @param dependency
+     * @return allows plugins to inject custom dependency. Only MongoClient
+     *         dependency is supported. Other dependencies requires
+     *         extending core PluginsRegistryImpl and PluginsFactory
+     */
+    public void injectDependency(Object dependency);
 }
