@@ -20,17 +20,14 @@
  */
 package org.restheart.mongodb.db.sessions;
 
-import com.mongodb.Mongo;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoCredential;
-import com.mongodb.client.internal.MongoClientDelegate;
-import com.mongodb.connection.Cluster;
-import com.mongodb.internal.session.ServerSessionPool;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collections;
-import static java.util.Collections.singletonList;
-import java.util.List;
+
+import com.mongodb.MongoClient;
+import com.mongodb.client.internal.MongoClientDelegate;
+import com.mongodb.internal.connection.Cluster;
+import com.mongodb.internal.session.ServerSessionPool;
+
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,45 +37,29 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 public class SessionsUtils {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(SessionsUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SessionsUtils.class);
 
-    private static final MongoClient MCLIENT = MongoClientSingleton
-            .getInstance().getClient();
+    private static final MongoClient MCLIENT = MongoClientSingleton.getInstance().getClient();
 
     private static final MongoClientDelegate DELEGATE;
 
     static {
-        List<MongoCredential> credentialsList
-                = MCLIENT.getCredential() != null
-                ? singletonList(MCLIENT.getCredential())
-                : Collections.<MongoCredential>emptyList();
-
-        DELEGATE = new MongoClientDelegate(
-                getCluster(),
-                null,
-                credentialsList,
-                MCLIENT,
-                null);
+        DELEGATE = new MongoClientDelegate(getCluster(), null, MCLIENT, null);
     }
 
     /**
      *
      * @return
      */
-    @SuppressWarnings({"unchecked", "deprecation"})
+    @SuppressWarnings("unchecked")
     public static Cluster getCluster() {
         try {
-            Class clazz = Class.forName("com.mongodb.Mongo");
+            Class clazz = MCLIENT.getClass();
             Method getCluster = clazz.getDeclaredMethod("getCluster");
             getCluster.setAccessible(true);
 
             return (Cluster) getCluster.invoke(MCLIENT);
-        } catch (ClassNotFoundException
-                | NoSuchMethodException
-                | SecurityException
-                | IllegalAccessException
-                | InvocationTargetException ex) {
+        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException ex) {
             LOGGER.error("error invokng MongoClient.getCluster() through reflection", ex);
             return null;
         }
@@ -88,19 +69,15 @@ public class SessionsUtils {
      *
      * @return
      */
-    @SuppressWarnings({"unchecked", "deprecation"})
+    @SuppressWarnings("unchecked")
     public static ServerSessionPool getServerSessionPool() {
         try {
-            Class clazz = Class.<Mongo>forName("com.mongodb.Mongo");
+            Class clazz = MCLIENT.getClass();
             Method getServerSessionPool = clazz.getDeclaredMethod("getServerSessionPool");
             getServerSessionPool.setAccessible(true);
 
             return (ServerSessionPool) getServerSessionPool.invoke(MCLIENT);
-        } catch (ClassNotFoundException
-                | NoSuchMethodException
-                | SecurityException
-                | IllegalAccessException
-                | InvocationTargetException ex) {
+        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException ex) {
             LOGGER.error("error invokng MongoClient.getCluster() through reflection", ex);
             return null;
         }

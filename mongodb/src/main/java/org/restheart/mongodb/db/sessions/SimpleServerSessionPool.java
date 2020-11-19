@@ -20,7 +20,7 @@
  */
 package org.restheart.mongodb.db.sessions;
 
-import com.mongodb.connection.Cluster;
+import com.mongodb.internal.connection.Cluster;
 import com.mongodb.internal.session.ServerSessionPool;
 import com.mongodb.session.ServerSession;
 import java.util.UUID;
@@ -31,7 +31,7 @@ import java.util.UUID;
  */
 public class SimpleServerSessionPool extends ServerSessionPool {
     private final UUID sid;
-    
+
     /**
      *
      * @param cluster
@@ -40,7 +40,6 @@ public class SimpleServerSessionPool extends ServerSessionPool {
     @SuppressWarnings("deprecation")
     public SimpleServerSessionPool(Cluster cluster, UUID sid) {
         super(cluster);
-        
         this.sid = sid;
     }
 

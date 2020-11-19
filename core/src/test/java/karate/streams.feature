@@ -8,7 +8,7 @@ Background:
 * def db = '/test-change-streams'
 * def coll = db + '/coll'
 * callonce read('./streams-setup.feature')
-* def parseResponse = 
+* def parseResponse =
 """
 function(json) {
 return JSON.parse(json)

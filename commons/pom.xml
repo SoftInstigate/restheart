@@ -33,11 +33,11 @@
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver-reactivestreams</artifactId>
+      <artifactId>mongodb-driver-legacy</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver</artifactId>
+      <artifactId>mongodb-driver-reactivestreams</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

@@ -161,14 +161,13 @@
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
-                <artifactId>mongodb-driver</artifactId>
-                <version>3.12.7</version>
+                <artifactId>mongodb-driver-legacy</artifactId>
+                <version>4.1.1</version>
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-reactivestreams</artifactId>
-                <!-- TODO: fails from 4.0.0 -->
-                <version>1.13.1</version>
+                <version>4.1.1</version>
             </dependency>
             <!-- downgraded for native-image. From version ? org.jboss.threads.EnhancedQueueExecutor uses unsupported Unsafe operations -->
             <dependency>

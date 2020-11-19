@@ -133,7 +133,7 @@ WARNING: Could not resolve org.xnio.nio.NioXnioWorker$NioWorkerMetrics for refle
 -cp mongodb/target/restheart-mongodb.jar:security/target/restheart-security.jar
 ```
 
-but `-cp` is ingored with `-jar`
+but `-cp` is ignored with `-jar`
 
 probably need to build uber-jar with shade plugin
 

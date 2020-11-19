@@ -20,7 +20,7 @@ Scenario: start txn when already IN
 
 @requires-mongodb-4 @requires-replica-set
 Scenario: commit txn when txn status=NONE
-    # just abort the txn automatically created by background section
+    # just abort the txn automatically created by background section
     * call read('common-abort-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
 
     * header Authorization = authHeader
@@ -40,7 +40,7 @@ Scenario: commit txn when txn status=NONE
 
 @requires-mongodb-4 @requires-replica-set
 Scenario: abort txn when txn status=NONE
-    # just abort the txn automatically created by background section
+    # just abort the txn automatically created by background section
     * call read('common-abort-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
     * header Authorization = authHeader
 
@@ -90,7 +90,7 @@ Scenario: commit txn when txn status=ABORTED
 Scenario: create a document using a wrong txnId
     * def sid = txn.sid
     * header Authorization = authHeader
-    
+
     Given path common.db + common.coll
     And param rep = 's'
     And request { a: 101 }
@@ -105,7 +105,7 @@ Scenario: create a document using a wrong txnId
 Scenario: GET collection using a wrong txnId
     * def sid = txn.sid
     * header Authorization = authHeader
-    
+
     Given path common.db + common.coll
     And param rep = 's'
     And param sid = sid
@@ -123,7 +123,7 @@ Scenario: create a document in committed txn
     * def sid = txn.sid
     * call read('common-commit-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
     * header Authorization = authHeader
-    
+
     Given path common.db + common.coll
     And param rep = 's'
     And request { a: 101 }
@@ -138,7 +138,7 @@ Scenario: GET collection in committed txn
     * def sid = txn.sid
     * call read('common-commit-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
     * header Authorization = authHeader
-    
+
     Given path common.db + common.coll
     And param rep = 's'
     And param sid = sid
@@ -152,7 +152,7 @@ Scenario: create a document in aborted txn
     * def sid = txn.sid
     * call read('common-abort-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
     * header Authorization = authHeader
-    
+
     Given path common.db + common.coll
     And param rep = 's'
     And request { a: 101 }
@@ -165,9 +165,10 @@ Scenario: create a document in aborted txn
 @requires-mongodb-4 @requires-replica-set
 Scenario: GET collection in aborted txn
     * def sid = txn.sid
-    * call read('common-abort-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(sid)', txn: 1 }
     * header Authorization = authHeader
-    
+
+    * call read('common-abort-txn.feature') { baseUrl: '#(common.baseUrl)', sid: '#(txn.sid)', txn: 1 }
+
     Given path common.db + common.coll
     And param rep = 's'
     And param sid = sid
@@ -182,7 +183,7 @@ Scenario: GET collection in aborted txn
 Scenario: create a document with wrong txn id
     * def sid = txn.sid
     * header Authorization = authHeader
-    
+
     Given path common.db + common.coll
     And param rep = 's'
     And request { a: 101 }
@@ -198,7 +199,7 @@ Scenario: create a document with wrong txn id
 Scenario: GET collection with wrong txn id
     * def sid = txn.sid
     * header Authorization = authHeader
-    
+
     Given path common.db + common.coll
     And param rep = 's'
     And param sid = sid

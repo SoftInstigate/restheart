@@ -286,7 +286,7 @@
 },
 {
   "name":"io.undertow.security.impl.BasicAuthenticationMechanism",
-  "fields":[{"name":"identityManager", "allowWrite" : true}]
+  "fields":[{"name":"identityManager", "allowWrite":true}]
 },
 {
   "name":"io.undertow.server.HttpServerExchange",

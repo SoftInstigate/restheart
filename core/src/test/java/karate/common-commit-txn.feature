@@ -1,8 +1,8 @@
 @ignore
-Feature: feature that aborts a txn
+Feature: feature that commits a txn
 
-# call as follows 
-# call read('common-commit-txn.feature') { baseUrl: <baseUrl>, sid: <sessionId>, txn: txnNum }
+# call as follows
+# call read('common-commit-txn.feature') { baseUrl: <baseUrl>, sid: <sessionId>, txn: txnNum }
 
 Background:
 * url baseUrl
@@ -10,12 +10,6 @@ Background:
 
 @requires-mongodb-4 @requires-replica-set
 Scenario: check session and abort txn
-    # Given path '/_sessions/' + sid + '/_txns'
-    # When method GET
-    # Then status 200
-    # And match response.currentTxn.status == 'IN'
-    # And match response.currentTxn.id == txn
-
     * header Authorization = authHeader
     Given path '/_sessions/' + sid + '/_txns/' + txn
     And param rep = 's'

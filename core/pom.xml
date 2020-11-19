@@ -43,6 +43,10 @@
       <artifactId>undertow-core</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>mongodb-driver-legacy</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
@@ -105,11 +109,6 @@
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>org.restheart</groupId>
-      <artifactId>restheart-security</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.restheart</groupId>
       <artifactId>restheart-mongodb</artifactId>
       <scope>test</scope>
     </dependency>
@@ -136,22 +135,6 @@
     <dependency>
       <groupId>com.eclipsesource.minimal-json</groupId>
       <artifactId>minimal-json</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- <dependency>
-      <groupId>org.restheart</groupId>
-      <artifactId>restheart-mongodb</artifactId>
-      <scope>test</scope>
-    </dependency> -->
-    <!-- <dependency>
-      <groupId>org.restheart</groupId>
-      <artifactId>restheart-security</artifactId>
-      <scope>test</scope>
-    </dependency> -->
-    <dependency>
-      <groupId>org.restheart</groupId>
-      <artifactId>restheart-test-plugins</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <!-- END Test dependencies -->
@@ -229,20 +212,19 @@
                 <exclude>com/google/common/util/concurrent/internal/InternalFutures.class</exclude>
               </excludes>
             </filter>
-            <!-- for native-image force include restheart-security in uber-jar -->
+            <!-- for native-image force include restheart-security in uber-jar
             <filter>
               <artifact>org.restheart:restheart-security</artifact>
               <includes>
                 <include>**</include>
               </includes>
             </filter>
-            <!-- for native-image force include restheart-mongodb in uber-jar -->
             <filter>
               <artifact>org.restheart:restheart-mongodb</artifact>
               <includes>
                 <include>**</include>
               </includes>
-            </filter>
+            </filter> -->
           </filters>
         </configuration>
         <executions>
@@ -460,7 +442,23 @@
         <dependency>
           <groupId>org.restheart</groupId>
           <artifactId>restheart-mongodb</artifactId>
-          <scope>provided</scope> <!-- TODO remove this -->
+          <!-- <scope>provided</scope> TODO remove this -->
+        </dependency>
+        <dependency>
+          <groupId>com.github.jnr</groupId>
+          <artifactId>jnr-unixsocket</artifactId>
+          <version>0.18</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
+        </dependency>
+        <dependency>
+          <groupId>org.mongodb</groupId>
+          <artifactId>mongodb-crypt</artifactId>
+          <version>1.1.0-beta1</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
+        </dependency>
+        <dependency>
+          <groupId>org.xerial.snappy</groupId>
+          <artifactId>snappy-java</artifactId>
+          <version>1.1.4</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
+          <scope>provided</scope> <!-- this removes this optional mongodb driver dependency from native-image build. otherwise fails -->
         </dependency>
       </dependencies>
       <build>

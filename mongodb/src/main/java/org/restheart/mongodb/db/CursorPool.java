@@ -89,7 +89,7 @@ public class CursorPool {
     public static CursorPool getInstance() {
         return DBCursorPoolSingletonHolder.INSTANCE;
     }
-    
+
     private final DatabaseImpl dbsDAO;
 
     private final int SKIP_SLICE_LINEAR_DELTA
@@ -156,7 +156,7 @@ public class CursorPool {
         if (key.getSkipped() < SKIP_SLICE_LINEAR_WIDTH) {
             LOGGER.trace("{} cursor to reuse found with less skips "
                     + "than SKIP_SLICE_LINEAR_WIDTH {}",
-                    ansi().fg(GREEN).bold().a("no ").reset().toString(),
+                    ansi().fg(GREEN).bold().a("no").reset().toString(),
                     SKIP_SLICE_LINEAR_WIDTH);
             return null;
         }
