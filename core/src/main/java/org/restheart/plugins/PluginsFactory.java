@@ -351,7 +351,7 @@ public class PluginsFactory {
                 // try to inovke @InjectConfiguration method
                 try {
                     ip.clazz.getDeclaredMethod(injection.method, Map.class).invoke(ip.instance, scopedConf);
-                    LOGGER.debug("Injected Configuration into {}.{}()", ip.clazz.getSimpleName(),
+                    LOGGER.trace("Injected Configuration into {}.{}()", ip.clazz.getSimpleName(),
                             injection.method);
                 } catch (NoSuchMethodException nme) {
                     throw new ConfigurationException(ip.type + " " + ip.name

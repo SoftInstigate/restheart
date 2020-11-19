@@ -75,6 +75,7 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
                 | SecurityException
                 | NoSuchFieldException
                 | IllegalAccessException ex) {
+            throw new RuntimeException("Error setting identity manager", ex);
         }
     }
 

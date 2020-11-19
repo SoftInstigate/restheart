@@ -55,6 +55,15 @@ The generated configuration are merged into the existing ones in directory `core
 
 > some files need to be manually edited. For instance, remote all references to classes of package`org.restheart.test` and `org.graalvm` from `reflect-config.json`
 
+The following fields must be configured with `allowWrite: true`
+
+```
+{
+  "name":"io.undertow.security.impl.BasicAuthenticationMechanism",
+  "fields":[{"name":"identityManager", "allowWrite" : true}]
+}
+```
+
 ## issues
 
 ### check bundled resources
