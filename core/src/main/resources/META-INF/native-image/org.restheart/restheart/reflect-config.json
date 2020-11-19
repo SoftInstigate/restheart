@@ -1123,6 +1123,9 @@
   ]
 },
 {
+  "name":"org.restheart.security.plugins.authorizers.FullAuthorizer"
+},
+{
   "name":"org.restheart.security.plugins.authorizers.MongoAclAuthorizer",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
@@ -1147,6 +1150,9 @@
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }
   ]
+},
+{
+  "name":"org.restheart.security.plugins.mechanisms.IdentityAuthMechanism"
 },
 {
   "name":"org.restheart.security.plugins.mechanisms.JwtAuthenticationMechanism",
