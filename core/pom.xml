@@ -39,16 +39,6 @@
       <artifactId>restheart-commons</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.restheart</groupId>
-      <artifactId>restheart-security</artifactId>
-      <!-- <scope>provided</scope> -->
-    </dependency>
-    <dependency>
-      <groupId>org.restheart</groupId>
-      <artifactId>restheart-mongodb</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
       <groupId>io.undertow</groupId>
       <artifactId>undertow-core</artifactId>
     </dependency>
@@ -113,6 +103,16 @@
       <artifactId>tika-core</artifactId>
     </dependency>
     <!-- BEGIN Test dependencies -->
+    <dependency>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-security</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-mongodb</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>com.intuit.karate</groupId>
       <artifactId>karate-apache</artifactId>
@@ -452,6 +452,15 @@
           <artifactId>graal-sdk</artifactId>
           <version>${graalvm.version}</version>
           <scope>provided</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-security</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-mongodb</artifactId>
+          <scope>provided</scope> <!-- TODO remove this -->
         </dependency>
       </dependencies>
       <build>
