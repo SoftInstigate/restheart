@@ -88,7 +88,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         factory.interceptors();
         factory.services();
 
-        // pluginFactory.injectDependencies();
+        factory.injectDependencies();
     }
 
     /**

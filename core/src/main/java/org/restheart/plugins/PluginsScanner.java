@@ -35,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.AbstractMap;
 
 import org.restheart.Bootstrapper;
 import org.restheart.graal.NativeImageBuildTimeChecker;
@@ -81,9 +82,6 @@ public class PluginsScanner {
         ClassGraph classGraph;
 
         if (NativeImageBuildTimeChecker.isBuildTime()) {
-            System.out.println("*******************************************");
-            System.out.println("we are at native image build time");
-            System.out.println("*******************************************");
             classGraph = new ClassGraph().disableModuleScanning() // added for GraalVM
                     .disableDirScanning() // added for GraalVM
                     .disableNestedJarScanning() // added for GraalVM
@@ -92,9 +90,6 @@ public class PluginsScanner {
                                                                                  // otherwise build fails
                     .enableAnnotationInfo().enableMethodInfo().initializeLoadedClasses();
         } else {
-            System.out.println("*******************************************");
-            System.out.println("we are at run time");
-            System.out.println("*******************************************");
             var rtcg = new RuntimeClassGraph();
             classGraph = rtcg.get();
             jars = rtcg.jars;
@@ -109,12 +104,6 @@ public class PluginsScanner {
             INTERCEPTORS.addAll(collectPlugins(scanResult, INTERCEPTOR_CLASS_NAME));
             SERVICES.addAll(collectPlugins(scanResult, SERVICE_CLASS_NAME));
         }
-
-        System.out.println("*******************************************");
-
-        System.out.println(PluginsScanner.SERVICES);
-
-        System.out.println("*******************************************");
     }
 
     /**
@@ -159,14 +148,19 @@ public class PluginsScanner {
         return ret;
     }
 
-    private static ArrayList<InjectionDescriptor> collectInjections(ClassInfo pluginClassInfo, Class injection) {
+    private static ArrayList<InjectionDescriptor> collectInjections(ClassInfo pluginClassInfo, Class clazz) {
         var ret = new ArrayList<InjectionDescriptor>();
 
         var mil = pluginClassInfo.getDeclaredMethodInfo();
 
         for (var mi : mil) {
-            if (mi.hasAnnotation(injection.getName())) {
-                ret.add(new InjectionDescriptor(mi.getName(), injection));
+            if (mi.hasAnnotation(clazz.getName())) {
+                ArrayList<AbstractMap.SimpleEntry<String, Object>> params = new ArrayList<>();
+                for (var p : mi.getAnnotationInfo(clazz.getName()).getParameterValues()) {
+                    params.add(new AbstractMap.SimpleEntry<String, Object>(p.getName(), p.getValue()));
+                }
+
+                ret.add(new InjectionDescriptor(mi.getName(), clazz, params, mi.hashCode()));
             }
         }
 
@@ -283,15 +277,19 @@ class PluginDescriptor {
 
 class InjectionDescriptor {
     final String method;
-    final Class injection;
+    final Class clazz;
+    final ArrayList<AbstractMap.SimpleEntry<String, Object>> params;
+    final int methodHash;
 
-    InjectionDescriptor(String method, Class injection) {
+    InjectionDescriptor(String method, Class clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> params, int methodHash) {
         this.method = method;
-        this.injection = injection;
+        this.clazz = clazz;
+        this.params = params;
+        this.methodHash = methodHash;
     }
 
     @Override
     public String toString() {
-        return "{ method:" + this.method + ", injection: " + this.injection + " }";
+        return "{ method:" + this.method + ", injection: " + this.clazz + ", params: " + this.params+ ", methodHash: " + this.methodHash + " }";
     }
 }

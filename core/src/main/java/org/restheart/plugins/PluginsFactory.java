@@ -20,28 +20,16 @@
  */
 package org.restheart.plugins;
 
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ClassInfoList;
-import io.github.classgraph.ScanResult;
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.restheart.Bootstrapper;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.security.AuthMechanism;
@@ -95,75 +83,113 @@ public class PluginsFactory {
         }
     }
 
+    private Set<PluginRecord<AuthMechanism>> authMechanismsCache = null;
+
     /**
      *
      * @return the AuthenticationMechanisms
      */
     Set<PluginRecord<AuthMechanism>> authMechanisms() {
-        return createPlugins(PluginsScanner.AUTH_MECHANISMS, "Authentication Mechanism",
-                Bootstrapper.getConfiguration().getAuthMechanisms());
+        if (authMechanismsCache == null) {
+            authMechanismsCache = createPlugins(PluginsScanner.AUTH_MECHANISMS, "Authentication Mechanism",
+                    Bootstrapper.getConfiguration().getAuthMechanisms());
+        }
+
+        return authMechanismsCache;
     }
+
+    private Set<PluginRecord<Authenticator>> authenticatorsCache = null;
 
     /**
      *
      * @return the Authenticators
      */
     Set<PluginRecord<Authenticator>> authenticators() {
-        return createPlugins(PluginsScanner.AUTHENTICATORS, "Authenticators",
-                Bootstrapper.getConfiguration().getAuthenticators());
+        if (authenticatorsCache == null) {
+            authenticatorsCache = createPlugins(PluginsScanner.AUTHENTICATORS, "Authenticators",
+                    Bootstrapper.getConfiguration().getAuthenticators());
+        }
+
+        return authenticatorsCache;
     }
+
+    private Set<PluginRecord<Authorizer>> authorizersCache = null;
 
     /**
      *
      * @return the Authorizers
      */
     Set<PluginRecord<Authorizer>> authorizers() {
-        return createPlugins(PluginsScanner.AUTHORIZERS, "Authorizer",
-                Bootstrapper.getConfiguration().getAuthorizers());
+        if (authorizersCache == null) {
+            authorizersCache = createPlugins(PluginsScanner.AUTHORIZERS, "Authorizer",
+                    Bootstrapper.getConfiguration().getAuthorizers());
+        }
+
+        return authorizersCache;
     }
+
+    private PluginRecord<TokenManager> tokenManagerCache = null;
 
     /**
      *
      * @return the Token Manager
      */
     PluginRecord<TokenManager> tokenManager() {
-        Set<PluginRecord<TokenManager>> tkms = createPlugins(PluginsScanner.TOKEN_MANAGERS, "Token Manager",
-                Bootstrapper.getConfiguration().getTokenManagers());
+        if (tokenManagerCache == null) {
+            Set<PluginRecord<TokenManager>> tkms = createPlugins(PluginsScanner.TOKEN_MANAGERS, "Token Manager",
+                    Bootstrapper.getConfiguration().getTokenManagers());
 
-        if (tkms != null) {
-            var tkm = tkms.stream().filter(t -> t.isEnabled()).findFirst();
+            if (tkms != null) {
+                var tkm = tkms.stream().filter(t -> t.isEnabled()).findFirst();
 
-            if (tkm != null && tkm.isPresent()) {
-                return tkm.get();
-            } else {
-                return null;
+                if (tkm != null && tkm.isPresent()) {
+                    tokenManagerCache = tkm.get();
+                }
             }
-        } else {
-            return null;
         }
+
+        return tokenManagerCache;
     }
+
+    private Set<PluginRecord<Initializer>> initializersCache = null;
 
     /**
      * create the initializers
      */
     Set<PluginRecord<Initializer>> initializers() {
-        return createPlugins(PluginsScanner.INITIALIZERS, "Initializer", PLUGINS_CONFS);
+        if (initializersCache == null) {
+            initializersCache = createPlugins(PluginsScanner.INITIALIZERS, "Initializer", PLUGINS_CONFS);
+        }
+
+        return initializersCache;
     }
+
+    private Set<PluginRecord<Interceptor>> interceptorsCache = null;
 
     /**
      * creates the interceptors
      */
     @SuppressWarnings("unchecked")
     Set<PluginRecord<Interceptor>> interceptors() {
-        return createPlugins(PluginsScanner.INTERCEPTORS, "Interceptor", PLUGINS_CONFS);
+        if (interceptorsCache == null) {
+            interceptorsCache = createPlugins(PluginsScanner.INTERCEPTORS, "Interceptor", PLUGINS_CONFS);
+        }
+
+        return interceptorsCache;
     }
+
+    private Set<PluginRecord<Service>> servicesCache = null;
 
     /**
      * creates the services
      */
     @SuppressWarnings("unchecked")
     Set<PluginRecord<Service>> services() {
-        return createPlugins(PluginsScanner.SERVICES, "Service", PLUGINS_CONFS);
+        if (servicesCache == null) {
+            servicesCache = createPlugins(PluginsScanner.SERVICES, "Service", PLUGINS_CONFS);
+        }
+
+        return servicesCache;
     }
 
     /**
@@ -176,7 +202,6 @@ public class PluginsFactory {
 
         // sort by priority
         pluginDescriptors.sort((PluginDescriptor cd1, PluginDescriptor cd2) -> {
-
             try {
                 var clazz1 = loadPluginClass(cd1);
                 var clazz2 = loadPluginClass(cd2);
@@ -206,13 +231,19 @@ public class PluginsFactory {
                     if (pr.isEnabled()) {
                         ret.add(pr);
                         LOGGER.debug("Registered {} {}: {}", type, name, description);
+
+                        if (!plugin.injections.isEmpty()) {
+                            var ip = new InstatiatedPlugin(name, type, plugin, clazz, i, confs);
+                            PLUGINS_TO_INJECT_DEPS.add(ip);
+                        }
                     }
                 } else {
                     LOGGER.debug("{} {} is disabled", type, name);
                 }
             } catch (ClassNotFoundException | ConfigurationException | InstantiationException | IllegalAccessException
                     | InvocationTargetException e) {
-                LOGGER.error("Error registering {} {}: {}", type, plugin.getClass().getSimpleName(), getRootException(e).getMessage(), e);
+                LOGGER.error("Error registering {} {}: {}", type, plugin.getClass().getSimpleName(),
+                        getRootException(e).getMessage(), e);
             }
         });
 
@@ -220,6 +251,7 @@ public class PluginsFactory {
     }
 
     Map<String, Class<Plugin>> PC_CACHE = new HashMap<>();
+
     @SuppressWarnings("unchecked")
     private Class<Plugin> loadPluginClass(PluginDescriptor plugin) throws ClassNotFoundException {
         if (PC_CACHE.containsKey(plugin.clazz)) {
@@ -252,150 +284,153 @@ public class PluginsFactory {
         }
     }
 
-    // public void injectDependencies() {
-    // for (Iterator<InstatiatedPlugin> it = PLUGINS_TO_INJECT_DEPS.iterator();
-    // it.hasNext();) {
-    // var ip = it.next();
+    private ArrayList<InstatiatedPlugin> PLUGINS_TO_INJECT_DEPS = new ArrayList<>();
 
-    // try {
-    // invokeInjectMethods(ip);
-    // } catch (InvocationTargetException ite) {
-    // if (ite.getCause() != null && ite.getCause() instanceof NoClassDefFoundError)
-    // {
-    // var errMsg = "Error handling the request. " + "An external dependency is
-    // missing for "
-    // + ip.pluginType + " " + ip.pluginName
-    // + ". Copy the missing dependency jar to the plugins directory "
-    // + "to add it to the classpath";
+    public void injectDependencies() {
+        for (Iterator<InstatiatedPlugin> it = PLUGINS_TO_INJECT_DEPS.iterator(); it.hasNext();) {
+            var ip = it.next();
 
-    // LOGGER.error(errMsg, ite);
-    // } else {
-    // LOGGER.error("Error injecting dependency to {} {}: {}", ip.pluginType,
-    // ip.pluginName,
-    // getRootException(ite).getMessage(), ite);
-    // }
-    // } catch (ConfigurationException | InstantiationException |
-    // IllegalAccessException ex) {
-    // LOGGER.error("Error injecting dependency to {} {}: {}", ip.pluginType,
-    // ip.pluginName,
-    // getRootException(ex).getMessage(), ex);
-    // }
+            try {
+                invokeInjectMethods(ip);
+            } catch (InvocationTargetException ite) {
+                if (ite.getCause() != null && ite.getCause() instanceof NoClassDefFoundError) {
+                    var errMsg = "Error handling the request. " + "An external dependency is missing for " + ip.type
+                            + " " + ip.name + ". Copy the missing dependency jar to the plugins directory "
+                            + "to add it to the classpath";
 
-    // it.remove();
-    // }
-    // }
+                    LOGGER.error(errMsg, ite);
+                } else {
+                    LOGGER.error("Error injecting dependency to {} {}: {}", ip.type, ip.name,
+                            getRootException(ite).getMessage(), ite);
+                }
+            } catch (ConfigurationException | InstantiationException | IllegalAccessException ex) {
+                LOGGER.error("Error injecting dependency to {} {}: {}", ip.type, ip.name,
+                        getRootException(ex).getMessage(), ex);
+            }
+
+            it.remove();
+        }
+    }
 
     private void invokeInjectMethods(InstatiatedPlugin ip)
             throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        invokeInjectConfigurationMethods(ip.pluginName, ip.pluginType, ip.pluginClassInfo, ip.pluingInstance, ip.confs);
+        invokeInjectConfigurationMethods(ip);
 
-        invokeInjectPluginsRegistryMethods(ip.pluginName, ip.pluginType, ip.pluginClassInfo, ip.pluingInstance);
+        invokeInjectPluginsRegistryMethods(ip);
 
-        invokeInjectConfigurationAndPluginsRegistryMethods(ip.pluginName, ip.pluginType, ip.pluginClassInfo,
-                ip.pluingInstance, ip.confs);
+        invokeInjectConfigurationAndPluginsRegistryMethods(ip);
     }
 
-    private void invokeInjectConfigurationMethods(String pluginName, String pluginType, ClassInfo pluginClassInfo,
-            Object pluingInstance, Map confs)
+    private void invokeInjectConfigurationMethods(InstatiatedPlugin ip)
             throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
-
         // finds @InjectConfiguration methods
-        var mil = pluginClassInfo.getDeclaredMethodInfo();
 
-        for (var mi : mil) {
-            if (mi.hasAnnotation(InjectConfiguration.class.getName())
-                    && !mi.hasAnnotation(InjectPluginsRegistry.class.getName())) {
-                var ai = mi.getAnnotationInfo(InjectConfiguration.class.getName());
+        // we need to process methods that are annotated only with @InjectConfiguration
+        // a method can have both @InjectConfiguration and @InjectPluginsRegistry
+        // so we check that method has only one annotation
+
+        for (var injection : ip.descriptor.injections) {
+            if (InjectConfiguration.class.equals(injection.clazz) && ip.descriptor.injections.stream()
+                    .filter(p -> p.methodHash == injection.methodHash).count() == 1) {
 
                 // check configuration scope
-                var allConfScope = ai.getParameterValues().stream()
-                        .anyMatch(p -> "scope".equals(p.getName())
+                var allConfScope = injection.params.stream()
+                        .anyMatch(p -> "scope".equals(p.getKey())
                                 && (ConfigurationScope.class.getName() + "." + ConfigurationScope.ALL.name())
                                         .equals(p.getValue().toString()));
 
                 var scopedConf = (Map) (allConfScope ? Bootstrapper.getConfiguration().toMap()
-                        : confs != null ? confs.get(pluginName) : null);
+                        : ip.confs != null ? ip.confs.get(ip.name) : null);
 
                 if (scopedConf == null) {
                     LOGGER.warn(
                             "{} {} defines method {} with @InjectConfiguration " + "but no configuration found for it",
-                            pluginType, pluginName, mi.getName());
+                            ip.type, ip.name, injection.method);
                 }
 
                 // try to inovke @InjectConfiguration method
                 try {
-                    pluginClassInfo.loadClass(false).getDeclaredMethod(mi.getName(), Map.class).invoke(pluingInstance,
-                            scopedConf);
+                    ip.clazz.getDeclaredMethod(injection.method, Map.class).invoke(ip.instance, scopedConf);
+                    LOGGER.debug("Injected Configuration into {}.{}()", ip.clazz.getSimpleName(),
+                            injection.method);
                 } catch (NoSuchMethodException nme) {
-                    throw new ConfigurationException(pluginType + " " + pluginName
+                    throw new ConfigurationException(ip.type + " " + ip.name
                             + " has an invalid method with @InjectConfiguration. " + "Method signature must be "
-                            + mi.getName() + "(Map<String, Object> configuration)");
+                            + injection.method + "(Map<String, Object> configuration)");
                 }
             }
         }
     }
 
-    private void invokeInjectPluginsRegistryMethods(String pluginName, String pluginType, ClassInfo pluginClassInfo,
-            Object pluingInstance)
+    private void invokeInjectPluginsRegistryMethods(InstatiatedPlugin ip)
             throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
-
         // finds @InjectPluginRegistry methods
-        var mil = pluginClassInfo.getDeclaredMethodInfo();
 
-        for (var mi : mil) {
-            if (mi.hasAnnotation(InjectPluginsRegistry.class.getName())
-                    && !mi.hasAnnotation(InjectConfiguration.class.getName())) {
+        // we need to process methods that are annotated only with @InjectConfiguration
+        // a method can have both @InjectConfiguration and @InjectPluginsRegistry
+        // so we check that method has only one annotation
+
+        for (var injection : ip.descriptor.injections) {
+            if (InjectPluginsRegistry.class.equals(injection.clazz) && ip.descriptor.injections.stream()
+                    .filter(p -> p.methodHash == injection.methodHash).count() == 1) {
                 // try to inovke @InjectPluginRegistry method
                 try {
-                    pluginClassInfo.loadClass(false).getDeclaredMethod(mi.getName(), PluginsRegistry.class)
-                            .invoke(pluingInstance, PluginsRegistryImpl.getInstance());
+                    ip.clazz.getDeclaredMethod(injection.method, PluginsRegistry.class).invoke(ip.instance,
+                            PluginsRegistryImpl.getInstance());
+                    LOGGER.trace("Injected PluginsRegistry into {}.{}()", ip.clazz.getSimpleName(), injection.method);
                 } catch (NoSuchMethodException nme) {
-                    throw new ConfigurationException(
-                            pluginType + " " + pluginName + " has an invalid method with @InjectPluginsRegistry. "
-                                    + "Method signature must be " + mi.getName() + "(PluginsRegistry pluginsRegistry)");
+                    throw new ConfigurationException(ip.type + " " + ip.name
+                            + " has an invalid method with @InjectPluginsRegistry. " + "Method signature must be "
+                            + injection.method + "(PluginsRegistry pluginsRegistry)");
                 }
             }
         }
     }
 
-    private void invokeInjectConfigurationAndPluginsRegistryMethods(String pluginName, String pluginType,
-            ClassInfo pluginClassInfo, Object pluingInstance, Map confs)
+    private void invokeInjectConfigurationAndPluginsRegistryMethods(InstatiatedPlugin ip)
             throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
 
+        // we need to process methods that are annotated only with @InjectConfiguration
+
+        var confMethods = ip.descriptor.injections.stream().filter(p -> InjectConfiguration.class.equals(p.clazz))
+                .collect(Collectors.toList());
+        var regiMethods = ip.descriptor.injections.stream().filter(p -> InjectPluginsRegistry.class.equals(p.clazz))
+                .collect(Collectors.toList());
+
+        // intersect
+        var bothMethods = confMethods.stream()
+                .filter(c -> regiMethods.stream().anyMatch(r -> r.methodHash == c.methodHash))
+                .collect(Collectors.toList());
+
         // finds @InjectConfiguration methods
-        var mil = pluginClassInfo.getDeclaredMethodInfo();
+        for (var injection : bothMethods) {
+            // check configuration scope
+            var allConfScope = injection.params.stream()
+                    .anyMatch(p -> "scope".equals(p.getKey())
+                            && (ConfigurationScope.class.getName() + "." + ConfigurationScope.ALL.name())
+                                    .equals(p.getValue().toString()));
 
-        for (var mi : mil) {
-            if (mi.hasAnnotation(InjectConfiguration.class.getName())
-                    && mi.hasAnnotation(InjectPluginsRegistry.class.getName())) {
-                var ai = mi.getAnnotationInfo(InjectConfiguration.class.getName());
+            var scopedConf = (Map) (allConfScope ? Bootstrapper.getConfiguration().toMap()
+                    : ip.confs != null ? ip.confs.get(ip.name) : null);
 
-                // check configuration scope
-                var allConfScope = ai.getParameterValues().stream()
-                        .anyMatch(p -> "scope".equals(p.getName())
-                                && (ConfigurationScope.class.getName() + "." + ConfigurationScope.ALL.name())
-                                        .equals(p.getValue().toString()));
-
-                var scopedConf = (Map) (allConfScope ? Bootstrapper.getConfiguration().toMap()
-                        : confs != null ? confs.get(pluginName) : null);
-
-                if (scopedConf == null) {
-                    LOGGER.warn(
-                            "{} {} defines method {} with @InjectConfiguration " + "but no configuration found for it",
-                            pluginType, pluginName, mi.getName());
-                }
-
-                // try to inovke @InjectConfiguration method
-                try {
-                    pluginClassInfo.loadClass(false).getDeclaredMethod(mi.getName(), Map.class, PluginsRegistry.class)
-                            .invoke(pluingInstance, scopedConf, PluginsRegistryImpl.getInstance());
-                } catch (NoSuchMethodException nme) {
-                    throw new ConfigurationException(
-                            pluginType + " " + pluginName + " has an invalid method with @InjectConfiguration"
-                                    + " and @InjectPluginsRegistry." + " Method signature must be " + mi.getName()
-                                    + "(Map<String, Object> configuration," + " PluginsRegistry pluginsRegistry)");
-                }
+            if (scopedConf == null) {
+                LOGGER.warn("{} {} defines method {} with @InjectConfiguration " + "but no configuration found for it",
+                        ip.type, ip.name, injection.method);
             }
+
+            // try to inovke @InjectConfiguration method
+            try {
+                ip.clazz.getDeclaredMethod(injection.method, Map.class, PluginsRegistry.class).invoke(ip.instance,
+                        scopedConf, PluginsRegistryImpl.getInstance());
+                LOGGER.trace("Injected PluginsRegistry and Configuration into {}.{}()",
+                        ip.clazz.getSimpleName(), injection.method);
+            } catch (NoSuchMethodException nme) {
+                throw new ConfigurationException(
+                        ip.type + " " + ip.name + " has an invalid method with @InjectConfiguration"
+                                + " and @InjectPluginsRegistry." + " Method signature must be " + injection.method
+                                + "(Map<String, Object> configuration," + " PluginsRegistry pluginsRegistry)");
+            }
+
         }
     }
 
@@ -424,19 +459,20 @@ public class PluginsFactory {
     }
 
     private static class InstatiatedPlugin {
-
-        private final String pluginName;
-        private final String pluginType;
-        private final ClassInfo pluginClassInfo;
-        private final Object pluingInstance;
+        private final String name;
+        private final String type;
+        private final PluginDescriptor descriptor;
+        private final Class<Plugin> clazz;
+        private final Object instance;
         private final Map confs;
 
-        InstatiatedPlugin(String pluginName, String pluginType, ClassInfo pluginClassInfo, Object pluingInstance,
+        InstatiatedPlugin(String name, String type, PluginDescriptor descriptor, Class<Plugin> clazz, Object instance,
                 Map confs) {
-            this.pluginName = pluginName;
-            this.pluginType = pluginType;
-            this.pluginClassInfo = pluginClassInfo;
-            this.pluingInstance = pluingInstance;
+            this.name = name;
+            this.type = type;
+            this.descriptor = descriptor;
+            this.clazz = clazz;
+            this.instance = instance;
             this.confs = confs;
         }
     }
