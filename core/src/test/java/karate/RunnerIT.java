@@ -25,7 +25,8 @@ import org.junit.runner.RunWith;
 import org.restheart.test.integration.AbstactIT;
 
 /**
- *
+ * streams tests are disabled because can fail on slow hosts
+ * to enable them, remove from streams.feature
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
 @RunWith(Karate.class)
