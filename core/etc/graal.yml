@@ -122,7 +122,7 @@ default-representation-format: {{{default-representation-format}}}
 
 static-resources-mounts:
   - what: ../..
-    where: /
+    where: /web
     welcome-file: LICENSE.txt
     embedded: false
 
@@ -289,7 +289,7 @@ etag-check-policy:
 # Just add the plugins jar to plugins-directory and they will be automatically
 # added to the classpath and registered.
 
-plugins-directory: plugins
+plugins-directory: null
 
 # All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).

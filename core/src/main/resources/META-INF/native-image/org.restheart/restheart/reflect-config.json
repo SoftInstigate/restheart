@@ -82,7 +82,7 @@
   "name":"com.google.gson.Gson"
 },
 {
-  "name":"com.mongodb.Mongo",
+  "name":"com.mongodb.MongoClient",
   "methods":[{"name":"getCluster","parameterTypes":[] }]
 },
 {
@@ -529,6 +529,10 @@
   "name":"java.net.NetPermission"
 },
 {
+  "name":"java.net.Socket",
+  "methods":[{"name":"setOption","parameterTypes":["java.net.SocketOption","java.lang.Object"] }]
+},
+{
   "name":"java.net.SocketPermission"
 },
 {
@@ -766,6 +770,10 @@
   "allPublicMethods":true
 },
 {
+  "name":"jdk.net.ExtendedSocketOptions",
+  "allDeclaredFields":true
+},
+{
   "name":"nonapi.io.github.classgraph.classloaderhandler.AntClassLoaderHandler",
   "methods":[
     {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
@@ -935,10 +943,6 @@
 {
   "name":"nonapi.io.github.classgraph.scanspec.ScanSpec",
   "allDeclaredFields":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }]
-},
-{
-  "name":"org.bson.json.DateTimeFormatter$Java8DateTimeFormatter",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
@@ -1234,10 +1238,6 @@
 },
 {
   "name":"org.xnio.nio.NioXnioWorker$1",
-  "allPublicConstructors":true
-},
-{
-  "name":"org.xnio.nio.NioXnioWorker$NioWorkerMetrics",
   "allPublicConstructors":true
 },
 {
