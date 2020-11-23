@@ -40,6 +40,7 @@
         <skipUpdateLicense>true</skipUpdateLicense>
         <!-- SonarCloud configuration -->
         <sonar.projectKey>SoftInstigate_restheart</sonar.projectKey>
+        <sonar.moduleKey>${project.groupId}:${project.artifactId}</sonar.moduleKey>
         <sonar.organization>softinstigate</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
