@@ -31,8 +31,6 @@ import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
-import com.oracle.svm.core.heap.NativeImageInfo;
-import com.oracle.svm.hosted.server.NativeImageBuildClient;
 
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.resource;

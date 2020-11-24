@@ -952,7 +952,7 @@
     {"name":"peakQueueSize", "allowUnsafeAccess":true}, 
     {"name":"peakThreadCount", "allowUnsafeAccess":true}, 
     {"name":"queueSize", "allowUnsafeAccess":true}, 
-    {"name":"sequence"}, 
+    {"name":"sequence", "allowUnsafeAccess":true}, 
     {"name":"terminationWaiters", "allowUnsafeAccess":true}
   ]
 },

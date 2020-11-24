@@ -169,18 +169,6 @@
                 <artifactId>mongodb-driver-reactivestreams</artifactId>
                 <version>4.1.1</version>
             </dependency>
-            <!-- downgraded for native-image. From version ? org.jboss.threads.EnhancedQueueExecutor uses unsupported Unsafe operations -->
-            <dependency>
-                <groupId>org.jboss.xnio</groupId>
-                <artifactId>xnio-api</artifactId>
-                <version>3.3.8.Final</version>
-            </dependency>
-            <!-- downgraded for native-image. From version ? org.jboss.threads.EnhancedQueueExecutor uses unsupported Unsafe operations -->
-            <dependency>
-                <groupId>org.jboss.xnio</groupId>
-                <artifactId>xnio-nio</artifactId>
-                <version>3.3.8.Final</version>
-            </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-core</artifactId>
@@ -268,7 +256,6 @@
                 <artifactId>classgraph</artifactId>
                 <version>4.8.90</version>
             </dependency>
-
             <!-- BEGIN Test dependencies -->
             <dependency>
                 <groupId>junit</groupId>

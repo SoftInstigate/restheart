@@ -426,15 +426,9 @@
     <profile>
       <id>native</id>
       <properties>
-        <graalvm.version>20.2.0</graalvm.version>
+        <graalvm.version>20.3.0</graalvm.version>
       </properties>
       <dependencies>
-        <dependency>
-          <groupId>org.graalvm.sdk</groupId>
-          <artifactId>graal-sdk</artifactId>
-          <version>${graalvm.version}</version>
-          <scope>provided</scope>
-        </dependency>
         <dependency>
           <groupId>org.restheart</groupId>
           <artifactId>restheart-security</artifactId>
@@ -442,8 +436,30 @@
         <dependency>
           <groupId>org.restheart</groupId>
           <artifactId>restheart-mongodb</artifactId>
-          <!-- <scope>provided</scope> TODO remove this -->
         </dependency>
+        <!-- uncomment to add test plugins, need also to regenerate native-image build configuration, see GRAAL.md -->
+        <!-- <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-test-plugins</artifactId>
+          <version>${project.version}</version>
+        </dependency> -->
+        <!-- downgraded XNio for native-image.
+                 in version 3.6.0.Final xnio introduces dependency to org.jboss.threads:jboss-threads:2.3.0.Beta2
+                 this generates runtime error with native image
+                 see https://github.com/SoftInstigate/graalvm-undertow-issue
+            -->
+            <!-- downgraded for native-image -->
+            <dependency>
+              <groupId>org.jboss.xnio</groupId>
+              <artifactId>xnio-api</artifactId>
+              <version>3.5.9.Final</version>
+          </dependency>
+          <!-- downgraded for native-image -->
+          <dependency>
+              <groupId>org.jboss.xnio</groupId>
+              <artifactId>xnio-nio</artifactId>
+              <version>3.5.9.Final</version>
+          </dependency>
         <dependency>
           <groupId>com.github.jnr</groupId>
           <artifactId>jnr-unixsocket</artifactId>
@@ -458,7 +474,6 @@
           <groupId>org.xerial.snappy</groupId>
           <artifactId>snappy-java</artifactId>
           <version>1.1.4</version> <!-- check version at https://github.com/mongodb/mongo-java-driver/blob/master/build.gradle -->
-          <!-- <scope>provided</scope> this removes this optional mongodb driver dependency from native-image build. otherwise fails -->
         </dependency>
         <dependency>
           <groupId>com.github.luben</groupId>

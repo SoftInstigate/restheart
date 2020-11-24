@@ -139,7 +139,7 @@ authenticators:
 authorizers:
   fileAclAuthorizer:
     enabled: true
-    conf-file: ../../etc/test/acl.yml
+    conf-file: ../etc/test/acl.yml
   mongoAclAuthorizer:
     acl-db: restheart-test
     acl-collection: acl
@@ -392,8 +392,6 @@ buffers-per-region: 20
 direct-buffers: true
 
 #### Connection Options
-
-allow-unescaped-characters-in-url: true
 
 connection-options:
     # The maximum size of a HTTP header block, in bytes.
