@@ -118,6 +118,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.restheart</groupId>
+      <artifactId>restheart-test-plugins</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>com.intuit.karate</groupId>
       <artifactId>karate-apache</artifactId>
       <scope>test</scope>
