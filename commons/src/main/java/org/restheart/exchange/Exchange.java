@@ -124,7 +124,7 @@ public abstract class Exchange<T> {
     }
 
     /**
-     * @return ttrue if request is errored
+     * @return true if request is errored
      */
     public boolean isInError() {
         return getWrappedExchange().getAttachment(IN_ERROR_KEY) != null
