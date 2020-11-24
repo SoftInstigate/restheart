@@ -120,6 +120,7 @@
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-test-plugins</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
