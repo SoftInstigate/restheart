@@ -1,0 +1,84 @@
+[
+  {
+    "name": "org.restheart.mongodb.MongoService",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      {
+        "name": "init",
+        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.mongodb.MongoServiceInitializer",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "init", "parameterTypes": ["java.util.Map"] },
+      {
+        "name": "injectMongoClient",
+        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.mongodb.hal.HALRepresentation",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "org.restheart.mongodb.handlers.changestreams.ChangeStreamsActivator",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "setConf", "parameterTypes": ["java.util.Map"] }
+    ]
+  },
+  {
+    "name": "org.restheart.mongodb.handlers.metrics.MetricsInstrumentationInterceptor",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "org.restheart.mongodb.handlers.sessions.TxnsActivator",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "org.restheart.mongodb.interceptors.AddRequestProperties",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "org.restheart.mongodb.interceptors.CollectionPropsInjector",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "init", "parameterTypes": ["com.mongodb.MongoClient"] }
+    ]
+  },
+  {
+    "name": "org.restheart.mongodb.interceptors.ContentSizeChecker",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "org.restheart.mongodb.interceptors.DbPropsInjector",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "init", "parameterTypes": ["com.mongodb.MongoClient"] }
+    ]
+  },
+  {
+    "name": "org.restheart.mongodb.interceptors.JsonSchemaAfterWriteChecker",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "org.restheart.mongodb.interceptors.JsonSchemaBeforeWriteChecker",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "org.restheart.mongodb.interceptors.NamespacesResponseFlattener",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "org.restheart.mongodb.services.CacheInvalidator",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "org.restheart.mongodb.services.CsvLoader",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  }
+]

@@ -1,0 +1,163 @@
+[
+  {
+    "name": "org.restheart.security.plugins.authenticators.DenyFilterOnUserPwd",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      {
+        "name": "init",
+        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.authenticators.FileRealmAuthenticator",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "init", "parameterTypes": ["java.util.Map"] }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.authenticators.MongoRealmAuthenticator",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "setConf", "parameterTypes": ["java.util.Map"] },
+      {
+        "name": "setMongoClient",
+        "parameterTypes": ["com.mongodb.MongoClient"]
+      },
+      {
+        "name": "setRegistry",
+        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.authenticators.UserPwdHasher",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      {
+        "name": "init",
+        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.authenticators.UserPwdRemover",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      {
+        "name": "init",
+        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.authorizers.FileAclAuthorizer",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "init", "parameterTypes": ["java.util.Map"] }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.authorizers.FilterPredicateInjector",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      {
+        "name": "init",
+        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.authorizers.MongoAclAuthorizer",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "setConf", "parameterTypes": ["java.util.Map"] },
+      {
+        "name": "setMongoClient",
+        "parameterTypes": ["com.mongodb.MongoClient"]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor",
+    "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name": "org.restheart.security.plugins.mechanisms.BasicAuthMechanism",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      {
+        "name": "init",
+        "parameterTypes": [
+          "java.util.Map",
+          "org.restheart.plugins.PluginsRegistry"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.mechanisms.DigestAuthMechanism",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      {
+        "name": "init",
+        "parameterTypes": [
+          "java.util.Map",
+          "org.restheart.plugins.PluginsRegistry"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.mechanisms.IdentityAuthMechanism"
+  },
+  {
+    "name": "org.restheart.security.plugins.mechanisms.JwtAuthenticationMechanism",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "init", "parameterTypes": ["java.util.Map"] }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.mechanisms.TokenBasicAuthMechanism",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      {
+        "name": "init",
+        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.services.GetRoleService",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "init", "parameterTypes": ["java.util.Map"] }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.services.RndTokenService",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "init", "parameterTypes": ["java.util.Map"] },
+      {
+        "name": "setPluginRegistry",
+        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
+      }
+    ]
+  },
+  {
+    "name": "org.restheart.security.plugins.tokens.RndTokenManager",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      {
+        "name": "init",
+        "parameterTypes": [
+          "java.util.Map",
+          "org.restheart.plugins.PluginsRegistry"
+        ]
+      }
+    ]
+  }
+]
