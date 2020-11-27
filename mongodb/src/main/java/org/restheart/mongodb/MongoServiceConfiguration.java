@@ -56,8 +56,7 @@ public class MongoServiceConfiguration {
     /**
      * undertow connetction options
      *
-     * @see
-     * http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
+     * @see http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
      */
     public static final String CONNECTION_OPTIONS_KEY = "connection-options";
 
@@ -135,9 +134,7 @@ public class MongoServiceConfiguration {
     static boolean isParametric(final Path confFilePath) throws IOException {
         Scanner sc = new Scanner(confFilePath, "UTF-8");
 
-        return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}"))
-                .limit(1)
-                .count() > 0;
+        return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}")).limit(1).count() > 0;
     }
 
     /**
@@ -174,8 +171,8 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * Creates a new instance of Configuration from the configuration file For
-     * any missing property the default value is used.
+     * Creates a new instance of Configuration from the configuration file For any
+     * missing property the default value is used.
      *
      * @param confFilePath the path of the configuration file
      * @throws org.restheart.ConfigurationException
@@ -185,8 +182,8 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * Creates a new instance of Configuration from the configuration file For
-     * any missing property the default value is used.
+     * Creates a new instance of Configuration from the configuration file For any
+     * missing property the default value is used.
      *
      * @param confFilePath the path of the configuration file
      * @param silent
@@ -197,10 +194,10 @@ public class MongoServiceConfiguration {
     }
 
     /**
-     * Creates a new instance of Configuration from the configuration file For
-     * any missing property the default value is used.
+     * Creates a new instance of Configuration from the configuration file For any
+     * missing property the default value is used.
      *
-     * @param conf the key-value configuration map
+     * @param conf   the key-value configuration map
      * @param silent
      * @throws org.restheart.ConfigurationException
      */
@@ -210,19 +207,16 @@ public class MongoServiceConfiguration {
 
         instanceBaseURL = getAsStringOrDefault(conf, INSTANCE_BASE_URL_KEY, null);
 
-        String _representationFormat = getAsStringOrDefault(conf,
-                REPRESENTATION_FORMAT_KEY, DEFAULT_REPRESENTATION_FORMAT.name());
+        String _representationFormat = getAsStringOrDefault(conf, REPRESENTATION_FORMAT_KEY,
+                DEFAULT_REPRESENTATION_FORMAT.name());
 
         REPRESENTATION_FORMAT rf = REPRESENTATION_FORMAT.STANDARD;
 
         try {
             rf = REPRESENTATION_FORMAT.valueOf(_representationFormat);
         } catch (IllegalArgumentException iar) {
-            LOGGER.warn("wrong value for {}. allowed values are {}; "
-                    + "setting it to {}",
-                    REPRESENTATION_FORMAT_KEY,
-                    REPRESENTATION_FORMAT.values(),
-                    REPRESENTATION_FORMAT.STANDARD);
+            LOGGER.warn("wrong value for {}. allowed values are {}; " + "setting it to {}", REPRESENTATION_FORMAT_KEY,
+                    REPRESENTATION_FORMAT.values(), REPRESENTATION_FORMAT.STANDARD);
         } finally {
             defaultRepresentationFormat = rf;
         }
@@ -242,7 +236,7 @@ public class MongoServiceConfiguration {
         mongoMounts = getAsListOfMaps(conf, MONGO_MOUNTS_KEY, mongoMountsDefault);
 
         pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
-        
+
         requestsLimit = getAsIntegerOrDefault(conf, REQUESTS_LIMIT_KEY, 100);
 
         queryTimeLimit = getAsLongOrDefault(conf, QUERY_TIME_LIMIT_KEY, (long) 0);
@@ -258,27 +252,21 @@ public class MongoServiceConfiguration {
         eagerPoolSize = getAsIntegerOrDefault(conf, EAGER_POOL_SIZE, 100);
         eagerLinearSliceWidht = getAsIntegerOrDefault(conf, EAGER_LINEAR_SLICE_WIDHT, 1000);
         eagerLinearSliceDelta = getAsIntegerOrDefault(conf, EAGER_LINEAR_SLICE_DELTA, 100);
-        eagerLinearSliceHeights = getAsArrayOfInts(conf, EAGER_LINEAR_HEIGHTS, new int[]{4, 2, 1});
+        eagerLinearSliceHeights = getAsArrayOfInts(conf, EAGER_LINEAR_HEIGHTS, new int[] { 4, 2, 1 });
         eagerRndSliceMinWidht = getAsIntegerOrDefault(conf, EAGER_RND_SLICE_MIN_WIDHT, 1000);
         eagerRndMaxCursors = getAsIntegerOrDefault(conf, EAGER_RND_MAX_CURSORS, 50);
 
         Map<String, Object> etagCheckPolicies = getAsMap(conf, ETAG_CHECK_POLICY_KEY, null);
 
         if (etagCheckPolicies != null) {
-            String _dbEtagCheckPolicy
-                    = getAsStringOrDefault(etagCheckPolicies,
-                            ETAG_CHECK_POLICY_DB_KEY,
-                            DEFAULT_DB_ETAG_CHECK_POLICY.name());
+            String _dbEtagCheckPolicy = getAsStringOrDefault(etagCheckPolicies, ETAG_CHECK_POLICY_DB_KEY,
+                    DEFAULT_DB_ETAG_CHECK_POLICY.name());
 
-            String _collEtagCheckPolicy
-                    = getAsStringOrDefault(etagCheckPolicies,
-                            ETAG_CHECK_POLICY_COLL_KEY,
-                            DEFAULT_COLL_ETAG_CHECK_POLICY.name());
+            String _collEtagCheckPolicy = getAsStringOrDefault(etagCheckPolicies, ETAG_CHECK_POLICY_COLL_KEY,
+                    DEFAULT_COLL_ETAG_CHECK_POLICY.name());
 
-            String _docEtagCheckPolicy
-                    = getAsStringOrDefault(etagCheckPolicies,
-                            ETAG_CHECK_POLICY_DOC_KEY,
-                            DEFAULT_DOC_ETAG_CHECK_POLICY.name());
+            String _docEtagCheckPolicy = getAsStringOrDefault(etagCheckPolicies, ETAG_CHECK_POLICY_DOC_KEY,
+                    DEFAULT_DOC_ETAG_CHECK_POLICY.name());
 
             ETAG_CHECK_POLICY validDbValue;
             ETAG_CHECK_POLICY validCollValue;
@@ -287,8 +275,8 @@ public class MongoServiceConfiguration {
             try {
                 validDbValue = ETAG_CHECK_POLICY.valueOf(_dbEtagCheckPolicy);
             } catch (IllegalArgumentException iae) {
-                LOGGER.warn("wrong value for parameter {} setting it to default value {}",
-                        ETAG_CHECK_POLICY_DB_KEY, DEFAULT_DB_ETAG_CHECK_POLICY);
+                LOGGER.warn("wrong value for parameter {} setting it to default value {}", ETAG_CHECK_POLICY_DB_KEY,
+                        DEFAULT_DB_ETAG_CHECK_POLICY);
                 validDbValue = DEFAULT_DB_ETAG_CHECK_POLICY;
             }
 
@@ -297,8 +285,8 @@ public class MongoServiceConfiguration {
             try {
                 validCollValue = ETAG_CHECK_POLICY.valueOf(_collEtagCheckPolicy);
             } catch (IllegalArgumentException iae) {
-                LOGGER.warn("wrong value for parameter {} setting it to default value {}",
-                        ETAG_CHECK_POLICY_COLL_KEY, DEFAULT_COLL_ETAG_CHECK_POLICY);
+                LOGGER.warn("wrong value for parameter {} setting it to default value {}", ETAG_CHECK_POLICY_COLL_KEY,
+                        DEFAULT_COLL_ETAG_CHECK_POLICY);
                 validCollValue = DEFAULT_COLL_ETAG_CHECK_POLICY;
             }
 
@@ -307,8 +295,8 @@ public class MongoServiceConfiguration {
             try {
                 validDocValue = ETAG_CHECK_POLICY.valueOf(_docEtagCheckPolicy);
             } catch (IllegalArgumentException iae) {
-                LOGGER.warn("wrong value for parameter {} setting it to default value {}",
-                        ETAG_CHECK_POLICY_COLL_KEY, DEFAULT_COLL_ETAG_CHECK_POLICY);
+                LOGGER.warn("wrong value for parameter {} setting it to default value {}", ETAG_CHECK_POLICY_COLL_KEY,
+                        DEFAULT_COLL_ETAG_CHECK_POLICY);
                 validDocValue = DEFAULT_DOC_ETAG_CHECK_POLICY;
             }
 
@@ -321,22 +309,17 @@ public class MongoServiceConfiguration {
 
         connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY, Maps.newHashMap());
 
-        cursorBatchSize = getAsIntegerOrDefault(conf, CURSOR_BATCH_SIZE_KEY,
-                DEFAULT_CURSOR_BATCH_SIZE);
+        cursorBatchSize = getAsIntegerOrDefault(conf, CURSOR_BATCH_SIZE_KEY, DEFAULT_CURSOR_BATCH_SIZE);
 
-        defaultPagesize = getAsIntegerOrDefault(conf, DEFAULT_PAGESIZE_KEY,
-                DEFAULT_DEFAULT_PAGESIZE);
+        defaultPagesize = getAsIntegerOrDefault(conf, DEFAULT_PAGESIZE_KEY, DEFAULT_DEFAULT_PAGESIZE);
 
-        maxPagesize = getAsIntegerOrDefault(conf, MAX_PAGESIZE_KEY,
-                DEFAULT_MAX_PAGESIZE);
+        maxPagesize = getAsIntegerOrDefault(conf, MAX_PAGESIZE_KEY, DEFAULT_MAX_PAGESIZE);
 
         {
             METRICS_GATHERING_LEVEL mglevel;
             try {
-                String value = getAsStringOrDefault(conf, 
-                        METRICS_GATHERING_LEVEL_KEY, "ROOT");
-                mglevel = METRICS_GATHERING_LEVEL.valueOf(value
-                        .toUpperCase(Locale.getDefault()));
+                String value = getAsStringOrDefault(conf, METRICS_GATHERING_LEVEL_KEY, "ROOT");
+                mglevel = METRICS_GATHERING_LEVEL.valueOf(value.toUpperCase(Locale.getDefault()));
             } catch (IllegalArgumentException iae) {
                 mglevel = METRICS_GATHERING_LEVEL.ROOT;
             }
@@ -346,36 +329,20 @@ public class MongoServiceConfiguration {
 
     @Override
     public String toString() {
-        return "Configuration{"
-                + "silent=" + silent
-                + ", instanceBaseURL=" + instanceBaseURL
-                + ", defaultRepresentationFromat=" + defaultRepresentationFormat
-                + ", mongoUri=" + mongoUri
-                + ", mongoMounts=" + mongoMounts
-                + ", pluginsArgs=" + getPluginsArgs()
-                + ", localCacheEnabled=" + localCacheEnabled
-                + ", localCacheTtl=" + localCacheTtl
-                + ", schemaCacheEnabled=" + schemaCacheEnabled
-                + ", schemaCacheTtl=" + schemaCacheTtl
-                + ", requestsLimit=" + requestsLimit
-                + ", metricsGatheringLevel=" + metricsGatheringLevel
-                + ", eagerPoolSize=" + eagerPoolSize
-                + ", eagerLinearSliceWidht=" + eagerLinearSliceWidht
-                + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta
-                + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights)
-                + ", eagerRndSliceMinWidht=" + eagerRndSliceMinWidht
-                + ", eagerRndMaxCursors=" + eagerRndMaxCursors
-                + ", dbEtagCheckPolicy=" + dbEtagCheckPolicy
-                + ", collEtagCheckPolicy=" + collEtagCheckPolicy
-                + ", docEtagCheckPolicy=" + docEtagCheckPolicy
-                + ", connectionOptions=" + connectionOptions
-                + ", queryTimeLimit=" + queryTimeLimit
-                + ", aggregationTimeLimit=" + aggregationTimeLimit
-                + ", aggregationCheckOperators=" + aggregationCheckOperators
-                + ", cursorBatchSize=" + cursorBatchSize
-                + ", defaultPagesize=" + defaultPagesize
-                + ", maxPagesize=" + maxPagesize
-                + ", configurationFileMap=" + configurationFileMap
+        return "Configuration{" + "silent=" + silent + ", instanceBaseURL=" + instanceBaseURL
+                + ", defaultRepresentationFromat=" + defaultRepresentationFormat + ", mongoUri=" + mongoUri
+                + ", mongoMounts=" + mongoMounts + ", pluginsArgs=" + getPluginsArgs() + ", localCacheEnabled="
+                + localCacheEnabled + ", localCacheTtl=" + localCacheTtl + ", schemaCacheEnabled=" + schemaCacheEnabled
+                + ", schemaCacheTtl=" + schemaCacheTtl + ", requestsLimit=" + requestsLimit + ", metricsGatheringLevel="
+                + metricsGatheringLevel + ", eagerPoolSize=" + eagerPoolSize + ", eagerLinearSliceWidht="
+                + eagerLinearSliceWidht + ", eagerLinearSliceDelta=" + eagerLinearSliceDelta
+                + ", eagerLinearSliceHeights=" + Arrays.toString(eagerLinearSliceHeights) + ", eagerRndSliceMinWidht="
+                + eagerRndSliceMinWidht + ", eagerRndMaxCursors=" + eagerRndMaxCursors + ", dbEtagCheckPolicy="
+                + dbEtagCheckPolicy + ", collEtagCheckPolicy=" + collEtagCheckPolicy + ", docEtagCheckPolicy="
+                + docEtagCheckPolicy + ", connectionOptions=" + connectionOptions + ", queryTimeLimit=" + queryTimeLimit
+                + ", aggregationTimeLimit=" + aggregationTimeLimit + ", aggregationCheckOperators="
+                + aggregationCheckOperators + ", cursorBatchSize=" + cursorBatchSize + ", defaultPagesize="
+                + defaultPagesize + ", maxPagesize=" + maxPagesize + ", configurationFileMap=" + configurationFileMap
                 + '}';
     }
 
@@ -387,12 +354,13 @@ public class MongoServiceConfiguration {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key, final List<Map<String, Object>> defaultValue
-    ) {
+    private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key,
+            final List<Map<String, Object>> defaultValue) {
         if (conf == null) {
             if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
+                LOGGER.debug(
+                        "parameters group {} not specified in the configuration file." + " Using its default value {}",
+                        key, defaultValue);
             }
 
             return defaultValue;
@@ -404,8 +372,9 @@ public class MongoServiceConfiguration {
             return (List<Map<String, Object>>) o;
         } else {
             if (!silent) {
-                LOGGER.debug("parameters group {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
+                LOGGER.debug(
+                        "parameters group {} not specified in the configuration file." + " Using its default value {}",
+                        key, defaultValue);
             }
             return defaultValue;
         }
@@ -418,8 +387,8 @@ public class MongoServiceConfiguration {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key, final Map<String, Object> defaultVal
-    ) {
+    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key,
+            final Map<String, Object> defaultVal) {
         if (conf == null) {
             if (!silent) {
                 LOGGER.debug("parameters group {} not specified in the configuration file.", key);
@@ -446,11 +415,8 @@ public class MongoServiceConfiguration {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private Map<String, Map<String, Object>> getAsMapOfMaps(
-            final Map<String, Object> conf,
-            final String key,
-            final Map<String, Map<String, Object>> defaultVal
-    ) {
+    private Map<String, Map<String, Object>> getAsMapOfMaps(final Map<String, Object> conf, final String key,
+            final Map<String, Map<String, Object>> defaultVal) {
         if (conf == null) {
             if (!silent) {
                 LOGGER.debug("parameters {} not specified in the configuration file.", key);
@@ -480,20 +446,54 @@ public class MongoServiceConfiguration {
      * @param key
      * @return the environment or java property variable, if found
      */
-    private String overriddenValueFromEnv(final String key) {
-        String shellKey = key.toUpperCase().replaceAll("-", "_");
+    private static String overriddenValueFromEnv(final String confParameter) {
+        var value = _overriddenValueFromEnv("RH", confParameter);
+
+        if (value != null) {
+            return value;
+        }
+
+        value = _overriddenValueFromEnv("RESTHEART", confParameter);
+
+        if (value != null) {
+            return value;
+        }
+
+        // legacy variable pattern
+        value = _overriddenValueFromEnv("RESTHEART_SECURITY", confParameter);
+
+        if (value != null) {
+            return value;
+        }
+
+        // no prefix
+        value = _overriddenValueFromEnv(null, confParameter);
+
+        if (value != null) {
+            return value;
+        }
+
+        return null;
+    }
+
+    private static String _overriddenValueFromEnv(final String prefix, final String confParameter) {
+        var key = prefix != null ? prefix + "_" + confParameter.toUpperCase().replaceAll("-", "_")
+                : confParameter.toUpperCase().replaceAll("-", "_");
+
+        return __overriddenValueFromEnv(confParameter, key);
+    }
+
+    private static String __overriddenValueFromEnv(final String confParameter, final String key) {
+
         String envValue = System.getProperty(key);
 
         if (envValue == null) {
-            envValue = System.getProperty(shellKey);
+            envValue = System.getenv(key);
         }
 
-        if (envValue == null) {
-            envValue = System.getenv(shellKey);
-        }
         if (null != envValue) {
-            LOGGER.debug(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'",
-                    shellKey, key, envValue);
+            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'", key,
+                    confParameter, envValue);
         }
         return envValue;
     }
@@ -505,7 +505,8 @@ public class MongoServiceConfiguration {
      * @param defaultValue
      * @return
      */
-    private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
+    private Boolean getAsBooleanOrDefault(final Map<String, Object> conf, final String key,
+            final Boolean defaultValue) {
         String envValue = overriddenValueFromEnv(key);
         if (envValue != null) {
             return Boolean.valueOf(envValue);
@@ -513,8 +514,9 @@ public class MongoServiceConfiguration {
 
         if (conf == null) {
             if (!silent) {
-                LOGGER.debug("tried to get paramenter {} from a null configuration map."
-                        + " Using its default value {}", key, defaultValue);
+                LOGGER.debug(
+                        "tried to get paramenter {} from a null configuration map." + " Using its default value {}",
+                        key, defaultValue);
             }
             return defaultValue;
         }
@@ -524,8 +526,8 @@ public class MongoServiceConfiguration {
         if (o == null) {
             // if default value is null there is no default value actually
             if (defaultValue && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file." + " Using its default value {}",
+                        key, defaultValue);
             }
             return defaultValue;
         } else if (o instanceof Boolean) {
@@ -535,8 +537,7 @@ public class MongoServiceConfiguration {
             return (Boolean) o;
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}."
-                        + " Using its default value {}", key, o, defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, o, defaultValue);
             }
             return defaultValue;
         }
@@ -558,8 +559,8 @@ public class MongoServiceConfiguration {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file." + " Using its default value {}",
+                        key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof String) {
@@ -569,7 +570,8 @@ public class MongoServiceConfiguration {
             return (String) conf.get(key);
         } else {
             if (!silent) {
-                throw new IllegalArgumentException(String.format("Wrong value for parameter %s: %s.}", key, conf.get(key)));
+                throw new IllegalArgumentException(
+                        String.format("Wrong value for parameter %s: %s.}", key, conf.get(key)));
             }
             return defaultValue;
         }
@@ -582,7 +584,8 @@ public class MongoServiceConfiguration {
      * @param defaultValue
      * @return
      */
-    private Integer getAsIntegerOrDefault(final Map<String, Object> conf, final String key, final Integer defaultValue) {
+    private Integer getAsIntegerOrDefault(final Map<String, Object> conf, final String key,
+            final Integer defaultValue) {
         String envValue = overriddenValueFromEnv(key);
         if (envValue != null) {
             return Integer.valueOf(envValue);
@@ -591,8 +594,8 @@ public class MongoServiceConfiguration {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file." + " Using its default value {}",
+                        key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof Integer) {
@@ -602,8 +605,8 @@ public class MongoServiceConfiguration {
             return (Integer) conf.get(key);
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}."
-                        + " Using its default value {}", key, conf.get(key), defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
+                        defaultValue);
             }
             return defaultValue;
         }
@@ -625,8 +628,8 @@ public class MongoServiceConfiguration {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file." + " Using its default value {}",
+                        key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof Number) {
@@ -637,15 +640,15 @@ public class MongoServiceConfiguration {
                 return Long.parseLong(conf.get(key).toString());
             } catch (NumberFormatException nfe) {
                 if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}. Using its default value {}",
-                            key, conf.get(key), defaultValue);
+                    LOGGER.warn("wrong value for parameter {}: {}. Using its default value {}", key, conf.get(key),
+                            defaultValue);
                 }
                 return defaultValue;
             }
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}."
-                        + " Using its default value {}", key, conf.get(key), defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
+                        defaultValue);
             }
             return defaultValue;
         }
@@ -663,8 +666,8 @@ public class MongoServiceConfiguration {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file." + " Using its default value {}",
+                        key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof List) {
@@ -676,8 +679,8 @@ public class MongoServiceConfiguration {
 
             if (ret.length == 0) {
                 if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}."
-                            + " Using its default value {}", key, conf.get(key), defaultValue);
+                    LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
+                            defaultValue);
                 }
                 return defaultValue;
             } else {
@@ -685,20 +688,21 @@ public class MongoServiceConfiguration {
             }
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}."
-                        + " Using its default value {}", key, conf.get(key), defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
+                        defaultValue);
             }
             return defaultValue;
         }
     }
 
     @SuppressWarnings("unchecked")
-    private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key, final List<String> defaultValue) {
+    private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key,
+            final List<String> defaultValue) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file."
-                        + " Using its default value {}", key, defaultValue);
+                LOGGER.debug("parameter {} not specified in the configuration file." + " Using its default value {}",
+                        key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof List) {
@@ -710,8 +714,8 @@ public class MongoServiceConfiguration {
 
             if (ret.isEmpty()) {
                 if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}."
-                            + " Using its default value {}", key, conf.get(key), defaultValue);
+                    LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
+                            defaultValue);
                 }
                 return defaultValue;
             } else {
@@ -719,8 +723,8 @@ public class MongoServiceConfiguration {
             }
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}."
-                        + " Using its default value {}", key, conf.get(key), defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
+                        defaultValue);
             }
             return defaultValue;
         }
@@ -823,8 +827,8 @@ public class MongoServiceConfiguration {
     public MongoClientURI getMongoUri() {
         return mongoUri;
     }
-    
-     /**
+
+    /**
      * @return the pluginsArgs
      */
     public Map<String, Map<String, Object>> getPluginsArgs() {
@@ -914,7 +918,7 @@ public class MongoServiceConfiguration {
     public int getDefaultPagesize() {
         return defaultPagesize;
     }
-    
+
     /**
      *
      * @return
@@ -942,8 +946,7 @@ public class MongoServiceConfiguration {
          */
         OFF,
         /**
-         * gather basic metrics (for all databases, but not specific per
-         * database)
+         * gather basic metrics (for all databases, but not specific per database)
          */
         ROOT,
         /**
