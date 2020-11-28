@@ -1,68 +1,44 @@
 package org.restheart.graphql.BSONScalars;
 
-import graphql.GraphQL;
-import graphql.language.IntValue;
-import graphql.schema.Coercing;
-import graphql.schema.CoercingParseLiteralException;
-import graphql.schema.CoercingParseValueException;
-import graphql.schema.CoercingSerializeException;
+import graphql.schema.*;
+import org.bson.BsonInt32;
 import org.bson.BsonValue;
 
-import java.math.BigInteger;
+import java.math.BigDecimal;
+
+import static graphql.Scalars.GraphQLInt;
 import static org.restheart.graphql.BSONScalars.CoercingUtils.typeName;
 
 
 
-public class GraphQLBsonInt32Coercing implements Coercing<Integer, Integer> {
+public class GraphQLBsonInt32Coercing implements Coercing<BsonInt32, Integer> {
 
-    private static final BigInteger INT_MAX = BigInteger.valueOf(2147483647L);
-    private static final BigInteger INT_MIN = BigInteger.valueOf(-2147483648L);
 
-    private Integer convertImpl(Object input){
-        if(input instanceof Integer){
-            return (Integer) input;
-        }
-        else if(input instanceof BsonValue){
-            return ((BsonValue) input).isInt32() ? ((BsonValue) input).asInt32().getValue() : null;
-        }
-        return null;
-    }
     @Override
     public Integer serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        Integer possibileInteger = convertImpl(dataFetcherResult);
-        if(possibileInteger == null){
+        if(dataFetcherResult instanceof BsonValue){
+            BsonValue value = (BsonValue) dataFetcherResult;
+            if(value.isInt32()){
+                return value.asInt32().getValue();
+            }
             throw new CoercingSerializeException(
-                    "Expected type 'BsonInt32 but was '" + typeName(dataFetcherResult) +"."
+                    "Expected type 'Integer' but was '" + typeName(dataFetcherResult) +"'."
             );
         }
-        return possibileInteger;
+        throw new CoercingSerializeException(
+                "Expected type 'BsonValue' but was '" + typeName(dataFetcherResult) +"'."
+        );
     }
 
     @Override
-    public Integer parseValue(Object input) throws CoercingParseValueException {
-        Integer possibileInteger = convertImpl(input);
-        if(possibileInteger == null){
-            throw new CoercingParseValueException(
-                    "Expected type 'BsonInt32 but was '" + typeName(input) +"."
-            );
-        }
-        return possibileInteger;
+    public BsonInt32 parseValue(Object input) throws CoercingParseValueException {
+        Integer possibleInt = (Integer) GraphQLInt.getCoercing().parseValue(input);
+        return new BsonInt32(possibleInt);
     }
 
     @Override
-    public Integer parseLiteral(Object input) throws CoercingParseLiteralException {
-        if(!(input instanceof IntValue)){
-            throw new CoercingParseLiteralException(
-                    "Expected AST type 'IntValue' but was '" + typeName(input) + "'."
-            );
-        }
-        BigInteger i = ((IntValue) input).getValue();
-        if(i.compareTo(GraphQLBsonInt32Coercing.INT_MIN) >=0 && i.compareTo(GraphQLBsonInt32Coercing.INT_MAX) <=0){
-            return i.intValue();
-        }
-        else {
-            throw new CoercingParseLiteralException("Expected value to be in the Integer range but it was '" + i.toString() + "'");
-        }
-
+    public BsonInt32 parseLiteral(Object AST) throws CoercingParseLiteralException {
+        Integer possibleInt = (Integer) GraphQLInt.getCoercing().parseLiteral(AST);
+        return new BsonInt32(possibleInt);
     }
 }

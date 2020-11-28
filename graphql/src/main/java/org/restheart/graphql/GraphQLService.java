@@ -1,15 +1,8 @@
 package org.restheart.graphql;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import com.mongodb.MongoClient;
-import com.mongodb.util.JSON;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
 import io.undertow.server.HttpServerExchange;
-import nonapi.io.github.classgraph.json.JSONUtils;
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.json.JSONObject;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.ByteArrayRequest;
@@ -17,9 +10,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.plugins.*;
 import org.restheart.utils.JsonUtils;
-
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -54,7 +45,8 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
         }
 
         // Fetching app definition from cache and/or MongoDB, if it is present.
-        String appName = request.getPath().substring(9);
+        String[] split = request.getPath().split("/");
+        String appName = split[2];
         AppDefinitionLoadingCache appCache = AppDefinitionLoadingCache.getInstance();
         GraphQLApp appDefinition = appCache.get(appName);
 
@@ -63,22 +55,21 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
 
             // Get query from request
             JSONObject json = new JSONObject(new String(request.getContent()));
-            var query = (String) json.get("query");
+            String query = (String) json.get("query");
             var inputBuilder = ExecutionInput.newExecutionInput().query(query);
 
             // if request has GraphQL variables...
             if(json.has("variables")){
-                Map<String, Object> variables = getVariables(json.getJSONObject("variables"));
+                Map<String, Object> variables = json.getJSONObject("variables").toMap();
                 inputBuilder.variables(variables);
             }
 
 
             ExecutionInput input = inputBuilder.build();
 
+
             // Configuration of GraphQL environment for the current application
             this.gql = GraphQL.newGraphQL(appDefinition.getSchema()).build();
-            MultipleGraphQLDataFetcher.setCurrentApp(appDefinition);
-            SingleGraphQLDataFetcher.setCurrentApp(appDefinition);
 
             // Query execution
             var result = this.gql.execute(input);
@@ -89,7 +80,7 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
                 response.setInError(400, error.toString());
                 return;
             } else if (result.isDataPresent()) {
-                response.setContent(JsonUtils.toBsonDocument(result.getData()));
+                response.setContent(JsonUtils.toBsonDocument(result.toSpecification()));
             }
         }
         else{
@@ -110,16 +101,6 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
                 || (request.getContentType() != null
                 && request.getContentType().startsWith("application/graphql;"));
     }
-
-    private Map<String, Object> getVariables(JSONObject variables) {
-        Map<String, Object> result = new HashMap<>();
-        for (String varName: variables.keySet()){
-            BsonValue varValue = JsonUtils.parse(variables.get(varName).toString());
-            result.put(varName, varValue);
-        }
-        return result;
-    }
-
 
 
     @Override

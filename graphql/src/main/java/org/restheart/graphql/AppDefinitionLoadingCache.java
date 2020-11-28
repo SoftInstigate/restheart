@@ -3,8 +3,6 @@ package org.restheart.graphql;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
-
-import javax.swing.text.html.Option;
 import java.util.Optional;
 
 public class AppDefinitionLoadingCache {
@@ -18,7 +16,12 @@ public class AppDefinitionLoadingCache {
         this.appLoadingCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,
                 Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                 (String key) -> {
-            return AppDefinitionLoader.loadAppDefinition(key);
+                    try {
+                        return AppDefinitionLoader.loadAppDefinition(key);
+                    } catch (NoSuchFieldException e) {
+                        e.printStackTrace();
+                    }
+                    return null;
                 });
     }
 

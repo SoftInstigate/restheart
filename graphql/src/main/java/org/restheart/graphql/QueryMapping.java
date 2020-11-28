@@ -1,51 +1,42 @@
 package org.restheart.graphql;
-
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
-import org.bson.Document;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
-import org.restheart.utils.JsonUtils;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class QueryMapping extends Mapping {
 
-    private boolean multiple;
-    private BsonDocument filter;
+    private static final String[] META_CHARS = {"$arg", "$fk"};
+
+    public String getMetaChar(int index) {
+        return META_CHARS[index];
+    }
+
+    private BsonDocument find;
     private BsonDocument sort;
     private BsonDocument skip;
     private BsonDocument limit;
     private BsonDocument first;
 
-    public QueryMapping(String type, String name, String target_db, String target_collection, boolean multiple,
-                        BsonDocument filter, BsonDocument sort, BsonDocument skip, BsonDocument limit, BsonDocument first) {
+    public QueryMapping(String type, String name, String target_db, String target_collection,
+                        BsonDocument find, BsonDocument sort, BsonDocument skip, BsonDocument limit, BsonDocument first) {
         super(type, name, target_db, target_collection);
-        this.multiple = multiple;
-        this.filter = filter;
+        this.find = find;
         this.sort = sort;
         this.skip = skip;
         this.limit = limit;
         this.first = first;
     }
 
-    public boolean isMultiple() {
-        return multiple;
+
+
+    public BsonDocument getFind() {
+        return find;
     }
 
-    public void setMultiple(boolean multiple) {
-        this.multiple = multiple;
-    }
-
-    public BsonDocument getFilter() {
-        return filter;
-    }
-
-    public void setFilter(BsonDocument filter) {
-        this.filter = filter;
+    public void setFind(BsonDocument find) {
+        this.find = find;
     }
 
     public BsonDocument getSort() {
@@ -97,58 +88,58 @@ public class QueryMapping extends Mapping {
                 Object obj = (cls.getDeclaredMethod("get"+fieldNameUpper)).invoke(this);
                 if (obj != null){
                     BsonDocument doc = (BsonDocument) obj;
-                    BsonDocument fieldResult = searchMetaChars(new String[]{"$arg", "$fk"}, doc, parentDocument, arguments, fieldName);
-                    result.put(fieldName, fieldResult.get(fieldName));
+                    searchMetaChars(doc, parentDocument, arguments, result,fieldName);
                 }
             }
         }
         return result;
-    } 
+    }
 
-    private BsonDocument searchMetaChars(String[] metaChars, BsonDocument doc, BsonDocument parentDocument, BsonDocument arguments
-            , String prevKey) throws QueryVariableNotBoundException {
+
+    private void searchMetaChars(BsonDocument docToAnalyze,
+                                 BsonDocument parentDocument,
+                                 BsonDocument queryArguments,
+                                 BsonDocument result,
+                                 String prevKey) throws QueryVariableNotBoundException{
         boolean find = false;
-        //searching metacharacters..
-        for (String key: metaChars){
-            //if at least one is present, go out from the loop
-            if(doc.containsKey(key)){
+        for (String meta_char: META_CHARS){
+            if(docToAnalyze.containsKey(meta_char)){
                 find = true;
                 break;
             }
         }
-        //if no metacharacters are present...
-        if (!find) {
-            for (String key : doc.keySet()) {
-                //if there are sub-documents...
-                if (doc.get(key).getClass() == BsonDocument.class) {
-                    //recall recursively the method...
-                    return new BsonDocument(prevKey, searchMetaChars(metaChars, (BsonDocument) doc.get(key), parentDocument, arguments, key));
+
+        if(!find){
+            BsonDocument nextLevelResult = new BsonDocument();
+            for (String key: docToAnalyze.keySet()){
+                if(docToAnalyze.get(key).getClass() == BsonDocument.class){
+                    searchMetaChars((BsonDocument) docToAnalyze.get(key), parentDocument, queryArguments, nextLevelResult, key);
                 }
             }
-        } else {
-            //if at least one metacharacter is present...
-            for (String key: metaChars){
-                if(doc.containsKey(key)){
-                    String valueName = doc.get(key).asString().getValue();
-                    BsonDocument value = new BsonDocument();
-                    if(key == "$arg") {
-                        if (arguments == null || arguments.get(valueName) == null) {
-                            throw new QueryVariableNotBoundException("variable " + valueName + " not bound");
+            result.put(prevKey, nextLevelResult);
+        }
+        else {
+            for (String meta_char: META_CHARS){
+                if(docToAnalyze.containsKey(meta_char)){
+                    String valueName = docToAnalyze.get(meta_char).asString().getValue();
+                    switch (meta_char){
+                        case "$arg": {
+                            if (queryArguments == null || queryArguments.get(valueName) == null) {
+                                throw new QueryVariableNotBoundException("variable " + valueName + " not bound");
+                            }
+                            result.put(prevKey, queryArguments.get(valueName));
+                            break;
                         }
-                        //create a document of type {"argName" : "value"}
-                        value.put(prevKey, arguments.get(valueName));
-                    }
-                    else{
-                        if(parentDocument == null || parentDocument.get(valueName) == null){
-                            throw new QueryVariableNotBoundException("variable" + valueName + "not bound");
+                        case "$fk":{
+                            if(parentDocument == null || parentDocument.get(valueName) == null){
+                                throw new QueryVariableNotBoundException("variable" + valueName + "not bound");
+                            }
+                            result.put(prevKey, parentDocument.get(valueName));
                         }
-                        value.put(prevKey, parentDocument.get(valueName));
                     }
-                    return value;
                 }
             }
         }
-        return null;
     }
 
 
@@ -157,8 +148,7 @@ public class QueryMapping extends Mapping {
         String name;
         String target_db;
         String target_collection;
-        private boolean multiple;
-        private BsonDocument filter;
+        private BsonDocument find;
         private BsonDocument sort;
         private BsonDocument skip;
         private BsonDocument limit;
@@ -169,15 +159,14 @@ public class QueryMapping extends Mapping {
             this.name = name;
             this.target_db = db;
             this.target_collection = collection;
-            this.multiple = multiple;
         }
 
         public Builder newBuilder(String type, String db, String name, String collection, boolean multiple){
             return new Builder(type, db, name, collection, multiple);
         }
 
-        public Builder filter(BsonDocument filter){
-            this.filter = filter;
+        public Builder find(BsonDocument find){
+            this.find = find;
             return this;
         }
 
@@ -202,7 +191,7 @@ public class QueryMapping extends Mapping {
         }
 
         public QueryMapping build(){
-            return new QueryMapping(this.type, this.name, this.target_db, this.target_collection, this.multiple, this.filter,
+            return new QueryMapping(this.type, this.name, this.target_db, this.target_collection, this.find,
                     this.sort, this.skip, this.limit, this.first);
         }
 

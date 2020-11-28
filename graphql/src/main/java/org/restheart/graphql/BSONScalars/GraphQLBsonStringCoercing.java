@@ -1,55 +1,38 @@
 package org.restheart.graphql.BSONScalars;
-
-import graphql.language.StringValue;
-import graphql.schema.Coercing;
-import graphql.schema.CoercingParseLiteralException;
-import graphql.schema.CoercingParseValueException;
-import graphql.schema.CoercingSerializeException;
+import graphql.schema.*;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 
+import static graphql.Scalars.GraphQLString;
 import static org.restheart.graphql.BSONScalars.CoercingUtils.typeName;
 
-public class GraphQLBsonStringCoercing implements Coercing<String, String> {
-
-    private String convertImpl(Object input){
-        if (input instanceof String){
-            return (String) input;
-        }
-        else if(input instanceof BsonValue){
-            return ((BsonValue) input).isString() ? ((BsonValue) input).asString().getValue() : null;
-        }
-        return null;
-    }
+public class GraphQLBsonStringCoercing implements Coercing<BsonString, String> {
 
     @Override
     public String serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        String possibleString = convertImpl(dataFetcherResult);
-        if(possibleString == null){
-            throw new CoercingSerializeException(
-                    "Expected type 'String but was '" + typeName(dataFetcherResult) +"."
-            );
-        }
-        return possibleString;
+      if (dataFetcherResult instanceof BsonValue){
+          BsonValue value = (BsonValue) dataFetcherResult;
+          if(value.isString()){
+              return value.asString().getValue();
+          }
+          throw new CoercingSerializeException(
+                  "Expected type 'String' but was'" + typeName(dataFetcherResult) + "'."
+          );
+      }
+        throw new CoercingSerializeException(
+                "Expected a 'BsonValue' but was'" + typeName(dataFetcherResult) + "'."
+        );
     }
 
     @Override
-    public String parseValue(Object input) throws CoercingParseValueException {
-        String possibleString = convertImpl(input);
-        if(possibleString == null){
-            throw new CoercingParseValueException(
-                    "Expected type 'String but was '" + typeName(input) +"."
-            );
-        }
-        return possibleString;
+    public BsonString parseValue(Object input) throws CoercingParseValueException {
+        String possibleString = (String) GraphQLString.getCoercing().parseValue(input);
+        return new BsonString(possibleString);
     }
 
     @Override
-    public String parseLiteral(Object input) throws CoercingParseLiteralException {
-        if(!(input instanceof StringValue)){
-            throw new CoercingParseLiteralException(
-                    "Expected AST type 'StringValue' but was '" + typeName(input) + "'."
-            );
-        }
-        return ((StringValue) input).getValue();
+    public BsonString parseLiteral(Object AST) throws CoercingParseLiteralException {
+        String possibleString = (String) GraphQLString.getCoercing().parseLiteral(AST);
+        return new BsonString(possibleString);
     }
 }
