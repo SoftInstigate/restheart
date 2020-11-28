@@ -1,11 +1,11 @@
-package org.restheart.graphql;
+package org.restheart.graphql.models;
 import org.bson.BsonDocument;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
-public class QueryMapping extends Mapping {
+public class QueryMapping {
 
     private static final String[] META_CHARS = {"$arg", "$fk"};
 
@@ -13,15 +13,22 @@ public class QueryMapping extends Mapping {
         return META_CHARS[index];
     }
 
+
+    private String db;
+    private String collection;
     private BsonDocument find;
     private BsonDocument sort;
     private BsonDocument skip;
     private BsonDocument limit;
-    private BsonDocument first;
+    private Boolean first;
 
-    public QueryMapping(String type, String name, String target_db, String target_collection,
-                        BsonDocument find, BsonDocument sort, BsonDocument skip, BsonDocument limit, BsonDocument first) {
-        super(type, name, target_db, target_collection);
+    public QueryMapping(){}
+
+    public QueryMapping(String db, String collection, BsonDocument find, BsonDocument sort,
+                        BsonDocument skip, BsonDocument limit, Boolean first) {
+
+        this.db = db;
+        this.collection = collection;
         this.find = find;
         this.sort = sort;
         this.skip = skip;
@@ -29,7 +36,21 @@ public class QueryMapping extends Mapping {
         this.first = first;
     }
 
+    public String getDb() {
+        return db;
+    }
 
+    public void setDb(String db) {
+        this.db = db;
+    }
+
+    public String getCollection() {
+        return collection;
+    }
+
+    public void setCollection(String collection) {
+        this.collection = collection;
+    }
 
     public BsonDocument getFind() {
         return find;
@@ -63,11 +84,11 @@ public class QueryMapping extends Mapping {
         this.limit = limit;
     }
 
-    public BsonDocument getFirst() {
+    public Boolean getFirst() {
         return first;
     }
 
-    public void setFirst(BsonDocument first) {
+    public void setFirst(Boolean first) {
         this.first = first;
     }
 
@@ -144,25 +165,21 @@ public class QueryMapping extends Mapping {
 
 
     public static class Builder{
-        String type;
-        String name;
-        String target_db;
-        String target_collection;
+        String db;
+        String collection;
         private BsonDocument find;
         private BsonDocument sort;
         private BsonDocument skip;
         private BsonDocument limit;
-        private BsonDocument first;
+        private Boolean first;
 
-        public Builder(String type, String name, String db, String collection, boolean multiple){
-            this.type = type;
-            this.name = name;
-            this.target_db = db;
-            this.target_collection = collection;
+        public Builder(String db, String collection){
+            this.db = db;
+            this.collection = collection;
         }
 
-        public Builder newBuilder(String type, String db, String name, String collection, boolean multiple){
-            return new Builder(type, db, name, collection, multiple);
+        public Builder newBuilder(String name, String collection){
+            return new Builder(name, collection);
         }
 
         public Builder find(BsonDocument find){
@@ -185,13 +202,13 @@ public class QueryMapping extends Mapping {
             return this;
         }
 
-        public Builder first(BsonDocument first){
+        public Builder first(Boolean first){
             this.first = first;
             return this;
         }
 
         public QueryMapping build(){
-            return new QueryMapping(this.type, this.name, this.target_db, this.target_collection, this.find,
+            return new QueryMapping(this.db, this.collection, this.find,
                     this.sort, this.skip, this.limit, this.first);
         }
 

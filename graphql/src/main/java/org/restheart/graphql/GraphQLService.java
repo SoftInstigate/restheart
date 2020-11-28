@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.plugins.*;
 import org.restheart.utils.JsonUtils;
@@ -69,7 +70,7 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
 
 
             // Configuration of GraphQL environment for the current application
-            this.gql = GraphQL.newGraphQL(appDefinition.getSchema()).build();
+            this.gql = GraphQL.newGraphQL(appDefinition.getBuiltSchema()).build();
 
             // Query execution
             var result = this.gql.execute(input);

@@ -1,32 +1,26 @@
 package org.restheart.graphql;
 
 import com.mongodb.MongoClient;
+import com.mongodb.MongoClientSettings;
 import graphql.schema.*;
 import graphql.schema.idl.*;
-import org.bson.BSON;
 import org.bson.BsonDocument;
-import org.bson.Document;
+import org.bson.BsonString;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.PojoCodecProvider;
+import org.restheart.graphql.models.GraphQLApp;
+import org.restheart.graphql.models.QueryMapping;
 import org.restheart.mongodb.db.MongoClientSingleton;
 
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
 public class AppDefinitionLoader {
 
     private static final String APP_NAME_FIELD = "descriptor";
-    private static final String MAPPINGS_FIELD = "mappings";
-    private static final String DB_FIELD = "db";
-    private static final String COLL_FIELD = "collection";
-    private static final String MULTI_FIELD = "multiple";
-    private static final String FIND_FIELD = "find";
-    private static final String SORT_FIELD = "sort";
-    private static final String SKIP_FIELD = "skip";
-    private static final String LIMIT_FIELD = "limit";
-    private static final String FIRST_FIELD = "first";
-    private static final String SCHEMA_FIELD = "schema";
 
     private static final String BSON_SCALAR_SCHEMA = "scalar BsonTimestamp scalar BsonString " +
             "scalar ObjectId scalar BsonObject scalar BsonInt32 scalar BsonInt64 scalar BsonDouble " +
@@ -43,36 +37,24 @@ public class AppDefinitionLoader {
     public static GraphQLApp loadAppDefinition(String appName) throws NoSuchFieldException {
 
         MongoClient mongoClient = MongoClientSingleton.getInstance().getClient();
+        CodecRegistry pojoCodecRegistry = fromProviders(PojoCodecProvider.builder().automatic(true).build());
+        CodecRegistry codecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(),
+                pojoCodecRegistry);
 
-        GraphQLApp newApp = new GraphQLApp(appName);
-        BsonDocument appDesc = mongoClient.getDatabase(appDB)
-                .getCollection(appCollection, BsonDocument.class).find(new Document(APP_NAME_FIELD, appName)).first();
 
-        Map<String, Map<String,QueryMapping>> mappings = new HashMap<>();
-        BsonDocument mappingsData = (BsonDocument) appDesc.get(MAPPINGS_FIELD);
-        for (String type: mappingsData.keySet()){
-            Map<String, QueryMapping> typeMappings = new HashMap<>();
-            BsonDocument typeMapping = (BsonDocument) mappingsData.get(type);
-            for (String name: typeMapping.keySet()){
-                BsonDocument mapping = (BsonDocument) typeMapping.get(name);
-                typeMappings.put(name, new QueryMapping.Builder(type,name,
-                        mapping.getString(DB_FIELD).asString().getValue(),
-                        mapping.getString(COLL_FIELD).asString().getValue(),
-                        mapping.getBoolean(MULTI_FIELD).asBoolean().getValue())
-                        .find((BsonDocument) mapping.get(FIND_FIELD))
-                        .sort((BsonDocument) mapping.get(SORT_FIELD))
-                        .skip((BsonDocument) mapping.get(SKIP_FIELD))
-                        .limit((BsonDocument) mapping.get(LIMIT_FIELD))
-                        .first((BsonDocument) mapping.get(FIRST_FIELD))
-                        .build());
-            }
-            mappings.put(type, typeMappings);
+        GraphQLApp newApp = mongoClient.getDatabase(appDB).withCodecRegistry(codecRegistry)
+                .getCollection(appCollection, GraphQLApp.class)
+                .find(new BsonDocument(APP_NAME_FIELD, new BsonString(appName)))
+                .first();
+
+        if (newApp != null) {
+            String schema = newApp.getSchema();
+            String schemaWithBsonScalar = addBSONScalarsToSchema(schema);
+            GraphQLSchema graphQLBuiltSchema = buildSchema(schemaWithBsonScalar, newApp);
+            newApp.setBuiltSchema(graphQLBuiltSchema);
         }
-        newApp.setQueryMappings(mappings);
-        String schema = appDesc.getString(SCHEMA_FIELD).getValue();
-        String schemaWithBsonScalars = addBSONScalarsToSchema(schema);
-        GraphQLSchema graphQLSchema = buildSchema(schemaWithBsonScalars, newApp);
-        newApp.setSchema(graphQLSchema);
+
+
         return newApp;
     }
 
@@ -86,13 +68,15 @@ public class AppDefinitionLoader {
 
     private static RuntimeWiring buildWiring(GraphQLApp app){
 
-        Map<String, Map<String, QueryMapping>> queries = app.getQueryMappings();
-        if (queries.size() > 0) {
+
+        Map<String, Map<String, QueryMapping>> mappings = app.getMappings();
+        if (mappings.size() > 0) {
             RuntimeWiring.Builder runWire = RuntimeWiring.newRuntimeWiring();
             addBSONScalarsToWiring(runWire);
-            for (String type: queries.keySet()){
+            for (String type: mappings.keySet()){
                 TypeRuntimeWiring.Builder queryTypeBuilder = newTypeWiring(type);
-                for (String queryName : queries.get(type).keySet()) {
+                Map<String, QueryMapping> typeMappings = mappings.get(type);
+                for (String queryName : typeMappings.keySet()) {
                     queryTypeBuilder.dataFetcher(queryName, GraphQLDataFetcher.getInstance());
                 }
                 runWire.type(queryTypeBuilder);

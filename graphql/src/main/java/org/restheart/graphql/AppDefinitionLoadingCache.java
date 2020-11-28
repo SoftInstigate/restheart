@@ -3,6 +3,8 @@ package org.restheart.graphql;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
+import org.restheart.graphql.models.GraphQLApp;
+
 import java.util.Optional;
 
 public class AppDefinitionLoadingCache {

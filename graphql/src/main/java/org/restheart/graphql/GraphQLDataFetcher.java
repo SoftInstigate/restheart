@@ -9,6 +9,8 @@ import graphql.schema.GraphQLObjectType;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.graphql.models.GraphQLApp;
+import org.restheart.graphql.models.QueryMapping;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.utils.JsonUtils;
 
@@ -37,18 +39,20 @@ public class GraphQLDataFetcher implements DataFetcher<BsonValue> {
         MongoClient mongoClient = MongoClientSingleton.getInstance().getClient();
         String typeName = ((GraphQLObjectType) dataFetchingEnvironment.getParentType()).getName();
         String fieldName = dataFetchingEnvironment.getField().getName();
-        if(currentApp.getQueryMappings().containsKey(typeName)){
-            Map<String, QueryMapping> queryMappings = currentApp.getQueryMappingByType(typeName);
-            if ( queryMappings.containsKey(fieldName)) {
-                QueryMapping mapping = queryMappings.get(fieldName);
+
+
+        if(currentApp.getMappings().containsKey(typeName)){
+            Map<String, QueryMapping> mappings = currentApp.getMappings().get(typeName);
+            if (mappings.containsKey(fieldName)) {
+                QueryMapping mapping = mappings.get(fieldName);
                 BsonDocument parentDocument = dataFetchingEnvironment.getSource();
                 BsonDocument interpolatedArguments = mapping.interpolate(
                         JsonUtils.toBsonDocument(dataFetchingEnvironment.getArguments()),
                         parentDocument
                 );
 
-                FindIterable<BsonValue> query = mongoClient.getDatabase(mapping.getTarget_db())
-                        .getCollection(mapping.getTarget_collection(), BsonValue.class)
+                FindIterable<BsonValue> query = mongoClient.getDatabase(mapping.getDb())
+                        .getCollection(mapping.getCollection(), BsonValue.class)
                         .find(
                                 interpolatedArguments.containsKey("find") ?
                                         (BsonDocument) interpolatedArguments.get("find"): new BsonDocument()
