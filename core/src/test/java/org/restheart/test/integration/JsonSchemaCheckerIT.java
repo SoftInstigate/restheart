@@ -156,7 +156,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
     }
 
     /**
-     * @see https://github.com/SoftInstigate/restheart/issues/241
+     * Seehttps://github.com/SoftInstigate/restheart/issues/241
      * @throws Exception
      */
     @Test

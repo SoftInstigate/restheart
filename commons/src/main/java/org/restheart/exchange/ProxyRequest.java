@@ -33,7 +33,7 @@ import java.lang.reflect.Field;
  * of the HttpServerExchange.
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
+ * @param <T> generic type
  */
 public abstract class ProxyRequest<T> extends Request<T> implements BufferedExchange<T> {
     public ProxyRequest(HttpServerExchange exchange) {

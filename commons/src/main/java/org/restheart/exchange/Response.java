@@ -38,7 +38,7 @@ import io.undertow.util.HttpString;
  * common methods
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
+ * @param <T> generic type
  */
 public abstract class Response<T> extends Exchange<T> {
     private static final AttachmentKey<Integer> STATUS_CODE = AttachmentKey.create(Integer.class);

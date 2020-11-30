@@ -30,7 +30,7 @@ import org.slf4j.Logger;
  * and of the response, such as query parameters, headers and content
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
+ * @param <T> generic type
  */
 public abstract class Exchange<T> {
 

@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * - A mechanism attempts but fails to authenticate the request. <br>
  * - The list of mechanisms is exhausted.
  *
- * * @see
+ * * See
  * http://undertow.io/javadoc/2.0.x/io/undertow/security/api/AuthenticationMechanism.html
  *
  * The restheart-security process is:

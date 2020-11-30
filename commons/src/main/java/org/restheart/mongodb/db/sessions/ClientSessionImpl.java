@@ -71,7 +71,7 @@ public class ClientSessionImpl
     
     /**
      *
-     * @param <T>
+     * @param <T> generic type
      * @param tb
      * @return
      */
@@ -82,7 +82,7 @@ public class ClientSessionImpl
 
     /**
      *
-     * @param <T>
+     * @param <T> generic type
      * @param tb
      * @param to
      * @return

@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
+ * @param <T> generic type
  */
 public class PluginRecord<T extends Plugin> {
     private final String name;

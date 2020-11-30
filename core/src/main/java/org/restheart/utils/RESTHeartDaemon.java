@@ -23,7 +23,7 @@ package org.restheart.utils;
 /**
  * utility class to help daemonizing process
  *
- * @see <a href="http://akuma.kohsuke.org">Akuma</a>
+ * See<a href="http://akuma.kohsuke.org">Akuma</a>
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 import com.sun.akuma.Daemon;

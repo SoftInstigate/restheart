@@ -56,7 +56,7 @@ public class MongoServiceConfiguration {
     /**
      * undertow connetction options
      *
-     * @see http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
+     * Seehttp://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#common-listener-options
      */
     public static final String CONNECTION_OPTIONS_KEY = "connection-options";
 

@@ -29,7 +29,7 @@ import org.bson.BsonValue;
 
 /**
  *
- * {@link JsonUnflattener} provides a static {@link #unflatten(String)} method
+ * JsonUnflattener provides a static unflatten(String) method
  * to unflatten any flattened JSON string back to nested one.
  *
  * @author Wei-Ming Wu

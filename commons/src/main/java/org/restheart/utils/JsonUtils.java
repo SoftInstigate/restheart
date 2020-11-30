@@ -74,7 +74,7 @@ public class JsonUtils {
      * needed because MongoDB does not allow to store keys that starts with $
      * and with dots in it
      *
-     * @see
+     * See
      * https://docs.mongodb.org/manual/reference/limits/#Restrictions-on-Field-Names
      *
      * @param json
@@ -226,7 +226,7 @@ public class JsonUtils {
      * @return the List of Optional&lt;Object&gt;s extracted from root ojbect
      * and identified by the path or null if path does not exist
      *
-     * @see org.restheart.test.unit.JsonUtilsTest form code examples
+     * Seeorg.restheart.test.unit.JsonUtilsTest form code examples
      *
      */
     public static List<Optional<BsonValue>> getPropsFromPath(
@@ -418,8 +418,8 @@ public class JsonUtils {
      * left path selects a values set that includes the one selected by the
      * right path
      *
-     * examples: ($, $.a) -> true, ($.a, $.b) -> false, ($.*, $.a) -> true,
-     * ($.a.[*].c, $.a.0.c) -> true, ($.a.[*], $.a.b) -> false
+     * {@literal examples: ($, $.a) -> true, ($.a, $.b) -> false, ($.*, $.a) -> true,
+     * ($.a.[*].c, $.a.0.c) -> true, ($.a.[*], $.a.b) -> false }
      *
      */
     public static boolean isAncestorPath(final String left, final String right) {
@@ -792,7 +792,7 @@ public class JsonUtils {
             = Collections.unmodifiableList(Arrays.asList(_UPDATE_OPERATORS));
 
     /**
-     * @see https://docs.mongodb.com/manual/reference/operator/update/
+     * Seehttps://docs.mongodb.com/manual/reference/operator/update/
      * @param key
      * @return true if key is an update operator
      */
@@ -801,7 +801,7 @@ public class JsonUtils {
     }
 
     /**
-     * @see https://docs.mongodb.com/manual/reference/operator/update/
+     * Seehttps://docs.mongodb.com/manual/reference/operator/update/
      *
      * @param json
      * @return true if json contains update operators
@@ -811,7 +811,7 @@ public class JsonUtils {
     }
 
     /**
-     * @see https://docs.mongodb.com/manual/reference/operator/update/
+     * Seehttps://docs.mongodb.com/manual/reference/operator/update/
      *
      * @param ignoreCurrentDate true to ignore $currentDate
      * @param json

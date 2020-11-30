@@ -29,7 +29,7 @@ import org.restheart.ConfigurationException;
 public interface ConfigurablePlugin extends Plugin {
     /**
      *
-     * @param <V>
+     * @param <V> return value
      * @param args
      * @param argKey
      * @return the string arg value of argKey from args

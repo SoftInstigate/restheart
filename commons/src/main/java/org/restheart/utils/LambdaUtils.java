@@ -27,7 +27,7 @@ public class LambdaUtils {
     /**
      * allows to throw Checked exception from a Consumer
      *
-     * @see https://www.baeldung.com/java-sneaky-throws
+     * Seehttps://www.baeldung.com/java-sneaky-throws
      * @param ex
      */
     public static void throwsSneakyExcpetion(Throwable ex) {

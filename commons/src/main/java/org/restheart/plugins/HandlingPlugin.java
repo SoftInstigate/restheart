@@ -26,8 +26,8 @@ import org.restheart.exchange.Response;
  * Parent interface of handling plugins: Service and Proxy
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <R>
- * @param <S>
+ * @param <R> Request
+ * @param <S> Response
  */
 public interface HandlingPlugin<R extends Request<?>, S extends Response<?>>
         extends Plugin, ExchangeTypeResolver<R, S> {

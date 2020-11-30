@@ -29,8 +29,8 @@ import org.restheart.exchange.Response;
  * runtime
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <R>
- * @param <S>
+ * @param <R> Request
+ * @param <S> Response
  */
 public interface ExchangeTypeResolver<R extends Request<?>, S extends Response<?>> {
     default Type requestType() {

@@ -25,7 +25,7 @@ import org.restheart.exchange.Response;
 /**
  * Interceptors allow to snoop and modify requests and responses at different
  * stages of the request lifecycle as defined by the interceptPoint parameter of
- * the annotation RegisterPlugin. @see org.restheart.plugins.InterceptPoint
+ * the annotation RegisterPlugin. Seeorg.restheart.plugins.InterceptPoint
  *
  * An interceptor can intercept either proxied requests or requests handled by
  * Services.
@@ -36,9 +36,10 @@ import org.restheart.exchange.Response;
  * An interceptor can intercept a proxied request, when its request and response
  * types extends BufferedRequest and BufferedResponse.
  *
- * @see https://restheart.org/docs/plugins/core-plugins/#interceptors
- * @param <R> the request type
- * @param <S> the response type
+ * See https://restheart.org/docs/plugins/core-plugins/#interceptors
+ * 
+ * @param <R> Request the request type
+ * @param <S> Response the response type
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */

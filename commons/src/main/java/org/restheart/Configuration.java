@@ -213,7 +213,7 @@ public class Configuration {
 
     /**
      *
-     * @param <V>
+     * @param <V> return value
      * @param conf
      * @param key
      * @param defaultValue

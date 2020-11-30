@@ -33,9 +33,9 @@ import io.undertow.util.HttpString;
 /**
  * Services allow to extend the API adding web services
  *
- * @param <R> the request type
- * @param <S> the response type
- * @see https://restheart.org/docs/plugins/core-plugins/#services
+ * @param <R> Request the request type
+ * @param <S> Response the response type
+ * Seehttps://restheart.org/docs/plugins/core-plugins/#services
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface Service<R extends ServiceRequest<?>, S extends ServiceResponse<?>>

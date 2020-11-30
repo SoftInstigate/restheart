@@ -27,7 +27,7 @@ import static org.restheart.plugins.ConfigurationScope.OWN;
 
 /**
  * Plugin annotation that sets a method to get the configuration's properties as
- * a Map<String, Object>
+ * a {@literal Map<String, Object>}
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */

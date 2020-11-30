@@ -29,7 +29,7 @@ import java.io.IOException;
  * This makes possibile using it in proxied requests.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
+ * @param <T> generic type
  */
 public interface BufferedExchange<T> {
     /**

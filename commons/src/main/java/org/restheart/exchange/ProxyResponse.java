@@ -33,7 +33,7 @@ import org.restheart.utils.HttpStatus;
  * of the HttpServerExchange.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
+ * @param <T> generic type
  */
 public abstract class ProxyResponse<T> extends Response<T>
         implements BufferedExchange<T> {

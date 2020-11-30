@@ -31,7 +31,7 @@ import org.restheart.utils.PluginUtils;
  * function defined by the handling service
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
+ * @param <T> generic type
  */
 public abstract class ServiceRequest<T> extends Request<T> {
     private static final AttachmentKey<ServiceRequest<?>> REQUEST_KEY

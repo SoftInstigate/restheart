@@ -51,9 +51,9 @@
  * itself a translation of jsmin.c written by Douglas Crockford
  * (www.crockford.com).
  *
- * @see
+ * See
  * <a href="http://www.unl.edu/ucomm/templatedependents/JSMin.java">http://www.unl.edu/ucomm/templatedependents/JSMin.java</a>
- * @see
+ * See
  * <a href="http://www.crockford.com/javascript/jsmin.c">http://www.crockford.com/javascript/jsmin.c</a>
  */
 

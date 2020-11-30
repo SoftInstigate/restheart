@@ -77,8 +77,8 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 
     /**
      *
-     * @param <R>
-     * @param <S>
+     * @param <R> Request
+     * @param <S> Response
      * @param service
      * @return the wrapping handler
      */
@@ -98,8 +98,8 @@ public class PipelinedWrappingHandler extends PipelinedHandler {
 
     /**
      *
-     * @param <R>
-     * @param <S>
+     * @param <R> Request
+     * @param <S> Response
      * @param next
      * @param service
      * @return the wrapping handler

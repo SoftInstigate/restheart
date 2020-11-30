@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 /**
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
+ * @param <T> generic type
  */
 public interface ConsumingPlugin<T> {
     public void addConsumer(Consumer<T> consumer);

@@ -30,7 +30,7 @@ import io.undertow.util.AttachmentKey;
  * function defined by the handling service
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
+ * @param <T> generic type
  */
 public abstract class ServiceResponse<T> extends Response<T> {
     private static final AttachmentKey<ServiceResponse<?>> RESPONSE_KEY
@@ -110,7 +110,7 @@ public abstract class ServiceResponse<T> extends Response<T> {
     }
 
     /**
-     * @see setCustomerSender()
+     * SeesetCustomerSender()
      * @return the customSender 
      *
      */

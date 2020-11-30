@@ -45,7 +45,7 @@ import org.restheart.utils.PluginUtils;
  * common methods
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @param <T>
+ * @param <T> generic type
  */
 public abstract class Request<T> extends Exchange<T> {
 
