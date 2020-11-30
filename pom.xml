@@ -515,8 +515,8 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>3.2.0</version>
                         <configuration>
-                            <!--doclint>none,-missing</doclint-->
-                            <failOnError>true</failOnError>
+                            <doclint>none</doclint>
+                            <failOnError>false</failOnError>
                         </configuration>
                         <executions>
                             <execution>
