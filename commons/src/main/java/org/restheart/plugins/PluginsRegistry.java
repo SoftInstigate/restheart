@@ -111,10 +111,8 @@ public interface PluginsRegistry {
     public PipelineInfo getPipelineInfo(String path);
 
     /**
+     * 
      * @param dependency
-     * @return allows plugins to inject custom dependency. Only MongoClient
-     *         dependency is supported. Other dependencies requires
-     *         extending core PluginsRegistryImpl and PluginsFactory
      */
     public void injectDependency(Object dependency);
 }

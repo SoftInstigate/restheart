@@ -1005,7 +1005,7 @@ public class MongoRequest extends BsonRequest {
 
     /**
      * if mongo-mounts specifies a path template (i.e. /{foo}/*) this returns
-     * the request template parameters (/x/y => foo=x, *=y)
+     * the request template parameters {@literal (/x/y => foo=x, *=y) }
      *
      * @return
      */
