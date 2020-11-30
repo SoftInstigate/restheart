@@ -134,7 +134,7 @@ public class PostBucketHandler extends PipelinedHandler {
         response.setDbOperationResult(result);
 
         // insert the Location handler
-        exchange.getResponseHeaders()
+        response.getHeaders()
                 .add(HttpString.tryFromString("Location"),
                         RepresentationUtils.getReferenceLink(
                                 URLUtils.getRemappedRequestURL(exchange),

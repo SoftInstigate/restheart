@@ -169,28 +169,26 @@ public class GetFileBinaryHandler extends PipelinedHandler {
 
         if (file.getMetadata() != null
                 && file.getMetadata().get("contentType") != null) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
+            response.getHeaders().put(Headers.CONTENT_TYPE,
                     file.getMetadata().get("contentType").toString());
         } else if (file.getMetadata() != null
                 && file.getMetadata().get("contentType") != null) {
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
+            response.getHeaders().put(Headers.CONTENT_TYPE,
                     file.getMetadata().get("contentType").toString());
         } else {
-            exchange.getResponseHeaders().put(
+            response.getHeaders().put(
                     Headers.CONTENT_TYPE,
                     APPLICATION_OCTET_STREAM);
         }
 
-        exchange.getResponseHeaders().put(
-                Headers.CONTENT_LENGTH,
-                file.getLength());
+        response.getHeaders().put(Headers.CONTENT_LENGTH, file.getLength());
 
-        exchange.getResponseHeaders().put(
+        response.getHeaders().put(
                 Headers.CONTENT_DISPOSITION,
                 String.format("inline; filename=\"%s\"",
                         extractFilename(file)));
 
-        exchange.getResponseHeaders().put(
+            response.getHeaders().put(
                 Headers.CONTENT_TRANSFER_ENCODING,
                 CONTENT_TRANSFER_ENCODING_BINARY);
 

@@ -89,12 +89,11 @@ public class RndTokenService implements JsonService {
     @Override
     public void handle(JsonRequest request, JsonResponse response) throws Exception {
         var exchange = request.getExchange();
-        
-        if (exchange.getRequestPath().startsWith(getUri())
-                && exchange.getRequestPath().length() >= (getUri().length() + 2)
+
+        if (request.getPath().startsWith(getUri())
+                && request.getPath().length() >= (getUri().length() + 2)
                 && Methods.OPTIONS.equals(exchange.getRequestMethod())) {
-            exchange.getResponseHeaders().put(
-                    HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, DELETE")
+            response.getHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, DELETE")
                     .put(HttpString.tryFromString("Access-Control-Allow-Headers"),
                             "Accept, Accept-Encoding, Authorization, Content-Length, "
                             + "Content-Type, Host, Origin, X-Requested-With, "
@@ -104,10 +103,8 @@ public class RndTokenService implements JsonService {
             return;
         }
 
-        if (exchange.getSecurityContext() == null
-                || exchange.getSecurityContext().getAuthenticatedAccount() == null
-                || exchange.getSecurityContext().getAuthenticatedAccount()
-                        .getPrincipal() == null) {
+        if (request.getAuthenticatedAccount() == null
+                || request.getAuthenticatedAccount().getPrincipal() == null) {
             response.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
             return;
         }
@@ -125,17 +122,12 @@ public class RndTokenService implements JsonService {
         if (Methods.GET.equals(exchange.getRequestMethod())) {
             JsonObject resp = new JsonObject();
 
-            resp.add("auth_token", new JsonPrimitive(exchange.getResponseHeaders()
-                    .get(AUTH_TOKEN_HEADER).getFirst()));
+            resp.add("auth_token", new JsonPrimitive(response.getHeader(AUTH_TOKEN_HEADER)));
 
-            resp.add("auth_token_valid_until",
-                    new JsonPrimitive(exchange.getResponseHeaders()
-                            .get(AUTH_TOKEN_VALID_HEADER).getFirst()));
+            resp.add("auth_token_valid_until", new JsonPrimitive(response.getHeader(AUTH_TOKEN_VALID_HEADER)));
 
             response.setStatusCode(HttpStatus.SC_OK);
-            // TODO use static var for content type
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-            exchange.getResponseSender().send(resp.toString());
+            response.setContent(resp);
         } else if (Methods.DELETE.equals(exchange.getRequestMethod())) {
             BaseAccount account = new BaseAccount(exchange.getSecurityContext()
                     .getAuthenticatedAccount().getPrincipal().getName(),
@@ -172,7 +164,7 @@ public class RndTokenService implements JsonService {
         if (confArgs == null) {
             return "/tokens";
         }
-        
+
         try {
             return ConfigurablePlugin.argValue(confArgs, "uri");
         }

@@ -101,7 +101,7 @@ public class DeleteDBHandler extends PipelinedHandler {
         }
 
         if (result.getEtag() != null) {
-            exchange.getResponseHeaders().put(Headers.ETAG, result.getEtag().toString());
+            response.getHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
 
         response.setStatusCode(result.getHttpCode());

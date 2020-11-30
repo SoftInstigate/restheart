@@ -81,7 +81,7 @@ public class JsonProxyRequest extends ProxyRequest<JsonElement> {
         setContentTypeAsJson();
         if (content == null) {
             setBuffer(null);
-            getWrappedExchange().getRequestHeaders().remove(Headers.CONTENT_LENGTH);
+            getHeaders().remove(Headers.CONTENT_LENGTH);
         } else {
             PooledByteBuffer[] dest;
             if (isContentAvailable()) {
@@ -99,8 +99,7 @@ public class JsonProxyRequest extends ProxyRequest<JsonElement> {
             // updated request content length
             // this is not needed in Response.writeContent() since done
             // by ModificableContentSinkConduit.updateContentLenght();
-            getWrappedExchange().getRequestHeaders().put(Headers.CONTENT_LENGTH, 
-                    copied);
+            getHeaders().put(Headers.CONTENT_LENGTH, copied);
         }
     }
 }

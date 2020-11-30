@@ -85,7 +85,7 @@ public class ByteArrayProxyRequest extends ProxyRequest<byte[]> {
             // updated request content length
             // this is not needed in Response.writeContent() since done
             // by ModificableContentSinkConduit.updateContentLenght();
-            getWrappedExchange().getRequestHeaders().put(Headers.CONTENT_LENGTH, copied);
+            getHeaders().put(Headers.CONTENT_LENGTH, copied);
         }
     }
 }

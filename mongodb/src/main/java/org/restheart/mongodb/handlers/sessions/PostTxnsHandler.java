@@ -93,7 +93,7 @@ public class PostTxnsHandler extends PipelinedHandler {
             // propagate the transaction
             TxnsUtils.propagateSession(cs);
 
-            exchange.getResponseHeaders()
+            response.getHeaders()
                     .add(HttpString.tryFromString("Location"),
                             RepresentationUtils.getReferenceLink(
                                     request.getMappedRequestUri(), //URLUtils.getRemappedRequestURL(exchange),

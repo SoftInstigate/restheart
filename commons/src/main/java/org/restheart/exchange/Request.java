@@ -140,11 +140,44 @@ public abstract class Request<T> extends Exchange<T> {
     /**
      * note: an header can have multiple values. This only returns the first one.
      * use getHeaders() to get all the header's values
+     * 
      * @param name the name of the header to return
      * @return the first value of the header
      */
     public String getHeader(String name) {
-        return wrapped.getRequestHeaders().getFirst(name);
+        return getHeaders().getFirst(HttpString.tryFromString(name));
+    }
+
+    /**
+     * note: an header can have multiple values. This sets the given value clearing
+     * existing ones. use getHeaders().add(value) to add the value without clearing.
+     *
+     * @param name the name of the header to return
+     * @return the first value of the request header
+     */
+    public void setHeader(HttpString name, String value) {
+        if (getHeaders().get(name) == null) {
+            getHeaders().put(name, value);
+        } else {
+            getHeaders().get(name).clear();
+            getHeaders().get(name).add(value);
+        }
+    }
+
+    /**
+     * note: an header can have multiple values. This sets the given value clearing
+     * existing ones. use getHeaders().add(value) to add the value without clearing.
+     *
+     * @param name the name of the header to return
+     * @return the first value of the request header
+     */
+    public void setHeader(String name, String value) {
+        if (getHeaders().get(name) == null) {
+            getHeaders().put(HttpString.tryFromString(name), value);
+        } else {
+            getHeaders().get(HttpString.tryFromString(name)).clear();
+            getHeaders().get(HttpString.tryFromString(name)).add(value);
+        }
     }
 
     /**
@@ -159,6 +192,7 @@ public abstract class Request<T> extends Exchange<T> {
      * get path parameters using a template
      *
      * eg pathTemplate=/foo/{id} and URI=/foo/bar => returns a map with id=bar
+     * 
      * @param pathTemplate the path template
      * @return the path parameters
      */
@@ -167,7 +201,7 @@ public abstract class Request<T> extends Exchange<T> {
 
         try {
             ptm.add(PathTemplate.create(pathTemplate), "");
-        } catch (Throwable t ) {
+        } catch (Throwable t) {
             throw new IllegalArgumentException("wrong path template", t);
         }
 
@@ -180,8 +214,9 @@ public abstract class Request<T> extends Exchange<T> {
      * get a path parameter using a path template
      *
      * eg pathTemplate=/foo/{id}, paramName=id and URI=/foo/bar => returns bar
+     * 
      * @param pathTemplate the path template
-     * @param parameter name
+     * @param parameter    name
      * @return the path parameter
      */
     public String getPathParam(String pathTemplate, String paramName) {
@@ -202,7 +237,7 @@ public abstract class Request<T> extends Exchange<T> {
      * @param responseContentType the responseContentType to set
      */
     public void setContentType(String responseContentType) {
-        getWrappedExchange().getRequestHeaders().put(Headers.CONTENT_TYPE, responseContentType);
+        getHeaders().put(Headers.CONTENT_TYPE, responseContentType);
     }
 
     /**
@@ -213,7 +248,7 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     protected void setContentLength(int length) {
-        wrapped.getRequestHeaders().put(Headers.CONTENT_LENGTH, length);
+        getHeaders().put(Headers.CONTENT_LENGTH, length);
     }
 
     /**

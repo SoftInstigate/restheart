@@ -63,13 +63,11 @@ public class EchoProxyResponseInterceptor implements ProxyInterceptor {
 
     @Override
     public void handle(ByteArrayProxyRequest request, ByteArrayProxyResponse response) throws Exception {
-        response.getExchange().getResponseHeaders()
-                .add(HttpString.tryFromString("header"),
+        response.getHeaders().add(HttpString.tryFromString("header"),
                         "added by echoProxyResponseInterceptor "
                         + request.getPath());
 
         var content = response.readContent();
-        
         if (content != null && response.isContentTypeJson()) {
             var _content = JsonParser.parseString(
                     BuffersUtils.toString(content,
@@ -80,7 +78,7 @@ public class EchoProxyResponseInterceptor implements ProxyInterceptor {
 
             __content.addProperty("prop3",
                     "property added by echoProxyResponseInterceptor");
-            
+
             response.writeContent(__content.toString().getBytes());
 
         }

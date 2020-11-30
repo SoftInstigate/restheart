@@ -93,7 +93,7 @@ public class EchoService implements ByteArrayService {
         var headers = new JsonObject();
         resp.add("headers", headers);
 
-        exchange.getRequestHeaders().forEach(header -> {
+        request.getHeaders().forEach(header -> {
             var _values = new JsonArray();
             headers.add(header.getHeaderName().toString(), _values);
 

@@ -45,32 +45,27 @@ public class RequestHelper {
      * @param etag
      * @return
      */
-    public static boolean checkReadEtag(HttpServerExchange exchange, 
-            BsonObjectId etag) {
+    public static boolean checkReadEtag(HttpServerExchange exchange, BsonObjectId etag) {
         if (etag == null) {
             return false;
         }
 
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_NONE_MATCH);
 
-        return vs == null || vs.getFirst() == null
-                ? false
-                : vs.getFirst().equals(etag.getValue().toString());
+        return vs == null || vs.getFirst() == null ? false : vs.getFirst().equals(etag.getValue().toString());
     }
 
     /**
      *
      * @param exchange
-     * @return the etag ObjectId value or null in case the IF_MATCH header is
-     * not present. If the header contains an invalid ObjectId string value
-     * returns a new ObjectId (the check will fail for sure)
+     * @return the etag ObjectId value or null in case the IF_MATCH header is not
+     *         present. If the header contains an invalid ObjectId string value
+     *         returns a new ObjectId (the check will fail for sure)
      */
     public static ObjectId getWriteEtag(HttpServerExchange exchange) {
         HeaderValues vs = exchange.getRequestHeaders().get(Headers.IF_MATCH);
 
-        return vs == null || vs.getFirst() == null 
-                ? null 
-                : getEtagAsObjectId(vs.getFirst());
+        return vs == null || vs.getFirst() == null ? null : getEtagAsObjectId(vs.getFirst());
     }
 
     /**
@@ -94,31 +89,24 @@ public class RequestHelper {
      *
      * @param content
      * @param exchange
-     * @return true if content is not acceptable. In this case it also
- invoke response.setInError() on the exchange and the
- caller must invoke next() and return
+     * @return true if content is not acceptable. In this case it also invoke
+     *         response.setInError() on the exchange and the caller must invoke
+     *         next() and return
      * @throws Exception
      */
-    public static boolean isNotAcceptableContent(BsonValue content, 
-            HttpServerExchange exchange) throws Exception {
+    public static boolean isNotAcceptableContent(BsonValue content, HttpServerExchange exchange) throws Exception {
         // cannot proceed with no data
         if (content == null) {
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "no data provided");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
             return true;
         }
         // cannot proceed with an array
         if (!content.isDocument()) {
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data must be a json object");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object");
             return true;
         }
         if (content.asDocument().isEmpty()) {
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "no data provided");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
             return true;
         }
         return false;
@@ -126,35 +114,30 @@ public class RequestHelper {
 
     /**
      *
-     * Warn side effect: invokes 
- MongoResponse.of(exchange).setDbOperationResult(result)
+     * Warn side effect: invokes
+     * MongoResponse.of(exchange).setDbOperationResult(result)
      * 
      * @param result
      * @param exchange
-     * @return true if response is in coflict. In this case it also
- invoke response.setInError() on the exchange and the
- caller must invoke next() and return
+     * @return true if response is in coflict. In this case it also invoke
+     *         response.setInError() on the exchange and the caller must invoke
+     *         next() and return
      * @throws Exception
      */
-    public static boolean isResponseInConflict(OperationResult result, 
-            HttpServerExchange exchange) throws Exception {
+    public static boolean isResponseInConflict(OperationResult result, HttpServerExchange exchange) throws Exception {
         MongoResponse.of(exchange).setDbOperationResult(result);
         // inject the etag
         if (result.getEtag() != null) {
             ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_CONFLICT,
-                    "The ETag must be provided using the '"
-                    + Headers.IF_MATCH
-                    + "' header");
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_CONFLICT,
+                    "The ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             return true;
         }
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_EXPECTATION_FAILED,
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_EXPECTATION_FAILED,
                     ResponseHelper.getMessageFromErrorCode(11000));
             return true;
         }

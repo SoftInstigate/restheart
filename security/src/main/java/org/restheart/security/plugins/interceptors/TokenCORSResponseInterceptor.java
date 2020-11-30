@@ -52,15 +52,10 @@ public class TokenCORSResponseInterceptor implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var exchange = request.getExchange();
-
-        var hs = exchange
-                .getResponseHeaders()
-                .get(ACCESS_CONTROL_EXPOSE_HEADERS);
+        var hs = response.getHeaders().get(ACCESS_CONTROL_EXPOSE_HEADERS);
 
         if (hs == null || hs.isEmpty()) {
-            exchange
-                .getResponseHeaders()
+            response.getHeaders()
                 .put(ACCESS_CONTROL_EXPOSE_HEADERS, headers());
         } else {
             var v0 = hs.getFirst();
@@ -71,9 +66,7 @@ public class TokenCORSResponseInterceptor implements MongoInterceptor {
                 }
             }
 
-            exchange
-                .getResponseHeaders()
-                .put(ACCESS_CONTROL_EXPOSE_HEADERS, v0);
+            response.getHeaders().put(ACCESS_CONTROL_EXPOSE_HEADERS, v0);
         }
     }
 

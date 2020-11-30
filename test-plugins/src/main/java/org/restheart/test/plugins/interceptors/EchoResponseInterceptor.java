@@ -62,7 +62,7 @@ public class EchoResponseInterceptor implements ByteArrayInterceptor {
 
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
-        response.getExchange().getResponseHeaders()
+        response.getHeaders()
                 .add(HttpString.tryFromString("header"),
                         "added by echoResponseInterceptor "
                         + request.getPath());
@@ -71,14 +71,11 @@ public class EchoResponseInterceptor implements ByteArrayInterceptor {
             var _content = JsonParser.parseString(
                     new String(response.getContent(), Charset.forName("utf-8")));
 
-            JsonObject content = _content
-                    .getAsJsonObject();
+            JsonObject content = _content.getAsJsonObject();
 
-            content.addProperty("prop2",
-                    "property added by echoResponseInterceptor");
-            
+            content.addProperty("prop2", "property added by echoResponseInterceptor");
+
             response.setContent(content.toString().getBytes());
-
         }
     }
 

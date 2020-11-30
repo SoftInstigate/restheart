@@ -72,8 +72,8 @@ public class GetRoleService implements JsonService {
         var exchange = request.getExchange();
 
         if (request.isOptions()) {
-            exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
-            exchange.getResponseHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"),
+            response.getHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
+            response.getHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"),
                     "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, "
                     + AUTH_TOKEN_HEADER
                     + ", " + AUTH_TOKEN_VALID_HEADER
@@ -90,9 +90,9 @@ public class GetRoleService implements JsonService {
                     exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
 
                     // REMOVE THE AUTH TOKEN HEADERS!!!!!!!!!!!
-                    exchange.getResponseHeaders().remove(AUTH_TOKEN_HEADER);
-                    exchange.getResponseHeaders().remove(AUTH_TOKEN_VALID_HEADER);
-                    exchange.getResponseHeaders().remove(AUTH_TOKEN_LOCATION_HEADER);
+                    response.getHeaders().remove(AUTH_TOKEN_HEADER);
+                    response.getHeaders().remove(AUTH_TOKEN_VALID_HEADER);
+                    response.getHeaders().remove(AUTH_TOKEN_LOCATION_HEADER);
 
                     exchange.endExchange();
                     return;

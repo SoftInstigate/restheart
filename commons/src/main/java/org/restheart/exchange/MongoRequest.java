@@ -150,8 +150,8 @@ public class MongoRequest extends BsonRequest {
         this.type = selectRequestType(pathTokens);
 
         // etag
-        HeaderValues etagHvs = exchange.getRequestHeaders() == null
-                ? null : exchange.getRequestHeaders().get(Headers.IF_MATCH);
+        HeaderValues etagHvs = getHeaders() == null
+                ? null : getHeaders().get(Headers.IF_MATCH);
 
         this.etag = etagHvs == null || etagHvs.getFirst() == null
                 ? null

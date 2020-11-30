@@ -170,8 +170,7 @@ public class MetricsHandler extends PipelinedHandler {
                                         ? null
                                         : representationFormatParameters.getFirst())
                 ).orElseGet(()
-                        -> ResponseType.forAcceptHeader(exchange
-                                .getRequestHeaders().getFirst(Headers.ACCEPT))
+                        -> ResponseType.forAcceptHeader(request.getHeader(Headers.ACCEPT.toString()))
                 );
 
                 // render metrics or error on unknown response type

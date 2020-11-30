@@ -247,7 +247,7 @@ public class BsonRequestContentInjector {
 
         BsonValue content;
 
-        final HeaderValues contentType = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
+        final HeaderValues contentType = request.getHeaders().get(Headers.CONTENT_TYPE);
         if (isFormOrMultipart(contentType)) {
             if (!((request.isPost() && request.isFilesBucket())
                     || (request.isPut() && request.isFile()))) {

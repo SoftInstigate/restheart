@@ -78,7 +78,7 @@ public abstract class ProxyResponse<T> extends Response<T>
     }
 
     protected void setContentLength(int length) {
-        wrapped.getResponseHeaders().put(Headers.CONTENT_LENGTH, length);
+        getHeaders().put(Headers.CONTENT_LENGTH, length);
     }
 
     /**

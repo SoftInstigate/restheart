@@ -39,52 +39,41 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare <andrea@softinstigate.com>
  */
-@RegisterPlugin(
-        name = "echoProxyRequestInterceptor",
-        description = "used for testing purposes",
-        enabledByDefault = false,
-        requiresContent = true,
-        interceptPoint = REQUEST_AFTER_AUTH)
+@RegisterPlugin(name = "echoProxyRequestInterceptor", description = "used for testing purposes", enabledByDefault = false, requiresContent = true, interceptPoint = REQUEST_AFTER_AUTH)
 public class EchoProxyRequestInterceptor implements ProxyInterceptor {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(EchoProxyRequestInterceptor.class);
+        private static final Logger LOGGER = LoggerFactory.getLogger(EchoProxyRequestInterceptor.class);
 
-    /**
-     * shows how to inject configuration via @OnInit
-     *
-     * @param args
-     */
-    @InjectConfiguration
-    public void init(Map<String, Object> args) {
-        LOGGER.trace("got args {}", args);
-    }
-
-    @Override
-    public void handle(ByteArrayProxyRequest request, ByteArrayProxyResponse response) throws Exception {
-        request.getExchange().getRequestHeaders()
-                .add(HttpString.tryFromString("header"),
-                        "added by echoProxyRequestInterceptor "
-                        + request.getPath());
-
-        var content = request.readContent();
-        
-        if (content != null && request.isContentTypeJson()) {
-            var _content = JsonParser.parseString(
-                    new String(content, Charset.forName("utf-8")));
-
-            JsonObject __content = _content
-                    .getAsJsonObject();
-
-            __content.addProperty("prop3",
-                    "property added by echoProxyRequestInterceptor");
-            
-            request.writeContent(__content.toString().getBytes());
+        /**
+         * shows how to inject configuration via @OnInit
+         *
+         * @param args
+         */
+        @InjectConfiguration
+        public void init(Map<String, Object> args) {
+                LOGGER.trace("got args {}", args);
         }
-    }
 
-    @Override
-    public boolean resolve(ByteArrayProxyRequest request, ByteArrayProxyResponse response) {
-        return request.getPath().equals("/piecho");
-    }
+        @Override
+        public void handle(ByteArrayProxyRequest request, ByteArrayProxyResponse response) throws Exception {
+                request.getHeaders().add(HttpString.tryFromString("header"),
+                                "added by echoProxyRequestInterceptor " + request.getPath());
+
+                var content = request.readContent();
+
+                if (content != null && request.isContentTypeJson()) {
+                        var _content = JsonParser.parseString(new String(content, Charset.forName("utf-8")));
+
+                        JsonObject __content = _content.getAsJsonObject();
+
+                        __content.addProperty("prop3", "property added by echoProxyRequestInterceptor");
+
+                        request.writeContent(__content.toString().getBytes());
+                }
+        }
+
+        @Override
+        public boolean resolve(ByteArrayProxyRequest request, ByteArrayProxyResponse response) {
+                return request.getPath().equals("/piecho");
+        }
 }

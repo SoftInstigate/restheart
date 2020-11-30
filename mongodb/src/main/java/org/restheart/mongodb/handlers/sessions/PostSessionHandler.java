@@ -86,7 +86,7 @@ public class PostSessionHandler extends PipelinedHandler {
         try {
             UUID sid = Sid.randomUUID(options(request));
 
-            exchange.getResponseHeaders()
+            response.getHeaders()
                     .add(HttpString.tryFromString("Location"),
                             RepresentationUtils.getReferenceLink(
                                     URLUtils.getRemappedRequestURL(exchange),

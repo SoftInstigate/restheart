@@ -164,7 +164,7 @@ public class PostCollectionHandler extends PipelinedHandler {
             next(exchange);
             return;
         }
-        
+
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
             response.setInError(
@@ -179,7 +179,7 @@ public class PostCollectionHandler extends PipelinedHandler {
         // insert the Location handler for new documents
         // note, next handlers might change the status code
         if (result.getHttpCode() == HttpStatus.SC_CREATED) {
-            exchange.getResponseHeaders()
+            response.getHeaders()
                     .add(HttpString.tryFromString("Location"),
                             RepresentationUtils.getReferenceLink(
                                     URLUtils.getRemappedRequestURL(exchange),

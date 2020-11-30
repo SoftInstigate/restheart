@@ -321,15 +321,14 @@ public class MongoResponse extends BsonResponse {
     public void rollback(MongoClient mclient)
             throws Exception {
         var request = MongoRequest.of(getExchange());
-        
+        var response = MongoResponse.of(getExchange());
+
         if (request.isBulkDocuments()
                 || (request.isPost() && request.getContent() != null
                 && request.getContent().isArray())) {
             throw new UnsupportedOperationException("rollback() does not support "
                     + "bulk updates");
         }
-
-        var exchange = request.getExchange();
 
         MongoDatabase mdb = mclient.getDatabase(request.getDBName());
 
@@ -358,7 +357,7 @@ public class MongoResponse extends BsonResponse {
                     && oldData.get("$set")
                             .asDocument()
                             .get("_etag") != null) {
-                exchange.getResponseHeaders().put(Headers.ETAG,
+                    response.getHeaders().put(Headers.ETAG,
                         oldData.get("$set")
                                 .asDocument()
                                 .get("_etag")
@@ -366,7 +365,7 @@ public class MongoResponse extends BsonResponse {
                                 .getValue()
                                 .toString());
             } else {
-                exchange.getResponseHeaders().remove(Headers.ETAG);
+                response.getHeaders().remove(Headers.ETAG);
             }
 
         } else {

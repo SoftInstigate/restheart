@@ -19,13 +19,18 @@
  */
 package org.restheart.exchange;
 
-import com.google.common.reflect.TypeToken;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.AttachmentKey;
-import io.undertow.util.Headers;
 import java.lang.reflect.Type;
 import java.util.Map;
+
+import com.google.common.reflect.TypeToken;
+
 import org.restheart.utils.PluginUtils;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
+import io.undertow.util.HeaderMap;
+import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
 
 /**
  *
@@ -36,47 +41,42 @@ import org.restheart.utils.PluginUtils;
  * @param <T>
  */
 public abstract class Response<T> extends Exchange<T> {
-    private static final AttachmentKey<Integer> STATUS_CODE
-            = AttachmentKey.create(Integer.class);
+    private static final AttachmentKey<Integer> STATUS_CODE = AttachmentKey.create(Integer.class);
 
-    private static final AttachmentKey<Map<String, String>> MDC_CONTEXT_KEY
-            = AttachmentKey.create(Map.class);
+    private static final AttachmentKey<Map<String, String>> MDC_CONTEXT_KEY = AttachmentKey.create(Map.class);
 
     protected Response(HttpServerExchange exchange) {
         super(exchange);
     }
-    
+
     public static Response of(HttpServerExchange exchange) {
         var pi = PluginUtils.pipelineInfo(exchange);
-        
+
         if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
             return ServiceResponse.of(exchange);
         } else {
             return ByteArrayProxyResponse.of(exchange);
         }
     }
-    
+
     private static final Type _TYPE = new TypeToken<Response>(Response.class) {
-        }.getType();
-    
+    }.getType();
+
     public static Type type() {
         return _TYPE;
     }
 
     public static String getContentType(HttpServerExchange exchange) {
-        return exchange.getResponseHeaders()
-                .getFirst(Headers.CONTENT_TYPE);
+        return exchange.getResponseHeaders().getFirst(Headers.CONTENT_TYPE);
     }
-    
+
     /**
      * @return the responseContentType
      */
     @Override
     public String getContentType() {
-        if (getWrappedExchange().getResponseHeaders()
-                .get(Headers.CONTENT_TYPE) != null) {
-            return getWrappedExchange().getResponseHeaders()
-                    .get(Headers.CONTENT_TYPE).getFirst();
+        if (getHeaders().get(Headers.CONTENT_TYPE) != null) {
+            return getHeaders().get(Headers.CONTENT_TYPE).getFirst();
         } else {
             return null;
         }
@@ -86,8 +86,7 @@ public abstract class Response<T> extends Exchange<T> {
      * @param responseContentType the responseContentType to set
      */
     public void setContentType(String responseContentType) {
-        getWrappedExchange().getResponseHeaders()
-                .put(Headers.CONTENT_TYPE, responseContentType);
+        setHeader(Headers.CONTENT_TYPE, responseContentType);
     }
 
     /**
@@ -103,8 +102,7 @@ public abstract class Response<T> extends Exchange<T> {
     public int getStatusCode() {
         var wrappedExchange = getWrappedExchange();
 
-        if (wrappedExchange == null
-                || wrappedExchange.getAttachment(STATUS_CODE) == null) {
+        if (wrappedExchange == null || wrappedExchange.getAttachment(STATUS_CODE) == null) {
             return -1;
         } else {
             return wrappedExchange.getAttachment(STATUS_CODE);
@@ -119,9 +117,70 @@ public abstract class Response<T> extends Exchange<T> {
     }
 
     /**
-     * Logging MDC Context is bind to the thread context. In case of a thread
-     * switch it must be restored from this exchange attachment using
-     * MDC.setContextMap()
+     *
+     * @return the response headers
+     */
+    public HeaderMap getHeaders() {
+        return wrapped.getResponseHeaders();
+    }
+
+    /**
+     * note: an header can have multiple values. This only returns the first one.
+     * use getHeaders() to get all the header's values
+     *
+     * @param name the name of the header to return
+     * @return the first value of the response header
+     */
+    public String getHeader(HttpString name) {
+        return getHeaders().getFirst(name);
+    }
+
+    /**
+     * note: an header can have multiple values. This only returns the first one.
+     * use getHeaders() to get all the header's values
+     *
+     * @param name the name of the header to return
+     * @return the first value of the response header
+     */
+    public String getHeader(String name) {
+        return getHeaders().getFirst(HttpString.tryFromString(name));
+    }
+
+    /**
+     * note: an header can have multiple values. This sets the given value clearing
+     * existing ones. use getHeaders().add(value) to add the value without clearing.
+     *
+     * @param name the name of the header to return
+     * @return the first value of the response header
+     */
+    public void setHeader(HttpString name, String value) {
+        if (getHeaders().get(name) == null) {
+            getHeaders().put(name, value);
+        } else {
+            getHeaders().get(name).clear();
+            getHeaders().get(name).add(value);
+        }
+    }
+
+    /**
+     * note: an header can have multiple values. This sets the given value clearing
+     * existing ones. use getHeaders().add(value) to add the value without clearing.
+     *
+     * @param name the name of the header to return
+     * @return the first value of the response header
+     */
+    public void setHeader(String name, String value) {
+        if (getHeaders().get(name) == null) {
+            getHeaders().put(HttpString.tryFromString(name), value);
+        } else {
+            getHeaders().get(HttpString.tryFromString(name)).clear();
+            getHeaders().get(HttpString.tryFromString(name)).add(value);
+        }
+    }
+
+    /**
+     * Logging MDC Context is bind to the thread context. In case of a thread switch
+     * it must be restored from this exchange attachment using MDC.setContextMap()
      *
      * @return the MDC Context
      */
@@ -137,19 +196,16 @@ public abstract class Response<T> extends Exchange<T> {
      *
      * @param code
      * @param message
-     * @param t can be null
+     * @param t       can be null
      */
-    public abstract void setInError(int code,
-            String message,
-            Throwable t);
-    
+    public abstract void setInError(int code, String message, Throwable t);
+
     /**
      *
      * @param code
      * @param message
      */
-    public void setInError(int code,
-            String message) {
+    public void setInError(int code, String message) {
         setInError(code, message, null);
     }
 }
