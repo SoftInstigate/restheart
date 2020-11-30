@@ -35,7 +35,7 @@ import org.xnio.conduits.StreamSinkConduit;
  * content; response interceptors that require response content are executed by
  * ModifiableContentSinkConduit.terminateWrites()
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ContentStreamSinkConduit
         extends AbstractStreamSinkConduit<StreamSinkConduit> {

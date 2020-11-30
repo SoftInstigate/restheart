@@ -25,7 +25,7 @@ import org.restheart.exchange.Response;
 /**
  * Parent interface of handling plugins: Service and Proxy
  * 
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <R>
  * @param <S>
  */

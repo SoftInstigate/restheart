@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * this class is configured to be initialized at build time by native-image
  * note: we cannot use logging in this class, otherwise native-image will fail
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PluginsScanner {
     private static final String REGISTER_PLUGIN_CLASS_NAME = RegisterPlugin.class.getName();

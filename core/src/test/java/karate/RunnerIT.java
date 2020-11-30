@@ -27,7 +27,7 @@ import org.restheart.test.integration.AbstactIT;
 /**
  * streams tests are disabled because can fail on slow hosts
  * to enable them, remove from streams.feature
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RunWith(Karate.class)
 // use KarateOptions to limit test to execute

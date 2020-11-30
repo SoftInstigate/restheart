@@ -36,7 +36,7 @@ import org.restheart.utils.JsonUtils;
  * data. Two query parameters controls the conversion: 'id', the the index of
  * the _id property and 'sep', the separator char
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
     /**

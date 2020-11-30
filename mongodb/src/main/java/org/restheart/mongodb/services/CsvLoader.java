@@ -56,7 +56,7 @@ import org.restheart.utils.JsonUtils;
  * defined in conf file) of a tranformer to apply to imported data - update
  * optional (default: no).use data to update matching documents");
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @SuppressWarnings("unchecked")
 @RegisterPlugin(name = "csvLoader",

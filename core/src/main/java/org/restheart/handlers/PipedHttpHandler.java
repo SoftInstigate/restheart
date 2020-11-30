@@ -22,7 +22,7 @@ package org.restheart.handlers;
 
 /**
  * @deprecated use PipelinedHandler
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @Deprecated
 public abstract class PipedHttpHandler extends PipelinedHandler {

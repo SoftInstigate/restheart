@@ -29,7 +29,7 @@ import org.restheart.plugins.RegisterPlugin;
 /**
  * An idea to further simplify service definition. TBC
  * 
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 
 public abstract class DelegateHandleService implements ByteArrayService  {

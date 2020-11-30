@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * Transform the response content to HAL or SHAL format when required (e.g. when
  * the request has the query parameter ?rep=HAL)
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "halRepresentation",
         description = "transforms the response to the HAL format if requested",

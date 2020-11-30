@@ -28,7 +28,7 @@ import org.restheart.exchange.JsonResponse;
 /**
  * Specialized Service interface that uses JsonRequest and JsonResponse
  * 
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface JsonService extends Service<JsonRequest, JsonResponse> {
     @Override

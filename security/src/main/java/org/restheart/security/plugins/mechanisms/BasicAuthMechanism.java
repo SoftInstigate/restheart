@@ -35,7 +35,7 @@ import org.restheart.plugins.security.AuthMechanism;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
         name = "basicAuthMechanism",

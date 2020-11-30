@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The Service that handles requests to mongodb resources
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "mongo",
         description = "handles requests to mongodb resources",

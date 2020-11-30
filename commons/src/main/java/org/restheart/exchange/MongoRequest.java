@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
  * provides simplified methods to deal with headers and query parameters
  * specific to mongo requests
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class MongoRequest extends BsonRequest {
     static {

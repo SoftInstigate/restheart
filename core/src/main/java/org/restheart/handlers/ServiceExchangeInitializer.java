@@ -35,7 +35,7 @@ import org.restheart.utils.JsonUtils;
  * Initializes the Request and the Response invoking requestInitializer() and
  * responseInitializer() functions defined by the handling service
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ServiceExchangeInitializer extends PipelinedHandler {
     /**

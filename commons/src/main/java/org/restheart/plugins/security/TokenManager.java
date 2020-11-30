@@ -29,7 +29,7 @@ import org.restheart.plugins.ConfigurablePlugin;
  * Interface for token managers
  *
  * @see https://restheart.org/docs/plugins/security-plugins/#token-managers
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface TokenManager extends Authenticator, ConfigurablePlugin {
     public static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");

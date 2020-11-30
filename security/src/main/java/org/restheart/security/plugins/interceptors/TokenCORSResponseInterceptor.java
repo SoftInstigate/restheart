@@ -31,7 +31,7 @@ import static org.restheart.plugins.security.TokenManager.ACCESS_CONTROL_EXPOSE_
  * helper interceptor to add token headers to Access-Control-Expose-Headers to
  * handle CORS request
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name="tokenCORSResponseInterceptor",
         description = "helper interceptor to add token headers to "

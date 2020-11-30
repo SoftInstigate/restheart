@@ -23,7 +23,7 @@ import java.util.Map;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <T>
  */
 public class PluginRecord<T extends Plugin> {

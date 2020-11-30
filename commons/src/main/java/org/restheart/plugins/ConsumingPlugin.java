@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 /**
  * 
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <T>
  */
 public interface ConsumingPlugin<T> {

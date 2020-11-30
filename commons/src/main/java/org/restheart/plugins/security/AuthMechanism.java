@@ -27,7 +27,7 @@ import org.restheart.utils.PluginUtils;
 
 /**
  * @see https://restheart.org/docs/plugins/security-plugins/#authentication-mechanisms
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface AuthMechanism extends AuthenticationMechanism, ConfigurablePlugin {
     @Override

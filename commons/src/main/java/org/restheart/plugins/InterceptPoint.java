@@ -22,7 +22,7 @@ package org.restheart.plugins;
 /**
  * Defines the intercept point of an Interceptor
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public enum InterceptPoint {
     /**

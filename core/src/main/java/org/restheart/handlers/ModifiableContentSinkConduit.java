@@ -47,7 +47,7 @@ import org.xnio.conduits.StreamSinkConduit;
  * It is also responsible of executing response interceptors. terminateWrites()
  * is called
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ModifiableContentSinkConduit
         extends AbstractStreamSinkConduit<StreamSinkConduit> {

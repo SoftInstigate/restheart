@@ -40,7 +40,7 @@ import org.restheart.exchange.Response;
  * @param <R> the request type
  * @param <S> the response type
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface Interceptor<R extends Request<?>, S extends Response<?>>
         extends ConfigurablePlugin, ExchangeTypeResolver<R, S> {

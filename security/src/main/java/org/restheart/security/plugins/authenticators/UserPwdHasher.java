@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "userPwdHasher",
         description = "automatically hashes the user password",

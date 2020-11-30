@@ -32,7 +32,7 @@ import org.restheart.utils.HttpStatus;
  * It stores the response content in the BUFFERED_RESPONSE_DATA_KEY attachment
  * of the HttpServerExchange.
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <T>
  */
 public abstract class ProxyResponse<T> extends Response<T>

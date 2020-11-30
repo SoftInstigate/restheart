@@ -22,7 +22,7 @@ package org.restheart.mongodb.db.sessions;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class Txn {
     public enum TransactionStatus {

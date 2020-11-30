@@ -28,7 +28,7 @@ import org.restheart.utils.JsonUtils;
 /**
  * ServiceRequest implementation backed by BsonValue
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BsonRequest extends ServiceRequest<BsonValue> {
     protected BsonRequest(HttpServerExchange exchange) {

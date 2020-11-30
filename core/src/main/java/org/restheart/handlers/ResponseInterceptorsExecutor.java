@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Executes response interceptors t
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseInterceptorsExecutor
         extends PipelinedHandler {

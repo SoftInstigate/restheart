@@ -30,7 +30,7 @@ import org.restheart.utils.URLUtils;
  *
  * PipelineInfo(type=SERVICE, uri="/", name="mongo")
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PipelineInfo {
     public enum PIPELINE_TYPE {

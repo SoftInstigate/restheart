@@ -28,7 +28,7 @@ import java.io.IOException;
  *
  * This makes possibile using it in proxied requests.
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <T>
  */
 public interface BufferedExchange<T> {

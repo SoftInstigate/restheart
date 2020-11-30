@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "mongoInitializer",
         description = "executes mongo service init tasks",

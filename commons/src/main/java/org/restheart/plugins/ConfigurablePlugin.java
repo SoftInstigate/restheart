@@ -24,7 +24,7 @@ import org.restheart.ConfigurationException;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface ConfigurablePlugin extends Plugin {
     /**

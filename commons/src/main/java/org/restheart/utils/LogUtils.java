@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class LogUtils {
     public static enum Level {

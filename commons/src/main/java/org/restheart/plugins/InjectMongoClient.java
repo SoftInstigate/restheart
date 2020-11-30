@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
  * Plugins in package org.restheart.plugins.mongodb can also use
  * MongoDBClientSingleton.getInstance().getClient()
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

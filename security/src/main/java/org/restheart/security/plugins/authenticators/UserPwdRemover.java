@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "userPwdRemover",
         description = "filters out the password from the response",

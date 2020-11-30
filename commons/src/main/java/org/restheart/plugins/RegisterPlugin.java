@@ -25,7 +25,7 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * Annotation to register a Plugin
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RegisterPlugin {

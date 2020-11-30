@@ -26,7 +26,7 @@ package org.restheart.plugins;
  *
  * OWN injects the configuration of the plugins identified by its name
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public enum ConfigurationScope {
     ALL, OWN

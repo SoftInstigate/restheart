@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * Demonstrate how to add an extra verification step to the
  * jwtAuthenticationMechanism.
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(
         name = "extraJwtVerifier",

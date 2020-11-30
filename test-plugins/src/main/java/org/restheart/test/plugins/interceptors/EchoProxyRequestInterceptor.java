@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "echoProxyRequestInterceptor", description = "used for testing purposes", enabledByDefault = false, requiresContent = true, interceptPoint = REQUEST_AFTER_AUTH)
 public class EchoProxyRequestInterceptor implements ProxyInterceptor {

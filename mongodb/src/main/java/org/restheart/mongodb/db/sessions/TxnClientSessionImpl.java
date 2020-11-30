@@ -36,7 +36,7 @@ import org.restheart.mongodb.db.sessions.Txn.TransactionStatus;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class TxnClientSessionImpl extends ClientSessionImpl {
     private final MongoClientDelegate delegate;

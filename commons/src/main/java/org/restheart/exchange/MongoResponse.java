@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * Response implementation used by MongoService and backed by BsonValue that
  * provides simplify methods to deal mongo response
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class MongoResponse extends BsonResponse {
     private final static ReplaceOptions R_NOT_UPSERT_OPS = new ReplaceOptions()

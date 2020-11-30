@@ -32,7 +32,7 @@ import java.lang.reflect.Field;
  * It stores the response content in the BUFFERED_REQUEST_DATA attachment
  * of the HttpServerExchange.
  * 
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <T>
  */
 public abstract class ProxyRequest<T> extends Request<T> implements BufferedExchange<T> {

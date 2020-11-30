@@ -63,7 +63,7 @@ import org.slf4j.LoggerFactory;
 /**
  * factory for JWT AuthenticationMechanism
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name="jwtAuthenticationMechanism",
         description = "handle JSON Web Token authentication")

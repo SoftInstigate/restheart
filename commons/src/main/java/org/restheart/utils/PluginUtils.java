@@ -41,7 +41,7 @@ import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PluginUtils {
     public static InterceptPoint interceptPoint(Interceptor interceptor) {

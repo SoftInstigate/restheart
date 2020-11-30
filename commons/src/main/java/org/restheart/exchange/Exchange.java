@@ -29,7 +29,7 @@ import org.slf4j.Logger;
  * HttpServerExchange to provide simplified access to elements of the request
  * and of the response, such as query parameters, headers and content
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <T>
  */
 public abstract class Exchange<T> {

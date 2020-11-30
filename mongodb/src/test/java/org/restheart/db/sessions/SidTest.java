@@ -27,7 +27,7 @@ import org.restheart.mongodb.db.sessions.Sid;
 
 /**
  *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SidTest {
 
