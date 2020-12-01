@@ -10,26 +10,24 @@
  */
 package org.restheart.exchange;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderValues;
-import io.undertow.util.Headers;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
-import java.util.Optional;
 import java.util.Scanner;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.bson.BsonNull;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
-import static org.restheart.exchange.Exchange.LOGGER;
-import static org.restheart.exchange.ServiceRequest.of;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.JsonUtils;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HeaderValues;
+import io.undertow.util.Headers;
 
 /**
  * ServiceRequest implementation backed by BsonValue and initialized from csv
@@ -62,8 +60,7 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
                 ret.setInError(true);
             }
         } else {
-            LOGGER.warn("error initializing request, "
-                    + "Contenty-Type is not {}", CVS_CONTENT_TYPE);
+            LOGGER.warn("error initializing request, " + "Contenty-Type is not {}", CVS_CONTENT_TYPE);
             ret.setInError(true);
         }
 
@@ -82,18 +79,13 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
     }
 
     private static boolean checkContentType(HttpServerExchange exchange) {
-        HeaderValues contentType = exchange.getRequestHeaders()
-                .get(Headers.CONTENT_TYPE);
+        HeaderValues contentType = exchange.getRequestHeaders().get(Headers.CONTENT_TYPE);
 
-        return contentType != null
-                && contentType.stream()
-                        .anyMatch(ct
-                                -> ct.equals(CVS_CONTENT_TYPE)
-                        || ct.startsWith(CVS_CONTENT_TYPE.concat(";")));
+        return contentType != null && contentType.stream()
+                .anyMatch(ct -> ct.equals(CVS_CONTENT_TYPE) || ct.startsWith(CVS_CONTENT_TYPE.concat(";")));
     }
 
-    private BsonArray parseCsv(CsvRequestParams params, String csv)
-            throws IOException {
+    private BsonArray parseCsv(CsvRequestParams params, String csv) throws IOException {
         var bson = new BsonArray();
 
         boolean isHeader = true;
