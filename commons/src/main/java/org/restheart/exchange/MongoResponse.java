@@ -44,7 +44,6 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonParseException;
-import static org.restheart.exchange.Exchange.LOGGER;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.LoggerFactory;
@@ -313,10 +312,8 @@ public class MongoResponse extends BsonResponse {
      *
      * Note: rollback() does not support bulk updates.
      *
-     * @param mclient
-     * @param request
-     * @param response
-     * @throws Exception
+     * @param mclient the MongoClient instance
+     * @throws Exception in case of any error
      */
     public void rollback(MongoClient mclient)
             throws Exception {

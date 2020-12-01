@@ -47,7 +47,7 @@ public class AggregationTransformer extends PipelinedHandler {
 
     /**
      *
-     * @param phase true -> transform request otherwise transform the response
+     * @param phase if 'true' then transform request otherwise transform the response
      */
     public AggregationTransformer(boolean phase) {
         this.phase = phase;

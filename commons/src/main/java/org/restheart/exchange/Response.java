@@ -151,7 +151,6 @@ public abstract class Response<T> extends Exchange<T> {
      * existing ones. use getHeaders().add(value) to add the value without clearing.
      *
      * @param name the name of the header to return
-     * @return the first value of the response header
      */
     public void setHeader(HttpString name, String value) {
         if (getHeaders().get(name) == null) {
@@ -167,7 +166,6 @@ public abstract class Response<T> extends Exchange<T> {
      * existing ones. use getHeaders().add(value) to add the value without clearing.
      *
      * @param name the name of the header to return
-     * @return the first value of the response header
      */
     public void setHeader(String name, String value) {
         if (getHeaders().get(name) == null) {

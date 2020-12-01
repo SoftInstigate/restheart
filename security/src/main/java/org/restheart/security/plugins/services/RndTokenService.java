@@ -26,7 +26,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import io.undertow.util.Methods;
 import java.util.Map;
@@ -82,9 +81,9 @@ public class RndTokenService implements JsonService {
     }
 
     /**
-     *
-     * @param exchange
-     * @throws Exception
+     * @param request JsonRequest
+     * @param response JsonResponse
+     * @throws Exception in case of any error
      */
     @Override
     public void handle(JsonRequest request, JsonResponse response) throws Exception {

@@ -44,10 +44,10 @@ import org.restheart.utils.JsonUtils;
  *
  * addRequestProperties adds properties to write requests on documents of
  * collections that have the following metadata:
- * <br><br>
+ *
  * { "addRequestProperties": { "log": [ "userName", "remoteIp" ] } } ] }
- * <br><br>
- * This is an example on how to refactor an old (<v5) Transformer as an
+ *
+ * This is an example on how to refactor an old (before v5) Transformer as an
  * Interceptor. The Transformer was applied using collection metatada; here the
  * resolve() method checks if the collection properties obtained via the method
  * request.getCollectionProps() contains the expected metadata object.

@@ -124,7 +124,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
      * @param avars RequestContext.getAggregationVars()
      * @return the stages, with unescaped operators and bound variables
      * @throws org.restheart.exchange.InvalidMetadataException
-     * @throws org.restheart.mongodb.handlers.aggregation.QueryVariableNotBoundException
+     * @throws org.restheart.exchange.QueryVariableNotBoundException
      */
     public List<BsonDocument> getResolvedStagesAsList(BsonDocument avars)
             throws InvalidMetadataException, QueryVariableNotBoundException {

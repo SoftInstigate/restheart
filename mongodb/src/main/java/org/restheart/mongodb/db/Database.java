@@ -301,7 +301,7 @@ public interface Database {
      * projection.
      *
      * @param cs the client session
-     * @param collection the mongodb MongoCollection<BsonDocument> object
+     * @param collection the mongodb {@literal MongoCollection<BsonDocument> } object
      * @param sortBy the Deque collection of fields to use for sorting (prepend
      * field name with - for descending sorting)
      * @param filters the filters to apply. it is a Deque collection of mongodb

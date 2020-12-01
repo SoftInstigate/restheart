@@ -153,7 +153,6 @@ public abstract class Request<T> extends Exchange<T> {
      * existing ones. use getHeaders().add(value) to add the value without clearing.
      *
      * @param name the name of the header to return
-     * @return the first value of the request header
      */
     public void setHeader(HttpString name, String value) {
         if (getHeaders().get(name) == null) {
@@ -169,7 +168,6 @@ public abstract class Request<T> extends Exchange<T> {
      * existing ones. use getHeaders().add(value) to add the value without clearing.
      *
      * @param name the name of the header to return
-     * @return the first value of the request header
      */
     public void setHeader(String name, String value) {
         if (getHeaders().get(name) == null) {
@@ -191,7 +189,7 @@ public abstract class Request<T> extends Exchange<T> {
     /**
      * get path parameters using a template
      *
-     * eg pathTemplate=/foo/{id} and URI=/foo/bar => returns a map with id=bar
+     * {@literal pathTemplate=/foo/{id} and URI=/foo/bar => returns a map with id=bar }
      * 
      * @param pathTemplate the path template
      * @return the path parameters
@@ -213,10 +211,10 @@ public abstract class Request<T> extends Exchange<T> {
     /**
      * get a path parameter using a path template
      *
-     * eg pathTemplate=/foo/{id}, paramName=id and URI=/foo/bar => returns bar
+     * eg {@literal paramName=id and URI=/foo/bar => returns bar }
      * 
      * @param pathTemplate the path template
-     * @param parameter    name
+     * @param paramName name of parameter
      * @return the path parameter
      */
     public String getPathParam(String pathTemplate, String paramName) {
