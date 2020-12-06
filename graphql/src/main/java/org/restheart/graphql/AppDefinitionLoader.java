@@ -10,8 +10,6 @@ import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.QueryMapping;
-import org.restheart.mongodb.db.MongoClientSingleton;
-
 import java.util.Map;
 
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
@@ -22,21 +20,18 @@ public class AppDefinitionLoader {
 
     private static final String APP_NAME_FIELD = "descriptor";
 
-    private static final String BSON_SCALAR_SCHEMA = "scalar BsonTimestamp scalar BsonString " +
-            "scalar ObjectId scalar BsonObject scalar BsonInt32 scalar BsonInt64 scalar BsonDouble " +
-            "scalar BsonDecimal128 scalar BsonDate scalar BsonBoolean scalar BsonArray scalar BsonDocument";
-
-
+    private static MongoClient mongoClient;
     private static String appDB;
     private static String appCollection;
 
-    public static void setup(String _db, String _collection){
+    public static void setup(String _db, String _collection, MongoClient mclient){
         appDB = _db;
         appCollection = _collection;
+        mongoClient = mclient;
     }
-    public static GraphQLApp loadAppDefinition(String appName) throws NoSuchFieldException {
 
-        MongoClient mongoClient = MongoClientSingleton.getInstance().getClient();
+    public static GraphQLApp loadAppDefinition(String appName) throws NoSuchFieldException, IllegalAccessException {
+
         CodecRegistry pojoCodecRegistry = fromProviders(PojoCodecProvider.builder().automatic(true).build());
         CodecRegistry codecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(),
                 pojoCodecRegistry);
@@ -53,58 +48,56 @@ public class AppDefinitionLoader {
             GraphQLSchema graphQLBuiltSchema = buildSchema(schemaWithBsonScalar, newApp);
             newApp.setBuiltSchema(graphQLBuiltSchema);
         }
+        else {
+            throw new NullPointerException(
+                    "Configuration for " + appName +  " application not found!"
+            );
+        }
 
 
         return newApp;
     }
 
 
-    private static GraphQLSchema buildSchema(String sdl, GraphQLApp app) {
+    private static GraphQLSchema buildSchema(String sdl, GraphQLApp app) throws NoSuchFieldException, IllegalAccessException {
         TypeDefinitionRegistry typeRegistry = new SchemaParser().parse(sdl);
         RuntimeWiring runtimeWiring = buildWiring(app);
         SchemaGenerator schemaGenerator = new SchemaGenerator();
         return schemaGenerator.makeExecutableSchema(typeRegistry, runtimeWiring);
     }
 
-    private static RuntimeWiring buildWiring(GraphQLApp app){
-
+    private static RuntimeWiring buildWiring(GraphQLApp app) throws IllegalAccessException {
 
         Map<String, Map<String, QueryMapping>> mappings = app.getMappings();
         if (mappings.size() > 0) {
             RuntimeWiring.Builder runWire = RuntimeWiring.newRuntimeWiring();
             addBSONScalarsToWiring(runWire);
+            GraphQLDataFetcher dataFetcher = GraphQLDataFetcher.getInstance();
+            dataFetcher.setMongoClient(mongoClient);
             for (String type: mappings.keySet()){
                 TypeRuntimeWiring.Builder queryTypeBuilder = newTypeWiring(type);
                 Map<String, QueryMapping> typeMappings = mappings.get(type);
                 for (String queryName : typeMappings.keySet()) {
-                    queryTypeBuilder.dataFetcher(queryName, GraphQLDataFetcher.getInstance());
+                    queryTypeBuilder.dataFetcher(queryName, dataFetcher);
                 }
                 runWire.type(queryTypeBuilder);
-                GraphQLDataFetcher.setCurrentApp(app);
+                dataFetcher.setCurrentApp(app);
             }
             return runWire.build();
         }
         else return null;
     }
 
-    private static void addBSONScalarsToWiring(RuntimeWiring.Builder runtimeBuilder){
-        runtimeBuilder.scalar(BSONScalar.GraphQLBsonObjectId)
-                .scalar(BSONScalar.GraphQLBsonString)
-                .scalar(BSONScalar.GraphQLBsonInt32)
-                .scalar(BSONScalar.GraphQLBsonInt64)
-                .scalar(BSONScalar.GraphQLBsonDouble)
-                .scalar(BSONScalar.GraphQLBsonBoolean)
-                .scalar(BSONScalar.GraphQLBsonDecimal128)
-                .scalar(BSONScalar.GraphQLBsonDate)
-                .scalar(BSONScalar.GraphQLBsonTimestamp)
-                .scalar(BSONScalar.GraphQLBsonObject)
-                .scalar(BSONScalar.GraphQLBsonArray)
-                .scalar(BSONScalar.GraphQLBsonDocument);
+    private static void addBSONScalarsToWiring(RuntimeWiring.Builder runtimeBuilder) throws IllegalAccessException {
+        Map<String, GraphQLScalarType> bsonScalars = BsonScalars.getBsonScalars();
+
+        bsonScalars.forEach(((s, graphQLScalarType) -> {
+            runtimeBuilder.scalar(graphQLScalarType);
+        }));
     }
 
-
-    private static String addBSONScalarsToSchema(String schemaWithoutBsonScalars){
-        return BSON_SCALAR_SCHEMA + " " + schemaWithoutBsonScalars;
+    private static String addBSONScalarsToSchema(String schemaWithoutBsonScalars) throws IllegalAccessException {
+        return BsonScalars.getBsonScalarHeader() + schemaWithoutBsonScalars;
     }
 
 

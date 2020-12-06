@@ -1,12 +1,11 @@
-package org.restheart.graphql.BSONScalars;
+package org.restheart.graphql.BSONCoercing;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
-import static graphql.Scalars.GraphQLLong;
-import static org.restheart.graphql.BSONScalars.CoercingUtils.typeName;
+import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonTimestampCoercing implements Coercing<BsonTimestamp, Long> {
 
@@ -52,7 +51,7 @@ public class GraphQLBsonTimestampCoercing implements Coercing<BsonTimestamp, Lon
 
     @Override
     public BsonTimestamp parseLiteral(Object AST) throws CoercingParseLiteralException {
-        Long timestamp =  (Long) GraphQLLong.getCoercing().parseLiteral(AST);
+        Long timestamp =  (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(AST);
         return new BsonTimestamp(timestamp);
     }
 }

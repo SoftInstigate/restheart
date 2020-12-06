@@ -2,13 +2,13 @@ package org.restheart.graphql;
 import com.mongodb.MongoClient;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
-import io.undertow.server.HttpServerExchange;
 import org.json.JSONObject;
+import io.undertow.server.HttpServerExchange;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.graphql.BSONCoercing.CoercingUtils;
 import org.restheart.graphql.models.GraphQLApp;
-import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.plugins.*;
 import org.restheart.utils.JsonUtils;
 import java.io.IOException;
@@ -21,14 +21,27 @@ import java.util.function.Function;
         description = "handles GraphQL requests", defaultURI = "/graphql")
 public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> {
     private GraphQL gql;
-    private MongoClient mongoClient;
+    private MongoClient mongoClient = null;
+    private String db = null;
+    private String collection = null;
 
     @InjectConfiguration
-    public void init(Map<String, Object> args) throws ConfigurationException {
-        String db = ConfigurablePlugin.argValue(args, "db");
-        String collection = ConfigurablePlugin.argValue(args, "collection");
-        AppDefinitionLoader.setup(db, collection);
-        this.mongoClient = MongoClientSingleton.getInstance().getClient();
+    public void initConf(Map<String, Object> args) throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
+        CoercingUtils.replaceBuiltInCoercing();
+        this.db = ConfigurablePlugin.argValue(args, "db");
+        this.collection = ConfigurablePlugin.argValue(args, "collection");
+
+        if(mongoClient != null){
+            AppDefinitionLoader.setup(db, collection, mongoClient);
+        }
+    }
+
+    @InjectMongoClient
+    public void initMongoClient(MongoClient mClient){
+        this.mongoClient = mClient;
+        if (db!= null && collection != null){
+            AppDefinitionLoader.setup(db, collection, mongoClient);
+        }
     }
 
 
@@ -60,14 +73,12 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
             var inputBuilder = ExecutionInput.newExecutionInput().query(query);
 
             // if request has GraphQL variables...
-            if(json.has("variables")){
+            if (json.has("variables")){
                 Map<String, Object> variables = json.getJSONObject("variables").toMap();
                 inputBuilder.variables(variables);
             }
 
-
             ExecutionInput input = inputBuilder.build();
-
 
             // Configuration of GraphQL environment for the current application
             this.gql = GraphQL.newGraphQL(appDefinition.getBuiltSchema()).build();

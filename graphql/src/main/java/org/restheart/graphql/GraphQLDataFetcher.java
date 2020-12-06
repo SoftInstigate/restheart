@@ -6,20 +6,18 @@ import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
-import org.bson.BsonArray;
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
+import org.bson.*;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.QueryMapping;
-import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.utils.JsonUtils;
 
 import java.util.Map;
 
 public class GraphQLDataFetcher implements DataFetcher<BsonValue> {
 
-    private static GraphQLApp currentApp;
     private static GraphQLDataFetcher instance = null;
+    private  GraphQLApp currentApp;
+    private  MongoClient mongoClient;
 
 
     public static GraphQLDataFetcher getInstance(){
@@ -33,13 +31,12 @@ public class GraphQLDataFetcher implements DataFetcher<BsonValue> {
     private GraphQLDataFetcher() { }
 
 
+
     @Override
     public BsonValue get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
 
-        MongoClient mongoClient = MongoClientSingleton.getInstance().getClient();
         String typeName = ((GraphQLObjectType) dataFetchingEnvironment.getParentType()).getName();
         String fieldName = dataFetchingEnvironment.getField().getName();
-
 
         if(currentApp.getMappings().containsKey(typeName)){
             Map<String, QueryMapping> mappings = currentApp.getMappings().get(typeName);
@@ -72,21 +69,36 @@ public class GraphQLDataFetcher implements DataFetcher<BsonValue> {
 
                 boolean isMultiple = dataFetchingEnvironment.getFieldDefinition().getType() instanceof GraphQLList;
 
-                if (isMultiple){
-                    BsonArray results = new BsonArray();
-                    query.into(results);
-                    return results;
+                BsonValue queryResult;
+                if (isMultiple) {
+                   BsonArray results = new BsonArray();
+                   query.into(results);
+                   queryResult = results;
                 }
-                else return query.first();
+                else queryResult = query.first();
+
+                return queryResult;
 
             }
+            else{
+                throw new NullPointerException(
+                        "Mappings of GraphQL field with name " + fieldName + " not found in type " + typeName + "!"
+                );
+            }
         }
-        return null;
+        else{
+            throw new NullPointerException(
+                    "Mappings of GraphQL type " + typeName + " not found!"
+            );
+        }
     }
 
-    public static void setCurrentApp(GraphQLApp app){
+    public  void setCurrentApp(GraphQLApp app){
         currentApp = app;
     }
 
+    public  void setMongoClient(MongoClient mClient){
+        mongoClient = mClient;
+    }
 
 }

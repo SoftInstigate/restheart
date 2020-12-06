@@ -20,7 +20,7 @@ public class AppDefinitionLoadingCache {
                 (String key) -> {
                     try {
                         return AppDefinitionLoader.loadAppDefinition(key);
-                    } catch (NoSuchFieldException e) {
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
                     }
                     return null;

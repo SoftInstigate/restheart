@@ -1,4 +1,4 @@
-package org.restheart.graphql.BSONScalars;
+package org.restheart.graphql.BSONCoercing;
 import graphql.language.*;
 import graphql.schema.*;
 import org.bson.BsonArray;
@@ -6,8 +6,8 @@ import org.bson.BsonValue;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.restheart.graphql.BSONScalar.GraphQLBsonObject;
-import static org.restheart.graphql.BSONScalars.CoercingUtils.typeName;
+import static org.restheart.graphql.BsonScalars.GraphQLBsonObject;
+import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
 
 
 public class GraphQLBsonArrayCoercing implements Coercing<BsonArray, List<Object>> {

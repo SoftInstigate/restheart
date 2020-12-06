@@ -1,4 +1,4 @@
-package org.restheart.graphql.BSONScalars;
+package org.restheart.graphql.BSONCoercing;
 import graphql.Assert;
 import graphql.language.*;
 import graphql.schema.Coercing;
@@ -11,28 +11,30 @@ import org.restheart.utils.JsonUtils;
 
 import java.util.*;
 
-import static org.restheart.graphql.BSONScalars.CoercingUtils.typeName;
+import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonObjectCoercing implements Coercing<BsonValue, Object> {
 
 
+    private BsonDocument convertImpl(Object input){
+        if(input instanceof BsonValue){
+            BsonValue value = (BsonValue) input;
+            return value.isDocument() ? value.asDocument() : null;
+        }
+        return null;
+    }
+
     @Override
     public Object serialize(Object dataFetcherResult) throws CoercingSerializeException {
 
-        if (dataFetcherResult instanceof BsonValue){
-            BsonValue value = (BsonValue) dataFetcherResult;
-            try{
-                Coercing coercing = CoercingUtils.getTypeCoercing(value.getBsonType());
-                return coercing.serialize(value);
-            } catch (IllegalStateException e){
-                throw new CoercingSerializeException(
-                        "Error serializing: " + e.getMessage() + "."
-                );
-            }
+        BsonDocument possibleObj = convertImpl(dataFetcherResult);
+        if(possibleObj == null){
+            throw new CoercingSerializeException(
+                    "Expected type 'BsonDocument' but was '" + typeName(dataFetcherResult) +"'."
+            );
         }
-        throw new CoercingSerializeException(
-                "Expected type 'BsonValue' but was '" + typeName(dataFetcherResult) +"'."
-        );
+        return possibleObj;
+
     }
 
     @Override
