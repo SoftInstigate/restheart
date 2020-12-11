@@ -1,13 +1,13 @@
 [
 {
-  "name": "com.sun.akuma.CLibrary",
-  "methods":[
-    {"name":"readlink", "parameterTypes":["java.lang.String", "com.sun.jna.Memory", "com.sun.jna.NativeLong" ] },
-    {"name":"execv", "parameterTypes":["java.lang.String", "com.sun.jna.StringArray"] }]
-  },
-{
   "name":"apple.security.AppleProvider",
   "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"boolean[]"
+},
+{
+  "name":"byte[]"
 },
 {
   "name":"ch.qos.logback.classic.Logger"
@@ -63,6 +63,9 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"char[]"
+},
+{
   "name":"com.fasterxml.jackson.databind.deser.Deserializers[]"
 },
 {
@@ -94,6 +97,20 @@
 {
   "name":"com.mongodb.WriteConcern",
   "allPublicFields":true
+},
+{
+  "name":"com.sun.akuma.CLibrary",
+  "methods":[
+    {"name":"execv","parameterTypes":["java.lang.String","com.sun.jna.StringArray"] }, 
+    {"name":"readlink","parameterTypes":["java.lang.String","com.sun.jna.Memory","com.sun.jna.NativeLong"] }
+  ]
+},
+{
+  "name": "com.sun.jna.NativeLong",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] },
+    {"name":"<init>","parameterTypes":["long"] },
+    {"name":"<init>","parameterTypes":["long", "boolean"] }]
 },
 {
   "name":"com.sun.crypto.provider.AESCipher$General",
@@ -190,6 +207,15 @@
 {
   "name":"com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
   "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"double[]"
+},
+{
+  "name":"float[]"
+},
+{
+  "name":"int[]"
 },
 {
   "name":"io.github.classgraph.AnnotationClassRef",
@@ -780,6 +806,9 @@
   "name":"javax.management.openmbean.CompositeData[]"
 },
 {
+  "name":"javax.management.openmbean.OpenMBeanOperationInfoSupport"
+},
+{
   "name":"javax.management.openmbean.TabularData"
 },
 {
@@ -814,6 +843,9 @@
 {
   "name":"jdk.net.ExtendedSocketOptions",
   "allDeclaredFields":true
+},
+{
+  "name":"long[]"
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.AntClassLoaderHandler",
@@ -1042,7 +1074,199 @@
   "allDeclaredMethods":true
 },
 {
+  "name":"org.restheart.mongodb.MongoService",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
+  "name":"org.restheart.mongodb.MongoServiceInitializer",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["java.util.Map"] }, 
+    {"name":"injectMongoClient","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
+  "name":"org.restheart.mongodb.hal.HALRepresentation",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.restheart.mongodb.handlers.changestreams.ChangeStreamsActivator",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"setConf","parameterTypes":["java.util.Map"] }
+  ]
+},
+{
+  "name":"org.restheart.mongodb.handlers.metrics.MetricsInstrumentationInterceptor",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.restheart.mongodb.handlers.sessions.TxnsActivator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.restheart.mongodb.interceptors.AddRequestProperties",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.restheart.mongodb.interceptors.CollectionPropsInjector",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["com.mongodb.MongoClient"] }
+  ]
+},
+{
+  "name":"org.restheart.mongodb.interceptors.ContentSizeChecker",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.restheart.mongodb.interceptors.DbPropsInjector",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["com.mongodb.MongoClient"] }
+  ]
+},
+{
+  "name":"org.restheart.mongodb.interceptors.JsonSchemaAfterWriteChecker",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.restheart.mongodb.interceptors.JsonSchemaBeforeWriteChecker",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.restheart.mongodb.interceptors.NamespacesResponseFlattener",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.restheart.mongodb.services.CacheInvalidator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.restheart.mongodb.services.CsvLoader",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.restheart.security.plugins.authenticators.DenyFilterOnUserPwd",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.authenticators.FileRealmAuthenticator",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["java.util.Map"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.authenticators.MongoRealmAuthenticator",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"setConf","parameterTypes":["java.util.Map"] }, 
+    {"name":"setMongoClient","parameterTypes":["com.mongodb.MongoClient"] }, 
+    {"name":"setRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.authenticators.UserPwdHasher",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.authenticators.UserPwdRemover",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.authorizers.FileAclAuthorizer",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["java.util.Map"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.authorizers.FilterPredicateInjector",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
   "name":"org.restheart.security.plugins.authorizers.FullAuthorizer"
+},
+{
+  "name":"org.restheart.security.plugins.authorizers.MongoAclAuthorizer",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"setConf","parameterTypes":["java.util.Map"] }, 
+    {"name":"setMongoClient","parameterTypes":["com.mongodb.MongoClient"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.restheart.security.plugins.mechanisms.BasicAuthMechanism",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.mechanisms.DigestAuthMechanism",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.mechanisms.IdentityAuthMechanism"
+},
+{
+  "name":"org.restheart.security.plugins.mechanisms.JwtAuthenticationMechanism",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["java.util.Map"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.mechanisms.TokenBasicAuthMechanism",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.services.GetRoleService",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["java.util.Map"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.services.RndTokenService",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["java.util.Map"] }, 
+    {"name":"setPluginRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+  ]
+},
+{
+  "name":"org.restheart.security.plugins.tokens.RndTokenManager",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }
+  ]
 },
 {
   "name":"org.restheart.services.PingService",
@@ -1091,8 +1315,15 @@
   "allPublicConstructors":true
 },
 {
+  "name":"org.xnio.nio.NioXnioWorker$NioWorkerMetrics",
+  "allPublicConstructors":true
+},
+{
   "name":"org.xnio.nio.QueuedNioTcpServer$3",
   "allPublicConstructors":true
+},
+{
+  "name":"short[]"
 },
 {
   "name":"sun.management.ClassLoadingImpl",
