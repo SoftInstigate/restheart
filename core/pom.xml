@@ -240,19 +240,6 @@
                 <exclude>com/google/common/util/concurrent/internal/InternalFutures.class</exclude>
               </excludes>
             </filter>
-            <!-- for native-image force include restheart-security in uber-jar
-            <filter>
-              <artifact>org.restheart:restheart-security</artifact>
-              <includes>
-                <include>**</include>
-              </includes>
-            </filter>
-            <filter>
-              <artifact>org.restheart:restheart-mongodb</artifact>
-              <includes>
-                <include>**</include>
-              </includes>
-            </filter> -->
           </filters>
         </configuration>
         <executions>

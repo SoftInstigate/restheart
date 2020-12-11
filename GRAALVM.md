@@ -51,6 +51,8 @@ $ cd core
 $ mvn -Dtest=karate.RunnerIT surefire:test
 ```
 
+Stop restheart. this makes the [Assisted Configuration of Native Image Builds](https://github.com/oracle/graal/blob/master/substratevm/BuildConfiguration.md#assisted-configuration-of-native-image-builds) being updated.
+
 The generated configuration are merged into the existing ones in directory `core/src/main/resources/META-INF/native-image/org.restheart/restheart`
 
 > some files need to be manually edited. For instance, remote all references to classes of package`org.restheart.test` and `org.graalvm` from `reflect-config.json`

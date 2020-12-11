@@ -1,5 +1,120 @@
 [
 {
+  "name": "java.nio.Buffer",
+  "methods":[{"name":"position","parameterTypes":[] }]
+},
+{
+  "name": "java.nio.ByteBuffer",
+  "methods":[
+    {"name":"array","parameterTypes":[] },
+    {"name":"arrayOffset","parameterTypes":[] }]
+},
+{
+  "name": "java.nio.CharBuffer",
+  "methods":[
+    {"name":"array","parameterTypes":[] },
+    {"name":"arrayOffset","parameterTypes":[] }]
+},
+{
+  "name": "java.nio.ShortBuffer",
+  "methods":[
+    {"name":"array","parameterTypes":[] },
+    {"name":"arrayOffset","parameterTypes":[] }]
+},
+{
+  "name": "java.nio.IntBuffer",
+  "methods":[
+    {"name":"array","parameterTypes":[] },
+    {"name":"arrayOffset","parameterTypes":[] }]
+},
+{
+  "name": "java.nio.LongBuffer",
+  "methods":[
+    {"name":"array","parameterTypes":[] },
+    {"name":"arrayOffset","parameterTypes":[] }]
+},
+{
+  "name": "java.nio.FloatBuffer",
+  "methods":[
+    {"name":"array","parameterTypes":[] },
+    {"name":"arrayOffset","parameterTypes":[] }]
+},
+{
+  "name": "java.nio.DoubleBuffer",
+  "methods":[
+    {"name":"array","parameterTypes":[] },
+    {"name":"arrayOffset","parameterTypes":[] }]
+},
+{
+  "name": "java.lang.Void",
+  "methods":[{"name":"<init>","parameterTypes":["byte"] }],
+  "fields":[
+    {"name":"TYPE"}]
+},
+{
+  "name": "java.lang.Byte",
+  "methods":[{"name":"<init>","parameterTypes":["byte"] }],
+  "fields":[
+    {"name":"value"},
+    {"name":"TYPE"}]
+},
+{
+  "name": "java.lang.Character",
+  "methods":[{"name":"<init>","parameterTypes":["char"] }],
+  "fields":[
+    {"name":"value"},
+    {"name":"TYPE"}]
+},
+{
+  "name": "java.lang.Short",
+  "methods":[{"name":"<init>","parameterTypes":["short"] }],
+  "fields":[
+    {"name":"value"},
+    {"name":"TYPE"}]
+},
+{
+  "name": "java.lang.Integer",
+  "methods":[{"name":"<init>","parameterTypes":["int"] }],
+  "fields":[
+    {"name":"value"},
+    {"name":"TYPE"}]
+},
+{
+  "name": "java.lang.Long",
+  "methods":[{"name":"<init>","parameterTypes":["long"] }],
+  "fields":[
+    {"name":"value"},
+    {"name":"TYPE"}]
+},
+{
+  "name": "java.lang.Float",
+  "methods":[{"name":"<init>","parameterTypes":["float"] }],
+  "fields":[
+    {"name":"value"},
+    {"name":"TYPE"}]
+},
+{
+  "name": "java.lang.Double",
+  "methods":[{"name":"<init>","parameterTypes":["double"] }],
+  "fields":[
+      {"name":"value"},
+      {"name":"TYPE"}
+    ]
+},
+{
+  "name": "java.lang.Boolean",
+  "methods":[{"name":"<init>","parameterTypes":["boolean"] }],
+  "fields":[
+    {"name":"value"},
+    {"name":"TYPE"}]
+},
+{
+  "name": "java.lang.String",
+  "methods":[
+    {"name":"<init>", "parameterTypes":["byte[]"] },
+    {"name":"toCharArray", "parameterTypes":[] }]
+},
+{
   "name":"com.sun.jna.Callback"
 },
 {
@@ -15,14 +130,24 @@
   "name":"com.sun.jna.CallbackReference$AttachOptions"
 },
 {
+  "name":"com.sun.jna.FromNativeConverter",
+  "methods":[{"name":"nativeType","parameterTypes":[] }]
+},
+{
   "name":"com.sun.jna.IntegerType",
   "fields":[{"name":"value"}]
 },
 {
+  "name":"com.sun.jna.JNIEnv"
+},
+{
   "name":"com.sun.jna.Native",
   "methods":[
+    {"name":"dispose","parameterTypes":[] }, 
     {"name":"fromNative","parameterTypes":["com.sun.jna.FromNativeConverter","java.lang.Object","java.lang.Class"] }, 
+    {"name":"fromNative","parameterTypes":["com.sun.jna.FromNativeConverter","java.lang.Object","java.lang.reflect.Method"] }, 
     {"name":"fromNative","parameterTypes":["java.lang.Class","java.lang.Object"] }, 
+    {"name":"fromNative","parameterTypes":["java.lang.reflect.Method","java.lang.Object"] }, 
     {"name":"nativeType","parameterTypes":["java.lang.Class"] }, 
     {"name":"toNative","parameterTypes":["com.sun.jna.ToNativeConverter","java.lang.Object"] }
   ]
@@ -97,6 +222,12 @@
   "name":"com.sun.management.internal.DiagnosticCommandInfo[]"
 },
 {
+  "name":"java.lang.Class",
+  "methods":[
+    {"name":"getComponentType","parameterTypes":[] }
+  ]
+},
+{
   "name":"java.lang.ClassLoader",
   "methods":[
     {"name":"getPlatformClassLoader","parameterTypes":[] }, 
@@ -112,6 +243,12 @@
 {
   "name":"java.util.Arrays",
   "methods":[{"name":"asList","parameterTypes":["java.lang.Object[]"] }]
+},
+{
+  "name":"java.lang.reflect.Method",
+  "methods":[
+    {"name":"getParameterTypes","parameterTypes":[] },
+    {"name":"getReturnType","parameterTypes":[] }]
 },
 {
   "name":"sun.management.VMManagementImpl",
