@@ -73,7 +73,7 @@ public class RESTHeartDaemon extends Daemon {
 
             String _args[] = args.toArray(new String[args.size()]);
 
-            if (ImageInfo.isExecutable()) {
+            if (isExecutable()) {
                 _args[0] = FileUtils.getFileAbsolutePath(_args[0]).toString();
             } else {
                 _args[0] = getCurrentExecutable();
@@ -89,6 +89,15 @@ public class RESTHeartDaemon extends Daemon {
         } catch (Throwable t) {
             LOGGER.error("Fork failed", t);
             System.exit(-4);
+        }
+    }
+
+    private boolean isExecutable() {
+        try {
+            return ImageInfo.isExecutable();
+        } catch(Throwable cnfe) {
+            // this happen when not running GraalVM. ImageInfo would not be available.
+            return false;
         }
     }
 }
