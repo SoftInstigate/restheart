@@ -110,7 +110,7 @@ public class Version {
         private VersionHolder() {
         }
     }
-    
+
     private static Set<Map.Entry<Object, Object>> findManifestInfo() {
         Set<Map.Entry<Object, Object>> result = null;
         try {

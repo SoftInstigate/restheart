@@ -20,34 +20,31 @@
  */
 package org.restheart;
 
-import picocli.CommandLine;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheNotFoundException;
-import com.jayway.jsonpath.spi.json.GsonJsonProvider;
-import com.jayway.jsonpath.spi.json.JsonProvider;
-import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
-import com.jayway.jsonpath.spi.mapper.MappingProvider;
-
 import static com.sun.akuma.CLibrary.LIBC;
 import static io.undertow.Handlers.resource;
-import io.undertow.Undertow;
-import io.undertow.Undertow.Builder;
-import io.undertow.UndertowOptions;
-import io.undertow.server.handlers.AllowedMethodsHandler;
-import io.undertow.server.handlers.BlockingHandler;
-import io.undertow.server.handlers.GracefulShutdownHandler;
-import io.undertow.server.handlers.HttpContinueAcceptingHandler;
-import io.undertow.server.handlers.RequestLimit;
-import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
-import io.undertow.server.handlers.proxy.ProxyHandler;
-import io.undertow.server.handlers.resource.FileResourceManager;
-import io.undertow.server.handlers.resource.ResourceHandler;
-import io.undertow.util.HttpString;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
+import static org.fusesource.jansi.Ansi.Color.MAGENTA;
+import static org.fusesource.jansi.Ansi.Color.RED;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
+import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
+import static org.restheart.exchange.Exchange.MAX_CONTENT_SIZE;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
+import static org.restheart.handlers.PipelinedHandler.pipe;
+import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
+import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
+import static org.restheart.plugins.InitPoint.AFTER_STARTUP;
+import static org.restheart.plugins.InitPoint.BEFORE_STARTUP;
+import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
+import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
+import static org.restheart.utils.PluginUtils.defaultURI;
+import static org.restheart.utils.PluginUtils.initPoint;
+import static org.restheart.utils.PluginUtils.uriMatchPolicy;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -71,39 +68,39 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.MAGENTA;
-import static org.fusesource.jansi.Ansi.Color.RED;
-import static org.fusesource.jansi.Ansi.ansi;
+
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheNotFoundException;
+import com.jayway.jsonpath.spi.json.GsonJsonProvider;
+import com.jayway.jsonpath.spi.json.JsonProvider;
+import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
+import com.jayway.jsonpath.spi.mapper.MappingProvider;
+
 import org.fusesource.jansi.AnsiConsole;
-import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY;
-import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WELCOME_FILE_KEY;
-import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
-import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
 import org.restheart.exchange.Exchange;
-import static org.restheart.exchange.Exchange.MAX_CONTENT_SIZE;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.graal.NativeImageBuildTimeChecker;
-
-import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
-import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
-import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.PipelinedHandler;
-import static org.restheart.handlers.PipelinedHandler.pipe;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import org.restheart.handlers.QueryStringRebuilder;
 import org.restheart.handlers.RequestInterceptorsExecutor;
@@ -117,14 +114,8 @@ import org.restheart.handlers.injectors.AuthHeadersRemover;
 import org.restheart.handlers.injectors.ConduitInjector;
 import org.restheart.handlers.injectors.PipelineInfoInjector;
 import org.restheart.handlers.injectors.RequestContentInjector;
-import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
-import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.handlers.injectors.XForwardedHeadersInjector;
 import org.restheart.handlers.injectors.XPoweredByInjector;
-import static org.restheart.plugins.InitPoint.AFTER_STARTUP;
-import static org.restheart.plugins.InitPoint.BEFORE_STARTUP;
-import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
-import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
@@ -136,9 +127,6 @@ import org.restheart.security.plugins.authorizers.FullAuthorizer;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
-import static org.restheart.utils.PluginUtils.defaultURI;
-import static org.restheart.utils.PluginUtils.uriMatchPolicy;
-import static org.restheart.utils.PluginUtils.initPoint;
 import org.restheart.utils.RESTHeartDaemon;
 import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
@@ -149,6 +137,25 @@ import org.xnio.SslClientAuthMode;
 import org.xnio.Xnio;
 import org.xnio.ssl.XnioSsl;
 import org.yaml.snakeyaml.Yaml;
+
+import io.undertow.Undertow;
+import io.undertow.Undertow.Builder;
+import io.undertow.UndertowOptions;
+import io.undertow.server.handlers.AllowedMethodsHandler;
+import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.server.handlers.GracefulShutdownHandler;
+import io.undertow.server.handlers.HttpContinueAcceptingHandler;
+import io.undertow.server.handlers.RequestLimit;
+import io.undertow.server.handlers.RequestLimitingHandler;
+import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
+import io.undertow.server.handlers.proxy.ProxyHandler;
+import io.undertow.server.handlers.resource.FileResourceManager;
+import io.undertow.server.handlers.resource.ResourceHandler;
+import io.undertow.util.HttpString;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
 /**
  *
@@ -195,6 +202,22 @@ public class Bootstrapper {
             cmd.parseArgs(args);
             if (cmd.isUsageHelpRequested()) {
                 cmd.usage(System.out);
+                System.exit(0);
+            }
+
+            if (cmd.isVersionHelpRequested()) {
+                String version = Version.getInstance().getVersion() == null
+                ? "unknown (not packaged)"
+                : Version.getInstance().getVersion();
+
+                System.out.println(RESTHEART
+                .concat(" Version ")
+                .concat(version)
+                .concat(" Build-Time ")
+                .concat(DateTimeFormatter
+                    .ofPattern("yyyy-MM-dd")
+                    .withZone(ZoneId.systemDefault())
+                    .format(Version.getInstance().getBuildTime())));
                 System.exit(0);
             }
 
@@ -1405,5 +1428,8 @@ public class Bootstrapper {
 
         @Option(names = {"-h", "--help"}, usageHelp = true, description = "This help message")
         private boolean help = false;
+
+        @Option(names = { "-v", "--version" }, versionHelp = true, description = "Print product version to the output stream and exit")
+        boolean versionRequested;
     }
 }
