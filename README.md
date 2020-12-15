@@ -15,6 +15,7 @@
 
 -   [Introduction](#introduction)
 -   [Documentation](#documentation)
+-   [License and support options](#license-and-support-options)
 -   [Sponsors](#sponsors)
 
 ## Introduction
