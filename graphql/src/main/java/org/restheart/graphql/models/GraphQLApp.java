@@ -10,12 +10,12 @@ public class GraphQLApp {
     private ObjectId _id;
     private String descriptor;
     private String schema;
-    private Map<String, Map<String, QueryMapping>> mappings;
+    private Map<String, Map<String, Mapping>> mappings;
     private GraphQLSchema builtSchema;
 
     public GraphQLApp(){}
 
-    public GraphQLApp(ObjectId id, String descriptor, String schema, Map<String, Map<String, QueryMapping>> mappings) {
+    public GraphQLApp(ObjectId id, String descriptor, String schema, Map<String, Map<String, Mapping>> mappings) {
         this._id = id;
         this.descriptor = descriptor;
         this.schema = schema;
@@ -46,11 +46,11 @@ public class GraphQLApp {
         this.schema = schema;
     }
 
-    public Map<String, Map<String, QueryMapping>> getMappings() {
+    public Map<String, Map<String, Mapping>> getMappings() {
         return mappings;
     }
 
-    public void setMappings(Map<String, Map<String, QueryMapping>> mappings) {
+    public void setMappings(Map<String, Map<String, Mapping>> mappings) {
         this.mappings = mappings;
     }
 
@@ -66,7 +66,7 @@ public class GraphQLApp {
         private ObjectId _id;
         private String descriptor;
         private String schema;
-        private Map<String, Map<String, QueryMapping>> mappings;
+        private Map<String, Map<String, Mapping>> mappings;
 
 
         public Builder(ObjectId _id, String descriptor){
@@ -83,7 +83,7 @@ public class GraphQLApp {
             return this;
         }
 
-        public Builder mappings(Map<String, Map<String, QueryMapping>> mappings){
+        public Builder mappings(Map<String, Map<String, Mapping>> mappings){
             this.mappings = mappings;
             return this;
         }

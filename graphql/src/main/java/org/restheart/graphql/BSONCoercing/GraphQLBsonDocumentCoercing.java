@@ -6,55 +6,54 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.*;
-import org.bson.json.JsonParseException;
 import org.restheart.utils.JsonUtils;
 
 import java.util.*;
 
 import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
 
-public class GraphQLBsonObjectCoercing implements Coercing<BsonValue, Object> {
+public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonDocument> {
 
 
-    private BsonDocument convertImpl(Object input){
-        if(input instanceof BsonValue){
-            BsonValue value = (BsonValue) input;
-            return value.isDocument() ? value.asDocument() : null;
+    @Override
+    public BsonDocument serialize(Object dataFetcherResult) throws CoercingSerializeException {
+
+        if(dataFetcherResult instanceof BsonDocument){
+            return (BsonDocument) dataFetcherResult;
         }
-        return null;
+        throw new CoercingSerializeException(
+                "Expected type 'BsonDocument' but was '" + typeName(dataFetcherResult) +"'."
+        );
     }
 
     @Override
-    public Object serialize(Object dataFetcherResult) throws CoercingSerializeException {
+    public BsonDocument parseValue(Object input) throws CoercingParseValueException {
 
-        BsonDocument possibleObj = convertImpl(dataFetcherResult);
-        if(possibleObj == null){
-            throw new CoercingSerializeException(
-                    "Expected type 'BsonDocument' but was '" + typeName(dataFetcherResult) +"'."
-            );
+        if(input instanceof Map){
+            return JsonUtils.toBsonDocument((Map<String, Object>) input);
         }
-        return possibleObj;
-
+        throw new CoercingParseValueException(
+                "Expected type 'Json Object' but was '" + typeName(input) +"'."
+        );
     }
 
     @Override
-    public BsonValue parseValue(Object input) throws CoercingParseValueException {
-        try {
-            return JsonUtils.parse(input.toString());
-        } catch (JsonParseException e){
-            throw new CoercingParseValueException(
-                    "Error parsing value: " + e.getMessage() + "."
-            );
+    public BsonDocument parseLiteral(Object AST) throws CoercingParseLiteralException {
+        if (AST instanceof ObjectValue){
+            List<ObjectField> fields = ((ObjectValue) AST).getObjectFields();
+            BsonDocument parsedValues = new BsonDocument();
+            fields.forEach(field ->{
+                BsonValue parsedValue = parseObjectField(field.getValue(), Collections.emptyMap());
+                parsedValues.put(field.getName(), parsedValue);
+            });
+            return parsedValues;
         }
+        throw new CoercingParseLiteralException(
+                "Expected AST type 'Value' but was '" + typeName(AST) + "'."
+        );
     }
 
-    @Override
-    public BsonValue parseLiteral(Object AST) throws CoercingParseLiteralException {
-        return parseLiteral(AST, Collections.emptyMap());
-    }
-
-    @Override
-    public BsonValue parseLiteral(Object input, Map<String, Object> variables) throws CoercingParseLiteralException {
+    public BsonValue parseObjectField(Object input, Map<String, Object> variables) throws CoercingParseLiteralException {
         if(!(input instanceof Value)) {
             throw new CoercingParseLiteralException(
                     "Expected AST type 'Value' but was '" + typeName(input) + "'."
@@ -86,7 +85,7 @@ public class GraphQLBsonObjectCoercing implements Coercing<BsonValue, Object> {
             List<Value> values = ((ArrayValue) input).getValues();
             BsonArray bsonValues = new BsonArray();
             values.forEach(value -> {
-                bsonValues.add((BsonValue) parseLiteral(value, variables));
+                bsonValues.add( parseLiteral(value, variables));
             });
             return bsonValues;
         }
@@ -95,7 +94,7 @@ public class GraphQLBsonObjectCoercing implements Coercing<BsonValue, Object> {
             BsonDocument parsedValues = new BsonDocument();
 
             fields.forEach(field ->{
-                BsonValue parsedValue = (BsonValue) parseLiteral(field, variables);
+                BsonValue parsedValue = parseObjectField(field.getValue(), variables);
                 parsedValues.put(field.getName(), parsedValue);
             });
             return parsedValues;

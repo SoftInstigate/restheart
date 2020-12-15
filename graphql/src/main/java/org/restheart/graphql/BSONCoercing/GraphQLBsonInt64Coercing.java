@@ -4,29 +4,20 @@ import graphql.schema.Coercing;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonInt64;
-import org.bson.BsonValue;
 
 import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
 
-public class GraphQLBsonInt64Coercing implements Coercing<BsonInt64, Long> {
+public class GraphQLBsonInt64Coercing implements Coercing<BsonInt64, BsonInt64> {
 
-    private Long convertImpl(Object input) {
-        if (input instanceof BsonValue){
-            BsonValue value = ((BsonValue) input);
-            return value.isInt64() ? value.asInt64().getValue() : null;
-        }
-        return null;
-    }
 
     @Override
-    public Long serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        Long possibleLong = convertImpl(dataFetcherResult);
-        if(possibleLong == null){
-            throw new CoercingParseValueException(
-                    "Expected type 'Long' but was '" + typeName(dataFetcherResult) + "."
-            );
+    public BsonInt64 serialize(Object dataFetcherResult) throws CoercingSerializeException {
+        if (dataFetcherResult instanceof BsonInt64){
+            return (BsonInt64) dataFetcherResult;
         }
-        return possibleLong;
+        throw new CoercingParseValueException(
+                "Expected type 'Long' but was '" + typeName(dataFetcherResult) + "."
+        );
     }
 
     @Override

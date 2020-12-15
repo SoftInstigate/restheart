@@ -2,30 +2,20 @@ package org.restheart.graphql.BSONCoercing;
 
 import graphql.schema.*;
 import org.bson.BsonInt32;
-import org.bson.BsonValue;
 
 import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
 
 
-public class GraphQLBsonInt32Coercing implements Coercing<BsonInt32, Integer> {
-
-    private Integer convertImpl(Object input) {
-        if (input instanceof BsonValue){
-            BsonValue value = ((BsonValue) input);
-            return value.isInt32() ? value.asInt32().getValue() : null;
-        }
-        return null;
-    }
+public class GraphQLBsonInt32Coercing implements Coercing<BsonInt32, BsonInt32> {
 
     @Override
-    public Integer serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        Integer possibleInt = convertImpl(dataFetcherResult);
-        if(possibleInt == null){
-            throw new CoercingSerializeException(
-                    "Expected type 'Integer' but was '" + typeName(dataFetcherResult) +"'."
-            );
+    public BsonInt32 serialize(Object dataFetcherResult) throws CoercingSerializeException {
+        if(dataFetcherResult instanceof BsonInt32) {
+            return (BsonInt32) dataFetcherResult;
         }
-        else return possibleInt;
+        throw new CoercingSerializeException(
+                "Expected type 'BsonInt32' but was '" + typeName(dataFetcherResult) +"'."
+        );
     }
 
     @Override

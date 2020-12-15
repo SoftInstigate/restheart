@@ -7,6 +7,8 @@ import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonDateTime;
 import org.bson.BsonValue;
+import org.restheart.utils.JsonUtils;
+
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -15,15 +17,11 @@ import java.time.format.DateTimeParseException;
 
 import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
 
-public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, String> {
+public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateTime> {
 
 
     private Long convertImpl(Object input){
-        if(input instanceof BsonValue){
-            BsonValue value = (BsonValue) input;
-            return value.isDateTime() ? value.asDateTime().getValue() : null;
-        }
-        else if(input instanceof Long){
+        if(input instanceof Long){
             return (Long) input;
         }
         else if(input instanceof String){
@@ -45,14 +43,13 @@ public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, String> {
     }
 
     @Override
-    public String serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        Long possibleDate = convertImpl(dataFetcherResult);
-        if (possibleDate == null){
-            throw new CoercingSerializeException(
-                    "Expected type 'Long (DateTime)' but was '" + typeName(dataFetcherResult) +"'."
-            );
+    public BsonDateTime serialize(Object dataFetcherResult) throws CoercingSerializeException {
+        if(dataFetcherResult instanceof BsonDateTime){
+            return (BsonDateTime) dataFetcherResult;
         }
-        return OffsetDateTime.ofInstant(Instant.ofEpochMilli(possibleDate), ZoneId.systemDefault()).toString();
+        throw new CoercingSerializeException(
+                "Expected type 'BsonDateTime' but was '" + typeName(dataFetcherResult) +"'."
+        );
     }
 
     @Override

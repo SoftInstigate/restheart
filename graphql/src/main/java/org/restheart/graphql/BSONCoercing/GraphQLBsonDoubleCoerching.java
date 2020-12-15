@@ -5,30 +5,21 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonDouble;
-import org.bson.BsonValue;
+import org.bson.BsonInt64;
 import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
 
-public class GraphQLBsonDoubleCoerching implements Coercing<BsonDouble, Double> {
+public class GraphQLBsonDoubleCoerching implements Coercing<BsonDouble, BsonDouble> {
 
-
-    private Double convertImpl(Object input){
-        if(input instanceof BsonValue){
-            BsonValue value = (BsonValue) input;
-            return value.isDouble() ? value.asDouble().getValue() : null;
-        }
-        return null;
-    }
 
     @Override
-    public Double serialize(Object dataFetcherResult) throws CoercingSerializeException {
+    public BsonDouble serialize(Object dataFetcherResult) throws CoercingSerializeException {
 
-        Double possibleDouble = convertImpl(dataFetcherResult);
-        if(possibleDouble == null) {
-            throw new CoercingSerializeException(
-                    "Expected type 'Double' but was '" + typeName(dataFetcherResult) + "'."
-            );
+        if (dataFetcherResult instanceof BsonInt64){
+            return (BsonDouble) dataFetcherResult;
         }
-        return possibleDouble;
+        throw new CoercingSerializeException(
+                "Expected type 'BsonDouble' but was '" + typeName(dataFetcherResult) + "'."
+        );
     }
 
     @Override

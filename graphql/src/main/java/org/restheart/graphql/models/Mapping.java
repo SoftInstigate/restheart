@@ -1,16 +1,18 @@
 package org.restheart.graphql.models;
+import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
-public class QueryMapping {
+public class Mapping {
 
-    private static final String[] META_CHARS = {"$arg", "$fk"};
+    private static final String[] OPERATORS = {"$arg", "$fk"};
 
     public String getMetaChar(int index) {
-        return META_CHARS[index];
+        return OPERATORS[index];
     }
 
 
@@ -22,10 +24,10 @@ public class QueryMapping {
     private BsonDocument limit;
     private Boolean first;
 
-    public QueryMapping(){}
+    public Mapping(){}
 
-    public QueryMapping(String db, String collection, BsonDocument find, BsonDocument sort,
-                        BsonDocument skip, BsonDocument limit, Boolean first) {
+    public Mapping(String db, String collection, BsonDocument find, BsonDocument sort,
+                   BsonDocument skip, BsonDocument limit, Boolean first) {
 
         this.db = db;
         this.collection = collection;
@@ -109,7 +111,7 @@ public class QueryMapping {
                 Object obj = (cls.getDeclaredMethod("get"+fieldNameUpper)).invoke(this);
                 if (obj != null){
                     BsonDocument doc = (BsonDocument) obj;
-                    searchMetaChars(doc, parentDocument, arguments, result,fieldName);
+                    searchOperators(doc, parentDocument, arguments, result,fieldName);
                 }
             }
         }
@@ -117,13 +119,13 @@ public class QueryMapping {
     }
 
 
-    private void searchMetaChars(BsonDocument docToAnalyze,
+    private void searchOperators(BsonDocument docToAnalyze,
                                  BsonDocument parentDocument,
                                  BsonDocument queryArguments,
                                  BsonDocument result,
                                  String prevKey) throws QueryVariableNotBoundException{
         boolean find = false;
-        for (String meta_char: META_CHARS){
+        for (String meta_char: OPERATORS){
             if(docToAnalyze.containsKey(meta_char)){
                 find = true;
                 break;
@@ -131,16 +133,31 @@ public class QueryMapping {
         }
 
         if(!find){
-            BsonDocument nextLevelResult = new BsonDocument();
             for (String key: docToAnalyze.keySet()){
                 if(docToAnalyze.get(key).getClass() == BsonDocument.class){
-                    searchMetaChars((BsonDocument) docToAnalyze.get(key), parentDocument, queryArguments, nextLevelResult, key);
+                    BsonDocument nextLevelResult = new BsonDocument();
+                    searchOperators((BsonDocument) docToAnalyze.get(key), parentDocument, queryArguments, nextLevelResult, key);
+                    result.put(prevKey, nextLevelResult);
+                }
+                else if(docToAnalyze.get(key).isArray()){
+                    BsonArray arrayResult = new BsonArray();
+                    for (BsonValue bsonValue: docToAnalyze.get(key).asArray()){
+                        if (bsonValue.isDocument()){
+                            BsonDocument res = new BsonDocument();
+                            searchOperators(bsonValue.asDocument(), parentDocument, queryArguments, res, key);
+                            arrayResult.add(res.get(key));
+                        }
+                        else arrayResult.add(bsonValue);
+                    }
+                    result.put(prevKey, new BsonDocument(key, arrayResult));
+                }
+                else {
+                    result.put(prevKey, docToAnalyze);
                 }
             }
-            result.put(prevKey, nextLevelResult);
         }
         else {
-            for (String meta_char: META_CHARS){
+            for (String meta_char: OPERATORS){
                 if(docToAnalyze.containsKey(meta_char)){
                     String valueName = docToAnalyze.get(meta_char).asString().getValue();
                     switch (meta_char){
@@ -207,8 +224,8 @@ public class QueryMapping {
             return this;
         }
 
-        public QueryMapping build(){
-            return new QueryMapping(this.db, this.collection, this.find,
+        public Mapping build(){
+            return new Mapping(this.db, this.collection, this.find,
                     this.sort, this.skip, this.limit, this.first);
         }
 

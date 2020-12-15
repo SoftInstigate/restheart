@@ -8,12 +8,17 @@ import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import org.bson.*;
 import org.restheart.graphql.models.GraphQLApp;
-import org.restheart.graphql.models.QueryMapping;
+import org.restheart.graphql.models.Mapping;
 import org.restheart.utils.JsonUtils;
 
 import java.util.Map;
 
 public class GraphQLDataFetcher implements DataFetcher<BsonValue> {
+
+    private static final String SORT_FIELD = "sort";
+    private static final String FIND_FIELD = "find";
+    private static final String LIMIT_FIELD = "limit";
+    private static final String SKIP_FIELD = "skip";
 
     private static GraphQLDataFetcher instance = null;
     private  GraphQLApp currentApp;
@@ -39,9 +44,9 @@ public class GraphQLDataFetcher implements DataFetcher<BsonValue> {
         String fieldName = dataFetchingEnvironment.getField().getName();
 
         if(currentApp.getMappings().containsKey(typeName)){
-            Map<String, QueryMapping> mappings = currentApp.getMappings().get(typeName);
+            Map<String, Mapping> mappings = currentApp.getMappings().get(typeName);
             if (mappings.containsKey(fieldName)) {
-                QueryMapping mapping = mappings.get(fieldName);
+                Mapping mapping = mappings.get(fieldName);
                 BsonDocument parentDocument = dataFetchingEnvironment.getSource();
                 BsonDocument interpolatedArguments = mapping.interpolate(
                         JsonUtils.toBsonDocument(dataFetchingEnvironment.getArguments()),
@@ -51,20 +56,20 @@ public class GraphQLDataFetcher implements DataFetcher<BsonValue> {
                 FindIterable<BsonValue> query = mongoClient.getDatabase(mapping.getDb())
                         .getCollection(mapping.getCollection(), BsonValue.class)
                         .find(
-                                interpolatedArguments.containsKey("find") ?
-                                        (BsonDocument) interpolatedArguments.get("find"): new BsonDocument()
+                                interpolatedArguments.containsKey(FIND_FIELD) ?
+                                        (BsonDocument) interpolatedArguments.get(FIND_FIELD): new BsonDocument()
                         );
 
-                if (interpolatedArguments.containsKey("sort")){
-                    query = query.sort(((BsonDocument) interpolatedArguments.get("sort")));
+                if (interpolatedArguments.containsKey(SORT_FIELD)){
+                    query = query.sort(((BsonDocument) interpolatedArguments.get(SORT_FIELD)));
                 }
 
-                if (interpolatedArguments.containsKey("skip")){
-                    query = query.skip(interpolatedArguments.get("skip").asInt32().getValue());
+                if (interpolatedArguments.containsKey(SKIP_FIELD)){
+                    query = query.skip(interpolatedArguments.get(SKIP_FIELD).asInt32().getValue());
                 }
 
-                if (interpolatedArguments.containsKey("limit")){
-                    query = query.limit(interpolatedArguments.get("limit").asInt32().getValue());
+                if (interpolatedArguments.containsKey(LIMIT_FIELD)){
+                    query = query.limit(interpolatedArguments.get(LIMIT_FIELD).asInt32().getValue());
                 }
 
                 boolean isMultiple = dataFetchingEnvironment.getFieldDefinition().getType() instanceof GraphQLList;

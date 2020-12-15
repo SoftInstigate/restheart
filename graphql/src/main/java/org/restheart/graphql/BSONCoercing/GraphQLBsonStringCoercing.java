@@ -1,29 +1,19 @@
 package org.restheart.graphql.BSONCoercing;
 import graphql.schema.*;
 import org.bson.BsonString;
-import org.bson.BsonValue;
 import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
 
-public class GraphQLBsonStringCoercing implements Coercing<BsonString, String> {
-
-    private String convertImpl(Object input) {
-        if (input instanceof BsonValue){
-            BsonValue value = ((BsonValue) input);
-            return value.isString() ? value.asString().getValue() : null;
-        }
-        return null;
-    }
+public class GraphQLBsonStringCoercing implements Coercing<BsonString, BsonString> {
 
     @Override
-    public String serialize(Object dataFetcherResult) throws CoercingSerializeException {
+    public BsonString serialize(Object dataFetcherResult) throws CoercingSerializeException {
 
-        String possibleString = convertImpl(dataFetcherResult);
-        if (possibleString == null){
-            throw new CoercingSerializeException(
-                    "Expected a 'String' but was'" + typeName(dataFetcherResult) + "'."
-            );
+        if(dataFetcherResult instanceof BsonString) {
+            return (BsonString) dataFetcherResult;
         }
-        return possibleString;
+        throw new CoercingSerializeException(
+                "Expected type 'BsonString' but was '" + typeName(dataFetcherResult) +"'."
+        );
     }
 
     @Override

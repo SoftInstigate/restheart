@@ -9,7 +9,7 @@ import org.bson.BsonString;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.restheart.graphql.models.GraphQLApp;
-import org.restheart.graphql.models.QueryMapping;
+import org.restheart.graphql.models.Mapping;
 import java.util.Map;
 
 import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
@@ -59,7 +59,7 @@ public class AppDefinitionLoader {
     }
 
 
-    private static GraphQLSchema buildSchema(String sdl, GraphQLApp app) throws NoSuchFieldException, IllegalAccessException {
+    private static GraphQLSchema buildSchema(String sdl, GraphQLApp app) throws IllegalAccessException {
         TypeDefinitionRegistry typeRegistry = new SchemaParser().parse(sdl);
         RuntimeWiring runtimeWiring = buildWiring(app);
         SchemaGenerator schemaGenerator = new SchemaGenerator();
@@ -68,7 +68,7 @@ public class AppDefinitionLoader {
 
     private static RuntimeWiring buildWiring(GraphQLApp app) throws IllegalAccessException {
 
-        Map<String, Map<String, QueryMapping>> mappings = app.getMappings();
+        Map<String, Map<String, Mapping>> mappings = app.getMappings();
         if (mappings.size() > 0) {
             RuntimeWiring.Builder runWire = RuntimeWiring.newRuntimeWiring();
             addBSONScalarsToWiring(runWire);
@@ -76,7 +76,7 @@ public class AppDefinitionLoader {
             dataFetcher.setMongoClient(mongoClient);
             for (String type: mappings.keySet()){
                 TypeRuntimeWiring.Builder queryTypeBuilder = newTypeWiring(type);
-                Map<String, QueryMapping> typeMappings = mappings.get(type);
+                Map<String, Mapping> typeMappings = mappings.get(type);
                 for (String queryName : typeMappings.keySet()) {
                     queryTypeBuilder.dataFetcher(queryName, dataFetcher);
                 }
