@@ -60,6 +60,8 @@ The Enterprise license is perpetual and overcomes some limitations of the AGPL v
 
 Please read more about the available [Free and Commercial Support Options](https://restheart.org/support).
 
+You can also have a look at our [RESTHeart's presentation on Slideshare](https://www.slideshare.net/mkjsix/restheart-modern-runtime-for-microservices-with-instant-data-api-on-mongodb).
+
 ## Sponsors
 
 <table>
