@@ -39,6 +39,26 @@ You can also have a look at our [introductory video](https://youtu.be/9KroH-RvjS
 
 [![Watch the video!](https://img.youtube.com/vi/9KroH-RvjS0/hqdefault.jpg)](https://youtu.be/9KroH-RvjS0)
 
+## License and support options
+
+RESTHeart is __dually licensed__ under the open source [GNU Affero General Public License v3 (AGPL-3.0)](https://www.tldrlegal.com/l/agpl3) and the [RESTHeart Enterprise License](https://github.com/SoftInstigate/restheart/blob/master/COMM-LICENSE.txt).
+
+When a company is not comfortable with the AGPL open source license or need __dedicated technical support__, then it could purchase a RESTHeart Subscription, which comes with:
+
+- Perpetual, business-friendly Enterprise license.
+- 12 months of e-mail technical support.
+- 12 months of supported upgrades to any new release of the product.
+- Training (optional).
+- Professional Services (optional).
+
+The Enterprise license is perpetual and overcomes some limitations of the AGPL v3. Specifically, it grants the following rights:
+
+- Use RESTHeart in closed source applications.
+- Distribute RESTHeart embedded in closed source products.
+- Get coverage against some legal risks, like third-parties IP claims.
+
+Please read more about the available [Free and Commercial Support Options](https://restheart.org/support).
+
 ## Sponsors
 
 <table>
