@@ -87,7 +87,7 @@ public class PostCollectionHandler extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
-        
+
         if (request.isInError()) {
             next(exchange);
             return;
@@ -137,13 +137,14 @@ public class PostCollectionHandler extends PipelinedHandler {
         }
 
         OperationResult result = this.documentDAO
-                .upsertDocumentPost(
+                .writeDocumentPost(
                         request.getClientSession(),
                         request.getDBName(),
                         request.getCollectionName(),
                         request.getFiltersDocument(),
                         request.getShardKey(),
                         content,
+                        request.isUpsert(), // <= upsert
                         request.getETag(),
                         request.isETagCheckRequired());
 

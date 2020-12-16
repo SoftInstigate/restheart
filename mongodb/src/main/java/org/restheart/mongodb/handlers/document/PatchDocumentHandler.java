@@ -70,7 +70,7 @@ public class PatchDocumentHandler extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
-        
+
         if (request.isInError()) {
             next(exchange);
             return;
@@ -97,7 +97,7 @@ public class PatchDocumentHandler extends PipelinedHandler {
             return;
         }
 
-        OperationResult result = documentDAO.upsertDocument(
+        OperationResult result = documentDAO.writeDocument(
                 request.getClientSession(),
                 request.getDBName(),
                 request.getCollectionName(),
@@ -107,6 +107,7 @@ public class PatchDocumentHandler extends PipelinedHandler {
                 content,
                 request.getETag(),
                 true,
+                request.isUpsert(), // <= upsert
                 request.isETagCheckRequired());
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {

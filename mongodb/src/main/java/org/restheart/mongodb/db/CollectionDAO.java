@@ -349,8 +349,8 @@ class CollectionDAO {
             } catch (MongoCommandException ex) {
                 // error 48 is NamespaceExists
                 // this can happen when a request A creates a collection
-                // and a concurrent request B checks if it exists before A 
-                // completes (updating = false) and try to create it after A 
+                // and a concurrent request B checks if it exists before A
+                // completes (updating = false) and try to create it after A
                 // actually created it.
                 // see https://github.com/SoftInstigate/restheart/issues/297
                 if (ex.getErrorCode() != 48) {
@@ -444,38 +444,41 @@ class CollectionDAO {
             final BsonDocument dcontent,
             final ObjectId newEtag) {
         if (patching) {
-            OperationResult ret = DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.writeDocument(
                     cs,
                     mcoll,
                     "_properties.".concat(collName),
                     null,
                     null,
                     dcontent,
-                    false);
+                    false,
+                    true);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_OK, newEtag);
         } else if (updating) {
-            OperationResult ret = DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.writeDocument(
                     cs,
                     mcoll,
                     "_properties.".concat(collName),
                     null,
                     null,
                     dcontent,
+                    true,
                     true);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_OK, newEtag);
         } else {
-            OperationResult ret = DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.writeDocument(
                     cs,
                     mcoll,
                     "_properties.".concat(collName),
                     null,
                     null,
                     dcontent,
-                    false);
+                    false,
+                    true);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_CREATED, newEtag);

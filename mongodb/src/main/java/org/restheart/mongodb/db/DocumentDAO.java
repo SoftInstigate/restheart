@@ -52,13 +52,12 @@ import org.restheart.utils.HttpStatus;
  */
 public class DocumentDAO implements DocumentRepository {
     private final CollectionDAO collectionDAO;
-    
+
     /**
      *
      */
     public DocumentDAO() {
-        collectionDAO = new CollectionDAO(MongoClientSingleton.getInstance()
-                .getClient());
+        collectionDAO = new CollectionDAO(MongoClientSingleton.getInstance().getClient());
     }
 
     /**
@@ -97,12 +96,13 @@ public class DocumentDAO implements DocumentRepository {
      * @param newContent
      * @param requestEtag
      * @param patching
+     * @param upsert whether or not to allow upsert mode
      * @param checkEtag
      * @return the HttpStatus code
      */
     @Override
     @SuppressWarnings("unchecked")
-    public OperationResult upsertDocument(
+    public OperationResult writeDocument(
             final ClientSession cs,
             final String dbName,
             final String collName,
@@ -112,9 +112,10 @@ public class DocumentDAO implements DocumentRepository {
             final BsonDocument newContent,
             final String requestEtag,
             final boolean patching,
+            final boolean upsert,
             final boolean checkEtag) {
         var mcoll = collectionDAO.getCollection(dbName, collName);
-        
+
         // genereate new etag
         ObjectId newEtag = new ObjectId();
 
@@ -122,14 +123,15 @@ public class DocumentDAO implements DocumentRepository {
 
         content.put("_etag", new BsonObjectId(newEtag));
 
-        OperationResult updateResult = DAOUtils.updateDocument(
+        OperationResult updateResult = DAOUtils.writeDocument(
                 cs,
                 mcoll,
                 documentId,
                 filter,
                 shardKeys,
                 content,
-                !patching);
+                !patching,
+                upsert);
 
         BsonDocument oldDocument = updateResult.getOldData();
 
@@ -149,7 +151,8 @@ public class DocumentDAO implements DocumentRepository {
                         newEtag,
                         requestEtag,
                         HttpStatus.SC_OK,
-                        false);
+                        false,
+                        upsert);
             } else {
                 var query = eq("_id", documentId);
                 BsonDocument newDocument = cs == null
@@ -170,7 +173,8 @@ public class DocumentDAO implements DocumentRepository {
                     newEtag,
                     requestEtag,
                     HttpStatus.SC_OK,
-                    false);
+                    false,
+                    upsert);
         } else if (oldDocument != null) {  // insert
             BsonDocument newDocument = mcoll.find(
                     eq("_id", documentId)).first();
@@ -196,47 +200,57 @@ public class DocumentDAO implements DocumentRepository {
      * @param dbName
      * @param collName
      * @param shardKeys
-     * @param newContent
+     * @param content
      * @param requestEtag
      * @param checkEtag
-     * @return
+     * @return the OperationResult
      */
     @Override
-    @SuppressWarnings("unchecked")
-    public OperationResult upsertDocumentPost(
+    public OperationResult writeDocumentPost(
             final ClientSession cs,
             final String dbName,
             final String collName,
             final BsonDocument filter,
             final BsonDocument shardKeys,
-            final BsonDocument newContent,
+            final BsonDocument content,
+            final boolean upsert,
             final String requestEtag,
             final boolean checkEtag) {
         var mcoll = collectionDAO.getCollection(dbName, collName);
 
         ObjectId newEtag = new ObjectId();
 
-        final BsonDocument content = DAOUtils.validContent(newContent);
+        final BsonDocument _content = DAOUtils.validContent(content);
 
-        content.put("_etag", new BsonObjectId(newEtag));
+        _content.put("_etag", new BsonObjectId(newEtag));
 
         Object documentId;
 
-        if (content.containsKey("_id")) {
-            documentId = content.get("_id");
+        if (_content.containsKey("_id")) {
+            documentId = _content.get("_id");
         } else {
-            documentId = Optional.empty(); // key _id is not present
+            // new document since the id is missing
+            // if !upsert => error
+            if (!upsert) {
+                return new OperationResult(
+                    HttpStatus.SC_BAD_REQUEST,
+                    null,
+                    null,
+                    null);
+            } else {
+                documentId = Optional.empty(); // key _id is not present
+            }
         }
 
-        // new document since the id is missing ()
-        OperationResult updateResult = DAOUtils.updateDocument(
+        OperationResult updateResult = DAOUtils.writeDocument(
                 cs,
                 mcoll,
                 documentId,
                 filter,
                 shardKeys,
-                content,
-                true);
+                _content,
+                true,
+                upsert);
 
         BsonDocument oldDocument = updateResult.getOldData();
         BsonDocument newDocument = updateResult.getNewData();
@@ -259,7 +273,8 @@ public class DocumentDAO implements DocumentRepository {
                     newEtag,
                     requestEtag,
                     HttpStatus.SC_OK,
-                    false);
+                    false,
+                    upsert);
         } else {
             return new OperationResult(updateResult.getHttpCode() > 0
                     ? updateResult.getHttpCode()
@@ -275,7 +290,7 @@ public class DocumentDAO implements DocumentRepository {
      * @param collName
      * @param documents
      * @param shardKeys
-     * @return
+     * @return the BulkOperationResult
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -319,7 +334,7 @@ public class DocumentDAO implements DocumentRepository {
      * @param shardedKeys
      * @param requestEtag
      * @param checkEtag
-     * @return
+     * @return the OperationResult
      */
     @Override
     public OperationResult deleteDocument(
@@ -351,7 +366,7 @@ public class DocumentDAO implements DocumentRepository {
                     oldDocument,
                     null,
                     requestEtag,
-                    HttpStatus.SC_NO_CONTENT, true);
+                    HttpStatus.SC_NO_CONTENT, true, true);
         } else {
             return new OperationResult(HttpStatus.SC_NO_CONTENT, oldDocument, null);
         }
@@ -381,7 +396,7 @@ public class DocumentDAO implements DocumentRepository {
      * @param collName
      * @param filter
      * @param shardedKeys
-     * @return
+     * @return the BulkOperationResult
      */
     @Override
     public BulkOperationResult bulkDeleteDocuments(
@@ -419,7 +434,7 @@ public class DocumentDAO implements DocumentRepository {
      * @param filter
      * @param shardedKeys
      * @param data
-     * @return
+     * @return the BulkOperationResult
      */
     @Override
     public BulkOperationResult bulkPatchDocuments(
@@ -473,7 +488,8 @@ public class DocumentDAO implements DocumentRepository {
             final Object newEtag,
             final String requestEtag,
             final int httpStatusIfOk,
-            final boolean deleting
+            final boolean deleting,
+            final boolean upsert
     ) {
 
         BsonValue oldEtag = oldDocument.get("_etag");
@@ -482,14 +498,15 @@ public class DocumentDAO implements DocumentRepository {
             // oopps, we need to restore old document
             // they call it optimistic lock strategy
             if (deleting) {
-                DAOUtils.updateDocument(
+                DAOUtils.writeDocument(
                         cs,
                         coll,
                         oldDocument.get("_id"),
                         null,
                         shardKeys,
                         oldDocument,
-                        true);
+                        true,
+                        upsert);
             } else {
                 DAOUtils.restoreDocument(
                         cs,
@@ -528,14 +545,15 @@ public class DocumentDAO implements DocumentRepository {
             // oopps, we need to restore old document
             // they call it optimistic lock strategy
             if (deleting) {
-                DAOUtils.updateDocument(
+                DAOUtils.writeDocument(
                         cs,
                         coll,
                         oldDocument.get("_id"),
                         shardKeys,
                         null,
                         oldDocument,
-                        true);
+                        true,
+                        upsert);
             } else {
                 DAOUtils.restoreDocument(
                         cs,

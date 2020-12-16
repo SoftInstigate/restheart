@@ -73,12 +73,12 @@ public class DAOUtils {
      *
      */
     public static final int DUPLICATE_KEY_ERROR = 11000;
-    
+
     /**
-     * 
+     *
      */
     public static final int BAD_VALUE_KEY_ERROR = 2;
-    
+
     /**
      *
      */
@@ -162,7 +162,7 @@ public class DAOUtils {
             final BsonDocument shardKeys,
             final BsonDocument data,
             final boolean patching) {
-        return updateDocument(
+        return writeDocument(
                 cs,
                 coll,
                 documentId,
@@ -184,17 +184,19 @@ public class DAOUtils {
      * @param shardKeys
      * @param data
      * @param replace
+     * @param upsert whether or not to allow upsert mode
      * @return the old document
      */
-    public static OperationResult updateDocument(
+    public static OperationResult writeDocument(
             final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final Object documentId,
             final BsonDocument filter,
             final BsonDocument shardKeys,
             final BsonDocument data,
-            final boolean replace) {
-        return updateDocument(
+            final boolean replace,
+            final boolean upsert) {
+        return writeDocument(
                 cs,
                 coll,
                 documentId,
@@ -203,13 +205,11 @@ public class DAOUtils {
                 data,
                 replace,
                 false,
-                true);
+                upsert);
     }
 
     /**
-     * Update a mongo document<br>
-     * <strong>TODO</strong> - Think about changing the numerous arguments into
-     * a context
+     * Update a mongo document
      *
      * @param cs the client session
      * @param coll
@@ -219,13 +219,13 @@ public class DAOUtils {
      * @param shardKeys
      * @param data
      * @param replace
-     * @param deepPatching if true then we will flatten any nested BsonDocuments
+     * @param upsert if true then we will flatten any nested BsonDocuments
      * into dot notation to ensure only the requested fields are updated.
      * @param allowUpsert whether or not to allow upsert mode
      * @return the new or old document depending on returnNew
      */
     @SuppressWarnings("rawtypes")
-    public static OperationResult updateDocument(
+    public static OperationResult writeDocument(
             final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final Object documentId,
@@ -234,7 +234,7 @@ public class DAOUtils {
             final BsonDocument data,
             final boolean replace,
             final boolean deepPatching,
-            final boolean allowUpsert) {
+            final boolean upsert) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
 
@@ -261,10 +261,17 @@ public class DAOUtils {
                     ? coll.find(query).first()
                     : coll.find(cs, query).first();
 
-            if (!allowUpsert && oldDocument == null) {
+            // if document not exits and not-upsert request => fail request with 404
+            if (!upsert && oldDocument == null) {
                 return new OperationResult(HttpStatus.SC_NOT_FOUND);
             }
         } else {
+            // if not upsert, docId is mandatory
+            if (!upsert) {
+                LOGGER.debug("write request with not-upsert option missing document id");
+                return new OperationResult(HttpStatus.SC_BAD_REQUEST);
+            }
+
             oldDocument = null;
         }
 
@@ -279,10 +286,10 @@ public class DAOUtils {
                 newDocument = cs == null
                         ? coll.findOneAndReplace(query,
                                 getReplaceDocument(data),
-                                allowUpsert ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS)
+                                upsert ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS)
                         : coll.findOneAndReplace(cs, query,
                                 getReplaceDocument(data),
-                                allowUpsert ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS);
+                                upsert ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS);
             } catch (IllegalArgumentException iae) {
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
             } catch (MongoCommandException mce) {
@@ -294,7 +301,7 @@ public class DAOUtils {
                         mce.getErrorMessage());
                 switch (mce.getErrorCode()) {
                     case DUPLICATE_KEY_ERROR:
-                        if (allowUpsert
+                        if (upsert
                                 && filter != null
                                 && !filter.isEmpty()
                                 && mce.getErrorMessage().contains("_id_ dup key")) {
@@ -328,14 +335,14 @@ public class DAOUtils {
                 newDocument = cs == null
                         ? coll.findOneAndUpdate(query,
                                 getUpdateDocument(data, deepPatching),
-                                allowUpsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS)
+                                upsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS)
                         : coll.findOneAndUpdate(cs, query,
                                 getUpdateDocument(data, deepPatching),
-                                allowUpsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
+                                upsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
             } catch (MongoCommandException mce) {
                 switch (mce.getErrorCode()) {
                     case DUPLICATE_KEY_ERROR:
-                        if (allowUpsert
+                        if (upsert
                                 && filter != null
                                 && !filter.isEmpty()
                                 && mce.getErrorMessage().contains("_id_ dup key")) {

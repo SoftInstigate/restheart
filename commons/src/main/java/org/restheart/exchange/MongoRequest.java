@@ -39,7 +39,6 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
-import static org.restheart.exchange.Exchange.LOGGER;
 import static org.restheart.exchange.ExchangeKeys.*;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
@@ -77,6 +76,7 @@ public class MongoRequest extends BsonRequest {
     private int pagesize = 100;
     private boolean count = false;
     private boolean etagCheckRequired = false;
+    private boolean upsert = true;
     private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
     private BsonDocument aggregationVars = null; // aggregation vars
@@ -122,7 +122,7 @@ public class MongoRequest extends BsonRequest {
             String resourceUri) {
         super(exchange);
 
-        this.whereUri = URLUtils.removeTrailingSlashes(requestUri == null 
+        this.whereUri = URLUtils.removeTrailingSlashes(requestUri == null
                 ? null
                 : requestUri.startsWith("/") ? requestUri
                 : "/" + requestUri);
@@ -146,7 +146,7 @@ public class MongoRequest extends BsonRequest {
 
         // "/db/collection/document" --> { "", "mappedDbName", "collection", "document" }
         this.pathTokens = this.unmappedUri.split(SLASH);
-        
+
         this.type = selectRequestType(pathTokens);
 
         // etag
@@ -182,6 +182,12 @@ public class MongoRequest extends BsonRequest {
         }
 
         this.noCache = exchange.getQueryParameters().get(NO_CACHE_QPARAM_KEY) != null;
+
+        // upsert
+
+        this.upsert = exchange.getQueryParameters().get(UPSERT_QPARAM_KEY) == null
+            ? true
+            : Boolean.parseBoolean(getQueryParameters().get(UPSERT_QPARAM_KEY).getFirst());
     }
 
     /**
@@ -1527,6 +1533,20 @@ public class MongoRequest extends BsonRequest {
      */
     public void setETagCheckRequired(boolean etagCheckRequired) {
         this.etagCheckRequired = etagCheckRequired;
+    }
+
+    /**
+     * @return upsert, i.e. whether or not to allow upsert mode
+     */
+    public boolean isUpsert() {
+        return upsert;
+    }
+
+    /**
+     * @param upsert whether or not to allow upsert mode
+     */
+    public void setUpsert(boolean upsert) {
+        this.upsert = upsert;
     }
 
     /**

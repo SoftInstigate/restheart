@@ -120,11 +120,16 @@ public interface ExchangeKeys {
      *
      */
     public static final String JSON_MODE_QPARAM_KEY = "jsonMode";
-    
+
     /**
      *
      */
     public static final String NO_CACHE_QPARAM_KEY = "nocache";
+
+    /**
+     *
+     */
+    public static final String UPSERT_QPARAM_KEY = "upsert";
 
     // matadata
 
@@ -281,7 +286,7 @@ public interface ExchangeKeys {
      *
      */
     public static final String UNDERSCORE = "_";
-    
+
     /**
      *
      */
@@ -306,12 +311,12 @@ public interface ExchangeKeys {
      *
      */
     public static final String FILENAME = "filename";
-    
+
     /**
-     * 
+     *
      */
     public static final String NUL = Character.toString('\0');
-    
+
     /**
      *
      */
@@ -541,7 +546,7 @@ public interface ExchangeKeys {
         /**
          * org.bson.types.MaxKey
          */
-        MAXKEY, 
+        MAXKEY,
 
         /**
          * null
@@ -562,7 +567,7 @@ public interface ExchangeKeys {
         /**
          * full mode
          */
-        FULL, 
+        FULL,
 
         /**
          * alias for full
@@ -588,19 +593,19 @@ public interface ExchangeKeys {
         /**
          * always requires the etag, return PRECONDITION FAILED if missing
          */
-        REQUIRED, 
+        REQUIRED,
 
         /**
          * only requires the etag for DELETE, return PRECONDITION FAILED if missing
          */
-        REQUIRED_FOR_DELETE, 
+        REQUIRED_FOR_DELETE,
 
         /**
          * checks the etag only if provided by client via If-Match header
          */
         OPTIONAL
     }
-    
+
     /**
      *
      */
@@ -615,7 +620,7 @@ public interface ExchangeKeys {
          *
          */
         SHAL, // Simplified HAL with children as direct elements of _embedded array
-        
+
         // root and dbs represeted as an array of children's ids,
         // collection as arrays of document objects
         // documents as objects
@@ -623,7 +628,7 @@ public interface ExchangeKeys {
         /**
          *
          */
-        STANDARD, 
+        STANDARD,
 
         /**
          *
@@ -633,14 +638,14 @@ public interface ExchangeKeys {
         /**
          *
          */
-        PLAIN_JSON, 
+        PLAIN_JSON,
 
         /**
          *
          */
         PJ, // Aliases for SHAL
     }
-    
+
     /**
      *
      */

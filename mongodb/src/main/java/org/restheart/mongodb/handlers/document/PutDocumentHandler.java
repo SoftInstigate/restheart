@@ -112,7 +112,7 @@ public class PutDocumentHandler extends PipelinedHandler {
 
         String etag = request.getETag();
 
-        OperationResult result = this.documentDAO.upsertDocument(
+        OperationResult result = this.documentDAO.writeDocument(
                 request.getClientSession(),
                 request.getDBName(),
                 request.getCollectionName(),
@@ -122,6 +122,7 @@ public class PutDocumentHandler extends PipelinedHandler {
                 content,
                 etag,
                 false,
+                request.isUpsert(), // <= upsert
                 request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
@@ -130,7 +131,7 @@ public class PutDocumentHandler extends PipelinedHandler {
         if (result.getEtag() != null) {
             ResponseHelper.injectEtagHeader(exchange, result.getEtag());
         }
-        
+
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
             response.setInError(
                     HttpStatus.SC_CONFLICT,

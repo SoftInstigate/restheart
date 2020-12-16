@@ -380,38 +380,41 @@ public class DatabaseImpl implements Database {
             final BsonDocument dcontent,
             final ObjectId newEtag) {
         if (patching) {
-            OperationResult ret = DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.writeDocument(
                     cs,
                     mcoll,
                     DB_META_DOCID,
                     null,
                     null,
                     dcontent,
-                    false);
+                    false,
+                    true);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_OK, newEtag);
         } else if (updating) {
-            OperationResult ret = DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.writeDocument(
                     cs,
                     mcoll,
                     DB_META_DOCID,
                     null,
                     null,
                     dcontent,
+                    true,
                     true);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_OK, newEtag);
         } else {
-            OperationResult ret = DAOUtils.updateDocument(
+            OperationResult ret = DAOUtils.writeDocument(
                     cs,
                     mcoll,
                     DB_META_DOCID,
                     null,
                     null,
                     dcontent,
-                    false);
+                    false,
+                    true);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_CREATED, newEtag);

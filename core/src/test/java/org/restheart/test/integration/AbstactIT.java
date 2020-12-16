@@ -20,7 +20,6 @@
  */
 package org.restheart.test.integration;
 
-import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.mongodb.MongoClientURI;
@@ -208,7 +207,7 @@ public abstract class AbstactIT {
         // clear cache
         deleted.stream().forEach(db -> {
             try {
-                HttpResponse resp = Unirest.post(HTTP_HOST.toURI() + "/ic")
+                var resp = Unirest.post(HTTP_HOST.toURI() + "/ic")
                         .basicAuth(ADMIN_ID, ADMIN_PWD)
                         .queryString("db", db)
                         .asJson();

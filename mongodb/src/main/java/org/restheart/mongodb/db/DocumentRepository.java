@@ -31,7 +31,7 @@ import org.restheart.exchange.OperationResult;
  */
 public interface DocumentRepository {
     /**
-     * 
+     *
      * @param cs the client session
      * @param dbName
      * @param collName
@@ -41,23 +41,25 @@ public interface DocumentRepository {
      * @param content
      * @param requestEtag
      * @param patching
+     * @param upsert whether or not to allow upsert mode
      * @param checkEtag
-     * @return 
+     * @return the OperationResult
      */
-    OperationResult upsertDocument(
+    OperationResult writeDocument(
             final ClientSession cs,
-            final String dbName, 
-            final String collName, 
-            final Object documentId, 
-            final BsonDocument filter, 
-            final BsonDocument shardedKeys, 
-            final BsonDocument content, 
-            final String requestEtag, 
-            boolean patching, 
+            final String dbName,
+            final String collName,
+            final Object documentId,
+            final BsonDocument filter,
+            final BsonDocument shardedKeys,
+            final BsonDocument content,
+            final String requestEtag,
+            final boolean patching,
+            final boolean upsert,
             final boolean checkEtag);
 
     /**
-     * 
+     *
      * @param cs the client session
      * @param dbName
      * @param collName
@@ -66,20 +68,21 @@ public interface DocumentRepository {
      * @param content
      * @param requestEtag
      * @param checkEtag
-     * @return 
+     * @return the OperationResult
      */
-    OperationResult upsertDocumentPost(
+    OperationResult writeDocumentPost(
             final ClientSession cs,
-            final String dbName, 
-            final String collName, 
+            final String dbName,
+            final String collName,
             final BsonDocument filter,
-            final BsonDocument shardedKeys, 
-            final BsonDocument content, 
-            final String requestEtag, 
+            final BsonDocument shardedKeys,
+            final BsonDocument content,
+            final boolean upsert,
+            final String requestEtag,
             final boolean checkEtag);
 
     /**
-     * 
+     *
      * @param cs the client session
      * @param dbName
      * @param collName
@@ -88,73 +91,72 @@ public interface DocumentRepository {
      * @param shardedKeys
      * @param requestEtag
      * @param checkEtag
-     * @return 
+     * @return the OperationResult
      */
     OperationResult deleteDocument(
             final ClientSession cs,
-            final String dbName, 
-            final String collName, 
-            final Object documentId, 
-            final BsonDocument filter, 
+            final String dbName,
+            final String collName,
+            final Object documentId,
+            final BsonDocument filter,
             final BsonDocument shardedKeys,
-            final String requestEtag, 
+            final String requestEtag,
             final boolean checkEtag);
-    
     /**
-     * 
+     *
      * @param cs the client session
      * @param dbName
      * @param collName
      * @param documents
      * @param filter
      * @param shardKeys
-     * @return 
+     * @return the BulkOperationResult
      */
     BulkOperationResult bulkUpsertDocumentsPost(
             final ClientSession cs,
-            final String dbName, 
+            final String dbName,
             final String collName,
             final BsonArray documents,
-            final BsonDocument filter, 
+            final BsonDocument filter,
             final BsonDocument shardKeys);
 
     /**
-     * 
+     *
      * @param cs the client session
      * @param dbName
      * @param collName
      * @param filter
      * @param shardKeys
      * @param data
-     * @return 
+     * @return the BulkOperationResult
      */
     BulkOperationResult bulkPatchDocuments(
             final ClientSession cs,
-            final String dbName, 
-            final String collName, 
-            final BsonDocument filter, 
-            final BsonDocument shardKeys, 
+            final String dbName,
+            final String collName,
+            final BsonDocument filter,
+            final BsonDocument shardKeys,
             final BsonDocument data);
 
     /**
-     * 
+     *
      * @param cs the client session
      * @param dbName
      * @param collName
      * @param filter
      * @param shardKeys
-     * @return 
+     * @return the BulkOperationResult
      */
     BulkOperationResult bulkDeleteDocuments(
             final ClientSession cs,
-            final String dbName, 
-            final String collName, 
-            final BsonDocument filter, 
+            final String dbName,
+            final String collName,
+            final BsonDocument filter,
             final BsonDocument shardKeys);
 
     /**
      * returns the ETag of the document
-     * 
+     *
      * @param cs the client session
      * @param dbName
      * @param collName
@@ -163,7 +165,7 @@ public interface DocumentRepository {
      */
     BsonDocument getDocumentEtag(
             final ClientSession cs,
-            final String dbName, 
-            final String collName, 
+            final String dbName,
+            final String collName,
             final Object documentId);
 }

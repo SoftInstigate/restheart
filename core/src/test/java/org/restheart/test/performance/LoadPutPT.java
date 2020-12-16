@@ -158,7 +158,7 @@ public class LoadPutPT extends AbstractPT {
         BsonDocument content = new BsonDocument("random",
                 new BsonDouble(Math.random()));
 
-        new DocumentDAO().upsertDocument(
+        new DocumentDAO().writeDocument(
                 null, // no client session
                 db,
                 coll,
@@ -167,6 +167,7 @@ public class LoadPutPT extends AbstractPT {
                 null,
                 content,
                 null,
+                true,
                 false,
                 false);
     }
