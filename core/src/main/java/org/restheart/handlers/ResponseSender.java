@@ -55,7 +55,7 @@ public class ResponseSender extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var registry = PluginsRegistryImpl.getInstance();
         var path = exchange.getRequestPath();

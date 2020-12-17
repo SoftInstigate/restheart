@@ -25,7 +25,9 @@ package org.restheart.exchange;
  */
 public class IllegalQueryParamenterException extends Exception {
 
-    /**
+	private static final long serialVersionUID = 3012988294234123826L;
+
+	/**
      *
      * @param message
      */

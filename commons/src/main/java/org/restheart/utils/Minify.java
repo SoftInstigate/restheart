@@ -425,6 +425,11 @@ public class Minify {
 
         /**
          *
+         */
+        private static final long serialVersionUID = -6883462093707704791L;
+
+        /**
+         *
          * @param line
          * @param column
          */
@@ -441,6 +446,11 @@ public class Minify {
 
         /**
          *
+         */
+        private static final long serialVersionUID = 4074245780159866501L;
+
+        /**
+         *
          * @param line
          * @param column
          */
@@ -454,6 +464,11 @@ public class Minify {
      * appears in the input.
      */
     public static class UnterminatedRegExpLiteralException extends Exception {
+
+        /**
+         *
+         */
+        private static final long serialVersionUID = -3296214957230186243L;
 
         /**
          *

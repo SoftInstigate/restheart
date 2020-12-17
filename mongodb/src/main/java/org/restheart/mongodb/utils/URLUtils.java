@@ -35,16 +35,9 @@ import org.bson.BsonNumber;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonType;
-import static org.bson.BsonType.BOOLEAN;
-import static org.bson.BsonType.STRING;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
-import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE.MAXKEY;
-import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE.MINKEY;
-import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE.NUMBER;
-import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE.OID;
-import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE.STRING_OID;
 import static org.restheart.exchange.ExchangeKeys.FALSE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.MAX_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys.MIN_KEY_ID;
@@ -54,16 +47,12 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.utils.JsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class URLUtils {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(URLUtils.class);
 
     /**
      *
@@ -171,6 +160,8 @@ public class URLUtils {
                     return getIdAsDate(id);
                 case BOOLEAN:
                     return getIdAsBoolean(id);
+                case NULL:
+                    return new BsonNull();
             }
         } catch (IllegalArgumentException iar) {
             throw new UnsupportedDocumentIdException(iar);

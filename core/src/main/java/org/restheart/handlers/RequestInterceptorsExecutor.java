@@ -78,7 +78,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         // if the request is handled by a service set to not execute interceptors
         // at this interceptPoint, skip interceptors execution

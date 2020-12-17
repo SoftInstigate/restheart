@@ -23,7 +23,6 @@ import io.undertow.security.idm.Account;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-import org.restheart.plugins.ConfigurablePlugin;
 
 /**
  * Interface for token managers
@@ -31,7 +30,7 @@ import org.restheart.plugins.ConfigurablePlugin;
  * Seehttps://restheart.org/docs/plugins/security-plugins/#token-managers
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface TokenManager extends Authenticator, ConfigurablePlugin {
+public interface TokenManager extends Authenticator {
     public static final HttpString AUTH_TOKEN_HEADER = HttpString.tryFromString("Auth-Token");
     public static final HttpString AUTH_TOKEN_VALID_HEADER = HttpString.tryFromString("Auth-Token-Valid-Until");
     public static final HttpString AUTH_TOKEN_LOCATION_HEADER = HttpString.tryFromString("Auth-Token-Location");

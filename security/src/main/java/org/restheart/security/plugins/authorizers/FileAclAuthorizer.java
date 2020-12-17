@@ -93,11 +93,12 @@ public class FileAclAuthorizer
      * @return
      */
     @Override
+    @SuppressWarnings("rawtypes")
     public boolean isAllowed(final Request request) {
         if (noAclDefined()) {
             return false;
         }
-        
+
         var exchange = request.getExchange();
 
         // this fixes undertow bug 377
@@ -117,6 +118,7 @@ public class FileAclAuthorizer
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public boolean isAuthenticationRequired(final Request request) {
         // don't require authentication for OPTIONS requests
         if (request.isOptions()) {

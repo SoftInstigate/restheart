@@ -31,8 +31,6 @@ import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -43,9 +41,6 @@ import org.slf4j.LoggerFactory;
         initPoint = InitPoint.BEFORE_STARTUP,
         priority = -10)
 public class MongoServiceInitializer implements Initializer {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(MongoService.class);
-
     private boolean mongoSrvEnabled = false;
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
@@ -81,10 +76,12 @@ public class MongoServiceInitializer implements Initializer {
     private boolean isMongoEnabled(Map<String, Object> confArgs) {
         if (confArgs.get(PLUGINS_ARGS_KEY) != null
                 && confArgs.get(PLUGINS_ARGS_KEY) instanceof Map) {
+            @SuppressWarnings("rawtypes")
             var pa = (Map) confArgs.get(PLUGINS_ARGS_KEY);
 
             if (pa.get("mongo") != null
                     && pa.get("mongo") instanceof Map) {
+                @SuppressWarnings("rawtypes")
                 var mc = (Map) pa.get("mongo");
 
                 if (mc.get("enabled") != null

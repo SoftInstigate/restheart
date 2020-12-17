@@ -283,7 +283,6 @@ public class DocumentDAO implements DocumentRepository {
     }
 
     /**
-     * TODO handle writeMode
      * @param cs the client session
      * @param dbName
      * @param collName
@@ -293,7 +292,6 @@ public class DocumentDAO implements DocumentRepository {
      * @return the BulkOperationResult
      */
     @Override
-    @SuppressWarnings("unchecked")
     public BulkOperationResult bulkPostDocuments(
             final ClientSession cs,
             final String dbName,
@@ -327,14 +325,12 @@ public class DocumentDAO implements DocumentRepository {
     }
 
     /**
-     * TODO handle writeMode
      * @param cs the client session
      * @param dbName
      * @param collName
      * @param filter
      * @param shardedKeys
      * @param data
-     * @param writeMode
      * @return the BulkOperationResult
      */
     @Override

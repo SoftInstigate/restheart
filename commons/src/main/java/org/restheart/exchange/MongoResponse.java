@@ -82,6 +82,7 @@ public class MongoResponse extends BsonResponse {
     }
 
     private static final Type _TYPE = new TypeToken<MongoResponse>(MongoResponse.class) {
+		private static final long serialVersionUID = 1407135302812289455L;
     }.getType();
 
     public static Type type() {

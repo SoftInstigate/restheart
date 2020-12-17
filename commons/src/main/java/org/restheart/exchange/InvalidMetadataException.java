@@ -25,8 +25,9 @@ package org.restheart.exchange;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class InvalidMetadataException extends Exception {
+	private static final long serialVersionUID = -4824392874427008468L;
 
-    /**
+	/**
      *
      */
     public InvalidMetadataException() {

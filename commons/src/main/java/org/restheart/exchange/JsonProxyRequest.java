@@ -29,7 +29,6 @@ import io.undertow.util.Headers;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import static org.restheart.exchange.Exchange.LOGGER;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
 

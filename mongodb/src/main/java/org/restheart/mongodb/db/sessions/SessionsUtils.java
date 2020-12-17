@@ -54,6 +54,7 @@ public class SessionsUtils {
     @SuppressWarnings("unchecked")
     public static Cluster getCluster() {
         try {
+            @SuppressWarnings("rawtypes")
             Class clazz = MCLIENT.getClass();
             Method getCluster = clazz.getDeclaredMethod("getCluster");
             getCluster.setAccessible(true);
@@ -72,6 +73,7 @@ public class SessionsUtils {
     @SuppressWarnings("unchecked")
     public static ServerSessionPool getServerSessionPool() {
         try {
+            @SuppressWarnings("rawtypes")
             Class clazz = MCLIENT.getClass();
             Method getServerSessionPool = clazz.getDeclaredMethod("getServerSessionPool");
             getServerSessionPool.setAccessible(true);

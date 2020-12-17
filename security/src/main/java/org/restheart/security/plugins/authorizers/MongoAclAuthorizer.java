@@ -147,6 +147,7 @@ public class MongoAclAuthorizer implements Authorizer {
      * @return
      */
     @Override
+    @SuppressWarnings("rawtypes")
     public boolean isAllowed(Request request) {
         // always allow OPTIONS requests
         if (request.isOptions()) {
@@ -236,6 +237,7 @@ public class MongoAclAuthorizer implements Authorizer {
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public boolean isAuthenticationRequired(Request request) {
         // don't require authentication for OPTIONS requests
         if (request.isOptions()) {
@@ -306,6 +308,11 @@ public class MongoAclAuthorizer implements Authorizer {
     }
 
     private static class NotAuthenticatedAccount implements Account {
+
+        /**
+         *
+         */
+        private static final long serialVersionUID = -5208703681313492952L;
 
         @Override
         public Principal getPrincipal() {

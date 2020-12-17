@@ -49,6 +49,7 @@ public abstract class Response<T> extends Exchange<T> {
         super(exchange);
     }
 
+    @SuppressWarnings("rawtypes")
     public static Response of(HttpServerExchange exchange) {
         var pi = PluginUtils.pipelineInfo(exchange);
 
@@ -59,7 +60,9 @@ public abstract class Response<T> extends Exchange<T> {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private static final Type _TYPE = new TypeToken<Response>(Response.class) {
+		private static final long serialVersionUID = -9157465373051608201L;
     }.getType();
 
     public static Type type() {

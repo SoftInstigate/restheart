@@ -54,7 +54,7 @@ public class PluginsFactory {
         return SINGLETON;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     private static Map<String, Map<String, Object>> consumePluginsConfiguration() {
         Map<String, Map<String, Object>> pluginsArgs = Bootstrapper.getConfiguration().getPluginsArgs();
 
@@ -163,12 +163,13 @@ public class PluginsFactory {
         return initializersCache;
     }
 
+    @SuppressWarnings("rawtypes")
     private Set<PluginRecord<Interceptor>> interceptorsCache = null;
 
     /**
      * creates the interceptors
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     Set<PluginRecord<Interceptor>> interceptors() {
         if (interceptorsCache == null) {
             interceptorsCache = createPlugins(PluginsScanner.INTERCEPTORS, "Interceptor", PLUGINS_CONFS);
@@ -177,12 +178,13 @@ public class PluginsFactory {
         return interceptorsCache;
     }
 
+    @SuppressWarnings("rawtypes")
     private Set<PluginRecord<Service>> servicesCache = null;
 
     /**
      * creates the services
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     Set<PluginRecord<Service>> services() {
         if (servicesCache == null) {
             servicesCache = createPlugins(PluginsScanner.SERVICES, "Service", PLUGINS_CONFS);
@@ -271,6 +273,7 @@ public class PluginsFactory {
         throw new ClassNotFoundException("plugin class not found " + plugin.clazz);
     }
 
+    @SuppressWarnings("rawtypes")
     private Plugin instantiatePlugin(Class<Plugin> pc, String pluginType, String pluginName, Map confs)
             throws InstantiationException, IllegalAccessException, InvocationTargetException, IllegalArgumentException,
             SecurityException, ClassNotFoundException {
@@ -338,6 +341,7 @@ public class PluginsFactory {
         invokeInjectConfigurationAndPluginsRegistryMethods(ip);
     }
 
+    @SuppressWarnings("rawtypes")
     private void invokeInjectConfigurationMethods(InstatiatedPlugin ip)
             throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
         // finds @InjectConfiguration methods
@@ -404,6 +408,7 @@ public class PluginsFactory {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private void invokeInjectConfigurationAndPluginsRegistryMethods(InstatiatedPlugin ip)
             throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
 
@@ -496,6 +501,7 @@ public class PluginsFactory {
         return p.getAnnotation(RegisterPlugin.class).enabledByDefault();
     }
 
+    @SuppressWarnings("rawtypes")
     private static class InstatiatedPlugin {
         private final String name;
         private final String type;

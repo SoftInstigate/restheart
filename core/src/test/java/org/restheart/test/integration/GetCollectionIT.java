@@ -303,7 +303,7 @@ public class GetCollectionIT extends HttpClientAbstactIT {
         assertTrue("check _embedded.rh:doc[0]._links.self.href to be a string", (rhdb0LinksSelf.get("href").isString()));
 
         try {
-            URI _uri = new URI(rhdb0LinksSelf.get("href").asString());
+            new URI(rhdb0LinksSelf.get("href").asString());
         } catch (URISyntaxException use) {
             fail("check _embedded.rh:doc[0]._links.self.href to be a valid URI");
         }

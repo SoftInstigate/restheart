@@ -44,6 +44,7 @@ import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PluginUtils {
+    @SuppressWarnings("rawtypes")
     public static InterceptPoint interceptPoint(Interceptor interceptor) {
         var a = interceptor.getClass()
                 .getDeclaredAnnotation(RegisterPlugin.class);
@@ -66,6 +67,7 @@ public class PluginUtils {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public static boolean requiresContent(Interceptor interceptor) {
         var a = interceptor.getClass()
                 .getDeclaredAnnotation(RegisterPlugin.class);
@@ -97,6 +99,7 @@ public class PluginUtils {
      * @return the service default URI. If not explicitly set via defaulUri
      * attribute, it is /[service-name]
      */
+    @SuppressWarnings("rawtypes")
     public static String defaultURI(Service service) {
         var a = service.getClass()
                 .getDeclaredAnnotation(RegisterPlugin.class);
@@ -113,6 +116,7 @@ public class PluginUtils {
      * @param service
      * @return uri match policy.
      */
+    @SuppressWarnings("rawtypes")
     public static MATCH_POLICY uriMatchPolicy(Service service) {
         return service.getClass()
                 .getDeclaredAnnotation(RegisterPlugin.class).uriMatchPolicy();
@@ -125,6 +129,7 @@ public class PluginUtils {
      * @return the service default URI. If not explicitly set via defaulUri
      * attribute, it is /[service-name]
      */
+    @SuppressWarnings("rawtypes")
     public static <P extends Service> String defaultURI(Class<P> serviceClass) {
         var a = serviceClass
                 .getDeclaredAnnotation(RegisterPlugin.class);
@@ -143,6 +148,7 @@ public class PluginUtils {
      * @param serviceClass the class of the service
      * @return the actual service uri set in cofiguration or the defaultURI
      */
+    @SuppressWarnings("rawtypes")
     public static <P extends Service> String actualUri(Map<String, Object> conf,
             Class<P> serviceClass) {
 
@@ -161,6 +167,7 @@ public class PluginUtils {
      * @return the intercept points of interceptors that must not be executed on
      * requests handled by service
      */
+    @SuppressWarnings("rawtypes")
     public static InterceptPoint[] dontIntercept(Service service) {
         var a = service.getClass()
                 .getDeclaredAnnotation(RegisterPlugin.class);
@@ -179,6 +186,7 @@ public class PluginUtils {
      * @return the service handling the exchange or null if the request is not
      * handled by a service
      */
+    @SuppressWarnings("rawtypes")
     public static Service handlingService(PluginsRegistry registry,
             HttpServerExchange exchange) {
         var pi = pipelineInfo(exchange);
@@ -222,12 +230,14 @@ public class PluginUtils {
         return ByteArrayProxyRequest.of(exchange).getPipelineInfo();
     }
 
+    @SuppressWarnings("rawtypes")
     private static LoadingCache<ExchangeTypeResolver, Type> RC = CacheFactory
             .createLocalLoadingCache(
                     Integer.MAX_VALUE,
                     Cache.EXPIRE_POLICY.NEVER, 0,
                     plugin -> plugin.requestType());
 
+    @SuppressWarnings("rawtypes")
     private static LoadingCache<ExchangeTypeResolver, Type> SC = CacheFactory
             .createLocalLoadingCache(
                     Integer.MAX_VALUE,
@@ -241,6 +251,7 @@ public class PluginUtils {
      * @param plugin
      * @return
      */
+    @SuppressWarnings("rawtypes")
     public static Type cachedRequestType(ExchangeTypeResolver plugin) {
         return RC.getLoading(plugin).get();
     }
@@ -252,6 +263,7 @@ public class PluginUtils {
      * @param plugin
      * @return
      */
+    @SuppressWarnings("rawtypes")
     public static Type cachedResponseType(ExchangeTypeResolver plugin) {
         return SC.getLoading(plugin).get();
     }

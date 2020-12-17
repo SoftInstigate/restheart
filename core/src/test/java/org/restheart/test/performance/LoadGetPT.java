@@ -104,6 +104,7 @@ public class LoadGetPT extends AbstractPT {
      */
     public void dbdirect() {
         final Database dbsDAO = new DatabaseImpl();
+        @SuppressWarnings("rawtypes")
         MongoCollection dbcoll = dbsDAO.getCollection(db, coll);
 
         BsonArray data;

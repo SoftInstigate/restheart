@@ -474,6 +474,11 @@ public class MetricsHandler extends PipelinedHandler {
          */
         static class AcceptHeaderEntryComparator implements Comparator<AcceptHeaderEntry>, Serializable {
 
+            /**
+             *
+             */
+            private static final long serialVersionUID = 1546289051858469995L;
+
             @Override
             public int compare(AcceptHeaderEntry one, AcceptHeaderEntry two) {
                 return Double.compare(two.qValue, one.qValue);

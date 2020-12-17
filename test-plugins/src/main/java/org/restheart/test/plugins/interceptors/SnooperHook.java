@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
         description = "A test hook that logs the request and response content and, for write requests, the response.getDbOperationResult()",
         enabledByDefault = false,
         interceptPoint = InterceptPoint.RESPONSE_ASYNC)
-@SuppressWarnings("deprecation")
 public class SnooperHook implements MongoInterceptor {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(SnooperHook.class);

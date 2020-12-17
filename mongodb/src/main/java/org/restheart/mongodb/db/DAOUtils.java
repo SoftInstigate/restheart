@@ -20,9 +20,6 @@
  */
 package org.restheart.mongodb.db;
 
-import com.mongodb.InsertOptions;
-import com.mongodb.MongoCommandException;
-import com.mongodb.MongoException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
@@ -55,7 +52,6 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.OperationResult;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
@@ -344,41 +340,6 @@ public class DAOUtils {
             }
 
             return new OperationResult(-1, oldDocument, newDocument);
-        }
-    }
-
-    private static OperationResult handleMongoCommandException(MongoCommandException mce, Object documentId, WRITE_MODE writeMode, BsonDocument filter, BsonDocument oldDocument) {
-        LOGGER.debug("document {} not updated, "
-                        + "might be due to a duplicate keys. "
-                        + "errorCode: {}, errorMessage: {}",
-                        documentId,
-                        mce.getErrorCode(),
-                        mce.getErrorMessage());
-        switch (mce.getErrorCode()) {
-            case DUPLICATE_KEY_ERROR:
-                if (writeMode != WRITE_MODE.UPDATE
-                        && filter != null
-                        && !filter.isEmpty()
-                        && mce.getErrorMessage().contains("_id_ dup key")) {
-                    // error 11000 is duplicate key error
-                    // happens when the _id and a filter are specified,
-                    // the document exists but does not match the filter
-                    return new OperationResult(ResponseHelper
-                            .getHttpStatusFromErrorCode(mce.getErrorCode()),
-                            oldDocument,
-                            null);
-                } else {
-                    return new OperationResult(HttpStatus.SC_CONFLICT,
-                            oldDocument,
-                            null);
-                }
-            case BAD_VALUE_KEY_ERROR:
-                return new OperationResult(ResponseHelper
-                        .getHttpStatusFromErrorCode(mce.getErrorCode()),
-                        oldDocument,
-                        null);
-            default:
-                throw mce;
         }
     }
 

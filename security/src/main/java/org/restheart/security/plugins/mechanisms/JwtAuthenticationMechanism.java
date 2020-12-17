@@ -30,7 +30,6 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.Verification;
 import com.google.common.net.HttpHeaders;
 import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.AuthenticationMechanism.ChallengeResult;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;

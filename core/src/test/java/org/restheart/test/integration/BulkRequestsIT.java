@@ -38,6 +38,7 @@ public class BulkRequestsIT extends AbstactIT {
     private final String DB = TEST_DB_PREFIX + "-bulk-requests-db";
     private final String COLL = "coll";
 
+    @SuppressWarnings("rawtypes")
     HttpResponse resp;
 
     /**

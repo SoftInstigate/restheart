@@ -292,7 +292,6 @@ public class DatabaseImpl implements Database {
      * @return
      */
     @Override
-    @SuppressWarnings("unchecked")
     public OperationResult upsertDB(
             final ClientSession cs,
             final String dbName,

@@ -127,9 +127,9 @@ public class GetDocumentIT extends HttpClientAbstactIT {
         assertTrue("check oto link", json.get("_links").asObject().get("oto").asObject().get("href").asString().endsWith("/doc2"));
 
         String mtm = json.get("_links").asObject().get("mtm").asObject().get("href").asString();
-        String mto = json.get("_links").asObject().get("mto").asObject().get("href").asString();
-        String otm = json.get("_links").asObject().get("otm").asObject().get("href").asString();
-        String oto = json.get("_links").asObject().get("oto").asObject().get("href").asString();
+        // String mto = json.get("_links").asObject().get("mto").asObject().get("href").asString();
+        // String otm = json.get("_links").asObject().get("otm").asObject().get("href").asString();
+        // String oto = json.get("_links").asObject().get("oto").asObject().get("href").asString();
 
         URIBuilder ub = new URIBuilder();
 

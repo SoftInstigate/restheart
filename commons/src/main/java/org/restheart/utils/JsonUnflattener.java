@@ -83,10 +83,6 @@ public final class JsonUnflattener {
         return this;
     }
 
-    private String illegalBracketsRegex() {
-        return "[\"\\s" + Pattern.quote(separator.toString()) + "]";
-    }
-
     /**
      * A fluent setter to setup the left and right brackets within a key in the
      * flattened JSON. The default left and right brackets are left square

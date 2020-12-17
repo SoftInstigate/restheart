@@ -29,7 +29,7 @@ import org.restheart.cache.Cache;
  *
  * @author mturatti
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked","rawtypes"})
 public class GuavaCacheTest {
 
     /**

@@ -53,7 +53,6 @@ public abstract class ServiceResponse<T> extends Response<T> {
         exchange.putAttachment(RESPONSE_KEY, this);
     }
 
-    @SuppressWarnings("unchecked")
     public static ServiceResponse<?> of(HttpServerExchange exchange) {
         var ret = exchange.getAttachment(RESPONSE_KEY);
 

@@ -167,7 +167,6 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
         notNull("writeConcern", writeConcern);
         notNull("readPreference", readPreference);
 
-        // TODO allow request to specify session and txn options
         ClientSessionOptions mergedOptions = ClientSessionOptions
                 .builder(options)
                 .causallyConsistent(true)

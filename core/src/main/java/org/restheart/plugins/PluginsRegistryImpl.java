@@ -66,10 +66,12 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private Optional<PluginRecord<TokenManager>> tokenManager;
 
+    @SuppressWarnings("rawtypes")
     private Set<PluginRecord<Service>> services;
 
     private Set<PluginRecord<Initializer>> initializers;
 
+    @SuppressWarnings("rawtypes")
     private Set<PluginRecord<Interceptor>> interceptors;
 
     private final Set<Predicate> globalSecurityPredicates = new LinkedHashSet<>();
@@ -179,6 +181,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public Set<PluginRecord<Interceptor>> getInterceptors() {
         if (this.interceptors == null) {
             this.interceptors = new LinkedHashSet<>();
@@ -192,6 +195,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
      * @return the services
      */
     @Override
+    @SuppressWarnings("rawtypes")
     public Set<PluginRecord<Service>> getServices() {
         if (this.services == null) {
             this.services = new LinkedHashSet<>();

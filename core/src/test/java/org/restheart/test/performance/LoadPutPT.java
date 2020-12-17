@@ -61,6 +61,7 @@ public class LoadPutPT extends AbstractPT {
      */
     public void post() throws Exception {
         HttpRequestWithBody req = Unirest.post(url);
+        @SuppressWarnings("rawtypes")
         HttpResponse resp;
 
         if (id != null && pwd != null) {
@@ -82,6 +83,7 @@ public class LoadPutPT extends AbstractPT {
      */
     public void postWitId() throws Exception {
         HttpRequestWithBody req = Unirest.post(url);
+        @SuppressWarnings("rawtypes")
         HttpResponse resp;
 
         if (id != null && pwd != null) {
@@ -110,6 +112,8 @@ public class LoadPutPT extends AbstractPT {
         String _url = url + "/" + new ObjectId().toString();
 
         HttpRequestWithBody req = Unirest.put(_url);
+
+        @SuppressWarnings("rawtypes")
         HttpResponse resp;
 
         if (id != null && pwd != null) {
@@ -135,6 +139,8 @@ public class LoadPutPT extends AbstractPT {
         String _url = this.url;
 
         HttpRequestWithBody req = Unirest.put(_url);
+
+        @SuppressWarnings("rawtypes")
         HttpResponse resp;
 
         if (id != null && pwd != null) {

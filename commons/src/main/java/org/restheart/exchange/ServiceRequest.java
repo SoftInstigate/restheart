@@ -52,8 +52,7 @@ public abstract class ServiceRequest<T> extends Request<T> {
 
         exchange.putAttachment(REQUEST_KEY, this);
     }
-    
-    @SuppressWarnings("unchecked")
+
     public static ServiceRequest<?> of(HttpServerExchange exchange) {
         var ret = exchange.getAttachment(REQUEST_KEY);
 

@@ -241,6 +241,7 @@ public class MongoRequest extends BsonRequest {
     }
 
     private static final Type _TYPE = new TypeToken<MongoRequest>(MongoRequest.class) {
+		private static final long serialVersionUID = 4831691538044162907L;
     }.getType();
 
     public static Type type() {

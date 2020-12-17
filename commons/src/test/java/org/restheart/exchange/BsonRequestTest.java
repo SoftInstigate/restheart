@@ -145,7 +145,6 @@ public class BsonRequestTest {
      *
      */
     @Test
-    @SuppressWarnings("deprecation")
     public void testGetMappedRequestUri() {
         HttpServerExchange ex = mock(HttpServerExchange.class);
         when(ex.getRequestPath()).thenReturn("/");
@@ -204,7 +203,6 @@ public class BsonRequestTest {
      *
      */
     @Test
-    @SuppressWarnings("deprecation")
     public void testGetMappedRequestUri2() {
         HttpServerExchange ex = mock(HttpServerExchange.class);
         when(ex.getRequestPath()).thenReturn("/x");

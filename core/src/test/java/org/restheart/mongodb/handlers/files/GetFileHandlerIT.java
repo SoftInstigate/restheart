@@ -143,7 +143,7 @@ public class GetFileHandlerIT extends FileHandlerAbstractIT {
      */
     @Test
     public void testBucketWithFile() throws IOException {
-        ObjectId fileId = createFile();
+        createFile();
 
         // test that GET /db/bucket.files includes the file
         String bucketUrl = dbTmpUri + "/" + BUCKET + ".files";

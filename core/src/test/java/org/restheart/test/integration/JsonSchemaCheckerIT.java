@@ -31,7 +31,6 @@ import org.bson.types.ObjectId;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -43,6 +42,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
     private final String COLL_CHILD = "coll_child";
     private final String SCHEMA_STORE = "_schemas";
 
+    @SuppressWarnings("rawtypes")
     HttpResponse resp;
 
     /**

@@ -20,9 +20,6 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.security.api.AuthenticationMechanism.AuthenticationMechanismOutcome;
-import static io.undertow.security.api.AuthenticationMechanism.AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
-import io.undertow.security.api.AuthenticationMechanism.ChallengeResult;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.plugins.security.AuthMechanism;

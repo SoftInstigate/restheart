@@ -26,7 +26,6 @@ import com.mongodb.MongoExecutionTimeoutException;
 import com.mongodb.MongoTimeoutException;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory;

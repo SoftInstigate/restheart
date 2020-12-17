@@ -94,6 +94,7 @@ public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
      * @return true if no global security predicate denies the request and any
      * accessManager allows the request
      */
+    @SuppressWarnings("rawtypes")
     private boolean isAllowed(final Request request) {
         if (getGlobalSecurityPredicates() != null
                 && !checkGlobalPredicates(request)) {
@@ -115,6 +116,7 @@ public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
      * @param exchange
      * @return true if all global security predicates resolve the request
      */
+    @SuppressWarnings("rawtypes")
     private boolean checkGlobalPredicates(final Request request) {
         return PluginsRegistryImpl.getInstance()
                 .getGlobalSecurityPredicates()

@@ -132,9 +132,9 @@ public class MongoServiceConfiguration {
     }
 
     static boolean isParametric(final Path confFilePath) throws IOException {
-        Scanner sc = new Scanner(confFilePath, "UTF-8");
-
-        return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}")).limit(1).count() > 0;
+        try (var sc = new Scanner(confFilePath, "UTF-8")) {
+            return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}")).limit(1).count() > 0;
+        }
     }
 
     /**
@@ -168,17 +168,6 @@ public class MongoServiceConfiguration {
      */
     public MongoServiceConfiguration() {
         this(new HashMap<>(), false);
-    }
-
-    /**
-     * Creates a new instance of Configuration from the configuration file For any
-     * missing property the default value is used.
-     *
-     * @param confFilePath the path of the configuration file
-     * @throws org.restheart.ConfigurationException
-     */
-    private MongoServiceConfiguration(final Path confFilePath) throws ConfigurationException {
-        this(confFilePath, false);
     }
 
     /**
@@ -695,40 +684,40 @@ public class MongoServiceConfiguration {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key,
-            final List<String> defaultValue) {
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.debug("parameter {} not specified in the configuration file." + " Using its default value {}",
-                        key, defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof List) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
+    // @SuppressWarnings("unchecked")
+    // private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key,
+    //         final List<String> defaultValue) {
+    //     if (conf == null || conf.get(key) == null) {
+    //         // if default value is null there is no default value actually
+    //         if (defaultValue != null && !silent) {
+    //             LOGGER.debug("parameter {} not specified in the configuration file." + " Using its default value {}",
+    //                     key, defaultValue);
+    //         }
+    //         return defaultValue;
+    //     } else if (conf.get(key) instanceof List) {
+    //         if (!silent) {
+    //             LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
+    //         }
 
-            List<String> ret = ((List<String>) conf.get(key));
+    //         List<String> ret = ((List<String>) conf.get(key));
 
-            if (ret.isEmpty()) {
-                if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
-                            defaultValue);
-                }
-                return defaultValue;
-            } else {
-                return ret;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
-                        defaultValue);
-            }
-            return defaultValue;
-        }
-    }
+    //         if (ret.isEmpty()) {
+    //             if (!silent) {
+    //                 LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
+    //                         defaultValue);
+    //             }
+    //             return defaultValue;
+    //         } else {
+    //             return ret;
+    //         }
+    //     } else {
+    //         if (!silent) {
+    //             LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
+    //                     defaultValue);
+    //         }
+    //         return defaultValue;
+    //     }
+    // }
 
     /**
      * @return the mongoMounts

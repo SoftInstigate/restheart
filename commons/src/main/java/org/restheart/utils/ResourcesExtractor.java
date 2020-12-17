@@ -52,6 +52,7 @@ public class ResourcesExtractor {
      * @return
      * @throws URISyntaxException
      */
+    @SuppressWarnings("rawtypes")
     public static boolean isResourceInJar(Class clazz, String resourcePath) throws URISyntaxException {
         return getClassLoader(clazz)
                 .getResource(resourcePath)
@@ -67,6 +68,7 @@ public class ResourcesExtractor {
      * @throws URISyntaxException
      * @throws IOException
      */
+    @SuppressWarnings("rawtypes")
     public static void deleteTempDir(Class clazz, String resourcePath, File tempDir) throws URISyntaxException, IOException {
         if (isResourceInJar(clazz, resourcePath) && tempDir.exists()) {
             delete(tempDir);
@@ -81,6 +83,7 @@ public class ResourcesExtractor {
      * @throws URISyntaxException
      * @throws IllegalStateException
      */
+    @SuppressWarnings("rawtypes")
     public static File extract(Class clazz, String resourcePath) throws IOException, URISyntaxException, IllegalStateException {
         //File jarFile = new File(ResourcesExtractor.class.getProtectionDomain().getCodeSource().getLocation().getPath());
 
@@ -184,6 +187,7 @@ public class ResourcesExtractor {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private static ClassLoader getClassLoader(Class clazz) {
         return clazz.getClassLoader();
     }

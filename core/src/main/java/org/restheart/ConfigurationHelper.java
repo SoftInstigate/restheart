@@ -37,6 +37,7 @@ public class ConfigurationHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
+    @SuppressWarnings("rawtypes")
     private static final Set<Option> UNDERTOW_OPTIONS;
 
     private static final Set<Option<Long>> LONG_UNDERTOW_OPTIONS;

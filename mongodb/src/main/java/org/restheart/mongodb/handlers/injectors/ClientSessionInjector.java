@@ -27,8 +27,6 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.sessions.ClientSessionFactory;
 import org.restheart.utils.HttpStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -37,9 +35,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ClientSessionInjector extends PipelinedHandler {
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(ClientSessionInjector.class);
-    
+
     /**
      *
      * @return
@@ -48,7 +44,7 @@ public class ClientSessionInjector extends PipelinedHandler {
         if (ClientSessionInjectorHandlerHolder.INSTANCE == null) {
             throw new IllegalStateException("Singleton not initialized");
         }
-        
+
         return ClientSessionInjectorHandlerHolder.INSTANCE;
     }
 

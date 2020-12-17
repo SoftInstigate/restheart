@@ -79,6 +79,7 @@ public class FileRealmAuthenticator
                 String _password = argValue(u, "password");
                 char[] password = ((String) _password).toCharArray();
 
+                @SuppressWarnings("rawtypes")
                 List _roles = argValue(u, "roles");
 
                 if (((Collection<?>) _roles).stream().anyMatch(i -> !(i instanceof String))) {

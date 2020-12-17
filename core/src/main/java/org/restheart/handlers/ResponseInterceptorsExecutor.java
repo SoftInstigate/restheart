@@ -76,6 +76,7 @@ public class ResponseInterceptorsExecutor
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         Request request;
         Response response;
@@ -101,7 +102,7 @@ public class ResponseInterceptorsExecutor
         next(exchange);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     private void executeResponseInterceptor(HttpServerExchange exchange,
             Service handlingService,
             Request request,
@@ -168,7 +169,7 @@ public class ResponseInterceptorsExecutor
                 });
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked","rawtypes"})
     private void executeAsyncResponseInterceptor(HttpServerExchange exchange,
             Service handlingService,
             Request request,

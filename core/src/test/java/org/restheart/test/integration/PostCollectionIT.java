@@ -35,8 +35,6 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.restheart.exchange.Exchange;
-import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -48,6 +46,7 @@ public class PostCollectionIT extends HttpClientAbstactIT {
     private final String DB = TEST_DB_PREFIX + "-post-collection-db";
     private final String COLL = "coll";
 
+    @SuppressWarnings("rawtypes")
     private com.mashape.unirest.http.HttpResponse resp;
 
     /**

@@ -152,7 +152,6 @@ public class ClientSessionImpl
      *
      */
     @Override
-    @SuppressWarnings("deprecation")
     public void commitTransaction() {
         throw new UnsupportedOperationException();
     }
@@ -161,7 +160,6 @@ public class ClientSessionImpl
      *
      */
     @Override
-    @SuppressWarnings("deprecation")
     public void abortTransaction() {
         throw new UnsupportedOperationException();
     }

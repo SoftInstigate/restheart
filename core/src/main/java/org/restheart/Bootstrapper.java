@@ -70,12 +70,10 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -1158,6 +1156,7 @@ public class Bootstrapper {
      * @param identityManager
      * @param authorizers
      */
+    @SuppressWarnings("unchecked")
     private static void plugProxies(final Configuration conf,
             final Set<PluginRecord<AuthMechanism>> authMechanisms,
             final Set<PluginRecord<Authorizer>> authorizers,

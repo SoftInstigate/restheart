@@ -26,7 +26,6 @@ import io.undertow.util.Headers;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
-import static org.restheart.exchange.Exchange.MAX_BUFFERS;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +47,7 @@ public class ByteArrayProxyRequest extends ProxyRequest<byte[]> {
     }
 
     private static final Type _TYPE = new TypeToken<ByteArrayProxyRequest>(ByteArrayProxyRequest.class) {
+        private static final long serialVersionUID = 7455691404944194247L;
     }.getType();
 
     public static Type type() {

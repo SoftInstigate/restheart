@@ -20,9 +20,6 @@
  */
 package org.restheart.utils;
 
-import java.io.File;
-import java.io.IOException;
-
 /**
  * utility class to help daemonizing process
  *
@@ -31,10 +28,6 @@ import java.io.IOException;
  */
 import com.sun.akuma.Daemon;
 import com.sun.akuma.JavaVMArguments;
-import com.sun.jna.Memory;
-import com.sun.jna.Native;
-import com.sun.jna.NativeLong;
-import static com.sun.akuma.CLibrary.LIBC;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.slf4j.Logger;

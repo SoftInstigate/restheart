@@ -37,8 +37,10 @@ public class ConfigurationHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoServiceConfiguration.class);
 
+    @SuppressWarnings("rawtypes")
     private static final Set<Option> UNDERTOW_OPTIONS;
 
+    @SuppressWarnings("rawtypes")
     private static final Set<Option> LONG_UNDERTOW_OPTIONS;
 
     static {

@@ -29,10 +29,15 @@ public class JsonSchemaNotFoundException extends Exception {
     /**
      *
      */
+    private static final long serialVersionUID = 7663866712095105681L;
+
+    /**
+     *
+     */
     public JsonSchemaNotFoundException() {
         super();
     }
-    
+
     /**
      *
      * @param message
@@ -40,7 +45,7 @@ public class JsonSchemaNotFoundException extends Exception {
     public JsonSchemaNotFoundException(String message) {
         super(message);
     }
-    
+
     /**
      *
      * @param message
@@ -49,7 +54,7 @@ public class JsonSchemaNotFoundException extends Exception {
     public JsonSchemaNotFoundException(String message, Throwable cause) {
         super(message, cause);
     }
-    
+
     /**
      *
      * @param cause

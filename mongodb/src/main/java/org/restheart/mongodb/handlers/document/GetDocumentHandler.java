@@ -34,13 +34,6 @@ import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
 import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.exchange.ExchangeKeys.TYPE;
-import static org.restheart.exchange.ExchangeKeys.TYPE.COLLECTION_META;
-import static org.restheart.exchange.ExchangeKeys.TYPE.DB_META;
-import static org.restheart.exchange.ExchangeKeys.TYPE.DOCUMENT;
-import static org.restheart.exchange.ExchangeKeys.TYPE.FILE;
-import static org.restheart.exchange.ExchangeKeys.TYPE.FILES_BUCKET_META;
-import static org.restheart.exchange.ExchangeKeys.TYPE.SCHEMA;
-import static org.restheart.exchange.ExchangeKeys.TYPE.SCHEMA_STORE_META;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -49,8 +42,6 @@ import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -58,9 +49,6 @@ import org.slf4j.LoggerFactory;
  */
 public class GetDocumentHandler extends PipelinedHandler {
     private final DatabaseImpl dbsDAO = new DatabaseImpl();
-    
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger(GetDocumentHandler.class);
 
     /**
      * Default ctor

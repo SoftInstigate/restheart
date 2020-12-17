@@ -41,7 +41,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonInt64;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-@SuppressWarnings("unchecked")
+
 public class MetricsJsonGenerator {
 
     private static String singular(TimeUnit timeUnit) {

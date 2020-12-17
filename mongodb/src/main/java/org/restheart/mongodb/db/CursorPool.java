@@ -255,7 +255,6 @@ public class CursorPool {
                         cursor
                                 .skip(sliceSkips);
 
-                        // TODO check after refactoring
                         cursor.iterator(); // this forces the actual skipping
 
                         CursorPoolEntryKey newkey = new CursorPoolEntryKey(
@@ -328,7 +327,6 @@ public class CursorPool {
                                         key.getKeys())
                                 .skip(sliceSkips);
 
-                        // TODO check after refactoring
                         cursor.iterator(); // this forces the actual skipping
 
                         CursorPoolEntryKey newkey = new CursorPoolEntryKey(

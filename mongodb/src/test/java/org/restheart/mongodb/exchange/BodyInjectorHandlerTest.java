@@ -45,7 +45,6 @@ public class BodyInjectorHandlerTest {
      * @throws IllegalArgumentException
      */
     @Test
-    @SuppressWarnings("deprecation")
     public void test_extractProperties() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         final String jsonString
                 = "{\"key1\": \"value1\", \"key2\": \"value2\"}";

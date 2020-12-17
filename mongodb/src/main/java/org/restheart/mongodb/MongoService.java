@@ -223,7 +223,6 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         return e -> MongoResponse.of(e);
     }
 
-    @SuppressWarnings("unchecked")
     private Set<MongoMount> getMongoMounts() {
         final var ret = new LinkedHashSet<MongoMount>();
 
@@ -326,6 +325,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
      *
      * @param request
      */
+    @SuppressWarnings("rawtypes")
     private void resetRelativePath(Request request) {
         request.getExchange().setRelativePath(request.getPath());
     }

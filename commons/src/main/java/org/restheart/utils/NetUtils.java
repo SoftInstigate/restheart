@@ -59,6 +59,7 @@ public class NetUtils {
      * @throws UnknownHostException If the LAN address of the machine cannot be
      * found.
      */
+    @SuppressWarnings("rawtypes")
     public static InetAddress getLocalHostLANAddress() throws UnknownHostException {
         try {
             InetAddress candidateAddress = null;

@@ -39,9 +39,6 @@ import org.junit.Test;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import static org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE_QPARAM_KEY;
-import static org.restheart.test.integration.AbstactIT.url;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
-import static org.restheart.test.integration.HttpClientAbstactIT.collectionTmpUri;
 import org.restheart.utils.HttpStatus;
 
 /**

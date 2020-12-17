@@ -71,8 +71,10 @@ public interface PluginsRegistry {
     /**
      * @return the services
      */
+    @SuppressWarnings("rawtypes")
     public Set<PluginRecord<Service>> getServices();
 
+    @SuppressWarnings("rawtypes")
     public Set<PluginRecord<Interceptor>> getInterceptors();
 
     /**

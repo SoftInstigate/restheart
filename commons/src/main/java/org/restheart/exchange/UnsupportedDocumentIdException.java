@@ -28,10 +28,15 @@ public class UnsupportedDocumentIdException extends Exception {
     /**
      *
      */
+    private static final long serialVersionUID = -5994487927482596996L;
+
+    /**
+     *
+     */
     public UnsupportedDocumentIdException() {
         super();
     }
-    
+
     /**
      *
      * @param message

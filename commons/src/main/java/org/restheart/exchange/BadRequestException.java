@@ -27,6 +27,11 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BadRequestException extends RuntimeException {
+    /**
+     *
+     */
+    private static final long serialVersionUID = -8466126772297299751L;
+
     int statusCode = HttpStatus.SC_BAD_REQUEST;
 
     /**
@@ -35,7 +40,7 @@ public class BadRequestException extends RuntimeException {
     public BadRequestException() {
         super();
     }
-    
+
     /**
      *
      * @param statusCode

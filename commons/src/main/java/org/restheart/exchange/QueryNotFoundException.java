@@ -30,6 +30,11 @@ public class QueryNotFoundException extends Exception {
     /**
      *
      */
+    private static final long serialVersionUID = 679969839186279828L;
+
+    /**
+     *
+     */
     public QueryNotFoundException() {
         super();
     }

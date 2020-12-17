@@ -45,10 +45,6 @@ import org.restheart.utils.RepresentationUtils;
 class CollectionRepresentationFactory
         extends AbstractRepresentationFactory {
 
-    // TODO this is hardcoded, if name of checker is changed in conf file
-// method won't work. need to get the name from the configuration
-    private static final String JSON_SCHEMA_NAME = "jsonSchema";
-
     private static final String _ETAG = "_etag";
     private static final String _TYPE = "_type";
     private static final String _LASTUPDATED_ON = "_lastupdated_on";

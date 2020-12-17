@@ -27,8 +27,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
 import java.util.TreeMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -39,9 +37,6 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class QueryStringRebuilder extends PipelinedHandler {
-
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(QueryStringRebuilder.class);
 
     static final AttachmentKey<String> ORIGINAL_QUERY_STRING
             = AttachmentKey.create(String.class);

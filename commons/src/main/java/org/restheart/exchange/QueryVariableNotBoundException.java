@@ -28,6 +28,11 @@ package org.restheart.exchange;
 public class QueryVariableNotBoundException extends Exception {
 
     /**
+	 *
+	 */
+	private static final long serialVersionUID = -8291349884609864832L;
+
+	/**
      *
      */
     public QueryVariableNotBoundException() {

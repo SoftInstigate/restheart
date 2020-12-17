@@ -28,7 +28,6 @@ import org.apache.http.HttpStatus;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}

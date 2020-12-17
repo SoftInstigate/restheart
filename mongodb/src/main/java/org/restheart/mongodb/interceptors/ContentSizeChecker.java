@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
         name = "checkContentSize",
         description = "Checks the write request content length on documents of collections with 'checkContentSize' metadata",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH)
-@SuppressWarnings("deprecation")
 public class ContentSizeChecker implements MongoInterceptor {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ContentSizeChecker.class);

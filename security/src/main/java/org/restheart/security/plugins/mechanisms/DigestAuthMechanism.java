@@ -21,8 +21,6 @@
 package org.restheart.security.plugins.mechanisms;
 
 import static io.undertow.UndertowMessages.MESSAGES;
-import io.undertow.security.api.AuthenticationMechanism.AuthenticationMechanismOutcome;
-import io.undertow.security.api.AuthenticationMechanism.ChallengeResult;
 import io.undertow.security.api.NonceManager;
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
@@ -121,7 +119,7 @@ public class DigestAuthMechanism implements AuthMechanism {
     private static final String OPAQUE_VALUE = "00000000000000000000000000000000";
     private static final byte COLON = ':';
 
-    private final String mechanismName;
+    // private final String mechanismName;
     private IdentityManager identityManager;
 
     private static final Set<DigestAuthorizationToken> MANDATORY_REQUEST_TOKENS;
@@ -144,7 +142,7 @@ public class DigestAuthMechanism implements AuthMechanism {
     private final List<DigestAlgorithm> supportedAlgorithms;
     private final List<DigestQop> supportedQops;
     private final String qopString;
-    private String realmName; // TODO - Will offer choice once backing store API/SPI is in.
+    private String realmName;
     private String domain;
     private final NonceManager nonceManager;
 
@@ -172,7 +170,7 @@ public class DigestAuthMechanism implements AuthMechanism {
         this.realmName = realmName;
         this.domain = domain;
         this.nonceManager = nonceManager;
-        this.mechanismName = mechanismName;
+        // this.mechanismName = mechanismName;
         this.identityManager = identityManager;
 
         if (!supportedQops.isEmpty()) {
@@ -257,7 +255,6 @@ public class DigestAuthMechanism implements AuthMechanism {
             qop = DigestQop.forName(parsedHeader.get(DigestAuthorizationToken.MESSAGE_QOP));
             if (qop == null || !supportedQops.contains(qop)) {
                 // We are also ensuring the client is not trying to force a qop that has been disabled.
-                // TODO - This actually needs to result in a HTTP 400 Bad Request response and not a new challenge.
                 return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
             }
             context.setQop(qop);
@@ -268,13 +265,11 @@ public class DigestAuthMechanism implements AuthMechanism {
         // Check all mandatory tokens are present.
         mandatoryTokens.removeAll(parsedHeader.keySet());
         if (mandatoryTokens.size() > 0) {
-            // TODO - This actually needs to result in a HTTP 400 Bad Request response and not a new challenge.
             return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
         }
 
         // Perform some validation of the remaining tokens.
         if (!realmName.equals(parsedHeader.get(DigestAuthorizationToken.REALM))) {
-            // TODO - This actually needs to result in a HTTP 400 Bad Request response and not a new challenge.
             return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
         }
 
@@ -320,7 +315,6 @@ public class DigestAuthMechanism implements AuthMechanism {
             algorithm = DigestAlgorithm.forName(parsedHeader.get(DigestAuthorizationToken.ALGORITHM));
             if (algorithm == null || !supportedAlgorithms.contains(algorithm)) {
                 // We are also ensuring the client is not trying to force an algorithm that has been disabled.
-                // TODO - This actually needs to result in a HTTP 400 Bad Request response and not a new challenge.
                 return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
             }
         } else {
@@ -365,7 +359,7 @@ public class DigestAuthMechanism implements AuthMechanism {
 
         // Step 3 - Verify that the nonce was eligible to be used.
         if (!validateNonceUse(context, parsedHeader, exchange)) {
-            // TODO - This is the right place to make use of the decision but the check needs to be much much sooner
+            // This is the right place to make use of the decision but the check needs to be much much sooner
             // otherwise a failure server
             // side could leave a packet that could be 're-played' after the failed auth.
             // The username and password verification passed but for some reason we do not like the nonce.
@@ -381,7 +375,6 @@ public class DigestAuthMechanism implements AuthMechanism {
         return AuthenticationMechanismOutcome.AUTHENTICATED;
 
         // Step 4 - Set up any QOP related requirements.
-        // TODO - Do QOP
     }
 
     private boolean validateRequest(final DigestContext context, final byte[] ha1) {
@@ -416,7 +409,7 @@ public class DigestAuthMechanism implements AuthMechanism {
         }
 
         context.setNonce(suppliedNonce);
-        // TODO - A replay attempt will need an exception.
+        // A replay attempt will need an exception.
         return (nonceManager.validateNonce(suppliedNonce, nonceCount, exchange));
     }
 
@@ -437,7 +430,6 @@ public class DigestAuthMechanism implements AuthMechanism {
     }
 
     private byte[] createHA2AuthInt() {
-        // TODO - Implement method.
         throw new IllegalStateException("Method not implemented.");
     }
 

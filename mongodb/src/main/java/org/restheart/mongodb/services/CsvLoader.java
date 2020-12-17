@@ -80,11 +80,11 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
 
     private static final String ERROR_NO_ID = "id must be set when update=true";
 
-    private static final String ERROR_CONTENT_TYPE = "Content-Type request header must be 'text/csv'";
+    // private static final String ERROR_CONTENT_TYPE = "Content-Type request header must be 'text/csv'";
 
     private static final String ERROR_WRONG_METHOD = "Only POST method is supported";
 
-    private static final String ERROR_PARSING_DATA = "Error parsing CSV, see logs for more information";
+    // private static final String ERROR_PARSING_DATA = "Error parsing CSV, see logs for more information";
 
     private final static FindOneAndUpdateOptions FAU_NO_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(false);
 
@@ -189,10 +189,12 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
         return request.isPost();
     }
 
-    @SuppressWarnings("unchecked")
     private BsonDocument addProps(CsvRequestParams params, BsonDocument doc) {
         if (params.props != null && params.values != null) {
+            @SuppressWarnings("rawtypes")
             Deque<String> _props = new ArrayDeque(params.props);
+            
+            @SuppressWarnings("rawtypes")
             Deque<String> _values = new ArrayDeque(params.values);
 
             while (!_props.isEmpty() && !_values.isEmpty()) {

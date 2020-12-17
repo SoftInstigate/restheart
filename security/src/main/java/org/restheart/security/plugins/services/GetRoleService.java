@@ -23,7 +23,6 @@ package org.restheart.security.plugins.services;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.util.Map;
 import java.util.Set;

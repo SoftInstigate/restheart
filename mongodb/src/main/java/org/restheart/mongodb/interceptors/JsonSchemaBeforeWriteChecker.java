@@ -69,7 +69,6 @@ import org.slf4j.LoggerFactory;
         name = "jsonSchemaBeforeWrite",
         description = "Checks the request content against the JSON schema specified by the 'jsonSchema' collection metadata",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
-@SuppressWarnings("deprecation")
 public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
 
     /**

@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author omartrasatti
  */
+@SuppressWarnings("rawtypes")
 public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> {
 
     private static final Logger LOGGER

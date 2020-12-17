@@ -67,6 +67,7 @@ public abstract class Request<T> extends Exchange<T> {
         super(exchange);
     }
 
+    @SuppressWarnings("rawtypes")
     public static Request of(HttpServerExchange exchange) {
         var pi = PluginUtils.pipelineInfo(exchange);
 

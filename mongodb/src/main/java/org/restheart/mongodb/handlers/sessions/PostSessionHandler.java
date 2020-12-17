@@ -20,7 +20,6 @@
  */
 package org.restheart.mongodb.handlers.sessions;
 
-import com.mongodb.MongoClient;
 import com.mongodb.MongoClientException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
@@ -47,11 +46,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PostSessionHandler extends PipelinedHandler {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(PostSessionHandler.class);
-
-    private static MongoClient MCLIENT = MongoClientSingleton
-            .getInstance().getClient();
+    private static final Logger LOGGER = LoggerFactory.getLogger(PostSessionHandler.class);
 
     /**
      * Creates a new instance of PostTxnsHandler
@@ -98,7 +93,7 @@ public class PostSessionHandler extends PipelinedHandler {
             LOGGER.error("Error {}",
                     mce.getMessage());
 
-            // TODO check if server supports sessions
+            // check if server supports sessions
             if (!MongoClientSingleton.getInstance().isReplicaSet()) {
                 response.setInError(
                         HttpStatus.SC_BAD_GATEWAY,

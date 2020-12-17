@@ -142,7 +142,6 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void commitTransaction() {
         if (transactionState == TransactionStatus.ABORTED) {
             throw new IllegalStateException(
@@ -171,7 +170,6 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public void abortTransaction() {
         if (transactionState == TransactionStatus.ABORTED) {
             throw new IllegalStateException("Cannot call abortTransaction twice");

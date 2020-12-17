@@ -28,17 +28,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SessionKey {
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(SessionKey.class);
-    
     private final String url;
     private final BsonDocument avars;
     private final JsonMode jsonMode;

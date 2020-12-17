@@ -37,7 +37,6 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.restheart.exchange.Exchange;
-import static org.restheart.test.integration.AbstactIT.url;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -148,6 +147,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
      * @throws Exception
      */
     @Before
+    @SuppressWarnings("rawtypes")
     public void createTestData() throws Exception {
         // create test db
         com.mashape.unirest.http.HttpResponse resp = Unirest.put(url(DB))
@@ -203,6 +203,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
      * @throws Exception
      */
     @Test
+    @SuppressWarnings("rawtypes")
     public void testGetHintStringFormat() throws Exception {
         com.mashape.unirest.http.HttpResponse resp = Unirest.get(url(DB, COLL))
                 .queryString("hint", "a")
@@ -284,6 +285,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
      * @throws Exception
      */
     @Test
+    @SuppressWarnings("rawtypes")
     public void testGetHintObjectFormat() throws Exception {
         com.mashape.unirest.http.HttpResponse resp = Unirest.get(url(DB, COLL))
                 .queryString("hint", "{'a':1}")

@@ -38,6 +38,7 @@ public class ETagIT extends AbstactIT {
     private final String COLL_REQUIRED = "coll-required";
     private final String COLL = "coll";
 
+    @SuppressWarnings("rawtypes")
     HttpResponse resp;
 
     /**

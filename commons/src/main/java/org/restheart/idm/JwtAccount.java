@@ -39,6 +39,10 @@ import java.util.Set;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class JwtAccount extends BaseAccount {
+    /**
+     *
+     */
+    private static final long serialVersionUID = -2405615782892727187L;
     final private String jwtPayload;
 
     /**

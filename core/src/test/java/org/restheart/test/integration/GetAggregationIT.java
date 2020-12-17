@@ -38,7 +38,6 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.restheart.exchange.Exchange;
 import static org.restheart.exchange.ExchangeKeys._AGGREGATIONS;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 
 /**

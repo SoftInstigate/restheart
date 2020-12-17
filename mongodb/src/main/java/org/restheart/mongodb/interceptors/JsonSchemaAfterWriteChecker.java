@@ -51,7 +51,6 @@ import org.restheart.plugins.RegisterPlugin;
         name = "jsonSchemaAfterWrite",
         description = "Checks the request content against the JSON schema specified by the 'jsonSchema' collection metadata",
         interceptPoint = InterceptPoint.RESPONSE)
-@SuppressWarnings("deprecation")
 public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {

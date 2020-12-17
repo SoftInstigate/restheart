@@ -33,6 +33,7 @@ public interface Authorizer extends ConfigurablePlugin {
      * @param request
      * @return true if request is allowed
      */
+    @SuppressWarnings("rawtypes")
     boolean isAllowed(final Request request);
 
     /**
@@ -40,5 +41,6 @@ public interface Authorizer extends ConfigurablePlugin {
      * @param request
      * @return true if not authenticated user won't be allowed
      */
+    @SuppressWarnings("rawtypes")
     boolean isAuthenticationRequired(final Request request);
 }

@@ -37,7 +37,6 @@ public class SimpleServerSessionPool extends ServerSessionPool {
      * @param cluster
      * @param sid
      */
-    @SuppressWarnings("deprecation")
     public SimpleServerSessionPool(Cluster cluster, UUID sid) {
         super(cluster);
         this.sid = sid;

@@ -36,7 +36,6 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
@@ -46,8 +45,6 @@ public class LoadGetPT extends AbstractPT {
 
     private boolean printData = false;
     private String doc;
-
-    private final ConcurrentHashMap<Long, Integer> threadPages = new ConcurrentHashMap<>();
 
     /**
      *

@@ -34,7 +34,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import org.junit.Test;
 import org.restheart.exchange.Exchange;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 
 /**

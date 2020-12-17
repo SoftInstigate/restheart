@@ -88,7 +88,6 @@ public class ChangeStreamOperation {
      *
      * @param aVars RequestContext.getAggregationVars()
      */
-    // TODO RequestContextInjector Header
     public static void checkAggregationVariables(BsonValue aVars) throws SecurityException {
         if (aVars == null) {
             return;

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.restheart.cache.Cache.EXPIRE_POLICY;
 
 /**
  *
@@ -34,7 +33,7 @@ import org.restheart.cache.Cache.EXPIRE_POLICY;
  * @param <K> the class of the keys.
  * @param <V> the class of the values (is Optional-ized).
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class GuavaCache<K, V> implements org.restheart.cache.Cache<K, V> {
     private final Cache<K, Optional<V>> wrapped;
 

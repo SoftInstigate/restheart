@@ -30,7 +30,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
-import static org.restheart.exchange.Exchange.MAX_BUFFERS;
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +51,7 @@ public class ByteArrayProxyResponse extends ProxyResponse<byte[]> {
     }
 
     private static final Type _TYPE = new TypeToken<ByteArrayProxyResponse>(ByteArrayProxyResponse.class) {
+        private static final long serialVersionUID = -6882416842030533004L;
     }.getType();
 
     public static Type type() {

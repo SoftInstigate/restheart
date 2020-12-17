@@ -33,9 +33,6 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.restheart.exchange.Exchange;
-import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
-import static org.restheart.test.integration.AbstactIT.url;
-import static org.restheart.test.integration.HttpClientAbstactIT.adminExecutor;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -47,6 +44,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
     private final String DB = TEST_DB_PREFIX + "-put-document-db";
     private final String COLL = "coll";
 
+    @SuppressWarnings("rawtypes")
     private HttpResponse resp;
 
     /**

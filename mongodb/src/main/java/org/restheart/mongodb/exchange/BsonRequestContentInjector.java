@@ -446,15 +446,15 @@ public class BsonRequestContentInjector {
         }
 
         if (request.isPost() || request.isPut()) {
-            if (JsonUtils.containsUpdateOperators(content, true)) {
-                // not acceptable
-                String errMsg = "update operators (but $currentDate) cannot be used on POST and PUT requests";
+            // if (JsonUtils.containsUpdateOperators(content, true)) {
+            //     // not acceptable
+            //     String errMsg = "update operators (but $currentDate) cannot be used on POST and PUT requests";
 
-                response.setInError(
-                        HttpStatus.SC_BAD_REQUEST,
-                        errMsg);
-                return;
-            }
+            //     response.setInError(
+            //             HttpStatus.SC_BAD_REQUEST,
+            //             errMsg);
+            //     return;
+            // } 
 
             // flatten request content for POST and PUT requests
             content = JsonUtils.unflatten(content);

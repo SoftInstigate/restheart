@@ -148,6 +148,7 @@ public class PluginsScanner {
         return ret;
     }
 
+    @SuppressWarnings("rawtypes")
     private static ArrayList<InjectionDescriptor> collectInjections(ClassInfo pluginClassInfo, Class clazz) {
         var ret = new ArrayList<InjectionDescriptor>();
 
@@ -275,6 +276,7 @@ class PluginDescriptor {
     }
 }
 
+@SuppressWarnings("rawtypes")
 class InjectionDescriptor {
     final String method;
     final Class clazz;

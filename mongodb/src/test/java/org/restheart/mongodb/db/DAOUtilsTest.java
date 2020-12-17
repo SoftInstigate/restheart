@@ -56,24 +56,6 @@ public class DAOUtilsTest {
     public DAOUtilsTest() {
     }
 
-    //@Test
-
-    /**
-     *
-     */
-    public void testGetDataFromRows() {
-        // TODO
-    }
-
-    //@Test
-
-    /**
-     *
-     */
-    public void testGetDataFromRow() {
-        // TODO
-    }
-
     /**
      *
      */
