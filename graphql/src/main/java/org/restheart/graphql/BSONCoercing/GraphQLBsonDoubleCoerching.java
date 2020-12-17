@@ -14,7 +14,7 @@ public class GraphQLBsonDoubleCoerching implements Coercing<BsonDouble, BsonDoub
     @Override
     public BsonDouble serialize(Object dataFetcherResult) throws CoercingSerializeException {
 
-        if (dataFetcherResult instanceof BsonInt64){
+        if (dataFetcherResult instanceof BsonDouble){
             return (BsonDouble) dataFetcherResult;
         }
         throw new CoercingSerializeException(

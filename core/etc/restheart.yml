@@ -320,10 +320,10 @@ plugins-args:
     secured: false
   graphql:
     enabled: true
-      uri: /graphql
-      secured: false
-      db: restheart
-      collection: apps
+    uri: /graphql
+    secured: false
+    db: restheart
+    collection: apps
 
 #### Logging
 
