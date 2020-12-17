@@ -53,14 +53,13 @@ public class TestInitializer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInitializer.class);
 
     private PluginsRegistry pluginRegistry;
-    
+
     @InjectPluginsRegistry
     public void setPluginRegistry(PluginsRegistry pluginRegistry) {
         this.pluginRegistry = pluginRegistry;
-        
         pluginRegistry.getServices();
     }
-    
+
     @Override
     public void init() {
         LOGGER.info("Testing initializer");

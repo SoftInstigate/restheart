@@ -136,7 +136,7 @@ public class Configuration {
 
         defaultConf.put(ANSI_CONSOLE_KEY, new ArrayList<>());
 
-        defaultConf.put(PROXY_KEY, new HashMap());
+        defaultConf.put(PROXY_KEY, new LinkedHashMap<>());
 
         defaultConf.put(PLUGINS_DIRECTORY_PATH_KEY, "plugins");
 
@@ -185,9 +185,9 @@ public class Configuration {
     }
 
     static boolean isParametric(final Path confFilePath) throws IOException {
-        Scanner sc = new Scanner(confFilePath, "UTF-8");
-
-        return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}")).limit(1).count() > 0;
+        try (var sc = new Scanner(confFilePath, "UTF-8")) {
+            return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}")).limit(1).count() > 0;
+        }
     }
 
     /**
@@ -420,7 +420,7 @@ public class Configuration {
      * @param silent
      * @throws org.restheart.ConfigurationException
      */
-    @SuppressWarnings({ "deprecation", "unchecked" })
+    @SuppressWarnings({ "deprecation", "unchecked", "rawtypes" })
     public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
         this.conf = conf;
 
@@ -847,6 +847,7 @@ public class Configuration {
      *         property name="restheart"
      * @throws ConfigurationException
      */
+    @SuppressWarnings("rawtypes")
     public URI getRestheartBaseUrl() throws ConfigurationException {
         var __proxyPass = getProxies().stream().filter(e -> e.containsKey(ConfigurationKeys.PROXY_NAME))
                 .filter(e -> "restheart".equals(e.get(ConfigurationKeys.PROXY_NAME)))
@@ -1089,12 +1090,11 @@ public class Configuration {
         return getOrDefault(conf, key, defaultValue);
     }
 
-    private Long getAsLong(final Map<String, Object> conf, final String key, final Long defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
-        if (envValue != null) {
-            return Long.valueOf(envValue);
-        }
-        return getOrDefault(conf, key, defaultValue);
-    }
-
+    // private Long getAsLong(final Map<String, Object> conf, final String key, final Long defaultValue) {
+    //     String envValue = overriddenValueFromEnv(key);
+    //     if (envValue != null) {
+    //         return Long.valueOf(envValue);
+    //     }
+    //     return getOrDefault(conf, key, defaultValue);
+    // }
 }
