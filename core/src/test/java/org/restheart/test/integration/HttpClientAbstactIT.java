@@ -45,6 +45,7 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.restheart.exchange.Exchange;
+import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.db.DocumentDAO;
@@ -763,11 +764,11 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         }
 
         final DocumentDAO documentDAO = new DocumentDAO();
-        documentDAO.writeDocument(null, dbName, collection1Name, document1Id, null, null, document1Props, new ObjectId().toString(), false, true, false);
-        documentDAO.writeDocument(null, dbName, collection2Name, document2Id, null, null, document2Props, new ObjectId().toString(), false, true, false);
+        documentDAO.writeDocument(null, dbName, collection1Name, document1Id, null, null, document1Props, new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
+        documentDAO.writeDocument(null, dbName, collection2Name, document2Id, null, null, document2Props, new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
 
         for (String doc : docsPropsStrings) {
-            documentDAO.writeDocument(null, dbName, docsCollectionName, new ObjectId().toString(), null, null, BsonDocument.parse(doc), new ObjectId().toString(), false, true, false);
+            documentDAO.writeDocument(null, dbName, docsCollectionName, new ObjectId().toString(), null, null, BsonDocument.parse(doc), new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
         }
         LOG.debug("test data created");
     }

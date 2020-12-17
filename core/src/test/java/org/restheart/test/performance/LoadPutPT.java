@@ -44,6 +44,8 @@ import org.bson.BsonDouble;
 import org.bson.types.ObjectId;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.mongodb.db.DocumentDAO;
 import org.restheart.utils.HttpStatus;
 
@@ -168,7 +170,7 @@ public class LoadPutPT extends AbstractPT {
                 content,
                 null,
                 true,
-                false,
+                WRITE_MODE.UPSERT,
                 false);
     }
 }

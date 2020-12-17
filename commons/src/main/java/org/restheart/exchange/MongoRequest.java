@@ -76,7 +76,7 @@ public class MongoRequest extends BsonRequest {
     private int pagesize = 100;
     private boolean count = false;
     private boolean etagCheckRequired = false;
-    private boolean upsert = true;
+    private WRITE_MODE writeMode = WRITE_MODE.UPSERT;
     private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
     private BsonDocument aggregationVars = null; // aggregation vars
@@ -183,11 +183,23 @@ public class MongoRequest extends BsonRequest {
 
         this.noCache = exchange.getQueryParameters().get(NO_CACHE_QPARAM_KEY) != null;
 
-        // upsert
+        // writeMode
 
-        this.upsert = exchange.getQueryParameters().get(UPSERT_QPARAM_KEY) == null
-            ? true
-            : Boolean.parseBoolean(getQueryParameters().get(UPSERT_QPARAM_KEY).getFirst());
+        var _writeMode = exchange.getQueryParameters().containsKey(WRITE_MODE_QPARAM_KEY)
+                ? exchange.getQueryParameters().get(WRITE_MODE_QPARAM_KEY).getFirst().toUpperCase()
+                : exchange.getQueryParameters().containsKey(WRITE_MODE_SHORT_QPARAM_KEY)
+                ? exchange.getQueryParameters().get(WRITE_MODE_SHORT_QPARAM_KEY).getFirst().toUpperCase()
+                : WRITE_MODE.UPSERT.name();
+
+        WRITE_MODE mode;
+
+        try {
+            mode = WRITE_MODE.valueOf(_writeMode.toUpperCase());
+        } catch (IllegalArgumentException iae) {
+            mode = WRITE_MODE.UPSERT;
+        }
+
+        this.writeMode = mode;
     }
 
     /**
@@ -1536,17 +1548,17 @@ public class MongoRequest extends BsonRequest {
     }
 
     /**
-     * @return upsert, i.e. whether or not to allow upsert mode
+     * @return the write mode
      */
-    public boolean isUpsert() {
-        return upsert;
+    public WRITE_MODE getWriteMode() {
+        return writeMode;
     }
 
     /**
-     * @param upsert whether or not to allow upsert mode
+     * @param writeMode the write mode to set
      */
-    public void setUpsert(boolean upsert) {
-        this.upsert = upsert;
+    public void setWriteMode(WRITE_MODE writeMode) {
+        this.writeMode = writeMode;
     }
 
     /**

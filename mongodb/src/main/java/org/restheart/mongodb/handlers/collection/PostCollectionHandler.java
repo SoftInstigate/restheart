@@ -144,7 +144,7 @@ public class PostCollectionHandler extends PipelinedHandler {
                         request.getFiltersDocument(),
                         request.getShardKey(),
                         content,
-                        request.isUpsert(), // <= upsert
+                        request.getWriteMode(),
                         request.getETag(),
                         request.isETagCheckRequired());
 

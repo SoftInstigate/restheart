@@ -40,6 +40,8 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
+
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
@@ -388,7 +390,7 @@ public class DatabaseImpl implements Database {
                     null,
                     dcontent,
                     false,
-                    true);
+                    WRITE_MODE.UPSERT);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_OK, newEtag);
@@ -401,7 +403,7 @@ public class DatabaseImpl implements Database {
                     null,
                     dcontent,
                     true,
-                    true);
+                    WRITE_MODE.UPSERT);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_OK, newEtag);
@@ -414,7 +416,7 @@ public class DatabaseImpl implements Database {
                     null,
                     dcontent,
                     false,
-                    true);
+                    WRITE_MODE.UPSERT);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_CREATED, newEtag);

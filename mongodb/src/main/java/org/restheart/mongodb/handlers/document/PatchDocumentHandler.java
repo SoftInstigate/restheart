@@ -107,7 +107,7 @@ public class PatchDocumentHandler extends PipelinedHandler {
                 content,
                 request.getETag(),
                 true,
-                request.isUpsert(), // <= upsert
+                request.getWriteMode(),
                 request.isETagCheckRequired());
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {

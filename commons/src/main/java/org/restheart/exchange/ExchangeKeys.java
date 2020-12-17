@@ -129,7 +129,12 @@ public interface ExchangeKeys {
     /**
      *
      */
-    public static final String UPSERT_QPARAM_KEY = "upsert";
+    public static final String WRITE_MODE_QPARAM_KEY = "writeMode";
+
+    /**
+     *
+     */
+    public static final String WRITE_MODE_SHORT_QPARAM_KEY = "wm";
 
     // matadata
 
@@ -665,5 +670,26 @@ public interface ExchangeKeys {
          *
          */
         NONE
+    }
+
+    /**
+     *
+     */
+    public enum WRITE_MODE {
+
+        /**
+         *
+         */
+        UPSERT,
+
+        /**
+         *
+         */
+        INSERT,
+
+        /**
+         *
+         */
+        UPDATE
     }
 }

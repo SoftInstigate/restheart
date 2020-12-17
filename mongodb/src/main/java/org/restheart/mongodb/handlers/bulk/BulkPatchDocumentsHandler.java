@@ -80,20 +80,21 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
-                
+
         if (request.isInError()) {
             next(exchange);
             return;
         }
-        
+
         BulkOperationResult result = this.documentDAO
                 .bulkPatchDocuments(
                         request.getClientSession(),
-                        request.getDBName(), 
-                        request.getCollectionName(), 
+                        request.getDBName(),
+                        request.getCollectionName(),
                         request.getFiltersDocument(),
                         request.getShardKey(),
-                        request.getContent().asDocument());
+                        request.getContent().asDocument(),
+                        request.getWriteMode());
 
         response.setDbOperationResult(result);
 

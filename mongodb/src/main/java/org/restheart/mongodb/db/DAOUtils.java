@@ -21,6 +21,7 @@
 package org.restheart.mongodb.db;
 
 import com.mongodb.MongoCommandException;
+import com.mongodb.MongoException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
@@ -51,6 +52,7 @@ import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.OperationResult;
+import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
@@ -82,20 +84,20 @@ public class DAOUtils {
     /**
      *
      */
-    public final static FindOneAndUpdateOptions FAU_UPSERT_OPS = new FindOneAndUpdateOptions()
-            .upsert(true).returnDocument(ReturnDocument.AFTER);
+    public final static FindOneAndUpdateOptions FAU_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(true)
+            .returnDocument(ReturnDocument.AFTER);
 
     /**
      *
      */
-    public final static FindOneAndUpdateOptions FAU_NOT_UPSERT_OPS = new FindOneAndUpdateOptions()
-            .upsert(false).returnDocument(ReturnDocument.AFTER);
+    public final static FindOneAndUpdateOptions FAU_NOT_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(false)
+            .returnDocument(ReturnDocument.AFTER);
 
     /**
      *
      */
-    public final static FindOneAndUpdateOptions FOU_AFTER_UPSERT_OPS = new FindOneAndUpdateOptions()
-            .upsert(true).returnDocument(ReturnDocument.AFTER);
+    public final static FindOneAndUpdateOptions FOU_AFTER_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(true)
+            .returnDocument(ReturnDocument.AFTER);
 
     /**
      *
@@ -171,7 +173,7 @@ public class DAOUtils {
                 data,
                 false,
                 patching,
-                false);
+                WRITE_MODE.UPSERT);
     }
 
     /**
@@ -195,7 +197,7 @@ public class DAOUtils {
             final BsonDocument shardKeys,
             final BsonDocument data,
             final boolean replace,
-            final boolean upsert) {
+            final WRITE_MODE writeMode) {
         return writeDocument(
                 cs,
                 coll,
@@ -205,7 +207,7 @@ public class DAOUtils {
                 data,
                 replace,
                 false,
-                upsert);
+                writeMode);
     }
 
     /**
@@ -234,9 +236,10 @@ public class DAOUtils {
             final BsonDocument data,
             final boolean replace,
             final boolean deepPatching,
-            final boolean upsert) {
+            final WRITE_MODE writeMode) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
+        Objects.requireNonNull(writeMode);
 
         Bson query;
 
@@ -261,14 +264,14 @@ public class DAOUtils {
                     ? coll.find(query).first()
                     : coll.find(cs, query).first();
 
-            // if document not exits and not-upsert request => fail request with 404
-            if (!upsert && oldDocument == null) {
+            // if document not exits and not-update request => fail request with 404
+            if (writeMode == WRITE_MODE.UPDATE && oldDocument == null) {
                 return new OperationResult(HttpStatus.SC_NOT_FOUND);
             }
         } else {
-            // if not upsert, docId is mandatory
-            if (!upsert) {
-                LOGGER.debug("write request with not-upsert option missing document id");
+            // if not-update, docId is mandatory
+            if (writeMode == WRITE_MODE.UPDATE) {
+                LOGGER.debug("write request with writeMode=update missing document id");
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST);
             }
 
@@ -279,52 +282,43 @@ public class DAOUtils {
             query = and(query, filter);
         }
 
-        if (replace) {
+        if (writeMode == WRITE_MODE.INSERT) {
             BsonDocument newDocument;
-
             try {
+                var insertedId = cs == null
+                    ? coll.insertOne(data).getInsertedId()
+                    : coll.insertOne(cs, data).getInsertedId();
+
+                var insertedQuery = eq("_id", insertedId);
+
+                if (shardKeys != null) {
+                    insertedQuery = and(insertedQuery, shardKeys);
+                }
+
                 newDocument = cs == null
-                        ? coll.findOneAndReplace(query,
-                                getReplaceDocument(data),
-                                upsert ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS)
-                        : coll.findOneAndReplace(cs, query,
-                                getReplaceDocument(data),
-                                upsert ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS);
+                    ? coll.find(insertedQuery).first()
+                    : coll.find(cs, insertedQuery).first();
             } catch (IllegalArgumentException iae) {
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
-            } catch (MongoCommandException mce) {
-                LOGGER.debug("document {} not updated, "
-                        + "might be due to a duplicate keys. "
-                        + "errorCode: {}, errorMessage: {}",
-                        documentId,
-                        mce.getErrorCode(),
-                        mce.getErrorMessage());
-                switch (mce.getErrorCode()) {
-                    case DUPLICATE_KEY_ERROR:
-                        if (upsert
-                                && filter != null
-                                && !filter.isEmpty()
-                                && mce.getErrorMessage().contains("_id_ dup key")) {
-                            // error 11000 is duplicate key error
-                            // happens when the _id and a filter are specified,
-                            // the document exists but does not match the filter
-                            return new OperationResult(ResponseHelper
-                                    .getHttpStatusFromErrorCode(mce.getErrorCode()),
-                                    oldDocument,
-                                    null);
-                        } else {
-                            return new OperationResult(HttpStatus.SC_CONFLICT,
-                                    oldDocument,
-                                    null);
-                        }
-                    case BAD_VALUE_KEY_ERROR:
-                        return new OperationResult(ResponseHelper
-                                .getHttpStatusFromErrorCode(mce.getErrorCode()),
-                                oldDocument,
-                                null);
-                    default:
-                        throw mce;
-                }
+            }
+
+            return new OperationResult(-1, oldDocument, newDocument);
+        } else if (replace) {
+            BsonDocument newDocument;
+            try {
+                    newDocument = cs == null
+                            ? coll.findOneAndReplace(query,
+                                    getReplaceDocument(data),
+                                    writeMode == WRITE_MODE.UPSERT
+                                        ? FOR_AFTER_UPSERT_OPS
+                                        : FOR_AFTER_NOT_UPSERT_OPS)
+                            : coll.findOneAndReplace(cs, query,
+                                    getReplaceDocument(data),
+                                    writeMode == WRITE_MODE.UPSERT
+                                        ? FOR_AFTER_UPSERT_OPS
+                                        : FOR_AFTER_NOT_UPSERT_OPS);
+            } catch (IllegalArgumentException iae) {
+                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
             }
 
             return new OperationResult(-1, oldDocument, newDocument);
@@ -335,40 +329,54 @@ public class DAOUtils {
                 newDocument = cs == null
                         ? coll.findOneAndUpdate(query,
                                 getUpdateDocument(data, deepPatching),
-                                upsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS)
+                                writeMode == WRITE_MODE.UPSERT
+                                    ? FAU_UPSERT_OPS
+                                    : FAU_NOT_UPSERT_OPS)
                         : coll.findOneAndUpdate(cs, query,
                                 getUpdateDocument(data, deepPatching),
-                                upsert ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
-            } catch (MongoCommandException mce) {
-                switch (mce.getErrorCode()) {
-                    case DUPLICATE_KEY_ERROR:
-                        if (upsert
-                                && filter != null
-                                && !filter.isEmpty()
-                                && mce.getErrorMessage().contains("_id_ dup key")) {
-                            // error 11000 is duplicate key error
-                            // happens when the _id and a filter are specified,
-                            // the document exists but does not match the filter
-                            return new OperationResult(ResponseHelper
-                                    .getHttpStatusFromErrorCode(mce.getErrorCode()),
-                                    oldDocument,
-                                    null);
-                        } else {
-                            return new OperationResult(HttpStatus.SC_CONFLICT,
-                                    oldDocument,
-                                    null);
-                        }
-                    case BAD_VALUE_KEY_ERROR:
-                        return new OperationResult(ResponseHelper
-                                .getHttpStatusFromErrorCode(mce.getErrorCode()),
-                                oldDocument,
-                                null);
-                    default:
-                        throw mce;
-                }
+                                writeMode == WRITE_MODE.UPSERT
+                                    ? FAU_UPSERT_OPS
+                                    : FAU_NOT_UPSERT_OPS);
+            } catch (IllegalArgumentException iae) {
+                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
             }
 
             return new OperationResult(-1, oldDocument, newDocument);
+        }
+    }
+
+    private static OperationResult handleMongoCommandException(MongoCommandException mce, Object documentId, WRITE_MODE writeMode, BsonDocument filter, BsonDocument oldDocument) {
+        LOGGER.debug("document {} not updated, "
+                        + "might be due to a duplicate keys. "
+                        + "errorCode: {}, errorMessage: {}",
+                        documentId,
+                        mce.getErrorCode(),
+                        mce.getErrorMessage());
+        switch (mce.getErrorCode()) {
+            case DUPLICATE_KEY_ERROR:
+                if (writeMode != WRITE_MODE.UPDATE
+                        && filter != null
+                        && !filter.isEmpty()
+                        && mce.getErrorMessage().contains("_id_ dup key")) {
+                    // error 11000 is duplicate key error
+                    // happens when the _id and a filter are specified,
+                    // the document exists but does not match the filter
+                    return new OperationResult(ResponseHelper
+                            .getHttpStatusFromErrorCode(mce.getErrorCode()),
+                            oldDocument,
+                            null);
+                } else {
+                    return new OperationResult(HttpStatus.SC_CONFLICT,
+                            oldDocument,
+                            null);
+                }
+            case BAD_VALUE_KEY_ERROR:
+                return new OperationResult(ResponseHelper
+                        .getHttpStatusFromErrorCode(mce.getErrorCode()),
+                        oldDocument,
+                        null);
+            default:
+                throw mce;
         }
     }
 
@@ -423,14 +431,16 @@ public class DAOUtils {
      * @param documents
      * @param filter
      * @param shardKeys
+     * @param writeMode
      * @return
      */
-    public static BulkOperationResult bulkUpsertDocuments(
+    public static BulkOperationResult bulkWriteDocuments(
             final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
             final BsonArray documents,
             final BsonDocument filter,
-            final BsonDocument shardKeys) {
+            final BsonDocument shardKeys,
+            final WRITE_MODE writeMode) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documents);
 

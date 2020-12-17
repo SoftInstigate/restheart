@@ -24,6 +24,7 @@ import com.mongodb.client.ClientSession;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.restheart.exchange.OperationResult;
+import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 
 /**
  *
@@ -41,7 +42,7 @@ public interface DocumentRepository {
      * @param content
      * @param requestEtag
      * @param patching
-     * @param upsert whether or not to allow upsert mode
+     * @param writeMode
      * @param checkEtag
      * @return the OperationResult
      */
@@ -55,7 +56,7 @@ public interface DocumentRepository {
             final BsonDocument content,
             final String requestEtag,
             final boolean patching,
-            final boolean upsert,
+            final WRITE_MODE writeMode,
             final boolean checkEtag);
 
     /**
@@ -66,6 +67,7 @@ public interface DocumentRepository {
      * @param filter
      * @param shardedKeys
      * @param content
+     * @param writeMode
      * @param requestEtag
      * @param checkEtag
      * @return the OperationResult
@@ -77,7 +79,7 @@ public interface DocumentRepository {
             final BsonDocument filter,
             final BsonDocument shardedKeys,
             final BsonDocument content,
-            final boolean upsert,
+            final WRITE_MODE writeMode,
             final String requestEtag,
             final boolean checkEtag);
 
@@ -110,15 +112,17 @@ public interface DocumentRepository {
      * @param documents
      * @param filter
      * @param shardKeys
+     * @param writeMode
      * @return the BulkOperationResult
      */
-    BulkOperationResult bulkUpsertDocumentsPost(
+    BulkOperationResult bulkPostDocuments(
             final ClientSession cs,
             final String dbName,
             final String collName,
             final BsonArray documents,
             final BsonDocument filter,
-            final BsonDocument shardKeys);
+            final BsonDocument shardKeys,
+            final WRITE_MODE writeMode);
 
     /**
      *
@@ -128,6 +132,7 @@ public interface DocumentRepository {
      * @param filter
      * @param shardKeys
      * @param data
+     * @param writeMode
      * @return the BulkOperationResult
      */
     BulkOperationResult bulkPatchDocuments(
@@ -136,7 +141,8 @@ public interface DocumentRepository {
             final String collName,
             final BsonDocument filter,
             final BsonDocument shardKeys,
-            final BsonDocument data);
+            final BsonDocument data,
+            final WRITE_MODE writeMode);
 
     /**
      *

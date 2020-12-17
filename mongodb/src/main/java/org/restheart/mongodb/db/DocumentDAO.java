@@ -42,6 +42,8 @@ import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.OperationResult;
+import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
+
 import static org.restheart.mongodb.db.DAOUtils.BAD_VALUE_KEY_ERROR;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -96,12 +98,11 @@ public class DocumentDAO implements DocumentRepository {
      * @param newContent
      * @param requestEtag
      * @param patching
-     * @param upsert whether or not to allow upsert mode
+     * @param writeMode
      * @param checkEtag
      * @return the HttpStatus code
      */
     @Override
-    @SuppressWarnings("unchecked")
     public OperationResult writeDocument(
             final ClientSession cs,
             final String dbName,
@@ -112,7 +113,7 @@ public class DocumentDAO implements DocumentRepository {
             final BsonDocument newContent,
             final String requestEtag,
             final boolean patching,
-            final boolean upsert,
+            final WRITE_MODE writeMode,
             final boolean checkEtag) {
         var mcoll = collectionDAO.getCollection(dbName, collName);
 
@@ -131,7 +132,7 @@ public class DocumentDAO implements DocumentRepository {
                 shardKeys,
                 content,
                 !patching,
-                upsert);
+                writeMode);
 
         BsonDocument oldDocument = updateResult.getOldData();
 
@@ -151,8 +152,7 @@ public class DocumentDAO implements DocumentRepository {
                         newEtag,
                         requestEtag,
                         HttpStatus.SC_OK,
-                        false,
-                        upsert);
+                        false);
             } else {
                 var query = eq("_id", documentId);
                 BsonDocument newDocument = cs == null
@@ -173,8 +173,7 @@ public class DocumentDAO implements DocumentRepository {
                     newEtag,
                     requestEtag,
                     HttpStatus.SC_OK,
-                    false,
-                    upsert);
+                    false);
         } else if (oldDocument != null) {  // insert
             BsonDocument newDocument = mcoll.find(
                     eq("_id", documentId)).first();
@@ -201,6 +200,7 @@ public class DocumentDAO implements DocumentRepository {
      * @param collName
      * @param shardKeys
      * @param content
+     * @param writeMode
      * @param requestEtag
      * @param checkEtag
      * @return the OperationResult
@@ -213,7 +213,7 @@ public class DocumentDAO implements DocumentRepository {
             final BsonDocument filter,
             final BsonDocument shardKeys,
             final BsonDocument content,
-            final boolean upsert,
+            final WRITE_MODE writeMode,
             final String requestEtag,
             final boolean checkEtag) {
         var mcoll = collectionDAO.getCollection(dbName, collName);
@@ -230,8 +230,8 @@ public class DocumentDAO implements DocumentRepository {
             documentId = _content.get("_id");
         } else {
             // new document since the id is missing
-            // if !upsert => error
-            if (!upsert) {
+            // if update => error
+            if (writeMode == WRITE_MODE.UPDATE) {
                 return new OperationResult(
                     HttpStatus.SC_BAD_REQUEST,
                     null,
@@ -250,7 +250,7 @@ public class DocumentDAO implements DocumentRepository {
                 shardKeys,
                 _content,
                 true,
-                upsert);
+                writeMode);
 
         BsonDocument oldDocument = updateResult.getOldData();
         BsonDocument newDocument = updateResult.getNewData();
@@ -273,8 +273,7 @@ public class DocumentDAO implements DocumentRepository {
                     newEtag,
                     requestEtag,
                     HttpStatus.SC_OK,
-                    false,
-                    upsert);
+                    false);
         } else {
             return new OperationResult(updateResult.getHttpCode() > 0
                     ? updateResult.getHttpCode()
@@ -284,23 +283,25 @@ public class DocumentDAO implements DocumentRepository {
     }
 
     /**
-     *
+     * TODO handle writeMode
      * @param cs the client session
      * @param dbName
      * @param collName
      * @param documents
      * @param shardKeys
+     * @param writeMode
      * @return the BulkOperationResult
      */
     @Override
     @SuppressWarnings("unchecked")
-    public BulkOperationResult bulkUpsertDocumentsPost(
+    public BulkOperationResult bulkPostDocuments(
             final ClientSession cs,
             final String dbName,
             final String collName,
             final BsonArray documents,
             final BsonDocument filter,
-            final BsonDocument shardKeys) {
+            final BsonDocument shardKeys,
+            final WRITE_MODE writeMode) {
         Objects.requireNonNull(documents);
 
         var mcoll = collectionDAO.getCollection(dbName, collName);
@@ -316,12 +317,69 @@ public class DocumentDAO implements DocumentRepository {
                             .put("_etag", newEtag);
                 });
 
-        return DAOUtils.bulkUpsertDocuments(
+        return DAOUtils.bulkWriteDocuments(
                 cs,
                 mcoll,
                 documents,
                 filter,
-                shardKeys);
+                shardKeys,
+                writeMode);
+    }
+
+    /**
+     * TODO handle writeMode
+     * @param cs the client session
+     * @param dbName
+     * @param collName
+     * @param filter
+     * @param shardedKeys
+     * @param data
+     * @param writeMode
+     * @return the BulkOperationResult
+     */
+    @Override
+    public BulkOperationResult bulkPatchDocuments(
+            final ClientSession cs,
+            final String dbName,
+            final String collName,
+            final BsonDocument filter,
+            final BsonDocument shardedKeys,
+            final BsonDocument data,
+            final WRITE_MODE writeMode) {
+        var mcoll = collectionDAO.getCollection(dbName, collName);
+
+        List<WriteModel<BsonDocument>> patches = new ArrayList<>();
+
+        Bson _filter;
+
+        if (shardedKeys != null) {
+            _filter = and(filter, shardedKeys);
+        } else {
+            _filter = filter;
+        }
+
+        patches.add(new UpdateManyModel<>(
+                _filter,
+                DAOUtils.getUpdateDocument(data),
+                DAOUtils.U_NOT_UPSERT_OPS));
+
+        try {
+            BulkWriteResult result = cs == null
+                    ? mcoll.bulkWrite(patches)
+                    : mcoll.bulkWrite(cs, patches);
+
+            return new BulkOperationResult(HttpStatus.SC_OK, null, result);
+        } catch (MongoBulkWriteException mce) {
+            switch (mce.getCode()) {
+                case BAD_VALUE_KEY_ERROR:
+                    return new BulkOperationResult(ResponseHelper
+                            .getHttpStatusFromErrorCode(mce.getCode()),
+                            null,
+                            null);
+                default:
+                    throw mce;
+            }
+        }
     }
 
     /**
@@ -366,7 +424,7 @@ public class DocumentDAO implements DocumentRepository {
                     oldDocument,
                     null,
                     requestEtag,
-                    HttpStatus.SC_NO_CONTENT, true, true);
+                    HttpStatus.SC_NO_CONTENT, true);
         } else {
             return new OperationResult(HttpStatus.SC_NO_CONTENT, oldDocument, null);
         }
@@ -426,60 +484,6 @@ public class DocumentDAO implements DocumentRepository {
         return new BulkOperationResult(HttpStatus.SC_OK, null, result);
     }
 
-    /**
-     *
-     * @param cs the client session
-     * @param dbName
-     * @param collName
-     * @param filter
-     * @param shardedKeys
-     * @param data
-     * @return the BulkOperationResult
-     */
-    @Override
-    public BulkOperationResult bulkPatchDocuments(
-            final ClientSession cs,
-            final String dbName,
-            final String collName,
-            final BsonDocument filter,
-            final BsonDocument shardedKeys,
-            final BsonDocument data) {
-        var mcoll = collectionDAO.getCollection(dbName, collName);
-
-        List<WriteModel<BsonDocument>> patches = new ArrayList<>();
-
-        Bson _filter;
-
-        if (shardedKeys != null) {
-            _filter = and(filter, shardedKeys);
-        } else {
-            _filter = filter;
-        }
-
-        patches.add(new UpdateManyModel<>(
-                _filter,
-                DAOUtils.getUpdateDocument(data),
-                DAOUtils.U_NOT_UPSERT_OPS));
-
-        try {
-            BulkWriteResult result = cs == null
-                    ? mcoll.bulkWrite(patches)
-                    : mcoll.bulkWrite(cs, patches);
-
-            return new BulkOperationResult(HttpStatus.SC_OK, null, result);
-        } catch (MongoBulkWriteException mce) {
-            switch (mce.getCode()) {
-                case BAD_VALUE_KEY_ERROR:
-                    return new BulkOperationResult(ResponseHelper
-                            .getHttpStatusFromErrorCode(mce.getCode()),
-                            null,
-                            null);
-                default:
-                    throw mce;
-            }
-        }
-    }
-
     private OperationResult optimisticCheckEtag(
             final ClientSession cs,
             final MongoCollection<BsonDocument> coll,
@@ -488,8 +492,7 @@ public class DocumentDAO implements DocumentRepository {
             final Object newEtag,
             final String requestEtag,
             final int httpStatusIfOk,
-            final boolean deleting,
-            final boolean upsert
+            final boolean deleting
     ) {
 
         BsonValue oldEtag = oldDocument.get("_etag");
@@ -506,7 +509,7 @@ public class DocumentDAO implements DocumentRepository {
                         shardKeys,
                         oldDocument,
                         true,
-                        upsert);
+                        WRITE_MODE.UPSERT);
             } else {
                 DAOUtils.restoreDocument(
                         cs,
@@ -553,7 +556,7 @@ public class DocumentDAO implements DocumentRepository {
                         null,
                         oldDocument,
                         true,
-                        upsert);
+                        WRITE_MODE.UPSERT);
             } else {
                 DAOUtils.restoreDocument(
                         cs,

@@ -106,13 +106,14 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
         }
 
         BulkOperationResult result = this.documentDAO
-                .bulkUpsertDocumentsPost(
+                .bulkPostDocuments(
                         request.getClientSession(),
                         request.getDBName(),
                         request.getCollectionName(),
                         documents,
                         request.getFiltersDocument(),
-                        request.getShardKey());
+                        request.getShardKey(),
+                        request.getWriteMode());
 
         response.setDbOperationResult(result);
 

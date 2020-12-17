@@ -122,7 +122,7 @@ public class PutDocumentHandler extends PipelinedHandler {
                 content,
                 etag,
                 false,
-                request.isUpsert(), // <= upsert
+                request.getWriteMode(),
                 request.isETagCheckRequired());
 
         response.setDbOperationResult(result);

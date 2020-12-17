@@ -39,6 +39,8 @@ import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
+
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.exchange.OperationResult;
 import org.restheart.mongodb.MongoServiceConfiguration;
@@ -452,7 +454,7 @@ class CollectionDAO {
                     null,
                     dcontent,
                     false,
-                    true);
+                    WRITE_MODE.UPSERT);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_OK, newEtag);
@@ -465,7 +467,7 @@ class CollectionDAO {
                     null,
                     dcontent,
                     true,
-                    true);
+                    WRITE_MODE.UPSERT);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_OK, newEtag);
@@ -478,7 +480,7 @@ class CollectionDAO {
                     null,
                     dcontent,
                     false,
-                    true);
+                    WRITE_MODE.UPSERT);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
                     : HttpStatus.SC_CREATED, newEtag);
