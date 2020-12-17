@@ -146,7 +146,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
 
     private boolean checkId(HttpServerExchange exchange, BsonValue document) throws Exception {
         var request = MongoRequest.of(exchange);
-        
+
         if (document.isDocument()
                 && document.asDocument().containsKey("_id")
                 && document.asDocument().get("_id").isString()

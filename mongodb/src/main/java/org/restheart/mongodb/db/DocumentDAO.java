@@ -344,8 +344,7 @@ public class DocumentDAO implements DocumentRepository {
             final String collName,
             final BsonDocument filter,
             final BsonDocument shardedKeys,
-            final BsonDocument data,
-            final WRITE_MODE writeMode) {
+            final BsonDocument data) {
         var mcoll = collectionDAO.getCollection(dbName, collName);
 
         List<WriteModel<BsonDocument>> patches = new ArrayList<>();

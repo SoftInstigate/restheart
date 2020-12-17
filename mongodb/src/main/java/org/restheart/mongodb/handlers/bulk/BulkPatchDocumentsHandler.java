@@ -50,7 +50,7 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
         super(null);
         this.documentDAO = documentDAO;
     }
-    
+
     /**
      *
      * @param next
@@ -59,7 +59,7 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
         super(next);
         this.documentDAO = new DocumentDAO();
     }
-    
+
     /**
      *
      * @param next
@@ -76,7 +76,6 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    @SuppressWarnings("unchecked")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
@@ -93,8 +92,7 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
                         request.getCollectionName(),
                         request.getFiltersDocument(),
                         request.getShardKey(),
-                        request.getContent().asDocument(),
-                        request.getWriteMode());
+                        request.getContent().asDocument());
 
         response.setDbOperationResult(result);
 

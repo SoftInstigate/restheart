@@ -20,6 +20,7 @@
  */
 package org.restheart.mongodb.db;
 
+import com.mongodb.InsertOptions;
 import com.mongodb.MongoCommandException;
 import com.mongodb.MongoException;
 import com.mongodb.bulk.BulkWriteResult;
@@ -30,6 +31,7 @@ import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.FindOneAndReplaceOptions;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.InsertOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.UpdateOneModel;
@@ -451,7 +453,8 @@ public class DAOUtils {
                 documents,
                 filter,
                 shardKeys,
-                newEtag);
+                newEtag,
+                writeMode);
 
         BulkWriteResult result = cs == null
                 ? coll.bulkWrite(wm, BWO_NOT_ORDERED)
@@ -483,7 +486,8 @@ public class DAOUtils {
             final BsonArray documents,
             final BsonDocument filter,
             final BsonDocument shardKeys,
-            final ObjectId etag) {
+            final ObjectId etag,
+            final WRITE_MODE writeMode) {
         Objects.requireNonNull(mcoll);
         Objects.requireNonNull(documents);
 
@@ -512,11 +516,22 @@ public class DAOUtils {
                         _filter = and(_filter, filter);
                     }
 
-                    updates.add(new UpdateOneModel<>(
+                    if (writeMode == WRITE_MODE.UPSERT) {
+                        updates.add(new UpdateOneModel<>(
+                                _filter,
+                                getUpdateDocument(document),
+                                new UpdateOptions().upsert(true)
+                        ));
+                    } else if (writeMode == WRITE_MODE.UPDATE) {
+                        updates.add(new UpdateOneModel<>(
                             _filter,
                             getUpdateDocument(document),
-                            new UpdateOptions().upsert(true)
-                    ));
+                            new UpdateOptions().upsert(false)
+                        ));
+
+                    } else if (writeMode == WRITE_MODE.INSERT) {
+                        updates.add(new InsertOneModel<>(document));
+                    }
                 });
 
         return updates;

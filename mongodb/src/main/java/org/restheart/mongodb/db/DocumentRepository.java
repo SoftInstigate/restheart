@@ -132,7 +132,6 @@ public interface DocumentRepository {
      * @param filter
      * @param shardKeys
      * @param data
-     * @param writeMode
      * @return the BulkOperationResult
      */
     BulkOperationResult bulkPatchDocuments(
@@ -141,8 +140,7 @@ public interface DocumentRepository {
             final String collName,
             final BsonDocument filter,
             final BsonDocument shardKeys,
-            final BsonDocument data,
-            final WRITE_MODE writeMode);
+            final BsonDocument data);
 
     /**
      *
