@@ -301,6 +301,12 @@ plugins-args:
     enabled: true
     uri: /
     secured: true
+  # Enabling simplifiedSecurityWriteMode restricts the write requests to allow:
+  # - POST to only insert new documents
+  # - PUT and PATCH to only update existing documents
+  # This greatly simplifies the definition of security permissions
+  simplifiedSecurityWriteMode:
+    enabled: false
   csvLoader:
     secured: true
   rndTokenService:
