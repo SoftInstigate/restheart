@@ -71,8 +71,7 @@ class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
      * @return
      * @throws IllegalQueryParamenterException
      */
-    public Resource getRepresentation(HttpServerExchange exchange, 
-            MongoBulkWriteException mbwe)
+    public Resource getRepresentation(HttpServerExchange exchange, MongoBulkWriteException mbwe)
             throws IllegalQueryParamenterException {
         final String requestPath = buildRequestPath(exchange);
         final Resource rep = createRepresentation(exchange, exchange.getRequestPath());
@@ -94,21 +93,22 @@ class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
         BulkWriteResult wr = result.getBulkResult();
 
         if (wr.wasAcknowledged()) {
-            if (wr.getUpserts() != null) {
-                nrep.addProperty("inserted",
-                        new BsonInt32(wr.getUpserts().size()));
+            if (wr.getUpserts() != null || wr.getInserts() != null) {
+                    nrep.addProperty("inserted", new BsonInt32(
+                            (wr.getUpserts() != null ? wr.getUpserts().size() : 0) +
+                            (wr.getInserts() != null ? wr.getInserts().size() : 0)));
 
-                // add links to new, upserted documents
-                wr.getUpserts().stream().
-                        forEach(update -> {
-                            nrep.addLink(new Link("rh:newdoc",
-                                    RepresentationUtils
-                                            .getReferenceLink(
-                                                    response,
-                                                    requestPath,
-                                                    update.getId())),
-                                    true);
-                        });
+                    // add links to new, upserted documents
+                    if (wr.getUpserts() != null) {
+                            wr.getUpserts().stream().forEach(update -> nrep.addLink(new Link("rh:newdoc",
+                                            RepresentationUtils.getReferenceLink(response, requestPath, update.getId())), true));
+                    }
+
+                    // add links to new, inserted documents
+                    if (wr.getInserts() != null) {
+                            wr.getInserts().stream().forEach(insert -> nrep.addLink(new Link("rh:newdoc",
+                                    RepresentationUtils.getReferenceLink(response, requestPath, insert.getId())), true));
+                    }
             }
 
             nrep.addProperty("deleted",
@@ -131,20 +131,22 @@ class BulkResultRepresentationFactory extends AbstractRepresentationFactory {
         Resource nrep = new Resource();
 
         if (wr.wasAcknowledged()) {
-            if (wr.getUpserts() != null) {
-                nrep.addProperty("inserted",
-                        new BsonInt32(wr.getUpserts().size()));
+            if (wr.getUpserts() != null || wr.getInserts() != null) {
+                nrep.addProperty("inserted", new BsonInt32(
+                        (wr.getUpserts() != null ? wr.getUpserts().size() : 0) +
+                        (wr.getInserts() != null ? wr.getInserts().size() : 0)));
 
                 // add links to new, upserted documents
-                wr.getUpserts().stream().
-                        forEach(update -> {
-                            nrep.addLink(new Link("rh:newdoc",
-                                    RepresentationUtils
-                                            .getReferenceLink(
-                                                    requestPath,
-                                                    update.getId())),
-                                    true);
-                        });
+                if (wr.getUpserts() != null) {
+                        wr.getUpserts().stream().forEach(update -> nrep.addLink(new Link("rh:newdoc",
+                                    RepresentationUtils.getReferenceLink(requestPath, update.getId())), true));
+                }
+
+                // add links to new, inserted documents
+                if (wr.getInserts() != null) {
+                        wr.getInserts().stream().forEach(insert -> nrep.addLink(new Link("rh:newdoc",
+                                RepresentationUtils.getReferenceLink(requestPath, insert.getId())), true));
+                }
             }
 
             nrep.addProperty("deleted",

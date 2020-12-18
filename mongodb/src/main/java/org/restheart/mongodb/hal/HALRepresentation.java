@@ -59,7 +59,7 @@ public class HALRepresentation implements MongoInterceptor {
 
         if (request.isGet() || request.isBulkDocuments()
                 || (request.isCollection()
-                && request.isPost() 
+                && request.isPost()
                 && request.getContent().isArray())) {
             try {
                 hal = std2HAL(request, response, content);
@@ -108,10 +108,7 @@ public class HALRepresentation implements MongoInterceptor {
      * @param content
      * @return
      */
-    private BsonDocument std2HAL(MongoRequest request,
-            MongoResponse response,
-            BsonValue content) {
-
+    private BsonDocument std2HAL(MongoRequest request, MongoResponse response, BsonValue content) {
         if (request.isGet()
                 && (request.isDocument()
                 || request.isFile()
@@ -139,8 +136,7 @@ public class HALRepresentation implements MongoInterceptor {
 
             try {
                 return factory.getRepresentation(request.getExchange(),
-                        (BulkOperationResult) response.getDbOperationResult())
-                        .asBsonDocument();
+                    (BulkOperationResult) response.getDbOperationResult()).asBsonDocument();
             } catch (IllegalQueryParamenterException iqpe) {
                 // shoudn't happen
                 throw new IllegalStateException(iqpe);
@@ -187,9 +183,7 @@ public class HALRepresentation implements MongoInterceptor {
      * @param content
      * @return
      */
-    private BsonValue hal2SHAL(MongoRequest request,
-            MongoResponse response,
-            BsonDocument content) {
+    private BsonValue hal2SHAL(MongoRequest request, MongoResponse response, BsonDocument content) {
         if (request.isInError()) {
             var ret = new BsonDocument();
 

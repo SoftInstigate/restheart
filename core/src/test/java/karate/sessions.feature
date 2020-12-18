@@ -13,7 +13,7 @@ Scenario: create a session and use it for inserts and queries
     * header Authorization = authHeader
     Given path db
     And param rep = 's'
-    And request {}    
+    And request {}
     When method PUT
     Then assert responseStatus == 201 || responseStatus == 200
 

@@ -82,9 +82,9 @@ public class ErrorHandler implements HttpHandler {
                     HttpStatus.SC_REQUEST_TIMEOUT,
                     "Operation exceeded time limit");
         } catch (MongoBulkWriteException mce) {
+            response.setInError(true);
             var error = new BulkResultRepresentationFactory()
-                    .getRepresentation(MongoRequest.of(exchange).getPath(),
-                            mce);
+                    .getRepresentation(MongoRequest.of(exchange).getPath(), mce);
 
             response.setStatusCode(HttpStatus.SC_MULTI_STATUS);
             response.setContent(error);
