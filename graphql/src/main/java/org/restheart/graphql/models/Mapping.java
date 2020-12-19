@@ -16,6 +16,7 @@ public class Mapping {
     }
 
 
+    private String alias;
     private String db;
     private String collection;
     private BsonDocument find;
@@ -26,9 +27,10 @@ public class Mapping {
 
     public Mapping(){}
 
-    public Mapping(String db, String collection, BsonDocument find, BsonDocument sort,
+    public Mapping(String alias, String db, String collection, BsonDocument find, BsonDocument sort,
                    BsonDocument skip, BsonDocument limit, Boolean first) {
 
+        this.alias = alias;
         this.db = db;
         this.collection = collection;
         this.find = find;
@@ -36,6 +38,14 @@ public class Mapping {
         this.skip = skip;
         this.limit = limit;
         this.first = first;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 
     public String getDb() {
@@ -182,22 +192,38 @@ public class Mapping {
 
 
     public static class Builder{
-        String db;
-        String collection;
+
+        private String alias;
+        private String db;
+        private String collection;
         private BsonDocument find;
         private BsonDocument sort;
         private BsonDocument skip;
         private BsonDocument limit;
         private Boolean first;
 
-        public Builder(String db, String collection){
-            this.db = db;
-            this.collection = collection;
+        public Builder(){
         }
 
-        public Builder newBuilder(String name, String collection){
-            return new Builder(name, collection);
+        public Builder newBuilder(){
+            return new Builder();
         }
+
+        public Builder db(String db){
+            this.db = db;
+            return this;
+        }
+
+        public Builder collection(String collection){
+            this.collection = collection;
+            return this;
+        }
+
+        public Builder alias(String alias){
+            this.alias = alias;
+            return this;
+        }
+
 
         public Builder find(BsonDocument find){
             this.find = find;
@@ -225,7 +251,7 @@ public class Mapping {
         }
 
         public Mapping build(){
-            return new Mapping(this.db, this.collection, this.find,
+            return new Mapping(this.alias, this.db, this.collection, this.find,
                     this.sort, this.skip, this.limit, this.first);
         }
 

@@ -75,12 +75,18 @@ public class AppDefinitionLoader {
             GraphQLDataFetcher dataFetcher = GraphQLDataFetcher.getInstance();
             dataFetcher.setMongoClient(mongoClient);
             for (String type: mappings.keySet()){
-                TypeRuntimeWiring.Builder queryTypeBuilder = newTypeWiring(type);
+                TypeRuntimeWiring.Builder typeWiringBuilder = newTypeWiring(type);
                 Map<String, Mapping> typeMappings = mappings.get(type);
-                for (String queryName : typeMappings.keySet()) {
-                    queryTypeBuilder.dataFetcher(queryName, dataFetcher);
+                for (String fieldName : typeMappings.keySet()) {
+                    String alias =typeMappings.get(fieldName).getAlias();
+                    if ( alias != null){
+                        typeWiringBuilder.dataFetcher(fieldName, PropertyDataFetcher.fetching(alias));
+                    }
+                    else {
+                        typeWiringBuilder.dataFetcher(fieldName, dataFetcher);
+                    }
                 }
-                runWire.type(queryTypeBuilder);
+                runWire.type(typeWiringBuilder);
                 dataFetcher.setCurrentApp(app);
             }
             return runWire.build();
