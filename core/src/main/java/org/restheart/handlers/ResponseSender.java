@@ -93,8 +93,7 @@ public class ResponseSender extends PipelinedHandler {
             }
 
             if (response.isContentAvailable()) {
-                exchange.getResponseSender().send(
-                        ByteBuffer.wrap(response.readContent()));
+                exchange.getResponseSender().send(ByteBuffer.wrap(response.readContent()));
             }
 
             exchange.endExchange();

@@ -45,7 +45,7 @@ public abstract class ProxyRequest<T> extends Request<T> implements BufferedExch
 
     @Override
     public abstract void writeContent(T content) throws IOException;
-    
+
     @SuppressWarnings("unchecked")
     protected AttachmentKey<PooledByteBuffer[]> getRawContentKey() {
         Field f;

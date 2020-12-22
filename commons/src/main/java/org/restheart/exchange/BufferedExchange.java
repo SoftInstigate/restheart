@@ -34,22 +34,22 @@ import java.io.IOException;
 public interface BufferedExchange<T> {
     /**
      * reads data from the buffer converting it to T
-     * 
+     *
      * @return
-     * @throws IOException 
+     * @throws IOException
      */
     public abstract T readContent() throws IOException;
 
     /**
-     * writes data the buffer from T 
-     * 
+     * writes data the buffer from T
+     *
      * @param content
-     * @throws IOException 
+     * @throws IOException
      */
     public abstract void writeContent(T content) throws IOException;
 
     public PooledByteBuffer[] getBuffer();
-    
+
     public void setBuffer(PooledByteBuffer[] raw);
 
     public boolean isContentAvailable();
