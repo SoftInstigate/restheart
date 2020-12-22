@@ -49,7 +49,6 @@ public class ByteArrayRequest extends ServiceRequest<byte[]> {
     }
 
     public void injectContent() throws IOException {
-        var rc = wrapped.getRequestChannel();
-        setContent(rc != null ? ChannelReader.read(rc).getBytes() : null);
+        setContent(ChannelReader.readBytes(wrapped));
     }
 }

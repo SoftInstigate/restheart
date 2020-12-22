@@ -29,7 +29,7 @@ import org.slf4j.MDC;
 public class TracingInstrumentationHandler extends PipelinedHandler {
     public TracingInstrumentationHandler() {
     }
-    
+
     public TracingInstrumentationHandler(final PipelinedHandler next) {
         super(next);
     }

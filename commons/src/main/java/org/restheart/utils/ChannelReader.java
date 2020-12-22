@@ -22,11 +22,11 @@ package org.restheart.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import org.xnio.channels.Channels;
-import org.xnio.channels.StreamSourceChannel;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *
@@ -35,6 +35,7 @@ import org.xnio.channels.StreamSourceChannel;
 public class ChannelReader {
 
     final static Charset CHARSET = StandardCharsets.UTF_8;
+    final static int CAPACITY = 1024;
 
     /**
      *
@@ -42,18 +43,44 @@ public class ChannelReader {
      * @return
      * @throws IOException
      */
-    public static String read(StreamSourceChannel channel) throws IOException {
-        final int capacity = 1024;
-
-        ByteArrayOutputStream os = new ByteArrayOutputStream(capacity);
-        
-        ByteBuffer buf = ByteBuffer.allocate(capacity);
-        
-        while (Channels.readBlocking(channel, buf) != -1) {
-            buf.flip();
-            os.write(buf.array(), 0, buf.remaining());
-            buf.clear();
-        }
-        return new String(os.toByteArray(), CHARSET);
+    public static String readString(HttpServerExchange exchange) throws IOException {
+        return new String(readBytes(exchange), CHARSET);
     }
+
+    /**
+     *
+     * @param channel
+     * @return
+     * @throws IOException
+     */
+    public static byte[] readBytes(HttpServerExchange exchange) throws IOException {
+        var channel = exchange.getRequestChannel();
+
+        if (channel == null) {
+            return null;
+        }
+
+        try (var os = new ByteArrayOutputStream(CAPACITY)) {
+            var pooledByteBuffer = exchange.getConnection().getByteBufferPool().getArrayBackedPool().allocate();
+            var buffer = pooledByteBuffer.getBuffer();
+
+            while (Channels.readBlocking(channel, buffer) != -1) {
+                buffer.flip();
+                os.write(buffer.array(), 0, buffer.remaining());
+                buffer.clear();
+            }
+
+            return os.toByteArray();
+        }
+    }
+
+    /**
+     *
+     * @param stream
+     * @return
+     * @throws IOException
+     */
+    // public static String read(InputStream stream) throws IOException {
+    // return CharStreams.toString(new InputStreamReader(stream, CHARSET));
+    // }
 }

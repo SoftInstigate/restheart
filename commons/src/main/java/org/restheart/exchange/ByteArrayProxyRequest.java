@@ -20,6 +20,8 @@
 package org.restheart.exchange;
 
 import com.google.common.reflect.TypeToken;
+
+import io.undertow.connector.ByteBufferPool;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -66,6 +68,7 @@ public class ByteArrayProxyRequest extends ProxyRequest<byte[]> {
 
     @Override
     public void writeContent(byte[] content) throws IOException {
+        this.wrapped.getConnection().getByteBufferPool().allocate();
         if (content == null) {
             setBuffer(null);
         } else {

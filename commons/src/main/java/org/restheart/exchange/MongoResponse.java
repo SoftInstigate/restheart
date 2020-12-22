@@ -56,9 +56,8 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class MongoResponse extends BsonResponse {
-    private final static ReplaceOptions R_NOT_UPSERT_OPS = new ReplaceOptions()
-            .upsert(false);
-    
+    private final static ReplaceOptions R_NOT_UPSERT_OPS = new ReplaceOptions().upsert(false);
+
     static {
         LOGGER = LoggerFactory.getLogger(MongoResponse.class);
     }

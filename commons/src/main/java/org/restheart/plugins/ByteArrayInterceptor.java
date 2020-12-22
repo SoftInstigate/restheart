@@ -27,5 +27,5 @@ import org.restheart.exchange.ByteArrayResponse;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface ByteArrayInterceptor extends Interceptor<ByteArrayRequest, ByteArrayResponse> {
-    
+
 }

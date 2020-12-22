@@ -33,27 +33,24 @@ public class JsonRequest extends ServiceRequest<JsonElement> {
     private JsonRequest(HttpServerExchange exchange) {
         super(exchange);
     }
-    
+
     public static JsonRequest init(HttpServerExchange exchange) {
         var ret = new JsonRequest(exchange);
-        
+
         try {
             ret.injectContent();
         } catch (Throwable ieo) {
             ret.setInError(true);
         }
-        
+
         return ret;
     }
-    
+
     public static JsonRequest of(HttpServerExchange exchange) {
         return of(exchange, JsonRequest.class);
     }
-    
+
     public void injectContent() throws IOException {
-        var json = JsonParser.parseString(ChannelReader
-                .read(wrapped.getRequestChannel()));
-        
-        setContent(json);
+        setContent(JsonParser.parseString(ChannelReader.readString(wrapped)));
     }
 }

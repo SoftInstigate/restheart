@@ -73,7 +73,7 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
 
     public void injectContent(HttpServerExchange exchange) throws IOException {
         final var params = new CsvRequestParams(exchange);
-        final var csv = ChannelReader.read(exchange.getRequestChannel());
+        final var csv = ChannelReader.readString(exchange);
 
         setContent(parseCsv(params, csv));
     }

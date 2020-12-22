@@ -27,5 +27,5 @@ import org.restheart.exchange.MongoResponse;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface MongoInterceptor extends Interceptor<MongoRequest, MongoResponse> {
-    
+
 }

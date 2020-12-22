@@ -328,15 +328,13 @@ public class BsonRequestContentInjector {
 
                 try {
                     if (bar.isContentAvailable()) {
-                        // if content has been already injected by core's 
+                        // if content has been already injected by core's
                         // BsonRequestContentInjector
                         // get it from MongoRequest.readContent()
-                        contentString = new String(bar.readContent(),
-                                StandardCharsets.UTF_8);
+                        contentString = new String(bar.readContent(), StandardCharsets.UTF_8);
                     } else {
                         // otherwise use ChannelReader
-                        contentString = ChannelReader
-                                .read(exchange.getRequestChannel());
+                        contentString = ChannelReader.readString(exchange);
                     }
                 } catch (IOException ieo) {
                     String errMsg = "Error reading request content";
