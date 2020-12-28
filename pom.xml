@@ -33,6 +33,7 @@
             mvn install -Dmongodb.version=3.8   : Test with mongo:3.8 container
         -->
         <mongodb.version>4.2</mongodb.version>
+        <graalvm.version>20.3.0</graalvm.version>
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
@@ -47,6 +48,7 @@
 
     <modules>
         <module>commons</module>
+        <module>polyglot</module>
         <module>core</module>
         <module>security</module>
         <module>mongodb</module>
@@ -266,6 +268,24 @@
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
                 <version>4.8.90</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.sdk</groupId>
+                <artifactId>graal-sdk</artifactId>
+                <version>${graalvm.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.js</groupId>
+                <artifactId>js</artifactId>
+                <version>${graalvm.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.js</groupId>
+                <artifactId>js-scriptengine</artifactId>
+                <version>${graalvm.version}</version>
+                <scope>provided</scope>
             </dependency>
             <!-- BEGIN Test dependencies -->
             <dependency>

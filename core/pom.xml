@@ -353,6 +353,8 @@
                 <mkdir dir="./target/plugins" />
                 <copy file="../security/target/restheart-security.jar" todir="./target/plugins" overwrite="true" />
                 <copy file="../mongodb/target/restheart-mongodb.jar" todir="./target/plugins" overwrite="true" />
+                <copy file="../polyglot/target/restheart-polyglot.jar" todir="./target/plugins" overwrite="true" />
+                <!-- <copy file="../polyglot/src/main/resources/foo.js" todir="./target/plugins" overwrite="true" /> -->
               </target>
             </configuration>
             <goals>
@@ -440,9 +442,6 @@
     </profile>
     <profile>
       <id>native</id>
-      <properties>
-        <graalvm.version>20.3.0</graalvm.version>
-      </properties>
       <dependencies>
         <dependency>
           <groupId>org.restheart</groupId>
@@ -451,6 +450,10 @@
         <dependency>
           <groupId>org.restheart</groupId>
           <artifactId>restheart-mongodb</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-polyglot</artifactId>
         </dependency>
         <!-- uncomment to add test plugins, need also to regenerate native-image build configuration, see GRAAL.md -->
         <!-- <dependency>
