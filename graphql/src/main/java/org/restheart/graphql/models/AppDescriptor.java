@@ -1,20 +1,25 @@
 package org.restheart.graphql.models;
 
+import org.bson.types.ObjectId;
+
 public class AppDescriptor {
 
     private String appName;
     private Boolean enabled;
     private String description;
-    private String url;
+    private String uri;
 
-    public AppDescriptor() {}
-
-    public AppDescriptor(String appName, Boolean enabled, String description, String url) {
+    private AppDescriptor(String appName, Boolean enabled, String description, String uri) {
         this.appName = appName;
         this.enabled = enabled;
         this.description = description;
-        this.url = url;
+        this.uri = uri;
     }
+
+    public static Builder newBuilder(){
+        return new Builder();
+    }
+
 
     public String getAppName() {
         return appName;
@@ -41,27 +46,32 @@ public class AppDescriptor {
     }
 
     public String getUrl() {
-        return url;
+        return uri;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setUrl(String uri) {
+        this.uri = uri;
     }
 
 
     public static class Builder{
+
         private String appName;
         private Boolean enabled;
         private String description;
-        private String url;
+        private String uri;
 
-        private Builder(String appName, Boolean enabled){
+        private Builder(){ }
+
+        public Builder appName(String appName){
             this.appName = appName;
-            this.enabled = enabled;
+            return this;
         }
 
-        public Builder newBuilder(String appName, Boolean enabled){
-            return new Builder(appName, enabled);
+
+        public Builder enabled(Boolean enabled){
+            this.enabled = enabled;
+            return this;
         }
 
         public Builder description(String description){
@@ -69,13 +79,28 @@ public class AppDescriptor {
             return this;
         }
 
-        public Builder url(String url){
-            this.url = url;
+        public Builder uri(String uri){
+            this.uri = uri;
             return this;
         }
 
         public AppDescriptor build(){
-            return new AppDescriptor(this.appName, this.enabled, this.description, this.url);
+
+            if (appName == null && uri == null){
+                throw new IllegalStateException(
+                        "At least one of 'appName' and 'uri' must be not null!"
+                );
+            }
+
+            return new AppDescriptor(this.appName, this.enabled, this.description, this.uri);
+        }
+
+        private static void throwIllegalException(String varName){
+
+            throw  new IllegalStateException(
+                    varName + "could not be null!"
+            );
+
         }
 
     }

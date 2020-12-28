@@ -1,40 +1,40 @@
 package org.restheart.graphql.models;
 
+import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLSchema;
-import org.bson.types.ObjectId;
+import graphql.schema.idl.RuntimeWiring;
+import graphql.schema.idl.SchemaGenerator;
+import graphql.schema.idl.SchemaParser;
+import graphql.schema.idl.TypeDefinitionRegistry;
+import org.restheart.graphql.BsonScalars;
 
 import java.util.Map;
 
 public class GraphQLApp {
 
-    private ObjectId _id;
-    private String descriptor;
+    private AppDescriptor descriptor;
     private String schema;
-    private Map<String, Map<String, Mapping>> mappings;
-    private GraphQLSchema builtSchema;
+    private Map<String, TypeMapping> mappings;
+    private GraphQLSchema executableSchema;
+
+    public static Builder newBuilder(){
+        return new Builder();
+    }
 
     public GraphQLApp(){}
 
-    public GraphQLApp(ObjectId id, String descriptor, String schema, Map<String, Map<String, Mapping>> mappings) {
-        this._id = id;
+    public GraphQLApp(AppDescriptor descriptor, String schema, Map<String, TypeMapping> mappings, GraphQLSchema executableSchema) {
         this.descriptor = descriptor;
         this.schema = schema;
         this.mappings = mappings;
+        this.executableSchema = executableSchema;
     }
 
-    public ObjectId getId() {
-        return _id;
-    }
-
-    public void setId(ObjectId id) {
-        this._id = id;
-    }
-
-    public String getDescriptor() {
+    public AppDescriptor getDescriptor() {
         return descriptor;
     }
 
-    public void setDescriptor(String descriptor) {
+    public void setDescriptor(AppDescriptor descriptor) {
         this.descriptor = descriptor;
     }
 
@@ -46,36 +46,34 @@ public class GraphQLApp {
         this.schema = schema;
     }
 
-    public Map<String, Map<String, Mapping>> getMappings() {
+    public Map<String, TypeMapping> getMappings() {
         return mappings;
     }
 
-    public void setMappings(Map<String, Map<String, Mapping>> mappings) {
+    public void setMappings(Map<String, TypeMapping> mappings) {
         this.mappings = mappings;
     }
 
-    public GraphQLSchema getBuiltSchema() {
-        return builtSchema;
+    public GraphQLSchema getExecutableSchema() {
+        return executableSchema;
     }
 
-    public void setBuiltSchema(GraphQLSchema builtSchema) {
-        this.builtSchema = builtSchema;
+    public void setExecutableSchema(GraphQLSchema executableSchema) {
+        this.executableSchema = executableSchema;
     }
 
     public static class Builder{
-        private ObjectId _id;
-        private String descriptor;
+        private AppDescriptor descriptor;
         private String schema;
-        private Map<String, Map<String, Mapping>> mappings;
+        private Map<String, TypeMapping> mappings;
+        private GraphQLSchema executableSchema;
 
 
-        public Builder(ObjectId _id, String descriptor){
-            this._id = _id;
+        private Builder(){}
+
+        public Builder appDescriptor(AppDescriptor descriptor){
             this.descriptor = descriptor;
-        }
-
-        public Builder newBuilder(ObjectId _id, String descriptor){
-            return new Builder(_id, descriptor);
+            return this;
         }
 
         public Builder schema(String schema){
@@ -83,13 +81,52 @@ public class GraphQLApp {
             return this;
         }
 
-        public Builder mappings(Map<String, Map<String, Mapping>> mappings){
+        public Builder mappings(Map<String, TypeMapping> mappings){
             this.mappings = mappings;
             return this;
         }
 
-        public GraphQLApp build(){
-            return new GraphQLApp(this._id, this.descriptor, this.schema, this.mappings);
+        public GraphQLApp build() throws IllegalAccessException {
+
+            if (this.descriptor == null){
+                throwIllegalException("descriptor");
+            }
+
+            if (this.schema == null){
+                throwIllegalException("schema");
+            }
+
+            String schemaWithBsonScalars = BsonScalars.getBsonScalarHeader() + this.schema;
+            TypeDefinitionRegistry typeRegistry = new SchemaParser().parse(schemaWithBsonScalars);
+            RuntimeWiring.Builder RWBuilder = RuntimeWiring.newRuntimeWiring();
+            Map<String, GraphQLScalarType> bsonScalars = BsonScalars.getBsonScalars();
+
+            bsonScalars.forEach(((s, graphQLScalarType) -> {
+                RWBuilder.scalar(graphQLScalarType);
+            }));
+
+            if(mappings != null){
+
+                this.mappings.forEach(((type, typeMapping) ->
+                        RWBuilder.type(typeMapping.getTypeWiring(typeRegistry))));
+
+            }
+
+            RuntimeWiring runtimeWiring = RWBuilder.build();
+
+            SchemaGenerator schemaGenerator = new SchemaGenerator();
+
+            GraphQLSchema execSchema =  schemaGenerator.makeExecutableSchema(typeRegistry, runtimeWiring);
+
+            return new GraphQLApp(this.descriptor, this.schema, this.mappings, execSchema);
+        }
+
+        private static void throwIllegalException(String varName){
+
+            throw  new IllegalStateException(
+                    varName + "could not be null!"
+            );
+
         }
 
     }

@@ -1,24 +1,17 @@
 package org.restheart.graphql;
 
 import com.mongodb.MongoClient;
-import com.mongodb.MongoClientSettings;
-import graphql.schema.*;
-import graphql.schema.idl.*;
+import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
-import org.bson.codecs.configuration.CodecRegistry;
-import org.bson.codecs.pojo.PojoCodecProvider;
-import org.restheart.graphql.models.GraphQLApp;
-import org.restheart.graphql.models.Mapping;
-import java.util.Map;
+import org.restheart.graphql.models.*;
 
-import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
-import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
-import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
 public class AppDefinitionLoader {
 
-    private static final String APP_NAME_FIELD = "descriptor";
+    private static final String APP_URI_FIELD = "descriptor.uri";
+    private static final String APP_ENABLED_FIELD = "descriptor.enabled";
 
     private static MongoClient mongoClient;
     private static String appDB;
@@ -30,80 +23,24 @@ public class AppDefinitionLoader {
         mongoClient = mclient;
     }
 
-    public static GraphQLApp loadAppDefinition(String appName) throws NoSuchFieldException, IllegalAccessException {
+    public static GraphQLApp loadAppDefinition(String appURI) throws NoSuchFieldException, IllegalAccessException {
 
-        CodecRegistry pojoCodecRegistry = fromProviders(PojoCodecProvider.builder().automatic(true).build());
-        CodecRegistry codecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(),
-                pojoCodecRegistry);
+        BsonArray conditions = new BsonArray();
+        conditions.add(new BsonDocument(APP_URI_FIELD, new BsonString(appURI)));
+        conditions.add(new BsonDocument(APP_ENABLED_FIELD, new BsonBoolean(true)));
+        BsonDocument findArg = new BsonDocument("$and",conditions);
 
+        BsonDocument appDefinition = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class)
+                .find(findArg).first();
 
-        GraphQLApp newApp = mongoClient.getDatabase(appDB).withCodecRegistry(codecRegistry)
-                .getCollection(appCollection, GraphQLApp.class)
-                .find(new BsonDocument(APP_NAME_FIELD, new BsonString(appName)))
-                .first();
-
-        if (newApp != null) {
-            String schema = newApp.getSchema();
-            String schemaWithBsonScalar = addBSONScalarsToSchema(schema);
-            GraphQLSchema graphQLBuiltSchema = buildSchema(schemaWithBsonScalar, newApp);
-            newApp.setBuiltSchema(graphQLBuiltSchema);
-        }
-        else {
+        if (appDefinition != null) {
+            GraphQLApp newApp = GraphQLAppDeserializer.fromBsonDocument(appDefinition);
+            return newApp;
+        } else {
             throw new NullPointerException(
-                    "Configuration for " + appName +  " application not found!"
+                    "Configuration for " + appURI + " application not found!"
             );
         }
-
-
-        return newApp;
-    }
-
-
-    private static GraphQLSchema buildSchema(String sdl, GraphQLApp app) throws IllegalAccessException {
-        TypeDefinitionRegistry typeRegistry = new SchemaParser().parse(sdl);
-        RuntimeWiring runtimeWiring = buildWiring(app);
-        SchemaGenerator schemaGenerator = new SchemaGenerator();
-        return schemaGenerator.makeExecutableSchema(typeRegistry, runtimeWiring);
-    }
-
-    private static RuntimeWiring buildWiring(GraphQLApp app) throws IllegalAccessException {
-
-        Map<String, Map<String, Mapping>> mappings = app.getMappings();
-        if (mappings.size() > 0) {
-            RuntimeWiring.Builder runWire = RuntimeWiring.newRuntimeWiring();
-            addBSONScalarsToWiring(runWire);
-            GraphQLDataFetcher dataFetcher = GraphQLDataFetcher.getInstance();
-            dataFetcher.setMongoClient(mongoClient);
-            for (String type: mappings.keySet()){
-                TypeRuntimeWiring.Builder typeWiringBuilder = newTypeWiring(type);
-                Map<String, Mapping> typeMappings = mappings.get(type);
-                for (String fieldName : typeMappings.keySet()) {
-                    String alias =typeMappings.get(fieldName).getAlias();
-                    if ( alias != null){
-                        typeWiringBuilder.dataFetcher(fieldName, PropertyDataFetcher.fetching(alias));
-                    }
-                    else {
-                        typeWiringBuilder.dataFetcher(fieldName, dataFetcher);
-                    }
-                }
-                runWire.type(typeWiringBuilder);
-                dataFetcher.setCurrentApp(app);
-            }
-            return runWire.build();
-        }
-        else return null;
-    }
-
-    private static void addBSONScalarsToWiring(RuntimeWiring.Builder runtimeBuilder) throws IllegalAccessException {
-        Map<String, GraphQLScalarType> bsonScalars = BsonScalars.getBsonScalars();
-
-        bsonScalars.forEach(((s, graphQLScalarType) -> {
-            runtimeBuilder.scalar(graphQLScalarType);
-        }));
-    }
-
-    private static String addBSONScalarsToSchema(String schemaWithoutBsonScalars) throws IllegalAccessException {
-        return BsonScalars.getBsonScalarHeader() + schemaWithoutBsonScalars;
     }
 
 

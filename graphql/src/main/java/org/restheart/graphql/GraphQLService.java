@@ -12,6 +12,7 @@ import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.plugins.*;
 import org.restheart.utils.JsonUtils;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -32,6 +33,7 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
         this.collection = ConfigurablePlugin.argValue(args, "collection");
 
         if(mongoClient != null){
+            GraphQLDataFetcher.setMongoClient(mongoClient);
             AppDefinitionLoader.setup(db, collection, mongoClient);
         }
     }
@@ -40,6 +42,7 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
     public void initMongoClient(MongoClient mClient){
         this.mongoClient = mClient;
         if (db!= null && collection != null){
+            GraphQLDataFetcher.setMongoClient(mongoClient);
             AppDefinitionLoader.setup(db, collection, mongoClient);
         }
     }
@@ -58,21 +61,17 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
             return;
         }
 
-        // Fetching app definition from cache and/or MongoDB, if it is present.
         String[] split = request.getPath().split("/");
-        String appName = split[2];
+        String appUri = String.join("/", Arrays.copyOfRange(split, 2, split.length));
         AppDefinitionLoadingCache appCache = AppDefinitionLoadingCache.getInstance();
-        GraphQLApp appDefinition = appCache.get(appName);
+        GraphQLApp appDefinition = appCache.get(appUri);
 
-        // If app definition is found...
         if (appDefinition != null){
 
-            // Get query from request
             JSONObject json = new JSONObject(new String(request.getContent()));
             String query = (String) json.get("query");
             var inputBuilder = ExecutionInput.newExecutionInput().query(query);
 
-            // if request has GraphQL variables...
             if (json.has("variables")){
                 Map<String, Object> variables = json.getJSONObject("variables").toMap();
                 inputBuilder.variables(variables);
@@ -80,10 +79,8 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
 
             ExecutionInput input = inputBuilder.build();
 
-            // Configuration of GraphQL environment for the current application
-            this.gql = GraphQL.newGraphQL(appDefinition.getBuiltSchema()).build();
+            this.gql = GraphQL.newGraphQL(appDefinition.getExecutableSchema()).build();
 
-            // Query execution
             var result = this.gql.execute(input);
 
             if (result.getErrors() != null && !result.getErrors().isEmpty()) {

@@ -1,6 +1,11 @@
 {
-   "descriptor":"testapp",
-   "schema":"type Product {_id: ObjectId! name: String! abstract: String compatibility: [String] related_products: [Product] teaser_image: Picture} type Picture {_id: ObjectId! url: String width: Float height: Float} type Query {Products(lang: String!, skip: Int = 0, limit: Int = 0, sort: Int = 1): [Product] Product(_id: ObjectId!): Product Picture(_id: ObjectId!): Picture}",
+   "descriptor": {
+     "name": "testapp",
+     "description": "this is an application to test GraphQL RESTheart plugin",
+     "enabled": true,
+     "uri": "testapp"
+   },
+   "schema":"type Product {_id: ObjectId! name: String! abstract: String compatibility: [String] related_products: [Product] teaser_image: Picture} type Picture {_id: ObjectId! url: String width: Int height: Int} type Query {Products(lang: String!, skip: Int = 0, limit: Int = 0, sort: Int = 1): [Product] Product(_id: ObjectId!): Product Picture(_id: ObjectId!): Picture}",
    "mappings":{
       "Query":{
          "Products":{
@@ -64,12 +69,8 @@
          }
       },
       "Product":{
-         "abstract": {
-           "alias": "abs"
-         },
-         "compatibility":{
-           "alias": "property.cpt"
-         },
+         "abstract": "abs",
+         "compatibility": "property.cpt",
          "related_products":{
             "db":"restheart",
             "collection":"customer",
