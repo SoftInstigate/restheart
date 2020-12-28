@@ -70,8 +70,7 @@ import org.slf4j.LoggerFactory;
         defaultURI = "/",
         priority = Integer.MIN_VALUE)
 public class MongoService implements Service<MongoRequest, MongoResponse> {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(MongoService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoService.class);
 
     private String myURI = null;
 
@@ -90,8 +89,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         this.pipeline = getBasePipeline();
 
         // init mongoMounts
-        getMongoMounts().stream().forEachOrdered(mm
-                -> mongoMounts.addPrefixPath(mm.uri, mm));
+        getMongoMounts().stream().forEachOrdered(mm -> mongoMounts.addPrefixPath(mm.uri, mm));
     }
 
     @Override
@@ -116,8 +114,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
      *
      * @return a GracefulShutdownHandler
      */
-    private PipelinedHandler getBasePipeline()
-            throws ConfigurationException {
+    private PipelinedHandler getBasePipeline() throws ConfigurationException {
         var rootHandler = path();
 
         var _pipeline = PipelinedWrappingHandler.wrap(
@@ -276,8 +273,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
             return _uri;
         } else {
-            throw new IllegalArgumentException("Wrong 'uri' configuration of "
-                    + "mongo service.");
+            throw new IllegalArgumentException("Wrong 'uri' configuration of mongo service.");
         }
     }
 
