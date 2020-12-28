@@ -1,4 +1,4 @@
-package org.restheart.graphql.BSONCoercing;
+package org.restheart.graphql.scalars.bsonCoercing;
 
 import graphql.language.StringValue;
 import graphql.schema.Coercing;
@@ -7,7 +7,7 @@ import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonRegularExpression;
 
-import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonRegexCoercing implements Coercing<BsonRegularExpression, BsonRegularExpression> {
     @Override

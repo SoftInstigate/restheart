@@ -1,4 +1,4 @@
-package org.restheart.graphql;
+package org.restheart.graphql.cache;
 
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;

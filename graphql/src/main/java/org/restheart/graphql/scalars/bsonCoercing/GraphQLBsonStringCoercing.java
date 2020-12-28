@@ -1,7 +1,7 @@
-package org.restheart.graphql.BSONCoercing;
+package org.restheart.graphql.scalars.bsonCoercing;
 import graphql.schema.*;
 import org.bson.BsonString;
-import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonStringCoercing implements Coercing<BsonString, BsonString> {
 

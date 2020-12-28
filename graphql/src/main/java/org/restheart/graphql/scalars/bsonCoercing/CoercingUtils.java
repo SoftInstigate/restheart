@@ -1,4 +1,4 @@
-package org.restheart.graphql.BSONCoercing;
+package org.restheart.graphql.scalars.bsonCoercing;
 
 import graphql.Assert;
 import graphql.schema.*;

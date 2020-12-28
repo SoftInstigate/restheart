@@ -1,4 +1,4 @@
-package org.restheart.graphql.BSONCoercing;
+package org.restheart.graphql.scalars.bsonCoercing;
 import graphql.language.StringValue;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
@@ -7,7 +7,7 @@ import graphql.schema.CoercingSerializeException;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 
-import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonObjectIdCoercing implements Coercing<ObjectId, ObjectId> {
 

@@ -1,10 +1,11 @@
-package org.restheart.graphql;
+package org.restheart.graphql.cache;
 
 import com.mongodb.MongoClient;
 import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.restheart.graphql.GraphQLAppDeserializer;
 import org.restheart.graphql.models.*;
 
 

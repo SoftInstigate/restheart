@@ -6,7 +6,7 @@ import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
-import org.restheart.graphql.BsonScalars;
+import org.restheart.graphql.scalars.BsonScalars;
 
 import java.util.Map;
 

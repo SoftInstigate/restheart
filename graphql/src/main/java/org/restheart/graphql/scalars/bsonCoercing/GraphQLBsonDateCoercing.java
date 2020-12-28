@@ -1,4 +1,4 @@
-package org.restheart.graphql.BSONCoercing;
+package org.restheart.graphql.scalars.bsonCoercing;
 
 import graphql.language.StringValue;
 import graphql.schema.Coercing;
@@ -6,16 +6,12 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonDateTime;
-import org.bson.BsonValue;
-import org.restheart.utils.JsonUtils;
 
-import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
-import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateTime> {
 

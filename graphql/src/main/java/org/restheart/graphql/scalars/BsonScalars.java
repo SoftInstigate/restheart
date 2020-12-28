@@ -1,6 +1,6 @@
-package org.restheart.graphql;
+package org.restheart.graphql.scalars;
 import graphql.schema.GraphQLScalarType;
-import org.restheart.graphql.BSONCoercing.*;
+import org.restheart.graphql.scalars.bsonCoercing.*;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;

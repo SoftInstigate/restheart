@@ -1,9 +1,9 @@
-package org.restheart.graphql.BSONCoercing;
+package org.restheart.graphql.scalars.bsonCoercing;
 
 import graphql.schema.Coercing;
 import graphql.schema.CoercingSerializeException;
 import org.bson.BsonBoolean;
-import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonBooleanCoercing implements Coercing<BsonBoolean, BsonBoolean> {
 

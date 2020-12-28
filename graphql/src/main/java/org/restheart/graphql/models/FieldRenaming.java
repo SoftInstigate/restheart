@@ -2,7 +2,7 @@ package org.restheart.graphql.models;
 
 import graphql.schema.DataFetcher;
 import org.bson.BsonValue;
-import org.restheart.graphql.GQLRenamingDataFetcher;
+import org.restheart.graphql.datafetchers.GQLRenamingDataFetcher;
 
 public class FieldRenaming extends FieldMapping{
 

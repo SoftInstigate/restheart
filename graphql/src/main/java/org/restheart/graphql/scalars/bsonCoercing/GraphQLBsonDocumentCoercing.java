@@ -1,4 +1,4 @@
-package org.restheart.graphql.BSONCoercing;
+package org.restheart.graphql.scalars.bsonCoercing;
 import graphql.Assert;
 import graphql.language.*;
 import graphql.schema.Coercing;
@@ -10,7 +10,7 @@ import org.restheart.utils.JsonUtils;
 
 import java.util.*;
 
-import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonDocument> {
 

@@ -1,9 +1,10 @@
-package org.restheart.graphql;
+package org.restheart.graphql.datafetchers;
 
 import com.mongodb.client.FindIterable;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLList;
 import org.bson.*;
+import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.models.QueryMapping;
 
 public class GQLQueryDataFetcher extends GraphQLDataFetcher {

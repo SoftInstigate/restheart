@@ -1,4 +1,4 @@
-package org.restheart.graphql;
+package org.restheart.graphql.datafetchers;
 
 import com.mongodb.MongoClient;
 import graphql.schema.DataFetcher;

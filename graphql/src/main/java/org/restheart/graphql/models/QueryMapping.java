@@ -7,7 +7,7 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.QueryVariableNotBoundException;
-import org.restheart.graphql.GQLQueryDataFetcher;
+import org.restheart.graphql.datafetchers.GQLQueryDataFetcher;
 import org.restheart.utils.JsonUtils;
 
 import java.lang.reflect.Field;

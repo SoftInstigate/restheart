@@ -1,9 +1,8 @@
-package org.restheart.graphql.BSONCoercing;
+package org.restheart.graphql.scalars.bsonCoercing;
 
 import graphql.language.FloatValue;
 import graphql.language.IntValue;
 import graphql.language.StringValue;
-import graphql.language.Value;
 import graphql.schema.Coercing;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
@@ -12,7 +11,7 @@ import org.bson.BsonDecimal128;
 import org.bson.BsonValue;
 import org.bson.types.Decimal128;
 
-import static org.restheart.graphql.BSONCoercing.CoercingUtils.typeName;
+import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
 public class GraphQLBsonDecimal128Coercing implements Coercing<BsonDecimal128, Decimal128> {
 

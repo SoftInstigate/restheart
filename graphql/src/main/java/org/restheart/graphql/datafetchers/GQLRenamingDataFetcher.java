@@ -1,8 +1,9 @@
-package org.restheart.graphql;
+package org.restheart.graphql.datafetchers;
 
 import graphql.schema.DataFetchingEnvironment;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.models.FieldRenaming;
 import java.util.regex.Pattern;
 
