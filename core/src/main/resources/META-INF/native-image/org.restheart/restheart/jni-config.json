@@ -1,12 +1,5 @@
 [
 {
-  "name": "com.sun.jna.NativeLong",
-  "methods":[
-    {"name":"<init>","parameterTypes":[] },
-    {"name":"<init>","parameterTypes":["long"] },
-    {"name":"<init>","parameterTypes":["long", "boolean"] }]
-},
-{
   "name":"com.sun.jna.Callback"
 },
 {
@@ -23,8 +16,7 @@
 },
 {
   "name":"com.sun.jna.FromNativeConverter",
-  "methods":[ 
-    {"name":"nativeType","parameterTypes":[] }]
+  "methods":[{"name":"nativeType","parameterTypes":[] }]
 },
 {
   "name":"com.sun.jna.IntegerType",
@@ -47,6 +39,14 @@
 {
   "name":"com.sun.jna.Native$ffi_callback",
   "methods":[{"name":"invoke","parameterTypes":["long","long","long"] }]
+},
+{
+  "name":"com.sun.jna.NativeLong",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":["long"] }, 
+    {"name":"<init>","parameterTypes":["long","boolean"] }
+  ]
 },
 {
   "name":"com.sun.jna.NativeMapped",

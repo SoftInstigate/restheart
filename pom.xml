@@ -124,7 +124,7 @@
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://oss.sonativeype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
             <id>ossrh</id>
@@ -165,6 +165,11 @@
             <dependency>
                 <groupId>org.restheart</groupId>
                 <artifactId>restheart-mongodb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.restheart</groupId>
+                <artifactId>restheart-polyglot</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
