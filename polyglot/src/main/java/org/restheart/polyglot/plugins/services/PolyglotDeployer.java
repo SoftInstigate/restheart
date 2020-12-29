@@ -31,6 +31,7 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
@@ -56,15 +57,16 @@ import io.undertow.util.PathMatcher;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "jsDeployer", description = "handles GraalVM polyglot plugins", enabledByDefault = true, defaultURI = "/graal")
-public class RootService implements JsonService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RootService.class);
+@RegisterPlugin(name = "polyglotDeployer", description = "handles GraalVM polyglot plugins", enabledByDefault = true, defaultURI = "/graal")
+public class PolyglotDeployer implements JsonService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
 
     private Path pluginsDirectory;
 
     private String myURI;
 
     private static final PathMatcher<JavaScriptService> PATHS = new PathMatcher<>();
+    private static final Map<Path, JavaScriptService> DEPLOYEES = new HashMap<>();
 
     private WatchService watchService;
 
@@ -89,7 +91,7 @@ public class RootService implements JsonService {
 
         this.myURI = myURI(args);
 
-        deploy(pluginsDirectory);
+        deployAll(pluginsDirectory);
         watch(pluginsDirectory);
     }
 
@@ -105,24 +107,10 @@ public class RootService implements JsonService {
         }
     }
 
-    private void deploy(Path pluginsDirectory) {
+    private void deployAll(Path pluginsDirectory) {
         try {
             for (var pluginPath : findJsPlugins(pluginsDirectory)) {
-                var language = Source.findLanguage(pluginPath.toFile());
-
-                if ("js".equals(language)) {
-                    JavaScriptService srv;
-
-                    try {
-                        srv = new JavaScriptService(pluginPath, this.requireCdw);
-                        PATHS.addPrefixPath(resolveURI(srv.getUri()), srv);
-
-                        LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, secured: {}, uri match {}").reset()
-                                .toString(), resolveURI(srv.getUri()), srv.getName(), false, "prefix!");
-                    } catch (Throwable t) {
-                        LOGGER.warn("Error deploying {}", pluginPath.toAbsolutePath(), t.getMessage());
-                    }
-                }
+                deploy(pluginPath);
             }
         } catch (IOException ie) {
             throw new ConfigurationException("error watching " + pluginsDirectory.toAbsolutePath(), ie);
@@ -132,8 +120,10 @@ public class RootService implements JsonService {
     private void watch(Path pluginsDirectory) {
         try {
             watchService = FileSystems.getDefault().newWatchService();
-            pluginsDirectory.register(watchService, StandardWatchEventKinds.ENTRY_CREATE,
-                    StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
+            pluginsDirectory.register(watchService,
+                    StandardWatchEventKinds.ENTRY_CREATE,
+                    StandardWatchEventKinds.ENTRY_MODIFY,
+                    StandardWatchEventKinds.ENTRY_DELETE);
 
             var watchThread = new Thread(() -> {
                 WatchKey key;
@@ -141,29 +131,31 @@ public class RootService implements JsonService {
                     while ((key = watchService.take()) != null) {
                         for (var event : key.pollEvents()) {
                             var eventContext = event.context();
-                            var path = pluginsDirectory.resolve(eventContext.toString());
-                            var language = Source.findLanguage(path.toFile());
+                            var pluginPath = pluginsDirectory.resolve(eventContext.toString());
 
-                            if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
-                                LOGGER.debug("fs event {} {}", event.kind(), eventContext.toString());
+                            LOGGER.debug("fs event {} {}", event.kind(), eventContext.toString());
 
+                            if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
+                                var language = Source.findLanguage(pluginPath.toFile());
                                 if ("js".equals(language)) {
                                     try {
-                                        JavaScriptService srv = new JavaScriptService(path, this.requireCdw);
-                                        PATHS.addPrefixPath(resolveURI(srv.getUri()), srv);
-
-                                        LOGGER.info(
-                                                ansi().fg(GREEN)
-                                                        .a("URI {} bound to service {}, secured: {}, uri match {}")
-                                                        .reset().toString(),
-                                                resolveURI(srv.getUri()), srv.getName(), false, "prefix!");
+                                        deploy(pluginPath);
                                     } catch (Throwable t) {
-                                        LOGGER.warn("Error updating {}, {}", path.toAbsolutePath(), t.getMessage());
+                                        LOGGER.warn("Error deploying {}, {}", pluginPath.toAbsolutePath(), t.getMessage());
                                     }
-
+                                }
+                            } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
+                                var language = Source.findLanguage(pluginPath.toFile());
+                                if ("js".equals(language)) {
+                                    try {
+                                        undeploy(pluginPath);
+                                        deploy(pluginPath);
+                                    } catch (Throwable t) {
+                                        LOGGER.warn("Error updating {}, {}", pluginPath.toAbsolutePath(), t.getMessage());
+                                    }
                                 }
                             } else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-                                LOGGER.warn("Should undeploy {} but not yet implemented", path.toAbsolutePath());
+                                undeploy(pluginPath);
                             }
                         }
 
@@ -240,6 +232,36 @@ public class RootService implements JsonService {
         if (!Files.isReadable(pluginsDirectory)) {
             LOGGER.error("Plugin directory {} is not readable", pluginsDirectory);
             throw new IllegalStateException("Plugins directory " + pluginsDirectory + " is not readable");
+        }
+    }
+
+    private void deploy(Path pluginPath) throws IOException {
+        var language = Source.findLanguage(pluginPath.toFile());
+
+        if ("js".equals(language)) {
+            try {
+                var srv = new JavaScriptService(pluginPath, this.requireCdw);
+                PATHS.addPrefixPath(resolveURI(srv.getUri()), srv);
+
+                DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
+
+                LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, secured: {}, uri match {}").reset().toString(), 
+                    resolveURI(srv.getUri()), srv.getName(), false, "prefix!");
+            } catch (Throwable t) {
+                LOGGER.warn("Error deploying {}", pluginPath.toAbsolutePath(), t.getMessage());
+            }
+        }
+    }
+
+    private void undeploy(Path pluginPath) {
+        var srvToUndeploy = DEPLOYEES.remove(pluginPath.toAbsolutePath());
+
+        if (srvToUndeploy != null) {
+            var uri = resolveURI(srvToUndeploy.getUri());
+            PATHS.removePrefixPath(uri);
+
+            LOGGER.info(ansi().fg(GREEN).a("removed service {} bound to URI {}").reset().toString(), 
+                srvToUndeploy.getName(), uri);
         }
     }
 
