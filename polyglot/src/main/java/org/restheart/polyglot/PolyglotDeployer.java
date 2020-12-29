@@ -34,6 +34,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.mongodb.MongoClient;
+
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 
@@ -44,6 +46,7 @@ import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.StringService;
@@ -73,6 +76,8 @@ public class PolyglotDeployer implements StringService {
 
     private Path requireCdw;
 
+    private MongoClient mclient;
+
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void init(Map<String, Object> args) throws ConfigurationException {
         pluginsDirectory = getPluginsDirectory(args);
@@ -94,6 +99,11 @@ public class PolyglotDeployer implements StringService {
 
         deployAll(pluginsDirectory);
         watch(pluginsDirectory);
+    }
+
+    @InjectMongoClient
+    public void mc(MongoClient mclient) {
+        this.mclient = mclient;
     }
 
     @Override
@@ -238,7 +248,7 @@ public class PolyglotDeployer implements StringService {
         var language = Source.findLanguage(pluginPath.toFile());
 
         if ("js".equals(language)) {
-            var srv = new JavaScriptService(pluginPath, this.requireCdw);
+            var srv = new JavaScriptService(pluginPath, this.requireCdw, this.mclient);
             PATHS.addPrefixPath(resolveURI(srv.getUri()), srv);
 
             DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);

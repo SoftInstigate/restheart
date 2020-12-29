@@ -24,6 +24,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.mongodb.MongoClient;
+
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
@@ -48,9 +51,13 @@ public class JavaScriptService {
     private String name;
     private String uri;
 
+    private MongoClient mclient;
+
     private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {}\n})";
 
-    JavaScriptService(Path scriptPath, Path requireCdw) throws IOException {
+    JavaScriptService(Path scriptPath, Path requireCdw, MongoClient mclient) throws IOException {
+        this.mclient = mclient;
+
         OPTS.put("js.commonjs-require", "true");
         OPTS.put("js.commonjs-require-cwd", requireCdw.toAbsolutePath().toString());
 
@@ -136,6 +143,10 @@ public class JavaScriptService {
                 .allowIO(true).options(OPTS).build();
 
         ctx.getBindings("js").putMember("LOGGER", LOGGER);
+
+        if (this.mclient != null) {
+            ctx.getBindings("js").putMember("mclient", this.mclient);
+        }
 
         ctx.eval(source).getMember("handle").executeVoid(request, response);
     }

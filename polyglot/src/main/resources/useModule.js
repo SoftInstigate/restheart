@@ -13,14 +13,13 @@ const moment = require('moment');
     },
 
     handle: (request, response) => {
-        const rc = JSON.parse(new String(request.getContentString()));
+        LOGGER.debug('request {}', request.getContent());
+        const rc = JSON.parse(new String(request.getContent()));
 
         let body = {
             msg: `Hello ${rc.name }`,
             date: moment().format("[Today is] dddd")
         }
-
-        LOGGER.debug('******** {}', rc);
 
         response.setContent(JSON.stringify(body));
         response.setContentTypeAsJson();
