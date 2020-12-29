@@ -21,7 +21,6 @@ package org.restheart.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 import org.restheart.utils.ChannelReader;
 
@@ -29,13 +28,13 @@ import org.restheart.utils.ChannelReader;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ByteArrayRequest extends ServiceRequest<byte[]> {
-    private ByteArrayRequest(HttpServerExchange exchange) {
+public class StringRequest extends ServiceRequest<String> {
+    private StringRequest(HttpServerExchange exchange) {
         super(exchange);
     }
 
-    public static ByteArrayRequest init(HttpServerExchange exchange) {
-        var ret = new ByteArrayRequest(exchange);
+    public static StringRequest init(HttpServerExchange exchange) {
+        var ret = new StringRequest(exchange);
 
         try {
             ret.injectContent();
@@ -46,15 +45,11 @@ public class ByteArrayRequest extends ServiceRequest<byte[]> {
         return ret;
     }
 
-    public static ByteArrayRequest of(HttpServerExchange exchange) {
-        return of(exchange, ByteArrayRequest.class);
+    public static StringRequest of(HttpServerExchange exchange) {
+        return of(exchange, StringRequest.class);
     }
 
     public void injectContent() throws IOException {
-        setContent(ChannelReader.readBytes(wrapped));
-    }
-
-    public String getContentString() {
-        return new String(getContent(), StandardCharsets.UTF_8);
+        setContent(ChannelReader.readString(wrapped));
     }
 }

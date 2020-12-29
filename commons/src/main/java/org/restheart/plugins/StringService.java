@@ -17,44 +17,36 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.exchange;
+package org.restheart.plugins;
 
 import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
-import org.restheart.utils.ChannelReader;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import org.restheart.exchange.StringRequest;
+import org.restheart.exchange.StringResponse;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ByteArrayRequest extends ServiceRequest<byte[]> {
-    private ByteArrayRequest(HttpServerExchange exchange) {
-        super(exchange);
+public interface StringService extends Service<StringRequest, StringResponse> {
+    @Override
+    default Consumer<HttpServerExchange> requestInitializer() {
+        return e -> StringRequest.init(e);
     }
 
-    public static ByteArrayRequest init(HttpServerExchange exchange) {
-        var ret = new ByteArrayRequest(exchange);
-
-        try {
-            ret.injectContent();
-        } catch (IOException ieo) {
-            ret.setInError(true);
-        }
-
-        return ret;
+    @Override
+    default Consumer<HttpServerExchange> responseInitializer() {
+        return e -> StringResponse.init(e);
     }
 
-    public static ByteArrayRequest of(HttpServerExchange exchange) {
-        return of(exchange, ByteArrayRequest.class);
+    @Override
+    default Function<HttpServerExchange, StringRequest> request() {
+        return e -> StringRequest.of(e);
     }
 
-    public void injectContent() throws IOException {
-        setContent(ChannelReader.readBytes(wrapped));
-    }
-
-    public String getContentString() {
-        return new String(getContent(), StandardCharsets.UTF_8);
+    @Override
+    default Function<HttpServerExchange, StringResponse> response() {
+        return e -> StringResponse.of(e);
     }
 }

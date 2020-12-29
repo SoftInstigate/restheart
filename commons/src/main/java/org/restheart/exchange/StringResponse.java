@@ -19,42 +19,50 @@
  */
 package org.restheart.exchange;
 
+import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
-import org.restheart.utils.ChannelReader;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ByteArrayRequest extends ServiceRequest<byte[]> {
-    private ByteArrayRequest(HttpServerExchange exchange) {
+public class StringResponse extends ServiceResponse<String> {
+    private StringResponse(HttpServerExchange exchange) {
         super(exchange);
     }
 
-    public static ByteArrayRequest init(HttpServerExchange exchange) {
-        var ret = new ByteArrayRequest(exchange);
+    public static StringResponse init(HttpServerExchange exchange) {
+        return new StringResponse(exchange);
+    }
 
-        try {
-            ret.injectContent();
-        } catch (IOException ieo) {
-            ret.setInError(true);
+    public static StringResponse of(HttpServerExchange exchange) {
+        return of(exchange, StringResponse.class);
+    }
+
+    @Override
+    public String readContent() {
+        if (content != null) {
+            return content;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public void setInError(int code, String message, Throwable t) {
+        setStatusCode(code);
+
+        var resp = new JsonObject();
+
+        if (message != null) {
+            resp.addProperty("msg", message);
         }
 
-        return ret;
-    }
+        if (t != null) {
+            resp.addProperty("exception", t.getMessage());
+        }
 
-    public static ByteArrayRequest of(HttpServerExchange exchange) {
-        return of(exchange, ByteArrayRequest.class);
-    }
-
-    public void injectContent() throws IOException {
-        setContent(ChannelReader.readBytes(wrapped));
-    }
-
-    public String getContentString() {
-        return new String(getContent(), StandardCharsets.UTF_8);
+        setContentTypeAsJson();
+        setContent(resp.toString());
     }
 }
