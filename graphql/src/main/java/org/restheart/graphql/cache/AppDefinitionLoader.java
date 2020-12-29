@@ -38,9 +38,7 @@ public class AppDefinitionLoader {
             GraphQLApp newApp = GraphQLAppDeserializer.fromBsonDocument(appDefinition);
             return newApp;
         } else {
-            throw new NullPointerException(
-                    "Configuration for " + appURI + " application not found!"
-            );
+            return null;
         }
     }
 

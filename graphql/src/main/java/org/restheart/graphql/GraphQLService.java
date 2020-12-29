@@ -1,20 +1,25 @@
 package org.restheart.graphql;
+
+import com.google.gson.Gson;
 import com.mongodb.MongoClient;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
-import org.json.JSONObject;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.ConfigurationException;
-import org.restheart.exchange.ByteArrayRequest;
+import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
 import org.restheart.graphql.cache.AppDefinitionLoader;
 import org.restheart.graphql.cache.AppDefinitionLoadingCache;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
+import org.restheart.graphql.exchange.GraphQLRequest;
 import org.restheart.graphql.models.GraphQLApp;
+import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
 import org.restheart.plugins.*;
+import org.restheart.utils.HttpStatus;
 import org.restheart.utils.JsonUtils;
-import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -22,8 +27,15 @@ import java.util.function.Function;
 
 
 @RegisterPlugin(name= "graphql",
-        description = "handles GraphQL requests", defaultURI = "/graphql")
-public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> {
+                description = "Service that handles GraphQL requests",
+                enabledByDefault = true,
+                defaultURI = "/graphql")
+
+public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
+
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(GraphQLService.class);
+
     private GraphQL gql;
     private MongoClient mongoClient = null;
     private String db = null;
@@ -52,72 +64,40 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
 
 
     @Override
-    public void handle(ByteArrayRequest request, MongoResponse response) throws IOException {
+    public void handle(GraphQLRequest request, MongoResponse response) throws Exception {
 
-        if (this.mongoClient == null) {
-            response.setInError(500, "MongoClient not initialized");
-            return;
+        GraphQLApp graphQLApp = request.getAppDefinition();
+        ExecutionInput.Builder inputBuilder = ExecutionInput.newExecutionInput().query(request.getQuery());
+        inputBuilder.operationName(request.getOperationName());
+        if (request.hasVariables()){
+            inputBuilder.variables((new Gson()).fromJson(request.getVariables(), Map.class));
         }
 
-        if (!check(request)) {
+        this.gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema()).build();
+
+        var result = this.gql.execute(inputBuilder.build());
+
+        if (!result.getErrors().isEmpty()){
             response.setInError(400, "Bad Request");
-            return;
         }
-
-        String[] split = request.getPath().split("/");
-        String appUri = String.join("/", Arrays.copyOfRange(split, 2, split.length));
-        AppDefinitionLoadingCache appCache = AppDefinitionLoadingCache.getInstance();
-        GraphQLApp appDefinition = appCache.get(appUri);
-
-        if (appDefinition != null){
-
-            JSONObject json = new JSONObject(new String(request.getContent()));
-            String query = (String) json.get("query");
-            var inputBuilder = ExecutionInput.newExecutionInput().query(query);
-
-            if (json.has("variables")){
-                Map<String, Object> variables = json.getJSONObject("variables").toMap();
-                inputBuilder.variables(variables);
-            }
-
-            ExecutionInput input = inputBuilder.build();
-
-            this.gql = GraphQL.newGraphQL(appDefinition.getExecutableSchema()).build();
-
-            var result = this.gql.execute(input);
-
-            if (result.getErrors() != null && !result.getErrors().isEmpty()) {
-                var error = new StringBuilder();
-                result.getErrors().forEach(e -> error.append(e.getMessage()).append(";"));
-                response.setInError(400, error.toString());
-                return;
-            } else if (result.isDataPresent()) {
-                response.setContent(JsonUtils.toBsonDocument(result.toSpecification()));
-            }
-        }
-        else{
-            response.setInError(400, "Bad Request");
-            return;
-        }
-
+        response.setContent(JsonUtils.toBsonDocument(result.toSpecification()));
     }
-
-    private boolean check(ByteArrayRequest request) {
-        return request.isPost()
-                && request.getContent() != null
-                && isContentTypeGraphQL(request);
-    }
-
-    private boolean isContentTypeGraphQL(ByteArrayRequest request) {
-        return "application/graphql".equals(request.getContentType())
-                || (request.getContentType() != null
-                && request.getContentType().startsWith("application/graphql;"));
-    }
-
 
     @Override
     public Consumer<HttpServerExchange> requestInitializer() {
-        return e -> ByteArrayRequest.init(e);
+        return e -> {
+
+            try{
+                AppDefinitionLoadingCache cache = AppDefinitionLoadingCache.getInstance();
+                String[] splitPath = e.getRequestPath().split("/");
+                String appUri = String.join("/", Arrays.copyOfRange(splitPath, 2, splitPath.length));
+                GraphQLApp appDef = cache.get(appUri);
+                GraphQLRequest.init(e, appUri, appDef);
+            }catch (NullPointerException npe){
+                LOGGER.error(npe.getMessage());
+                throw new BadRequestException(HttpStatus.SC_NOT_FOUND);
+            }
+        };
     }
 
     @Override
@@ -126,13 +106,12 @@ public class GraphQLService implements Service<ByteArrayRequest, MongoResponse> 
     }
 
     @Override
-    public Function<HttpServerExchange, ByteArrayRequest> request() {
-        return e -> ByteArrayRequest.of(e);
+    public Function<HttpServerExchange, GraphQLRequest> request() {
+        return e -> GraphQLRequest.of(e);
     }
 
     @Override
     public Function<HttpServerExchange, MongoResponse> response() {
         return e -> MongoResponse.of(e);
     }
-
 }

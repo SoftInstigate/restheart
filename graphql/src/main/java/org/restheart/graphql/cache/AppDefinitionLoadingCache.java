@@ -47,7 +47,9 @@ public class AppDefinitionLoadingCache {
             if(_app != null && _app.isPresent()){
                 return _app.get();
             }
-            return null;
+            throw new NullPointerException(
+                    "Configuration for " + appName + " not found."
+            );
         }
     }
 
