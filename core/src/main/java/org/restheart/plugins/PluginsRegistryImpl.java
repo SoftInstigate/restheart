@@ -137,7 +137,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             return auth.get();
         } else {
             throw new ConfigurationException("Authenticator " + name + " not found");
-
         }
     }
 

@@ -6,9 +6,6 @@ $ npm install moment
 
 const moment = require('moment');
 
-const JsonObject = Java.type('com.google.gson.JsonObject');
-const JsonPrimitive = Java.type('com.google.gson.JsonPrimitive');
-
 ({
     options: {
         name: "testJsSrv",
@@ -16,16 +13,16 @@ const JsonPrimitive = Java.type('com.google.gson.JsonPrimitive');
     },
 
     handle: (request, response) => {
-        const rc = request.getContent();
-        const name = rc !== null && rc.isJsonObject()
-            ? rc.getAsJsonObject().get('name')
-            : new JsonPrimitive('n.a');
+        const rc = JSON.parse(new String(request.getContentString()));
 
-        const body = new JsonObject();
-        body.add('msg', new JsonPrimitive('Hello World'));
-        body.add('name', name);
-        body.add('date', new JsonPrimitive(moment().format("[Today is] dddd")));
+        let body = {
+            msg: `Hello ${rc.name }`,
+            date: moment().format("[Today is] dddd")
+        }
 
-        response.setContent(body);
+        LOGGER.debug('******** {}', rc);
+
+        response.setContent(JSON.stringify(body));
+        response.setContentTypeAsJson();
     }
 })

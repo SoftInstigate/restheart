@@ -28,9 +28,8 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-import org.restheart.exchange.JsonRequest;
-import org.restheart.exchange.JsonResponse;
-import org.restheart.plugins.JsonService;
+import org.restheart.exchange.Request;
+import org.restheart.exchange.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JavaScriptService implements JsonService {
+public class JavaScriptService {
     private static final Logger LOGGER = LoggerFactory.getLogger(JavaScriptService.class);
 
     Map<String, String> OPTS = new HashMap<>();
@@ -131,10 +130,12 @@ public class JavaScriptService implements JsonService {
      *
      * @throws Exception
      */
-    @Override
-    public void handle(JsonRequest request, JsonResponse response) throws Exception {
+    @SuppressWarnings("rawtypes")
+    public void handle(Request request, Response response) throws Exception {
         var ctx = Context.newBuilder().engine(engine).allowAllAccess(true).allowHostClassLookup(className -> true)
                 .allowIO(true).options(OPTS).build();
+
+        ctx.getBindings("js").putMember("LOGGER", LOGGER);
 
         ctx.eval(source).getMember("handle").executeVoid(request, response);
     }

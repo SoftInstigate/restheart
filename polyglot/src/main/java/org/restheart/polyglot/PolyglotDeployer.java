@@ -33,19 +33,20 @@ import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 
 import org.graalvm.polyglot.Source;
 import org.restheart.ConfigurationException;
 import org.restheart.ConfigurationKeys;
-import org.restheart.exchange.JsonRequest;
-import org.restheart.exchange.JsonResponse;
+import org.restheart.exchange.StringRequest;
+import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.JsonService;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.plugins.StringService;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
 import org.restheart.utils.URLUtils;
@@ -58,7 +59,7 @@ import io.undertow.util.PathMatcher;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "polyglotDeployer", description = "handles GraalVM polyglot plugins", enabledByDefault = true, defaultURI = "/graal")
-public class PolyglotDeployer implements JsonService {
+public class PolyglotDeployer implements StringService {
     private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
 
     private Path pluginsDirectory;
@@ -96,7 +97,7 @@ public class PolyglotDeployer implements JsonService {
     }
 
     @Override
-    public void handle(JsonRequest request, JsonResponse response) throws Exception {
+    public void handle(StringRequest request, StringResponse response) throws Exception {
         var srv = PATHS.getPrefixPath(request.getPath());
 
         if (srv != null) {
