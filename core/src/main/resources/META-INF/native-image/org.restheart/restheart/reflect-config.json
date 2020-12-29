@@ -3583,7 +3583,7 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"org.restheart.polyglot.plugins.services.RootService",
+  "name":"org.restheart.polyglot.PolyglotDeployer",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map"] }

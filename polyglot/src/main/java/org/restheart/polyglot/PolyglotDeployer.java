@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.polyglot.plugins.services;
+package org.restheart.polyglot;
 
 import java.io.File;
 import java.io.IOException;
@@ -108,22 +108,20 @@ public class PolyglotDeployer implements JsonService {
     }
 
     private void deployAll(Path pluginsDirectory) {
-        try {
-            for (var pluginPath : findJsPlugins(pluginsDirectory)) {
+        for (var pluginPath : findJsPlugins(pluginsDirectory)) {
+            try {
                 deploy(pluginPath);
+            } catch (Throwable t) {
+                LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
             }
-        } catch (IOException ie) {
-            throw new ConfigurationException("error watching " + pluginsDirectory.toAbsolutePath(), ie);
         }
     }
 
     private void watch(Path pluginsDirectory) {
         try {
             watchService = FileSystems.getDefault().newWatchService();
-            pluginsDirectory.register(watchService,
-                    StandardWatchEventKinds.ENTRY_CREATE,
-                    StandardWatchEventKinds.ENTRY_MODIFY,
-                    StandardWatchEventKinds.ENTRY_DELETE);
+            pluginsDirectory.register(watchService, StandardWatchEventKinds.ENTRY_CREATE,
+                    StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
 
             var watchThread = new Thread(() -> {
                 WatchKey key;
@@ -133,7 +131,7 @@ public class PolyglotDeployer implements JsonService {
                             var eventContext = event.context();
                             var pluginPath = pluginsDirectory.resolve(eventContext.toString());
 
-                            LOGGER.debug("fs event {} {}", event.kind(), eventContext.toString());
+                            LOGGER.trace("fs event {} {}", event.kind(), eventContext.toString());
 
                             if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                                 var language = Source.findLanguage(pluginPath.toFile());
@@ -141,7 +139,7 @@ public class PolyglotDeployer implements JsonService {
                                     try {
                                         deploy(pluginPath);
                                     } catch (Throwable t) {
-                                        LOGGER.warn("Error deploying {}, {}", pluginPath.toAbsolutePath(), t.getMessage());
+                                        LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
                                     }
                                 }
                             } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
@@ -151,7 +149,7 @@ public class PolyglotDeployer implements JsonService {
                                         undeploy(pluginPath);
                                         deploy(pluginPath);
                                     } catch (Throwable t) {
-                                        LOGGER.warn("Error updating {}, {}", pluginPath.toAbsolutePath(), t.getMessage());
+                                        LOGGER.warn("Error updating {}", pluginPath.toAbsolutePath(), t);
                                     }
                                 }
                             } else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
@@ -161,15 +159,15 @@ public class PolyglotDeployer implements JsonService {
 
                         key.reset();
                     }
-                } catch (IOException | InterruptedException ie) {
-                    throw new ConfigurationException("error watching " + pluginsDirectory.toAbsolutePath(), ie);
+                } catch (IOException | InterruptedException ex) {
+                    LOGGER.error("Error watching {}" + pluginsDirectory.toAbsolutePath(), ex);
                 }
             });
 
             watchThread.start();
 
-        } catch (IOException ioe) {
-            throw new ConfigurationException("error reading " + pluginsDirectory.toAbsolutePath(), ioe);
+        } catch (IOException ex) {
+            LOGGER.error("Error watching {}: {}" + pluginsDirectory.toAbsolutePath(), ex);
         }
     }
 
@@ -217,7 +215,7 @@ public class PolyglotDeployer implements JsonService {
                 LOGGER.info("Found plugin script {}", path);
             }
         } catch (IOException ex) {
-            LOGGER.error("Cannot read scritps in plugins directory {}", pluginsDirectory, ex.getMessage());
+            LOGGER.error("Cannot read scritps in plugins directory", pluginsDirectory, ex);
         }
 
         return paths;
@@ -239,17 +237,14 @@ public class PolyglotDeployer implements JsonService {
         var language = Source.findLanguage(pluginPath.toFile());
 
         if ("js".equals(language)) {
-            try {
-                var srv = new JavaScriptService(pluginPath, this.requireCdw);
-                PATHS.addPrefixPath(resolveURI(srv.getUri()), srv);
+            var srv = new JavaScriptService(pluginPath, this.requireCdw);
+            PATHS.addPrefixPath(resolveURI(srv.getUri()), srv);
 
-                DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
+            DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
-                LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, secured: {}, uri match {}").reset().toString(), 
+            LOGGER.info(
+                    ansi().fg(GREEN).a("URI {} bound to service {}, secured: {}, uri match {}").reset().toString(),
                     resolveURI(srv.getUri()), srv.getName(), false, "prefix!");
-            } catch (Throwable t) {
-                LOGGER.warn("Error deploying {}", pluginPath.toAbsolutePath(), t.getMessage());
-            }
         }
     }
 
@@ -260,8 +255,8 @@ public class PolyglotDeployer implements JsonService {
             var uri = resolveURI(srvToUndeploy.getUri());
             PATHS.removePrefixPath(uri);
 
-            LOGGER.info(ansi().fg(GREEN).a("removed service {} bound to URI {}").reset().toString(), 
-                srvToUndeploy.getName(), uri);
+            LOGGER.info(ansi().fg(GREEN).a("removed service {} bound to URI {}").reset().toString(),
+                    srvToUndeploy.getName(), uri);
         }
     }
 
