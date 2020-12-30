@@ -31,8 +31,10 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-import org.restheart.exchange.Request;
-import org.restheart.exchange.Response;
+import org.restheart.exchange.StringRequest;
+import org.restheart.exchange.StringResponse;
+import org.restheart.plugins.StringService;
+import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JavaScriptService {
+public class JavaScriptService implements StringService {
     private static final Logger LOGGER = LoggerFactory.getLogger(JavaScriptService.class);
 
     Map<String, String> OPTS = new HashMap<>();
@@ -48,8 +50,11 @@ public class JavaScriptService {
     private Engine engine = Engine.create();
     private Source source;
 
-    private String name;
-    private String uri;
+    private final String name;
+    private final String description;
+    private final String uri;
+    private final boolean secured;
+    private final MATCH_POLICY matchPolicy;
 
     private MongoClient mclient;
 
@@ -102,6 +107,16 @@ public class JavaScriptService {
 
         this.name = parsed.getMember("options").getMember("name").asString();
 
+        if (!parsed.getMember("options").getMemberKeys().contains("description")) {
+            throw new IllegalArgumentException("wrong js plugin, missing member 'options.description', " + errorHint);
+        }
+
+        if (!parsed.getMember("options").getMember("description").isString()) {
+            throw new IllegalArgumentException("wrong js plugin, wrong member 'options.description', " + errorHint);
+        }
+
+        this.description = parsed.getMember("options").getMember("description").asString();
+
         if (!parsed.getMember("options").getMemberKeys().contains("uri")) {
             throw new IllegalArgumentException("wrong js plugin, missing member 'options.uri', " + errorHint);
         }
@@ -115,6 +130,31 @@ public class JavaScriptService {
         }
 
         this.uri = parsed.getMember("options").getMember("uri").asString();
+
+        if (!parsed.getMember("options").getMemberKeys().contains("secured")) {
+            this.secured = false;
+        } else {
+            if (!parsed.getMember("options").getMember("secured").isBoolean()) {
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.secured', " + errorHint);
+            } else {
+                this.secured = parsed.getMember("options").getMember("secured").asBoolean();
+            }
+        }
+
+        if (!parsed.getMember("options").getMemberKeys().contains("matchPolicy")) {
+            this.matchPolicy = MATCH_POLICY.PREFIX;
+        } else {
+            if (!parsed.getMember("options").getMember("matchPolicy").isString()) {
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.secured', " + errorHint);
+            } else {
+                var _matchPolicy = parsed.getMember("options").getMember("matchPolicy").asString();
+                try {
+                this.matchPolicy = MATCH_POLICY.valueOf(_matchPolicy);
+                } catch (Throwable t) {
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.matchPolicy', " + errorHint);
+                }
+            }
+        }
 
         if (!parsed.getMemberKeys().contains("handle")) {
             throw new IllegalArgumentException("wrong js plugin, missing member 'handle', " + errorHint);
@@ -133,12 +173,22 @@ public class JavaScriptService {
         return uri;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public boolean isSecured() {
+        return secured;
+    }
+
+    public MATCH_POLICY getMatchPolicy() {
+        return matchPolicy;
+    }
+
     /**
      *
-     * @throws Exception
      */
-    @SuppressWarnings("rawtypes")
-    public void handle(Request request, Response response) throws Exception {
+    public void handle(StringRequest request, StringResponse response) {
         var ctx = Context.newBuilder().engine(engine).allowAllAccess(true).allowHostClassLookup(className -> true)
                 .allowIO(true).options(OPTS).build();
 

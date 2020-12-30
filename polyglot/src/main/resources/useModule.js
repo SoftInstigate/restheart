@@ -8,8 +8,11 @@ const moment = require('moment');
 
 ({
     options: {
-        name: "testJsSrv",
-        uri: '/test'
+        name: "jsModule",
+        description: "just an example JavaScript service that uses a CommonJS module ",
+        uri: '/jsModule',
+        secured: false, // optional, default false
+        matchPolicy: "PREFIX" // optional, default PREFIX
     },
 
     handle: (request, response) => {

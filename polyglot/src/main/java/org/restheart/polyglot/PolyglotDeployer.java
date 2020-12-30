@@ -42,34 +42,31 @@ import static org.fusesource.jansi.Ansi.Color.GREEN;
 import org.graalvm.polyglot.Source;
 import org.restheart.ConfigurationException;
 import org.restheart.ConfigurationKeys;
-import org.restheart.exchange.StringRequest;
-import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.ConfigurationScope;
+import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectMongoClient;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.plugins.StringService;
-import org.restheart.utils.HttpStatus;
-import org.restheart.utils.PluginUtils;
-import org.restheart.utils.URLUtils;
+import org.restheart.plugins.Service;
+import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.undertow.util.PathMatcher;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "polyglotDeployer", description = "handles GraalVM polyglot plugins", enabledByDefault = true, defaultURI = "/graal")
-public class PolyglotDeployer implements StringService {
+public class PolyglotDeployer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
 
     private Path pluginsDirectory;
 
-    private String myURI;
+    // private String myURI;
 
-    private static final PathMatcher<JavaScriptService> PATHS = new PathMatcher<>();
     private static final Map<Path, JavaScriptService> DEPLOYEES = new HashMap<>();
 
     private WatchService watchService;
@@ -77,6 +74,13 @@ public class PolyglotDeployer implements StringService {
     private Path requireCdw;
 
     private MongoClient mclient;
+
+    private PluginsRegistry registry;
+
+    @InjectPluginsRegistry
+    public void reg(PluginsRegistry registry) {
+        this.registry = registry;
+    }
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void init(Map<String, Object> args) throws ConfigurationException {
@@ -95,7 +99,7 @@ public class PolyglotDeployer implements StringService {
 
         LOGGER.info("Folder where the CommonJS modules are located: {}", requireCdw.toAbsolutePath());
 
-        this.myURI = myURI(args);
+        // this.myURI = myURI(args);
 
         deployAll(pluginsDirectory);
         watch(pluginsDirectory);
@@ -107,15 +111,8 @@ public class PolyglotDeployer implements StringService {
     }
 
     @Override
-    public void handle(StringRequest request, StringResponse response) throws Exception {
-        var srv = PATHS.getPrefixPath(request.getPath());
-
-        if (srv != null) {
-            srv.handle(request, response);
-        } else {
-            response.setInError(true);
-            response.setStatusCode(HttpStatus.SC_BAD_GATEWAY);
-        }
+    public void init() {
+        // nothing to do
     }
 
     private void deployAll(Path pluginsDirectory) {
@@ -244,18 +241,30 @@ public class PolyglotDeployer implements StringService {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private void deploy(Path pluginPath) throws IOException {
         var language = Source.findLanguage(pluginPath.toFile());
 
         if ("js".equals(language)) {
             var srv = new JavaScriptService(pluginPath, this.requireCdw, this.mclient);
-            PATHS.addPrefixPath(resolveURI(srv.getUri()), srv);
+            var record = new PluginRecord<Service>(srv.getName(),
+                "description",
+                true,
+                srv.getClass().getName(),
+                srv,
+                new HashMap<>());
+
+            registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
 
             DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
             LOGGER.info(
-                    ansi().fg(GREEN).a("URI {} bound to service {}, secured: {}, uri match {}").reset().toString(),
-                    resolveURI(srv.getUri()), srv.getName(), false, "prefix!");
+                    ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
+                    srv.getUri(),
+                    srv.getName(),
+                    srv.getDescription(),
+                    srv.isSecured(),
+                    srv.getMatchPolicy());
         }
     }
 
@@ -263,59 +272,10 @@ public class PolyglotDeployer implements StringService {
         var srvToUndeploy = DEPLOYEES.remove(pluginPath.toAbsolutePath());
 
         if (srvToUndeploy != null) {
-            var uri = resolveURI(srvToUndeploy.getUri());
-            PATHS.removePrefixPath(uri);
+            registry.unplug(srvToUndeploy.getUri(), srvToUndeploy.getMatchPolicy());
 
             LOGGER.info(ansi().fg(GREEN).a("removed service {} bound to URI {}").reset().toString(),
-                    srvToUndeploy.getName(), uri);
-        }
-    }
-
-    @SuppressWarnings("rawtypes")
-    private String myURI(Map<String, Object> args) {
-        Object uri = null;
-
-        var _pluginsArgs = args.getOrDefault(ConfigurationKeys.PLUGINS_ARGS_KEY, null);
-
-        if (_pluginsArgs != null && _pluginsArgs instanceof Map) {
-            var pluginsArgs = (Map) _pluginsArgs;
-            var _myconf = pluginsArgs.get("jsDeployer");
-
-            if (_myconf != null && _myconf instanceof Map) {
-                var myconf = (Map) _myconf;
-                if (myconf.containsKey("uri") && !"/".equals(myconf.get("uri"))) {
-                    uri = myconf.get("uri");
-                }
-            } else {
-                uri = PluginUtils.defaultURI(this);
-            }
-        } else {
-            uri = PluginUtils.defaultURI(this);
-        }
-
-        if (uri != null && uri instanceof String) {
-            var _uri = (String) uri;
-            // make sure myURI does not end with /
-            _uri = URLUtils.removeTrailingSlashes(_uri);
-
-            return _uri;
-        } else {
-            throw new IllegalArgumentException("Wrong 'uri' configuration of jsDeployer service.");
-        }
-    }
-
-    /**
-     *
-     * @param uri
-     * @return the URI composed of serviceUri + uri
-     */
-    private String resolveURI(String uri) {
-        if ("".equals(myURI) || "/".equals(myURI)) {
-            return uri;
-        } else if (uri == null) {
-            return URLUtils.removeTrailingSlashes(myURI);
-        } else {
-            return URLUtils.removeTrailingSlashes(myURI.concat(uri));
+                    srvToUndeploy.getName(), srvToUndeploy.getUri());
         }
     }
 }
