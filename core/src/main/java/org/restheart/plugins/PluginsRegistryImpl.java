@@ -21,9 +21,7 @@
 package org.restheart.plugins;
 
 import static io.undertow.Handlers.path;
-import io.undertow.predicate.Predicate;
-import io.undertow.server.handlers.PathHandler;
-import io.undertow.util.PathMatcher;
+
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Optional;
@@ -31,14 +29,37 @@ import java.util.Set;
 
 import com.mongodb.MongoClient;
 
+import org.restheart.Configuration;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.PipelineInfo;
+import org.restheart.handlers.CORSHandler;
+import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.handlers.PipelinedWrappingHandler;
+import org.restheart.handlers.QueryStringRebuilder;
+import org.restheart.handlers.RequestInterceptorsExecutor;
+import org.restheart.handlers.RequestLogger;
+import org.restheart.handlers.ResponseInterceptorsExecutor;
+import org.restheart.handlers.ResponseSender;
+import org.restheart.handlers.ServiceExchangeInitializer;
+import org.restheart.handlers.TracingInstrumentationHandler;
+import org.restheart.handlers.injectors.PipelineInfoInjector;
+import org.restheart.handlers.injectors.XPoweredByInjector;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
+import org.restheart.security.handlers.SecurityHandler;
+import org.restheart.security.plugins.authorizers.FullAuthorizer;
+import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
+import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
+import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
+import static org.restheart.handlers.PipelinedHandler.pipe;
+
+import io.undertow.predicate.Predicate;
+import io.undertow.server.handlers.PathHandler;
+import io.undertow.util.PathMatcher;
 
 /**
  *
@@ -245,5 +266,83 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         var m = PIPELINE_INFOS.match(path);
 
         return m.getValue();
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void plugService(PluginRecord<Service> srv, final String uri, MATCH_POLICY mp, boolean secured) {
+            SecurityHandler securityHandler;
+
+            final Set<PluginRecord<AuthMechanism>> mechanisms = getAuthMechanisms();
+            final Set<PluginRecord<Authorizer>> authorizers = getAuthorizers();
+            final PluginRecord<TokenManager> tokenManager = getTokenManager();
+
+            if (secured) {
+                securityHandler = new SecurityHandler(
+                        mechanisms,
+                        authorizers,
+                        tokenManager);
+            } else {
+                var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
+
+                PluginRecord<Authorizer> _fauthorizer = new PluginRecord<>(
+                        "fullAuthorizer",
+                        "authorize any operation to any user",
+                        true,
+                        FullAuthorizer.class
+                                .getName(),
+                        new FullAuthorizer(false),
+                        null
+                );
+
+                _fauthorizers.add(_fauthorizer);
+
+                securityHandler = new SecurityHandler(
+                        mechanisms,
+                        _fauthorizers,
+                        tokenManager);
+            }
+
+            var _srv = pipe(new PipelineInfoInjector(),
+                    new TracingInstrumentationHandler(),
+                    new RequestLogger(),
+                    new ServiceExchangeInitializer(),
+                    new CORSHandler(),
+                    new XPoweredByInjector(),
+                    new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
+                    new QueryStringRebuilder(),
+                    securityHandler,
+                    new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
+                    new QueryStringRebuilder(),
+                    PipelinedWrappingHandler
+                            .wrap(new ConfigurableEncodingHandler(
+                                    PipelinedWrappingHandler.wrap(
+                                        srv.getInstance()))),
+                    new ResponseInterceptorsExecutor(),
+                    new ResponseSender()
+            );
+
+            plugPipeline(uri, _srv, new PipelineInfo(SERVICE, uri, mp, srv.getName()));
+
+            this.services.add(srv);
+    }
+
+    /**
+     * unplugs an handler from the root handler
+     *
+     * @param uri
+     * @param mp
+     */
+    public void unplug(String uri, MATCH_POLICY mp) {
+        var pi = getPipelineInfo(uri);
+
+        this.services.removeIf(s -> s.getName().equals(pi.getName()));
+
+        if (mp == MATCH_POLICY.PREFIX) {
+            ROOT_PATH_HANDLER.removePrefixPath(uri);
+            PIPELINE_INFOS.removePrefixPath(uri);
+        } else {
+            ROOT_PATH_HANDLER.removeExactPath(uri);
+            PIPELINE_INFOS.removeExactPath(uri);
+        }
     }
 }

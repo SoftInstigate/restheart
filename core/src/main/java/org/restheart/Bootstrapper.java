@@ -32,7 +32,6 @@ import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHAT_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNT_WHERE_KEY;
 import static org.restheart.exchange.Exchange.MAX_CONTENT_SIZE;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.PROXY;
-import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.STATIC_RESOURCE;
 import static org.restheart.handlers.PipelinedHandler.pipe;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
@@ -72,7 +71,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -95,7 +93,6 @@ import org.restheart.exchange.Exchange;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.graal.NativeImageBuildTimeChecker;
-import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.ErrorHandler;
 import org.restheart.handlers.PipelinedHandler;
@@ -104,9 +101,6 @@ import org.restheart.handlers.QueryStringRebuilder;
 import org.restheart.handlers.RequestInterceptorsExecutor;
 import org.restheart.handlers.RequestLogger;
 import org.restheart.handlers.RequestNotManagedHandler;
-import org.restheart.handlers.ResponseInterceptorsExecutor;
-import org.restheart.handlers.ResponseSender;
-import org.restheart.handlers.ServiceExchangeInitializer;
 import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.injectors.AuthHeadersRemover;
 import org.restheart.handlers.injectors.ConduitInjector;
@@ -121,7 +115,6 @@ import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.handlers.SecurityHandler;
-import org.restheart.security.plugins.authorizers.FullAuthorizer;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
@@ -907,9 +900,7 @@ public class Bootstrapper {
             }
         }
 
-        HANDLERS = getPipeline(authMechanisms,
-                authorizers,
-                tokenManager);
+        HANDLERS = getPipeline(authMechanisms, authorizers, tokenManager);
 
         // update buffer size in
         Exchange.updateBufferSize(configuration.getBufferSize());
@@ -996,7 +987,7 @@ public class Bootstrapper {
                 + "is {} bytes",
                 MAX_CONTENT_SIZE);
 
-        plugServices(authMechanisms, authorizers, tokenManager);
+        plugServices();
 
         plugProxies(configuration, authMechanisms, authorizers, tokenManager);
 
@@ -1039,10 +1030,7 @@ public class Bootstrapper {
      * @param authorizers
      * @param tokenManager
      */
-    @SuppressWarnings("unchecked")
-    private static void plugServices(final Set<PluginRecord<AuthMechanism>> mechanisms,
-            final Set<PluginRecord<Authorizer>> authorizers,
-            final PluginRecord<TokenManager> tokenManager) {
+    private static void plugServices() {
         PluginsRegistryImpl.getInstance().getServices().stream().forEach(srv -> {
             var srvConfArgs = srv.getConfArgs();
 
@@ -1088,58 +1076,9 @@ public class Bootstrapper {
                     ? (boolean) srvConfArgs.get("secured")
                     : false;
 
-            SecurityHandler securityHandler;
-
-            if (secured) {
-                securityHandler = new SecurityHandler(
-                        mechanisms,
-                        authorizers,
-                        tokenManager);
-            } else {
-                var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
-
-                PluginRecord<Authorizer> _fauthorizer = new PluginRecord<>(
-                        "fullAuthorizer",
-                        "authorize any operation to any user",
-                        true,
-                        FullAuthorizer.class
-                                .getName(),
-                        new FullAuthorizer(false),
-                        null
-                );
-
-                _fauthorizers.add(_fauthorizer);
-
-                securityHandler = new SecurityHandler(
-                        mechanisms,
-                        _fauthorizers,
-                        tokenManager);
-            }
-
-            var _srv = pipe(new PipelineInfoInjector(),
-                    new TracingInstrumentationHandler(),
-                    new RequestLogger(),
-                    new ServiceExchangeInitializer(),
-                    new CORSHandler(),
-                    new XPoweredByInjector(),
-                    new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
-                    new QueryStringRebuilder(),
-                    securityHandler,
-                    new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
-                    new QueryStringRebuilder(),
-                    PipelinedWrappingHandler
-                            .wrap(new ConfigurableEncodingHandler(
-                                    PipelinedWrappingHandler
-                                            .wrap(srv.getInstance()),
-                                    configuration.isForceGzipEncoding())),
-                    new ResponseInterceptorsExecutor(),
-                    new ResponseSender()
-            );
-
             PluginsRegistryImpl
                     .getInstance()
-                    .plugPipeline(uri, _srv,
-                            new PipelineInfo(SERVICE, uri, mp, srv.getName()));
+                    .plugService(srv, uri, mp, secured);
 
             LOGGER.info(ansi().fg(GREEN)
                     .a("URI {} bound to service {}, secured: {}, uri match {}")
@@ -1278,8 +1217,7 @@ public class Bootstrapper {
                         new ConduitInjector(),
                         PipelinedWrappingHandler.wrap(
                                 new ConfigurableEncodingHandler( // Must be after ConduitInjector
-                                        proxyHandler,
-                                        configuration.isForceGzipEncoding())));
+                                        proxyHandler)));
                 PluginsRegistryImpl
                         .getInstance()
                         .plugPipeline(location, proxy,

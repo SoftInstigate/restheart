@@ -29,6 +29,9 @@ import io.undertow.server.handlers.encoding.GzipEncodingProvider;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
+
+import org.restheart.Bootstrapper;
+import org.restheart.Configuration;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;
@@ -47,16 +50,18 @@ public class ConfigurableEncodingHandler extends EncodingHandler {
     /**
      * Creates a new instance of ConfigurableEncodingHandler
      *
+     * if Configuration().isForceGzipEncoding() is true
+     * requests without gzip or deflate encodingin Accept-Encoding header
+     * will be rejected
+     *
      * @param next
-     * @param forceCompression if true requests without gzip or deflate encoding
-     * in Accept-Encoding header will be rejected
      */
-    public ConfigurableEncodingHandler(HttpHandler next, boolean forceCompression) {
+    public ConfigurableEncodingHandler(HttpHandler next) {
         super(next, new ContentEncodingRepository()
                 .addEncodingHandler("gzip", new GzipEncodingProvider(), 60)
                 .addEncodingHandler("deflate", new DeflateEncodingProvider(), 50));
 
-        this.forceCompression = forceCompression;
+        this.forceCompression = Bootstrapper.getConfiguration().isForceGzipEncoding();
     }
 
     @Override

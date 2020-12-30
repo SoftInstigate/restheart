@@ -25,6 +25,7 @@ import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
@@ -105,6 +106,25 @@ public interface PluginsRegistry {
      * @param info    The PipelineInfo describing the handling pipeline
      */
     public void plugPipeline(String path, PipelinedHandler handler, PipelineInfo info);
+
+    /**
+     * unplugs an handler from the root handler
+     *
+     * @param uri
+     * @param mp
+     */
+    public void unplug(String uri, MATCH_POLICY mp);
+
+    /**
+     * Plugs a service into the root handler binding it to the path
+     *
+     * @param srv       The service to plug
+     * @param uri       The URI to bind the service to
+     * @param mp        The match policy, either exact or prefix
+     * @param secured   true to invoke the service only after authentication and authorization succeed
+     */
+    @SuppressWarnings({"rawtypes"})
+    public void plugService(PluginRecord<Service> srv, final String uri, MATCH_POLICY mp, boolean secured);
 
     /**
      * @param path
