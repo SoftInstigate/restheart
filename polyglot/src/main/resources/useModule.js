@@ -1,10 +1,13 @@
 /* How to run:
 $ cd plugins
 $ npm init
-$ npm install moment
+$ npm install one-liner-joke
+
+(not needed to install moment since it's a builtin module)
 */
 
 const moment = require('moment');
+const oneLinerJoke = require('one-liner-joke');
 
 ({
     options: {
@@ -17,10 +20,10 @@ const moment = require('moment');
 
     handle: (request, response) => {
         LOGGER.debug('request {}', request.getContent());
-        const rc = JSON.parse(new String(request.getContent()));
+        const rc = JSON.parse(request.getContent() || '{}');
 
         let body = {
-            msg: `Hello ${rc.name }`,
+            msg: oneLinerJoke.getRandomJoke(),
             date: moment().format("[Today is] dddd")
         }
 

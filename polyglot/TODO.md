@@ -39,6 +39,14 @@ $ npm install restheart-js
 options.put("js.commonjs-global-properties", "./globals.js");
 ```
 
+See [Global symbols pre-initialization](https://github.com/oracle/graaljs/blob/master/docs/user/NodeJSVSJavaScriptContext.md#global-symbols-pre-initialization)
+
+## allow mockup node modules
+
+Some JavaScript applications or NPM modules might need functionalities that are available in Node.js' built-in modules (e.g., 'fs' and 'buffer', etc.). Such modules are not available in the Context API. Thankfully, the Node.js community has developed high-quality JavaScript implementations for many Node.js core modules (e.g., the 'buffer' module for the browser). Such alternative module implementations can be exposed to a JavaScript Context using the `js.commonjs-core-modules-replacements` option
+
+See [Node.js core modules mockups](https://github.com/oracle/graaljs/blob/master/docs/user/NodeJSVSJavaScriptContext.md#nodejs-core-modules-mockups)
+
 ## Support Python
 
 allow implementing interceptors and services with Python
