@@ -1,20 +1,5 @@
 # TODO
 
-## service options
-
-```javascript
-{ name: 'fooSrv',
-  uri: '/foo',
-  secured: true, // optional
-}
-```
-
-## URI
-
-Currently it is only possible to bind a service under the PolyglotDeployer URI (default `/graal`). E.g. `/graal/test`
-
-Is it possible to bind it to any URI, e.g. `/test`?
-
 ## Interceptors
 
 allow implementing interceptors with JavaScript
@@ -31,16 +16,27 @@ allow implementing interceptors with JavaScript
 
 define test cases
 
-## develop npm module to simplify dealing with RESTHeart Java classes
+## simplify dealing with RESTHeart Java classes
 
-```bash
-$ npm install restheart-js
-```
+functions to simplify using Gson and Bson classes
 
 ```javascript
 const rh = require('restheart-js');
 
 var docs = rh.collect(mclient.getDb('restheart').getCollection('foo').find());
+```
+
+### option one: create an npm installable module
+
+```bash
+$ npm install restheart-js
+```
+
+### option two: use an initialization script
+
+```java
+// initialization script to pre-define globals.
+options.put("js.commonjs-global-properties", "./globals.js");
 ```
 
 ## Support Python
