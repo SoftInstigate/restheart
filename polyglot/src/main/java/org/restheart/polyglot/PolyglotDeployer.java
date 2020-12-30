@@ -51,7 +51,6 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
-import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +83,11 @@ public class PolyglotDeployer implements Initializer {
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void init(Map<String, Object> args) throws ConfigurationException {
+        if (!isRunningOnGraalVM()) {
+            LOGGER.warn("Not running on GraalVM, polyglot plugins deployer disabled!");
+            return;
+        }
+
         pluginsDirectory = getPluginsDirectory(args);
 
         this.requireCdw = pluginsDirectory.resolve("node_modules").toAbsolutePath();
@@ -103,6 +107,16 @@ public class PolyglotDeployer implements Initializer {
 
         deployAll(pluginsDirectory);
         watch(pluginsDirectory);
+    }
+
+    private boolean isRunningOnGraalVM() {
+        try {
+            Class.forName("org.graalvm.polyglot.Value");
+        } catch(ClassNotFoundException cnfe) {
+            return false;
+        }
+
+        return true;
     }
 
     @InjectMongoClient
@@ -132,6 +146,12 @@ public class PolyglotDeployer implements Initializer {
                     StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
 
             var watchThread = new Thread(() -> {
+                try {
+                    Thread.sleep(1000);
+                } catch(Throwable t) {
+                    // nothing to do
+                }
+
                 WatchKey key;
                 try {
                     while ((key = watchService.take()) != null) {

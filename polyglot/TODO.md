@@ -6,17 +6,8 @@
 { name: 'fooSrv',
   uri: '/foo',
   secured: true, // optional
-  type: 'JsonService',  // optional
 }
 ```
-
-## Allow using different Service implementations
-
-- ByteArrayService
-- JsonService
-- BsonService
-- MongoService
-- custom service
 
 ## URI
 
@@ -29,16 +20,12 @@ Is it possible to bind it to any URI, e.g. `/test`?
 allow implementing interceptors with JavaScript
 
 ```javascript
-{ name: 'fooSrv',
-  uri: '/foo',
+{ name: 'fooInterceptor',
+  interceptPoint: 'REQUEST_AFTER_AUTH', // optional
   secured: true, // optional
-  type: 'JsonIntercepto',  // optional
+  serviceClass: 'org.restheart.plugins.JsonService'
 }
 ```
-
-## MongoClient
-
-Add the MongoClient to the js bindings
 
 ## Karate tests
 
@@ -53,11 +40,7 @@ $ npm install restheart-js
 ```javascript
 const rh = require('restheart-js');
 
-const request = rh.toObject(request.getContent());
-
-mclient.getDb('restheart').getCollection('foo').find();
-
-response.setContent(rh.toJsonElement({ msg: `Hello ${request.name}` }));
+var docs = rh.collect(mclient.getDb('restheart').getCollection('foo').find());
 ```
 
 ## Support Python
