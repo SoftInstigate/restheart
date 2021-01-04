@@ -323,6 +323,11 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
             plugPipeline(uri, _srv, new PipelineInfo(SERVICE, uri, mp, srv.getName()));
 
+            // avoid NPE
+            if (this.services == null) {
+                this.services = new LinkedHashSet<>();
+            }
+
             this.services.add(srv);
     }
 

@@ -24,9 +24,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-
 import com.mongodb.MongoClient;
-
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
@@ -55,6 +53,7 @@ public class JavaScriptService implements StringService {
     private final String uri;
     private final boolean secured;
     private final MATCH_POLICY matchPolicy;
+    private final String modulesReplacements;
 
     private MongoClient mclient;
 
@@ -78,90 +77,108 @@ public class JavaScriptService implements StringService {
 
         // check plugin definition
 
-        Context ctx = Context.newBuilder().engine(engine).allowAllAccess(true).allowHostClassLookup(className -> true)
-                .allowIO(true).options(OPTS).build();
+        try (Context ctx = Context.newBuilder().engine(engine).allowAllAccess(true)
+                .allowHostClassLookup(className -> true).allowIO(true).allowExperimentalOptions(true).options(OPTS)
+                .build()) {
+            Value parsed;
 
-        Value parsed;
+            try {
+                ctx.getBindings("js").putMember("LOGGER", LOGGER);
 
-        try {
-            parsed = ctx.eval(source);
-        } catch (Throwable t) {
-            throw new IllegalArgumentException("wrong js plugin, " + t.getMessage());
-        }
-
-        if (parsed.getMemberKeys().isEmpty()) {
-            throw new IllegalArgumentException("wrong js plugin, " + errorHint);
-        }
-
-        if (!parsed.getMemberKeys().contains("options")) {
-            throw new IllegalArgumentException("wrong js plugin, missing member 'options', " + errorHint);
-        }
-
-        if (!parsed.getMember("options").getMemberKeys().contains("name")) {
-            throw new IllegalArgumentException("wrong js plugin, missing member 'options.name', " + errorHint);
-        }
-
-        if (!parsed.getMember("options").getMember("name").isString()) {
-            throw new IllegalArgumentException("wrong js plugin, wrong member 'options.name', " + errorHint);
-        }
-
-        this.name = parsed.getMember("options").getMember("name").asString();
-
-        if (!parsed.getMember("options").getMemberKeys().contains("description")) {
-            throw new IllegalArgumentException("wrong js plugin, missing member 'options.description', " + errorHint);
-        }
-
-        if (!parsed.getMember("options").getMember("description").isString()) {
-            throw new IllegalArgumentException("wrong js plugin, wrong member 'options.description', " + errorHint);
-        }
-
-        this.description = parsed.getMember("options").getMember("description").asString();
-
-        if (!parsed.getMember("options").getMemberKeys().contains("uri")) {
-            throw new IllegalArgumentException("wrong js plugin, missing member 'options.uri', " + errorHint);
-        }
-
-        if (!parsed.getMember("options").getMember("uri").isString()) {
-            throw new IllegalArgumentException("wrong js plugin, wrong member 'options.uri', " + errorHint);
-        }
-
-        if (!parsed.getMember("options").getMember("uri").asString().startsWith("/")) {
-            throw new IllegalArgumentException("wrong js plugin, wrong member 'options.uri', " + errorHint);
-        }
-
-        this.uri = parsed.getMember("options").getMember("uri").asString();
-
-        if (!parsed.getMember("options").getMemberKeys().contains("secured")) {
-            this.secured = false;
-        } else {
-            if (!parsed.getMember("options").getMember("secured").isBoolean()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.secured', " + errorHint);
-            } else {
-                this.secured = parsed.getMember("options").getMember("secured").asBoolean();
+                parsed = ctx.eval(source);
+            } catch (Throwable t) {
+                throw new IllegalArgumentException("wrong js plugin, " + t.getMessage());
             }
-        }
 
-        if (!parsed.getMember("options").getMemberKeys().contains("matchPolicy")) {
-            this.matchPolicy = MATCH_POLICY.PREFIX;
-        } else {
-            if (!parsed.getMember("options").getMember("matchPolicy").isString()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.secured', " + errorHint);
+            if (parsed.getMemberKeys().isEmpty()) {
+                throw new IllegalArgumentException("wrong js plugin, " + errorHint);
+            }
+
+            if (!parsed.getMemberKeys().contains("options")) {
+                throw new IllegalArgumentException("wrong js plugin, missing member 'options', " + errorHint);
+            }
+
+            if (!parsed.getMember("options").getMemberKeys().contains("name")) {
+                throw new IllegalArgumentException("wrong js plugin, missing member 'options.name', " + errorHint);
+            }
+
+            if (!parsed.getMember("options").getMember("name").isString()) {
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.name', " + errorHint);
+            }
+
+            this.name = parsed.getMember("options").getMember("name").asString();
+
+            if (!parsed.getMember("options").getMemberKeys().contains("description")) {
+                throw new IllegalArgumentException(
+                        "wrong js plugin, missing member 'options.description', " + errorHint);
+            }
+
+            if (!parsed.getMember("options").getMember("description").isString()) {
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.description', " + errorHint);
+            }
+
+            this.description = parsed.getMember("options").getMember("description").asString();
+
+            if (!parsed.getMember("options").getMemberKeys().contains("uri")) {
+                throw new IllegalArgumentException("wrong js plugin, missing member 'options.uri', " + errorHint);
+            }
+
+            if (!parsed.getMember("options").getMember("uri").isString()) {
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.uri', " + errorHint);
+            }
+
+            if (!parsed.getMember("options").getMember("uri").asString().startsWith("/")) {
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.uri', " + errorHint);
+            }
+
+            this.uri = parsed.getMember("options").getMember("uri").asString();
+
+            if (!parsed.getMember("options").getMemberKeys().contains("secured")) {
+                this.secured = false;
             } else {
-                var _matchPolicy = parsed.getMember("options").getMember("matchPolicy").asString();
-                try {
-                this.matchPolicy = MATCH_POLICY.valueOf(_matchPolicy);
-                } catch (Throwable t) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.matchPolicy', " + errorHint);
+                if (!parsed.getMember("options").getMember("secured").isBoolean()) {
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.secured', " + errorHint);
+                } else {
+                    this.secured = parsed.getMember("options").getMember("secured").asBoolean();
                 }
             }
-        }
 
-        if (!parsed.getMemberKeys().contains("handle")) {
-            throw new IllegalArgumentException("wrong js plugin, missing member 'handle', " + errorHint);
-        }
+            if (!parsed.getMember("options").getMemberKeys().contains("matchPolicy")) {
+                this.matchPolicy = MATCH_POLICY.PREFIX;
+            } else {
+                if (!parsed.getMember("options").getMember("matchPolicy").isString()) {
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.secured', " + errorHint);
+                } else {
+                    var _matchPolicy = parsed.getMember("options").getMember("matchPolicy").asString();
+                    try {
+                        this.matchPolicy = MATCH_POLICY.valueOf(_matchPolicy);
+                    } catch (Throwable t) {
+                        throw new IllegalArgumentException(
+                                "wrong js plugin, wrong member 'options.matchPolicy', " + errorHint);
+                    }
+                }
+            }
 
-        if (!parsed.getMember("handle").canExecute()) {
-            throw new IllegalArgumentException("wrong js plugin, member 'handle' is not a function, " + errorHint);
+            if (!parsed.getMember("options").getMemberKeys().contains("modulesReplacements")) {
+                this.modulesReplacements = null;
+            } else {
+                var sb = new StringBuilder();
+
+                parsed.getMember("options").getMember("modulesReplacements").getMemberKeys().stream()
+                        .forEach(k -> sb.append(k).append(":")
+                                .append(parsed.getMember("options").getMember("modulesReplacements").getMember(k))
+                                .append(","));
+
+                this.modulesReplacements = sb.toString();
+            }
+
+            if (!parsed.getMemberKeys().contains("handle")) {
+                throw new IllegalArgumentException("wrong js plugin, missing member 'handle', " + errorHint);
+            }
+
+            if (!parsed.getMember("handle").canExecute()) {
+                throw new IllegalArgumentException("wrong js plugin, member 'handle' is not a function, " + errorHint);
+            }
         }
     }
 
@@ -185,19 +202,31 @@ public class JavaScriptService implements StringService {
         return matchPolicy;
     }
 
+    public String getModulesReplacements() {
+        return this.modulesReplacements;
+    }
+
     /**
      *
      */
     public void handle(StringRequest request, StringResponse response) {
-        var ctx = Context.newBuilder().engine(engine).allowAllAccess(true).allowHostClassLookup(className -> true)
-                .allowIO(true).options(OPTS).build();
-
-        ctx.getBindings("js").putMember("LOGGER", LOGGER);
-
-        if (this.mclient != null) {
-            ctx.getBindings("js").putMember("mclient", this.mclient);
+        if (getModulesReplacements() != null) {
+            LOGGER.debug("modules-replacements: {} ", getModulesReplacements());
+            OPTS.put("js.commonjs-core-modules-replacements", getModulesReplacements());
+        } else {
+            OPTS.remove("js.commonjs-core-modules-replacements");
         }
 
-        ctx.eval(source).getMember("handle").executeVoid(request, response);
+        try (var ctx = Context.newBuilder().engine(engine).allowAllAccess(true).allowHostClassLookup(className -> true)
+                .allowIO(true).allowExperimentalOptions(true).options(OPTS).build()) {
+
+            ctx.getBindings("js").putMember("LOGGER", LOGGER);
+
+            if (this.mclient != null) {
+                ctx.getBindings("js").putMember("mclient", this.mclient);
+            }
+
+            ctx.eval(source).getMember("handle").executeVoid(request, response);
+        }
     }
 }

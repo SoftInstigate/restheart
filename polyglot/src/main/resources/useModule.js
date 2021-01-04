@@ -15,7 +15,8 @@ const oneLinerJoke = require('one-liner-joke');
         description: "just an example JavaScript service that uses a CommonJS module ",
         uri: '/jsModule',
         secured: false, // optional, default false
-        matchPolicy: "PREFIX" // optional, default PREFIX
+        matchPolicy: "PREFIX", // optional, default PREFIX,
+        modulesReplacements: [ "" ]
     },
 
     handle: (request, response) => {

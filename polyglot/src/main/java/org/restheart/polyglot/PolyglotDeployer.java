@@ -62,9 +62,9 @@ import org.slf4j.LoggerFactory;
 public class PolyglotDeployer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
 
-    private Path pluginsDirectory;
+    private Path pluginsDirectory = null;
 
-    // private String myURI;
+    private PluginsRegistry registry = null;
 
     private static final Map<Path, JavaScriptService> DEPLOYEES = new HashMap<>();
 
@@ -74,11 +74,15 @@ public class PolyglotDeployer implements Initializer {
 
     private MongoClient mclient;
 
-    private PluginsRegistry registry;
-
     @InjectPluginsRegistry
     public void reg(PluginsRegistry registry) {
         this.registry = registry;
+
+        // make sure to invoke this after both @Injected methods are invoked
+        if (pluginsDirectory != null) {
+            deployAll(pluginsDirectory);
+            watch(pluginsDirectory);
+        }
     }
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
@@ -103,10 +107,16 @@ public class PolyglotDeployer implements Initializer {
 
         LOGGER.info("Folder where the CommonJS modules are located: {}", requireCdw.toAbsolutePath());
 
-        // this.myURI = myURI(args);
+        // make sure to invoke this after both @Injected methods are invoked
+        if (registry != null) {
+            deployAll(pluginsDirectory);
+            watch(pluginsDirectory);
+        }
+    }
 
-        deployAll(pluginsDirectory);
-        watch(pluginsDirectory);
+    @InjectMongoClient
+    public void mc(MongoClient mclient) {
+        this.mclient = mclient;
     }
 
     private boolean isRunningOnGraalVM() {
@@ -117,11 +127,6 @@ public class PolyglotDeployer implements Initializer {
         }
 
         return true;
-    }
-
-    @InjectMongoClient
-    public void mc(MongoClient mclient) {
-        this.mclient = mclient;
     }
 
     @Override

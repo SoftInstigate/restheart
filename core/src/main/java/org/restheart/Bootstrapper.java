@@ -110,6 +110,7 @@ import org.restheart.handlers.injectors.XForwardedHeadersInjector;
 import org.restheart.handlers.injectors.XPoweredByInjector;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistryImpl;
+import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
@@ -1031,7 +1032,9 @@ public class Bootstrapper {
      * @param tokenManager
      */
     private static void plugServices() {
-        PluginsRegistryImpl.getInstance().getServices().stream().forEach(srv -> {
+        PluginsRegistryImpl.getInstance().getServices().stream()
+        .filter(srv -> srv.getClass().getDeclaredAnnotation(RegisterPlugin.class) != null)
+        .forEach(srv -> {
             var srvConfArgs = srv.getConfArgs();
 
             String uri;
