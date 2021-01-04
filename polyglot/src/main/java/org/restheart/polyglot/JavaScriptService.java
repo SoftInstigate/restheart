@@ -31,7 +31,6 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
-import org.restheart.plugins.StringService;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JavaScriptService implements StringService {
+public class JavaScriptService extends AbstractJavaScriptService {
     private static final Logger LOGGER = LoggerFactory.getLogger(JavaScriptService.class);
 
     Map<String, String> OPTS = new HashMap<>();
@@ -48,11 +47,6 @@ public class JavaScriptService implements StringService {
     private Engine engine = Engine.create();
     private Source source;
 
-    private final String name;
-    private final String description;
-    private final String uri;
-    private final boolean secured;
-    private final MATCH_POLICY matchPolicy;
     private final String modulesReplacements;
 
     private MongoClient mclient;
@@ -180,26 +174,6 @@ public class JavaScriptService implements StringService {
                 throw new IllegalArgumentException("wrong js plugin, member 'handle' is not a function, " + errorHint);
             }
         }
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getUri() {
-        return uri;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public boolean isSecured() {
-        return secured;
-    }
-
-    public MATCH_POLICY getMatchPolicy() {
-        return matchPolicy;
     }
 
     public String getModulesReplacements() {

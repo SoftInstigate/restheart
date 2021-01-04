@@ -33,12 +33,16 @@ import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 import com.mongodb.MongoClient;
 
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.restheart.ConfigurationException;
 import org.restheart.ConfigurationKeys;
@@ -66,7 +70,7 @@ public class PolyglotDeployer implements Initializer {
 
     private PluginsRegistry registry = null;
 
-    private static final Map<Path, JavaScriptService> DEPLOYEES = new HashMap<>();
+    private static final Map<Path, AbstractJavaScriptService> DEPLOYEES = new HashMap<>();
 
     private WatchService watchService;
 
@@ -122,7 +126,7 @@ public class PolyglotDeployer implements Initializer {
     private boolean isRunningOnGraalVM() {
         try {
             Class.forName("org.graalvm.polyglot.Value");
-        } catch(ClassNotFoundException cnfe) {
+        } catch (ClassNotFoundException cnfe) {
             return false;
         }
 
@@ -153,7 +157,7 @@ public class PolyglotDeployer implements Initializer {
             var watchThread = new Thread(() -> {
                 try {
                     Thread.sleep(1000);
-                } catch(Throwable t) {
+                } catch (Throwable t) {
                     // nothing to do
                 }
 
@@ -271,25 +275,46 @@ public class PolyglotDeployer implements Initializer {
         var language = Source.findLanguage(pluginPath.toFile());
 
         if ("js".equals(language)) {
-            var srv = new JavaScriptService(pluginPath, this.requireCdw, this.mclient);
-            var record = new PluginRecord<Service>(srv.getName(),
-                "description",
-                true,
-                srv.getClass().getName(),
-                srv,
-                new HashMap<>());
+            if (isRunningOnNode()) {
+                var executor = Executors.newSingleThreadExecutor();
+                executor.submit(() -> {
+                    try {
+                        var srvf = NodeService.get(pluginPath, this.requireCdw, this.mclient);
 
-            registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
+                        while (!srvf.isDone()) {
+                            Thread.sleep(300);
+                        }
 
-            DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
+                        var srv = srvf.get();
 
-            LOGGER.info(
-                    ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
-                    srv.getUri(),
-                    srv.getName(),
-                    srv.getDescription(),
-                    srv.isSecured(),
-                    srv.getMatchPolicy());
+                        var record = new PluginRecord<Service>(srv.getName(), "description", true,
+                                srv.getClass().getName(), srv, new HashMap<>());
+
+                        registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
+
+                        DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
+
+                        LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
+                            srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
+                    } catch (IOException | InterruptedException | ExecutionException ex) {
+                        LOGGER.error("Error deployng node plugin {}", pluginPath, ex);
+                        return;
+                    }
+                });
+
+            } else {
+                var srv = new JavaScriptService(pluginPath, this.requireCdw, this.mclient);
+
+                var record = new PluginRecord<Service>(srv.getName(), "description", true, srv.getClass().getName(),
+                        srv, new HashMap<>());
+
+                registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
+
+                DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
+
+                LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
+                    srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
+            }
         }
     }
 
@@ -302,5 +327,9 @@ public class PolyglotDeployer implements Initializer {
             LOGGER.info(ansi().fg(GREEN).a("removed service {} bound to URI {}").reset().toString(),
                     srvToUndeploy.getName(), srvToUndeploy.getUri());
         }
+    }
+
+    private boolean isRunningOnNode() {
+        return NodeQueue.instance().isRunningOnNode();
     }
 }

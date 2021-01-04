@@ -88,7 +88,10 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     private Optional<PluginRecord<TokenManager>> tokenManager;
 
     @SuppressWarnings("rawtypes")
-    private Set<PluginRecord<Service>> services;
+    private Set<PluginRecord<Service>> services = new LinkedHashSet<>();
+    // keep track of service initialization, to allow initializers to add services 
+    // before actual scannit. this is used for intance by PolyglotDeployer
+    private boolean servicesInitialized = false;
 
     private Set<PluginRecord<Initializer>> initializers;
 
@@ -217,9 +220,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     @SuppressWarnings("rawtypes")
     public Set<PluginRecord<Service>> getServices() {
-        if (this.services == null) {
-            this.services = new LinkedHashSet<>();
+        if (!servicesInitialized) {
             this.services.addAll(PluginsFactory.getInstance().services());
+            this.servicesInitialized = true;
         }
 
         return Collections.unmodifiableSet(this.services);
@@ -322,11 +325,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             );
 
             plugPipeline(uri, _srv, new PipelineInfo(SERVICE, uri, mp, srv.getName()));
-
-            // avoid NPE
-            if (this.services == null) {
-                this.services = new LinkedHashSet<>();
-            }
 
             this.services.add(srv);
     }

@@ -1033,7 +1033,9 @@ public class Bootstrapper {
      */
     private static void plugServices() {
         PluginsRegistryImpl.getInstance().getServices().stream()
-        .filter(srv -> srv.getClass().getDeclaredAnnotation(RegisterPlugin.class) != null)
+        // if a service has been added programmatically (for instance, by an initializer)
+        // filter out it (assuming it isn't annotated with @RegisterPlugin)
+        .filter(srv -> srv.getInstance().getClass().getDeclaredAnnotation(RegisterPlugin.class) != null)
         .forEach(srv -> {
             var srvConfArgs = srv.getConfArgs();
 
