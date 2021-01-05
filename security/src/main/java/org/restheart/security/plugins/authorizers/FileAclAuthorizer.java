@@ -83,7 +83,7 @@ public class FileAclAuthorizer
                 aclForRole(role).add(predicate);
 
             } catch (ConfigurationException pce) {
-                LambdaUtils.throwsSneakyExcpetion(pce);
+                LambdaUtils.throwsSneakyException(pce);
             }
         };
     }

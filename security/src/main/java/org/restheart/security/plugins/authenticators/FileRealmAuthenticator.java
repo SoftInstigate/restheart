@@ -93,7 +93,7 @@ public class FileRealmAuthenticator
 
                 this.accounts.put(userid, a);
             } catch (ConfigurationException pce) {
-                LambdaUtils.throwsSneakyExcpetion(pce);
+                LambdaUtils.throwsSneakyException(pce);
             }
         };
     }
