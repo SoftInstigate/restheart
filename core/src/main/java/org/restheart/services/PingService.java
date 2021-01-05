@@ -55,6 +55,8 @@ public class PingService implements ByteArrayService {
     @Override
     public void handle(ByteArrayRequest request,
             ByteArrayResponse response) throws Exception {
+        response.setContentType("text/plain");
+
         if (request.isGet()) {
             response.setStatusCode(HttpStatus.SC_OK);
             response.setContent(msg.getBytes());

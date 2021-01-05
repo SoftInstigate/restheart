@@ -1,15 +1,15 @@
 // this script allows executing RESTHeart with GraalVM node
 // requires GraalVM installed and properly configured
-// example
+// example:
 // $ node --jvm --vm.cp=core/target/restheart.jar core/bin/restheart.js core/etc/test/restheart.yml
 
 const { Worker } = require('worker_threads');
 
 const nqueue = Java.type('org.restheart.polyglot.NodeQueue').instance();
+// set NodeQueue.asRunningOnNode=true to run js plugins with NodeService
 nqueue.setAsRunningOnNode();
 
 const RuntimeException = Java.type('java.lang.RuntimeException');
-const util = require('util');
 const queue = nqueue.queue();
 
 // handle uncaughtException
@@ -22,7 +22,7 @@ function JavaToJSNotifier() {
     this.worker = new Worker(`
         const { workerData, parentPort } = require('worker_threads');
         while (true) {
-          // block the worker waiting for the next notification from Java
+          // block the worker waiting for the next notification from RESTHeart
           var data = workerData.queue.take();
           // notify the main event loop that we got new data
           parentPort.postMessage(data);
@@ -81,5 +81,3 @@ process.argv.shift();
 process.argv.shift();
 
 Bootstrapper.main(process.argv);
-
-//process.stdin.resume();
