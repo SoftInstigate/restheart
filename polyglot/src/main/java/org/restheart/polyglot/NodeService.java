@@ -45,6 +45,8 @@ public class NodeService extends AbstractJavaScriptService {
 
     private MongoClient mclient;
 
+    private int codeHash = 0;
+
     private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {}\n})";
 
     public static Future<NodeService> get(Path scriptPath, Path requireCdw, MongoClient mclient) throws IOException {
@@ -56,6 +58,7 @@ public class NodeService extends AbstractJavaScriptService {
         this.mclient = mclient;
 
         this.source = Files.readString(scriptPath);
+        this.codeHash = this.source.hashCode();
 
         // check plugin definition
 
@@ -170,7 +173,7 @@ public class NodeService extends AbstractJavaScriptService {
      */
     public void handle(StringRequest request, StringResponse response) {
         var out = new LinkedBlockingDeque<Object>();
-        Object[] message = { "handle", this.source, request, response, out };
+        Object[] message = { "handle", this.codeHash, this.source, request, response, out };
 
         try {
             NodeQueue.instance().queue().offer(message);
