@@ -41,8 +41,6 @@ import com.mongodb.MongoClient;
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.restheart.ConfigurationException;
 import org.restheart.ConfigurationKeys;

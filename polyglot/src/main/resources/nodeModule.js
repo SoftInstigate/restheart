@@ -28,13 +28,11 @@ const http = require('http');
             });
 
             res.on('end', () => {
-                console.log(JSON.parse(data));
+                console.log(data);
             });
         }).on("error", (err) => {
             console.log("Error: " + err.message);
         });
-
-        req.end();
 
         const rc = JSON.parse(request.getContent() || '{}');
 
@@ -44,5 +42,7 @@ const http = require('http');
 
         response.setContent(JSON.stringify(body));
         response.setContentTypeAsJson();
+
+        req.end();
     }
 })
