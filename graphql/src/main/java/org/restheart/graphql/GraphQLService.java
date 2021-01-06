@@ -93,8 +93,8 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
                 String appUri = String.join("/", Arrays.copyOfRange(splitPath, 2, splitPath.length));
                 GraphQLApp appDef = cache.get(appUri);
                 GraphQLRequest.init(e, appUri, appDef);
-            }catch (NullPointerException npe){
-                LOGGER.error(npe.getMessage());
+            }catch (GraphQLAppDefNotFoundException notFoundException){
+                LOGGER.error(notFoundException.getMessage());
                 throw new BadRequestException(HttpStatus.SC_NOT_FOUND);
             }
         };

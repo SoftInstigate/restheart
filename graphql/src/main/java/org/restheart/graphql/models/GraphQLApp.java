@@ -86,14 +86,14 @@ public class GraphQLApp {
             return this;
         }
 
-        public GraphQLApp build() throws IllegalAccessException {
+        public GraphQLApp build() throws IllegalStateException {
 
             if (this.descriptor == null){
-                throwIllegalException("descriptor");
+                throw new IllegalStateException("App descriptor must be not null!");
             }
 
             if (this.schema == null){
-                throwIllegalException("schema");
+                throw new IllegalStateException("App schema must be not null");
             }
 
             String schemaWithBsonScalars = BsonScalars.getBsonScalarHeader() + this.schema;
@@ -119,14 +119,6 @@ public class GraphQLApp {
             GraphQLSchema execSchema =  schemaGenerator.makeExecutableSchema(typeRegistry, runtimeWiring);
 
             return new GraphQLApp(this.descriptor, this.schema, this.mappings, execSchema);
-        }
-
-        private static void throwIllegalException(String varName){
-
-            throw  new IllegalStateException(
-                    varName + "could not be null!"
-            );
-
         }
 
     }

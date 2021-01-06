@@ -24,7 +24,7 @@ public class AppDefinitionLoader {
         mongoClient = mclient;
     }
 
-    public static GraphQLApp loadAppDefinition(String appURI) throws NoSuchFieldException, IllegalAccessException {
+    public static GraphQLApp loadAppDefinition(String appURI){
 
         BsonArray conditions = new BsonArray();
         conditions.add(new BsonDocument(APP_URI_FIELD, new BsonString(appURI)));
@@ -35,8 +35,7 @@ public class AppDefinitionLoader {
                 .find(findArg).first();
 
         if (appDefinition != null) {
-            GraphQLApp newApp = GraphQLAppDeserializer.fromBsonDocument(appDefinition);
-            return newApp;
+            return GraphQLAppDeserializer.fromBsonDocument(appDefinition);
         } else {
             return null;
         }

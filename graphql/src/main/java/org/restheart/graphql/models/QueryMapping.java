@@ -6,11 +6,14 @@ import graphql.schema.DataFetchingEnvironment;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.bson.conversions.Bson;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.datafetchers.GQLQueryDataFetcher;
 import org.restheart.utils.JsonUtils;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.regex.Pattern;
 
 
 public class QueryMapping extends FieldMapping{
@@ -102,10 +105,7 @@ public class QueryMapping extends FieldMapping{
                     }
                     case "$fk":{
                         BsonDocument parentDocument = env.getSource();
-                        if(parentDocument == null || parentDocument.get(valueToInterpolate) == null){
-                            throw new QueryVariableNotBoundException("variable" + valueToInterpolate + "not bound");
-                        }
-                        return parentDocument.get(valueToInterpolate);
+                        return getForeignValue(parentDocument, valueToInterpolate);
                     }
                     default:
                         return Assert.assertShouldNeverHappen();
@@ -137,6 +137,37 @@ public class QueryMapping extends FieldMapping{
         return result;
     }
 
+
+    private BsonValue getForeignValue(BsonValue bsonValue, String path) throws QueryVariableNotBoundException {
+
+        String[] splitPath = path.split(Pattern.quote("."));
+        BsonValue current = bsonValue;
+
+        for (int i = 0; i < splitPath.length; i++){
+            if (current.isDocument() && current.asDocument().containsKey(splitPath[i])){
+                current = current.asDocument().get(splitPath[i]);
+            }
+            else if (current.isArray()){
+                try{
+                    Integer index = Integer.parseInt(splitPath[i]);
+                    current = current.asArray().get(index);
+                }catch (NumberFormatException nfe){
+                    BsonArray array = new BsonArray();
+                    for (BsonValue value: current.asArray()){
+                        String[] copy = Arrays.copyOfRange(splitPath, i, splitPath.length);
+                        array.add(getForeignValue(value, String.join(".", copy)));
+                        current = array;
+                    }
+                    break;
+                }catch (IndexOutOfBoundsException ibe){
+                    throw new QueryVariableNotBoundException("index out of bounds in " + splitPath[i-1] + " array");
+                }
+
+            }
+            else throw new QueryVariableNotBoundException ("variable" + splitPath[i] + "not bound");
+        }
+        return current;
+    }
 
 
 

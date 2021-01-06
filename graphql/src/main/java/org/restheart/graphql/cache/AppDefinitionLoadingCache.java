@@ -3,6 +3,7 @@ package org.restheart.graphql.cache;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
+import org.restheart.graphql.GraphQLAppDefNotFoundException;
 import org.restheart.graphql.models.GraphQLApp;
 
 import java.util.Optional;
@@ -18,12 +19,7 @@ public class AppDefinitionLoadingCache {
         this.appLoadingCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE,
                 Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                 (String key) -> {
-                    try {
-                        return AppDefinitionLoader.loadAppDefinition(key);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
-                    return null;
+                    return AppDefinitionLoader.loadAppDefinition(key);
                 });
     }
 
@@ -34,7 +30,7 @@ public class AppDefinitionLoadingCache {
         return instance;
     }
 
-    public GraphQLApp get(String appName){
+    public GraphQLApp get(String appName) throws GraphQLAppDefNotFoundException {
 
         Optional<GraphQLApp> _app = this.appLoadingCache.get(appName);
 
@@ -47,8 +43,8 @@ public class AppDefinitionLoadingCache {
             if(_app != null && _app.isPresent()){
                 return _app.get();
             }
-            throw new NullPointerException(
-                    "Configuration for " + appName + " not found."
+            throw new GraphQLAppDefNotFoundException(
+                    "Valid configuration for " + appName + " not found. "
             );
         }
     }

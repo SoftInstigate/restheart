@@ -9,66 +9,56 @@ import java.util.Map;
 
 public class GraphQLAppDeserializer {
 
-    public static final GraphQLApp fromBsonDocument(BsonDocument appDef) throws IllegalAccessException {
+    public static final GraphQLApp fromBsonDocument(BsonDocument appDef) {
 
-        AppDescriptor descriptor;
-        String schema;
-        Map<String, TypeMapping> mappingsMap;
+        AppDescriptor descriptor = null;
+        String schema = null;
+        Map<String, TypeMapping> mappingsMap = null;
 
-        if( appDef.containsKey("descriptor")){
-            if (appDef.get("descriptor").isDocument()){
-                descriptor = getAppDescriptor(appDef);
+        try{
+            if( appDef.containsKey("descriptor")){
+                if (appDef.get("descriptor").isDocument()){
+                    descriptor = getAppDescriptor(appDef);
+                }
+                else{
+                    throw new IllegalArgumentException(
+                            "'Descriptor' field must be a 'DOCUMENT' but was " + appDef.get("descriptor").getBsonType()
+                    );
+                }
             }
-            else{
-                throw new IllegalArgumentException(
-                        "'Descriptor' field must be a 'DOCUMENT' but was " + appDef.get("descriptor").getBsonType()
-                );
-            }
-        }
-        else{
-            throw new NullPointerException(
-                    "App descriptor not found. GraphQL app must have a descriptor."
-            );
-        }
 
-        if (appDef.containsKey("schema")){
-            if (appDef.get("schema").isString()){
-                schema = appDef.getString("schema").getValue();
+            if (appDef.containsKey("schema")){
+                if (appDef.get("schema").isString()){
+                    schema = appDef.getString("schema").getValue();
+                }
+                else{
+                    throw new IllegalArgumentException(
+                            "'Schema' field must be a 'STRING' but was " + appDef.get("descriptor").getBsonType()
+                    );
+                }
             }
-            else{
-                throw new IllegalArgumentException(
-                        "'Schema' field must be a 'STRING' but was " + appDef.get("descriptor").getBsonType()
-                );
-            }
-        }
-        else{
-            throw new NullPointerException(
-                    "SDL schema not found. GraphQL app must have a schema."
-            );
-        }
 
-        if(appDef.containsKey("mappings")){
-            if (appDef.get("mappings").isDocument()){
-                mappingsMap = getMappings(appDef.getDocument("mappings"));
+            if(appDef.containsKey("mappings")){
+                if (appDef.get("mappings").isDocument()){
+                    mappingsMap = getMappings(appDef.getDocument("mappings"));
+                }
+                else{
+                    throw new IllegalArgumentException(
+                            "'Mappings' field must be a 'DOCUMENT' but was " + appDef.get("mappings").getBsonType()
+                    );
+                }
             }
-            else{
-                throw new IllegalArgumentException(
-                        "'Mappings' field must be a 'DOCUMENT' but was " + appDef.get("mappings").getBsonType()
-                );
-            }
-        }
-        else{
-            throw new NullPointerException(
-                    "Mappings not found. GraphQL app must have mappings."
-            );
-        }
 
-        return GraphQLApp.newBuilder()
-                .appDescriptor(descriptor)
-                .schema(schema)
-                .mappings(mappingsMap)
-                .build();
+            return GraphQLApp.newBuilder()
+                    .appDescriptor(descriptor)
+                    .schema(schema)
+                    .mappings(mappingsMap)
+                    .build();
 
+        }catch (IllegalStateException | IllegalArgumentException e){
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private static AppDescriptor getAppDescriptor(BsonDocument doc){

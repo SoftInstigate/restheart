@@ -1,4 +1,5 @@
 package org.restheart.graphql.scalars;
+import graphql.Assert;
 import graphql.schema.GraphQLScalarType;
 import org.restheart.graphql.scalars.bsonCoercing.*;
 
@@ -27,22 +28,31 @@ public class BsonScalars {
     public static final GraphQLScalarType GraphQLBsonRegularExpression = GraphQLScalarType.newScalar()
             .name("Regex").description("Bson regular expression scalar").coercing(new GraphQLBsonRegexCoercing()).build();
 
-    public static Map<String, GraphQLScalarType> getBsonScalars() throws IllegalAccessException {
-        Field[] scalarFields =  BsonScalars.class.getDeclaredFields();
-        Map<String, GraphQLScalarType> bsonScalars = new HashMap<>();
-        for(Field scalar: scalarFields){
-            bsonScalars.put(scalar.getName(), (GraphQLScalarType) scalar.get(null));
+    public static Map<String, GraphQLScalarType> getBsonScalars(){
+        try{
+            Field[] scalarFields =  BsonScalars.class.getDeclaredFields();
+            Map<String, GraphQLScalarType> bsonScalars = new HashMap<>();
+            for(Field scalar: scalarFields){
+                bsonScalars.put(scalar.getName(), (GraphQLScalarType) scalar.get(null));
+            }
+            return bsonScalars;
+        } catch (IllegalAccessException e){
+            return Assert.assertShouldNeverHappen();
         }
-        return bsonScalars;
+
     }
 
-    public static String getBsonScalarHeader() throws IllegalAccessException {
-        Field[] scalarFields = BsonScalars.class.getDeclaredFields();
-        String header = "";
-        for (Field scalar: scalarFields){
-            header += "scalar " + ((GraphQLScalarType) scalar.get(null)).getName() +" ";
+    public static String getBsonScalarHeader(){
+        try{
+            Field[] scalarFields = BsonScalars.class.getDeclaredFields();
+            String header = "";
+            for (Field scalar: scalarFields){
+                header += "scalar " + ((GraphQLScalarType) scalar.get(null)).getName() +" ";
+            }
+            return header;
+        } catch (IllegalAccessException e){
+            return Assert.assertShouldNeverHappen();
         }
-        return header;
     }
 
 

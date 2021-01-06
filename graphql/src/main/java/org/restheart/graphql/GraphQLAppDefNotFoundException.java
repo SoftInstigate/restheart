@@ -1,4 +1,15 @@
 package org.restheart.graphql;
 
-public class GraphQLAppDefNotFoundException {
+public class GraphQLAppDefNotFoundException extends Exception {
+
+
+    public GraphQLAppDefNotFoundException() {
+        super();
+    }
+
+
+    public GraphQLAppDefNotFoundException(String message) {
+        super(message);
+    }
+
 }
