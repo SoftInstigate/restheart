@@ -132,9 +132,9 @@ for ALIAS in ${!certs[@]}
 do
     FNAME="${certs[$ALIAS]}".pem.txt
     curl https://letsencrypt.org/certs/${FNAME} > ${archive}/${FNAME}
-    keytool -delete -alias $ALIAS -keystore ${KEYSTORE} -storepass ${password} > $(pwd)/errors.txt || true
+    keytool -delete -alias $ALIAS -keystore ${KEYSTORE} -storepass ${password} || true
     keytool -importcert -keystore ${KEYSTORE} -trustcacerts -storepass ${password} -noprompt  -alias $ALIAS -file "${archive}/${FNAME}"
 done
-rm -v "${archive}"/*.pem.txt
+rm -v "${archive}"/*.pem.txt > /dev/null
 
-msg "${GREEN}Done.${NOFORMAT}"
+msg "${GREEN}Done: ${KEYSTORE}${NOFORMAT}"
