@@ -9,7 +9,7 @@ const http = require('http');
         matchPolicy: "PREFIX" // optional, default PREFIX
     },
 
-    handle: (request, response) => {
+    handle: (request, response) => new Promise((resolve, reject) => {
         // LOGGER.debug('request {}', request.getContent());
         const reqOpts = {
             hostname: 'httpbin.org',
@@ -18,33 +18,31 @@ const http = require('http');
             method: 'GET'
         }
 
-        return new Promise((resolve, reject) => {
-            const req = http.request(reqOpts, res => {
-                let data = '';
+        const req = http.request(reqOpts, res => {
+            let data = '';
 
-                res.on('data', d => {
-                    data += d;
-                });
+            res.on('data', d => {
+                data += d;
+            });
 
-                res.on('end', () => {
-                    const rc = JSON.parse(request.getContent() || '{}');
+            res.on('end', () => {
+                const rc = JSON.parse(request.getContent() || '{}');
 
-                    let body = {
-                        msg: `Hello ${rc.name || 'World'}`,
-                        anything: JSON.parse(data)
-                    };
+                let body = {
+                    msg: `Hello ${rc.name || 'World'}`,
+                    anything: JSON.parse(data)
+                };
 
-                    response.setContent(JSON.stringify(body));
-                    response.setContentTypeAsJson();
+                response.setContent(JSON.stringify(body));
+                response.setContentTypeAsJson();
 
-                    console.log("resolving");
-                    resolve();
-                });
-            })
+                console.log("resolving");
+                resolve();
+            });
+        })
 
-            req.on("error", (err) => reject(err));
+        req.on("error", (err) => reject(err));
 
-            req.end();
-        });
-    }
+        req.end();
+    })
 })

@@ -45,14 +45,7 @@ public interface ConfigurablePlugin extends Plugin {
                     + argKey
                     + "'");
         } else {
-            try {
-                return (V) args.get(argKey);
-            } catch (ClassCastException cce) {
-                throw new ConfigurationException(
-                        "Wrong type for argument '"
-                        + argKey + "'",
-                        cce);
-            }
+            return (V) args.get(argKey);
         }
     }
 }
