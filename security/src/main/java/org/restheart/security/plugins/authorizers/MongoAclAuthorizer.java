@@ -70,17 +70,14 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(name = "mongoAclAuthorizer",
         description = "authorizes requests against acl stored in mongodb")
 public class MongoAclAuthorizer implements Authorizer {
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(MongoAclAuthorizer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoAclAuthorizer.class);
 
     public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
     public static final String X_FORWARDED_ROLE = "RESTHeart";
 
-    public static final AttachmentKey<FilterPredicate> MATCHING_ACL_PREDICATE = AttachmentKey.create(FilterPredicate.class);
+    public static final AttachmentKey<AclPermission> MATCHING_ACL_PERMISSION = AttachmentKey.create(AclPermission.class);
 
     public static final String ACL_COLLECTION_NAME = "acl";
-
-    public static String MREST_SUPERUSER_ROLE = "__MREST_SUPERUSER";
 
     public static final String $UNAUTHENTICATED = "$unauthenticated";
 
@@ -92,7 +89,7 @@ public class MongoAclAuthorizer implements Authorizer {
     private Integer cacheTTL = 60 * 1_000; // 1 minute
     private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
 
-    private LoadingCache<String, LinkedHashSet<FilterPredicate>> acl = null;
+    private LoadingCache<String, LinkedHashSet<AclPermission>> acl = null;
 
     private MongoClient mclient;
 
@@ -127,7 +124,7 @@ public class MongoAclAuthorizer implements Authorizer {
                         this.cacheSize,
                         this.cacheExpirePolicy,
                         this.cacheTTL, (String role) -> {
-                            return this.findRolePredicates(role);
+                            return this.findRolePermissions(role);
                         });
             }
         }
@@ -180,31 +177,31 @@ public class MongoAclAuthorizer implements Authorizer {
         // see https://issues.jboss.org/browse/UNDERTOW-1317
         exchange.setRelativePath(exchange.getRequestPath());
 
-        final ArrayList<FilterPredicate> predicates = new ArrayList<>();
+        final ArrayList<AclPermission> permissions = new ArrayList<>();
 
         // debug roles and predicates evaluation order
         if (LOGGER.isDebugEnabled()) {
             roles(exchange).forEachOrdered(role
                     -> {
-                ArrayList<FilterPredicate> matched = Lists.newArrayListWithCapacity(1);
+                ArrayList<AclPermission> matched = Lists.newArrayListWithCapacity(1);
 
-                predicatesForRole(role)
-                        .stream().anyMatch(predicate -> {
-                            var resolved = predicate.resolve(exchange);
+                rolePermissions(role)
+                        .stream().anyMatch(permission -> {
+                            var resolved = permission.resolve(exchange);
 
                             String marker;
 
-                            // to highlight the effective predicate
+                            // to highlight the effective permission
                             if (resolved && matched.isEmpty()) {
-                                matched.add(predicate);
+                                matched.add(permission);
                                 marker = "<--";
                             } else {
                                 marker = "";
                             }
 
-                            LOGGER.debug("role {}, predicate {}, resolve {} {}",
+                            LOGGER.debug("role {}, permission id {}, resolve {} {}",
                                     role,
-                                    predicate.getId(),
+                                    permission.getId(),
                                     resolved,
                                     marker);
 
@@ -213,25 +210,25 @@ public class MongoAclAuthorizer implements Authorizer {
             });
         }
 
-        // the applicable predicate is the ones that
+        // the applicable permission is the ones that
         // resolves the exchange
         roles(exchange)
                 .forEachOrdered(role
-                        -> predicatesForRole(role)
+                        -> rolePermissions(role)
                         .stream()
                         .anyMatch(r -> {
                             if (r.resolve(exchange)) {
-                                predicates.add(r);
+                                permissions.add(r);
                                 return true;
                             } else {
                                 return false;
                             }
                         }));
 
-        if (predicates.isEmpty()) {
+        if (permissions.isEmpty()) {
             return false;
         } else {
-            exchange.putAttachment(MATCHING_ACL_PREDICATE, predicates.get(0));
+            exchange.putAttachment(MATCHING_ACL_PERMISSION, permissions.get(0));
             return true;
         }
     }
@@ -246,7 +243,7 @@ public class MongoAclAuthorizer implements Authorizer {
 
         var exchange = request.getExchange();
 
-        var ps = getRoleFilterPredicates($UNAUTHENTICATED);
+        var ps = rolePermissions($UNAUTHENTICATED);
 
         if (ps != null) {
             // this fixes undertow bug 377
@@ -270,16 +267,6 @@ public class MongoAclAuthorizer implements Authorizer {
         return account(exchange).getRoles().stream();
     }
 
-    private LinkedHashSet<FilterPredicate> predicatesForRole(String role) {
-        LinkedHashSet<FilterPredicate> predicates = getRoleFilterPredicates(role);
-
-        if (predicates == null) {
-            return Sets.newLinkedHashSet();
-        } else {
-            return predicates;
-        }
-    }
-
     private Account account(HttpServerExchange exchange) {
         final Account account = exchange.getSecurityContext().getAuthenticatedAccount();
         return isAuthenticated(account) ? account : new NotAuthenticatedAccount();
@@ -293,17 +280,17 @@ public class MongoAclAuthorizer implements Authorizer {
      * @param role
      * @return the acl
      */
-    public LinkedHashSet<FilterPredicate> getRoleFilterPredicates(String role) {
+    public LinkedHashSet<AclPermission> rolePermissions(String role) {
         if (this.cacheEnabled) {
-            var _roleFilterPredicates = this.acl.getLoading(role);
+            var _rolePermissions = this.acl.getLoading(role);
 
-            if (_roleFilterPredicates != null && _roleFilterPredicates.isPresent()) {
-                return _roleFilterPredicates.get();
+            if (_rolePermissions != null && _rolePermissions.isPresent()) {
+                return _rolePermissions.get();
             } else {
                 return null;
             }
         } else {
-            return findRolePredicates(role);
+            return findRolePermissions(role);
         }
     }
 
@@ -328,51 +315,49 @@ public class MongoAclAuthorizer implements Authorizer {
     private static final BsonDocument PROJECTION = BsonDocument.parse("{\"_id\":1,\"roles\":1,\"predicate\":1,\"writeFilter\":1,\"readFilter\":1,\"priority\":1}");
     private static final BsonDocument SORT = BsonDocument.parse("{\"priority\":-1,\"_id\":-1}");
 
-    private LinkedHashSet<FilterPredicate> findRolePredicates(final String role) {
+    private LinkedHashSet<AclPermission> findRolePermissions(final String role) {
         if (this.mclient == null) {
             LOGGER.error("Cannot find acl: mongo service is not enabled.");
             return null;
         } else {
-            var predicates = this.mclient.getDatabase(this.aclDb)
+            var permissions = this.mclient.getDatabase(this.aclDb)
                     .getCollection(this.aclCollection, BsonDocument.class)
                     .find(eq("roles", role))
                     .projection(PROJECTION)
                     .sort(SORT);
 
-            if (predicates == null) {
+            if (permissions == null) {
                 return new LinkedHashSet<>();
             } else {
-                LinkedHashSet<FilterPredicate> ret = Sets.newLinkedHashSet();
+                LinkedHashSet<AclPermission> ret = Sets.newLinkedHashSet();
 
-                StreamSupport.stream(predicates.spliterator(), true)
-                        .filter(predicateElem -> predicateElem.isDocument())
-                        .map(predicateElem -> predicateElem.asDocument())
-                        .filter(predicateDocument -> {
-                            // filter out illegal predicates
+                StreamSupport.stream(permissions.spliterator(), true)
+                        .filter(permissionElem -> permissionElem.isDocument())
+                        .map(permissionElem -> permissionElem.asDocument())
+                        .filter(permissionDocument -> {
+                            // filter out illegal permissions
                             try {
-                                new FilterPredicate(predicateDocument);
+                                new AclPermission(permissionDocument);
                                 return true;
                             } catch (IllegalArgumentException iae) {
-                                LOGGER.warn("invalid predicate _id={}", predicateDocument.get("_id"));
+                                LOGGER.warn("invalid permission _id={}", permissionDocument.get("_id"));
                                 return false;
                             }
                         })
-                        .map(predicateDocument -> new FilterPredicate(predicateDocument))
-                        .forEachOrdered(p -> {
-                            ret.add(p);
-                        });
+                        .map(permissionDocument -> new AclPermission(permissionDocument))
+                        .forEachOrdered(p -> ret.add(p));
 
                 return ret;
             }
         }
     }
-    
+
     public boolean checkAclCollection() {
         if (this.mclient == null) {
             LOGGER.error("Cannot check acl collection: mongo service is not enabled.");
             return false;
         }
-        
+
         try {
             var mu = new MongoUtils(this.mclient);
 
@@ -387,7 +372,7 @@ public class MongoAclAuthorizer implements Authorizer {
             LOGGER.error("Error creating acl collection", t);
             return false;
         }
-        
+
         return true;
     }
 }

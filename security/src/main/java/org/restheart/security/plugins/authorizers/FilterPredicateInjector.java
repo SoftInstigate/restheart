@@ -70,7 +70,7 @@ public class FilterPredicateInjector implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         var exchange = request.getExchange();
-        var predicate = FilterPredicate.from(exchange);
+        var predicate = AclPermission.from(exchange);
 
         if (request.isGet()
                 && predicate.getReadFilter() != null) {
@@ -92,7 +92,7 @@ public class FilterPredicateInjector implements MongoInterceptor {
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return enabled
                 && request.isHandledBy("mongo")
-                && FilterPredicate.from(request.getExchange()) != null;
+                && AclPermission.from(request.getExchange()) != null;
     }
 
     private void addFilter(final MongoRequest request, final BsonDocument filter) {
@@ -102,7 +102,7 @@ public class FilterPredicateInjector implements MongoInterceptor {
 
         // this resolve the filter against the current exchange
         // eg {'username':'%u'} => {'username':'uji'}
-        var resolvedFilter = FilterPredicate
+        var resolvedFilter = AclPermission
                 .interpolateFilterVars(request.getExchange(), filter);
 
         if (request.getFilter() == null) {

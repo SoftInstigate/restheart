@@ -21,27 +21,32 @@
 package org.restheart.security.plugins.authorizers;
 
 import static com.google.common.collect.Sets.newHashSet;
-import io.undertow.predicate.Predicate;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
-import io.undertow.predicate.PredicateParser;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import java.io.FileNotFoundException;
 import java.security.Principal;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
-import org.restheart.utils.LambdaUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -53,8 +58,11 @@ import org.restheart.utils.LambdaUtils;
 public class FileAclAuthorizer
         extends FileConfigurablePlugin
         implements Authorizer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileAclAuthorizer.class);
 
-    private final HashMap<String, Set<Predicate>> acl = new HashMap<>();
+    public static final String $UNAUTHENTICATED = "$unauthenticated";
+
+    private final Set<AclPermission> permissions = new LinkedHashSet<>();
 
     @InjectConfiguration
     public void init(Map<String, Object> confArgs)
@@ -64,26 +72,11 @@ public class FileAclAuthorizer
 
     @Override
     public Consumer<? super Map<String, Object>> consumeConfiguration() {
-        return u -> {
+        return p -> {
             try {
-                String role = argValue(u, ("role"));
-                String _predicate = argValue(u, "predicate");
-
-                Predicate predicate = null;
-
-                try {
-                    predicate = PredicateParser.parse(
-                            _predicate,
-                            this.getClass().getClassLoader());
-                } catch (Throwable t) {
-                    throw new ConfigurationException("wrong configuration: "
-                            + "Invalid predicate " + _predicate, t);
-                }
-
-                aclForRole(role).add(predicate);
-
+                this.permissions.add(new AclPermission(p));
             } catch (ConfigurationException pce) {
-                LambdaUtils.throwsSneakyException(pce);
+                LOGGER.error("Wrong permission", pce);
             }
         };
     }
@@ -94,9 +87,10 @@ public class FileAclAuthorizer
      */
     @Override
     @SuppressWarnings("rawtypes")
-    public boolean isAllowed(final Request request) {
-        if (noAclDefined()) {
-            return false;
+    public boolean isAllowed(Request request) {
+        // always allow OPTIONS requests
+        if (request.isOptions()) {
+            return true;
         }
 
         var exchange = request.getExchange();
@@ -108,42 +102,91 @@ public class FileAclAuthorizer
         }
 
         // Predicate.resolve() uses getRelativePath() that is the path relative to
-        // the last PathHandler We want to check against the full request path
+        // the last PathHandler we want to check against the full request path
         // see https://issues.jboss.org/browse/UNDERTOW-1317
-        request.getExchange().setRelativePath(request.getExchange().getRequestPath());
+        exchange.setRelativePath(exchange.getRequestPath());
 
-        return roles(exchange).anyMatch(role -> aclForRole(role)
-                .stream()
-                .anyMatch(p -> p.resolve(exchange)));
+        final ArrayList<AclPermission> machedPermissions = new ArrayList<>();
+
+        // debug roles and permissions evaluation order
+        if (LOGGER.isDebugEnabled()) {
+            roles(exchange).forEachOrdered(role
+                    -> {
+                ArrayList<AclPermission> matched = Lists.newArrayListWithCapacity(1);
+
+                rolePermissions(role)
+                        .stream().anyMatch(permission -> {
+                            var resolved = permission.resolve(exchange);
+
+                            String marker;
+
+                            // to highlight the effective permission
+                            if (resolved && matched.isEmpty()) {
+                                matched.add(permission);
+                                marker = "<--";
+                            } else {
+                                marker = "";
+                            }
+
+                            LOGGER.debug("role {}, permission [{},{}], resolve {} {}",
+                                    role,
+                                    permission.getRoles(),
+                                    permission.getPredicate(),
+                                    resolved,
+                                    marker);
+
+                            return false;
+                        });
+            });
+        }
+
+        // the applicable permission is the ones that
+        // resolves the exchange
+        roles(exchange)
+                .forEachOrdered(role -> rolePermissions(role)
+                        .stream()
+                        .anyMatch(r -> {
+                            if (r.resolve(exchange)) {
+                                machedPermissions.add(r);
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        }));
+
+        if (machedPermissions.isEmpty()) {
+            return false;
+        } else {
+            exchange.putAttachment(MongoAclAuthorizer.MATCHING_ACL_PERMISSION, machedPermissions.get(0));
+            return true;
+        }
     }
 
     @Override
     @SuppressWarnings("rawtypes")
-    public boolean isAuthenticationRequired(final Request request) {
+    public boolean isAuthenticationRequired(Request request) {
         // don't require authentication for OPTIONS requests
         if (request.isOptions()) {
             return false;
         }
 
-        if (getAcl() == null) {
-            return true;
-        }
+        var exchange = request.getExchange();
 
-        Set<Predicate> ps = getAcl().get("$unauthenticated");
+        var ps = rolePermissions($UNAUTHENTICATED);
 
         if (ps != null) {
-            var exchange = request.getExchange();
             // this fixes undertow bug 377
             // https://issues.jboss.org/browse/UNDERTOW-377
             if (exchange.getAttachment(PREDICATE_CONTEXT) == null) {
                 exchange.putAttachment(PREDICATE_CONTEXT, new TreeMap<>());
             }
 
-            // Predicate.resolve() uses getRelativePath() that is the path 
-            // relative to the last PathHandler We want to check against the full 
-            // request path see https://issues.jboss.org/browse/UNDERTOW-1317
-            exchange.setRelativePath(exchange.getRequestPath());
-            return !ps.stream().anyMatch(p -> p.resolve(exchange));
+            // Predicate.resolve() uses getRelativePath() that is the path relative to
+            // the last PathHandler we want to check against the full request path
+            // see https://issues.jboss.org/browse/UNDERTOW-1317
+            exchange.setRelativePath(request.getPath());
+
+            return !ps.stream().anyMatch(r -> r.resolve(exchange));
         } else {
             return true;
         }
@@ -153,18 +196,15 @@ public class FileAclAuthorizer
         return account(exchange).getRoles().stream();
     }
 
-    private boolean noAclDefined() {
-        return getAcl() == null;
-    }
+    private LinkedHashSet<AclPermission> rolePermissions(final String role) {
+        LinkedHashSet<AclPermission> ret = Sets.newLinkedHashSet();
 
-    private Set<Predicate> aclForRole(String role) {
-        Set<Predicate> predicates = getAcl().get(role);
-        if (predicates == null) {
-            predicates = newHashSet();
-            getAcl().put(role, predicates);
-        }
+        StreamSupport.stream(this.permissions.spliterator(), true)
+                .filter(p -> p.getRoles() != null && p.getRoles().contains(role))
+                .sorted(Comparator.comparingInt(AclPermission::getPriority))
+                .forEachOrdered(p -> ret.add(p));
 
-        return predicates;
+        return ret;
     }
 
     private Account account(HttpServerExchange exchange) {
@@ -175,13 +215,6 @@ public class FileAclAuthorizer
 
     private boolean isAuthenticated(Account authenticatedAccount) {
         return authenticatedAccount != null;
-    }
-
-    /**
-     * @return the acl
-     */
-    public HashMap<String, Set<Predicate>> getAcl() {
-        return acl;
     }
 
     private static class NotAuthenticatedAccount implements Account {

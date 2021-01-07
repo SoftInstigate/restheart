@@ -3,32 +3,42 @@
 permissions:
   - role: admin
     predicate: path-prefix[path="/"]
+    priority: 0
 
   - role: $unauthenticated
     predicate: path-prefix[path="/testdb/refcoll1"] and method[value="GET"]
+    priority: 0
 
   - role: $unauthenticated
     predicate: path-prefix[path="/test-change-streams/coll/_streams"]
+    priority: 0
 
   - role: poweruser
     predicate: path-prefix[path="/testdb"] and method[value="GET"]
+    priority: 0
 
   - role: poweruser
     predicate: path-prefix[path="/testmytmpdb"]
+    priority: 0
 
   - role: user
     predicate: path-prefix[path="/testdb/refcoll2"] and method[value="GET"]
+    priority: 0
 
   - role: user
     predicate: path[path="/testdb/refcoll2"] and method[value="GET"]
+    priority: 0
 
   - role: user
     predicate: (path[path="/testtmpdb2"] or path[path="/testtmpdb3"]) and method[value="PUT"]
+    priority: 0
 
   # This to check the path-template predicate
   - role: user
     predicate: path-template[value="/testtmpdb2/{username}"] and equals[%u, "${username}"]
+    priority: 0
 
   # This to check the regex predicate
   - role: user
     predicate: regex[pattern="/testtmpdb3/(.*?)", value="%R", full-match=true] and equals[%u, "${1}"]
+    priority: 0

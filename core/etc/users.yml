@@ -7,4 +7,4 @@ users:
 
     - userid: admin
       password: secret
-      roles: [user, admin]
+      roles: [admin]
