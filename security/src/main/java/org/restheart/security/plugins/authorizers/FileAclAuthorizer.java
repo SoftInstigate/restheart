@@ -27,6 +27,7 @@ import io.undertow.server.HttpServerExchange;
 import java.io.FileNotFoundException;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -68,6 +69,12 @@ public class FileAclAuthorizer
     public void init(Map<String, Object> confArgs)
             throws FileNotFoundException, ConfigurationException {
         init(confArgs, "permissions");
+
+        // reverse oreder, the first permission in the acl.yml must be on top
+        var list = new ArrayList<AclPermission>(this.permissions);
+        Collections.sort(list, Collections.reverseOrder());
+        this.permissions.clear();
+        list.stream().forEach(permissions::add);
     }
 
     @Override

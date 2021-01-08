@@ -23,6 +23,8 @@ package org.restheart.security.plugins.authorizers;
 
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.google.common.collect.Maps;
@@ -76,12 +78,12 @@ public class MongoPermissions {
             return new MongoPermissions();
         } else {
             return new MongoPermissions(
-                parseArg(args, "whitelistManagementRequests"),
-                parseArg(args, "whitelistBulkPatch"),
-                parseArg(args, "whitelistBulkDelete"),
-                parseArg(args, "allowAllWriteModes"),
-                null,
-                null,
+                parseBooleanArg(args, "whitelistManagementRequests"),
+                parseBooleanArg(args, "whitelistBulkPatch"),
+                parseBooleanArg(args, "whitelistBulkDelete"),
+                parseBooleanArg(args, "allowAllWriteModes"),
+                parseSetArg(args, "hiddenProps"),
+                parseSetArg(args, "protectedProps"),
                 null);
         }
     }
@@ -92,17 +94,17 @@ public class MongoPermissions {
             return new MongoPermissions();
         } else {
             return new MongoPermissions(
-                parseArg(args, "whitelistManagementRequests"),
-                parseArg(args, "whitelistBulkPatch"),
-                parseArg(args, "whitelistBulkDelete"),
-                parseArg(args, "allowAllWriteModes"),
-                null,
-                null,
+                parseBooleanArg(args, "whitelistManagementRequests"),
+                parseBooleanArg(args, "whitelistBulkPatch"),
+                parseBooleanArg(args, "whitelistBulkDelete"),
+                parseBooleanArg(args, "allowAllWriteModes"),
+                parseSetArg(args, "hiddenProps"),
+                parseSetArg(args, "protectedProps"),
                 null);
         }
     }
 
-    private static boolean parseArg(Map<String, Object> args, String key) throws ConfigurationException {
+    private static boolean parseBooleanArg(Map<String, Object> args, String key) throws ConfigurationException {
         if (args.containsKey(key)) {
             Object _value = argValue(args, key);
 
@@ -116,7 +118,31 @@ public class MongoPermissions {
         }
     }
 
-    private static boolean parseArg(BsonDocument args, String key) throws ConfigurationException {
+    private static Set<String> parseSetArg(Map<String, Object> args, String key) throws ConfigurationException {
+        if (args.containsKey(key)) {
+            Object _value = argValue(args, key);
+
+            if (_value != null && _value instanceof List<?>) {
+                HashSet<String> ret = Sets.newHashSet();;
+                List<?> _set = (List<?>) _value;
+
+                for (var _entry: _set) {
+                    if (_entry instanceof String) {
+                        ret.add((String)_entry);
+                    } else {
+                        throw new ConfigurationException("Wrong permission: mongo." + key + " must be a list of strings");
+                    }
+                }
+                return ret;
+            } else {
+                throw new ConfigurationException("Wrong permission: mongo." + key + " must be a list of strings");
+            }
+        } else {
+            return Sets.newHashSet();
+        }
+    }
+
+    private static boolean parseBooleanArg(BsonDocument args, String key) throws ConfigurationException {
         if (args.containsKey(key)) {
             var _value = args.get(key);
 
@@ -127,6 +153,30 @@ public class MongoPermissions {
             }
         } else {
             return true;
+        }
+    }
+
+    private static Set<String> parseSetArg(BsonDocument args, String key) throws ConfigurationException {
+        if (args.containsKey(key)) {
+            var _value = args.get(key);
+
+            if (_value != null && _value.isArray()) {
+                HashSet<String> ret = Sets.newHashSet();;
+                var _array = _value.asArray();
+
+                for (var _entry: _array) {
+                    if (_entry != null && _entry.isString()) {
+                        ret.add(_entry.asString().getValue());
+                    } else {
+                        throw new ConfigurationException("Wrong permission: mongo." + key + " must be an array of strings");
+                    }
+                }
+                return ret;
+            } else {
+                throw new ConfigurationException("Wrong permission: mongo." + key + " must be an array of strings");
+            }
+        } else {
+            return Sets.newHashSet();
         }
     }
 
