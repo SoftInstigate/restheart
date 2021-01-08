@@ -302,7 +302,7 @@ public class MongoAclAuthorizer implements Authorizer {
         }
     }
 
-    private static final BsonDocument PROJECTION = BsonDocument.parse("{\"_id\":1,\"roles\":1,\"predicate\":1,\"writeFilter\":1,\"readFilter\":1,\"priority\":1}");
+    private static final BsonDocument PROJECTION = BsonDocument.parse("{\"_id\":1,\"roles\":1,\"predicate\":1,\"writeFilter\":1,\"readFilter\":1,\"priority\":1,\"mongo\":1}");
     private static final BsonDocument SORT = BsonDocument.parse("{\"priority\":-1,\"_id\":-1}");
 
     private LinkedHashSet<AclPermission> findRolePermissions(final String role) {

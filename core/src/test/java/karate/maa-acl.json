@@ -1,37 +1,41 @@
 [{
     "predicate": "path[/test-db/test-authorization] and method[GET]",
     "roles": ["$unauthenticated"],
-    "writeFilter": null,
     "_id": {
         "$oid": "5c3cb121681f64334c98a6df"
     },
     "priority": 1,
-    "readFilter": { "status": { "_$eq": "public"} }
+    "readFilter": { "status": { "_$eq": "public"} },
+    "writeFilter": null
 }, {
     "predicate": "path-prefix[/test-db/test-authorization]",
     "roles": ["full"],
-    "writeFilter": null,
     "_id": {
         "$oid": "5c3cb100681f64334c98a6de"
     },
     "priority": 1,
-    "readFilter": null
+    "readFilter": null,
+    "writeFilter": null
 }, {
     "predicate": "path-prefix[/test-db/test-authorization]",
     "roles": ["filtered"],
-    "writeFilter": { "status": { "_$eq": "public"} },
     "_id": {
         "$oid": "5c3cab6cc9e77c0006e25281"
     },
     "priority": 2,
-    "readFilter": { "status": { "_$eq": "public"} }
+    "readFilter": { "status": { "_$eq": "public"} },
+    "writeFilter": { "status": { "_$eq": "public"} },
+    "mongo": {
+        "allowAllWriteModes": true,
+        "whitelistBulkPatch": true
+    }
 },{
     "predicate": "path-prefix[/test-db/test-authorization] and method[GET]",
     "roles": ["filtered"],
-    "writeFilter": null,
     "_id": {
         "$oid": "5d920e5305b8d476cbcd75cf"
     },
     "priority": 1,
-    "readFilter": null
+    "readFilter": null,
+    "writeFilter": null
 }]

@@ -18,16 +18,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-/*
- * Copyright SoftInstigate srl. All Rights Reserved.
- *
- *
- * The copyright to the computer program(s) herein is the property of
- * SoftInstigate srl, Italy. The program(s) may be used and/or copied only
- * with the written permission of SoftInstigate srl or in accordance with the
- * terms and conditions stipulated in the agreement/contract under which the
- * program(s) have been supplied. This copyright notice must not be removed.
- */
 package org.restheart.security.plugins.authorizers;
 
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
@@ -73,16 +63,22 @@ public class AclPermission {
     private final BsonDocument writeFilter;
     private final int priority;
 
+    // mongo permissions
+    private final MongoPermissions mongoPermissions;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(AclPermission.class);
 
     AclPermission(BsonValue _id, Set<String> roles, Predicate predicate, BsonDocument readFilter,
-            BsonDocument writeFilter, int priority) {
+            BsonDocument writeFilter, BsonDocument mongoPermissions, int priority) {
         this._id = _id;
         this.roles = roles;
         this.predicate = predicate;
         this.readFilter = readFilter;
         this.writeFilter = writeFilter;
         this.priority = priority;
+        this.mongoPermissions = mongoPermissions == null
+            ? new MongoPermissions()
+            : MongoPermissions.from(mongoPermissions);
     }
 
     /**
@@ -96,11 +92,11 @@ public class AclPermission {
         var _roles = doc.get("roles");
 
         if (_roles == null || !_roles.isArray() || _roles.asArray().isEmpty()) {
-            throw new ConfigurationException("roles must be an not empty array of strings");
+            throw new ConfigurationException("Wrong permission: roles must be an not empty array of strings");
         }
 
         if (StreamSupport.stream(_roles.asArray().spliterator(), true).anyMatch(el -> el == null || !el.isString())) {
-            throw new ConfigurationException("roles must be an not empty array of strings");
+            throw new ConfigurationException("Wrong permission: roles must be an not empty array of strings");
         }
 
         this.roles = StreamSupport.stream(_roles.asArray().spliterator(), true).map(role -> role.asString())
@@ -109,19 +105,19 @@ public class AclPermission {
         var _predicate = doc.get("predicate");
 
         if (_predicate == null || !_predicate.isString()) {
-            throw new ConfigurationException("_predicate must be a string");
+            throw new ConfigurationException("Wrong permission: predicate must be a string");
         }
 
         try {
             this.predicate = PredicateParser.parse(_predicate.asString().getValue(), this.getClass().getClassLoader());
         } catch (Throwable t) {
-            throw new ConfigurationException("wrong predicate " + _predicate, t);
+            throw new ConfigurationException("Wrong permission: invalid predicate " + _predicate, t);
         }
 
         var _readFilter = doc.get("readFilter");
 
         if (!(_readFilter == null || _readFilter.isNull()) && !_readFilter.isDocument()) {
-            throw new ConfigurationException("readFilter must be a JSON object or null");
+            throw new ConfigurationException("Wrong permission: readFilter must be a JSON object or null");
         }
 
         this.readFilter = _readFilter == null ? null
@@ -130,7 +126,7 @@ public class AclPermission {
         var _writeFilter = doc.get("writeFilter");
 
         if (!(_writeFilter == null || _writeFilter.isNull()) && !_writeFilter.isDocument()) {
-            throw new ConfigurationException("writeFilter must be a JSON object or null");
+            throw new ConfigurationException("Wrong permission: writeFilter must be a JSON object or null");
         }
 
         this.writeFilter = _writeFilter == null ? null
@@ -141,9 +137,23 @@ public class AclPermission {
         if (_priority == null || _priority.isNull() || !_priority.isNumber()) {
             this.priority = Integer.MAX_VALUE; // very low priority
 
-            LOGGER.warn("predicate {} doesn't have priority; setting it to 0", this._id);
+            LOGGER.warn("predicate {} doesn't have priority; setting it to very low priority", this._id);
         } else {
             this.priority = _priority.asNumber().intValue();
+        }
+
+        if (this._id.isObjectId() && this._id.asObjectId().getValue().toHexString().equals("5c3cab6cc9e77c0006e25281")) {
+            LOGGER.debug(doc.toJson());
+        }
+
+        var mongo = doc.get("mongo");
+
+         if (mongo == null) {
+            this.mongoPermissions = new MongoPermissions();
+        } else if (mongo.isDocument()){
+            this.mongoPermissions = MongoPermissions.from(mongo.asDocument());
+        } else {
+            throw new ConfigurationException("Wrong permission: mongo must be a JSON object or null");
         }
     }
 
@@ -231,8 +241,16 @@ public class AclPermission {
         if (args.containsKey("priority")) {
             this.priority = argValue(args, "priority");
         } else {
-            LOGGER.warn("Predicate {} {} doesn't have priority; setting it to 0", this.roles, this.predicate);
+            LOGGER.warn("Predicate {} {} doesn't have priority; setting it to very low priority", this.roles,
+                    this.predicate);
             this.priority = Integer.MAX_VALUE; // very low priority
+        }
+
+        if (args.containsKey("mongo")) {
+            Map<String, Object> mongoArgs = argValue(args, "mongo");
+            this.mongoPermissions = MongoPermissions.from(mongoArgs);
+        } else {
+            this.mongoPermissions = new MongoPermissions();
         }
     }
 
@@ -279,6 +297,14 @@ public class AclPermission {
      */
     public BsonValue getId() {
         return _id;
+    }
+
+    /**
+     *
+     * @return the mongoPermissions
+     */
+    public MongoPermissions getMongoPermissions() {
+        return this.mongoPermissions;
     }
 
     /**

@@ -255,6 +255,10 @@ public class DAOUtils {
             query = and(query, shardKeys);
         }
 
+        if (filter != null && !filter.isEmpty()) {
+            query = and(query, filter);
+        }
+
         BsonDocument oldDocument;
 
         if (idPresent) {
@@ -274,10 +278,6 @@ public class DAOUtils {
             }
 
             oldDocument = null;
-        }
-
-        if (filter != null && !filter.isEmpty()) {
-            query = and(query, filter);
         }
 
         if (writeMode == WRITE_MODE.INSERT) {
@@ -304,17 +304,21 @@ public class DAOUtils {
         } else if (replace) {
             BsonDocument newDocument;
             try {
-                    newDocument = cs == null
-                            ? coll.findOneAndReplace(query,
-                                    getReplaceDocument(data),
-                                    writeMode == WRITE_MODE.UPSERT
-                                        ? FOR_AFTER_UPSERT_OPS
-                                        : FOR_AFTER_NOT_UPSERT_OPS)
-                            : coll.findOneAndReplace(cs, query,
-                                    getReplaceDocument(data),
-                                    writeMode == WRITE_MODE.UPSERT
-                                        ? FOR_AFTER_UPSERT_OPS
-                                        : FOR_AFTER_NOT_UPSERT_OPS);
+                if (filter != null && !filter.isEmpty()) {
+                    query = and(query, filter);
+                }
+
+                newDocument = cs == null
+                        ? coll.findOneAndReplace(query,
+                                getReplaceDocument(data),
+                                writeMode == WRITE_MODE.UPSERT
+                                    ? FOR_AFTER_UPSERT_OPS
+                                    : FOR_AFTER_NOT_UPSERT_OPS)
+                        : coll.findOneAndReplace(cs, query,
+                                getReplaceDocument(data),
+                                writeMode == WRITE_MODE.UPSERT
+                                    ? FOR_AFTER_UPSERT_OPS
+                                    : FOR_AFTER_NOT_UPSERT_OPS);
             } catch (IllegalArgumentException iae) {
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
             }

@@ -128,7 +128,7 @@ public class FileAclAuthorizer
                                 marker = "";
                             }
 
-                            LOGGER.debug("role {}, permission [{},{}], resolve {} {}",
+                            LOGGER.debug("role {}, permission (roles={},predicate={}), resolve {} {}",
                                     role,
                                     permission.getRoles(),
                                     permission.getPredicate(),

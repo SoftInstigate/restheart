@@ -45,7 +45,8 @@ public class FilterPredicateInjector implements MongoInterceptor {
     public void init(PluginsRegistry registry) {
         var __maa = registry.getAuthorizers()
                 .stream()
-                .filter(a -> "mongoAclAuthorizer".equals(a.getName()))
+                .filter(a -> "mongoAclAuthorizer".equals(a.getName())
+                    || "fileAclAuthorizer".equals(a.getName()))
                 .findFirst();
 
         if (__maa == null || !__maa.isPresent()) {
@@ -91,7 +92,7 @@ public class FilterPredicateInjector implements MongoInterceptor {
         }
 
         // this resolve the filter against the current exchange
-        // eg {'username':'%u'} => {'username':'uji'}
+        // eg {'username':'%USER'} => {'username':'uji'}
         var resolvedFilter = AclPermission
                 .interpolateFilterVars(request.getExchange(), filter);
 

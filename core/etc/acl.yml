@@ -1,24 +1,26 @@
-## configuration file for requestPredicatesAuthorizer
+## Configuration file for fileAclAuthorizer
+
 permissions:
     # admin role can do everything
     - role: admin
       predicate: path-prefix[path="/"]
       priority: 0
+      mongo:
+        whitelistManagementRequests: true # default false
+        whitelistBulkPatch: true          # default false
+        whitelistBulkDelete: true         # default false
+        allowAllWriteModes: true          # default false
 
-    - role: admin
-      predicate: path-prefix[path="/user"]
-      priority: 10
-
-    # user role can do everything on /{username} with filter
+    # allow role 'user' access /{username} with filter
     - roles:
         - user
-        - admin
       predicate: path-template[value="/{username}"] and equals[%u, "${username}"]
       priority: 100
       readFilter: '{"status": "public"}'
       writeFilter: '{"status": "public"}'
 
-    - role: user
+    - roles:
+        - user
       predicate: path-template[value="/{username}/{subpath}"] and equals[%u, "${username}"]
       priority: 100
       readFilter: '{"status": "public"}'
