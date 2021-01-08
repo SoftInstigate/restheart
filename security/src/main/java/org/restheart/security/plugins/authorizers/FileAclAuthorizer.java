@@ -72,7 +72,7 @@ public class FileAclAuthorizer
 
         // reverse oreder, the first permission in the acl.yml must be on top
         var list = new ArrayList<AclPermission>(this.permissions);
-        Collections.sort(list, Collections.reverseOrder());
+        Collections.reverse(list);
         this.permissions.clear();
         list.stream().forEach(permissions::add);
     }

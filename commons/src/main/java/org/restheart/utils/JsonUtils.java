@@ -795,12 +795,11 @@ public class JsonUtils {
     /**
      * @param json
      * @return the unflatten json replacing dot notatation fkeys with nested
-     * objects: from {"a.b":2} to {"a":{"b":2}}
+     * objects: from {"a.b":2} to {"a":{"b":2}}
      */
     public static BsonValue unflatten(BsonValue json)
             throws IllegalArgumentException {
-        return new JsonUnflattener(json)
-                .unflatten();
+        return new JsonUnflattener(json).unflatten();
     }
 
     /**
