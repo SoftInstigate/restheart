@@ -114,7 +114,8 @@ public class MongoPermissions {
                 throw new ConfigurationException("Wrong permission: mongo." + key + " must be a boolean");
             }
         } else {
-            return true;
+            //default value
+            return false;
         }
     }
 
@@ -152,7 +153,8 @@ public class MongoPermissions {
                 throw new ConfigurationException("Wrong permission: mongo." + key + " must be a boolean");
             }
         } else {
-            return true;
+            // default value
+            return false;
         }
     }
 
