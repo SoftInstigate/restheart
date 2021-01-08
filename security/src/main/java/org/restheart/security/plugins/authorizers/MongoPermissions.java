@@ -23,6 +23,7 @@ package org.restheart.security.plugins.authorizers;
 
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.ConfigurationException;
+import org.restheart.utils.JsonUtils;
+import org.restheart.utils.LambdaUtils;
 
 /**
  * This holdes the general permissions for MongoService
@@ -44,7 +48,7 @@ public class MongoPermissions {
 
     final Set<String> hiddenProps = Sets.newHashSet();
     final Set<String> protectedProps = Sets.newHashSet();
-    final Map<String, String> overriddenProps = Maps.newHashMap();
+    final Map<String, BsonValue> overriddenProps = Maps.newHashMap();
 
     public MongoPermissions() {
         this.whitelistManagementRequests = false;
@@ -54,7 +58,8 @@ public class MongoPermissions {
     }
 
     MongoPermissions(boolean whitelistManagementRequests, boolean whitelistBulkPatch, boolean whitelistBulkDelete,
-            boolean allowAllWriteModes, Set<String> hiddenProps, Set<String> protectedProps, Map<String, String> overriddenProps) {
+            boolean allowAllWriteModes, Set<String> hiddenProps, Set<String> protectedProps,
+            Map<String, BsonValue> overriddenProps) {
         this.whitelistManagementRequests = whitelistManagementRequests;
         this.whitelistBulkPatch = whitelistBulkPatch;
         this.whitelistBulkDelete = whitelistBulkDelete;
@@ -77,14 +82,10 @@ public class MongoPermissions {
             // return default values
             return new MongoPermissions();
         } else {
-            return new MongoPermissions(
-                parseBooleanArg(args, "whitelistManagementRequests"),
-                parseBooleanArg(args, "whitelistBulkPatch"),
-                parseBooleanArg(args, "whitelistBulkDelete"),
-                parseBooleanArg(args, "allowAllWriteModes"),
-                parseSetArg(args, "hiddenProps"),
-                parseSetArg(args, "protectedProps"),
-                null);
+            return new MongoPermissions(parseBooleanArg(args, "whitelistManagementRequests"),
+                    parseBooleanArg(args, "whitelistBulkPatch"), parseBooleanArg(args, "whitelistBulkDelete"),
+                    parseBooleanArg(args, "allowAllWriteModes"), parseSetArg(args, "hiddenProps"),
+                    parseSetArg(args, "protectedProps"), parseMapArg(args, "overriddenProps"));
         }
     }
 
@@ -93,14 +94,10 @@ public class MongoPermissions {
             // return default values
             return new MongoPermissions();
         } else {
-            return new MongoPermissions(
-                parseBooleanArg(args, "whitelistManagementRequests"),
-                parseBooleanArg(args, "whitelistBulkPatch"),
-                parseBooleanArg(args, "whitelistBulkDelete"),
-                parseBooleanArg(args, "allowAllWriteModes"),
-                parseSetArg(args, "hiddenProps"),
-                parseSetArg(args, "protectedProps"),
-                null);
+            return new MongoPermissions(parseBooleanArg(args, "whitelistManagementRequests"),
+                    parseBooleanArg(args, "whitelistBulkPatch"), parseBooleanArg(args, "whitelistBulkDelete"),
+                    parseBooleanArg(args, "allowAllWriteModes"), parseSetArg(args, "hiddenProps"),
+                    parseSetArg(args, "protectedProps"), parseMapArg(args, "overriddenProps"));
         }
     }
 
@@ -114,7 +111,7 @@ public class MongoPermissions {
                 throw new ConfigurationException("Wrong permission: mongo." + key + " must be a boolean");
             }
         } else {
-            //default value
+            // default value
             return false;
         }
     }
@@ -124,14 +121,16 @@ public class MongoPermissions {
             Object _value = argValue(args, key);
 
             if (_value != null && _value instanceof List<?>) {
-                HashSet<String> ret = Sets.newHashSet();;
+                HashSet<String> ret = Sets.newHashSet();
+                ;
                 List<?> _set = (List<?>) _value;
 
-                for (var _entry: _set) {
+                for (var _entry : _set) {
                     if (_entry instanceof String) {
-                        ret.add((String)_entry);
+                        ret.add((String) _entry);
                     } else {
-                        throw new ConfigurationException("Wrong permission: mongo." + key + " must be a list of strings");
+                        throw new ConfigurationException(
+                                "Wrong permission: mongo." + key + " must be a list of strings");
                     }
                 }
                 return ret;
@@ -140,6 +139,52 @@ public class MongoPermissions {
             }
         } else {
             return Sets.newHashSet();
+        }
+    }
+
+    private static Map<String, BsonValue> parseMapArg(Map<String, Object> args, String key)
+            throws ConfigurationException {
+        if (args.containsKey(key)) {
+            Object _value = argValue(args, key);
+
+            if (_value != null && _value instanceof List<?>) {
+                HashMap<String, BsonValue> ret = Maps.newHashMap();
+                ;
+                List<?> _set = (List<?>) _value;
+
+                for (var _item : _set) {
+                    if (_item instanceof Map<?, ?>) {
+                        var item = (Map<?, ?>) _item;
+                        item.entrySet().stream().forEach(e -> {
+                            var ikey = e.getKey();
+                            var ivalue = e.getValue();
+
+                            if (ikey instanceof String && ivalue instanceof String) {
+                                try {
+                                    ret.put((String) ikey, JsonUtils.parse((String) ivalue));
+                                } catch (Throwable t) {
+                                    var ex = new ConfigurationException(
+                                            "Wrong permission: mongo." + key + " must be a list of key:json", t);
+                                    LambdaUtils.throwsSneakyException(ex);
+                                }
+                            } else {
+                                var ex = new ConfigurationException(
+                                        "Wrong permission: mongo." + key + " must be a list of key:json");
+                                ;
+                                LambdaUtils.throwsSneakyException(ex);
+                            }
+                        });
+                    } else {
+                        throw new ConfigurationException(
+                                "Wrong permission: mongo." + key + " must be a list of key:json");
+                    }
+                }
+                return ret;
+            } else {
+                throw new ConfigurationException("Wrong permission: mongo." + key + " must be a list of key:json");
+            }
+        } else {
+            return Maps.newHashMap();
         }
     }
 
@@ -163,14 +208,16 @@ public class MongoPermissions {
             var _value = args.get(key);
 
             if (_value != null && _value.isArray()) {
-                HashSet<String> ret = Sets.newHashSet();;
+                HashSet<String> ret = Sets.newHashSet();
+                ;
                 var _array = _value.asArray();
 
-                for (var _entry: _array) {
+                for (var _entry : _array) {
                     if (_entry != null && _entry.isString()) {
                         ret.add(_entry.asString().getValue());
                     } else {
-                        throw new ConfigurationException("Wrong permission: mongo." + key + " must be an array of strings");
+                        throw new ConfigurationException(
+                                "Wrong permission: mongo." + key + " must be an array of strings");
                     }
                 }
                 return ret;
@@ -179,6 +226,25 @@ public class MongoPermissions {
             }
         } else {
             return Sets.newHashSet();
+        }
+    }
+
+    private static Map<String, BsonValue> parseMapArg(BsonDocument args, String key) throws ConfigurationException {
+        if (args.containsKey(key)) {
+            var _value = args.get(key);
+
+            if (_value.isDocument()) {
+                HashMap<String, BsonValue> ret = Maps.newHashMap();
+                var doc = _value.asDocument();
+
+                doc.entrySet().stream().forEach(e -> ret.put(e.getKey(), e.getValue()));
+
+                return ret;
+            } else {
+                throw new ConfigurationException("Wrong permission: mongo." + key + " must be a JSON object {key1:json, key2:json, ..}");
+            }
+        } else {
+            return Maps.newHashMap();
         }
     }
 
@@ -222,7 +288,7 @@ public class MongoPermissions {
         return this.protectedProps;
     }
 
-    public Map<String,String> getOverriddenProps() {
+    public Map<String, BsonValue> getOverriddenProps() {
         return this.overriddenProps;
     }
 }

@@ -41,7 +41,13 @@ public class MongoPermissionsProtectedProps implements MongoInterceptor {
     }
 
     private boolean contains(BsonDocument doc, Set<String> protectedProps) {
+        // CHECK is this a problem?
+        // before {"a": {"b":1, "c":2}}
+        // request "a.b": 100
+        // ufdoc {"a":{"b":100}}
+        // after {"a": {"b":1}} <=== c removed!!!!!
         var ufdoc = JsonUtils.unflatten(doc).asDocument();
+
         return protectedProps.stream().anyMatch(hiddenProp -> contains(ufdoc, hiddenProp));
     }
 
@@ -56,6 +62,7 @@ public class MongoPermissionsProtectedProps implements MongoInterceptor {
         if (JsonUtils.containsUpdateOperators(doc)) {
             var updateOperators = doc.keySet().stream().filter(k -> k.startsWith("$")).collect(Collectors.toList());
 
+            // CHECK shall we unflatten doc.get(uo) as well?
             var propInUpdateOperators = updateOperators.stream().anyMatch(uo -> contains(doc.get(uo).asDocument(), protectedProps));
 
             if (propInUpdateOperators) {
