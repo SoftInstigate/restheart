@@ -83,7 +83,6 @@ import static org.restheart.ConfigurationKeys.REQUESTS_LOG_TRACE_HEADERS_KEY;
 import static org.restheart.ConfigurationKeys.SERVICES_KEY;
 import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNTS_KEY;
 import static org.restheart.ConfigurationKeys.TOKEN_MANAGER_KEY;
-import static org.restheart.ConfigurationKeys.USE_EMBEDDED_KEYSTORE_KEY;
 import static org.restheart.ConfigurationKeys.WORKER_THREADS_KEY;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -127,8 +126,6 @@ public class Configuration {
         defaultConf.put(AJP_HOST_KEY, DEFAULT_AJP_HOST);
 
         defaultConf.put(INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-
-        defaultConf.put(USE_EMBEDDED_KEYSTORE_KEY, true);
 
         defaultConf.put(KEYSTORE_FILE_KEY, null);
         defaultConf.put(KEYSTORE_PASSWORD_KEY, null);
@@ -352,7 +349,6 @@ public class Configuration {
     private final String ajpHost;
     private final String instanceName;
     private final String pluginsDirectory;
-    private final boolean useEmbeddedKeystore;
     private final String keystoreFile;
     private final String keystorePassword;
     private final String certPassword;
@@ -447,7 +443,6 @@ public class Configuration {
         ajpHost = getAsString(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
 
         instanceName = getAsString(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-        useEmbeddedKeystore = getAsBoolean(conf, USE_EMBEDDED_KEYSTORE_KEY, true);
         keystoreFile = getAsString(conf, KEYSTORE_FILE_KEY, null);
         keystorePassword = getAsString(conf, KEYSTORE_PASSWORD_KEY, null);
         certPassword = getAsString(conf, CERT_PASSWORD_KEY, null);
@@ -468,8 +463,7 @@ public class Configuration {
             var old = conf.get(AUTH_MECHANISMS_KEY);
 
             if (old != null && old instanceof List && checkPre20Confs((List) old)) {
-                LOGGER.error(
-                        "The auth-mechanisms configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
+                LOGGER.error("The auth-mechanisms configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
                 throw new ConfigurationException("Wrong Authentication Mechanisms configuration");
             }
         }
@@ -551,7 +545,7 @@ public class Configuration {
                 + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener="
                 + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost + ", ajpListener=" + ajpListener
                 + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost + ", pluginsDirectory=" + pluginsDirectory
-                + ", useEmbeddedKeystore=" + useEmbeddedKeystore + ", keystoreFile=" + keystoreFile
+                + ", keystoreFile=" + keystoreFile
                 + ", keystorePassword=" + keystorePassword + ", certPassword=" + certPassword + ", proxies=" + proxies
                 + ", pluginsArgs=" + pluginsArgs + ", authMechanisms=" + authMechanisms + ", authenticators="
                 + authenticators + ", authorizers=" + authorizers + ", tokenManager=" + tokenManagers + ", logFilePath="
@@ -668,13 +662,6 @@ public class Configuration {
      */
     public String getPluginsDirectory() {
         return this.pluginsDirectory;
-    }
-
-    /**
-     * @return the useEmbeddedKeystore
-     */
-    public boolean isUseEmbeddedKeystore() {
-        return useEmbeddedKeystore;
     }
 
     /**

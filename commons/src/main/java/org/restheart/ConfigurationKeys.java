@@ -294,11 +294,6 @@ public interface ConfigurationKeys {
     public static final String KEYSTORE_FILE_KEY = "keystore-file";
 
     /**
-     * the key for the use-embedded-keystore property.
-     */
-    public static final String USE_EMBEDDED_KEYSTORE_KEY = "use-embedded-keystore";
-
-    /**
      * the key for the http-host property.
      */
     public static final String HTTP_HOST_KEY = "http-host";

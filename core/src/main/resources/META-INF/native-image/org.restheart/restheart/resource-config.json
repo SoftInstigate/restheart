@@ -19,8 +19,7 @@
     {"pattern":"\\Qorg/jboss/threads/Version.properties\\E"}, 
     {"pattern":"\\Qorg/slf4j/impl/StaticLoggerBinder.class\\E"}, 
     {"pattern":"\\Qorg/xnio/Version.properties\\E"}, 
-    {"pattern":"\\Qorg/xnio/nio/Version.properties\\E"}, 
-    {"pattern":"\\Qsskeystore.jks\\E"}
+    {"pattern":"\\Qorg/xnio/nio/Version.properties\\E"}
   ]},
   "bundles":[]
 }

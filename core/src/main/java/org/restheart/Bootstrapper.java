@@ -801,17 +801,7 @@ public class Bootstrapper {
 
             KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
 
-            if (getConfiguration().isUseEmbeddedKeystore()) {
-                char[] storepass = "restheart".toCharArray();
-                char[] keypass = "restheart".toCharArray();
-
-                String storename = "sskeystore.jks";
-
-                ks.load(Bootstrapper.class
-                        .getClassLoader()
-                        .getResourceAsStream(storename), storepass);
-                kmf.init(ks, keypass);
-            } else if (configuration.getKeystoreFile() != null
+            if (configuration.getKeystoreFile() != null
                     && configuration.getKeystorePassword() != null
                     && configuration.getCertPassword() != null) {
                 try (FileInputStream fis = new FileInputStream(
@@ -820,10 +810,10 @@ public class Bootstrapper {
                     kmf.init(ks, configuration.getCertPassword().toCharArray());
                 }
             } else {
-                LOGGER.error(
-                        "The keystore is not configured. "
-                        + "Check the keystore-file, "
-                        + "keystore-password and certpassword options.");
+                logErrorAndExit("Cannot enable the HTTPS listener: "
+                          + "the keystore is not configured. "
+                          + "Generate a keystore and set the configuration options keystore-file, keystore-password and certpassword. "
+                          + "More information at https://restheart.org/docs/security/tls/", null, false, -1);
             }
 
             tmf.init(ks);

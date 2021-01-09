@@ -40,17 +40,15 @@ proxies:
 
  # Configure the keystore to enable the https listener.
 
- # RESTHeart Security comes with a self-signed certificate that makes
- # straightforward enabling https.
- # Specify use-embedded-keystore: true to use it (this is the default setting).
- # Using the self-signed certificate leads to issues with some clients;
- # for instance, with curl you need to specify the "--insecure" option or you'll get an error message.
-
-use-embedded-keystore: true
-
  # To use your own certificate you need to import it (and eventually the CA certificates chain) into a java keystore
- # and specify use-embedded-keystore: false and the keystore-file,keystore-password and certpassword configuration properties.
- # Refer to the java keystore documentation for that.
+ # and specify the keystore-file,keystore-password and certpassword configuration properties.
+ # Two scripts are available to generate the keystore:
+ ## 1) generate-self-signed-keystore.sh
+ ##    Generate a self signed certificate and import it in the java keystore
+ ##    https://github.com/SoftInstigate/restheart/blob/master/core/bin/generate-self-signed-keystore.sh
+ ## 2) convert-letsencrypt-java-keystore.sh
+ ##    Generate the keystore from a https://letsencrypt.org free certificate
+ ##    https://github.com/SoftInstigate/restheart/blob/master/core/bin/convert-letsencrypt-java-keystore.sh
 
 #keystore-file: /path/to/keystore/file
 #keystore-password: password
