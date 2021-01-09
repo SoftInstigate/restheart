@@ -34,11 +34,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(
-        name = "ping",
-        description = "simple ping service",
-        enabledByDefault = true,
-        defaultURI = "/ping")
+@RegisterPlugin(name = "ping", description = "simple ping service", enabledByDefault = true, defaultURI = "/ping")
 public class PingService implements ByteArrayService {
 
     private String msg = null;
@@ -53,15 +49,20 @@ public class PingService implements ByteArrayService {
      * @throws Exception
      */
     @Override
-    public void handle(ByteArrayRequest request,
-            ByteArrayResponse response) throws Exception {
-        response.setContentType("text/plain");
-
-        if (request.isGet()) {
-            response.setStatusCode(HttpStatus.SC_OK);
-            response.setContent(msg.getBytes());
-        } else {
+    public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
+        if (!request.isGet()) {
             response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
+        } else {
+            var accept = request.getHeader("Accept");
+
+            if (accept != null && accept.startsWith("text/html")) {
+                var content = "<div><h2>" + msg + "</h2></div>";
+                response.setContent(content.getBytes());
+                response.setContentType("text/html");
+            } else {
+                response.setContentType("text/plain");
+                response.setContent(msg.getBytes());
+            }
         }
     }
 }
