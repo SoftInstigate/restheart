@@ -789,67 +789,12 @@ public class Bootstrapper {
                     .reset().toString());
         }
 
-        SSLContext sslContext = null;
-
-        try {
-            sslContext = SSLContext.getInstance("TLS");
-
-            KeyManagerFactory kmf = KeyManagerFactory
-                    .getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            TrustManagerFactory tmf = TrustManagerFactory
-                    .getInstance(TrustManagerFactory.getDefaultAlgorithm());
-
-            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-
-            if (configuration.getKeystoreFile() != null
-                    && configuration.getKeystorePassword() != null
-                    && configuration.getCertPassword() != null) {
-                try (FileInputStream fis = new FileInputStream(
-                        new File(configuration.getKeystoreFile()))) {
-                    ks.load(fis, configuration.getKeystorePassword().toCharArray());
-                    kmf.init(ks, configuration.getCertPassword().toCharArray());
-                }
-            } else {
-                logErrorAndExit("Cannot enable the HTTPS listener: "
-                          + "the keystore is not configured. "
-                          + "Generate a keystore and set the configuration options keystore-file, keystore-password and certpassword. "
-                          + "More information at https://restheart.org/docs/security/tls/", null, false, -1);
-            }
-
-            tmf.init(ks);
-
-            sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        } catch (KeyManagementException
-                | NoSuchAlgorithmException
-                | KeyStoreException
-                | CertificateException
-                | UnrecoverableKeyException ex) {
-            logErrorAndExit(
-                    "Couldn't start RESTHeart, error with specified keystore. "
-                    + "Check the keystore-file, "
-                    + "keystore-password and certpassword options. Exiting..",
-                    ex, false, -1);
-        } catch (FileNotFoundException ex) {
-            logErrorAndExit(
-                    "Couldn't start RESTHeart, keystore file not found. "
-                    + "Check the keystore-file, "
-                    + "keystore-password and certpassword options. Exiting..",
-                    ex, false, -1);
-        } catch (IOException ex) {
-            logErrorAndExit(
-                    "Couldn't start RESTHeart, error reading the keystore file. "
-                    + "Check the keystore-file, "
-                    + "keystore-password and certpassword options. Exiting..",
-                    ex, false, -1);
-        }
-
         Builder builder = Undertow.builder();
 
         if (configuration.isHttpsListener()) {
             builder.addHttpsListener(configuration.getHttpsPort(),
                     configuration.getHttpsHost(),
-                    sslContext);
-
+                    initSSLContext());
             if (configuration.getHttpsHost().equals("127.0.0.1")
                     || configuration.getHttpsHost().equalsIgnoreCase("localhost")) {
                 LOGGER.warn("HTTPS listener bound to localhost:{}. "
@@ -916,6 +861,64 @@ public class Bootstrapper {
 
         undertowServer = builder.build();
         undertowServer.start();
+    }
+
+    private static SSLContext initSSLContext() {
+        try {
+            var sslContext = SSLContext.getInstance("TLS");
+
+            KeyManagerFactory kmf = KeyManagerFactory
+                    .getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            TrustManagerFactory tmf = TrustManagerFactory
+                    .getInstance(TrustManagerFactory.getDefaultAlgorithm());
+
+            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+
+            if (configuration.getKeystoreFile() != null
+                    && configuration.getKeystorePassword() != null
+                    && configuration.getCertPassword() != null) {
+                try (FileInputStream fis = new FileInputStream(
+                        new File(configuration.getKeystoreFile()))) {
+                    ks.load(fis, configuration.getKeystorePassword().toCharArray());
+                    kmf.init(ks, configuration.getCertPassword().toCharArray());
+                }
+            } else {
+                logErrorAndExit("Cannot enable the HTTPS listener: "
+                            + "the keystore is not configured. "
+                            + "Generate a keystore and set the configuration options keystore-file, keystore-password and certpassword. "
+                            + "More information at https://restheart.org/docs/security/tls/", null, false, -1);
+            }
+
+            tmf.init(ks);
+
+            sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+
+            return sslContext;
+        } catch (KeyManagementException
+                | NoSuchAlgorithmException
+                | KeyStoreException
+                | CertificateException
+                | UnrecoverableKeyException ex) {
+            logErrorAndExit(
+                    "Couldn't start RESTHeart, error with specified keystore. "
+                    + "Check the keystore-file, "
+                    + "keystore-password and certpassword options. Exiting..",
+                    ex, false, -1);
+        } catch (FileNotFoundException ex) {
+            logErrorAndExit(
+                    "Couldn't start RESTHeart, keystore file not found. "
+                    + "Check the keystore-file, "
+                    + "keystore-password and certpassword options. Exiting..",
+                    ex, false, -1);
+        } catch (IOException ex) {
+            logErrorAndExit(
+                    "Couldn't start RESTHeart, error reading the keystore file. "
+                    + "Check the keystore-file, "
+                    + "keystore-password and certpassword options. Exiting..",
+                    ex, false, -1);
+        }
+
+        return null;
     }
 
     /**

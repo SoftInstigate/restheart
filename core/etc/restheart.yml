@@ -7,7 +7,6 @@
  # You can setup a listener per protocol (up to 2).
 
  # To enable HTTPS, configure a certificate. See https://restheart.org/docs/security/tls/
- # The self signed certificate embedded in RESTHeart is insecure and only for testing purpose
 https-listener: {{{https-listener}}}
 https-host: {{{https-host}}}
 https-port: {{{https-port}}}
