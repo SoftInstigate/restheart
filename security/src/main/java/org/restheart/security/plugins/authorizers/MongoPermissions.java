@@ -142,46 +142,33 @@ public class MongoPermissions {
         }
     }
 
-    private static Map<String, BsonValue> parseMapArg(Map<String, Object> args, String key)
-            throws ConfigurationException {
+    private static Map<String, BsonValue> parseMapArg(Map<String, Object> args, String key) throws ConfigurationException {
         if (args.containsKey(key)) {
             Object _value = argValue(args, key);
 
-            if (_value != null && _value instanceof List<?>) {
-                HashMap<String, BsonValue> ret = Maps.newHashMap();
-                ;
-                List<?> _set = (List<?>) _value;
+            if (_value != null && _value instanceof Map<?,?>) {
+                Map<String, BsonValue> ret = Maps.newHashMap();
+                var item = (Map<?, ?>) _value;
+                item.entrySet().stream().forEach(e -> {
+                    var ikey = e.getKey();
+                    var ivalue = e.getValue();
 
-                for (var _item : _set) {
-                    if (_item instanceof Map<?, ?>) {
-                        var item = (Map<?, ?>) _item;
-                        item.entrySet().stream().forEach(e -> {
-                            var ikey = e.getKey();
-                            var ivalue = e.getValue();
-
-                            if (ikey instanceof String && ivalue instanceof String) {
-                                try {
-                                    ret.put((String) ikey, JsonUtils.parse((String) ivalue));
-                                } catch (Throwable t) {
-                                    var ex = new ConfigurationException(
-                                            "Wrong permission: mongo." + key + " must be a list of key:json", t);
-                                    LambdaUtils.throwsSneakyException(ex);
-                                }
-                            } else {
-                                var ex = new ConfigurationException(
-                                        "Wrong permission: mongo." + key + " must be a list of key:json");
-                                ;
-                                LambdaUtils.throwsSneakyException(ex);
-                            }
-                        });
+                    if (ikey instanceof String && ivalue instanceof String) {
+                        try {
+                            ret.put((String) ikey, JsonUtils.parse((String) ivalue));
+                        } catch (Throwable t) {
+                            var ex = new ConfigurationException("Wrong permission: mongo." + key + " must be an object. A valid example is:\n\toverriddenProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'", t);
+                            LambdaUtils.throwsSneakyException(ex);
+                        }
                     } else {
-                        throw new ConfigurationException(
-                                "Wrong permission: mongo." + key + " must be a list of key:json");
+                        var ex = new ConfigurationException("Wrong permission: mongo." + key + " must be an object. A valid example is:\n\toverriddenProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'");
+                        LambdaUtils.throwsSneakyException(ex);
                     }
-                }
+                });
+
                 return ret;
             } else {
-                throw new ConfigurationException("Wrong permission: mongo." + key + " must be a list of key:json");
+                throw new ConfigurationException("Wrong permission: mongo." + key + " must be an object. A valid example is:\n\toverriddenProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'");
             }
         } else {
             return Maps.newHashMap();
