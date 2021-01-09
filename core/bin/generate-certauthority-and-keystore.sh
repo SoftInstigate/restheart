@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # credits to:
-# - richmilne https://github.com/richmilne
-#    A codificiation of the steps outlined at
-#    https://ordina-jworks.github.io/security/2019/08/14/Using-Lets-Encrypt-Certificates-In-Java.html
+# - Lorenzo Fontana
+     https://gist.github.com/fntlnz/cf14feb5a46b2eda428e000157447309
 # - Maciej
 #    https://betterdev.blog/minimal-safe-bash-script-template/
 
@@ -15,7 +14,8 @@ usage() {
   cat <<EOF
 Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-v] [--no-color] -d mydomain.io -a /tmp/letsencrypt/archive -p mysecret
 
-Generate a self signed certificate and import it in a java keystore
+Creates a Certificate Authority, issues a certificate and import it a the java keystore to be used by RESTHeart
+The Certificate Authority root certificate must be imported in OS or browsers.
 
 Available options:
 
@@ -103,23 +103,57 @@ setup_colors
 
 # script logic here
 
-msg "${GREEN}Generate the self signed certificate${NOFORMAT}"
+######################
+# Generate the Certificate Authority
+######################
 
-sanconfig="[re] distinguished_name=req [san] subjectAltName=DNS:${domain},DNS:${domain}"
-[[ -z "${ip-}" ]] && sanconfig=${sanconfig},IP:${ip}
+# Generate private key
+msg "${GREEN}Generate the Certificate Authority private key${NOFORMAT}"
+[ -f "${archive}"/${domain}.key ] && msg "${BLUE}skipped, CA private key exists${NOFORMAT}"
+[ ! -f "${archive}"/${domain}.key ] && openssl genrsa -out "${archive}"/devCA.key 4096
+# Generate root certificate
+msg "${GREEN}Create and self sign the Root Certificate${NOFORMAT}"
+[ -f "${archive}"/${domain}.key ] && msg "${BLUE}skipped, root certificate exists${NOFORMAT}"
+openssl req -x509 -new -nodes -key "${archive}"/devCA.key -subj "/CN=devCA" -sha256 -days 1024 -out "${archive}"/devCA.pem
+[ ! -f "${archive}"/${domain}.key ] && msg "${GREEN}Certificate Authority certificate ${RED}(TO BE IMPORTED IN BROWSER)${GREEN}: "${archive}"/devCA.pem${NOFORMAT}"
 
-openssl req -x509 -newkey rsa:4096 -sha256 -keyout "${archive}"/privkey.pem -out "${archive}"/cert.pem -days 365 -subj "/CN=${domain}" -nodes
+######################
+# Create CA-signed certs
+######################
+
+# Generate a private key
+openssl genrsa -out "${archive}"/${domain}.key 2048
+
+# Create a certificate-signing request
+msg "${GREEN}Create a certificate-signing request${NOFORMAT}"
+openssl req -new -sha256 -key "${archive}"/${domain}.key -subj "/CN=${domain}" -out "${archive}"/${domain}.csr
+#openssl req -new -key "${archive}"/${domain}.key -passout pass:"${password}" -out ${archive}/${domain}.csr
+# Create a config file for the extensions
+>"${archive}"/${domain}.ext cat <<-EOF
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = ${domain}   # Be sure to include the domain name here because Common Name is not so commonly honoured by itself
+EOF
+
+# Add the IP address if specified
+[[ ! -z "${ip-}" ]] && echo -e "IP.1 = ${ip}\n" >> "${archive}"/${domain}.ext
+
+msg "${GREEN}Generate the certificate${NOFORMAT}"
+openssl x509 -extfile "${archive}"/${domain}.ext -req -in "${archive}"/${domain}.csr -CA "${archive}"/devCA.pem -CAkey "${archive}"/devCA.key -CAcreateserial -out "${archive}"/${domain}.pem -days 365 -sha256
 
 KEYSTORE=${archive}/${domain}
 
-msg "${GREEN}Convert Let's Encrypt certificates to PKCS 12 archive${NOFORMAT}"
+msg "${GREEN}Convert certificate to PKCS 12 archive${NOFORMAT}"
 openssl pkcs12 -export \
-	-in "${archive}"/cert.pem \
-	-inkey "${archive}"/privkey.pem \
+	-in "${archive}"/${domain}.pem \
+	-inkey "${archive}"/${domain}.key \
 	-out "${KEYSTORE}".p12 \
 	-name "${domain}" \
-	-CAfile "${archive}"/fullchain.pem \
-	-caname "Let's Encrypt Authority X3" \
+	-CAfile "${archive}"/devCA.pem \
+    -caname "devCA" \
 	-password pass:"${password}"
 
 msg "${GREEN}Import certificates into a keystore file.${NOFORMAT}"
@@ -133,4 +167,6 @@ keytool -importkeystore \
 	-destkeypass "${password}" \
 	-alias ${domain}
 
-msg "${GREEN}Done: ${KEYSTORE}${NOFORMAT}"
+#keytool -importcert -keystore ${KEYSTORE} -trustcacerts -storepass ${password} -noprompt  -alias "devCA" -file "${archive}/devCA.pem"
+
+msg "${GREEN}Done: keystore ${KEYSTORE}.jks, CA root certificate: "${archive}"/devCA.pem${NOFORMAT}"
