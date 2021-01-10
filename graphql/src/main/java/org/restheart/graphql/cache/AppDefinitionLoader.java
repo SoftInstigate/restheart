@@ -6,6 +6,7 @@ import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.graphql.GraphQLAppDeserializer;
+import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.models.*;
 
 
@@ -24,7 +25,7 @@ public class AppDefinitionLoader {
         mongoClient = mclient;
     }
 
-    public static GraphQLApp loadAppDefinition(String appURI){
+    public static GraphQLApp loadAppDefinition(String appURI) throws GraphQLIllegalAppDefinitionException {
 
         BsonArray conditions = new BsonArray();
         conditions.add(new BsonDocument(APP_URI_FIELD, new BsonString(appURI)));

@@ -96,6 +96,9 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             }catch (GraphQLAppDefNotFoundException notFoundException){
                 LOGGER.error(notFoundException.getMessage());
                 throw new BadRequestException(HttpStatus.SC_NOT_FOUND);
+            }catch (GraphQLIllegalAppDefinitionException illegalException){
+                LOGGER.error(illegalException.getMessage());
+                throw new BadRequestException(illegalException.getMessage(), HttpStatus.SC_BAD_REQUEST);
             }
         };
     }

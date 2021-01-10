@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
+/***
 package org.restheart.security.plugins.interceptors;
 
 import org.restheart.exchange.MongoRequest;
@@ -39,12 +40,7 @@ import java.util.Map;
 
 import com.mongodb.MongoClient;
 
-/**
- * helper interceptor to add token headers to Access-Control-Expose-Headers to
- * handle CORS request
- *
- * @author Andrea Di Cesare <andrea@softinstigate.com>
- */
+
 @RegisterPlugin(name="graphAppDefinitionChecker",
         description = "checks the GraphQL Application Definition",
         interceptPoint = RESPONSE,
@@ -91,3 +87,4 @@ public class GraphAppDefinitionChecker implements MongoInterceptor {
             && response.getDbOperationResult().getNewData() != null;
     }
 }
+***/

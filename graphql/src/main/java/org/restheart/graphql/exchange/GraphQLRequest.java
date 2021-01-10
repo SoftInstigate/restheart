@@ -106,7 +106,7 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
         String contentType = getContentType(exchange);
 
         return GRAPHQL_CONTENT_TYPE.equals(contentType) || (contentType != null
-                && contentType.startsWith("application/graphql;"));
+                && contentType.startsWith(GRAPHQL_CONTENT_TYPE));
 
     }
 
