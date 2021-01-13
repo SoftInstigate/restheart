@@ -36,7 +36,6 @@ const http = require('http');
                 response.setContent(JSON.stringify(body));
                 response.setContentTypeAsJson();
 
-                console.log("resolving");
                 resolve();
             });
         })

@@ -155,7 +155,15 @@ public class MongoPermissions {
 
                     if (ikey instanceof String && ivalue instanceof String) {
                         try {
-                            ret.put((String) ikey, JsonUtils.parse((String) ivalue));
+                            var svalue = ((String) ivalue).trim();
+
+                            if (svalue.startsWith("@")) {
+                                // quote value if starts with @
+                                // this allows to use variables as follows
+                                // userId: '@user._id' (and not the annoying userId: '"@user._id"')
+                                svalue = "\"".concat(svalue).concat("\"");
+                            }
+                            ret.put((String) ikey, JsonUtils.parse(svalue));
                         } catch (Throwable t) {
                             var ex = new ConfigurationException("Wrong permission: mongo." + key + " must be an object. A valid example is:\n\toverriddenProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'", t);
                             LambdaUtils.throwsSneakyException(ex);

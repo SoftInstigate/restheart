@@ -48,6 +48,7 @@ import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
+import org.restheart.idm.MongoRealmAccount;
 import org.restheart.idm.PwdCredentialAccount;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
@@ -88,7 +89,7 @@ public class MongoRealmAuthenticator implements Authenticator {
     private Cache.EXPIRE_POLICY cacheExpirePolicy
             = Cache.EXPIRE_POLICY.AFTER_WRITE;
 
-    private LoadingCache<String, PwdCredentialAccount> USERS_CACHE = null;
+    private LoadingCache<String, MongoRealmAccount> USERS_CACHE = null;
 
     private static final transient Cache<String, String> USERS_PWDS_CACHE
             = CacheFactory.createLocalCache(
@@ -199,7 +200,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             return null;
         }
 
-        PwdCredentialAccount ref = getAccount(id);
+        var ref = getAccount(id);
 
         boolean verified;
 
@@ -353,7 +354,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         }
     }
 
-    private PwdCredentialAccount getAccount(String id) {
+    private MongoRealmAccount getAccount(String id) {
         if (this.mclient == null) {
             LOGGER.error("Cannot find account: mongo service is not enabled.");
             return null;
@@ -362,7 +363,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         if (USERS_CACHE == null) {
             return findAccount(this.accountIdTrasformer(id));
         } else {
-            Optional<PwdCredentialAccount> _account = USERS_CACHE.getLoading(id);
+            Optional<MongoRealmAccount> _account = USERS_CACHE.getLoading(id);
 
             if (_account != null && _account.isPresent()) {
                 return _account.get();
@@ -447,7 +448,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             LOGGER.error("Error creating users collection", t);
             return false;
         }
-        
+
         return true;
     }
 
@@ -479,12 +480,12 @@ public class MongoRealmAuthenticator implements Authenticator {
         }
     }
 
-    public PwdCredentialAccount findAccount(String accountId) {
+    public MongoRealmAccount findAccount(String accountId) {
         var coll = mclient
                 .getDatabase(this.getUsersDb())
-                .getCollection(this.getUsersCollection());
+                .getCollection(this.getUsersCollection(), BsonDocument.class);
 
-        Document _account;
+        BsonDocument _account;
 
         try {
             _account = coll.find(eq(propId, accountId)).first();
@@ -514,7 +515,9 @@ public class MongoRealmAuthenticator implements Authenticator {
         JsonElement _password;
 
         try {
-            _password = JsonPath.read(account, "$.".concat(this.propPassword));
+            var ctx = JsonPath.parse(account);
+            _password = ctx.read("$.".concat(this.propPassword));
+            account = ctx.delete("$.".concat(this.propPassword)).json();
         } catch (PathNotFoundException pnfe) {
             LOGGER.warn("Cannot find pwd property '{}' for account {}", this.propPassword,
                     accountId);
@@ -552,9 +555,11 @@ public class MongoRealmAuthenticator implements Authenticator {
             }
         });
 
-        return new PwdCredentialAccount(accountId,
+        return new MongoRealmAccount(accountId,
                 _password.getAsJsonPrimitive().getAsString().toCharArray(),
-                roles);
+                roles,
+                // used this because password has been removed from account
+                BsonDocument.parse(account.toString()));
     }
 
     /**
