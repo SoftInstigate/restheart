@@ -8,9 +8,9 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
 
-@RegisterPlugin(name = "mongoPermissionsForbidMgmgRequests", 
+@RegisterPlugin(name = "mongoPermissionsForbidMgmgRequests",
     description = "Whitelists mongo management requests according to the mongo.whitelistManagementRequests ACL permission", 
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH, 
+    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
     enabledByDefault = true)
 public class MongoPermissionsWhitelistMgmgRequests implements MongoInterceptor {
 
