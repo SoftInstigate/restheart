@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * transformer in charge of escaping the aggregation stages that can contain
- * dollar prefixed keys (for operator) use the dot notation
+ * dollar prefixed keys (for operators)
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
