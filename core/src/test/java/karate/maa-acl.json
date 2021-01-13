@@ -5,8 +5,10 @@
         "$oid": "5c3cb121681f64334c98a6df"
     },
     "priority": 1,
-    "readFilter": { "status": { "_$eq": "public"} },
-    "writeFilter": null
+    "mongo": {
+        "readFilter": { "status": { "_$eq": "public"} },
+        "writeFilter": null
+    }
 }, {
     "predicate": "path-prefix[/test-db/test-authorization]",
     "roles": ["full"],
@@ -14,8 +16,10 @@
         "$oid": "5c3cb100681f64334c98a6de"
     },
     "priority": 1,
-    "readFilter": null,
-    "writeFilter": null
+    "mongo": {
+        "readFilter": null,
+        "writeFilter": null
+    }
 }, {
     "predicate": "path-prefix[/test-db/test-authorization]",
     "roles": ["filtered"],
@@ -23,9 +27,9 @@
         "$oid": "5c3cab6cc9e77c0006e25281"
     },
     "priority": 2,
-    "readFilter": { "status": { "_$eq": "public"} },
-    "writeFilter": { "status": { "_$eq": "public"} },
     "mongo": {
+        "readFilter": { "status": { "_$eq": "public"} },
+        "writeFilter": { "status": { "_$eq": "public"} },
         "allowAllWriteModes": true,
         "whitelistBulkPatch": true
     }
@@ -35,7 +39,5 @@
     "_id": {
         "$oid": "5d920e5305b8d476cbcd75cf"
     },
-    "priority": 1,
-    "readFilter": null,
-    "writeFilter": null
+    "priority": 1
 }]

@@ -59,8 +59,6 @@ public class AclPermission {
     private final BsonValue _id;
     private final Set<String> roles;
     private final Predicate predicate;
-    private final BsonDocument readFilter;
-    private final BsonDocument writeFilter;
     private final int priority;
 
     // mongo permissions
@@ -68,13 +66,10 @@ public class AclPermission {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AclPermission.class);
 
-    AclPermission(BsonValue _id, Set<String> roles, Predicate predicate, BsonDocument readFilter,
-            BsonDocument writeFilter, BsonDocument mongoPermissions, int priority) {
+    AclPermission(BsonValue _id, Set<String> roles, Predicate predicate, BsonDocument mongoPermissions, int priority) {
         this._id = _id;
         this.roles = roles;
         this.predicate = predicate;
-        this.readFilter = readFilter;
-        this.writeFilter = writeFilter;
         this.priority = priority;
         this.mongoPermissions = mongoPermissions == null
             ? new MongoPermissions()
@@ -113,24 +108,6 @@ public class AclPermission {
         } catch (Throwable t) {
             throw new ConfigurationException("Wrong permission: invalid predicate " + _predicate, t);
         }
-
-        var _readFilter = doc.get("readFilter");
-
-        if (!(_readFilter == null || _readFilter.isNull()) && !_readFilter.isDocument()) {
-            throw new ConfigurationException("Wrong permission: readFilter must be a JSON object or null");
-        }
-
-        this.readFilter = _readFilter == null ? null
-                : _readFilter.isNull() ? null : JsonUtils.escapeKeys(_readFilter.asDocument(), true).asDocument();
-
-        var _writeFilter = doc.get("writeFilter");
-
-        if (!(_writeFilter == null || _writeFilter.isNull()) && !_writeFilter.isDocument()) {
-            throw new ConfigurationException("Wrong permission: writeFilter must be a JSON object or null");
-        }
-
-        this.writeFilter = _writeFilter == null ? null
-                : _writeFilter.isNull() ? null : JsonUtils.escapeKeys(_writeFilter.asDocument(), true).asDocument();
 
         var _priority = doc.get("priority");
 
@@ -196,48 +173,6 @@ public class AclPermission {
             throw new ConfigurationException("Wrong permission: invalid predicate: " + _predicate, t);
         }
 
-        if (args.containsKey("readFilter")) {
-            try {
-                String __readFilter = argValue(args, "readFilter");
-
-                var _readFilter = BsonDocument.parse(__readFilter);
-
-                if (!(_readFilter == null || _readFilter.isNull()) && !_readFilter.isDocument()) {
-                    throw new IllegalArgumentException("Wrong permission: readFilter must be a JSON object or null");
-                }
-
-                this.readFilter = _readFilter == null ? null
-                        : _readFilter.isNull() ? null
-                                : JsonUtils.escapeKeys(_readFilter.asDocument(), true).asDocument();
-            } catch (ClassCastException | JsonParseException jpe) {
-                throw new ConfigurationException(
-                        "Wrong permission: the readFilter is not a string containing a JSON Object", jpe);
-            }
-        } else {
-            this.readFilter = null;
-        }
-
-        if (args.containsKey("writeFilter")) {
-            try {
-                String __writeFilter = argValue(args, "writeFilter");
-
-                var _writeFilter = BsonDocument.parse(__writeFilter);
-
-                if (!(_writeFilter == null || _writeFilter.isNull()) && !_writeFilter.isDocument()) {
-                    throw new ConfigurationException("writeFilter must be a JSON object or null");
-                }
-
-                this.writeFilter = _writeFilter == null ? null
-                        : _writeFilter.isNull() ? null
-                                : JsonUtils.escapeKeys(_writeFilter.asDocument(), true).asDocument();
-            } catch (ClassCastException | JsonParseException jpe) {
-                throw new ConfigurationException(
-                        "Wrong permission: the writeFilter is not a string containing a JSON Object", jpe);
-            }
-        } else {
-            this.writeFilter = null;
-        }
-
         if (args.containsKey("priority")) {
             this.priority = argValue(args, "priority");
         } else {
@@ -266,21 +201,6 @@ public class AclPermission {
      */
     public Predicate getPredicate() {
         return predicate;
-    }
-
-    /**
-     * @return the readFilter
-     */
-    public BsonDocument getReadFilter() {
-        return readFilter == null || readFilter.isNull() ? null : JsonUtils.unescapeKeys(readFilter).asDocument();
-    }
-
-    /**
-     * @return the writeFilter
-     */
-    public BsonDocument getWriteFilter() {
-        return writeFilter == null || writeFilter.isNull() ? writeFilter
-                : JsonUtils.unescapeKeys(writeFilter).asDocument();
     }
 
     /**

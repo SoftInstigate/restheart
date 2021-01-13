@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.restheart.ConfigurationException;
-import org.restheart.idm.PwdCredentialAccount;
+import org.restheart.idm.FileRealmAccount;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
@@ -62,7 +62,7 @@ public class FileRealmAuthenticator
         extends FileConfigurablePlugin
         implements Authenticator {
 
-    private final Map<String, PwdCredentialAccount> accounts = new HashMap<>();
+    private final Map<String, FileRealmAccount> accounts = new HashMap<>();
 
     @InjectConfiguration
     public void init(Map<String, Object> confArgs)
@@ -89,7 +89,9 @@ public class FileRealmAuthenticator
 
                 Set<String> roles = Sets.newLinkedHashSet((Collection<String>) _roles);
 
-                PwdCredentialAccount a = new PwdCredentialAccount(userid, password, roles);
+                // remove the password before injecting the account properties in the account
+                u.remove("password");
+                FileRealmAccount a = new FileRealmAccount(userid, password, roles, u);
 
                 this.accounts.put(userid, a);
             } catch (ConfigurationException pce) {
@@ -116,7 +118,7 @@ public class FileRealmAuthenticator
     }
 
     private boolean verifyCredential(Account account, Credential credential) {
-        if (account instanceof PwdCredentialAccount) {
+        if (account instanceof FileRealmAccount) {
             if (credential instanceof PasswordCredential) {
                 return verifyPasswordCredential(account, credential);
             } else if (credential instanceof DigestCredential) {

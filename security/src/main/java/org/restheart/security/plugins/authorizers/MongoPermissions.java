@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.gson.JsonParseException;
 
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
@@ -38,13 +39,15 @@ import org.restheart.utils.JsonUtils;
 import org.restheart.utils.LambdaUtils;
 
 /**
- * This holdes the general permissions for MongoService
+ * Permissions specific for MongoService
  */
 public class MongoPermissions {
     final boolean whitelistManagementRequests;
     final boolean whitelistBulkPatch;
     final boolean whitelistBulkDelete;
     final boolean allowAllWriteModes;
+    private final BsonDocument readFilter;
+    private final BsonDocument writeFilter;
 
     final Set<String> hiddenProps = Sets.newHashSet();
     final Set<String> protectedProps = Sets.newHashSet();
@@ -55,11 +58,19 @@ public class MongoPermissions {
         this.whitelistBulkPatch = false;
         this.whitelistBulkDelete = false;
         this.allowAllWriteModes = false;
+        this.readFilter = null;
+        this.writeFilter = null;
     }
 
-    MongoPermissions(boolean whitelistManagementRequests, boolean whitelistBulkPatch, boolean whitelistBulkDelete,
-            boolean allowAllWriteModes, Set<String> hiddenProps, Set<String> protectedProps,
-            Map<String, BsonValue> overriddenProps) {
+    MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean whitelistManagementRequests,
+            boolean whitelistBulkPatch, boolean whitelistBulkDelete, boolean allowAllWriteModes,
+            Set<String> hiddenProps, Set<String> protectedProps, Map<String, BsonValue> overriddenProps) {
+        this.readFilter = readFilter == null ? null
+                : readFilter.isNull() ? null : JsonUtils.escapeKeys(readFilter.asDocument(), true).asDocument();
+
+        this.writeFilter = writeFilter == null ? null
+                : writeFilter.isNull() ? null : JsonUtils.escapeKeys(writeFilter.asDocument(), true).asDocument();
+
         this.whitelistManagementRequests = whitelistManagementRequests;
         this.whitelistBulkPatch = whitelistBulkPatch;
         this.whitelistBulkDelete = whitelistBulkDelete;
@@ -82,7 +93,25 @@ public class MongoPermissions {
             // return default values
             return new MongoPermissions();
         } else {
-            return new MongoPermissions(parseBooleanArg(args, "whitelistManagementRequests"),
+            var _readFilter = args.get("readFilter");
+
+            if (!(_readFilter == null || _readFilter.isNull()) && !_readFilter.isDocument()) {
+                throw new ConfigurationException("Wrong permission: readFilter must be a JSON object or null");
+            }
+
+            var readFilter = _readFilter == null ? null
+                    : _readFilter.isNull() ? null : JsonUtils.escapeKeys(_readFilter.asDocument(), true).asDocument();
+
+            var _writeFilter = args.get("writeFilter");
+
+            if (!(_writeFilter == null || _writeFilter.isNull()) && !_writeFilter.isDocument()) {
+                throw new ConfigurationException("Wrong permission: writeFilter must be a JSON object or null");
+            }
+
+            var writeFilter = _writeFilter == null ? null
+                    : _writeFilter.isNull() ? null : JsonUtils.escapeKeys(_writeFilter.asDocument(), true).asDocument();
+
+            return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "whitelistManagementRequests"),
                     parseBooleanArg(args, "whitelistBulkPatch"), parseBooleanArg(args, "whitelistBulkDelete"),
                     parseBooleanArg(args, "allowAllWriteModes"), parseSetArg(args, "hiddenProps"),
                     parseSetArg(args, "protectedProps"), parseMapArg(args, "overriddenProps"));
@@ -94,7 +123,53 @@ public class MongoPermissions {
             // return default values
             return new MongoPermissions();
         } else {
-            return new MongoPermissions(parseBooleanArg(args, "whitelistManagementRequests"),
+            BsonDocument readFilter = null;
+            BsonDocument writeFilter = null;
+
+            if (args.containsKey("readFilter")) {
+                try {
+                    String __readFilter = argValue(args, "readFilter");
+
+                    var _readFilter = BsonDocument.parse(__readFilter);
+
+                    if (!(_readFilter == null || _readFilter.isNull()) && !_readFilter.isDocument()) {
+                        throw new IllegalArgumentException(
+                                "Wrong permission: readFilter must be a JSON object or null");
+                    }
+
+                    readFilter = _readFilter == null ? null
+                            : _readFilter.isNull() ? null
+                                    : JsonUtils.escapeKeys(_readFilter.asDocument(), true).asDocument();
+                } catch (ClassCastException | JsonParseException jpe) {
+                    throw new ConfigurationException(
+                            "Wrong permission: the readFilter is not a string containing a JSON Object", jpe);
+                }
+            } else {
+                readFilter = null;
+            }
+
+            if (args.containsKey("writeFilter")) {
+                try {
+                    String __writeFilter = argValue(args, "writeFilter");
+
+                    var _writeFilter = BsonDocument.parse(__writeFilter);
+
+                    if (!(_writeFilter == null || _writeFilter.isNull()) && !_writeFilter.isDocument()) {
+                        throw new ConfigurationException("writeFilter must be a JSON object or null");
+                    }
+
+                    writeFilter = _writeFilter == null ? null
+                            : _writeFilter.isNull() ? null
+                                    : JsonUtils.escapeKeys(_writeFilter.asDocument(), true).asDocument();
+                } catch (ClassCastException | JsonParseException jpe) {
+                    throw new ConfigurationException(
+                            "Wrong permission: the writeFilter is not a string containing a JSON Object", jpe);
+                }
+            } else {
+                writeFilter = null;
+            }
+
+            return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "whitelistManagementRequests"),
                     parseBooleanArg(args, "whitelistBulkPatch"), parseBooleanArg(args, "whitelistBulkDelete"),
                     parseBooleanArg(args, "allowAllWriteModes"), parseSetArg(args, "hiddenProps"),
                     parseSetArg(args, "protectedProps"), parseMapArg(args, "overriddenProps"));
@@ -142,11 +217,12 @@ public class MongoPermissions {
         }
     }
 
-    private static Map<String, BsonValue> parseMapArg(Map<String, Object> args, String key) throws ConfigurationException {
+    private static Map<String, BsonValue> parseMapArg(Map<String, Object> args, String key)
+            throws ConfigurationException {
         if (args.containsKey(key)) {
             Object _value = argValue(args, key);
 
-            if (_value != null && _value instanceof Map<?,?>) {
+            if (_value != null && _value instanceof Map<?, ?>) {
                 Map<String, BsonValue> ret = Maps.newHashMap();
                 var item = (Map<?, ?>) _value;
                 item.entrySet().stream().forEach(e -> {
@@ -165,18 +241,22 @@ public class MongoPermissions {
                             }
                             ret.put((String) ikey, JsonUtils.parse(svalue));
                         } catch (Throwable t) {
-                            var ex = new ConfigurationException("Wrong permission: mongo." + key + " must be an object. A valid example is:\n\toverriddenProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'", t);
+                            var ex = new ConfigurationException("Wrong permission: mongo." + key
+                                    + " must be an object. A valid example is:\n\toverriddenProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'\n\t\tuser: \"@user._id\"",
+                                    t);
                             LambdaUtils.throwsSneakyException(ex);
                         }
                     } else {
-                        var ex = new ConfigurationException("Wrong permission: mongo." + key + " must be an object. A valid example is:\n\toverriddenProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'");
+                        var ex = new ConfigurationException("Wrong permission: mongo." + key
+                                + " must be an object. A valid example is:\n\toverriddenProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'\n\t\tuser: \"@user._id\"");
                         LambdaUtils.throwsSneakyException(ex);
                     }
                 });
 
                 return ret;
             } else {
-                throw new ConfigurationException("Wrong permission: mongo." + key + " must be an object. A valid example is:\n\toverriddenProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'");
+                throw new ConfigurationException("Wrong permission: mongo." + key
+                        + " must be an object. A valid example is:\n\toverriddenProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'\n\t\tuser: \"@user._id\"");
             }
         } else {
             return Maps.newHashMap();
@@ -236,11 +316,27 @@ public class MongoPermissions {
 
                 return ret;
             } else {
-                throw new ConfigurationException("Wrong permission: mongo." + key + " must be a JSON object {key1:json, key2:json, ..}");
+                throw new ConfigurationException(
+                        "Wrong permission: mongo." + key + " must be a JSON object {key1:json, key2:json, ..}");
             }
         } else {
             return Maps.newHashMap();
         }
+    }
+
+    /**
+     * @return the readFilter
+     */
+    public BsonDocument getReadFilter() {
+        return readFilter == null || readFilter.isNull() ? null : JsonUtils.unescapeKeys(readFilter).asDocument();
+    }
+
+    /**
+     * @return the writeFilter
+     */
+    public BsonDocument getWriteFilter() {
+        return writeFilter == null || writeFilter.isNull() ? writeFilter
+                : JsonUtils.unescapeKeys(writeFilter).asDocument();
     }
 
     public boolean getWhitelistManagementRequests() {

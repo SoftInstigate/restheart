@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.plugins.authorizers;
+package org.restheart.security.plugins.interceptors.mongo;
 
 import java.util.ArrayDeque;
 import org.bson.BsonDocument;
@@ -29,15 +29,15 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.plugins.authorizers.AclPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@RegisterPlugin(name = "filterPredicateInjector",
-        description = "inject the filter set by ACL into the request",
+@RegisterPlugin(name = "mongoFilters",
+        description = "enforces the filters according to the mongo.readFilter and mongo.writeFilter ACL permission",
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
-public class FilterPredicateInjector implements MongoInterceptor {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(FilterPredicateInjector.class);
+public class RequestFilters implements MongoInterceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestFilters.class);
 
     private boolean enabled = false;
 
@@ -64,16 +64,16 @@ public class FilterPredicateInjector implements MongoInterceptor {
         var predicate = AclPermission.from(exchange);
 
         if (request.isGet()
-                && predicate.getReadFilter() != null) {
-            LOGGER.debug("read filter: {}", predicate.getReadFilter());
-            addFilter(request, predicate.getReadFilter());
+                && predicate.getMongoPermissions().getReadFilter() != null) {
+            LOGGER.debug("read filter: {}", predicate.getMongoPermissions().getReadFilter());
+            addFilter(request, predicate.getMongoPermissions().getReadFilter());
         } else if ((request.isPatch()
                 || request.isPut()
                 || request.isPost()
                 || request.isDelete())
-                && predicate.getWriteFilter() != null) {
-            LOGGER.debug("write filter to add: {}", predicate.getWriteFilter());
-            addFilter(request, predicate.getWriteFilter());
+                && predicate.getMongoPermissions().getWriteFilter() != null) {
+            LOGGER.debug("write filter to add: {}", predicate.getMongoPermissions().getWriteFilter());
+            addFilter(request, predicate.getMongoPermissions().getWriteFilter());
         } else {
             LOGGER.trace("predicate specifies no filter");
         }
@@ -81,9 +81,11 @@ public class FilterPredicateInjector implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
+        var permission = AclPermission.from(request.getExchange());
         return enabled
                 && request.isHandledBy("mongo")
-                && AclPermission.from(request.getExchange()) != null;
+                && permission != null
+                && permission.getMongoPermissions() != null;
     }
 
     private void addFilter(final MongoRequest request, final BsonDocument filter) {
@@ -91,10 +93,7 @@ public class FilterPredicateInjector implements MongoInterceptor {
             return;
         }
 
-        // this resolve the filter against the current exchange
-        // eg {'username':'%USER'} => {'username':'uji'}
-        var resolvedFilter = AclPermission
-                .interpolateFilterVars(request.getExchange(), filter);
+        var resolvedFilter = MongoPermissionsUtils.interpolateBson(request, filter);
 
         if (request.getFilter() == null) {
             request.setFilter(new ArrayDeque<>());

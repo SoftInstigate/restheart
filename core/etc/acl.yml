@@ -16,12 +16,18 @@ permissions:
         - user
       predicate: path-template[value="/{username}"] and equals[%u, "${username}"]
       priority: 100
-      readFilter: '{"status": "public"}'
-      writeFilter: '{"status": "public"}'
+      mongo:
+        readFilter: '{"status": "public"}'
+        writeFilter: '{"status": "public"}'
+        protectedProps: ["status"]
+        overriddenProps: {"status": '"public"', "user": "@user.userid"}
 
     - roles:
         - user
       predicate: path-template[value="/{username}/{subpath}"] and equals[%u, "${username}"]
       priority: 100
-      readFilter: '{"status": "public"}'
-      writeFilter: '{"status": "public"}'
+      mongo:
+        readFilter: '{"status": "public"}'
+        writeFilter: '{"status": "public"}'
+        protectedProps: ["status"]
+        overriddenProps: {"status": '"public"', "user": "@user.userid"}
