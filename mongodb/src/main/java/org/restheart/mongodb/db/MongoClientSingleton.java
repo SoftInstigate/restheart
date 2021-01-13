@@ -103,6 +103,8 @@ public class MongoClientSingleton {
             throw new IllegalStateException("MongoClientSingleton is not initialized");
         }
 
+        LOGGER.info("Connecting to MongoDB...");
+
         mongoClient = new MongoClient(mongoUri);
 
         // invoke Plugins methods annotated with @InjectMongoClient
@@ -110,8 +112,6 @@ public class MongoClientSingleton {
         if (pluginsRegistry != null) {
             pluginsRegistry.injectDependency(mongoClient);
         }
-
-        LOGGER.info("Connecting to MongoDB...");
 
         // get the db version
         // this also is the first time we check the connection
