@@ -19,7 +19,7 @@ permissions:
       mongo:
         readFilter: '{"status": "public"}'
         writeFilter: '{"status": "public"}'
-        protectedProps: ["status"]
+        protectedProps: ["status", "user"]
         overriddenProps: {"status": '"public"', "user": "@user.userid"}
 
     - roles:
@@ -29,5 +29,5 @@ permissions:
       mongo:
         readFilter: '{"status": "public"}'
         writeFilter: '{"status": "public"}'
-        protectedProps: ["status"]
+        protectedProps: ["status", "user"]
         overriddenProps: {"status": '"public"', "user": "@user.userid"}

@@ -22,6 +22,8 @@ package org.restheart.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -58,5 +60,12 @@ public class RequestTest {
         var params = req.getPathParams("/{one}/{two}");
         assertEquals("foo", params.get("one"));
         assertEquals("bar", params.get("two"));
+
+        var params2 = req.getPathParams("/{one}/*");
+        assertEquals("foo", params2.get("one"));
+
+        var params3 = req.getPathParams("/{one}/{two}/*");
+        assertNull(params3.get("one"));
+        assertNull(params3.get("two"));
     }
 }

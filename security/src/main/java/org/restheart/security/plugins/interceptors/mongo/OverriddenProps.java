@@ -36,7 +36,7 @@ import org.restheart.utils.JsonUtils;
     interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
     enabledByDefault = true,
     // must be lesser priority than mongoProtectedProps
-    priority = 11) 
+    priority = 11)
 public class OverriddenProps implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {

@@ -29,7 +29,6 @@ import java.util.Set;
 
 import com.mongodb.MongoClient;
 
-import org.restheart.Configuration;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.handlers.CORSHandler;

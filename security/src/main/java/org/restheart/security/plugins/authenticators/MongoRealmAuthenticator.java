@@ -42,7 +42,6 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import org.bson.BsonDocument;
-import org.bson.Document;
 import org.mindrot.jbcrypt.BCrypt;
 import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;

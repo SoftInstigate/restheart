@@ -31,7 +31,6 @@ import io.undertow.util.Headers;
 import java.util.Arrays;
 
 import org.restheart.Bootstrapper;
-import org.restheart.Configuration;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.Exchange;
 import org.restheart.utils.HttpStatus;

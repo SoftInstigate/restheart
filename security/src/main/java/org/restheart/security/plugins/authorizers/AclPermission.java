@@ -36,9 +36,7 @@ import com.google.gson.JsonParser;
 
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.bson.json.JsonParseException;
 import org.restheart.ConfigurationException;
-import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
