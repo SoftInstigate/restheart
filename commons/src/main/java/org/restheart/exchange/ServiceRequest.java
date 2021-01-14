@@ -95,7 +95,8 @@ public abstract class ServiceRequest<T> extends Request<T> {
      * @return true if the request is handled by the specified Service
      */
     public boolean isHandledBy(String serviceName) {
-        return serviceName == null ? false : serviceName.equals(
-                PluginUtils.pipelineInfo(wrapped).getName());
+        return serviceName == null
+            ? false
+            : serviceName.equals(PluginUtils.pipelineInfo(wrapped).getName());
     }
 }

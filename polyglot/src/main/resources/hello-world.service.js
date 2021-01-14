@@ -1,8 +1,8 @@
 ({
     options: {
-        name: "testJsSrv",
-        description: "just an example JavaScript service",
-        uri: '/test',
+        name: "helloWorldService",
+        description: "just another Hello World",
+        uri: '/hello',
         secured: false, // optional, default false
         matchPolicy: "PREFIX" // optional, default PREFIX
     },

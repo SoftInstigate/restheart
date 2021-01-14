@@ -20,6 +20,7 @@
 package org.restheart.utils;
 
 import io.undertow.server.HttpServerExchange;
+
 import java.lang.reflect.Type;
 import java.util.Map;
 import org.restheart.cache.Cache;
@@ -42,23 +43,55 @@ import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ *
+ * @return the interceptPoint as defined by the @RegisterPlugin annotation if
+ *         annotated or the value of the field interceptPoint if exists
  */
 public class PluginUtils {
     @SuppressWarnings("rawtypes")
     public static InterceptPoint interceptPoint(Interceptor interceptor) {
-        var a = interceptor.getClass()
-                .getDeclaredAnnotation(RegisterPlugin.class);
+        var a = interceptor.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
         if (a == null) {
-            return null;
+            // if class is not annotated, look for field interceptPoint
+            return findInterceptPointField(interceptor.getClass(), interceptor);
         } else {
             return a.interceptPoint();
         }
     }
 
+    /**
+     * this is used to retrieve the interceptPoint of an Interceptor that is not annotated
+     * with @RegisterPlugin
+     *
+     * @param clazz
+     * @param o
+     * @return
+     */
+    private static InterceptPoint findInterceptPointField(Class<?> clazz, Object o) {
+        try {
+            var field = clazz.getDeclaredField("interceptPoint");
+            field.setAccessible(true);
+
+            var value = field.get(o);
+            if (value instanceof InterceptPoint) {
+                return (InterceptPoint) value;
+            } else {
+                return null;
+            }
+        } catch (NoSuchFieldException nfe) {
+            if (clazz.getSuperclass() != null) {
+                return findInterceptPointField(clazz.getSuperclass(), o);
+            } else {
+                return null;
+            }
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
     public static InitPoint initPoint(Initializer initializer) {
-        var a = initializer.getClass()
-                .getDeclaredAnnotation(RegisterPlugin.class);
+        var a = initializer.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
         if (a == null) {
             return null;
@@ -69,8 +102,7 @@ public class PluginUtils {
 
     @SuppressWarnings("rawtypes")
     public static boolean requiresContent(Interceptor interceptor) {
-        var a = interceptor.getClass()
-                .getDeclaredAnnotation(RegisterPlugin.class);
+        var a = interceptor.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
         if (a == null) {
             return false;
@@ -85,30 +117,23 @@ public class PluginUtils {
      * @return the plugin name
      */
     public static String name(Plugin plugin) {
-        var a = plugin.getClass()
-                .getDeclaredAnnotation(RegisterPlugin.class);
+        var a = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
-        return a == null
-                ? null
-                : a.name();
+        return a == null ? null : a.name();
     }
 
     /**
      *
      * @param service
      * @return the service default URI. If not explicitly set via defaulUri
-     * attribute, it is /[service-name]
+     *         attribute, it is /[service-name]
      */
     @SuppressWarnings("rawtypes")
     public static String defaultURI(Service service) {
-        var a = service.getClass()
-                .getDeclaredAnnotation(RegisterPlugin.class);
+        var a = service.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
-        return a == null
-                ? null
-                : a.defaultURI() == null || "".equals(a.defaultURI())
-                ? "/".concat(a.name())
-                : a.defaultURI();
+        return a == null ? null
+                : a.defaultURI() == null || "".equals(a.defaultURI()) ? "/".concat(a.name()) : a.defaultURI();
     }
 
     /**
@@ -118,8 +143,7 @@ public class PluginUtils {
      */
     @SuppressWarnings("rawtypes")
     public static MATCH_POLICY uriMatchPolicy(Service service) {
-        return service.getClass()
-                .getDeclaredAnnotation(RegisterPlugin.class).uriMatchPolicy();
+        return service.getClass().getDeclaredAnnotation(RegisterPlugin.class).uriMatchPolicy();
     }
 
     /**
@@ -127,34 +151,27 @@ public class PluginUtils {
      * @param <P>
      * @param serviceClass
      * @return the service default URI. If not explicitly set via defaulUri
-     * attribute, it is /[service-name]
+     *         attribute, it is /[service-name]
      */
     @SuppressWarnings("rawtypes")
     public static <P extends Service> String defaultURI(Class<P> serviceClass) {
-        var a = serviceClass
-                .getDeclaredAnnotation(RegisterPlugin.class);
+        var a = serviceClass.getDeclaredAnnotation(RegisterPlugin.class);
 
-        return a == null
-                ? null
-                : a.defaultURI() == null || "".equals(a.defaultURI())
-                ? "/".concat(a.name())
-                : a.defaultURI();
+        return a == null ? null
+                : a.defaultURI() == null || "".equals(a.defaultURI()) ? "/".concat(a.name()) : a.defaultURI();
     }
 
     /**
      *
      * @param <P>
-     * @param conf the plugin configuration got from @InjectConfiguration
+     * @param conf         the plugin configuration got from @InjectConfiguration
      * @param serviceClass the class of the service
      * @return the actual service uri set in cofiguration or the defaultURI
      */
     @SuppressWarnings("rawtypes")
-    public static <P extends Service> String actualUri(Map<String, Object> conf,
-            Class<P> serviceClass) {
+    public static <P extends Service> String actualUri(Map<String, Object> conf, Class<P> serviceClass) {
 
-        if (conf != null
-                && conf.get("uri") != null
-                && conf.get("uri") instanceof String) {
+        if (conf != null && conf.get("uri") != null && conf.get("uri") instanceof String) {
             return (String) conf.get("uri");
         } else {
             return PluginUtils.defaultURI(serviceClass);
@@ -165,12 +182,11 @@ public class PluginUtils {
      *
      * @param service
      * @return the intercept points of interceptors that must not be executed on
-     * requests handled by service
+     *         requests handled by service
      */
     @SuppressWarnings("rawtypes")
     public static InterceptPoint[] dontIntercept(Service service) {
-        var a = service.getClass()
-                .getDeclaredAnnotation(RegisterPlugin.class);
+        var a = service.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
         if (a == null) {
             return new InterceptPoint[0];
@@ -184,22 +200,18 @@ public class PluginUtils {
      * @param registry
      * @param exchange
      * @return the service handling the exchange or null if the request is not
-     * handled by a service
+     *         handled by a service
      */
     @SuppressWarnings("rawtypes")
-    public static Service handlingService(PluginsRegistry registry,
-            HttpServerExchange exchange) {
+    public static Service handlingService(PluginsRegistry registry, HttpServerExchange exchange) {
         var pi = pipelineInfo(exchange);
 
         if (pi != null && pi.getType() == SERVICE) {
             var srvName = pi.getName();
 
             if (srvName != null) {
-                var _s = registry.getServices()
-                        .stream()
-                        .filter(s -> srvName.equals(s.getName()))
-                        .map(s -> s.getInstance())
-                        .findAny();
+                var _s = registry.getServices().stream().filter(s -> srvName.equals(s.getName()))
+                        .map(s -> s.getInstance()).findAny();
 
                 if (_s.isPresent()) {
                     return _s.get();
@@ -214,16 +226,13 @@ public class PluginUtils {
      *
      * @param registry
      * @param exchange
-     * @return the intercept points of interceptors that must not be executed on
-     * the exchange
+     * @return the intercept points of interceptors that must not be executed on the
+     *         exchange
      */
-    public static InterceptPoint[] dontIntercept(PluginsRegistry registry,
-            HttpServerExchange exchange) {
+    public static InterceptPoint[] dontIntercept(PluginsRegistry registry, HttpServerExchange exchange) {
         var hs = handlingService(registry, exchange);
 
-        return hs == null
-                ? new InterceptPoint[0]
-                : dontIntercept(hs);
+        return hs == null ? new InterceptPoint[0] : dontIntercept(hs);
     }
 
     public static PipelineInfo pipelineInfo(HttpServerExchange exchange) {
@@ -231,22 +240,16 @@ public class PluginUtils {
     }
 
     @SuppressWarnings("rawtypes")
-    private static LoadingCache<ExchangeTypeResolver, Type> RC = CacheFactory
-            .createLocalLoadingCache(
-                    Integer.MAX_VALUE,
-                    Cache.EXPIRE_POLICY.NEVER, 0,
-                    plugin -> plugin.requestType());
+    private static LoadingCache<ExchangeTypeResolver, Type> RC = CacheFactory.createLocalLoadingCache(Integer.MAX_VALUE,
+            Cache.EXPIRE_POLICY.NEVER, 0, plugin -> plugin.requestType());
 
     @SuppressWarnings("rawtypes")
-    private static LoadingCache<ExchangeTypeResolver, Type> SC = CacheFactory
-            .createLocalLoadingCache(
-                    Integer.MAX_VALUE,
-                    Cache.EXPIRE_POLICY.NEVER, 0,
-                    plugin -> plugin.responseType());
+    private static LoadingCache<ExchangeTypeResolver, Type> SC = CacheFactory.createLocalLoadingCache(Integer.MAX_VALUE,
+            Cache.EXPIRE_POLICY.NEVER, 0, plugin -> plugin.responseType());
 
     /**
-     * Plugin.requestType() is heavy. This helper methods speeds up invocation
-     * using a cache
+     * Plugin.requestType() is heavy. This helper methods speeds up invocation using
+     * a cache
      *
      * @param plugin
      * @return

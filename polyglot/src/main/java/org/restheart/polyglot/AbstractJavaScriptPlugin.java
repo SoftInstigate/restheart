@@ -1,16 +1,15 @@
 package org.restheart.polyglot;
 
-import org.restheart.plugins.StringService;
-import org.restheart.exchange.StringRequest;
-import org.restheart.exchange.StringResponse;
+import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 
-public abstract class AbstractJavaScriptService implements StringService {
+public abstract class AbstractJavaScriptPlugin {
     protected String name;
     protected String description;
     protected String uri;
     protected boolean secured;
     protected MATCH_POLICY matchPolicy;
+    protected InterceptPoint interceptPoint;
 
     public String getName() {
         return name;
@@ -32,6 +31,7 @@ public abstract class AbstractJavaScriptService implements StringService {
         return matchPolicy;
     }
 
-    @Override
-    public abstract void handle(StringRequest request, StringResponse response);
+    public InterceptPoint getInterceptPoint() {
+        return interceptPoint;
+    }
 }

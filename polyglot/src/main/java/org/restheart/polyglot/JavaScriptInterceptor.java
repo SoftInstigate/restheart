@@ -31,8 +31,8 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
-import org.restheart.plugins.StringService;
-import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
+import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.StringInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +40,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JavaScriptService extends AbstractJavaScriptPlugin implements StringService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JavaScriptService.class);
+public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements StringInterceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JavaScriptInterceptor.class);
 
     Map<String, String> OPTS = new HashMap<>();
 
@@ -52,9 +52,9 @@ public class JavaScriptService extends AbstractJavaScriptPlugin implements Strin
 
     private MongoClient mclient;
 
-    private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {}\n})";
+    private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {},\n\tresolve: (request) => {}\n})";
 
-    JavaScriptService(Path scriptPath, Path requireCdw, MongoClient mclient) throws IOException {
+    JavaScriptInterceptor(Path scriptPath, Path requireCdw, MongoClient mclient) throws IOException {
         this.mclient = mclient;
 
         OPTS.put("js.commonjs-require", "true");
@@ -114,42 +114,22 @@ public class JavaScriptService extends AbstractJavaScriptPlugin implements Strin
 
             this.description = parsed.getMember("options").getMember("description").asString();
 
-            if (!parsed.getMember("options").getMemberKeys().contains("uri")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'options.uri', " + errorHint);
-            }
+            this.uri = null;
+            this.secured = false;
+            this.matchPolicy = null;
 
-            if (!parsed.getMember("options").getMember("uri").isString()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.uri', " + errorHint);
-            }
-
-            if (!parsed.getMember("options").getMember("uri").asString().startsWith("/")) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.uri', " + errorHint);
-            }
-
-            this.uri = parsed.getMember("options").getMember("uri").asString();
-
-            if (!parsed.getMember("options").getMemberKeys().contains("secured")) {
-                this.secured = false;
+            if (!parsed.getMember("options").getMemberKeys().contains("interceptPoint")) {
+                this.interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH;
             } else {
-                if (!parsed.getMember("options").getMember("secured").isBoolean()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.secured', " + errorHint);
+                if (!parsed.getMember("options").getMember("interceptPoint").isString()) {
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.interceptPoint', " + errorHint);
                 } else {
-                    this.secured = parsed.getMember("options").getMember("secured").asBoolean();
-                }
-            }
-
-            if (!parsed.getMember("options").getMemberKeys().contains("matchPolicy")) {
-                this.matchPolicy = MATCH_POLICY.PREFIX;
-            } else {
-                if (!parsed.getMember("options").getMember("matchPolicy").isString()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.secured', " + errorHint);
-                } else {
-                    var _matchPolicy = parsed.getMember("options").getMember("matchPolicy").asString();
+                    var _interceptPoint = parsed.getMember("options").getMember("interceptPoint").asString();
                     try {
-                        this.matchPolicy = MATCH_POLICY.valueOf(_matchPolicy);
+                        this.interceptPoint = InterceptPoint.valueOf(_interceptPoint);
                     } catch (Throwable t) {
                         throw new IllegalArgumentException(
-                                "wrong js plugin, wrong member 'options.matchPolicy', " + errorHint);
+                                "wrong js plugin, wrong member 'options.interceptPoint', " + errorHint);
                     }
                 }
             }
@@ -173,6 +153,14 @@ public class JavaScriptService extends AbstractJavaScriptPlugin implements Strin
 
             if (!parsed.getMember("handle").canExecute()) {
                 throw new IllegalArgumentException("wrong js plugin, member 'handle' is not a function, " + errorHint);
+            }
+
+            if (!parsed.getMemberKeys().contains("resolve")) {
+                throw new IllegalArgumentException("wrong js plugin, missing member 'resolve', " + errorHint);
+            }
+
+            if (!parsed.getMember("resolve").canExecute()) {
+                throw new IllegalArgumentException("wrong js plugin, member 'resolve' is not a function, " + errorHint);
             }
         }
     }
@@ -202,6 +190,35 @@ public class JavaScriptService extends AbstractJavaScriptPlugin implements Strin
             }
 
             ctx.eval(source).getMember("handle").executeVoid(request, response);
+        }
+    }
+
+    @Override
+    public boolean resolve(StringRequest request, StringResponse response) {
+        if (getModulesReplacements() != null) {
+            LOGGER.debug("modules-replacements: {} ", getModulesReplacements());
+            OPTS.put("js.commonjs-core-modules-replacements", getModulesReplacements());
+        } else {
+            OPTS.remove("js.commonjs-core-modules-replacements");
+        }
+
+        try (var ctx = Context.newBuilder().engine(engine).allowAllAccess(true).allowHostClassLookup(className -> true)
+                .allowIO(true).allowExperimentalOptions(true).options(OPTS).build()) {
+
+            ctx.getBindings("js").putMember("LOGGER", LOGGER);
+
+            if (this.mclient != null) {
+                ctx.getBindings("js").putMember("mclient", this.mclient);
+            }
+
+            var ret = ctx.eval(source).getMember("resolve").execute(request);
+
+            if (ret.isBoolean()) {
+                return ret.asBoolean();
+            } else {
+                LOGGER.error("resolve() of plugin did not returned a boolean", name);
+                return false;
+            }
         }
     }
 }

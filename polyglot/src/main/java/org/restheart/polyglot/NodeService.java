@@ -30,6 +30,7 @@ import com.google.gson.JsonParser;
 import com.mongodb.MongoClient;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
+import org.restheart.plugins.StringService;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class NodeService extends AbstractJavaScriptService {
+public class NodeService extends AbstractJavaScriptPlugin implements StringService {
     private static final Logger LOGGER = LoggerFactory.getLogger(NodeService.class);
 
     private String source;
