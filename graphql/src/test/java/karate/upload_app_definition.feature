@@ -1,13 +1,14 @@
-Feature: upload GraphQL App definition on MongoDB collection
+Feature: Utils feature to upload App Definition om MongoDB
   
   Background: 
     
     * url restheartBaseURL
-    * def appDef = read('app-definitionExample.json')
+    * def appDef = (__arg.appDef == null) ? read('app-definitionExample.json') : __arg.appDef
+    * def expectedStatus = (__arg.expectedStatus == null) ? 201 : __arg.expectedStatus
     * configure charset = null
 
 
-  Scenario: upload correct GraphQL App definition
+  Scenario: upload GraphQL App definition
 
     * header Authorization = rhBasicAuth
     * path 'test-apps'
@@ -20,7 +21,9 @@ Feature: upload GraphQL App definition on MongoDB collection
     * header Authorization = rhBasicAuth
     * path 'test-apps'
 
+
     # upload GraphQL app definition
     Given request appDef
     When method POST
-    Then status 200
+    Then match responseStatus == expectedStatus
+

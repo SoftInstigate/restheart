@@ -5,6 +5,7 @@ import com.mongodb.MongoClient;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HeaderValues;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoResponse;
@@ -88,11 +89,17 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         return e -> {
 
             try{
-                AppDefinitionLoadingCache cache = AppDefinitionLoadingCache.getInstance();
-                String[] splitPath = e.getRequestPath().split("/");
-                String appUri = String.join("/", Arrays.copyOfRange(splitPath, 2, splitPath.length));
-                GraphQLApp appDef = cache.get(appUri);
-                GraphQLRequest.init(e, appUri, appDef);
+                if (e.getRequestMethod().equalToString("POST")){
+                    AppDefinitionLoadingCache cache = AppDefinitionLoadingCache.getInstance();
+                    String[] splitPath = e.getRequestPath().split("/");
+                    String appUri = String.join("/", Arrays.copyOfRange(splitPath, 2, splitPath.length));
+                    GraphQLApp appDef = cache.get(appUri);
+                    GraphQLRequest.init(e, appUri, appDef);
+                }
+                else{
+                    throw new BadRequestException(HttpStatus.SC_METHOD_NOT_ALLOWED);
+                }
+
             }catch (GraphQLAppDefNotFoundException notFoundException){
                 LOGGER.error(notFoundException.getMessage());
                 throw new BadRequestException(HttpStatus.SC_NOT_FOUND);

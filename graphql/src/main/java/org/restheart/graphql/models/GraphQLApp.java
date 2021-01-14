@@ -6,6 +6,7 @@ import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
+import graphql.schema.idl.errors.SchemaProblem;
 import org.restheart.graphql.scalars.BsonScalars;
 
 import java.util.Map;
@@ -97,28 +98,36 @@ public class GraphQLApp {
             }
 
             String schemaWithBsonScalars = BsonScalars.getBsonScalarHeader() + this.schema;
-            TypeDefinitionRegistry typeRegistry = new SchemaParser().parse(schemaWithBsonScalars);
-            RuntimeWiring.Builder RWBuilder = RuntimeWiring.newRuntimeWiring();
-            Map<String, GraphQLScalarType> bsonScalars = BsonScalars.getBsonScalars();
 
-            bsonScalars.forEach(((s, graphQLScalarType) -> {
-                RWBuilder.scalar(graphQLScalarType);
-            }));
+            try{
 
-            if(mappings != null){
+                TypeDefinitionRegistry typeRegistry = new SchemaParser().parse(schemaWithBsonScalars);
 
-                this.mappings.forEach(((type, typeMapping) ->
-                        RWBuilder.type(typeMapping.getTypeWiring(typeRegistry))));
+                RuntimeWiring.Builder RWBuilder = RuntimeWiring.newRuntimeWiring();
+                Map<String, GraphQLScalarType> bsonScalars = BsonScalars.getBsonScalars();
 
+                bsonScalars.forEach(((s, graphQLScalarType) -> {
+                    RWBuilder.scalar(graphQLScalarType);
+                }));
+
+                if(mappings != null){
+
+                    this.mappings.forEach(((type, typeMapping) ->
+                            RWBuilder.type(typeMapping.getTypeWiring(typeRegistry))));
+
+                }
+
+                RuntimeWiring runtimeWiring = RWBuilder.build();
+
+                SchemaGenerator schemaGenerator = new SchemaGenerator();
+
+                GraphQLSchema execSchema =  schemaGenerator.makeExecutableSchema(typeRegistry, runtimeWiring);
+
+                return new GraphQLApp(this.descriptor, this.schema, this.mappings, execSchema);
+
+            } catch (SchemaProblem schemaProblem){
+                throw new IllegalArgumentException("Given String is not a valid GraphQL schema");
             }
-
-            RuntimeWiring runtimeWiring = RWBuilder.build();
-
-            SchemaGenerator schemaGenerator = new SchemaGenerator();
-
-            GraphQLSchema execSchema =  schemaGenerator.makeExecutableSchema(typeRegistry, runtimeWiring);
-
-            return new GraphQLApp(this.descriptor, this.schema, this.mappings, execSchema);
         }
 
     }

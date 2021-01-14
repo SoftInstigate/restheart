@@ -44,6 +44,16 @@
             <version>20190722</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-apache</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.intuit.karate</groupId>
+            <artifactId>karate-junit4</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -1,8 +1,10 @@
 package org.restheart.graphql;
 
 import org.bson.BsonDocument;
+import org.bson.BsonInvalidOperationException;
 import org.bson.BsonValue;
 import org.restheart.graphql.models.*;
+import org.restheart.utils.JsonUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +41,7 @@ public class GraphQLAppDeserializer {
 
             if(appDef.containsKey("mappings")){
                 if (appDef.get("mappings").isDocument()){
-                    mappingsMap = getMappings(appDef.getDocument("mappings"));
+                    mappingsMap = getMappings(JsonUtils.unescapeKeys(appDef.getDocument("mappings")).asDocument());
                 }
                 else{
                     throw new GraphQLIllegalAppDefinitionException(
@@ -54,7 +56,8 @@ public class GraphQLAppDeserializer {
                         .schema(schema)
                         .mappings(mappingsMap)
                         .build();
-            } catch (IllegalStateException e){
+
+            } catch (IllegalStateException | IllegalArgumentException e){
                 throw  new GraphQLIllegalAppDefinitionException(
                         e.getMessage()
                 );
@@ -63,31 +66,34 @@ public class GraphQLAppDeserializer {
 
     }
 
-    private static AppDescriptor getAppDescriptor(BsonDocument doc){
+    private static AppDescriptor getAppDescriptor(BsonDocument doc) throws GraphQLIllegalAppDefinitionException {
 
-        BsonDocument descriptor = doc.getDocument("descriptor");
+        try{
+            BsonDocument descriptor = doc.getDocument("descriptor");
 
-        AppDescriptor.Builder descBuilder = AppDescriptor.newBuilder()
-                .appName(descriptor.getString("name").getValue())
-                .description(descriptor.getString("description").getValue());
+            AppDescriptor.Builder descBuilder = AppDescriptor.newBuilder()
+                    .appName(descriptor.getString("name").getValue())
+                    .description(descriptor.getString("description").getValue());
 
-        if(descriptor.containsKey("uri") && descriptor.get("uri").isString()){
+            if (descriptor.containsKey("uri") && descriptor.get("uri").isString()) {
 
-            descBuilder.uri(descriptor.getString("uri").getValue());
+                descBuilder.uri(descriptor.getString("uri").getValue());
+            } else {
+                descBuilder.uri(descriptor.getString("name").getValue());
+            }
+
+            if (descriptor.containsKey("enabled") && descriptor.get("enabled").isBoolean()) {
+
+                descBuilder.enabled(descriptor.getBoolean("enabled").getValue());
+            } else {
+                descBuilder.enabled(true);
+            }
+
+            return descBuilder.build();
+
+        }catch (BsonInvalidOperationException bsonEx){
+            throw new GraphQLIllegalAppDefinitionException("Error with app descriptor. " + bsonEx.getMessage());
         }
-        else {
-            descBuilder.uri(descriptor.getString("name").getValue());
-        }
-
-        if (descriptor.containsKey("enabled") && descriptor.get("enabled").isBoolean()){
-
-            descBuilder.enabled(descriptor.getBoolean("enabled").getValue());
-        }
-        else {
-            descBuilder.enabled(true);
-        }
-
-        return descBuilder.build();
     }
 
     private static Map<String, TypeMapping> getMappings(BsonDocument doc) throws GraphQLIllegalAppDefinitionException {

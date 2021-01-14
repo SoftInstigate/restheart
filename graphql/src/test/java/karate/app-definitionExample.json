@@ -13,34 +13,34 @@
         "db": "sample_mflix",
         "collection": "users",
         "find":{
-          "email": {"$fk": "email"}
+          "email": {"_$fk": "email"}
         }
       },
       "movie":{
         "db": "sample_mflix",
         "collection": "movies",
         "find":{
-          "_id": {"$fk": "movie_id"}
+          "_id": {"_$fk": "movie_id"}
         }
       }
     },
     "Movie":{
-      "imdbRate": "imdb.rating",
-      "imdbVotes": "imdb.votes",
-      "tomatoesRate": "tomatoes.viewer.rating",
-      "tomatoesReviewsNum": "tomatoes.viewer.numReviews",
+      "imdbRate": "imdb::rating",
+      "imdbVotes": "imdb::votes",
+      "tomatoesRate": "tomatoes::viewer::rating",
+      "tomatoesReviewsNum": "tomatoes::viewer::numReviews",
       "lastUpdate": "lastupdated",
       "fullPlot": "fullplot",
       "filmType": "type",
       "comments": {
         "db": "sample_mflix",
         "collection": "comments",
-        "find": {"$and":[{"movie_id": {"$fk":"_id"}},
-          {"date":{"$gte":{"$arg":"startDate"}, "$lt":{"$arg":"endDate"}}}]
+        "find": {"_$and":[{"movie_id": {"_$fk":"_id"}},
+          {"date":{"_$gte":{"_$arg":"startDate"}, "_$lt":{"_$arg":"endDate"}}}]
         },
-        "sort": {"date":{"$arg": "sort"}},
-        "skip": {"$arg": "skip"},
-        "limit": {"$arg": "limit"}
+        "sort": {"date":{"_$arg": "sort"}},
+        "skip": {"_$arg": "skip"},
+        "limit": {"_$arg": "limit"}
       }
     },
     "Session":{
@@ -48,7 +48,7 @@
         "db": "sample_mflix",
         "collection": "user",
         "find":{
-          "email": {"$fk":"user_id"}
+          "email": {"_$fk":"user_id"}
         }
       }
     },
@@ -56,48 +56,48 @@
       "comments":{
         "db": "sample_mflix",
         "collection": "comments",
-        "find":{"$and":[{"email": {"$fk":"email"}},
-          {"date":{"$gte":{"$arg":"startDate"}, "$lt":{"$arg":"endDate"}}}]
+        "find":{"_$and":[{"email": {"_$fk":"email"}},
+          {"date":{"_$gte":{"_$arg":"startDate"}, "_$lt":{"_$arg":"endDate"}}}]
         },
-        "sort":{"_id":{"$arg": "sort"}},
-        "skip":{"$arg": "skip"},
-        "limit":{"$arg": "limit"}
+        "sort":{"_id":{"_$arg": "sort"}},
+        "skip":{"_$arg": "skip"},
+        "limit":{"_$arg": "limit"}
       }
     },
     "Query":{
       "MoviesByTitle":{
         "db": "sample_mflix",
         "collection": "movies",
-        "find":{"title":{"$arg":"title"}}
+        "find":{"title":{"_$arg":"title"}}
       },
       "MoviesByYear":{
         "db": "sample_mflix",
         "collection": "movies",
-        "find":{"year": {"$arg": "year"}},
-        "sort":{"_id":{"$arg": "sort"}},
-        "skip":{"$arg": "skip"},
-        "limit":{"$arg": "limit"}
+        "find":{"year": {"_$arg": "year"}},
+        "sort":{"_id":{"_$arg": "sort"}},
+        "skip":{"_$arg": "skip"},
+        "limit":{"_$arg": "limit"}
       },
       "UserByEmail":{
         "db": "sample_mflix",
         "collection": "users",
-        "find":{"email":{"$arg":"email"}}
+        "find":{"email":{"_$arg":"email"}}
       },
       "MoviesByTomatoesRateRange":{
         "db": "sample_mflix",
         "collection": "movies",
-        "find":{"tomatoes.viewer.rating":{"$gte":{"$arg":"min"}, "$lt":{"$arg":"max"}}},
-        "sort":{"tomatoes.viewer.rating": {"$arg": "sort"}},
-        "skip":{"$arg": "skip"},
-        "limit":{"$arg":"limit"}
+        "find":{"tomatoes::viewer::rating":{"_$gte":{"_$arg":"min"}, "_$lt":{"_$arg":"max"}}},
+        "sort":{"tomatoes::viewer::rating": {"_$arg": "sort"}},
+        "skip":{"_$arg": "skip"},
+        "limit":{"_$arg":"limit"}
       },
       "TheatersByCity":{
         "db": "sample_mflix",
         "collection": "theaters",
-        "find":{"location.address.city": {"$arg": "city"}},
-        "sort":{"location.address.city": {"$arg":"sort"}},
-        "skip":{"$arg":"skip"},
-        "limit":{"$arg":"limit"}
+        "find":{"location::address::city": {"_$arg": "city"}},
+        "sort":{"location::address::city": {"_$arg":"sort"}},
+        "skip":{"_$arg":"skip"},
+        "limit":{"_$arg":"limit"}
       }
     }
   }

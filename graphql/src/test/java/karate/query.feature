@@ -5,8 +5,8 @@ Feature: GraphQL query response test
     * url graphQLBaseURL
     * path 'mflix'
     * configure charset = null
-    * json appDef = read('app-definitionExample.json')
-    * call read('upload-app-definition.feature') {appDef: #(appDef)}
+    * def appDef = read('app-definitionExample.json')
+    * call read('upload_app_definition.feature') {appDef: #(appDef)}
 
 
   Scenario: Illegal Content-Type
@@ -87,10 +87,8 @@ Feature: GraphQL query response test
 
 
   Scenario: Undefined field in GraphQL query result type
-      
-      # * json appDef = read('app-definitionExample.json')
-      # * call appDefUploader {appDef: #(appDef)}
-      
+
+
       * text query = 
       """
       {
