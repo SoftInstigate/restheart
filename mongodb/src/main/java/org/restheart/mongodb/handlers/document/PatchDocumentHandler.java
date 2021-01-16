@@ -110,6 +110,8 @@ public class PatchDocumentHandler extends PipelinedHandler {
                 request.getWriteMode(),
                 request.isETagCheckRequired());
 
+        response.setDbOperationResult(result);
+
         if (RequestHelper.isResponseInConflict(result, exchange)) {
             next(exchange);
             return;
