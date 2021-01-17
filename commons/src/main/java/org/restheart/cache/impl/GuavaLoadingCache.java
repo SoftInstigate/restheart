@@ -22,6 +22,7 @@ package org.restheart.cache.impl;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +39,8 @@ public class GuavaLoadingCache<K, V> implements org.restheart.cache.LoadingCache
     private final LoadingCache<K, Optional<V>> wrapped;
 
     public GuavaLoadingCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Function<K, V> loader) {
-        CacheBuilder builder = CacheBuilder.newBuilder();
+        CacheBuilder builder = CacheBuilder.newBuilder()
+            .concurrencyLevel(Runtime.getRuntime().availableProcessors());
 
         builder.maximumSize(size);
 

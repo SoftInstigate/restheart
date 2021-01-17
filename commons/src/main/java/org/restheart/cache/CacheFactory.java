@@ -32,7 +32,7 @@ import org.restheart.cache.impl.GuavaLoadingCache;
  */
 public class CacheFactory {
     /**
-     * 
+     *
      * @param <K> the type of the cache keys
      * @param <V> the type of the cached values
      * @param size the size of the cache
@@ -44,9 +44,9 @@ public class CacheFactory {
     public static <K,V> LoadingCache<K,V> createLocalLoadingCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl, Function<K,V> loader) {
         return new GuavaLoadingCache<>(size, expirePolicy, ttl, loader);
     }
-    
+
     /**
-     * 
+     *
      * @param <K> the type of the cache keys
      * @param <V> the type of the cached values
      * @param size the size of the cache
@@ -58,7 +58,7 @@ public class CacheFactory {
         return new GuavaCache<>(size, expirePolicy, ttl);
     }
     /**
-     * 
+     *
      * @param <K> the type of the cache keys.
      * @param <V> the type of the cached values.
      * @param size the size of the cache.

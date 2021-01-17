@@ -123,7 +123,7 @@ public class RequestContentInjector extends PipelinedHandler {
                 || (policy == ON_REQUIRES_CONTENT_BEFORE_AUTH
                 && isContentRequired(exchange, InterceptPoint.REQUEST_BEFORE_AUTH)));
     }
-    
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     private boolean isContentRequired(HttpServerExchange exchange,
             InterceptPoint interceptPoint) {

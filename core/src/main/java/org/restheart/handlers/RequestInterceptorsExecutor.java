@@ -157,9 +157,9 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
 
         // If an interceptor sets the response as errored
         // stop processing the request and send the response
-        // This happens AFTER_AUTH, otherwise not authenticated requests 
+        // This happens AFTER_AUTH, otherwise not authenticated requests
         // might snoop information. For instance, a request to MongoService might
-        // be able to check if a collection exists (this check is done by 
+        // be able to check if a collection exists (this check is done by
         // BEFORE_AUTH interceptor CollectionPropsInjector)
         if (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH
                 && Exchange.isInError(exchange)) {

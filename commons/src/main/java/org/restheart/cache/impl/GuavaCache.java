@@ -38,7 +38,8 @@ public class GuavaCache<K, V> implements org.restheart.cache.Cache<K, V> {
     private final Cache<K, Optional<V>> wrapped;
 
     public GuavaCache(long size, EXPIRE_POLICY expirePolicy, long ttl) {
-        CacheBuilder builder = CacheBuilder.newBuilder();
+        CacheBuilder builder = CacheBuilder.newBuilder()
+            .concurrencyLevel(Runtime.getRuntime().availableProcessors());
 
         builder.maximumSize(size);
 
