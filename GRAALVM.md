@@ -2,7 +2,7 @@
 
 ## build native image
 
-> need to use Graal VM as JDK (https://www.graalvm.org/downloads/)
+> need to use Graal VM 21.0.0 as JDK (https://www.graalvm.org/downloads/)
 
 Build image for local OS
 
@@ -55,7 +55,8 @@ Stop restheart. this makes the [Assisted Configuration of Native Image Builds](h
 
 The generated configuration are merged into the existing ones in directory `core/src/main/resources/META-INF/native-image/org.restheart/restheart`
 
-> some files need to be manually edited. For instance, remove all references to classes of package`org.restheart.test` and `org.graalvm` from `reflect-config.json`
+> some files need to be manually edited. For instance, remove all references to classes of packages `org.restheart.test`, `org.graalvm` and `com.oracle.truffle` from `reflect-config.json`
+
 
 The following fields must be configured with `allowWrite: true`
 

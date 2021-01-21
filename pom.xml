@@ -33,7 +33,7 @@
             mvn install -Dmongodb.version=3.8   : Test with mongo:3.8 container
         -->
         <mongodb.version>4.2</mongodb.version>
-        <graalvm.version>20.3.0</graalvm.version>
+        <graalvm.version>21.0.0</graalvm.version>
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
