@@ -23,9 +23,9 @@ package org.restheart.handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.Version;
+import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +66,7 @@ public class ErrorHandler implements HttpHandler {
                     HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "Error handling the request, see logs for more information");
 
-            var pi = PluginUtils.pipelineInfo(exchange);
+            var pi = Request.of(exchange).getPipelineInfo();
 
             if (pi != null) {
                 var errMsg = "Error handling the request. "
@@ -86,7 +86,7 @@ public class ErrorHandler implements HttpHandler {
         } catch (LinkageError le) {
             // this occurs executing plugin code compiled
             // with wrong version of restheart-commons
-            var pi = PluginUtils.pipelineInfo(exchange);
+            var pi = Request.of(exchange).getPipelineInfo();
 
             if (pi != null) {
                 String version = Version.getInstance().getVersion() == null

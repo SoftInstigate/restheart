@@ -25,7 +25,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.util.List;
 import java.util.Map;
-import org.restheart.exchange.ByteArrayProxyRequest;
+import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.idm.BaseAccount;
 
@@ -75,6 +75,7 @@ public class XForwardedHeadersInjector extends PipelinedHandler {
      * @throws Exception
      */
     @Override
+    @SuppressWarnings("unchecked")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (exchange != null && exchange.getSecurityContext() != null
                 && exchange.getSecurityContext()
@@ -86,8 +87,7 @@ public class XForwardedHeadersInjector extends PipelinedHandler {
             exchange.getRequestHeaders().remove(getXForwardedAccountIdHeaderName());
             exchange.getRequestHeaders().remove(getXForwardedRolesHeaderName());
 
-            Map<String, List<String>> xfhs = ByteArrayProxyRequest.of(exchange)
-                    .getXForwardedHeaders();
+            Map<String, List<String>> xfhs = Request.of(exchange).getXForwardedHeaders();
 
             if (xfhs != null) {
                 xfhs.entrySet().stream()

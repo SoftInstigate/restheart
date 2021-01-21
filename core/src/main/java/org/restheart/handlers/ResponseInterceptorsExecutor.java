@@ -30,6 +30,7 @@ import org.restheart.exchange.Response;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.plugins.Service;
 import org.restheart.utils.LambdaUtils;
@@ -49,10 +50,11 @@ import org.slf4j.LoggerFactory;
 public class ResponseInterceptorsExecutor
         extends PipelinedHandler {
 
-    static final Logger LOGGER = LoggerFactory
-            .getLogger(ResponseInterceptorsExecutor.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(ResponseInterceptorsExecutor.class);
 
     private final boolean filterRequiringContent;
+
+    private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();
 
     public ResponseInterceptorsExecutor() {
         this(null, false);
@@ -81,9 +83,7 @@ public class ResponseInterceptorsExecutor
         Request request;
         Response response;
 
-        var handlingService = PluginUtils.handlingService(
-                PluginsRegistryImpl.getInstance(),
-                exchange);
+        var handlingService = PluginUtils.handlingService(pluginsRegistry, exchange);
 
         if (handlingService != null) {
             request = ServiceRequest.of(exchange, ServiceRequest.class);
@@ -109,15 +109,16 @@ public class ResponseInterceptorsExecutor
             Response response) {
         // if the request is handled by a service set to not execute interceptors
         // at this interceptPoint, skip interceptors execution
-        var vip = PluginUtils.dontIntercept(
-                PluginsRegistryImpl.getInstance(), exchange);
-
-        if (Arrays.stream(vip).anyMatch(InterceptPoint.RESPONSE::equals)) {
-            return;
+        if (handlingService != null) {
+            var vip = PluginUtils.dontIntercept(handlingService);
+            if (Arrays.stream(vip).anyMatch(InterceptPoint.RESPONSE::equals)) {
+                return;
+            }
         }
 
         Exchange.setResponseInterceptorsExecuted(exchange);
-        PluginsRegistryImpl.getInstance()
+
+        pluginsRegistry
                 .getInterceptors()
                 .stream()
                 .filter(i -> interceptPoint(i.getInstance())
@@ -176,15 +177,16 @@ public class ResponseInterceptorsExecutor
             Response response) {
         // if the request is handled by a service set to not execute interceptors
         // at this interceptPoint, skip interceptors execution
-        var vip = PluginUtils.dontIntercept(
-                PluginsRegistryImpl.getInstance(), exchange);
-
-        if (Arrays.stream(vip).anyMatch(InterceptPoint.RESPONSE_ASYNC::equals)) {
-            return;
+        if (handlingService != null) {
+            var vip = PluginUtils.dontIntercept(handlingService);
+            if (Arrays.stream(vip).anyMatch(InterceptPoint.RESPONSE_ASYNC::equals)) {
+                return;
+            }
         }
 
         Exchange.setResponseInterceptorsExecuted(exchange);
-        PluginsRegistryImpl.getInstance()
+
+        this.pluginsRegistry
                 .getInterceptors()
                 .stream()
                 .filter(i -> interceptPoint(

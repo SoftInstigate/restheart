@@ -36,6 +36,7 @@ import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ALW
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.PluginUtils;
 import static org.restheart.utils.PluginUtils.cachedRequestType;
@@ -65,6 +66,8 @@ public class RequestContentInjector extends PipelinedHandler {
     private final Policy policy;
 
     private HttpHandler bufferingHandler = null;
+
+    private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();
 
     /**
      * @param next
@@ -125,14 +128,11 @@ public class RequestContentInjector extends PipelinedHandler {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private boolean isContentRequired(HttpServerExchange exchange,
-            InterceptPoint interceptPoint) {
+    private boolean isContentRequired(HttpServerExchange exchange, InterceptPoint interceptPoint) {
         Request request;
         Response response;
 
-        var handlingService = PluginUtils.handlingService(
-                PluginsRegistryImpl.getInstance(),
-                exchange);
+        var handlingService = PluginUtils.handlingService(pluginsRegistry, exchange);
 
         if (handlingService != null) {
             request = ServiceRequest.of(exchange, ServiceRequest.class);
@@ -142,8 +142,7 @@ public class RequestContentInjector extends PipelinedHandler {
             response = ByteArrayProxyResponse.of(exchange);
         }
 
-        return PluginsRegistryImpl
-                .getInstance()
+        return this.pluginsRegistry
                 .getInterceptors().stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())

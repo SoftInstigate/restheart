@@ -26,8 +26,8 @@ import java.util.Map;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
-import org.restheart.exchange.ByteArrayProxyRequest;
-import org.restheart.exchange.PipelineInfo;
+import org.restheart.exchange.Request;
+
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.plugins.ExchangeTypeResolver;
 import org.restheart.plugins.InitPoint;
@@ -186,6 +186,10 @@ public class PluginUtils {
      */
     @SuppressWarnings("rawtypes")
     public static InterceptPoint[] dontIntercept(Service service) {
+        if (service == null) {
+            return null;
+        }
+
         var a = service.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
         if (a == null) {
@@ -204,7 +208,7 @@ public class PluginUtils {
      */
     @SuppressWarnings("rawtypes")
     public static Service handlingService(PluginsRegistry registry, HttpServerExchange exchange) {
-        var pi = pipelineInfo(exchange);
+        var pi = Request.of(exchange).getPipelineInfo();
 
         if (pi != null && pi.getType() == SERVICE) {
             var srvName = pi.getName();
@@ -233,10 +237,6 @@ public class PluginUtils {
         var hs = handlingService(registry, exchange);
 
         return hs == null ? new InterceptPoint[0] : dontIntercept(hs);
-    }
-
-    public static PipelineInfo pipelineInfo(HttpServerExchange exchange) {
-        return ByteArrayProxyRequest.of(exchange).getPipelineInfo();
     }
 
     @SuppressWarnings("rawtypes")

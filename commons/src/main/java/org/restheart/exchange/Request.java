@@ -37,7 +37,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.restheart.exchange.ExchangeKeys.METHOD;
-import org.restheart.utils.PluginUtils;
 
 /**
  *
@@ -69,7 +68,7 @@ public abstract class Request<T> extends Exchange<T> {
 
     @SuppressWarnings("rawtypes")
     public static Request of(HttpServerExchange exchange) {
-        var pi = PluginUtils.pipelineInfo(exchange);
+        var pi = pipelineInfo(exchange);
 
         if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
             return ServiceRequest.of(exchange);
@@ -191,7 +190,7 @@ public abstract class Request<T> extends Exchange<T> {
      * get path parameters using a template
      *
      * {@literal pathTemplate=/foo/{id} and URI=/foo/bar => returns a map with id=bar }
-     * 
+     *
      * @param pathTemplate the path template
      * @return the path parameters
      */
@@ -298,6 +297,15 @@ public abstract class Request<T> extends Exchange<T> {
 
     public Map<String, List<String>> getXForwardedHeaders() {
         return getWrappedExchange().getAttachment(XFORWARDED_HEADERS);
+    }
+
+    /**
+     *
+     * @return the PipelineInfo that allows to know which pipeline (service, proxy
+     *         or static resource) is handling the exchange
+     */
+    public static PipelineInfo pipelineInfo(HttpServerExchange exchange) {
+        return exchange.getAttachment(PIPELINE_INFO_KEY);
     }
 
     /**

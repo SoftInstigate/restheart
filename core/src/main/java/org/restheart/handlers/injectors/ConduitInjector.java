@@ -32,6 +32,8 @@ import org.restheart.handlers.ModifiableContentSinkConduit;
 import org.restheart.handlers.PipelinedHandler;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
+
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import static org.restheart.utils.PluginUtils.cachedRequestType;
 import static org.restheart.utils.PluginUtils.cachedResponseType;
@@ -63,6 +65,8 @@ public class ConduitInjector extends PipelinedHandler {
     public static final AttachmentKey<HeaderMap> ORIGINAL_ACCEPT_ENCODINGS_KEY
             = AttachmentKey.create(HeaderMap.class);
 
+    private final static PluginsRegistry PLUGINS_REGISTRY = PluginsRegistryImpl.getInstance();
+
     /**
      *
      */
@@ -85,10 +89,9 @@ public class ConduitInjector extends PipelinedHandler {
      * @param exchange
      */
     @SuppressWarnings("unchecked")
-    private static void forceIdentityEncodingForInterceptors(
-            HttpServerExchange exchange) {
+    private static void forceIdentityEncodingForInterceptors(HttpServerExchange exchange) {
 
-        if (PluginsRegistryImpl.getInstance()
+        if (PLUGINS_REGISTRY
                 .getInterceptors()
                 .stream()
                 .filter(ri -> ri.isEnabled())
@@ -156,7 +159,7 @@ public class ConduitInjector extends PipelinedHandler {
                 MDC.setContextMap(mdcCtx);
             }
 
-            if (PluginsRegistryImpl.getInstance()
+            if (PLUGINS_REGISTRY
                     .getInterceptors()
                     .stream()
                     .filter(ri -> ri.isEnabled())

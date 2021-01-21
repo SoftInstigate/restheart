@@ -21,7 +21,6 @@ package org.restheart.exchange;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
-import org.restheart.utils.PluginUtils;
 
 /**
  * Base class for Request implementations that can be used in service requests.
@@ -97,6 +96,6 @@ public abstract class ServiceRequest<T> extends Request<T> {
     public boolean isHandledBy(String serviceName) {
         return serviceName == null
             ? false
-            : serviceName.equals(PluginUtils.pipelineInfo(wrapped).getName());
+            : serviceName.equals(getPipelineInfo().getName());
     }
 }

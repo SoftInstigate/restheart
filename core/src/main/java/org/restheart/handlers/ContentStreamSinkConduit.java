@@ -24,6 +24,8 @@ import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+
+import org.restheart.exchange.ByteArrayProxyRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.channels.StreamSourceChannel;
@@ -50,8 +52,7 @@ public class ContentStreamSinkConduit
      * @param next
      * @param exchange
      */
-    public ContentStreamSinkConduit(StreamSinkConduit next,
-            HttpServerExchange exchange) {
+    public ContentStreamSinkConduit(StreamSinkConduit next, HttpServerExchange exchange) {
         super(next);
         this._next = next;
 
@@ -60,6 +61,8 @@ public class ContentStreamSinkConduit
         try {
             interceptorsExecutor.handleRequest(exchange);
         } catch (Exception e) {
+            LOGGER.error("Error executing interceptors", e);
+            ByteArrayProxyRequest.of(exchange).setInError(true);
             throw new RuntimeException(e);
         }
     }

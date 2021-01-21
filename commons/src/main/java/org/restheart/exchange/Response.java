@@ -24,8 +24,6 @@ import java.util.Map;
 
 import com.google.common.reflect.TypeToken;
 
-import org.restheart.utils.PluginUtils;
-
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
@@ -51,7 +49,7 @@ public abstract class Response<T> extends Exchange<T> {
 
     @SuppressWarnings("rawtypes")
     public static Response of(HttpServerExchange exchange) {
-        var pi = PluginUtils.pipelineInfo(exchange);
+        var pi = Request.pipelineInfo(exchange);;
 
         if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
             return ServiceResponse.of(exchange);
