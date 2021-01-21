@@ -159,3 +159,76 @@ Feature: GraphQL query response test
       Given request {query: '#(query)', variables: #(variables)}
       When method POST
       Then status 200
+
+
+
+    Scenario: Query with ascendant sort field
+
+      * text query =
+      """
+      {
+        TheatersByCity(city: "New York", sort: 1){
+          theaterId
+          location
+        }
+      }
+      """
+
+      Given request {query: '#(query)'}
+      When method POST
+      Then status 200
+      And match response.data.TheatersByCity[0].theaterId == 482
+
+
+    Scenario: Query with descendant sort field
+
+      * text query =
+      """
+      {
+        TheatersByCity(city: "New York", sort: -1){
+          theaterId
+        }
+      }
+      """
+
+      Given request {query: '#(query)'}
+      When method POST
+      Then status 200
+      And match response.data.TheatersByCity[0].theaterId == 1908
+
+
+    Scenario: Query with limit field
+
+      * text query =
+      """
+      {
+        TheatersByCity(city: "New York", limit: 2){
+          theaterId
+        }
+      }
+      """
+
+      Given request {query: '#(query)'}
+      When method POST
+      Then status 200
+      And match response.data.TheatersByCity == '#[2]'
+
+
+
+    Scenario: Query with skip field
+
+      * text query =
+      """
+      {
+        TheatersByCity(city: "New York", sort: 1, skip: 1){
+          theaterId
+        }
+      }
+      """
+      Given request {query: '#(query)'}
+      When method POST
+      Then status 200
+      And match response.data.TheatersByCity[0].theaterId == 609
+
+
+

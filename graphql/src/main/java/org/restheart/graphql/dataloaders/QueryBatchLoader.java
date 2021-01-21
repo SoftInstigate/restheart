@@ -45,7 +45,7 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
      *
      * So, when in batch there at least 2 queries the aggregation pipeline is given by:
      *
-     * - 1st Stage: {$match: {$or: query1, query2, query3, ...}}
+     * - 1st Stage: {$match: {$or: [query1, query2, query3, ...]}}
      * - 2nd Stage: {$facet: [
      *                  "0": [{$match: query1}, ...],
      *                  "1": [{$match: query2}, ...],
@@ -68,28 +68,48 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
             // if there are at least 2 queries within the batch
             if (queries.size() > 1){
 
-                //merge query by $or operator
-
-                BsonDocument mergedQueries = new BsonDocument("$or", new BsonArray(queries));
-
-                // 1 stage: MATCH with merged conditions
-                stages.add(Aggregates.match(mergedQueries));
-
-                // create list of sub-pipelines, one for each query
+                BsonArray mergedCond = new BsonArray();
                 List<Facet> listOfFacets = new ArrayList<>();
 
-                queries.forEach(query -> {
+                // foreach query within the batch...
+                queries.stream().map(query -> ((BsonDocument) query)).forEach(query -> {
 
-                    listOfFacets.add(new Facet(String.valueOf(queries.indexOf(query)), Aggregates.match(query.asDocument())));
+                    List<Bson> queryStages = new ArrayList<>();
+
+                    BsonDocument find = query.containsKey("find") ? query.getDocument("find") : new BsonDocument();
+                    mergedCond.add(find);
+                    queryStages.add(find);
+
+                    if(query.containsKey("sort")) queryStages.add(Aggregates.sort(query.getDocument("sort")));
+
+                    if(query.containsKey("skip")) queryStages.add(Aggregates.skip(query.getInt32("skip").getValue()));
+
+                    if(query.containsKey("limit")) queryStages.add(Aggregates.limit(query.getInt32("limit").getValue()));
+
+                    listOfFacets.add(new Facet(String.valueOf(query.hashCode()), queryStages));
 
                 });
 
+                // 1° stage --> $match with conditions merged by $or operator
+                stages.add(Aggregates.match(new BsonDocument("$or", mergedCond)));
+
+                // 2° stage --> $facet with one sub-pipeline for each query within the batch
                 stages.add(Aggregates.facet(listOfFacets));
 
 
-                // ... otherwise merging is not needed and sub-pipelines neither
+            // ... otherwise merging is not needed and sub-pipelines neither
             }else {
-                stages.add(Aggregates.match(queries.get(0).asDocument()));
+
+                BsonDocument query = queries.get(0).asDocument();
+
+                if(query.containsKey("find")) stages.add(Aggregates.match(query.getDocument("find")));
+
+                if(query.containsKey("sort")) stages.add(Aggregates.sort(query.getDocument("sort")));
+
+                if(query.containsKey("skip")) stages.add(Aggregates.skip(query.getInt32("skip").getValue()));
+
+                if(query.containsKey("limit")) stages.add(Aggregates.limit(query.getInt32("limit").getValue()));
+
             }
 
             var iterable = mongoClient.getDatabase(this.db).getCollection(this.collection, BsonValue.class).aggregate(stages);

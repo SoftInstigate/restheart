@@ -95,7 +95,7 @@
         "db": "sample_mflix",
         "collection": "theaters",
         "find":{"location::address::city": {"_$arg": "city"}},
-        "sort":{"location::address::city": {"_$arg":"sort"}},
+        "sort":{"theaterId": {"_$arg":"sort"}},
         "skip":{"_$arg":"skip"},
         "limit":{"_$arg":"limit"}
       }
