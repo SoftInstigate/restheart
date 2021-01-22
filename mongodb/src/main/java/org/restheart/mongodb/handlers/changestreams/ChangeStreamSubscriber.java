@@ -22,6 +22,7 @@ package org.restheart.mongodb.handlers.changestreams;
 
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonString;
@@ -40,8 +41,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author omartrasatti
  */
-@SuppressWarnings("rawtypes")
-public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> {
+public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?>> {
 
     private static final Logger LOGGER
             = LoggerFactory.getLogger(ChangeStreamSubscriber.class);
@@ -61,10 +61,10 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
     }
 
     @Override
-    public void onNext(ChangeStreamDocument notification) {
-        if (!GuavaHashMultimapSingleton.get(sessionKey).isEmpty()) {
+    public void onNext(ChangeStreamDocument<?> notification) {
+        if (!SocketSessionsRegistry.get(sessionKey).isEmpty()) {
             LOGGER.trace("[clients watching]: "
-                    + GuavaHashMultimapSingleton.get(sessionKey).size());
+                    + SocketSessionsRegistry.get(sessionKey).size());
 
             LOGGER.debug("Change stream notification for sessionKey={}: {}",
                     sessionKey,
@@ -95,23 +95,31 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
     public void stop() {
         this.sub.cancel();
     }
-    
-    private BsonDocument getDocument(ChangeStreamDocument notification) {
+
+    private BsonDocument getDocument(ChangeStreamDocument<?> notification) {
         var doc = new BsonDocument();
 
         if (notification == null) {
             return doc;
         }
-        
-        doc.put("fullDocument", toBson((Document) notification.getFullDocument()));
-        
-        doc.put("documentKey", notification.getDocumentKey());
+
+        if (notification.getFullDocument() != null) {
+            try {
+                doc.put("fullDocument", toBson((Document) notification.getFullDocument()));
+            } catch(ClassCastException cce) {
+                LOGGER.warn("change stream fullDocument is not json {}", notification.getFullDocument());
+                doc.put("fullDocument", BsonNull.VALUE);
+            }
+        }
+
+        if (notification.getDocumentKey() != null) {
+            doc.put("documentKey", notification.getDocumentKey());
+        }
 
         if (notification.getUpdateDescription() != null) {
             var updateDescription = new BsonDocument();
-            
-            var updatedFields = notification.getUpdateDescription()
-                    .getUpdatedFields();
+
+            var updatedFields = notification.getUpdateDescription().getUpdatedFields();
 
             if (updatedFields != null) {
                 updateDescription.put("updatedFields", updatedFields);
@@ -133,17 +141,16 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
             }
 
             doc.put("updateDescription", updateDescription);
-        } else {
-            doc.put("updateDescription", BsonNull.VALUE);
         }
 
-        doc.put("operationType", new BsonString(notification.getOperationType().getValue()));
+        if (notification.getOperationType() != null) {
+            doc.put("operationType", new BsonString(notification.getOperationType().getValue()));
+        }
 
         return doc;
     }
-    
-    private static final CodecRegistry REGISTRY = CodecRegistries
-            .fromCodecs(new DocumentCodec());
+
+    private static final CodecRegistry REGISTRY = CodecRegistries.fromCodecs(new DocumentCodec());
 
     private static BsonValue toBson(Document document) {
         return document == null
