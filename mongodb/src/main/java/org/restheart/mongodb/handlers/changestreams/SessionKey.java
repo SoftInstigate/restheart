@@ -49,19 +49,19 @@ public class SessionKey {
             var qstring = encode("?".concat(exchange.getQueryString()));
             var uri = encode(exchange.getRequestURI());
             uri = uri.replace(qstring, "");
-            
+
             this.url = uri;
         } else {
             this.url = encode(exchange.getRequestURI());
         }
-        
+
         this.avars = exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
         this.jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
     }
-    
+
     public SessionKey(HttpServerExchange exchange) {
         this.url = encode(exchange.getRequestPath());
-        
+
         this.avars = exchange.getAttachment(GetChangeStreamHandler.AVARS_ATTACHMENT_KEY);
         this.jsonMode = exchange.getAttachment(GetChangeStreamHandler.JSON_MODE_ATTACHMENT_KEY);
     }
@@ -84,9 +84,7 @@ public class SessionKey {
     public String toString() {
         return "" + hashCode();
     }
-    
-    
-    
+
     private static String encode(String queryString) {
         return URLEncoder.encode(
                 URLDecoder.decode(queryString,

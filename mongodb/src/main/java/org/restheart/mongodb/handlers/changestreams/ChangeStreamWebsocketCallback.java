@@ -46,15 +46,14 @@ public class ChangeStreamWebsocketCallback implements WebSocketConnectionCallbac
     @Override
     public void onConnect(WebSocketHttpExchange exchange, WebSocketChannel channel) {
         var sessionKey = new SessionKey(exchange);
-        
-        ChangeStreamWebSocketSession newSession
-                = createSession(channel, sessionKey);
+
+        ChangeStreamWebSocketSession newSession = createSession(channel, sessionKey);
 
         LOGGER.debug("New stream connection, sessionkey={}", sessionKey);
-        
-        GuavaHashMultimapSingleton.add(sessionKey, newSession);
+
+        WebSocketSessionsRegistry.getInstance().add(sessionKey, newSession);
     }
-    
+
     private ChangeStreamWebSocketSession createSession(WebSocketChannel channel, SessionKey sessionKey) {
         ChangeStreamWebSocketSession newSession = new ChangeStreamWebSocketSession(
                 channel, sessionKey);

@@ -55,7 +55,6 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     private final String UPGRADE_HEADER_KEY = "upgrade";
     private final String UPGRADE_HEADER_VALUE = "websocket";
 
-    public static final Set<SessionKey> OPENED_STREAMS = Collections.newSetFromMap(new ConcurrentHashMap<SessionKey, Boolean>());
     private static final Logger LOGGER = LoggerFactory.getLogger(GetChangeStreamHandler.class);
     private static final HttpHandler WEBSOCKET_HANDSHAKE_HANDLER
             = Handlers.websocket(new ChangeStreamWebsocketCallback());
@@ -171,7 +170,9 @@ public class GetChangeStreamHandler extends PipelinedHandler {
 
         List<BsonDocument> resolvedStages = getResolvedStagesAsList(request);
 
-        if (OPENED_STREAMS.add(streamKey)) {
+        if (!ChangeStreamsRegistry.getInstance().containsKey(streamKey)) {
+            ChangeStreamsRegistry.getInstance().put(streamKey, new SessionInfo(MongoRequest.of(exchange)));
+
             MongoReactiveClientSingleton
                     .getInstance()
                     .getClient()

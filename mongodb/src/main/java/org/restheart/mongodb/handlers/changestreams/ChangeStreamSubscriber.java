@@ -62,9 +62,9 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
 
     @Override
     public void onNext(ChangeStreamDocument<?> notification) {
-        if (!SocketSessionsRegistry.get(sessionKey).isEmpty()) {
+        if (!WebSocketSessionsRegistry.getInstance().get(sessionKey).isEmpty()) {
             LOGGER.trace("[clients watching]: "
-                    + SocketSessionsRegistry.get(sessionKey).size());
+                    + WebSocketSessionsRegistry.getInstance().get(sessionKey).size());
 
             LOGGER.debug("Change stream notification for sessionKey={}: {}",
                     sessionKey,
@@ -78,7 +78,7 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
         } else {
             this.stop();
             LOGGER.debug("Closing unwatched stream, sessionKey=" + sessionKey);
-            GetChangeStreamHandler.OPENED_STREAMS.remove(sessionKey);
+            ChangeStreamsRegistry.getInstance().remove(sessionKey);
         }
     }
 

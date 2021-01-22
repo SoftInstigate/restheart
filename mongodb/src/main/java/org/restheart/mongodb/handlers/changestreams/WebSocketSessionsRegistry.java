@@ -27,35 +27,37 @@ import java.util.Set;
 
 
 /**
+ * Registry to keep track of web socket sessions
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @author Omar Trasatti {@literal <omar@softinstigate.com>}
  */
-public class GuavaHashMultimapSingleton {
+public class WebSocketSessionsRegistry {
 
     private final SetMultimap<SessionKey, ChangeStreamWebSocketSession> MULTIMAP = Multimaps
             .synchronizedSetMultimap(Multimaps.synchronizedSetMultimap(HashMultimap.<SessionKey, ChangeStreamWebSocketSession>create()));
 
-    public static GuavaHashMultimapSingleton getInstance() {
+    public static WebSocketSessionsRegistry getInstance() {
         return CacheManagerSingletonHolder.INSTANCE;
     }
 
-    public static Set<ChangeStreamWebSocketSession> get(SessionKey key) {
-        return GuavaHashMultimapSingleton.getInstance().MULTIMAP.get(key);
+    public Set<ChangeStreamWebSocketSession> get(SessionKey key) {
+        return MULTIMAP.get(key);
     }
-    
-    
-    public static boolean add(SessionKey key, ChangeStreamWebSocketSession session) {
-        return GuavaHashMultimapSingleton.getInstance().MULTIMAP
-                .put(key, session);
+
+    public Set<SessionKey> keySet() {
+        return MULTIMAP.keySet();
     }
-    
-    public static boolean remove(SessionKey key, ChangeStreamWebSocketSession session) {
-        return GuavaHashMultimapSingleton.getInstance().MULTIMAP
-                .remove(key, session);
+
+    public boolean add(SessionKey key, ChangeStreamWebSocketSession session) {
+        return MULTIMAP.put(key, session);
+    }
+
+    public boolean remove(SessionKey key, ChangeStreamWebSocketSession session) {
+        return MULTIMAP.remove(key, session);
     }
 
     private static class CacheManagerSingletonHolder {
-        private static final GuavaHashMultimapSingleton INSTANCE = new GuavaHashMultimapSingleton();
+        private static final WebSocketSessionsRegistry INSTANCE = new WebSocketSessionsRegistry();
     }
 }
