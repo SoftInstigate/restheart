@@ -74,19 +74,12 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
                 // foreach query within the batch...
                 queries.stream().map(query -> ((BsonDocument) query)).forEach(query -> {
 
-                    List<Bson> queryStages = new ArrayList<>();
-
+                    // add find condition to merged array
                     BsonDocument find = query.containsKey("find") ? query.getDocument("find") : new BsonDocument();
                     mergedCond.add(find);
-                    queryStages.add(find);
 
-                    if(query.containsKey("sort")) queryStages.add(Aggregates.sort(query.getDocument("sort")));
-
-                    if(query.containsKey("skip")) queryStages.add(Aggregates.skip(query.getInt32("skip").getValue()));
-
-                    if(query.containsKey("limit")) queryStages.add(Aggregates.limit(query.getInt32("limit").getValue()));
-
-                    listOfFacets.add(new Facet(String.valueOf(query.hashCode()), queryStages));
+                    // create a new sub-pipeline with query stages
+                    listOfFacets.add(new Facet(String.valueOf(query.hashCode()), getQueryStages(query)));
 
                 });
 
@@ -102,13 +95,7 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
 
                 BsonDocument query = queries.get(0).asDocument();
 
-                if(query.containsKey("find")) stages.add(Aggregates.match(query.getDocument("find")));
-
-                if(query.containsKey("sort")) stages.add(Aggregates.sort(query.getDocument("sort")));
-
-                if(query.containsKey("skip")) stages.add(Aggregates.skip(query.getInt32("skip").getValue()));
-
-                if(query.containsKey("limit")) stages.add(Aggregates.limit(query.getInt32("limit").getValue()));
+                stages = getQueryStages(query);
 
             }
 
@@ -119,7 +106,7 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
             iterable.into(aggResult);
 
             List<BsonValue> res = new ArrayList<>();
-            // CASE queries.size() > 1: result is a BsonDocument with format {"0": [<results-of-query0>], "1":[<results-of-query1>, "2":[<results-of-query2>], ...] }
+            // CASE queries.size() > 1: result is a BsonDocument with format {"hashCode query 0": [<results-of-query0>], "hashCode query 1":[<results-of-query1>, "hashCode query 2":[<results-of-query2>], ...] }
             if (queries.size() > 1){
 
                 aggResult.get(0).asDocument().forEach((key, queryResult) -> {
@@ -134,6 +121,26 @@ public class QueryBatchLoader implements BatchLoader<BsonValue, BsonValue> {
 
             return res;
         });
+
+    }
+
+
+    private List<Bson> getQueryStages(BsonDocument queryDoc){
+
+        List<Bson> stages = new ArrayList<>();
+
+        if(queryDoc.containsKey("find")) stages.add(Aggregates.match(queryDoc.getDocument("find")));
+
+        if(queryDoc.containsKey("sort")) stages.add(Aggregates.sort(queryDoc.getDocument("sort")));
+
+        if(queryDoc.containsKey("skip")) stages.add(Aggregates.skip(queryDoc.getInt32("skip").getValue()));
+
+        if(queryDoc.containsKey("limit")) {
+            Integer limit = queryDoc.getInt32("limit").getValue();
+            if (limit > 0) stages.add(Aggregates.limit(limit));
+        }
+
+        return stages;
 
     }
 }
