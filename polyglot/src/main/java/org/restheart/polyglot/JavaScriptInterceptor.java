@@ -29,9 +29,12 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.restheart.exchange.Request;
+import org.restheart.exchange.Response;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.StringInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +56,8 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
     private MongoClient mclient;
 
     private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {},\n\tresolve: (request) => {}\n})";
+
+    private final Interceptor<?, ?> interceptor;
 
     JavaScriptInterceptor(Path scriptPath, Path requireCdw, MongoClient mclient) throws IOException {
         this.mclient = mclient;
@@ -122,7 +127,8 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
                 this.interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH;
             } else {
                 if (!parsed.getMember("options").getMember("interceptPoint").isString()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.interceptPoint', " + errorHint);
+                    throw new IllegalArgumentException(
+                            "wrong js plugin, wrong member 'options.interceptPoint', " + errorHint);
                 } else {
                     var _interceptPoint = parsed.getMember("options").getMember("interceptPoint").asString();
                     try {
@@ -132,6 +138,24 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
                                 "wrong js plugin, wrong member 'options.interceptPoint', " + errorHint);
                     }
                 }
+            }
+
+            if (!parsed.getMember("options").getMemberKeys().contains("pluginClassName")) {
+                this.pluginClassName = "StringService";
+            } else if (!parsed.getMember("options").getMember("pluginClassName").isString()) {
+                throw new IllegalArgumentException(
+                        "wrong js plugin, wrong member 'options.pluginClassName', " + errorHint);
+            } else {
+                this.pluginClassName = parsed.getMember("options").getMember("pluginClassName").asString();
+            }
+
+            switch (this.pluginClassName) {
+                case "StringService":
+                    this.interceptor = new StringJavaScriptInterceptor(this.interceptPoint);
+                    break;
+                default:
+                    throw new IllegalArgumentException(
+                            "wrong js plugin, wrong member 'options.pluginClassName', " + errorHint);
             }
 
             if (!parsed.getMember("options").getMemberKeys().contains("modulesReplacements")) {
@@ -167,6 +191,10 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
 
     public String getModulesReplacements() {
         return this.modulesReplacements;
+    }
+
+    public Interceptor<?, ?> getInterceptor() {
+        return interceptor;
     }
 
     /**
@@ -220,5 +248,36 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
                 return false;
             }
         }
+    }
+}
+
+abstract class AbstractJavaScriptInterceptor<R extends Request<?>, S extends Response<?>> implements Interceptor<R, S> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractJavaScriptInterceptor.class);
+
+    private final InterceptPoint interceptPoint;
+
+    public AbstractJavaScriptInterceptor(InterceptPoint interceptPoint) {
+        this.interceptPoint = interceptPoint;
+    }
+
+    @Override
+    public void handle(final R request, final S response) throws Exception {
+        LOGGER.debug("**** handle {}", request.getClass().getName());
+    }
+
+    @Override
+    public boolean resolve(final R request, final S response) {
+        LOGGER.debug("**** resolve {}", request.getClass().getName());
+        return true;
+    }
+
+    public InterceptPoint getInterceptPoint() {
+        return interceptPoint;
+    }
+}
+
+class StringJavaScriptInterceptor extends AbstractJavaScriptInterceptor<StringRequest, StringResponse> {
+    public StringJavaScriptInterceptor(InterceptPoint interceptPoint) {
+        super(interceptPoint);
     }
 }

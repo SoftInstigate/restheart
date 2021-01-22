@@ -5,6 +5,7 @@ import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 
 public abstract class AbstractJavaScriptPlugin {
     protected String name;
+    protected String pluginClassName;
     protected String description;
     protected String uri;
     protected boolean secured;
@@ -13,6 +14,10 @@ public abstract class AbstractJavaScriptPlugin {
 
     public String getName() {
         return name;
+    }
+
+    public String getPluginClassName() {
+        return pluginClassName;
     }
 
     public String getUri() {

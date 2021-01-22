@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import com.google.gson.JsonParser;
@@ -44,7 +45,11 @@ public class NodeService extends AbstractJavaScriptPlugin implements StringServi
 
     private String source;
 
+    // TODO pass this to node runtime
     private MongoClient mclient;
+
+    // TODO pass this to node runtime
+    private Map<String, Object> configuration;
 
     private int codeHash = 0;
 

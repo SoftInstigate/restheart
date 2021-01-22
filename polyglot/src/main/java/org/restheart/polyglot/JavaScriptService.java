@@ -52,6 +52,9 @@ public class JavaScriptService extends AbstractJavaScriptPlugin implements Strin
 
     private MongoClient mclient;
 
+    // TODO pass this to node runtime
+    private Map<String, Object> configuration;
+
     private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {}\n})";
 
     JavaScriptService(Path scriptPath, Path requireCdw, MongoClient mclient) throws IOException {

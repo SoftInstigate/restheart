@@ -362,22 +362,22 @@ public class PolyglotDeployer implements Initializer {
         if (isRunningOnNode()) {
             throw new IllegalStateException("interceptors on node are not yet implemented");
         } else {
-            var interceptor = new JavaScriptInterceptor(pluginPath, this.requireCdw, this.mclient);
+            var interceptorBuilder = new JavaScriptInterceptor(pluginPath, this.requireCdw, this.mclient);
 
-            var record = new PluginRecord<Interceptor>(interceptor.getName(),
-                interceptor.getDescription(),
+            var record = new PluginRecord<Interceptor>(interceptorBuilder.getName(),
+            interceptorBuilder.getDescription(),
                 true,
-                interceptor.getClass().getName(),
-                interceptor,
+                interceptorBuilder.getInterceptor().getClass().getName(),
+                interceptorBuilder.getInterceptor(),
                 new HashMap<>());
 
             registry.getInterceptors().add(record);
 
-            DEPLOYEES.put(pluginPath.toAbsolutePath(), interceptor);
+            DEPLOYEES.put(pluginPath.toAbsolutePath(), interceptorBuilder);
 
             LOGGER.info(ansi().fg(GREEN).a("Added interceptor {}, description: {}").reset().toString(),
-                interceptor.getName(),
-                interceptor.getDescription());
+                interceptorBuilder.getName(),
+                interceptorBuilder.getDescription());
         }
     }
 
