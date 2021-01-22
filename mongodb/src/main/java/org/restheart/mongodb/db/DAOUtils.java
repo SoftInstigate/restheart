@@ -73,12 +73,12 @@ public class DAOUtils {
      *
      */
     public static final int DUPLICATE_KEY_ERROR = 11000;
-    
+
     /**
-     * 
+     *
      */
     public static final int BAD_VALUE_KEY_ERROR = 2;
-    
+
     /**
      *
      */

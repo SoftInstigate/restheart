@@ -324,7 +324,6 @@ class CollectionDAO {
      * @param checkEtag true if etag must be checked
      * @return the HttpStatus code to set in the http response
      */
-    @SuppressWarnings("unchecked")
     OperationResult upsertCollection(
             final ClientSession cs,
             final String dbName,
@@ -466,7 +465,10 @@ class CollectionDAO {
                     true);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
-                    : HttpStatus.SC_OK, newEtag);
+                    : HttpStatus.SC_OK,
+                    newEtag,
+                    ret.getOldData(),
+                    ret.getNewData());
         } else {
             OperationResult ret = DAOUtils.updateDocument(
                     cs,
@@ -478,7 +480,10 @@ class CollectionDAO {
                     false);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
-                    : HttpStatus.SC_CREATED, newEtag);
+                    : HttpStatus.SC_CREATED,
+                    newEtag,
+                    ret.getOldData(),
+                    ret.getNewData());
         }
     }
 
@@ -502,11 +507,11 @@ class CollectionDAO {
 
         var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
 
-        if (checkEtag) {
-            BsonDocument properties = cs == null
+        var properties = cs == null
                     ? mcoll.find(query).projection(FIELDS_TO_RETURN).first()
                     : mcoll.find(cs, query).projection(FIELDS_TO_RETURN).first();
 
+        if (checkEtag) {
             if (properties != null) {
                 BsonValue oldEtag = properties.get("_etag");
 
@@ -514,11 +519,15 @@ class CollectionDAO {
                     if (requestEtag == null) {
                         return new OperationResult(
                                 HttpStatus.SC_CONFLICT,
-                                oldEtag);
+                                oldEtag,
+                                properties,
+                                properties);
                     } else if (!requestEtag.equals(oldEtag)) {
                         return new OperationResult(
                                 HttpStatus.SC_PRECONDITION_FAILED,
-                                oldEtag);
+                                oldEtag,
+                                properties,
+                                properties);
                     }
                 }
             }
@@ -534,6 +543,6 @@ class CollectionDAO {
             mcoll.deleteOne(cs, query);
         }
 
-        return new OperationResult(HttpStatus.SC_NO_CONTENT);
+        return new OperationResult(HttpStatus.SC_NO_CONTENT, null, properties, null);
     }
 }
