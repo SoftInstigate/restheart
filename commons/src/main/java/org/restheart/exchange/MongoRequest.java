@@ -676,14 +676,6 @@ public class MongoRequest extends BsonRequest {
 
     /**
      *
-     * @return
-     */
-    public String getChangeStreamIdentifier() {
-        return getPathTokenAt(5);
-    }
-
-    /**
-     *
      * @return URI
      * @throws URISyntaxException
      */
