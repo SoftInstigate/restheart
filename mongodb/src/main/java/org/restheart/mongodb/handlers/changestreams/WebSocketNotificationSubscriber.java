@@ -23,6 +23,8 @@ package org.restheart.mongodb.handlers.changestreams;
 import io.undertow.websockets.core.WebSocketCallback;
 import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
+
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,8 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 public class WebSocketNotificationSubscriber implements Subscriber<ChangeStreamNotification> {
 
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(WebSocketNotificationSubscriber.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketNotificationSubscriber.class);
 
     private Subscription sub;
 
@@ -54,18 +55,20 @@ public class WebSocketNotificationSubscriber implements Subscriber<ChangeStreamN
 
     @Override
     public void onNext(ChangeStreamNotification notification) {
-        Set<ChangeStreamWebSocketSession> sessions
-                = GuavaHashMultimapSingleton.get(notification.getSessionKey());
+        Set<ChangeStreamWebSocketSession> sessions = WebSocketSessionsRegistry.getInstance().get(notification.getSessionKey());
 
-        Set<ChangeStreamWebSocketSession> sessionsInError = Collections
-                .newSetFromMap(new ConcurrentHashMap<>());
+        Set<ChangeStreamWebSocketSession> sessionsInError = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
         sessions.stream().forEach(session -> {
             this.sendNotification(session, notification.getNotificationMessage(), sessionsInError);
         });
 
         sessionsInError.parallelStream().forEach(sessionInError -> {
-            GuavaHashMultimapSingleton.remove(notification.getSessionKey(), sessionInError);
+            try {
+                sessionInError.close();
+            } catch (IOException e) {
+                LOGGER.warn("error closing session in error {}", notification.getSessionKey());
+            }
         });
     }
 

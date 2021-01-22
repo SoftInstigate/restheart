@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 public class ChangeStreamWebSocketSession {
     private static final Logger LOGGER
             = LoggerFactory.getLogger(ChangeStreamWebSocketSession.class);
-    
+
     private final String sessionId;
     private final SessionKey sessionKey;
     private final WebSocketChannel webSocketChannel;
@@ -48,36 +48,38 @@ public class ChangeStreamWebSocketSession {
     }
 
     private void initChannelReceiveListener(WebSocketChannel channel) {
-        channel.getReceiveSetter().set(
-                new ChangeStreamReceiveListener(this));
-        
+        channel.getReceiveSetter().set(new ChangeStreamReceiveListener(this));
+
         channel.resumeReceives();
     }
 
     public String getId() {
         return this.sessionId;
     }
-    
+
     public SessionKey getSessionKey() {
         return this.sessionKey;
     }
-    
+
     public WebSocketChannel getChannel() {
         return this.webSocketChannel;
     }
 
-    class ChangeStreamReceiveListener extends AbstractReceiveListener {
+    public void close() throws IOException {
+        WebSocketSessionsRegistry.getInstance().remove(this.sessionKey, this);
+        this.webSocketChannel.close();
+    }
 
+    class ChangeStreamReceiveListener extends AbstractReceiveListener {
         private final ChangeStreamWebSocketSession session;
-        
+
         public ChangeStreamReceiveListener(ChangeStreamWebSocketSession session) {
             this.session = session;
         }
         @Override
         protected void onClose(WebSocketChannel webSocketChannel, StreamSourceFrameChannel channel) throws IOException {
             LOGGER.debug("Stream connection closed, sessionkey={}", sessionKey);
-            GuavaHashMultimapSingleton.remove(this.session.getSessionKey(), session);
-            webSocketChannel.close();
+            this.session.close();
         }
     }
 }
