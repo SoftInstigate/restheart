@@ -469,7 +469,10 @@ class CollectionDAO {
                     WRITE_MODE.UPSERT);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
-                    : HttpStatus.SC_OK, newEtag);
+                    : HttpStatus.SC_OK,
+                    newEtag,
+                    ret.getOldData(),
+                    ret.getNewData());
         } else {
             OperationResult ret = DAOUtils.writeDocument(
                     cs,
@@ -482,7 +485,10 @@ class CollectionDAO {
                     WRITE_MODE.UPSERT);
             return new OperationResult(ret.getHttpCode() > 0
                     ? ret.getHttpCode()
-                    : HttpStatus.SC_CREATED, newEtag);
+                    : HttpStatus.SC_CREATED,
+                    newEtag,
+                    ret.getOldData(),
+                    ret.getNewData());
         }
     }
 
@@ -506,11 +512,11 @@ class CollectionDAO {
 
         var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
 
-        if (checkEtag) {
-            BsonDocument properties = cs == null
+        var properties = cs == null
                     ? mcoll.find(query).projection(FIELDS_TO_RETURN).first()
                     : mcoll.find(cs, query).projection(FIELDS_TO_RETURN).first();
 
+        if (checkEtag) {
             if (properties != null) {
                 BsonValue oldEtag = properties.get("_etag");
 
@@ -518,11 +524,15 @@ class CollectionDAO {
                     if (requestEtag == null) {
                         return new OperationResult(
                                 HttpStatus.SC_CONFLICT,
-                                oldEtag);
+                                oldEtag,
+                                properties,
+                                properties);
                     } else if (!requestEtag.equals(oldEtag)) {
                         return new OperationResult(
                                 HttpStatus.SC_PRECONDITION_FAILED,
-                                oldEtag);
+                                oldEtag,
+                                properties,
+                                properties);
                     }
                 }
             }
@@ -538,6 +548,6 @@ class CollectionDAO {
             mcoll.deleteOne(cs, query);
         }
 
-        return new OperationResult(HttpStatus.SC_NO_CONTENT);
+        return new OperationResult(HttpStatus.SC_NO_CONTENT, null, properties, null);
     }
 }
