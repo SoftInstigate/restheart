@@ -167,7 +167,7 @@ public class MetricsHandlerTest {
 
     private MongoRequest createRequest(String resourceUri) {
         HttpServerExchange httpServerExchange = mock(HttpServerExchange.class);
-        
+
         when(httpServerExchange.getStatusCode()).thenReturn(200);
         when(httpServerExchange.getRequestMethod()).thenReturn(Methods.GET);
         when(httpServerExchange.getRequestPath()).thenReturn("/");

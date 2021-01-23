@@ -23,4 +23,4 @@
  * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.security.plugins.authorizers;
+package org.restheart.security.authorizers;

@@ -1038,6 +1038,9 @@
   "allDeclaredFields":true
 },
 {
+  "name":"org.graalvm.polyglot.Value"
+},
+{
   "name":"org.jboss.threads.EnhancedQueueExecutor",
   "fields":[
     {"name":"activeCount", "allowUnsafeAccess":true}, 
@@ -1172,9 +1175,6 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"org.restheart.mongodb.interceptors.SimplifiedSecurityWriteMode"
-},
-{
   "name":"org.restheart.mongodb.services.CacheInvalidator",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
@@ -1192,21 +1192,21 @@
   ]
 },
 {
-  "name":"org.restheart.security.plugins.authenticators.DenyFilterOnUserPwd",
+  "name":"org.restheart.security.authenticators.DenyFilterOnUserPwd",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
-  "name":"org.restheart.security.plugins.authenticators.FileRealmAuthenticator",
+  "name":"org.restheart.security.authenticators.FileRealmAuthenticator",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map"] }
   ]
 },
 {
-  "name":"org.restheart.security.plugins.authenticators.MongoRealmAuthenticator",
+  "name":"org.restheart.security.authenticators.MongoRealmAuthenticator",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"setConf","parameterTypes":["java.util.Map"] }, 
@@ -1215,38 +1215,31 @@
   ]
 },
 {
-  "name":"org.restheart.security.plugins.authenticators.UserPwdHasher",
+  "name":"org.restheart.security.authenticators.UserPwdHasher",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
-  "name":"org.restheart.security.plugins.authenticators.UserPwdRemover",
+  "name":"org.restheart.security.authenticators.UserPwdRemover",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
-  "name":"org.restheart.security.plugins.authorizers.FileAclAuthorizer",
+  "name":"org.restheart.security.authorizers.FileAclAuthorizer",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map"] }
   ]
 },
 {
-  "name":"org.restheart.security.plugins.authorizers.FilterPredicateInjector",
-  "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
-  ]
+  "name":"org.restheart.security.authorizers.FullAuthorizer"
 },
 {
-  "name":"org.restheart.security.plugins.authorizers.FullAuthorizer"
-},
-{
-  "name":"org.restheart.security.plugins.authorizers.MongoAclAuthorizer",
+  "name":"org.restheart.security.authorizers.MongoAclAuthorizer",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"setConf","parameterTypes":["java.util.Map"] }, 
@@ -1254,80 +1247,80 @@
   ]
 },
 {
-  "name":"org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor",
+  "name":"org.restheart.security.interceptors.TokenCORSResponseInterceptor",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"org.restheart.security.plugins.interceptors.mongo.AllowAllWriteModes",
+  "name":"org.restheart.security.interceptors.mongo.AllowAllWriteModes",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"org.restheart.security.plugins.interceptors.mongo.HiddenProps",
+  "name":"org.restheart.security.interceptors.mongo.HiddenProps",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"org.restheart.security.plugins.interceptors.mongo.OverriddenProps",
+  "name":"org.restheart.security.interceptors.mongo.OverriddenProps",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"org.restheart.security.plugins.interceptors.mongo.ProtectedProps",
+  "name":"org.restheart.security.interceptors.mongo.ProtectedProps",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"org.restheart.security.plugins.interceptors.mongo.RequestFilters",
+  "name":"org.restheart.security.interceptors.mongo.RequestFilters",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
-  "name":"org.restheart.security.plugins.interceptors.mongo.WhitelistBulkRequests",
+  "name":"org.restheart.security.interceptors.mongo.WhitelistBulkRequests",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"org.restheart.security.plugins.interceptors.mongo.WhitelistMgmgRequests",
+  "name":"org.restheart.security.interceptors.mongo.WhitelistMgmtRequests",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"org.restheart.security.plugins.mechanisms.BasicAuthMechanism",
+  "name":"org.restheart.security.mechanisms.BasicAuthMechanism",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
-  "name":"org.restheart.security.plugins.mechanisms.DigestAuthMechanism",
+  "name":"org.restheart.security.mechanisms.DigestAuthMechanism",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
-  "name":"org.restheart.security.plugins.mechanisms.IdentityAuthMechanism"
+  "name":"org.restheart.security.mechanisms.IdentityAuthMechanism"
 },
 {
-  "name":"org.restheart.security.plugins.mechanisms.JwtAuthenticationMechanism",
+  "name":"org.restheart.security.mechanisms.JwtAuthenticationMechanism",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map"] }
   ]
 },
 {
-  "name":"org.restheart.security.plugins.mechanisms.TokenBasicAuthMechanism",
+  "name":"org.restheart.security.mechanisms.TokenBasicAuthMechanism",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
-  "name":"org.restheart.security.plugins.services.GetRoleService",
+  "name":"org.restheart.security.services.GetRoleService",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map"] }
   ]
 },
 {
-  "name":"org.restheart.security.plugins.services.RndTokenService",
+  "name":"org.restheart.security.services.RndTokenService",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map"] }, 
@@ -1335,7 +1328,7 @@
   ]
 },
 {
-  "name":"org.restheart.security.plugins.tokens.RndTokenManager",
+  "name":"org.restheart.security.tokens.RndTokenManager",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }

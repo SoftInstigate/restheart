@@ -310,7 +310,7 @@ public class Configuration {
      * <pre>
      * auth-mechanisms:
      *  - name: basicAuthMechanism
-     *    class: org.restheart.security.plugins.mechanisms.BasicAuthMechanism
+     *    class: org.restheart.security.mechanisms.BasicAuthMechanism
      *    args:
      *      argParam1: value
      *      argParam2: value

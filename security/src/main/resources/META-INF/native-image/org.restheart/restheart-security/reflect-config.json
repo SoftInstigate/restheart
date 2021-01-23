@@ -1,6 +1,6 @@
 [
   {
-    "name": "org.restheart.security.plugins.authenticators.DenyFilterOnUserPwd",
+    "name": "org.restheart.security.authenticators.DenyFilterOnUserPwd",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       {
@@ -10,14 +10,14 @@
     ]
   },
   {
-    "name": "org.restheart.security.plugins.authenticators.FileRealmAuthenticator",
+    "name": "org.restheart.security.authenticators.FileRealmAuthenticator",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       { "name": "init", "parameterTypes": ["java.util.Map"] }
     ]
   },
   {
-    "name": "org.restheart.security.plugins.authenticators.MongoRealmAuthenticator",
+    "name": "org.restheart.security.authenticators.MongoRealmAuthenticator",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       { "name": "setConf", "parameterTypes": ["java.util.Map"] },
@@ -32,7 +32,7 @@
     ]
   },
   {
-    "name": "org.restheart.security.plugins.authenticators.UserPwdHasher",
+    "name": "org.restheart.security.authenticators.UserPwdHasher",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       {
@@ -42,7 +42,7 @@
     ]
   },
   {
-    "name": "org.restheart.security.plugins.authenticators.UserPwdRemover",
+    "name": "org.restheart.security.authenticators.UserPwdRemover",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       {
@@ -52,24 +52,14 @@
     ]
   },
   {
-    "name": "org.restheart.security.plugins.authorizers.FileAclAuthorizer",
+    "name": "org.restheart.security.authorizers.FileAclAuthorizer",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       { "name": "init", "parameterTypes": ["java.util.Map"] }
     ]
   },
   {
-    "name": "org.restheart.security.plugins.authorizers.FilterPredicateInjector",
-    "methods": [
-      { "name": "<init>", "parameterTypes": [] },
-      {
-        "name": "init",
-        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
-      }
-    ]
-  },
-  {
-    "name": "org.restheart.security.plugins.authorizers.MongoAclAuthorizer",
+    "name": "org.restheart.security.authorizers.MongoAclAuthorizer",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       { "name": "setConf", "parameterTypes": ["java.util.Map"] },
@@ -80,11 +70,11 @@
     ]
   },
   {
-    "name": "org.restheart.security.plugins.interceptors.TokenCORSResponseInterceptor",
+    "name": "org.restheart.security.interceptors.TokenCORSResponseInterceptor",
     "methods": [{ "name": "<init>", "parameterTypes": [] }]
   },
   {
-    "name": "org.restheart.security.plugins.mechanisms.BasicAuthMechanism",
+    "name": "org.restheart.security.mechanisms.BasicAuthMechanism",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       {
@@ -97,7 +87,7 @@
     ]
   },
   {
-    "name": "org.restheart.security.plugins.mechanisms.DigestAuthMechanism",
+    "name": "org.restheart.security.mechanisms.DigestAuthMechanism",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       {
@@ -110,17 +100,17 @@
     ]
   },
   {
-    "name": "org.restheart.security.plugins.mechanisms.IdentityAuthMechanism"
+    "name": "org.restheart.security.mechanisms.IdentityAuthMechanism"
   },
   {
-    "name": "org.restheart.security.plugins.mechanisms.JwtAuthenticationMechanism",
+    "name": "org.restheart.security.mechanisms.JwtAuthenticationMechanism",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       { "name": "init", "parameterTypes": ["java.util.Map"] }
     ]
   },
   {
-    "name": "org.restheart.security.plugins.mechanisms.TokenBasicAuthMechanism",
+    "name": "org.restheart.security.mechanisms.TokenBasicAuthMechanism",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       {
@@ -130,14 +120,14 @@
     ]
   },
   {
-    "name": "org.restheart.security.plugins.services.GetRoleService",
+    "name": "org.restheart.security.services.GetRoleService",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       { "name": "init", "parameterTypes": ["java.util.Map"] }
     ]
   },
   {
-    "name": "org.restheart.security.plugins.services.RndTokenService",
+    "name": "org.restheart.security.services.RndTokenService",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       { "name": "init", "parameterTypes": ["java.util.Map"] },
@@ -148,7 +138,7 @@
     ]
   },
   {
-    "name": "org.restheart.security.plugins.tokens.RndTokenManager",
+    "name": "org.restheart.security.tokens.RndTokenManager",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
       {

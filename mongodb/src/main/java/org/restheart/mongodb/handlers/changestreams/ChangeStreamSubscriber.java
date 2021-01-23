@@ -81,7 +81,6 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument> 
             GetChangeStreamHandler.OPENED_STREAMS.remove(sessionKey);
         }
     }
-    
 
     @Override
     public void onError(final Throwable t) {

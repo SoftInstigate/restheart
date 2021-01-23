@@ -50,7 +50,7 @@ import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.handlers.SecurityHandler;
-import org.restheart.security.plugins.authorizers.FullAuthorizer;
+import org.restheart.security.authorizers.FullAuthorizer;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;

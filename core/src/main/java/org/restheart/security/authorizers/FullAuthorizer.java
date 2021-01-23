@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.plugins.authorizers;
+package org.restheart.security.authorizers;
 
 import java.util.Map;
 import org.restheart.ConfigurationException;

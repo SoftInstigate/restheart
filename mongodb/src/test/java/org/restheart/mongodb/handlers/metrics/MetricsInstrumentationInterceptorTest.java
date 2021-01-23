@@ -87,14 +87,14 @@ public class MetricsInstrumentationInterceptorTest {
         MetricsInstrumentationInterceptor mih = new MetricsInstrumentationInterceptor();
         mih.configuration = config;
         mih.metrics = proxy;
-        
+
         HttpServerExchange httpServerExchange = mock(HttpServerExchange.class);
         when(httpServerExchange.getStatusCode()).thenReturn(200);
         when(httpServerExchange.getRequestMethod()).thenReturn(Methods.GET);
         when(httpServerExchange.getRequestPath()).thenReturn("/foo/bar");
-        
+
         var request = MongoRequest.init(httpServerExchange, "foo", "bar");
-        
+
         when(httpServerExchange.getAttachment(anyObject())).thenReturn(request);
 
         mih.addMetrics(0, httpServerExchange);
