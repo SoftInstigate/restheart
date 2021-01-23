@@ -79,6 +79,8 @@ see:
 
 workaround: downgraded xnio to v3.5.9.Final in native profile
 
+(not needed anymore with GraalVM 21)
+
 ### error creating pid file
 
 resolved with Substitution
