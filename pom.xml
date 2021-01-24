@@ -187,6 +187,23 @@
                 <artifactId>undertow-core</artifactId>
                 <version>2.2.2.Final</version>
             </dependency>
+            <!-- downgraded XNio for native-image.
+                 in version 3.6.0.Final xnio introduces dependency to org.jboss.threads:jboss-threads:2.3.0.Beta2
+                 this generates runtime error with native image
+                 see https://github.com/SoftInstigate/graalvm-undertow-issue
+            -->
+            <!-- downgraded for native-image -->
+            <dependency>
+                <groupId>org.jboss.xnio</groupId>
+                <artifactId>xnio-api</artifactId>
+                <version>3.5.9.Final</version>
+            </dependency>
+            <!-- downgraded for native-image -->
+            <dependency>
+                <groupId>org.jboss.xnio</groupId>
+                <artifactId>xnio-nio</artifactId>
+                <version>3.5.9.Final</version>
+            </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>

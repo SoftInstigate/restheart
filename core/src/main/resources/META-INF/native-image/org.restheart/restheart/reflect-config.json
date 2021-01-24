@@ -1385,10 +1385,6 @@
   "allPublicConstructors":true
 },
 {
-  "name":"org.xnio.nio.QueuedNioTcpServer$3",
-  "allPublicConstructors":true
-},
-{
   "name":"short[]"
 },
 {
