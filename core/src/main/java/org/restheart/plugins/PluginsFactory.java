@@ -243,8 +243,7 @@ public class PluginsFactory {
                 }
             } catch (ClassNotFoundException | ConfigurationException | InstantiationException | IllegalAccessException
                     | InvocationTargetException e) {
-                LOGGER.error("Error registering {} {}: {}", type, plugin.getClass().getSimpleName(),
-                        getRootException(e).getMessage(), e);
+                LOGGER.error("Error registering {} {}: {}", type, plugin.clazz, getRootException(e).getMessage(), e);
             }
         });
 
