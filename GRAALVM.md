@@ -79,16 +79,6 @@ see:
 
 workaround: downgraded xnio to v3.5.9.Final in native profile
 
-(not needed anymore with GraalVM 21)
-
-### error creating pid file
-
-resolved with Substitution
-
-### check bundled resources
-
-See [substratevm/Resources.md](https://github.com/oracle/graal/blob/master/substratevm/Resources.md)
-
 ### build fails due to ClassNotFoundException from mongodb-driver
 
 resolved adding the following dependencies in native profile:
