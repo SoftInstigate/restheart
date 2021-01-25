@@ -163,6 +163,9 @@ public class ResponseHelper {
                 // happens when the _id and a filter are specified,
                 // the document exists but does not match the filter
                 return HttpStatus.SC_CONFLICT;
+            case 13297:
+                // db already exists with different case
+                return HttpStatus.SC_CONFLICT;
             default:
                 // Other
                 return HttpStatus.SC_INTERNAL_SERVER_ERROR;
@@ -211,6 +214,9 @@ public class ResponseHelper {
                 // - for upsert/updates with the _id and a filter, and the update document does not match the filter
                 // - a unique index exists, and the document duplicates an existing key
                 return "Duplicate key error (insert with existing _id, update a document not matching specified filter or unique index violation)";
+                case 13297:
+                // db already exists with different case
+                return "Db already exists with different case";
             default:
                 return "Error handling the request, see log for more information";
         }
