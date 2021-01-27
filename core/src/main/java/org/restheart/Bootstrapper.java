@@ -89,6 +89,7 @@ import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
 import org.fusesource.jansi.AnsiConsole;
+import org.graalvm.nativeimage.ImageInfo;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
@@ -270,6 +271,10 @@ public class Bootstrapper {
         // we are at runtime. this is used for building native image
         NativeImageBuildTimeChecker.atRuntime();
 
+        // disable Xnio Executors on native image
+        // due to https://github.com/SoftInstigate/graalvm-undertow-issue
+        disableXnioExecutorsOnNativeImage();
+
         if (!configuration.isAnsiConsole()) {
             AnsiConsole.systemInstall();
         }
@@ -317,6 +322,23 @@ public class Bootstrapper {
                     logErrorAndExit("Error forking", t, false, false, -1);
                 }
             }
+        }
+    }
+
+    /**
+     * Disable jboss xnio executors on native image
+     * Xnio's EnhancedQueueExecutor uses and unsafe operation not supported by GraalVM
+     * see https://github.com/SoftInstigate/graalvm-undertow-issue
+     * and https://github.com/oracle/graal/issues/3020#issuecomment-768231442
+     */
+    private static void disableXnioExecutorsOnNativeImage() {
+        try {
+            if(ImageInfo.isExecutable()) {
+                System.setProperty("jboss.threads.eqe.disable", Boolean.toString(true));
+            }
+        } catch(Throwable cnfe) {
+            // this happen when not running GraalVM. ImageInfo would not be available.
+            // so nothing to do
         }
     }
 

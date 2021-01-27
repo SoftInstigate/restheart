@@ -1274,6 +1274,12 @@
   ]
 },
 {
+    "name":"org.restheart.security.interceptors.mongo.ForbiddenQueryParams",
+    "methods":[
+      {"name":"<init>","parameterTypes":[] }
+    ]
+},
+{
   "name":"org.restheart.security.interceptors.mongo.WhitelistBulkRequests",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
