@@ -233,6 +233,10 @@
   "name":"float[]"
 },
 {
+  "name":"graphql.schema.GraphQLScalarType",
+  "fields":[{"name":"coercing", "allowWrite":true}]
+},
+{
   "name":"int[]"
 },
 {
@@ -1107,19 +1111,19 @@
   "allPublicConstructors":true
 },
 {
+  "name":"org.restheart.graphql.GraphQLService",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"initConf","parameterTypes":["java.util.Map"] }, 
+    {"name":"initMongoClient","parameterTypes":["com.mongodb.MongoClient"] }
+  ]
+},
+{
   "name":"org.restheart.mongodb.MongoService",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
-},
-{
-    "name":"org.restheart.graphql.GraphQLService",
-    "methods":[
-      {"name":"<init>","parameterTypes":[] }, 
-      {"name":"initMongoClient","parameterTypes":["com.mongodb.MongoClient"] },
-      {"name":"initConf","parameterTypes":["java.util.Map"] }
-    ]
 },
 {
   "name":"org.restheart.mongodb.MongoServiceInitializer",
@@ -1263,6 +1267,10 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"org.restheart.security.interceptors.mongo.ForbiddenQueryParams",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"org.restheart.security.interceptors.mongo.HiddenProps",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
@@ -1280,12 +1288,6 @@
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
-},
-{
-    "name":"org.restheart.security.interceptors.mongo.ForbiddenQueryParams",
-    "methods":[
-      {"name":"<init>","parameterTypes":[] }
-    ]
 },
 {
   "name":"org.restheart.security.interceptors.mongo.WhitelistBulkRequests",

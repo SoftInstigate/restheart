@@ -1,7 +1,8 @@
+@ignore
 Feature: Utils feature to upload App Definition om MongoDB
-  
-  Background: 
-    
+
+  Background:
+
     * url restheartBaseURL
     * def appDef = (__arg.appDef == null) ? read('app-definitionExample.json') : __arg.appDef
     * def expectedStatus = (__arg.expectedStatus == null) ? 201 : __arg.expectedStatus

@@ -38,7 +38,7 @@ $ ./core/target/restheart-native core/etc/restheart.yml -e core/etc/uber.propert
 
 Start RESTHeart with test configuration and the `native-image-agent`
 
-```
+```bash
 $ mvn clean package
 $ cp test-plugins/target/restheart-test-plugins.jar core/target/plugins
 $ java -agentlib:native-image-agent=config-merge-dir=core/src/main/resources/META-INF/native-image/org.restheart/restheart/ -jar core/target/restheart.jar core/etc/test/restheart.yml
@@ -46,7 +46,7 @@ $ java -agentlib:native-image-agent=config-merge-dir=core/src/main/resources/MET
 
 Execute tests, this makes the `native-image-agent` collecting all needed configuration
 
-```
+```bash
 $ cd core
 $ mvn surefire:test -DskipITs=false -Dtest=\*IT
 ```
@@ -60,10 +60,14 @@ The generated configuration are merged into the existing ones in directory `core
 
 The following fields must be configured with `allowWrite: true`
 
-```
+```json
 {
   "name":"io.undertow.security.impl.BasicAuthenticationMechanism",
   "fields":[{"name":"identityManager", "allowWrite" : true}]
+},
+{
+  "name":"graphql.schema.GraphQLScalarType",
+  "fields":[{"name":"coercing", "allowWrite":true}]
 }
 ```
 

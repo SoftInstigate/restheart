@@ -1,3 +1,5 @@
+
+@ignore
 Feature: Field renaming test
 
   Background:

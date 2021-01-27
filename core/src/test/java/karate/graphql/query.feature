@@ -1,3 +1,4 @@
+@ignore
 Feature: GraphQL query response test
 
   Background:
@@ -20,8 +21,8 @@ Feature: GraphQL query response test
 
 
   Scenario: Content-Type application/graphql
-    
-    * text query = 
+
+    * text query =
      """
     {
       TheatersByCity(city: "New York"){
@@ -65,10 +66,10 @@ Feature: GraphQL query response test
 
 
 
-    
+
   Scenario: Undefined GraphQL query
 
-    * text query = 
+    * text query =
     """
     {
       UndefinedQuery(foo1: "bar1", foo2: "bar2"){
@@ -77,7 +78,7 @@ Feature: GraphQL query response test
       }
     }
     """
-    
+
     Given request {query: '#(query)'}
     When method POST
     Then status 400
@@ -89,7 +90,7 @@ Feature: GraphQL query response test
   Scenario: Undefined field in GraphQL query result type
 
 
-      * text query = 
+      * text query =
       """
       {
         TheatersByCity(city: "New York"){
@@ -98,7 +99,7 @@ Feature: GraphQL query response test
         }
       }
       """
-      
+
       Given request {query : '#(query)'}
       When method POST
       Then status 400

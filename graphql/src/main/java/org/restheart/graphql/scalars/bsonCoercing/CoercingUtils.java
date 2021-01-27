@@ -25,7 +25,11 @@ import graphql.schema.*;
 import java.lang.reflect.Field;
 import java.util.*;
 import static graphql.Scalars.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CoercingUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CoercingUtils.class);
 
     private static final Map<String, GraphQLScalarType> builtInScalars = Map.ofEntries(
             Map.entry("String", GraphQLString),
@@ -68,6 +72,7 @@ public class CoercingUtils {
             try {
                 coercingField.set(builtInScalars.get(s), coercing);
             } catch (IllegalAccessException e) {
+                LOGGER.error("Error replacing built-in scalars", e);
                 Assert.assertShouldNeverHappen();
             }
         }));
