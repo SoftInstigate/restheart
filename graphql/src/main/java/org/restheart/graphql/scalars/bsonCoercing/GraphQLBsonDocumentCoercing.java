@@ -47,6 +47,7 @@ public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonD
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public BsonDocument parseValue(Object input) throws CoercingParseValueException {
 
         if(input instanceof Map){
@@ -102,7 +103,7 @@ public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonD
             return (BsonValue) variables.get(varName);
         }
         else if (input instanceof ArrayValue){
-            List<Value> values = ((ArrayValue) input).getValues();
+            var values = ((ArrayValue) input).getValues();
             BsonArray bsonValues = new BsonArray();
             values.forEach(value -> {
                 bsonValues.add( parseLiteral(value, variables));

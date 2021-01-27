@@ -87,8 +87,6 @@ public class GraphQLApp {
         private AppDescriptor descriptor;
         private String schema;
         private Map<String, TypeMapping> mappings;
-        private GraphQLSchema executableSchema;
-
 
         private Builder(){}
 

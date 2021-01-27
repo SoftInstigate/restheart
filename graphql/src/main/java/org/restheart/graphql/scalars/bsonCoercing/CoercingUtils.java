@@ -35,7 +35,7 @@ public class CoercingUtils {
             Map.entry("Long", GraphQLLong)
     );
 
-    private static final Map<String, Coercing> replacements = Map.ofEntries(
+    private static final Map<String, Coercing<?,?>> replacements = Map.ofEntries(
             Map.entry("String", new GraphQLBsonStringCoercing()),
             Map.entry("Int", new GraphQLBsonInt32Coercing()),
             Map.entry("Float", new GraphQLBsonDoubleCoerching()),
@@ -43,7 +43,8 @@ public class CoercingUtils {
             Map.entry("Long", new GraphQLBsonInt64Coercing())
     );
 
-    public static final Map<String, Coercing> builtInCoercing = new HashMap<>();
+
+    public static final Map<String, Coercing<?,?>> builtInCoercing = new HashMap<>();
 
 
     static String typeName(Object input) {

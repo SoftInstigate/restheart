@@ -23,6 +23,11 @@ package org.restheart.graphql;
 public class GraphQLAppDefNotFoundException extends Exception {
 
 
+    /**
+     *
+     */
+    private static final long serialVersionUID = 5949991448991967143L;
+
     public GraphQLAppDefNotFoundException() {
         super();
     }

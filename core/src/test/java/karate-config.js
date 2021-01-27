@@ -6,7 +6,12 @@ function fn() {
   }
   var config = {
     env: env,
-	myVarName: 'someValue'
+    myVarName: 'someValue',
+    rhBasicAuth: 'Basic YWRtaW46c2VjcmV0',
+    graphQLBaseURL: 'http://localhost:8080/graphql',
+    restheartBaseURL: 'http://localhost:8080',
+    contTypeGraphQL: 'application/graphql',
+    contTypeJson: 'application/json'
   };
   
   if (env === 'dev') {

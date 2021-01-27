@@ -20,8 +20,6 @@
  */
 package org.restheart.graphql.models;
 
-import org.bson.types.ObjectId;
-
 public class AppDescriptor {
 
     private String appName;
@@ -114,15 +112,5 @@ public class AppDescriptor {
 
             return new AppDescriptor(this.appName, this.enabled, this.description, this.uri);
         }
-
-        private static void throwIllegalException(String varName){
-
-            throw  new IllegalStateException(
-                    varName + "could not be null!"
-            );
-
-        }
-
     }
-
 }

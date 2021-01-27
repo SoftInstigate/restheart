@@ -24,6 +24,11 @@ package org.restheart.graphql;
 public class GraphQLIllegalAppDefinitionException extends Exception {
 
 
+    /**
+     *
+     */
+    private static final long serialVersionUID = 4825538142826266781L;
+
     public GraphQLIllegalAppDefinitionException() {
         super();
     }

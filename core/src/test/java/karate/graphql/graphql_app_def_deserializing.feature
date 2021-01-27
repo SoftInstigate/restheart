@@ -1,3 +1,4 @@
+@ignore
 Feature: GraphQL App correctness checker (needs Interceptor)
 
   Background:

@@ -25,7 +25,6 @@ import com.mongodb.MongoClient;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderValues;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoResponse;
@@ -85,6 +84,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
 
     @Override
+    @SuppressWarnings("unchecked")
     public void handle(GraphQLRequest request, MongoResponse response) throws Exception {
 
         GraphQLApp graphQLApp = request.getAppDefinition();

@@ -231,6 +231,12 @@ plugins-args:
     mongo:
         enabled: true
         secured: true
+    graphql:
+        enabled: true
+        uri: /graphql
+        secured: false
+        db: restheart
+        collection: test-apps
     csvLoader:
         secured: true
     testInitializer:
