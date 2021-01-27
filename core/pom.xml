@@ -443,6 +443,10 @@
           <groupId>org.restheart</groupId>
           <artifactId>restheart-polyglot</artifactId>
         </dependency>
+        <dependency>
+          <groupId>org.restheart</groupId>
+          <artifactId>restheart-graphql</artifactId>
+        </dependency>
         <!-- uncomment to add test plugins, need also to regenerate native-image build configuration, see GRAAL.md -->
         <!-- <dependency>
           <groupId>org.restheart</groupId>

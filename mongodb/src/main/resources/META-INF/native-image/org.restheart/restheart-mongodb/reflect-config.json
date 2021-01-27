@@ -15,7 +15,7 @@
       { "name": "<init>", "parameterTypes": [] },
       { "name": "init", "parameterTypes": ["java.util.Map"] },
       {
-        "name": "injectMongoClient",
+        "name": "injectPluginsRegistry",
         "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
       }
     ]

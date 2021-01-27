@@ -44,7 +44,7 @@ public class AppDefinitionLoadingCache {
                     try {
                         return AppDefinitionLoader.loadAppDefinition(key);
                     } catch (GraphQLIllegalAppDefinitionException e) {
-                        LambdaUtils.throwsSneakyExcpetion(e);
+                        LambdaUtils.throwsSneakyException(e);
                         return null;
                     }
                 });

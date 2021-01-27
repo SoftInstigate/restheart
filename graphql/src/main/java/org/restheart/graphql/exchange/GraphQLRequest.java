@@ -72,7 +72,7 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
     }
 
     public void injectContentJson() throws IOException {
-        String body = ChannelReader.read(wrapped.getRequestChannel());
+        var body = ChannelReader.readString(wrapped);
         var json = JsonParser.parseString(body);
 
         setContent(json);
@@ -80,7 +80,7 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
 
     public void injectContentGraphQL() throws IOException {
 
-        String body = ChannelReader.read(wrapped.getRequestChannel());
+        var body = ChannelReader.readString(wrapped);
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty(QUERY_FIELD,body);
 

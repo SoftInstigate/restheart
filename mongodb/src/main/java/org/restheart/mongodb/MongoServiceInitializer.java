@@ -61,7 +61,7 @@ public class MongoServiceInitializer implements Initializer {
     }
 
     @InjectPluginsRegistry
-    public void injectMongoClient(PluginsRegistry pluginsRegistry) {
+    public void injectPluginsRegistry(PluginsRegistry pluginsRegistry) {
         if (!this.mongoSrvEnabled) {
             return;
         }

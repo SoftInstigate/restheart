@@ -1114,11 +1114,19 @@
   ]
 },
 {
+    "name":"org.restheart.graphql.GraphQLService",
+    "methods":[
+      {"name":"<init>","parameterTypes":[] }, 
+      {"name":"initMongoClient","parameterTypes":["com.mongodb.MongoClient"] },
+      {"name":"initConf","parameterTypes":["java.util.Map"] }
+    ]
+},
+{
   "name":"org.restheart.mongodb.MongoServiceInitializer",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map"] }, 
-    {"name":"injectMongoClient","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+    {"name":"injectPluginsRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
