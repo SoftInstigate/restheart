@@ -49,6 +49,7 @@
     <modules>
         <module>commons</module>
         <module>polyglot</module>
+        <module>graphql</module>
         <module>core</module>
         <module>security</module>
         <module>mongodb</module>
@@ -173,6 +174,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.restheart</groupId>
+                <artifactId>restheart-graphql</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-legacy</artifactId>
                 <version>4.1.1</version>
@@ -291,6 +297,11 @@
                 <artifactId>js-scriptengine</artifactId>
                 <version>${graalvm.version}</version>
                 <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.graphql-java</groupId>
+                <artifactId>graphql-java</artifactId>
+                <version>15.0</version>
             </dependency>
             <!-- BEGIN Test dependencies -->
             <dependency>

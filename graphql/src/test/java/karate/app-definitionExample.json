@@ -1,0 +1,104 @@
+
+{
+  "descriptor": {
+    "name": "MFlix",
+    "description": "GraphQL App Example using MongoDB sample_mflix dataset",
+    "enabled": true,
+    "uri": "mflix"
+  },
+  "schema": "type Comment{  _id: ObjectId  user: User  movie: Movie  text: String  date: DateTime}type Movie{  _id: ObjectId  title: String  year: Int  runtime: Int  released: DateTime  poster: String  plot: String  fullPlot: String  lastUpdate: String  filmType: String  directors: [String]  imdbRate: Float  imdbVotes: Int  countries: [String]  genres: [String]  tomatoesRate: Float  tomatoesReviewsNum: Int  comments(startDate: DateTime = \"-9223372036854775808\", endDate: DateTime = \"9223372036854775807\", sort: Int = 1, skip: Int = 0, limit: Int = 0): [Comment]  relatedMovies: [Movie]}type Session{  _id: ObjectId  user: User  jwt: String} type Theater{  theaterId: Int  location: BsonDocument} type User{  _id: ObjectId  name: String  email: String  comments(startDate: DateTime = \"-9223372036854775808\", endDate: DateTime = \"9223372036854775807\", sort: Int = 1, skip: Int = 0, limit: Int = 0): [Comment]}type Query{  MoviesByTitle(title: String!): [Movie]  MoviesByYear(year: Int!, sort: Int = 1, skip: Int = 0, limit: Int = 0): [Movie]  UserByEmail(email: String!): [User]  MoviesByTomatoesRateRange(min: Float, max: Float, sort: Int = 1, skip: Int = 0, limit: Int = 0):[Movie]  TheatersByCity(city: String!, sort: Int = 1, skip: Int = 0, limit: Int = 0): [Theater]}",
+  "mappings":{
+    "Comment":{
+      "user":{
+        "db": "sample_mflix",
+        "collection": "users",
+        "find":{
+          "email": {"_$fk": "email"}
+        }
+      },
+      "movie":{
+        "db": "sample_mflix",
+        "collection": "movies",
+        "find":{
+          "_id": {"_$fk": "movie_id"}
+        }
+      }
+    },
+    "Movie":{
+      "imdbRate": "imdb::rating",
+      "imdbVotes": "imdb::votes",
+      "tomatoesRate": "tomatoes::viewer::rating",
+      "tomatoesReviewsNum": "tomatoes::viewer::numReviews",
+      "lastUpdate": "lastupdated",
+      "fullPlot": "fullplot",
+      "filmType": "type",
+      "comments": {
+        "db": "sample_mflix",
+        "collection": "comments",
+        "find": {"_$and":[{"movie_id": {"_$fk":"_id"}},
+          {"date":{"_$gte":{"_$arg":"startDate"}, "_$lt":{"_$arg":"endDate"}}}]
+        },
+        "sort": {"date":{"_$arg": "sort"}},
+        "skip": {"_$arg": "skip"},
+        "limit": {"_$arg": "limit"}
+      }
+    },
+    "Session":{
+      "user": {
+        "db": "sample_mflix",
+        "collection": "user",
+        "find":{
+          "email": {"_$fk":"user_id"}
+        }
+      }
+    },
+    "User":{
+      "comments":{
+        "db": "sample_mflix",
+        "collection": "comments",
+        "find":{"_$and":[{"email": {"_$fk":"email"}},
+          {"date":{"_$gte":{"_$arg":"startDate"}, "_$lt":{"_$arg":"endDate"}}}]
+        },
+        "sort":{"_id":{"_$arg": "sort"}},
+        "skip":{"_$arg": "skip"},
+        "limit":{"_$arg": "limit"}
+      }
+    },
+    "Query":{
+      "MoviesByTitle":{
+        "db": "sample_mflix",
+        "collection": "movies",
+        "find":{"title":{"_$arg":"title"}}
+      },
+      "MoviesByYear":{
+        "db": "sample_mflix",
+        "collection": "movies",
+        "find":{"year": {"_$arg": "year"}},
+        "sort":{"_id":{"_$arg": "sort"}},
+        "skip":{"_$arg": "skip"},
+        "limit":{"_$arg": "limit"}
+      },
+      "UserByEmail":{
+        "db": "sample_mflix",
+        "collection": "users",
+        "find":{"email":{"_$arg":"email"}}
+      },
+      "MoviesByTomatoesRateRange":{
+        "db": "sample_mflix",
+        "collection": "movies",
+        "find":{"tomatoes::viewer::rating":{"_$gte":{"_$arg":"min"}, "_$lt":{"_$arg":"max"}}},
+        "sort":{"tomatoes::viewer::rating": {"_$arg": "sort"}},
+        "skip":{"_$arg": "skip"},
+        "limit":{"_$arg":"limit"}
+      },
+      "TheatersByCity":{
+        "db": "sample_mflix",
+        "collection": "theaters",
+        "find":{"location::address::city": {"_$arg": "city"}},
+        "sort":{"theaterId": {"_$arg":"sort"}},
+        "skip":{"_$arg":"skip"},
+        "limit":{"_$arg":"limit"}
+      }
+    }
+  }
+}

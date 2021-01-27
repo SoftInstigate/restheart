@@ -1,0 +1,55 @@
+type Comment{
+  _id: ObjectId
+  user: User
+  movie: Movie
+  text: String
+  date: DateTime
+}
+
+type Movie{
+  _id: ObjectId
+  title: String
+  year: Int
+  runtime: Int
+  released: DateTime
+  poster: String
+  plot: String
+  fullPlot: String
+  lastUpdate: DateTime
+  filmType: String
+  directors: [String]
+  imdbRate: Float
+  imdbVotes: Int
+  countries: [String]
+  genres: [String]
+  tomatoesRate: Float
+  tomatoesReviewsNum: Int
+  comments(startDate: DateTime = "-9223372036854775808", endDate: DateTime = "9223372036854775807", sort: Int = 1, skip: Int = 0, limit: Int = 0): [Comment]
+  relatedMovies: [Movie]
+}
+
+type Session{
+  _id: ObjectId
+  user: User
+  jwt: String
+}
+
+type Theater{
+  theaterId: Int
+  location: BsonDocument
+}
+
+type User{
+  _id: ObjectId
+  name: String
+  email: String
+  comments(startDate: DateTime = "-9223372036854775808", endDate: DateTime = "9223372036854775807", sort: Int = 1, skip: Int = 0, limit: Int = 0): [Comment]
+}
+
+type Query{
+  MoviesByTitle(title: String!): [Movie]
+  MoviesByYear(year: Int!, sort: Int = 1, skip: Int = 0, limit: Int = 0): [Movie]
+  UserByEmail(email: String!): [User]
+  MoviesByTomatoesRateRange(min: Float, max: Float, sort: Int = 1, skip: Int = 0, limit: Int = 0):[Movie]
+  TheatersByCity(city: String!, sort: Int = 1, skip: Int = 0, limit: Int = 0): [Theater]
+}
