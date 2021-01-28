@@ -2,7 +2,8 @@
 
 [![Donate](https://img.shields.io/badge/Donate-Patreon-orange.svg?colorB=F96854)](https://www.patreon.com/restheart)
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
-[![Build](https://github.com/SoftInstigate/restheart/workflows/Build/badge.svg)](https://github.com/SoftInstigate/restheart/actions?query=workflow%3A%22Build%22)
+![Release build](https://github.com/SoftInstigate/restheart/workflows/Build%20stable%20release/badge.svg)
+![Snapshot build](https://github.com/SoftInstigate/restheart/workflows/Build%20snapshot%20release/badge.svg)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
 [![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.restheart%22%20AND%20a:%22restheart%22)
 [![javadoc](https://javadoc.io/badge2/org.restheart/restheart/javadoc.svg)](https://javadoc.io/doc/org.restheart/restheart)
