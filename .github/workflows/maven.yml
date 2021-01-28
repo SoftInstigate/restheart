@@ -52,26 +52,34 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
-      - name: Push snapshot Docker image tagged with SHA
+      - name: Push Docker image tagged with SHA
         run: |
           echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
           docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.SHA}} ./core/.
           docker push softinstigate/restheart:${{steps.vars.outputs.SHA}}
 
-      - name: Push stable Docker image
+      - name: If git tag then push Docker image tagged with VERSION
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
-          docker tag softinstigate/restheart:snapshot softinstigate/restheart:latest
-          docker tag softinstigate/restheart:latest softinstigate/restheart:${{steps.vars.outputs.VERSION}}
-          docker push softinstigate/restheart:latest
+          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}} softinstigate/restheart:${{steps.vars.outputs.VERSION}}
           docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}
 
-      - name: Push distroless Docker image
+      - name: Push "latest" docker tag only if branch is "master"
+        if: github.ref == 'refs/heads/master'
+        run: |
+          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}} softinstigate/restheart:latest
+          docker push softinstigate/restheart:latest
+
+      - name: If git tag then push distroless Docker image tagged with VERSION
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
           docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless ./core/.
-          docker tag softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless softinstigate/restheart:distroless
           docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
+
+      - name: Push "distroless" docker tag only if branch is "master"
+        if: github.ref == 'refs/heads/master'
+        run: |
+          docker tag softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless softinstigate/restheart:distroless
           docker push softinstigate/restheart:distroless
 
       - name: Upload GitHub release
