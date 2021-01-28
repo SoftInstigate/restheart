@@ -36,6 +36,7 @@ import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ALW
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_AFTER_AUTH;
 import static org.restheart.handlers.injectors.RequestContentInjector.Policy.ON_REQUIRES_CONTENT_BEFORE_AUTH;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.PluginUtils;
@@ -43,6 +44,9 @@ import static org.restheart.utils.PluginUtils.cachedRequestType;
 import static org.restheart.utils.PluginUtils.cachedResponseType;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
+
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,32 +138,20 @@ public class RequestContentInjector extends PipelinedHandler {
 
         var handlingService = PluginUtils.handlingService(pluginsRegistry, exchange);
 
+        List<Interceptor> interceptors;
+
         if (handlingService != null) {
             request = ServiceRequest.of(exchange, ServiceRequest.class);
             response = ServiceResponse.of(exchange, ServiceResponse.class);
+            interceptors = this.pluginsRegistry.getServiceInterceptors(handlingService, interceptPoint);
+
         } else {
             request = ByteArrayProxyRequest.of(exchange);
             response = ByteArrayProxyResponse.of(exchange);
+            interceptors = this.pluginsRegistry.getProxyInterceptors(interceptPoint);
         }
 
-        return this.pluginsRegistry
-                .getInterceptors().stream()
-                .filter(ri -> ri.isEnabled())
-                .map(ri -> ri.getInstance())
-                .filter(ri -> interceptPoint == interceptPoint(ri))
-                // IMPORTANT: An interceptor can intercept
-                // - requests handled by a Service when its request and response
-                //   types are equal to the ones declared by the Service
-                // - request handled by a Proxy when its request and response
-                //   are ByteArrayProxyRequest and ByteArrayProxyResponse
-                .filter(ri
-                        -> (handlingService == null
-                && cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
-                && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
-                || (handlingService != null
-                && cachedRequestType(ri).equals(cachedRequestType(handlingService))
-                && cachedResponseType(ri).equals(cachedRequestType(handlingService))))
-                .filter(ri -> {
+        return interceptors.stream().filter(ri -> {
                     try {
                         return ri.resolve(request, response);
                     } catch (Exception e) {

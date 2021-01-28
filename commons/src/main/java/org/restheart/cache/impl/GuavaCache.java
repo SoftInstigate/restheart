@@ -86,6 +86,11 @@ public class GuavaCache<K, V> implements org.restheart.cache.Cache<K, V> {
     }
 
     @Override
+    public void invalidateAll() {
+        wrapped.invalidateAll();
+    }
+
+    @Override
     public Map<K, Optional<V>> asMap() {
         return wrapped.asMap();
     }

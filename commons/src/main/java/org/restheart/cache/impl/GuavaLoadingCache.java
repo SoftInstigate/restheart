@@ -79,6 +79,11 @@ public class GuavaLoadingCache<K, V> implements org.restheart.cache.LoadingCache
     }
 
     @Override
+    public void invalidateAll() {
+        wrapped.invalidateAll();
+    }
+
+    @Override
     public Map<K, Optional<V>> asMap() {
         return wrapped.asMap();
     }

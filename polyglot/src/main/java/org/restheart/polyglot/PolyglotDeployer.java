@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
+import com.google.common.base.Objects;
 import com.mongodb.MongoClient;
 
 import static org.fusesource.jansi.Ansi.ansi;
@@ -365,13 +366,13 @@ public class PolyglotDeployer implements Initializer {
             var interceptorBuilder = new JavaScriptInterceptor(pluginPath, this.requireCdw, this.mclient);
 
             var record = new PluginRecord<Interceptor>(interceptorBuilder.getName(),
-            interceptorBuilder.getDescription(),
+                interceptorBuilder.getDescription(),
                 true,
                 interceptorBuilder.getInterceptor().getClass().getName(),
                 interceptorBuilder.getInterceptor(),
                 new HashMap<>());
 
-            registry.getInterceptors().add(record);
+            registry.addInterceptor(record);
 
             DEPLOYEES.put(pluginPath.toAbsolutePath(), interceptorBuilder);
 
@@ -404,9 +405,13 @@ public class PolyglotDeployer implements Initializer {
         var interceptorToUndeploy = DEPLOYEES.remove(pluginPath.toAbsolutePath());
 
         if (interceptorToUndeploy != null) {
-            registry.getInterceptors().removeIf(interceptor -> interceptor.getInstance() == interceptorToUndeploy);
+            var removed = registry.removeInterceptorIf(interceptor -> Objects.equal(interceptor.getName(), interceptorToUndeploy.getName()));
 
-            LOGGER.info(ansi().fg(GREEN).a("removed interceptor {}").reset().toString(), interceptorToUndeploy.getName());
+            if (removed) {
+                LOGGER.info(ansi().fg(GREEN).a("removed interceptor {}").reset().toString(), interceptorToUndeploy.getName());
+            } else {
+                LOGGER.warn("interceptor {} was not removed", interceptorToUndeploy.getName());
+            }
         }
     }
 

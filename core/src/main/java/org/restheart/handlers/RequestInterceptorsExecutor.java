@@ -21,7 +21,9 @@
 package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.Arrays;
+
+import java.util.List;
+
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.Exchange;
@@ -30,14 +32,12 @@ import org.restheart.exchange.Response;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.LambdaUtils;
 import org.restheart.utils.PluginUtils;
-import static org.restheart.utils.PluginUtils.cachedRequestType;
-import static org.restheart.utils.PluginUtils.cachedResponseType;
-import static org.restheart.utils.PluginUtils.interceptPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +47,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RequestInterceptorsExecutor extends PipelinedHandler {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(RequestInterceptorsExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestInterceptorsExecutor.class);
 
     private final ResponseSender sender = new ResponseSender();
 
@@ -90,42 +89,19 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
 
         var handlingService = PluginUtils.handlingService(pluginsRegistry, exchange);
 
-        if (handlingService != null) {
-            // if the request is handled by a service set to not execute interceptors
-            // at this interceptPoint, skip interceptors execution
-            // var vip = PluginUtils.dontIntercept(PluginsRegistryImpl.getInstance(), exchange);
-            var vip = PluginUtils.dontIntercept(handlingService);
-            if (Arrays.stream(vip).anyMatch(interceptPoint::equals)) {
-                next(exchange);
-                return;
-            }
+        List<Interceptor> interceptors;
 
+        if (handlingService != null) {
             request = ServiceRequest.of(exchange, ServiceRequest.class);
             response = ServiceResponse.of(exchange, ServiceResponse.class);
+            interceptors = pluginsRegistry.getServiceInterceptors(handlingService, interceptPoint);
         } else {
             request = ByteArrayProxyRequest.of(exchange);
             response = ByteArrayProxyResponse.of(exchange);
+            interceptors = pluginsRegistry.getProxyInterceptors(interceptPoint);
         }
 
-        pluginsRegistry
-                .getInterceptors()
-                .stream()
-                .filter(ri -> ri.isEnabled())
-                .map(ri -> ri.getInstance())
-                // IMPORTANT: An interceptor can intercept
-                // - requests handled by a Service when its request and response
-                //   types are equal to the ones declared by the Service
-                // - request handled by a Proxy when its request and response
-                //   are ByteArrayProxyRequest and ByteArrayProxyResponse
-                .filter(ri
-                        -> (handlingService == null
-                && cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
-                && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
-                || (handlingService != null
-                && cachedRequestType(ri).equals(cachedRequestType(handlingService))
-                && cachedResponseType(ri).equals(cachedResponseType(handlingService))))
-                .filter(ri -> interceptPoint == interceptPoint(ri))
-                .filter(ri -> {
+        interceptors.stream().filter(ri -> {
                     try {
                         return ri.resolve(request, response);
                     } catch (Exception e) {

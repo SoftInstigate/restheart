@@ -21,6 +21,8 @@ package org.restheart.plugins;
 
 import io.undertow.predicate.Predicate;
 import io.undertow.server.handlers.PathHandler;
+
+import java.util.List;
 import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.PipelineInfo;
@@ -70,6 +72,18 @@ public interface PluginsRegistry {
     public Set<PluginRecord<Initializer>> getInitializers();
 
     /**
+     * @return add the interceptor
+     */
+    @SuppressWarnings("rawtypes")
+    public void addInterceptor(PluginRecord<Interceptor> i);
+
+    /**
+     * @return remove all interceptors that match the filter predicate
+     */
+    @SuppressWarnings("rawtypes")
+    public boolean removeInterceptorIf(java.util.function.Predicate<? super PluginRecord<Interceptor>> filter);
+
+    /**
      * @return the services
      */
     @SuppressWarnings("rawtypes")
@@ -77,6 +91,23 @@ public interface PluginsRegistry {
 
     @SuppressWarnings("rawtypes")
     public Set<PluginRecord<Interceptor>> getInterceptors();
+
+    /**
+     * @return the interceptors of the service srv
+     * @param srv
+     * @param interceptPoint
+     *
+     */
+    @SuppressWarnings("rawtypes")
+    public List<Interceptor> getServiceInterceptors(Service<?,?> srv, InterceptPoint interceptPoint);
+
+    /**
+     * @return the interceptors of the proxy
+     * @param interceptPoint
+     *
+     */
+    @SuppressWarnings("rawtypes")
+    public List<Interceptor> getProxyInterceptors(InterceptPoint interceptPoint);
 
     /**
      * global security predicates must all resolve to true to allow the request
@@ -88,7 +119,7 @@ public interface PluginsRegistry {
 
     /**
      * Gets the RESTHeart root handler
-     * 
+     *
      * Avoid adding handlers using PathHandler.addPrefixPath() or
      * PathHandler.addExactPath(). Instead use PluginsRegistry.plug() which sets
      * also the correct PipelineInfo

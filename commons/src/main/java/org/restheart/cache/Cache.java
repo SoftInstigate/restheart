@@ -30,14 +30,16 @@ import java.util.Optional;
  */
 public interface Cache<K,V> {
     public enum EXPIRE_POLICY { NEVER, AFTER_WRITE, AFTER_READ };
-    
+
     public Optional<V> get(K key);
-    
+
     public void put(K key, V value);
-    
+
     public void cleanUp();
-    
+
     public void invalidate(K key);
-    
+
+    public void invalidateAll();
+
     public Map<K, Optional<V>> asMap();
 }

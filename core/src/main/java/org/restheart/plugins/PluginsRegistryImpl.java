@@ -22,14 +22,24 @@ package org.restheart.plugins;
 
 import static io.undertow.Handlers.path;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import java.util.Objects;
+import com.google.common.collect.Lists;
 import com.mongodb.MongoClient;
 
 import org.restheart.ConfigurationException;
+import org.restheart.cache.CacheFactory;
+import org.restheart.cache.LoadingCache;
+import org.restheart.cache.Cache.EXPIRE_POLICY;
+import org.restheart.exchange.ByteArrayProxyRequest;
+import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
@@ -50,6 +60,7 @@ import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.handlers.SecurityHandler;
+import org.restheart.utils.PluginUtils;
 import org.restheart.security.authorizers.FullAuthorizer;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
@@ -88,7 +99,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     @SuppressWarnings("rawtypes")
     private Set<PluginRecord<Service>> services = new LinkedHashSet<>();
-    // keep track of service initialization, to allow initializers to add services 
+    // keep track of service initialization, to allow initializers to add services
     // before actual scannit. this is used for intance by PolyglotDeployer
     private boolean servicesInitialized = false;
 
@@ -202,6 +213,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         return Collections.unmodifiableSet(this.initializers);
     }
 
+    /**
+     * note, this is cached to speed up requests
+     */
     @Override
     @SuppressWarnings("rawtypes")
     public Set<PluginRecord<Interceptor>> getInterceptors() {
@@ -210,7 +224,121 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             this.interceptors.addAll(PluginsFactory.getInstance().interceptors());
         }
 
-        return this.interceptors;
+        // service might change, invalidate cache
+        return Collections.unmodifiableSet(this.interceptors);
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public void addInterceptor(PluginRecord<Interceptor> i) {
+        this.SRV_INTERCEPTORS_CACHE.invalidateAll();
+
+        if (this.interceptors == null) {
+            // avoid NPE if not already initialized
+            getInterceptors();
+        }
+
+        this.interceptors.add(i);
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public boolean removeInterceptorIf(java.util.function.Predicate<? super PluginRecord<Interceptor>> filter) {
+        this.SRV_INTERCEPTORS_CACHE.invalidateAll();
+        return this.interceptors.removeIf(filter);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private LoadingCache<ICKey, List<Interceptor>> SRV_INTERCEPTORS_CACHE = CacheFactory
+        .createLocalLoadingCache(Integer.MAX_VALUE, EXPIRE_POLICY.NEVER, 0,
+            (key) -> __interceptors(key.service, key.interceptPoint));
+
+    class ICKey {
+        final Service<?,?> service;
+        final InterceptPoint interceptPoint;
+
+        ICKey(Service<?,?> service, InterceptPoint interceptPoint) {
+            this.service = service;
+            this.interceptPoint = interceptPoint;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(service, interceptPoint);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            } else if (obj instanceof ICKey) {
+                return hashCode() == obj.hashCode();
+            } else {
+                return false;
+            }
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private List<Interceptor> __interceptors(Service service, InterceptPoint interceptPoint) {
+        if (service != null) {
+            // if the request is handled by a service set to not execute interceptors
+            // at this interceptPoint, skip interceptors execution
+            // var vip = PluginUtils.dontIntercept(PluginsRegistryImpl.getInstance(), exchange);
+            var vip = PluginUtils.dontIntercept(service);
+            if (Arrays.stream(vip).anyMatch(interceptPoint::equals)) {
+                return Lists.newArrayList();
+            }
+        }
+
+        return getInterceptors()
+                .stream()
+                .filter(ri -> ri.isEnabled())
+                .map(ri -> ri.getInstance())
+                // IMPORTANT: An interceptor can intercept
+                // - requests handled by a Service when its request and response
+                //   types are equal to the ones declared by the Service
+                // - request handled by a Proxy when its request and response
+                //   are ByteArrayProxyRequest and ByteArrayProxyResponse
+                .filter(ri
+                    -> (service == null
+                    && PluginUtils.cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
+                    && PluginUtils.cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
+                    || (service != null
+                    && PluginUtils.cachedRequestType(ri).equals(PluginUtils.cachedRequestType(service))
+                    && PluginUtils.cachedResponseType(ri).equals(PluginUtils.cachedResponseType(service))))
+                .filter(ri -> interceptPoint == PluginUtils.interceptPoint(ri))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * @return the interceptors of the service srv
+     * @param srv
+     * @param interceptPoint
+     *
+     */
+    @Override
+    @SuppressWarnings("rawtypes")
+    public List<Interceptor> getServiceInterceptors(Service<?,?> srv, InterceptPoint interceptPoint) {
+        Objects.requireNonNull(srv);
+        Objects.requireNonNull(interceptPoint);
+
+        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new ICKey(srv, interceptPoint));
+
+        return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
+    }
+
+    /**
+     * @return the interceptors of the proxy
+     * @param interceptPoint
+     *
+     */
+    @Override
+    @SuppressWarnings("rawtypes")
+    public List<Interceptor> getProxyInterceptors(InterceptPoint interceptPoint) {
+        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new ICKey(null, interceptPoint));
+
+        return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
     }
 
     /**
@@ -326,6 +454,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             plugPipeline(uri, _srv, new PipelineInfo(SERVICE, uri, mp, srv.getName()));
 
             this.services.add(srv);
+
+            // service list changed, invalidate cache
+            this.SRV_INTERCEPTORS_CACHE.invalidateAll();
     }
 
     /**
@@ -346,5 +477,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             ROOT_PATH_HANDLER.removeExactPath(uri);
             PIPELINE_INFOS.removeExactPath(uri);
         }
+
+        // service list changed, invalidate cache
+        this.SRV_INTERCEPTORS_CACHE.invalidateAll();
     }
 }

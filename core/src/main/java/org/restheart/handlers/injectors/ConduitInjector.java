@@ -88,36 +88,12 @@ public class ConduitInjector extends PipelinedHandler {
      *
      * @param exchange
      */
-    @SuppressWarnings("unchecked")
     private static void forceIdentityEncodingForInterceptors(HttpServerExchange exchange) {
+        var inteceptors = PLUGINS_REGISTRY.getProxyInterceptors(RESPONSE);
+            inteceptors.addAll(PLUGINS_REGISTRY.getProxyInterceptors(RESPONSE_ASYNC));
 
-        if (PLUGINS_REGISTRY
-                .getInterceptors()
-                .stream()
-                .filter(ri -> ri.isEnabled())
-                .map(ri -> ri.getInstance())
-                // IMPORTANT: An interceptor can intercept
-                // - request handled by a Proxy when its request and response
-                //   are ByteArrayProxyRequest and ByteArrayProxyResponse
-                .filter(ri -> cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
-                        && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
-                .filter(ri -> {
-                    try {
-                        return ri.resolve(
-                                ByteArrayProxyRequest.of(exchange),
-                                ByteArrayProxyResponse.of(exchange));
-                    } catch (Exception e) {
-                        LOGGER.warn("Error resolving interceptor {} for {}",
-                                ri.getClass().getSimpleName(),
-                                exchange.getRequestPath(),
-                                e);
-
-                        return false;
-                    }
-                })
-                .anyMatch(ri -> requiresContent(ri))) {
-            var _before = exchange.getRequestHeaders()
-                    .get(Headers.ACCEPT_ENCODING);
+        if (inteceptors.stream().anyMatch(ri -> requiresContent(ri))) {
+            var _before = exchange.getRequestHeaders().get(Headers.ACCEPT_ENCODING);
 
             var before = new HeaderMap();
 
@@ -131,9 +107,7 @@ public class ConduitInjector extends PipelinedHandler {
                     + "setting encoding to identity because request involves "
                     + "response interceptors.", before);
 
-            exchange.getRequestHeaders().put(
-                    Headers.ACCEPT_ENCODING,
-                    "identity");
+            exchange.getRequestHeaders().put(Headers.ACCEPT_ENCODING, "identity");
         }
     }
 
@@ -143,7 +117,6 @@ public class ConduitInjector extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    @SuppressWarnings("unchecked")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         // of the response buffering it if any interceptor resolvers the request
         // and requires the content from the backend
@@ -159,34 +132,10 @@ public class ConduitInjector extends PipelinedHandler {
                 MDC.setContextMap(mdcCtx);
             }
 
-            if (PLUGINS_REGISTRY
-                    .getInterceptors()
-                    .stream()
-                    .filter(ri -> ri.isEnabled())
-                    .map(ri -> ri.getInstance())
-                    .filter(ri -> interceptPoint(ri) == RESPONSE
-                    || interceptPoint(ri) == RESPONSE_ASYNC)
-                    // IMPORTANT: An interceptor can intercept
-                    // - request handled by a Proxy when its request and response
-                    //   are ByteArrayProxyRequest and ByteArrayProxyResponse
-                    .filter(ri -> cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
-                    && cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
-                    .filter(ri -> {
-                        try {
-                            return ri.resolve(
-                                    ByteArrayProxyRequest.of(exchange),
-                                    ByteArrayProxyResponse.of(exchange));
-                        } catch (Exception e) {
-                            LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
-                                    ri.getClass().getSimpleName(),
-                                    exchange.getRequestPath(),
-                                    interceptPoint(ri),
-                                    e);
+            var inteceptors = PLUGINS_REGISTRY.getProxyInterceptors(RESPONSE);
+            inteceptors.addAll(PLUGINS_REGISTRY.getProxyInterceptors(RESPONSE_ASYNC));
 
-                            return false;
-                        }
-                    })
-                    .anyMatch(ri -> requiresContent(ri))) {
+            if (inteceptors.stream().anyMatch(ri -> requiresContent(ri))) {
 
                 var mcsc = new ModifiableContentSinkConduit(factory.create(),
                         cexchange);

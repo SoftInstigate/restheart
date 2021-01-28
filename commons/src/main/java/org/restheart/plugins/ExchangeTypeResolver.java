@@ -25,7 +25,7 @@ import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 
 /**
- * Abstract class to get the response and request implementation classes at
+ * Interface to get the response and request implementation classes at
  * runtime
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
