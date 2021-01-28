@@ -40,9 +40,6 @@ import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.PluginUtils;
-import static org.restheart.utils.PluginUtils.cachedRequestType;
-import static org.restheart.utils.PluginUtils.cachedResponseType;
-import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 
 import java.util.List;

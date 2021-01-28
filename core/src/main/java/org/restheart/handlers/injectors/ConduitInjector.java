@@ -25,7 +25,6 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
-import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.handlers.ContentStreamSinkConduit;
 import org.restheart.handlers.ModifiableContentSinkConduit;
@@ -35,9 +34,6 @@ import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
 
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
-import static org.restheart.utils.PluginUtils.cachedRequestType;
-import static org.restheart.utils.PluginUtils.cachedResponseType;
-import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
