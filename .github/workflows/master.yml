@@ -61,9 +61,14 @@ jobs:
           docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}} softinstigate/restheart:latest
           docker push softinstigate/restheart:latest
 
+      - name: Build and Push "distroless" docker tag with SHA
+        run: |
+          docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless ./core/.
+          docker push softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless
+
       - name: Push "distroless" docker tag
         run: |
-          docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:distroless ./core/.
+          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart:distroless 
           docker push softinstigate/restheart:distroless
 
       - name: Import private gpg key
