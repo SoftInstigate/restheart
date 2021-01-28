@@ -124,6 +124,19 @@ public class MongoPermissions {
         }
     }
 
+    public BsonDocument asBson() {
+        var map = new HashMap<String, Object>();
+
+        map.put("whitelistManagementRequests", this.whitelistManagementRequests);
+        map.put("whitelistBulkPatch", this.whitelistBulkPatch);
+        map.put("whitelistBulkDelete", this.whitelistBulkDelete);
+        map.put("allowAllWriteModes", this.allowAllWriteModes);
+        map.put("readFilter", this.readFilter);
+        map.put("writeFilter", this.writeFilter);
+
+        return JsonUtils.toBsonDocument(map);
+    }
+
     public static MongoPermissions from(Map<String, Object> args) throws ConfigurationException {
         if (args == null || args.isEmpty()) {
             // return default values

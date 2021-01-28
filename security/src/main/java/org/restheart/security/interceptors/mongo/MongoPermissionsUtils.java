@@ -40,6 +40,7 @@ import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.idm.FileRealmAccount;
 import org.restheart.idm.MongoRealmAccount;
+import org.restheart.security.authorizers.AclPermission;
 import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,12 +53,13 @@ public class MongoPermissionsUtils {
     /**
      * Interpolate values in doc like '@user', '@user.property', @now
      *
-     * Supports accounts handled by MongoRealAuthenticator and FileRealmAuthenticator
+     * Supports accounts handled by MongoRealAuthenticator and
+     * FileRealmAuthenticator
      *
      * Legacy variable names %USER, %ROLES and %NOW are supported as well
      *
      * @param request
-     * @param doc
+     * @param bson
      * @return bson with interpolated variables
      */
     public static BsonValue interpolateBson(MongoRequest request, BsonValue bson) {
@@ -82,7 +84,7 @@ public class MongoPermissionsUtils {
             var ret = new BsonArray();
             bson.asArray().stream().forEachOrdered(ae -> ret.add(interpolateBson(request, ae)));
             return ret;
-        } else if (bson.isString()){
+        } else if (bson.isString()) {
             return interpolatePropValue(request, null, bson.asString().getValue());
         } else {
             return bson;
@@ -90,12 +92,15 @@ public class MongoPermissionsUtils {
     }
 
     /**
-     * If value is a '@user', '@user.property', @now, returns the interpolated value from
-     * authenticated account.
+     * If value is a '@user', '@user.property', '@request',
+     * '@request.remoteIp', '@mongoPermissions', '@mongoPermissions.readFilter',
+     * '@now', returns the interpolated value.
      *
-     * Supports accounts handled by MongoRealAuthenticator and FileRealmAuthenticator
+     * For '@user' and  '@mongoPermissions' supports accounts handled by
+     * MongoRealAuthenticator and FileRealmAuthenticator
      *
      * Legacy variable names %USER, %ROLES and %NOW are supported as well
+     *
      * @param request
      * @param key
      * @param value
@@ -128,7 +133,64 @@ public class MongoPermissionsUtils {
             } else {
                 return BsonNull.VALUE;
             }
-        } else if (value.startsWith("@user.")) {
+        } else if (value.equals("@request")) {
+            return getRequestObject(request);
+        } else if (value.startsWith("@request.") && value.length() > 8) {
+            var requestObject = getRequestObject(request);
+            var prop = value.substring(9);
+
+            LOGGER.debug("request doc: {}", requestObject.toJson());
+
+            if (prop.contains(".")) {
+                try {
+                    JsonElement v = JsonPath.read(requestObject.toJson(), "$.".concat(prop));
+
+                    return JsonUtils.parse(v.toString());
+                } catch (Throwable pnfe) {
+                    return BsonNull.VALUE;
+                }
+            } else {
+                if (requestObject.containsKey(prop)) {
+                    return requestObject.get(prop);
+                } else {
+                    return BsonNull.VALUE;
+                }
+            }
+        } else if (value.equals("@mongoPermissions")) {
+            var permission = AclPermission.from(request.getExchange());
+            if (permission != null && permission.getMongoPermissions() != null) {
+                return permission.getMongoPermissions().asBson();
+            } else {
+                return BsonNull.VALUE;
+            }
+        } else if (value.startsWith("@mongoPermissions.") && value.length() > 17) {
+            var permission = AclPermission.from(request.getExchange());
+            if (permission != null && permission.getMongoPermissions() != null) {
+
+                var doc = permission.getMongoPermissions().asBson();
+                var prop = value.substring(18);
+
+                LOGGER.debug("permission doc: {}", permission);
+
+                if (prop.contains(".")) {
+                    try {
+                        JsonElement v = JsonPath.read(doc.toJson(), "$.".concat(prop));
+
+                        return JsonUtils.parse(v.toString());
+                    } catch (Throwable pnfe) {
+                        return BsonNull.VALUE;
+                    }
+                } else {
+                    if (doc.containsKey(prop)) {
+                        return doc.get(prop);
+                    } else {
+                        return BsonNull.VALUE;
+                    }
+                }
+            } else {
+                return BsonNull.VALUE;
+            }
+        } else if (value.startsWith("@user.") && value.length() > 5) {
             if (request.getAuthenticatedAccount() instanceof MongoRealmAccount) {
                 var maccount = (MongoRealmAccount) request.getAuthenticatedAccount();
                 var accountDoc = maccount.getAccountDocument();
@@ -167,11 +229,11 @@ public class MongoPermissionsUtils {
     private static BsonValue fromProperties(Map<String, Object> properties, String key) {
         if (key.contains(".")) {
             var first = key.substring(0, key.indexOf("."));
-            var last = key.substring(key.indexOf(".")+1);
+            var last = key.substring(key.indexOf(".") + 1);
             var subProperties = properties.get(first);
 
-            if (subProperties != null && subProperties instanceof Map<?,?>) {
-                return fromProperties((Map<String,Object>)subProperties, last);
+            if (subProperties != null && subProperties instanceof Map<?, ?>) {
+                return fromProperties((Map<String, Object>) subProperties, last);
             } else if (subProperties != null && subProperties instanceof List<?>) {
                 List<Object> list = (List<Object>) subProperties;
 
@@ -182,13 +244,14 @@ public class MongoPermissionsUtils {
                     try {
                         var idx = Integer.parseInt(next);
                         var elementAtIdx = list.get(idx);
-                        var afterNext = last.substring(last.indexOf(".")+1);
+                        var afterNext = last.substring(last.indexOf(".") + 1);
 
-                        if (elementAtIdx instanceof Map<?,?>) {
-                            return fromProperties((Map<String,Object>)elementAtIdx, afterNext);
+                        if (elementAtIdx instanceof Map<?, ?>) {
+                            return fromProperties((Map<String, Object>) elementAtIdx, afterNext);
                         } else {
-                            LOGGER.warn("Key {} at {} matches an array but selected element is not an object", key, first);
-                        return BsonNull.VALUE;
+                            LOGGER.warn("Key {} at {} matches an array but selected element is not an object", key,
+                                    first);
+                            return BsonNull.VALUE;
                         }
                     } catch (Throwable t) {
                         LOGGER.warn("Key {} at {} matches an array but following part is not a number", key, first);
@@ -219,8 +282,8 @@ public class MongoPermissionsUtils {
     private static BsonValue toBson(Object obj) {
         if (obj instanceof String) {
             return new BsonString((String) obj);
-        } else if (obj instanceof Map<?,?>) {
-            var map = (Map<String,Object>) obj;
+        } else if (obj instanceof Map<?, ?>) {
+            var map = (Map<String, Object>) obj;
             var ret = new BsonDocument();
             map.entrySet().stream().forEachOrdered(e -> ret.put(e.getKey(), toBson(e.getValue())));
             return ret;
@@ -239,5 +302,50 @@ public class MongoPermissionsUtils {
             LOGGER.warn("ovverridendProp value not suppored {}", obj);
             return BsonNull.VALUE;
         }
+    }
+
+    private static BsonDocument getRequestObject(final MongoRequest request) {
+        var exchange = request.getExchange();
+
+        var properties = new BsonDocument();
+
+        var _userName = ExchangeAttributes.remoteUser().readAttribute(exchange);
+
+        var userName = _userName != null ? new BsonString(_userName) : BsonNull.VALUE;
+
+        // remote user
+        properties.put("userName", userName);
+
+        // dateTime
+        properties.put("epochTimeStamp", new BsonDateTime(Instant.now().getEpochSecond() * 1000));
+
+        // dateTime
+        properties.put("dateTime", new BsonString(ExchangeAttributes.dateTime().readAttribute(exchange)));
+
+        // local ip
+        properties.put("localIp", new BsonString(ExchangeAttributes.localIp().readAttribute(exchange)));
+
+        // local port
+        properties.put("localPort", new BsonString(ExchangeAttributes.localPort().readAttribute(exchange)));
+
+        // local server name
+        properties.put("localServerName", new BsonString(ExchangeAttributes.localServerName().readAttribute(exchange)));
+
+        // request query string
+        properties.put("queryString", new BsonString(ExchangeAttributes.queryString().readAttribute(exchange)));
+
+        // request relative path
+        properties.put("relativePath", new BsonString(ExchangeAttributes.relativePath().readAttribute(exchange)));
+
+        // remote ip
+        properties.put("remoteIp", new BsonString(ExchangeAttributes.remoteIp().readAttribute(exchange)));
+
+        // request method
+        properties.put("requestMethod", new BsonString(ExchangeAttributes.requestMethod().readAttribute(exchange)));
+
+        // request protocol
+        properties.put("requestProtocol", new BsonString(ExchangeAttributes.requestProtocol().readAttribute(exchange)));
+
+        return properties;
     }
 }

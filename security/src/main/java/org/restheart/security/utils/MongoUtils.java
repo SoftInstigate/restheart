@@ -32,23 +32,18 @@ import org.bson.BsonString;
  */
 public class MongoUtils {
     MongoClient client;
-    
+
     public MongoUtils(MongoClient client) {
         this.client = client;
     }
-    
+
     public boolean doesDbExist(final String dbName) {
         // at least one collection exists for an existing db
-        return client.getDatabase(dbName)
-                        .listCollectionNames()
-                        .first() != null;
+        return client.getDatabase(dbName).listCollectionNames().first() != null;
     }
-    
-    public boolean doesCollectionExist(
-            final String dbName,
-            final String collName) {
-        MongoCursor<String> dbCollections = client
-                .getDatabase(dbName).listCollectionNames().iterator();
+
+    public boolean doesCollectionExist(final String dbName, final String collName) {
+        MongoCursor<String> dbCollections = client.getDatabase(dbName).listCollectionNames().iterator();
 
         while (dbCollections.hasNext()) {
             String dbCollection = dbCollections.next();
@@ -60,36 +55,31 @@ public class MongoUtils {
 
         return false;
     }
-    
+
     public void createDb(final String dbName) {
-        client.getDatabase(dbName)
-                .createCollection("_properties");
-        
-        var pc = client.getDatabase(dbName)
-                .getCollection("_properties", BsonDocument.class);
-        
+        client.getDatabase(dbName).createCollection("_properties");
+
+        var pc = client.getDatabase(dbName).getCollection("_properties", BsonDocument.class);
+
         var doc = new BsonDocument();
-        
+
         doc.put("_id", new BsonString("_properties"));
         doc.put("_etag", new BsonObjectId());
-        
+
         pc.insertOne(doc);
     }
-    
-    public void createCollection(
-            final String dbName,
-            final String collName) {
 
-        var pc = client.getDatabase(dbName)
-                .getCollection("_properties", BsonDocument.class);
-        
+    public void createCollection(final String dbName, final String collName) {
+
+        var pc = client.getDatabase(dbName).getCollection("_properties", BsonDocument.class);
+
         var doc = new BsonDocument();
-        
+
         doc.put("_id", new BsonString("_properties.".concat(collName)));
         doc.put("_etag", new BsonObjectId());
-        
+
         pc.insertOne(doc);
-        
+
         client.getDatabase(dbName).createCollection(collName);
     }
 }

@@ -73,7 +73,7 @@ public class OverriddenProps implements MongoInterceptor {
         var permission = AclPermission.from(request.getExchange());
 
         if (permission != null && permission.getMongoPermissions() != null) {
-            return !permission.getMongoPermissions().getProtectedProps().isEmpty();
+            return !permission.getMongoPermissions().getOverriddenProps().isEmpty();
         } else {
             return false;
         }

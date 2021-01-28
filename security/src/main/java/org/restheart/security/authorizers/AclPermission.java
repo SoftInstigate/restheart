@@ -23,16 +23,12 @@ package org.restheart.security.authorizers;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import static org.restheart.security.authorizers.MongoAclAuthorizer.MATCHING_ACL_PERMISSION;
 
-import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
@@ -40,7 +36,6 @@ import org.restheart.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;
 import io.undertow.server.HttpServerExchange;
@@ -50,7 +45,7 @@ import io.undertow.server.HttpServerExchange;
  * the request
  *
  * The request is authorized if AclPermission.resolve() to true
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AclPermission {
@@ -240,43 +235,5 @@ public class AclPermission {
         } else {
             return this.predicate.resolve(exchange);
         }
-    }
-
-    /**
-     * resolves the a filter variables such as %USER, %ROLES, and %NOW
-     *
-     * @param exchange
-     * @param filter
-     * @return the filter with interpolated variables
-     */
-    public static JsonObject interpolateFilterVars(final HttpServerExchange exchange, final BsonDocument filter) {
-        if (Objects.isNull(filter) || filter.isNull()) {
-            return null;
-        }
-
-        String ret = filter.toString();
-
-        String username = ExchangeAttributes.remoteUser().readAttribute(exchange);
-
-        if (username != null) {
-            ret = ret.replace("%USER", username);
-        }
-
-        // user roles
-        if (Objects.nonNull(exchange.getSecurityContext())
-                && Objects.nonNull(exchange.getSecurityContext().getAuthenticatedAccount())
-                && Objects.nonNull(exchange.getSecurityContext().getAuthenticatedAccount().getRoles())) {
-            String roles = exchange.getSecurityContext().getAuthenticatedAccount().getRoles().toString();
-
-            ret = ret.replace("%ROLES", roles);
-        } else {
-            ret = ret.replace("%ROLES", "[]");
-        }
-
-        // now
-        long now = Instant.now().getEpochSecond() * 1000;
-        ret = ret.replace("%NOW", "{'$date':" + now + "}");
-
-        return JsonParser.parseString(ret).getAsJsonObject();
     }
 }
