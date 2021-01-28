@@ -35,12 +35,16 @@ jobs:
         with:
           java-version: 11
 
-      - name: Set the version
+      - name: Set the version and SHA
         id: vars
-        run: echo "::set-output name=VERSION::$(echo ${GITHUB_REF:10})"
+        run: |
+          echo "::set-output name=VERSION::$(echo ${GITHUB_REF:10})"
+          echo "::set-output name=SHA::$(echo ${GITHUB_SHA:0:7})"
 
-      - name: Print the version
-        run: echo "VERSION=${{steps.vars.outputs.VERSION}}"
+      - name: Print the version and SHA
+        run: |
+          echo "VERSION=${{steps.vars.outputs.VERSION}}"
+          echo "SHA=${{steps.vars.outputs.SHA}}"
 
       - name: Build and verify
         env:
@@ -48,11 +52,11 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
-      - name: Push snapshot Docker image
+      - name: Push snapshot Docker image tagged with SHA
         run: |
           echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-          docker build --file ./core/Dockerfile -t softinstigate/restheart:snapshot ./core/.
-          docker push softinstigate/restheart:snapshot
+          docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.SHA}} ./core/.
+          docker push softinstigate/restheart:${{steps.vars.outputs.SHA}}
 
       - name: Push stable Docker image
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
