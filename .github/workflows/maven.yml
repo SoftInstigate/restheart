@@ -35,9 +35,12 @@ jobs:
         with:
           java-version: 11
 
+      - uses: tenhaus/get-release-or-tag@v2
+        id: tag
+
       - name: Set the version
         id: vars
-        run: echo "::set-output name=VERSION::$(echo ${GITHUB_REF:10})"
+        run: echo "::set-output name=VERSION::${{ steps.tag.outputs.tag }}"
 
       - name: Print the version
         run: echo "VERSION=${{steps.vars.outputs.VERSION}}"
