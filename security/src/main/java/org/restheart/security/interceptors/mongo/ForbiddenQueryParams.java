@@ -57,6 +57,18 @@ public class ForbiddenQueryParams implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return request.isHandledBy("mongo") && request.getQueryParameters() != null;
+        if (!request.isHandledBy("mongo")
+            || request.getQueryParameters() == null
+            || request.getQueryParameters().isEmpty()) {
+            return false;
+        }
+
+        var permission = AclPermission.from(request.getExchange());
+
+        if (permission != null && permission.getMongoPermissions() != null) {
+            return !permission.getMongoPermissions().getForbiddenQueryParams().isEmpty();
+        } else {
+            return false;
+        }
     }
 }
