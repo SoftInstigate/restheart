@@ -57,15 +57,15 @@ jobs:
           docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.SHA}} ./core/.
           docker push softinstigate/restheart:${{steps.vars.outputs.SHA}}
 
-      - name: Push Docker image tagged with VERSION
-        run: |
-          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}} softinstigate/restheart:${{steps.vars.outputs.VERSION}}
-          docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}
-
       - name: Build and Push distroless Docker image tagged with VERSION
         run: |
           docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless ./core/.
           docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
+
+      - name: Push Docker image tagged with VERSION
+        run: |
+          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}} softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+          docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}
 
       - name: Upload GitHub release
         uses: softprops/action-gh-release@v1

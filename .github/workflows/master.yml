@@ -50,6 +50,16 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
+      - name: Build and Push "distroless" docker tag with SHA
+        run: |
+          docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless ./core/.
+          docker push softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless
+
+      - name: Push "distroless" docker tag
+        run: |
+          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart:distroless 
+          docker push softinstigate/restheart:distroless
+
       - name: Build and Push Docker image tagged with SHA
         run: |
           echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
@@ -60,16 +70,6 @@ jobs:
         run: |
           docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}} softinstigate/restheart:latest
           docker push softinstigate/restheart:latest
-
-      - name: Build and Push "distroless" docker tag with SHA
-        run: |
-          docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless ./core/.
-          docker push softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless
-
-      - name: Push "distroless" docker tag
-        run: |
-          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart:distroless 
-          docker push softinstigate/restheart:distroless
 
       - name: Import private gpg key
         run: |
