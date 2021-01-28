@@ -1,4 +1,4 @@
-FROM gcr.io/distroless/java:11
+FROM gcr.io/distroless/java-debian10:11
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
