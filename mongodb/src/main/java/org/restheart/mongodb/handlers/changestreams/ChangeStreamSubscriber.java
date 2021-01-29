@@ -22,7 +22,6 @@ package org.restheart.mongodb.handlers.changestreams;
 
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import org.bson.BsonArray;
-import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
 import org.bson.BsonString;

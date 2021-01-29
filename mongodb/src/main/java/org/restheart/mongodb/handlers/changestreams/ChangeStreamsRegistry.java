@@ -85,7 +85,7 @@ public class ChangeStreamsRegistry {
         }
     }
 
-    public Set<SessionKey> getSessionKeysOnOperation(SessionInfo db, String coll, String operation) {
+    public Set<SessionKey> getSessionKeysOnOperation(String db, String coll, String operation) {
         var ret = new HashSet<SessionKey>();
         if (db == null || coll == null || operation == null) {
             return ret;
