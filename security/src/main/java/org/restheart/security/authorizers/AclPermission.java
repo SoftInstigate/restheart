@@ -29,14 +29,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.ConfigurationException;
+import org.restheart.exchange.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;
 import io.undertow.server.HttpServerExchange;
 
@@ -51,7 +50,7 @@ import io.undertow.server.HttpServerExchange;
 public class AclPermission {
     private final BsonValue _id;
     private final Set<String> roles;
-    private final Predicate predicate;
+    private final String predicate;
     private final int priority;
 
     // mongo permissions
@@ -59,7 +58,7 @@ public class AclPermission {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AclPermission.class);
 
-    AclPermission(BsonValue _id, Set<String> roles, Predicate predicate, BsonDocument mongoPermissions, int priority) {
+    AclPermission(BsonValue _id, Set<String> roles, String predicate, BsonDocument mongoPermissions, int priority) {
         this._id = _id;
         this.roles = roles;
         this.predicate = predicate;
@@ -97,7 +96,9 @@ public class AclPermission {
         }
 
         try {
-            this.predicate = PredicateParser.parse(_predicate.asString().getValue(), this.getClass().getClassLoader());
+            // check predicate
+            PredicateParser.parse(_predicate.asString().getValue(), this.getClass().getClassLoader());
+            this.predicate = _predicate.asString().getValue();
         } catch (Throwable t) {
             throw new ConfigurationException("Wrong permission: invalid predicate " + _predicate, t);
         }
@@ -161,7 +162,9 @@ public class AclPermission {
         }
 
         try {
-            this.predicate = PredicateParser.parse(_predicate, this.getClass().getClassLoader());
+            // check predicate
+            PredicateParser.parse(_predicate, this.getClass().getClassLoader());
+            this.predicate = _predicate;
         } catch (Throwable t) {
             throw new ConfigurationException("Wrong permission: invalid predicate: " + _predicate, t);
         }
@@ -192,7 +195,7 @@ public class AclPermission {
     /**
      * @return the predicate
      */
-    public Predicate getPredicate() {
+    public String getPredicate() {
         return predicate;
     }
 
@@ -233,7 +236,7 @@ public class AclPermission {
         if (this.predicate == null) {
             return false;
         } else {
-            return this.predicate.resolve(exchange);
+            return AclPermissionsVarsInterpolator.interpolatePredicate(Request.of(exchange), this.predicate).resolve(exchange);
         }
     }
 }

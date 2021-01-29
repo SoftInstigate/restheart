@@ -30,6 +30,7 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.authorizers.AclPermission;
+import org.restheart.security.authorizers.AclPermissionsVarsInterpolator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +94,7 @@ public class RequestFilters implements MongoInterceptor {
             return;
         }
 
-        var resolvedFilter = MongoPermissionsUtils.interpolateBson(request, filter);
+        var resolvedFilter = AclPermissionsVarsInterpolator.interpolateBson(request, filter);
 
         if (request.getFilter() == null) {
             request.setFilter(new ArrayDeque<>());

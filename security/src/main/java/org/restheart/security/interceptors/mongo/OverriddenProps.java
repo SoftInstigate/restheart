@@ -29,6 +29,7 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.authorizers.AclPermission;
+import org.restheart.security.authorizers.AclPermissionsVarsInterpolator;
 import org.restheart.utils.JsonUtils;
 
 @RegisterPlugin(name = "mongoPermissionOverriddenProps",
@@ -61,7 +62,7 @@ public class OverriddenProps implements MongoInterceptor {
     }
 
     private void override(MongoRequest request, String key, String value) {
-        request.getContent().asDocument().put(key, MongoPermissionsUtils.interpolatePropValue(request, key, value));
+        request.getContent().asDocument().put(key, AclPermissionsVarsInterpolator.interpolatePropValue(request, key, value));
     }
 
     @Override
