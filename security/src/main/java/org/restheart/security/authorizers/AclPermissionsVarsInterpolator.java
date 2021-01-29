@@ -432,10 +432,10 @@ public class AclPermissionsVarsInterpolator {
         properties.put("remoteIp", new BsonString(ExchangeAttributes.remoteIp().readAttribute(exchange)));
 
         // request method
-        properties.put("requestMethod", new BsonString(ExchangeAttributes.requestMethod().readAttribute(exchange)));
+        properties.put("method", new BsonString(ExchangeAttributes.requestMethod().readAttribute(exchange)));
 
         // request protocol
-        properties.put("requestProtocol", new BsonString(ExchangeAttributes.requestProtocol().readAttribute(exchange)));
+        properties.put("protocol", new BsonString(ExchangeAttributes.requestProtocol().readAttribute(exchange)));
 
         return properties;
     }
