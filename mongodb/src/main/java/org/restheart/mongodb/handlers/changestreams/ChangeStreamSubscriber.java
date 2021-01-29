@@ -66,7 +66,7 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
             LOGGER.trace("[clients watching]: "
                     + WebSocketSessionsRegistry.getInstance().get(sessionKey).size());
 
-            LOGGER.debug("Change stream notification for sessionKey={}: {}",
+            LOGGER.trace("Change stream notification for sessionKey={}: {}",
                     sessionKey,
                     notification);
 
