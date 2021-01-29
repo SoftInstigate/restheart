@@ -1,11 +1,10 @@
 # This workflow will build a Java project with Maven
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
-name: Build
+name: Build stable release
 
 on:
   push:
-    branches: [master]
     tags:
       - "*"
 
@@ -13,7 +12,7 @@ jobs:
   build:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     runs-on: ubuntu-18.04
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v1.1.2
@@ -35,12 +34,16 @@ jobs:
         with:
           java-version: 11
 
-      - name: Set the version
+      - name: Set the version and SHA
         id: vars
-        run: echo "::set-output name=VERSION::$(echo ${GITHUB_REF:10})"
+        run: |
+          echo "::set-output name=VERSION::$(echo ${GITHUB_REF:10})"
+          echo "::set-output name=SHA::$(echo ${GITHUB_SHA:0:7})"
 
-      - name: Print the version
-        run: echo "VERSION=${{steps.vars.outputs.VERSION}}"
+      - name: Print the version and SHA
+        run: |
+          echo "VERSION=${{steps.vars.outputs.VERSION}}"
+          echo "SHA=${{steps.vars.outputs.SHA}}"
 
       - name: Build and verify
         env:
@@ -48,30 +51,25 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
-      - name: Push snapshot Docker image
-        run: |
-          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-          docker build --file ./core/Dockerfile -t softinstigate/restheart:snapshot ./core/.
-          docker push softinstigate/restheart:snapshot
+      - name: Docker login
+        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-      - name: Push stable Docker image
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+      - name: Build and Push Docker image tagged with SHA
         run: |
-          docker tag softinstigate/restheart:snapshot softinstigate/restheart:latest
-          docker tag softinstigate/restheart:latest softinstigate/restheart:${{steps.vars.outputs.VERSION}}
-          docker push softinstigate/restheart:latest
-          docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+          docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.SHA}} ./core/.
+          docker push softinstigate/restheart:${{steps.vars.outputs.SHA}}
 
-      - name: Push distroless Docker image
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+      - name: Build and Push distroless Docker image tagged with VERSION
         run: |
           docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless ./core/.
-          docker tag softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless softinstigate/restheart:distroless
           docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
-          docker push softinstigate/restheart:distroless
+
+      - name: Push Docker image tagged with VERSION
+        run: |
+          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}} softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+          docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}
 
       - name: Upload GitHub release
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
