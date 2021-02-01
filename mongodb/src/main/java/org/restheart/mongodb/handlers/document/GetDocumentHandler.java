@@ -41,7 +41,7 @@ import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  *
@@ -75,7 +75,7 @@ public class GetDocumentHandler extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
-        
+
         if (request.isInError()) {
             next(exchange);
             return;
@@ -86,7 +86,7 @@ public class GetDocumentHandler extends PipelinedHandler {
 
         // get collection name and doc id
         // handling special case /_meta that is mapped to collName=_properties
-        // and docId=_properties (for db meta) 
+        // and docId=_properties (for db meta)
         // and docId=_properties.collName for (coll meta)
         if (request.isDbMeta()) {
             collName = META_COLLNAME;
@@ -108,7 +108,7 @@ public class GetDocumentHandler extends PipelinedHandler {
             terms.add(request.getShardKey());
         }
 
-        // filters are applied to GET /db/coll/docid as well 
+        // filters are applied to GET /db/coll/docid as well
         // to make easy implementing filter based access restrictions
         // for instance a Trasnformer can add a filter to limit access to data
         // on the basis of the user role
@@ -151,7 +151,7 @@ public class GetDocumentHandler extends PipelinedHandler {
         if (document == null) {
             String errMsg = request.getDocumentId() == null
                     ? " does not exist"
-                    : " ".concat(JsonUtils.getIdAsString(
+                    : " ".concat(BsonUtils.getIdAsString(
                             request.getDocumentId(), true))
                             .concat(" does not exist");
 

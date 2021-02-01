@@ -27,7 +27,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  *
@@ -177,8 +177,7 @@ public class ChangeStreamOperation {
     public List<BsonDocument> getResolvedStagesAsList(BsonDocument vars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
         BsonArray replacedStages = bindAggregationVariables(
-                JsonUtils.unescapeKeys(stages), vars)
-                .asArray();
+            BsonUtils.unescapeKeys(stages), vars).asArray();
 
         List<BsonDocument> ret = new ArrayList<>();
 

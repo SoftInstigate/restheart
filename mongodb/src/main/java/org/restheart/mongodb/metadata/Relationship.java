@@ -31,7 +31,7 @@ import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.utils.URLUtils;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -371,7 +371,7 @@ public class Relationship {
             List<Optional<BsonValue>> objs;
 
             try {
-                objs = JsonUtils.getPropsFromPath(data, referenceField);
+                objs = BsonUtils.getPropsFromPath(data, referenceField);
             } catch (IllegalArgumentException ex) {
                 return null;
             }

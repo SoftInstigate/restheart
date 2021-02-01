@@ -25,7 +25,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  * represents a map reduce.
@@ -143,9 +143,7 @@ public class MapReduce extends AbstractAggregationOperation {
      */
     public BsonDocument getResolvedQuery(BsonDocument aVars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
-        return bindAggregationVariables(
-                JsonUtils.unescapeKeys(query), aVars)
-                .asDocument();
+        return bindAggregationVariables(BsonUtils.unescapeKeys(query), aVars).asDocument();
     }
 
     /**

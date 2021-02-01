@@ -36,7 +36,7 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  *
@@ -163,7 +163,7 @@ public class AddRequestProperties implements MongoInterceptor {
             response.addWarning("addRequestProperties wrong definition: "
                     + "must be an array containing "
                     + "the properties to inject. got "
-                    + JsonUtils.toJson(propNames));
+                    + BsonUtils.toJson(propNames));
         }
     }
 

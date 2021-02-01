@@ -30,7 +30,7 @@ import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,8 +84,7 @@ public class SnooperHook implements MongoInterceptor {
         BsonValue responseContent = response.getContent();
 
         if (responseContent != null) {
-            LOGGER.info("*** Response content ****\n{}",
-                    JsonUtils.toJson(responseContent));
+            LOGGER.info("*** Response content ****\n{}", BsonUtils.toJson(responseContent));
         }
     }
 

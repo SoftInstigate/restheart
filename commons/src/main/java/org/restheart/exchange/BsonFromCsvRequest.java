@@ -31,8 +31,8 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.ChannelReader;
-import org.restheart.utils.JsonUtils;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
@@ -163,7 +163,7 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
 
     private BsonValue getBsonValue(String raw) {
         try {
-            return JsonUtils.parse(raw);
+            return BsonUtils.parse(raw);
         } catch (JsonParseException jpe) {
             return new BsonString(raw);
         }

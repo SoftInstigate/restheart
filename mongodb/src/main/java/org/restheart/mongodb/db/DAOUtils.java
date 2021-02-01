@@ -53,7 +53,7 @@ import org.bson.types.ObjectId;
 import org.restheart.exchange.OperationResult;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -518,7 +518,7 @@ public class DAOUtils {
      * replacing $currentDate operator
      */
     static BsonDocument getReplaceDocument(final BsonDocument doc) {
-        if (JsonUtils.containsUpdateOperators(doc, false)) {
+        if (BsonUtils.containsUpdateOperators(doc, false)) {
             BsonDocument ret = new BsonDocument();
             ret.putAll(doc);
 
@@ -558,7 +558,7 @@ public class DAOUtils {
                 }
             }
 
-            return JsonUtils.unflatten(ret).asDocument();
+            return BsonUtils.unflatten(ret).asDocument();
         } else {
             return doc;
         }
@@ -579,7 +579,7 @@ public class DAOUtils {
         // add other update operators
         data.keySet()
                 .stream()
-                .filter(key -> JsonUtils.isUpdateOperator(key))
+                .filter(key -> BsonUtils.isUpdateOperator(key))
                 .forEach(key -> ret.put(key, data.get(key)));
 
         // add properties to $set update operator
@@ -587,14 +587,14 @@ public class DAOUtils {
 
         keys = data.keySet()
                 .stream()
-                .filter(key -> !JsonUtils.isUpdateOperator(key))
+                .filter(key -> !BsonUtils.isUpdateOperator(key))
                 .collect(Collectors.toList());
 
         if (keys != null && !keys.isEmpty()) {
             BsonDocument set;
 
             if (flatten) {
-                set = JsonUtils.flatten(ret, false);
+                set = BsonUtils.flatten(ret, false);
             } else {
                 set = new BsonDocument();
                 keys.stream().forEach(key -> set.append(key, data.get(key)));

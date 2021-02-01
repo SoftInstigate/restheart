@@ -29,7 +29,7 @@ import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.Exchange;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  * Initializes the Request and the Response invoking requestInitializer() and
@@ -72,7 +72,7 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                 exchange.setStatusCode(bre.getStatusCode());
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
                         Exchange.JSON_MEDIA_TYPE);
-                exchange.getResponseSender().send(JsonUtils.toJson(
+                exchange.getResponseSender().send(BsonUtils.toJson(
                         getErrorDocument(bre.getStatusCode(),
                                 bre.getMessage())));
                 return;

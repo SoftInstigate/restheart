@@ -52,7 +52,7 @@ import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.aggregation.AggregationPipeline;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -285,7 +285,7 @@ public class BsonRequestPropsInjector {
                 }
 
                 try {
-                    BsonValue _keys = JsonUtils.parse(f);
+                    BsonValue _keys = BsonUtils.parse(f);
 
                     if (!_keys.isDocument()) {
                         response.setInError(
@@ -323,7 +323,7 @@ public class BsonRequestPropsInjector {
                 }
 
                 try {
-                    BsonValue _filter = JsonUtils.parse(f);
+                    BsonValue _filter = BsonUtils.parse(f);
 
                     if (!_filter.isDocument()) {
                         response.setInError(

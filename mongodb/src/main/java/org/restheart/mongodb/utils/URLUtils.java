@@ -46,7 +46,7 @@ import static org.restheart.exchange.ExchangeKeys.TRUE_KEY_ID;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  *
@@ -364,7 +364,7 @@ public class URLUtils {
                 .append("':{").append("'$elemMatch':{'$eq':")
                 .append(getIdString(id)).append("}}}");
 
-        return JsonUtils.minify(request.mapUri(sb.toString()));
+        return BsonUtils.minify(request.mapUri(sb.toString()));
     }
 
     /**
@@ -395,7 +395,7 @@ public class URLUtils {
     }
 
     private static BsonNumber getIdAsNumber(String id) throws IllegalArgumentException {
-        BsonValue ret = JsonUtils.parse(id);
+        BsonValue ret = BsonUtils.parse(id);
 
         if (ret.isNumber()) {
             return ret.asNumber();
@@ -405,7 +405,7 @@ public class URLUtils {
     }
 
     private static BsonDateTime getIdAsDate(String id) throws IllegalArgumentException {
-        BsonValue ret = JsonUtils.parse(id);
+        BsonValue ret = BsonUtils.parse(id);
 
         if (ret.isDateTime()) {
             return ret.asDateTime();
@@ -457,8 +457,7 @@ public class URLUtils {
         } else if (id.isObjectId()) {
             return id.asObjectId().getValue().toHexString();
         } else {
-            return JsonUtils.minify(
-                    JsonUtils.toJson(id));
+            return BsonUtils.minify(BsonUtils.toJson(id));
         }
     }
 
@@ -475,7 +474,7 @@ public class URLUtils {
         } else if (id.isString()) {
             return "'" + id.asString().getValue() + "'";
         } else {
-            return JsonUtils.toJson(id).replace("\"", "'");
+            return BsonUtils.toJson(id).replace("\"", "'");
         }
     }
 
@@ -493,7 +492,7 @@ public class URLUtils {
             cont++;
         }
 
-        return JsonUtils.minify(Arrays.toString(_ids));
+        return BsonUtils.minify(Arrays.toString(_ids));
     }
 
     private URLUtils() {

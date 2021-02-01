@@ -23,7 +23,7 @@ import io.undertow.server.HttpServerExchange;
 import java.io.IOException;
 import org.bson.BsonValue;
 import org.restheart.utils.ChannelReader;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  * ServiceRequest implementation backed by BsonValue
@@ -52,6 +52,6 @@ public class BsonRequest extends ServiceRequest<BsonValue> {
     }
 
     public void injectContent() throws IOException {
-        setContent(JsonUtils.parse(ChannelReader.readString(wrapped)));
+        setContent(BsonUtils.parse(ChannelReader.readString(wrapped)));
     }
 }

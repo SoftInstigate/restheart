@@ -51,7 +51,7 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -352,7 +352,7 @@ public class BsonRequestContentInjector {
                         && !contentString.isEmpty()) { // check content type
 
                     try {
-                        content = JsonUtils.parse(contentString);
+                        content = BsonUtils.parse(contentString);
 
                         if (content != null
                                 && !content.isDocument()
@@ -455,7 +455,7 @@ public class BsonRequestContentInjector {
             // } 
 
             // flatten request content for POST and PUT requests
-            content = JsonUtils.unflatten(content);
+            content = BsonUtils.unflatten(content);
         }
 
         request.setContent(content);

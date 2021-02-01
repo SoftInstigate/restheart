@@ -28,7 +28,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.datafetchers.GQLQueryDataFetcher;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -116,7 +116,7 @@ public class QueryMapping extends FieldMapping{
 
                 switch (operator){
                     case "$arg": {
-                        BsonDocument arguments = JsonUtils.toBsonDocument(env.getArguments());
+                        BsonDocument arguments = BsonUtils.toBsonDocument(env.getArguments());
                         if (arguments == null || arguments.get(valueToInterpolate) == null) {
                             throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not bound");
                         }

@@ -33,7 +33,7 @@ import org.restheart.cache.CacheFactory;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 public class JsonSchemaCacheSingleton {
@@ -151,9 +151,7 @@ public class JsonSchemaCacheSingleton {
                 .first();
 
         if (Objects.isNull(document)) {
-            String sid;
-
-            sid = JsonUtils.getIdAsString(schemaId, false);
+            var sid = BsonUtils.getIdAsString(schemaId, false);
 
             throw new JsonSchemaNotFoundException(
                     "schema not found "

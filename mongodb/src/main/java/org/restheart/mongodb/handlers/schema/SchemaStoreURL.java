@@ -23,7 +23,7 @@ package org.restheart.mongodb.handlers.schema;
 import java.util.Objects;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  *
@@ -119,14 +119,10 @@ public class SchemaStoreURL {
 
     @Override
     public String toString() {
-        String sid;
-
-        sid = JsonUtils.getIdAsString(schemaId, false);
-
         return SCHEMA_STORE_URL_PREFIX
                 .concat(schemaDb)
                 .concat("/")
-                .concat(sid)
+                .concat(BsonUtils.getIdAsString(schemaId, false))
                 .concat("#");
     }
 

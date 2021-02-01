@@ -23,7 +23,7 @@ import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  * ServiceResponse implementation backed by BsonValue
@@ -35,19 +35,19 @@ public class BsonResponse extends ServiceResponse<BsonValue> {
         super(exchange);
         setContentTypeAsJson();
     }
-    
+
     public static BsonResponse init(HttpServerExchange exchange) {
         return new BsonResponse(exchange);
     }
-    
+
     public static BsonResponse of(HttpServerExchange exchange) {
         return BsonResponse.of(exchange, BsonResponse.class);
     }
-    
+
     @Override
     public String readContent() {
         if (content != null) {
-            return JsonUtils.toJson(content);
+            return BsonUtils.toJson(content);
         } else {
             return null;
         }
@@ -56,7 +56,7 @@ public class BsonResponse extends ServiceResponse<BsonValue> {
     @Override
     public void setInError(int code, String message, Throwable t) {
         setStatusCode(code);
-        
+
         var resp = new BsonDocument();
 
         if (message != null) {

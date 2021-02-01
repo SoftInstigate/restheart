@@ -31,7 +31,7 @@ import io.undertow.util.Headers;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonParseException;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
@@ -103,9 +103,9 @@ public class MongoResponse extends BsonResponse {
 
         if (tosend != null) {
             if (request instanceof MongoRequest) {
-                return JsonUtils.toJson(tosend, ((MongoRequest) request).getJsonMode());
+                return BsonUtils.toJson(tosend, ((MongoRequest) request).getJsonMode());
             } else {
-                return JsonUtils.toJson(tosend);
+                return BsonUtils.toJson(tosend);
             }
         } else {
             return null;

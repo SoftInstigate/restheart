@@ -28,7 +28,7 @@ import org.bson.BsonValue;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -100,7 +100,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -144,7 +144,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isArray());
 
@@ -173,7 +173,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -217,7 +217,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isArray());
 
@@ -247,7 +247,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -294,7 +294,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -330,7 +330,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isArray());
 
@@ -359,7 +359,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -399,7 +399,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -424,7 +424,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -449,7 +449,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -484,7 +484,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -520,7 +520,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -575,7 +575,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -622,7 +622,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        body = JsonUtils.parse(_body);
+        body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -676,7 +676,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -712,7 +712,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 
@@ -759,7 +759,7 @@ public class PlainJsonRepIT extends AbstactIT {
 
         Assert.assertTrue(_body != null && !_body.isEmpty());
 
-        BsonValue body = JsonUtils.parse(_body);
+        BsonValue body = BsonUtils.parse(_body);
 
         Assert.assertTrue(body.isDocument());
 

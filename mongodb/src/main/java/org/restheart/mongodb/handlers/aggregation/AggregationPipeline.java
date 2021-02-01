@@ -28,7 +28,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.QueryVariableNotBoundException;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  * represents a map reduce.
@@ -129,7 +129,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
     public List<BsonDocument> getResolvedStagesAsList(BsonDocument avars)
             throws InvalidMetadataException, QueryVariableNotBoundException {
         BsonArray replacedStages = bindAggregationVariables(
-                JsonUtils.unescapeKeys(stages), avars)
+            BsonUtils.unescapeKeys(stages), avars)
                 .asArray();
 
         List<BsonDocument> ret = new ArrayList<>();
@@ -138,7 +138,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
                 .forEach((stage) -> {
                     ret.add(stage.asDocument());
                 });
-        
+
         return ret;
     }
 

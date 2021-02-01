@@ -26,7 +26,7 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import org.bson.*;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 import java.util.*;
 
@@ -51,7 +51,7 @@ public class GraphQLBsonDocumentCoercing implements Coercing<BsonDocument, BsonD
     public BsonDocument parseValue(Object input) throws CoercingParseValueException {
 
         if(input instanceof Map){
-            return JsonUtils.toBsonDocument((Map<String, Object>) input);
+            return BsonUtils.toBsonDocument((Map<String, Object>) input);
         }
         throw new CoercingParseValueException(
                 "Expected type 'Json Object' but was '" + typeName(input) +"'."

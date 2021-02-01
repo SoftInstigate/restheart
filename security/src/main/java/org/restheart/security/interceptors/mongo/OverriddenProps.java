@@ -30,7 +30,7 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.authorizers.AclPermission;
 import org.restheart.security.authorizers.AclPermissionsVarsInterpolator;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 @RegisterPlugin(name = "mongoPermissionOverriddenProps",
     description = "Override properties's values in write requests according to the mongo.overriddenProps ACL permission",
@@ -51,7 +51,7 @@ public class OverriddenProps implements MongoInterceptor {
         }
 
         if (request.isPost()) {
-            request.setContent(JsonUtils.unflatten(request.getContent()));
+            request.setContent(BsonUtils.unflatten(request.getContent()));
         }
     }
 

@@ -31,7 +31,7 @@ import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,7 +166,7 @@ public class JsonSchemaTransformer extends PipelinedHandler {
      * @param schema
      */
     static void escapeSchema(BsonDocument schema) {
-        BsonValue escaped = JsonUtils.escapeKeys(schema, false);
+        BsonValue escaped = BsonUtils.escapeKeys(schema, false);
 
         if (escaped.isDocument()) {
             List<String> keys = Lists.newArrayList(schema.keySet().iterator());
@@ -182,7 +182,7 @@ public class JsonSchemaTransformer extends PipelinedHandler {
      * @param schema
      */
     static void unescapeSchema(BsonDocument schema) {
-        BsonValue unescaped = JsonUtils.unescapeKeys(schema);
+        BsonValue unescaped = BsonUtils.unescapeKeys(schema);
 
         if (unescaped != null && unescaped.isDocument()) {
             List<String> keys = Lists.newArrayList(schema.keySet().iterator());

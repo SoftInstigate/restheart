@@ -24,7 +24,7 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.authorizers.AclPermission;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,7 +62,7 @@ public class ProtectedProps implements MongoInterceptor {
     }
 
     private boolean contains(BsonDocument doc, Set<String> protectedProps) {
-        var ufdoc = JsonUtils.unflatten(doc).asDocument();
+        var ufdoc = BsonUtils.unflatten(doc).asDocument();
 
         return protectedProps.stream().anyMatch(hiddenProp -> contains(ufdoc, hiddenProp));
     }
@@ -75,10 +75,10 @@ public class ProtectedProps implements MongoInterceptor {
         //    ...
         // }
 
-        if (JsonUtils.containsUpdateOperators(doc)) {
+        if (BsonUtils.containsUpdateOperators(doc)) {
             var updateOperators = doc.keySet().stream().filter(k -> k.startsWith("$")).collect(Collectors.toList());
 
-            return updateOperators.stream().anyMatch(uo -> contains(JsonUtils.unflatten(doc.get(uo)).asDocument(), protectedProps));
+            return updateOperators.stream().anyMatch(uo -> contains(BsonUtils.unflatten(doc.get(uo)).asDocument(), protectedProps));
         }
 
         if (protectedProps.contains(".")) {

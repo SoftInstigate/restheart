@@ -41,7 +41,7 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.Request;
 import org.restheart.idm.FileRealmAccount;
 import org.restheart.idm.MongoRealmAccount;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,9 +145,9 @@ public class AclPermissionsVarsInterpolator {
 
             if (prop.contains(".")) {
                 try {
-                    JsonElement v = JsonPath.read(requestObject.toJson(), "$.".concat(prop));
+                    var v = JsonPath.read(requestObject.toJson(), "$.".concat(prop));
 
-                    return JsonUtils.parse(v.toString());
+                    return BsonUtils.parse(v.toString());
                 } catch (Throwable pnfe) {
                     return BsonNull.VALUE;
                 }
@@ -178,7 +178,7 @@ public class AclPermissionsVarsInterpolator {
                     try {
                         JsonElement v = JsonPath.read(doc.toJson(), "$.".concat(prop));
 
-                        return JsonUtils.parse(v.toString());
+                        return BsonUtils.parse(v.toString());
                     } catch (Throwable pnfe) {
                         return BsonNull.VALUE;
                     }
@@ -204,7 +204,7 @@ public class AclPermissionsVarsInterpolator {
                     try {
                         JsonElement v = JsonPath.read(accountDoc.toJson(), "$.".concat(prop));
 
-                        return JsonUtils.parse(v.toString());
+                        return BsonUtils.parse(v.toString());
                     } catch (Throwable pnfe) {
                         return BsonNull.VALUE;
                     }
@@ -268,7 +268,7 @@ public class AclPermissionsVarsInterpolator {
             return predicate;
         }
 
-        var flatten = JsonUtils.flatten(variableValues, true);
+        var flatten = BsonUtils.flatten(variableValues, true);
 
         String[] ret = { predicate };
 

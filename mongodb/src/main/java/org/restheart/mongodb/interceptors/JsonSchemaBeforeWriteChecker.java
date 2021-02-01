@@ -39,7 +39,7 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,7 +158,7 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': schema "
                     + schemaStoreDb + "/" + _SCHEMAS + "/"
-                    + JsonUtils.getIdAsString(schemaId, false)
+                    + BsonUtils.getIdAsString(schemaId, false)
                     + " not found");
             return;
         }
@@ -167,7 +167,7 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': schema "
                     + schemaStoreDb + "/" + _SCHEMAS + "/"
-                    + JsonUtils.getIdAsString(schemaId, false)
+                    + BsonUtils.getIdAsString(schemaId, false)
                     + " not found");
             return;
         }
@@ -203,7 +203,7 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
 
                         response.setInError(HttpStatus.SC_BAD_REQUEST,
                                 "Request content violates schema "
-                                + JsonUtils.getIdAsString(schemaId, true)
+                                + BsonUtils.getIdAsString(schemaId, true)
                                 + ": "
                                 + errMsg);
                     }

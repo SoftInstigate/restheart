@@ -36,7 +36,7 @@ import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
 import org.restheart.plugins.*;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +101,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         if (!result.getErrors().isEmpty()){
             response.setInError(400, "Bad Request");
         }
-        response.setContent(JsonUtils.toBsonDocument(result.toSpecification()));
+        response.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
     }
 
     @Override

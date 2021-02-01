@@ -33,7 +33,7 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +56,7 @@ public class UserPwdRemover implements MongoInterceptor {
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
         PluginRecord<Authenticator> _mra;
-        
+
         try {
             _mra = registry.getAuthenticator("mongoRealmAuthenticator");
         } catch (ConfigurationException ce) {
@@ -73,8 +73,8 @@ public class UserPwdRemover implements MongoInterceptor {
             this.usersCollection = rhAuth.getUsersCollection();
             this.propNamePassword = rhAuth.getPropPassword();
 
-            if (usersDb == null 
-                    || usersCollection == null 
+            if (usersDb == null
+                    || usersCollection == null
                     || propNamePassword == null) {
                 LOGGER.error("Wrong configuration of mongoRealmAuthenticator! "
                         + "Password stored in users collection "
@@ -118,7 +118,7 @@ public class UserPwdRemover implements MongoInterceptor {
             dc.delete("$.".concat(this.propNamePassword));
         }
 
-        response.setContent(JsonUtils.parse(content.toString()));
+        response.setContent(BsonUtils.parse(content.toString()));
     }
 
     @Override

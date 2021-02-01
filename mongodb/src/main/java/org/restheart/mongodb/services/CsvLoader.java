@@ -38,7 +38,7 @@ import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 /**
  * service to upload a csv file in a collection
@@ -193,7 +193,7 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
         if (params.props != null && params.values != null) {
             @SuppressWarnings("rawtypes")
             Deque<String> _props = new ArrayDeque(params.props);
-            
+
             @SuppressWarnings("rawtypes")
             Deque<String> _values = new ArrayDeque(params.values);
 
@@ -207,7 +207,7 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
 
     private BsonValue getBsonValue(String raw) {
         try {
-            return JsonUtils.parse(raw);
+            return BsonUtils.parse(raw);
         } catch (JsonParseException jpe) {
             return new BsonString(raw);
         }

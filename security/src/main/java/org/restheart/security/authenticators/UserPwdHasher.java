@@ -36,7 +36,7 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +74,7 @@ public class UserPwdHasher implements MongoInterceptor {
             enabled = false;
         } else {
             var rhAuth = (MongoRealmAuthenticator) _mra.getInstance();
-            
+
             if (!rhAuth.isBcryptHashedPassword()) {
                 this.enabled = false;
                 return;
@@ -84,7 +84,6 @@ public class UserPwdHasher implements MongoInterceptor {
             this.usersCollection = rhAuth.getUsersCollection();
             this.propNamePassword = rhAuth.getPropPassword();
             this.complexity = rhAuth.getBcryptComplexity();
-            
 
             if (usersDb == null
                     || usersCollection == null
@@ -111,7 +110,7 @@ public class UserPwdHasher implements MongoInterceptor {
             return;
         } else if (content.isArray() && request.isPost()) {
             // POST collection with array of documents
-            JsonArray passwords = JsonPath.read(JsonUtils.toJson(content),
+            JsonArray passwords = JsonPath.read(BsonUtils.toJson(content),
                     "$.[*].".concat(this.propNamePassword));
 
             int[] iarr = {0};
@@ -133,7 +132,7 @@ public class UserPwdHasher implements MongoInterceptor {
             // PUT/PATCH document or bulk PATCH
             JsonElement plain;
             try {
-                plain = JsonPath.read(JsonUtils.toJson(content),
+                plain = JsonPath.read(BsonUtils.toJson(content),
                         "$.".concat(this.propNamePassword));
 
                 if (plain != null && plain.isJsonPrimitive()

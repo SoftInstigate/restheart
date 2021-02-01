@@ -29,7 +29,7 @@ import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,17 +88,16 @@ public class AggregationTransformer extends PipelinedHandler {
 
             if (request.isPut() || request.isPatch()) {
                 _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
-                        JsonUtils.escapeKeys(aggrs, true));
+                    BsonUtils.escapeKeys(aggrs, true));
             } else if (request.isGet()) {
                 _contentToTransform.put(AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME,
-                        JsonUtils.unescapeKeys(aggrs));
+                    BsonUtils.unescapeKeys(aggrs));
             }
         }
     }
 
     private BsonArray getAggregationMetadata(BsonDocument contentToTransform) {
-        List<Optional<BsonValue>> ___aggrs = JsonUtils
-                .getPropsFromPath(contentToTransform,
+        List<Optional<BsonValue>> ___aggrs = BsonUtils.getPropsFromPath(contentToTransform,
                         "$." + AbstractAggregationOperation.AGGREGATIONS_ELEMENT_NAME);
 
         if (___aggrs == null || ___aggrs.isEmpty()) {

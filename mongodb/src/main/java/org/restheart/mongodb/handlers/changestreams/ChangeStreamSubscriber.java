@@ -32,7 +32,7 @@ import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +71,7 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
 
             ChangeStreamWebsocketCallback.NOTIFICATION_PUBLISHER.submit(
                     new ChangeStreamNotification(sessionKey,
-                            JsonUtils.toJson(
+                        BsonUtils.toJson(
                                     getDocument(notification),
                                     sessionKey.getJsonMode())));
         } else {
