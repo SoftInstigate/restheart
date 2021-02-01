@@ -34,7 +34,7 @@ import org.xnio.Option;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ConfigurationHelper {
-
+xxx
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoServiceConfiguration.class);
 
     @SuppressWarnings("rawtypes")
