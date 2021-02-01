@@ -444,7 +444,7 @@ public class BsonRequestContentInjector {
         }
 
         if (request.isPost() || request.isPut()) {
-            // if (JsonUtils.containsUpdateOperators(content, true)) {
+            // if (BsonUtils.containsUpdateOperators(content, true)) {
             //     // not acceptable
             //     String errMsg = "update operators (but $currentDate) cannot be used on POST and PUT requests";
 

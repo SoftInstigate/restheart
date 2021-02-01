@@ -46,7 +46,7 @@ public class CheckersUtils {
      */
     public static boolean doesRequestUseUpdateOperators(BsonValue content) {
         if (content.isDocument()) {
-            return JsonUtils.containsUpdateOperators(content.asDocument());
+            return BsonUtils.containsUpdateOperators(content.asDocument());
         } else if (content.isArray()) {
             BsonArray objs = content.asArray();
 

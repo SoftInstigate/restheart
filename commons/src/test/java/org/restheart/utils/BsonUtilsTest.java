@@ -47,9 +47,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JsonUtilsTest {
+public class BsonUtilsTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JsonUtilsTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BsonUtilsTest.class);
 
     /**
      *
@@ -79,7 +79,7 @@ public class JsonUtilsTest {
     /**
      *
      */
-    public JsonUtilsTest() {
+    public BsonUtilsTest() {
     }
 
     /**
@@ -104,7 +104,7 @@ public class JsonUtilsTest {
         String json = "{ '_id'  :   {   '$in' : [1, 20.0, 'id']}}";
         String minified = "{'_id':{'$in':[1,20.0,'id']}}";
 
-        Assert.assertEquals(minified, JsonUtils.minify(json));
+        Assert.assertEquals(minified, BsonUtils.minify(json));
     }
     
     /**
@@ -589,41 +589,41 @@ public class JsonUtilsTest {
 
         BsonDocument json = BsonDocument.parse(_json);
 
-        LOG.debug("$.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.*"));
-        LOG.debug("$._id" + " -> " + JsonUtils.getPropsFromPath(json, "$._id"));
-        LOG.debug("$.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.descr"));
-        LOG.debug("$.items" + " -> " + JsonUtils.getPropsFromPath(json, "$.items"));
-        LOG.debug("$.items.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*"));
-        LOG.debug("$.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.*"));
-        LOG.debug("$.items.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.descr"));
-        LOG.debug("$.items.*.items" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items"));
-        LOG.debug("$.items.*.items.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*"));
-        LOG.debug("$.items.*.items.*.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.*"));
-        LOG.debug("$.items.*.items.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.descr"));
-        LOG.debug("$.items.*.items.*.values" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values"));
-        LOG.debug("$.items.*.items.*.values.*" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
-        LOG.debug("$.items.*.items.*.values.*.descr" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
-        LOG.debug("$.items.*.items.*.values.*.svalue" + " -> " + JsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
+        LOG.debug("$.*" + " -> " + BsonUtils.getPropsFromPath(json, "$.*"));
+        LOG.debug("$._id" + " -> " + BsonUtils.getPropsFromPath(json, "$._id"));
+        LOG.debug("$.descr" + " -> " + BsonUtils.getPropsFromPath(json, "$.descr"));
+        LOG.debug("$.items" + " -> " + BsonUtils.getPropsFromPath(json, "$.items"));
+        LOG.debug("$.items.*" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*"));
+        LOG.debug("$.items.*.*" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.*"));
+        LOG.debug("$.items.*.descr" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.descr"));
+        LOG.debug("$.items.*.items" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items"));
+        LOG.debug("$.items.*.items.*" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*"));
+        LOG.debug("$.items.*.items.*.*" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.*"));
+        LOG.debug("$.items.*.items.*.descr" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.descr"));
+        LOG.debug("$.items.*.items.*.values" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.values"));
+        LOG.debug("$.items.*.items.*.values.*" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*"));
+        LOG.debug("$.items.*.items.*.values.*.descr" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.descr"));
+        LOG.debug("$.items.*.items.*.values.*.svalue" + " -> " + BsonUtils.getPropsFromPath(json, "$.items.*.items.*.values.*.svalue"));
 
         String path = "$.items.*.*";
 
         try {
-            Assert.assertTrue(JsonUtils.countPropsFromPath(json, path) == 4);
+            Assert.assertTrue(BsonUtils.countPropsFromPath(json, path) == 4);
         } catch (IllegalArgumentException ex) {
             Assert.fail(ex.toString());
         }
     }
-    
+
     /**
      *
      */
     @Test
     public void testParseToBsonObject() {
-        String object = JsonUtils.minify("{\"a\" :1 }");
+        String object = BsonUtils.minify("{\"a\" :1 }");
 
-        BsonValue bson = JsonUtils.parse(object);
+        BsonValue bson = BsonUtils.parse(object);
 
-        String actual = JsonUtils.toJson(bson);
+        String actual = BsonUtils.toJson(bson);
 
         Assert.assertEquals(object, actual);
     }
@@ -635,11 +635,11 @@ public class JsonUtilsTest {
     public void testParseToBsonArray() {
         String array = "[\"a\", \"b\", 2 ]";
 
-        BsonValue bson = JsonUtils.parse(array);
+        BsonValue bson = BsonUtils.parse(array);
 
-        String actual = JsonUtils.toJson(bson);
+        String actual = BsonUtils.toJson(bson);
 
-        Assert.assertEquals(JsonUtils.minify(array), actual);
+        Assert.assertEquals(BsonUtils.minify(array), actual);
     }
 
     /**
@@ -649,7 +649,7 @@ public class JsonUtilsTest {
     public void testParseObjectId() {
         ObjectId id = new ObjectId();
 
-        BsonValue parsed = JsonUtils.parse(
+        BsonValue parsed = BsonUtils.parse(
                 "{'$oid':'"
                         .concat(id.toString())
                         .concat("'}"));
@@ -663,7 +663,7 @@ public class JsonUtilsTest {
      */
     @Test
     public void testParseFloat() {
-        BsonValue parsed = JsonUtils.parse("3.1415");
+        BsonValue parsed = BsonUtils.parse("3.1415");
 
         Assert.assertTrue(parsed.isNumber());
         Assert.assertEquals(parsed.asDouble(), new BsonDouble(3.1415));
@@ -674,7 +674,7 @@ public class JsonUtilsTest {
      */
     @Test
     public void testParseString() {
-        BsonValue parsed = JsonUtils.parse("'hello'");
+        BsonValue parsed = BsonUtils.parse("'hello'");
 
         Assert.assertTrue(parsed.isString());
         Assert.assertEquals(parsed.asString(), new BsonString("hello"));
@@ -685,7 +685,7 @@ public class JsonUtilsTest {
      */
     @Test
     public void testParseEmptyString() {
-        BsonValue parsed = JsonUtils.parse("''");
+        BsonValue parsed = BsonUtils.parse("''");
 
         Assert.assertTrue(parsed.isString());
         Assert.assertEquals(parsed.asString(), new BsonString(""));
@@ -698,11 +698,11 @@ public class JsonUtilsTest {
     public void testParseToBsonArrayOfObjectets() {
         String arrayOfObjs = "[{\"a\" :1 },{\"b\" :2 }]";
 
-        BsonValue bson = JsonUtils.parse(arrayOfObjs);
+        BsonValue bson = BsonUtils.parse(arrayOfObjs);
 
-        String actual = JsonUtils.toJson(bson);
+        String actual = BsonUtils.toJson(bson);
 
-        Assert.assertEquals(JsonUtils.minify(arrayOfObjs), actual);
+        Assert.assertEquals(BsonUtils.minify(arrayOfObjs), actual);
     }
 
     private boolean eq(List<Optional<BsonValue>> left, List<Optional<BsonValue>> right) {
@@ -763,7 +763,7 @@ public class JsonUtilsTest {
         List<Optional<BsonValue>> gots;
 
         try {
-            gots = JsonUtils.getPropsFromPath(json, path);
+            gots = BsonUtils.getPropsFromPath(json, path);
         } catch (IllegalArgumentException ex) {
             Assert.fail(ex.toString());
             return false;
@@ -780,7 +780,7 @@ public class JsonUtilsTest {
             if (exp == null) {
                 exps.add(null);
             } else {
-                BsonValue _exp = JsonUtils.parse(exp);
+                BsonValue _exp = BsonUtils.parse(exp);
 
                 if (_exp.isNull()) {
                     exps.add(Optional.empty());
@@ -798,7 +798,7 @@ public class JsonUtilsTest {
     private boolean checkType(BsonDocument json, String path, String expectedType) {
         List<Optional<BsonValue>> gots;
         try {
-            gots = JsonUtils.getPropsFromPath(json, path);
+            gots = BsonUtils.getPropsFromPath(json, path);
         } catch (IllegalArgumentException ex) {
             Assert.fail(ex.toString());
             return false;
@@ -812,7 +812,7 @@ public class JsonUtilsTest {
         boolean typeMatch = true;
 
         for (Optional<BsonValue> got : gots) {
-            typeMatch = typeMatch && JsonUtils.checkType(got, expectedType);
+            typeMatch = typeMatch && BsonUtils.checkType(got, expectedType);
         }
 
         return typeMatch;
@@ -835,14 +835,14 @@ public class JsonUtilsTest {
 
         root.put("child2", child2);
 
-        BsonDocument flatten = JsonUtils.flatten(root, false).asDocument();
+        BsonDocument flatten = BsonUtils.flatten(root, false).asDocument();
 
         Assert.assertTrue(flatten.size() == 3);
         Assert.assertTrue(flatten.containsKey("child1.grandchild1.a"));
         Assert.assertTrue(flatten.containsKey("child1.grandchild1.b"));
         Assert.assertTrue(flatten.containsKey("child2.grandchild2.a"));
 
-        BsonValue unflatten = JsonUtils.unflatten(flatten);
+        BsonValue unflatten = BsonUtils.unflatten(flatten);
 
         Assert.assertTrue(unflatten.isDocument());
         Assert.assertTrue(unflatten.asDocument().containsKey("child1"));
@@ -863,24 +863,24 @@ public class JsonUtilsTest {
     public void testParseLong() {
         var json = "[{'n':2084824280},{'n':5887391606}]";
         
-        var parsed = JsonUtils.parse(json);
+        var parsed = BsonUtils.parse(json);
         
-        System.out.println(JsonUtils.toJson(parsed));
+        System.out.println(BsonUtils.toJson(parsed));
         
         long l = 1111111115887391606l;
         
         var json2 = "[{'n':2084824280},{'n':"+l+"}]";
         
-        var parsed2 = JsonUtils.parse(json2);
+        var parsed2 = BsonUtils.parse(json2);
         
-        System.out.println(JsonUtils.toJson(parsed2));
+        System.out.println(BsonUtils.toJson(parsed2));
         System.out.println(parsed2);
         
         var json3 = "[{'n':2084824280},{'d':{'$date':"+ System.currentTimeMillis()+"}}]";
         
-        var parsed3 = JsonUtils.parse(json3);
+        var parsed3 = BsonUtils.parse(json3);
         
-        System.out.println(JsonUtils.toJson(parsed3));
+        System.out.println(BsonUtils.toJson(parsed3));
         System.out.println(parsed3);
     }
     
@@ -889,18 +889,18 @@ public class JsonUtilsTest {
      */
     @Test
     public void testParseLong2() {
-        System.out.println(JsonUtils.toJson(
-                JsonUtils.parse(
+        System.out.println(BsonUtils.toJson(
+                BsonUtils.parse(
                         "{'n':"+4294967296l+"}")));
         
-        var ls = JsonUtils.toJson(
-                JsonUtils.parse(
+        var ls = BsonUtils.toJson(
+                BsonUtils.parse(
                         "{'n':"+(5999999999l)+"}"));
         
         System.out.println(ls);
         
-        System.out.println(JsonUtils.toJson(
-                JsonUtils.parse(ls)));
+        System.out.println(BsonUtils.toJson(
+                BsonUtils.parse(ls)));
     }
     
     /**
@@ -908,8 +908,8 @@ public class JsonUtilsTest {
      */
     @Test
     public void testParseInt() {
-        System.out.println(JsonUtils.toJson(
-                JsonUtils.parse(
+        System.out.println(BsonUtils.toJson(
+                BsonUtils.parse(
                         "{'n':"+10+"}")));
     }
     
@@ -918,8 +918,8 @@ public class JsonUtilsTest {
      */
     @Test
     public void testParseDouble() {
-        System.out.println(JsonUtils.toJson(
-                JsonUtils.parse(
+        System.out.println(BsonUtils.toJson(
+                BsonUtils.parse(
                         "{'n':{'$numberDouble':'11111111158873916063432424232349289023842309842039587209357329578573489573958734985753498573495743957349839'}}")));
     }
 }

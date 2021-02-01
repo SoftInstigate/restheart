@@ -424,7 +424,7 @@
                     <configuration>
                         <debug>true</debug>
                         <compilerArgument>-Xlint:unchecked</compilerArgument>
-                        <showDeprecation>false</showDeprecation>
+                        <showDeprecation>true</showDeprecation>
                     </configuration>
                 </plugin>
                 <plugin>

@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  */
 public class BsonUtils {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(JsonUtils.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(BsonUtils.class);
 
     private static final BsonArrayCodec BSON_ARRAY_CODEC = new BsonArrayCodec(
             CodecRegistries.fromProviders(
@@ -226,7 +226,6 @@ public class BsonUtils {
      * @return the List of Optional&lt;Object&gt;s extracted from root ojbect
      * and identified by the path or null if path does not exist
      *
-     * Seeorg.restheart.test.unit.JsonUtilsTest form code examples
      *
      */
     public static List<Optional<BsonValue>> getPropsFromPath(
@@ -701,8 +700,7 @@ public class BsonUtils {
         } else if (id.isObjectId()) {
             return id.asObjectId().getValue().toString();
         } else {
-            return minify(JsonUtils.toJson(id)
-                    .replace("\"", "'"));
+            return minify(BsonUtils.toJson(id).replace("\"", "'"));
         }
     }
 
@@ -824,7 +822,7 @@ public class BsonUtils {
             // add update operators
             keys
                     .stream()
-                    .filter(key -> JsonUtils.isUpdateOperator(key))
+                    .filter(key -> BsonUtils.isUpdateOperator(key))
                     .forEach(key -> ret.put(key, json.get(key)));
 
             // add properties to $set update operator

@@ -121,7 +121,7 @@ public class URLUtils {
 
         return ret;
     }
-    
+
     /**
      *
      * @param id
@@ -135,7 +135,7 @@ public class URLUtils {
         } else if (id.isString()) {
             return "'" + id.asString().getValue() + "'";
         } else {
-            return JsonUtils.toJson(id).replace("\"", "'");
+            return BsonUtils.toJson(id).replace("\"", "'");
         }
     }
 }
