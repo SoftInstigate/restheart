@@ -20,6 +20,7 @@
  */
 package org.restheart.plugins;
 
+import io.github.classgraph.AnnotationEnumValue;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
@@ -158,7 +159,11 @@ public class PluginsScanner {
             if (mi.hasAnnotation(clazz.getName())) {
                 ArrayList<AbstractMap.SimpleEntry<String, Object>> params = new ArrayList<>();
                 for (var p : mi.getAnnotationInfo(clazz.getName()).getParameterValues()) {
-                    params.add(new AbstractMap.SimpleEntry<String, Object>(p.getName(), p.getValue()));
+                    var value = p.getValue();
+                    if (value instanceof AnnotationEnumValue) {
+                        removeRefToScanResult((AnnotationEnumValue)value);
+                    }
+                    params.add(new AbstractMap.SimpleEntry<String, Object>(p.getName(), value));
                 }
 
                 ret.add(new InjectionDescriptor(mi.getName(), clazz, params, mi.hashCode()));
@@ -166,6 +171,22 @@ public class PluginsScanner {
         }
 
         return ret;
+    }
+
+    /**
+     * this removes the reference to scanResult in the annotation info
+     * otherwise the huge object won't be garbage collected
+     *
+     * @param obj
+     */
+    private static void removeRefToScanResult(AnnotationEnumValue obj) {
+        try {
+            var f = AnnotationEnumValue.class.getSuperclass().getDeclaredField("scanResult");
+            f.setAccessible(true);
+            f.set(obj, null);
+        } catch (Throwable ex) {
+            // nothing to do
+        }
     }
 
     static class RuntimeClassGraph {
