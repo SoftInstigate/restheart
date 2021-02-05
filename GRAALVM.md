@@ -68,6 +68,11 @@ The following fields must be configured with `allowWrite: true`
 {
   "name":"graphql.schema.GraphQLScalarType",
   "fields":[{"name":"coercing", "allowWrite":true}]
+},
+{
+  "name":"io.github.classgraph.ScanResultObject",
+  "allDeclaredFields":true,
+  "fields":[{"name":"scanResult", "allowWrite":true}]
 }
 ```
 
