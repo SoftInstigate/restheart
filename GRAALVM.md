@@ -29,11 +29,6 @@ Start RESTHeart
 $ ./core/target/restheart-native core/etc/restheart.yml -e core/etc/uber.properties
 ```
 
-`graal.yml` defines two services:
-
-- `/anything` that proxies `https://httpbin.org/anything`
-- `/web` that serve the project directory as a static resource (shows LICENSE.txt as welcome file)
-
 ## Generate native-image build configuration
 
 Start RESTHeart with test configuration and the `native-image-agent`
@@ -86,7 +81,7 @@ see:
 - https://github.com/oracle/graal/issues/3020
 - https://issues.redhat.com/browse/UNDERTOW-1811
 
-workaround: downgraded xnio to v3.5.9.Final in native profile
+fixed by remove unsafe calls and disable jboss enhanced executor on native build: https://github.com/SoftInstigate/graalvm-undertow-issue/commit/ad36bd2d5b5397800f3494613e7fecc22615beab
 
 ### build fails due to ClassNotFoundException from mongodb-driver
 

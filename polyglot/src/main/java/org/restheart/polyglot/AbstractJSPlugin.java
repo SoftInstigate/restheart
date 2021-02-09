@@ -20,24 +20,64 @@
  */
 package org.restheart.polyglot;
 
+import java.util.Map;
+
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 
-public abstract class AbstractJavaScriptPlugin {
+public abstract class AbstractJSPlugin {
     protected String name;
-    protected String pluginClassName;
+    protected String pluginClass;
     protected String description;
     protected String uri;
     protected boolean secured;
     protected MATCH_POLICY matchPolicy;
     protected InterceptPoint interceptPoint;
 
+    // TODO remove this and make fields final
+    protected AbstractJSPlugin() {
+        this.name = null;
+        this.pluginClass = null;
+        this.description = null;
+        this.uri = null;
+        this.secured = false;
+        this.matchPolicy = null;
+        this.interceptPoint = null;
+    }
+
+    protected AbstractJSPlugin(String name,
+        String pluginClass,
+        String description,
+        String uri,
+        boolean secured,
+        MATCH_POLICY matchPolicy,
+        InterceptPoint interceptPoint) {
+        this.name = name;
+        this.pluginClass = pluginClass;
+        this.description = description;
+        this.uri = uri;
+        this.secured = secured;
+        this.matchPolicy = matchPolicy;
+        this.interceptPoint = interceptPoint;
+    }
+
+    protected Context context(Engine engine, Map<String, String> OPTS) {
+        return Context.newBuilder().engine(engine).allowAllAccess(true)
+                .allowHostClassLookup(className -> true)
+                .allowIO(true)
+                .allowExperimentalOptions(true)
+                .options(OPTS)
+                .build();
+    }
+
     public String getName() {
         return name;
     }
 
-    public String getPluginClassName() {
-        return pluginClassName;
+    public String getPluginClass() {
+        return pluginClass;
     }
 
     public String getUri() {

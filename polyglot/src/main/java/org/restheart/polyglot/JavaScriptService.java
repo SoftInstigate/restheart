@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JavaScriptService extends AbstractJavaScriptPlugin implements StringService {
+public class JavaScriptService extends AbstractJSPlugin implements StringService {
     private static final Logger LOGGER = LoggerFactory.getLogger(JavaScriptService.class);
 
     Map<String, String> OPTS = new HashMap<>();

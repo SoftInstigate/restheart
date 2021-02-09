@@ -29,13 +29,16 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-import org.restheart.exchange.Request;
-import org.restheart.exchange.Response;
-import org.restheart.exchange.StringRequest;
-import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
-import org.restheart.plugins.StringInterceptor;
+import org.restheart.plugins.PluginRecord;
+import org.restheart.polyglot.interceptors.AbstractJSInterceptor;
+import org.restheart.polyglot.interceptors.ByteArrayJSInterceptor;
+import org.restheart.polyglot.interceptors.ByteArrayProxyJSInterceptor;
+import org.restheart.polyglot.interceptors.CsvJSInterceptor;
+import org.restheart.polyglot.interceptors.JsonJSInterceptor;
+import org.restheart.polyglot.interceptors.MongoJSInterceptor;
+import org.restheart.polyglot.interceptors.StringJSInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,29 +46,26 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements StringInterceptor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JavaScriptInterceptor.class);
+public class JSInterceptorFactory {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JSInterceptorFactory.class);
 
     Map<String, String> OPTS = new HashMap<>();
 
-    private Engine engine = Engine.create();
-    private Source source;
-
-    private final String modulesReplacements;
-
-    private MongoClient mclient;
+    private final MongoClient mclient;
 
     private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {},\n\tresolve: (request) => {}\n})";
 
-    private final Interceptor<?, ?> interceptor;
-
-    JavaScriptInterceptor(Path scriptPath, Path requireCdw, MongoClient mclient) throws IOException {
+    public JSInterceptorFactory(Path requireCdw, MongoClient mclient) {
         this.mclient = mclient;
-
         OPTS.put("js.commonjs-require", "true");
         OPTS.put("js.commonjs-require-cwd", requireCdw.toAbsolutePath().toString());
+    }
 
+    @SuppressWarnings("rawtypes")
+    public PluginRecord<Interceptor> create(Path scriptPath) throws IOException {
         var language = Source.findLanguage(scriptPath.toFile());
+
+        Source source;
 
         if ("js".equals(language)) {
             if (scriptPath.getFileName().toString().endsWith(".mjs")) {
@@ -73,12 +73,19 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
             } else {
                 source = Source.newBuilder("js", scriptPath.toFile()).build();
             }
+        } else {
+            throw new IllegalArgumentException("Interceptor is not javascript " + scriptPath);
         }
 
         // check plugin definition
 
+        var engine = Engine.create();
+
         try (Context ctx = Context.newBuilder().engine(engine).allowAllAccess(true)
-                .allowHostClassLookup(className -> true).allowIO(true).allowExperimentalOptions(true).options(OPTS)
+                .allowHostClassLookup(className -> true)
+                .allowIO(true)
+                .allowExperimentalOptions(true)
+                .options(OPTS)
                 .build()) {
             Value parsed;
 
@@ -106,7 +113,7 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
                 throw new IllegalArgumentException("wrong js plugin, wrong member 'options.name', " + errorHint);
             }
 
-            this.name = parsed.getMember("options").getMember("name").asString();
+            var name = parsed.getMember("options").getMember("name").asString();
 
             if (!parsed.getMember("options").getMemberKeys().contains("description")) {
                 throw new IllegalArgumentException(
@@ -117,14 +124,14 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
                 throw new IllegalArgumentException("wrong js plugin, wrong member 'options.description', " + errorHint);
             }
 
-            this.description = parsed.getMember("options").getMember("description").asString();
+            var description = parsed.getMember("options").getMember("description").asString();
 
-            this.uri = null;
-            this.secured = false;
-            this.matchPolicy = null;
+            InterceptPoint interceptPoint;
+            String pluginClass;
+            String modulesReplacements;
 
             if (!parsed.getMember("options").getMemberKeys().contains("interceptPoint")) {
-                this.interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH;
+                interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH;
             } else {
                 if (!parsed.getMember("options").getMember("interceptPoint").isString()) {
                     throw new IllegalArgumentException(
@@ -132,7 +139,7 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
                 } else {
                     var _interceptPoint = parsed.getMember("options").getMember("interceptPoint").asString();
                     try {
-                        this.interceptPoint = InterceptPoint.valueOf(_interceptPoint);
+                        interceptPoint = InterceptPoint.valueOf(_interceptPoint);
                     } catch (Throwable t) {
                         throw new IllegalArgumentException(
                                 "wrong js plugin, wrong member 'options.interceptPoint', " + errorHint);
@@ -140,26 +147,8 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
                 }
             }
 
-            if (!parsed.getMember("options").getMemberKeys().contains("pluginClassName")) {
-                this.pluginClassName = "StringService";
-            } else if (!parsed.getMember("options").getMember("pluginClassName").isString()) {
-                throw new IllegalArgumentException(
-                        "wrong js plugin, wrong member 'options.pluginClassName', " + errorHint);
-            } else {
-                this.pluginClassName = parsed.getMember("options").getMember("pluginClassName").asString();
-            }
-
-            switch (this.pluginClassName) {
-                case "StringService":
-                    this.interceptor = new StringJavaScriptInterceptor(this.interceptPoint);
-                    break;
-                default:
-                    throw new IllegalArgumentException(
-                            "wrong js plugin, wrong member 'options.pluginClassName', " + errorHint);
-            }
-
             if (!parsed.getMember("options").getMemberKeys().contains("modulesReplacements")) {
-                this.modulesReplacements = null;
+                modulesReplacements = null;
             } else {
                 var sb = new StringBuilder();
 
@@ -168,7 +157,7 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
                                 .append(parsed.getMember("options").getMember("modulesReplacements").getMember(k))
                                 .append(","));
 
-                this.modulesReplacements = sb.toString();
+                modulesReplacements = sb.toString();
             }
 
             if (!parsed.getMemberKeys().contains("handle")) {
@@ -186,98 +175,100 @@ public class JavaScriptInterceptor extends AbstractJavaScriptPlugin implements S
             if (!parsed.getMember("resolve").canExecute()) {
                 throw new IllegalArgumentException("wrong js plugin, member 'resolve' is not a function, " + errorHint);
             }
-        }
-    }
 
-    public String getModulesReplacements() {
-        return this.modulesReplacements;
-    }
-
-    public Interceptor<?, ?> getInterceptor() {
-        return interceptor;
-    }
-
-    /**
-     *
-     */
-    public void handle(StringRequest request, StringResponse response) {
-        if (getModulesReplacements() != null) {
-            LOGGER.debug("modules-replacements: {} ", getModulesReplacements());
-            OPTS.put("js.commonjs-core-modules-replacements", getModulesReplacements());
-        } else {
-            OPTS.remove("js.commonjs-core-modules-replacements");
-        }
-
-        try (var ctx = Context.newBuilder().engine(engine).allowAllAccess(true).allowHostClassLookup(className -> true)
-                .allowIO(true).allowExperimentalOptions(true).options(OPTS).build()) {
-
-            ctx.getBindings("js").putMember("LOGGER", LOGGER);
-
-            if (this.mclient != null) {
-                ctx.getBindings("js").putMember("mclient", this.mclient);
-            }
-
-            ctx.eval(source).getMember("handle").executeVoid(request, response);
-        }
-    }
-
-    @Override
-    public boolean resolve(StringRequest request, StringResponse response) {
-        if (getModulesReplacements() != null) {
-            LOGGER.debug("modules-replacements: {} ", getModulesReplacements());
-            OPTS.put("js.commonjs-core-modules-replacements", getModulesReplacements());
-        } else {
-            OPTS.remove("js.commonjs-core-modules-replacements");
-        }
-
-        try (var ctx = Context.newBuilder().engine(engine).allowAllAccess(true).allowHostClassLookup(className -> true)
-                .allowIO(true).allowExperimentalOptions(true).options(OPTS).build()) {
-
-            ctx.getBindings("js").putMember("LOGGER", LOGGER);
-
-            if (this.mclient != null) {
-                ctx.getBindings("js").putMember("mclient", this.mclient);
-            }
-
-            var ret = ctx.eval(source).getMember("resolve").execute(request);
-
-            if (ret.isBoolean()) {
-                return ret.asBoolean();
+            if (!parsed.getMember("options").getMemberKeys().contains("pluginClass")) {
+                pluginClass = "StringService";
+            } else if (!parsed.getMember("options").getMember("pluginClass").isString()) {
+                throw new IllegalArgumentException(
+                        "wrong js plugin, wrong member 'options.pluginClass', " + errorHint);
             } else {
-                LOGGER.error("resolve() of plugin did not returned a boolean", name);
-                return false;
+                pluginClass = parsed.getMember("options").getMember("pluginClass").asString();
             }
+
+            AbstractJSInterceptor<?,?> interceptor;
+
+            switch (pluginClass) {
+                case "StringInterceptor":
+                case "org.restheart.plugins.StringInterceptor":
+                    interceptor = new StringJSInterceptor(name,
+                        pluginClass,
+                        description,
+                        interceptPoint,
+                        source,
+                        mclient,
+                        modulesReplacements);
+                        break;
+                case "BsonInterceptor":
+                case "org.restheart.plugins.BsonInterceptor":
+                    interceptor = new StringJSInterceptor(name,
+                        pluginClass,
+                        description,
+                        interceptPoint,
+                        source,
+                        mclient,
+                        modulesReplacements);
+                        break;
+                case "ByteArrayInterceptor":
+                case "org.restheart.plugins.ByteArrayInterceptor":
+                    interceptor = new ByteArrayJSInterceptor(name,
+                        pluginClass,
+                        description,
+                        interceptPoint,
+                        source,
+                        mclient,
+                        modulesReplacements);
+                        break;
+                case "ByteArrayProxyInterceptor":
+                case "org.restheart.plugins.ByteArrayProxyInterceptor":
+                    interceptor = new ByteArrayProxyJSInterceptor(name,
+                        pluginClass,
+                        description,
+                        interceptPoint,
+                        source,
+                        mclient,
+                        modulesReplacements);
+                        break;
+                case "CsvInterceptor":
+                case "org.restheart.plugins.CsvInterceptor":
+                    interceptor = new CsvJSInterceptor(name,
+                        pluginClass,
+                        description,
+                        interceptPoint,
+                        source,
+                        mclient,
+                        modulesReplacements);
+                        break;
+                case "JsonInterceptor":
+                case "org.restheart.plugins.JsonInterceptor":
+                    interceptor = new JsonJSInterceptor(name,
+                        pluginClass,
+                        description,
+                        interceptPoint,
+                        source,
+                        mclient,
+                        modulesReplacements);
+                        break;
+                case "MongoInterceptor":
+                case "org.restheart.plugins.MongoInterceptor":
+                    interceptor = new MongoJSInterceptor(name,
+                        pluginClass,
+                        description,
+                        interceptPoint,
+                        source,
+                        mclient,
+                        modulesReplacements);
+                        break;
+                default:
+                    throw new IllegalArgumentException(
+                            "wrong js plugin, wrong member 'options.pluginClass', " + errorHint);
+            }
+
+            return new PluginRecord<Interceptor>(interceptor.getName(),
+                interceptor.getDescription(),
+                true,
+                interceptor.getClass().getName(),
+                interceptor,
+                new HashMap<>());
         }
-    }
-}
-
-abstract class AbstractJavaScriptInterceptor<R extends Request<?>, S extends Response<?>> implements Interceptor<R, S> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractJavaScriptInterceptor.class);
-
-    private final InterceptPoint interceptPoint;
-
-    public AbstractJavaScriptInterceptor(InterceptPoint interceptPoint) {
-        this.interceptPoint = interceptPoint;
-    }
-
-    @Override
-    public void handle(final R request, final S response) throws Exception {
-        LOGGER.debug("**** handle {}", request.getClass().getName());
-    }
-
-    @Override
-    public boolean resolve(final R request, final S response) {
-        LOGGER.debug("**** resolve {}", request.getClass().getName());
-        return true;
-    }
-
-    public InterceptPoint getInterceptPoint() {
-        return interceptPoint;
-    }
-}
-
-class StringJavaScriptInterceptor extends AbstractJavaScriptInterceptor<StringRequest, StringResponse> {
-    public StringJavaScriptInterceptor(InterceptPoint interceptPoint) {
-        super(interceptPoint);
     }
 }

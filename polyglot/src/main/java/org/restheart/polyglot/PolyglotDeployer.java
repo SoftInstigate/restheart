@@ -50,7 +50,6 @@ import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
@@ -70,7 +69,7 @@ public class PolyglotDeployer implements Initializer {
 
     private PluginsRegistry registry = null;
 
-    private static final Map<Path, AbstractJavaScriptPlugin> DEPLOYEES = new HashMap<>();
+    private static final Map<Path, AbstractJSPlugin> DEPLOYEES = new HashMap<>();
 
     private WatchService watchService;
 
@@ -78,12 +77,15 @@ public class PolyglotDeployer implements Initializer {
 
     private MongoClient mclient;
 
+    private JSInterceptorFactory jsInterceptorFactory;
+
     @InjectPluginsRegistry
     public void reg(PluginsRegistry registry) {
         this.registry = registry;
 
         // make sure to invoke this after both @Injected methods are invoked
         if (pluginsDirectory != null) {
+            this.jsInterceptorFactory = new JSInterceptorFactory(this.requireCdw, this.mclient);
             deployAll(pluginsDirectory);
             watch(pluginsDirectory);
         }
@@ -113,6 +115,7 @@ public class PolyglotDeployer implements Initializer {
 
         // make sure to invoke this after both @Injected methods are invoked
         if (registry != null) {
+            this.jsInterceptorFactory = new JSInterceptorFactory(this.requireCdw, this.mclient);
             deployAll(pluginsDirectory);
             watch(pluginsDirectory);
         }
@@ -358,27 +361,19 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     private void deployInterceptor(Path pluginPath) throws IOException {
         if (isRunningOnNode()) {
             throw new IllegalStateException("interceptors on node are not yet implemented");
         } else {
-            var interceptorBuilder = new JavaScriptInterceptor(pluginPath, this.requireCdw, this.mclient);
+            var interceptorRecord = this.jsInterceptorFactory.create(pluginPath);
 
-            var record = new PluginRecord<Interceptor>(interceptorBuilder.getName(),
-                interceptorBuilder.getDescription(),
-                true,
-                interceptorBuilder.getInterceptor().getClass().getName(),
-                interceptorBuilder.getInterceptor(),
-                new HashMap<>());
+            registry.addInterceptor(interceptorRecord);
 
-            registry.addInterceptor(record);
-
-            DEPLOYEES.put(pluginPath.toAbsolutePath(), interceptorBuilder);
+            DEPLOYEES.put(pluginPath.toAbsolutePath(), (AbstractJSPlugin) interceptorRecord.getInstance());
 
             LOGGER.info(ansi().fg(GREEN).a("Added interceptor {}, description: {}").reset().toString(),
-                interceptorBuilder.getName(),
-                interceptorBuilder.getDescription());
+                interceptorRecord.getName(),
+                interceptorRecord.getDescription());
         }
     }
 
