@@ -117,17 +117,18 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 .forEachOrdered(ri -> {
                     try {
                         LOGGER.debug("Executing interceptor {} for {} on intercept point {}",
-                                ri.getClass().getSimpleName(),
-                                exchange.getRequestPath(),
-                                interceptPoint);
+                            PluginUtils.name(ri),
+                            exchange.getRequestPath(),
+                            interceptPoint);
 
                         ri.handle(request, response);
                     } catch (Exception ex) {
                         LOGGER.error("Error executing interceptor {} for {} on intercept point {}",
-                                ri.getClass().getSimpleName(),
-                                exchange.getRequestPath(),
-                                interceptPoint,
-                                ex);
+                            PluginUtils.name(ri),
+                            exchange.getRequestPath(),
+                            interceptPoint,
+                            ex);
+
                         Exchange.setInError(exchange);
                         LambdaUtils.throwsSneakyException(ex);
                     }

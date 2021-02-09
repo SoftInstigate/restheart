@@ -123,14 +123,18 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
                         return false;
                     }
                 }).forEachOrdered(ri -> {
-                    LOGGER.debug("Executing interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(),
-                            exchange.getRequestPath(), InterceptPoint.RESPONSE);
+                    LOGGER.debug("Executing interceptor {} for {} on intercept point {}", 
+                                PluginUtils.name(ri),
+                        exchange.getRequestPath(),
+                        InterceptPoint.RESPONSE);
 
                     try {
                         ri.handle(request, response);
                     } catch (Exception ex) {
                         LOGGER.error("Error executing interceptor {} for {} on intercept point {}",
-                                ri.getClass().getSimpleName(), exchange.getRequestPath(), InterceptPoint.RESPONSE, ex);
+                            PluginUtils.name(ri),
+                            exchange.getRequestPath(),
+                            InterceptPoint.RESPONSE, ex);
 
                         Exchange.setInError(exchange);
                         LambdaUtils.throwsSneakyException(ex);
@@ -171,7 +175,7 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
                 .forEachOrdered(ri -> {
                     exchange.getConnection().getWorker().execute(() -> {
                         LOGGER.debug("Executing interceptor {} for {} on intercept point {}",
-                            ri.getClass().getSimpleName(),
+                            PluginUtils.name(ri),
                             exchange.getRequestPath(),
                             InterceptPoint.RESPONSE_ASYNC);
 
@@ -179,7 +183,7 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
                             ri.handle(request, response);
                         } catch (Exception ex) {
                             LOGGER.error("Error executing interceptor {} for {} on intercept point {}",
-                                ri.getClass().getSimpleName(),
+                                PluginUtils.name(ri),
                                 exchange.getRequestPath(),
                                 InterceptPoint.RESPONSE_ASYNC,
                                 ex);

@@ -119,7 +119,41 @@ public class PluginUtils {
     public static String name(Plugin plugin) {
         var a = plugin.getClass().getDeclaredAnnotation(RegisterPlugin.class);
 
-        return a == null ? null : a.name();
+        if (a == null) {
+            return findNameField(plugin.getClass(), plugin);
+        } else {
+            return a.name();
+        }
+    }
+
+    /**
+     * this is used to retrieve the name of a plugin that is not annotated
+     * with @RegisterPlugin. Assumes the existance of the field 'name'.
+     *
+     * @param clazz
+     * @param o
+     * @return
+     */
+    private static String findNameField(Class<?> clazz, Object o) {
+        try {
+            var field = clazz.getDeclaredField("name");
+            field.setAccessible(true);
+
+            var value = field.get(o);
+            if (value instanceof String) {
+                return (String) value;
+            } else {
+                return null;
+            }
+        } catch (NoSuchFieldException nfe) {
+            if (clazz.getSuperclass() != null) {
+                return findNameField(clazz.getSuperclass(), o);
+            } else {
+                return null;
+            }
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     /**
