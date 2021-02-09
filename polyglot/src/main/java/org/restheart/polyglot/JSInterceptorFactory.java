@@ -182,7 +182,7 @@ public class JSInterceptorFactory {
             }
 
             if (!parsed.getMember("options").getMemberKeys().contains("pluginClass")) {
-                pluginClass = "StringService";
+                pluginClass = "StringInterceptor";
             } else if (!parsed.getMember("options").getMember("pluginClass").isString()) {
                 throw new IllegalArgumentException(
                         "wrong js plugin, wrong member 'options.pluginClass', " + errorHint);
