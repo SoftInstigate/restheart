@@ -75,8 +75,7 @@ public class DbPropsInjector implements MongoInterceptor {
                         request.getClientSession(),
                         dbName);
             } else {
-                dbProps = MetadataCachesSingleton.getInstance()
-                        .getDBProperties(dbName);
+                dbProps = MetadataCachesSingleton.getInstance().getDBProperties(dbName);
             }
 
             // if dbProps is null, the db does not exist
@@ -84,8 +83,7 @@ public class DbPropsInjector implements MongoInterceptor {
                     && !(request.isDb()
                     && request.isPut())
                     && !request.isRoot()) {
-                response.setInError(
-                        HttpStatus.SC_NOT_FOUND,
+                response.setInError(HttpStatus.SC_NOT_FOUND,
                         "Db '" + dbName + "' does not exist");
                 return;
             }

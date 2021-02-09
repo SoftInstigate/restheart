@@ -86,19 +86,16 @@ public class CollectionPropsInjector implements MongoInterceptor {
                                 dbName,
                                 collName);
             } else {
-                collProps = MetadataCachesSingleton.getInstance()
-                        .getCollectionProperties(dbName, collName);
+                collProps = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
             }
 
             // if collProps is null, the collection does not exist
-            if (collProps == null
-                    && checkCollection(request)) {
+            if (collProps == null && checkCollection(request)) {
                 doesNotExists(request, response);
                 return;
             }
 
-            if (collProps == null
-                    && request.isGet()) {
+            if (collProps == null && request.isGet()) {
                 collProps = new BsonDocument("_id", new BsonString(collName));
             }
 

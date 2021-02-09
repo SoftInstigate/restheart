@@ -256,7 +256,8 @@ public class MongoRequest extends BsonRequest {
     public static boolean isReservedDbName(String dbName) {
         return dbName == null
                 ? false
-                : dbName.equalsIgnoreCase(ADMIN)
+                : "".equals(dbName)
+                || dbName.equalsIgnoreCase(ADMIN)
                 || dbName.equalsIgnoreCase(CONFIG)
                 || dbName.equalsIgnoreCase(LOCAL)
                 || dbName.startsWith(SYSTEM);
@@ -270,7 +271,8 @@ public class MongoRequest extends BsonRequest {
     public static boolean isReservedCollectionName(String collectionName) {
         return collectionName == null
                 ? false
-                : collectionName.startsWith(SYSTEM)
+                : "".equals(collectionName)
+                || collectionName.startsWith(SYSTEM)
                 || collectionName.endsWith(FS_CHUNKS_SUFFIX)
                 || collectionName.equals(META_COLLNAME);
     }
