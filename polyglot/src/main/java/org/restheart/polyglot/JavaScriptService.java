@@ -52,13 +52,13 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
 
     private MongoClient mclient;
 
-    // TODO pass this to node runtime
-    private Map<String, Object> configuration;
+    private final Map<String, Object> pluginsArgs;
 
     private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {}\n})";
 
-    JavaScriptService(Path scriptPath, Path requireCdw, MongoClient mclient) throws IOException {
+    JavaScriptService(Path scriptPath, Path requireCdw, MongoClient mclient, Map<String, Object> pluginsArgs) throws IOException {
         this.mclient = mclient;
+        this.pluginsArgs = pluginsArgs;
 
         OPTS.put("js.commonjs-require", "true");
         OPTS.put("js.commonjs-require-cwd", requireCdw.toAbsolutePath().toString());
@@ -203,6 +203,13 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             if (this.mclient != null) {
                 ctx.getBindings("js").putMember("mclient", this.mclient);
             }
+
+            @SuppressWarnings("unchecked")
+            var args = this.pluginsArgs != null
+                ? (Map<String, Object>) this.pluginsArgs.getOrDefault(this.name, new HashMap<String, Object>())
+                : new HashMap<String, Object>();
+
+            ctx.getBindings("js").putMember("pluginArgs", args);
 
             ctx.eval(source).getMember("handle").executeVoid(request, response);
         }

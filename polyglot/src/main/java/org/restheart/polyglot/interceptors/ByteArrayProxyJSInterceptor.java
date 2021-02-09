@@ -20,6 +20,8 @@
  */
 package org.restheart.polyglot.interceptors;
 
+import java.util.Map;
+
 import com.mongodb.MongoClient;
 
 import org.graalvm.polyglot.Source;
@@ -34,7 +36,8 @@ public class ByteArrayProxyJSInterceptor extends AbstractJSInterceptor<ByteArray
         InterceptPoint interceptPoint,
         Source source,
         MongoClient mclient,
+        Map<String, Object> args,
         String modulesReplacements) {
-            super(name, pluginClass, description, interceptPoint, source ,mclient, modulesReplacements);
+            super(name, pluginClass, description, interceptPoint, source ,mclient, args, modulesReplacements);
     }
 }

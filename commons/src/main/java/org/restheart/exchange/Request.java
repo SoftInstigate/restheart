@@ -131,6 +131,16 @@ public abstract class Request<T> extends Exchange<T> {
 
     /**
      *
+     * @return a the first value of the query paramter of defaultValue if not present
+     */
+    public String getQueryParameterOfDefault(String name, String defaultValue) {
+        return wrapped.getQueryParameters().containsKey(name)
+            ?  wrapped.getQueryParameters().get(name).getFirst()
+            : defaultValue;
+    }
+
+    /**
+     *
      * @return the request headers
      */
     public HeaderMap getHeaders() {

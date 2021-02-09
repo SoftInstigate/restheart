@@ -77,15 +77,17 @@ public class PolyglotDeployer implements Initializer {
 
     private MongoClient mclient;
 
+    private Map<String, Object> pluginsArgs;
+
     private JSInterceptorFactory jsInterceptorFactory;
 
     @InjectPluginsRegistry
     public void reg(PluginsRegistry registry) {
         this.registry = registry;
 
-        // make sure to invoke this after both @Injected methods are invoked
-        if (pluginsDirectory != null) {
-            this.jsInterceptorFactory = new JSInterceptorFactory(this.requireCdw, this.mclient);
+        // make sure to invoke this after all @Injected methods are invoked
+        if (pluginsDirectory != null && mclient != null) {
+            this.jsInterceptorFactory = new JSInterceptorFactory(this.requireCdw, this.mclient, this.pluginsArgs);
             deployAll(pluginsDirectory);
             watch(pluginsDirectory);
         }
@@ -100,6 +102,8 @@ public class PolyglotDeployer implements Initializer {
 
         pluginsDirectory = getPluginsDirectory(args);
 
+        this.pluginsArgs = getPluginsArgs(args);
+
         this.requireCdw = pluginsDirectory.resolve("node_modules").toAbsolutePath();
 
         if (!Files.exists(requireCdw)) {
@@ -113,9 +117,9 @@ public class PolyglotDeployer implements Initializer {
 
         LOGGER.info("Folder where the CommonJS modules are located: {}", requireCdw.toAbsolutePath());
 
-        // make sure to invoke this after both @Injected methods are invoked
-        if (registry != null) {
-            this.jsInterceptorFactory = new JSInterceptorFactory(this.requireCdw, this.mclient);
+        // make sure to invoke this after all @Injected methods are invoked
+        if (registry != null && mclient != null) {
+            this.jsInterceptorFactory = new JSInterceptorFactory(this.requireCdw, this.mclient, this.pluginsArgs);
             deployAll(pluginsDirectory);
             watch(pluginsDirectory);
         }
@@ -124,6 +128,13 @@ public class PolyglotDeployer implements Initializer {
     @InjectMongoClient
     public void mc(MongoClient mclient) {
         this.mclient = mclient;
+
+        // make sure to invoke this after all @Injected methods are invoked
+        if (pluginsDirectory != null && registry != null) {
+            this.jsInterceptorFactory = new JSInterceptorFactory(this.requireCdw, this.mclient, this.pluginsArgs);
+            deployAll(pluginsDirectory);
+            watch(pluginsDirectory);
+        }
     }
 
     private boolean isRunningOnGraalVM() {
@@ -239,6 +250,17 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getPluginsArgs(Map<String, Object> args) {
+        var _pluginsArgs = args.getOrDefault(ConfigurationKeys.PLUGINS_ARGS_KEY, null);
+
+        if (_pluginsArgs == null || !(_pluginsArgs instanceof Map)) {
+            return null;
+        } else {
+            return (Map<String, Object>) _pluginsArgs;
+        }
+    }
+
     private ArrayList<Path> findJsPlugins(Path pluginsDirectory) {
         if (pluginsDirectory == null) {
             return new ArrayList<>();
@@ -343,7 +365,7 @@ public class PolyglotDeployer implements Initializer {
             });
 
         } else {
-            var srv = new JavaScriptService(pluginPath, this.requireCdw, this.mclient);
+            var srv = new JavaScriptService(pluginPath, this.requireCdw, this.mclient, this.pluginsArgs);
 
             var record = new PluginRecord<Service>(srv.getName(),
                 srv.getDescription(),

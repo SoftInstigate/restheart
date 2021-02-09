@@ -46,6 +46,8 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
 
     private final MongoClient mclient;
 
+    private final Map<String, Object> args;
+
     /**
      * @param name
      * @param pluginClass
@@ -60,10 +62,12 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
         InterceptPoint interceptPoint,
         Source source,
         MongoClient mclient,
+        Map<String, Object> args,
         String modulesReplacements) {
             super(name, pluginClass, description, null, false, null, interceptPoint);
             this.modulesReplacements = modulesReplacements;
             this.mclient = mclient;
+            this.args = args;
             this.source = source;
     }
 
@@ -83,6 +87,10 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
 
             if (this.mclient != null) {
                 ctx.getBindings("js").putMember("mclient", this.mclient);
+            }
+
+            if (this.args != null) {
+                ctx.getBindings("js").putMember("pluginArgs", this.args);
             }
 
             ctx.eval(source).getMember("handle").executeVoid(request, response);

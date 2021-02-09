@@ -53,10 +53,13 @@ public class JSInterceptorFactory {
 
     private final MongoClient mclient;
 
+    private final Map<String, Object> pluginsArgs;
+
     private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {},\n\tresolve: (request) => {}\n})";
 
-    public JSInterceptorFactory(Path requireCdw, MongoClient mclient) {
+    public JSInterceptorFactory(Path requireCdw, MongoClient mclient, Map<String, Object> pluginsArgs) {
         this.mclient = mclient;
+        this.pluginsArgs = pluginsArgs;
         OPTS.put("js.commonjs-require", "true");
         OPTS.put("js.commonjs-require-cwd", requireCdw.toAbsolutePath().toString());
     }
@@ -91,6 +94,8 @@ public class JSInterceptorFactory {
 
             try {
                 ctx.getBindings("js").putMember("LOGGER", LOGGER);
+                ctx.getBindings("js").putMember("mclient", this.mclient);
+                ctx.getBindings("js").putMember("args", null);
 
                 parsed = ctx.eval(source);
             } catch (Throwable t) {
@@ -187,6 +192,11 @@ public class JSInterceptorFactory {
 
             AbstractJSInterceptor<?,?> interceptor;
 
+            @SuppressWarnings("unchecked")
+            var args = this.pluginsArgs != null
+                ? (Map<String, Object>) this.pluginsArgs.getOrDefault(name, new HashMap<String, Object>())
+                : new HashMap<String, Object>();
+
             switch (pluginClass) {
                 case "StringInterceptor":
                 case "org.restheart.plugins.StringInterceptor":
@@ -196,6 +206,7 @@ public class JSInterceptorFactory {
                         interceptPoint,
                         source,
                         mclient,
+                        args,
                         modulesReplacements);
                         break;
                 case "BsonInterceptor":
@@ -206,6 +217,7 @@ public class JSInterceptorFactory {
                         interceptPoint,
                         source,
                         mclient,
+                        args,
                         modulesReplacements);
                         break;
                 case "ByteArrayInterceptor":
@@ -216,6 +228,7 @@ public class JSInterceptorFactory {
                         interceptPoint,
                         source,
                         mclient,
+                        args,
                         modulesReplacements);
                         break;
                 case "ByteArrayProxyInterceptor":
@@ -226,6 +239,7 @@ public class JSInterceptorFactory {
                         interceptPoint,
                         source,
                         mclient,
+                        args,
                         modulesReplacements);
                         break;
                 case "CsvInterceptor":
@@ -236,6 +250,7 @@ public class JSInterceptorFactory {
                         interceptPoint,
                         source,
                         mclient,
+                        args,
                         modulesReplacements);
                         break;
                 case "JsonInterceptor":
@@ -246,6 +261,7 @@ public class JSInterceptorFactory {
                         interceptPoint,
                         source,
                         mclient,
+                        args,
                         modulesReplacements);
                         break;
                 case "MongoInterceptor":
@@ -256,6 +272,7 @@ public class JSInterceptorFactory {
                         interceptPoint,
                         source,
                         mclient,
+                        args,
                         modulesReplacements);
                         break;
                 default:
