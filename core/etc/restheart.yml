@@ -28,7 +28,18 @@ ajp-port: {{{ajp-port}}}
 
 instance-name: {{{instance-name}}}
 
-### Proxied resources
+#### Instance base URL
+
+ # Optionally define the base url of this instance
+ # Useful when RESTHeart is mediated by a reverse proxy or an API gateway
+ # to determine the instance's correct URL
+ # It is used by the MongoService to build the Location response header
+ # when a document is created with a POST request that doesn't include the _id
+ # If not specified, the Location is generated from the request URL
+
+ # instance-base-url: https://api.example.io
+
+#### Proxied resources
 
  # location (required) The location URI to bound to the HTTP proxied server.
  # proxy-pass (required) The URL of the HTTP proxied server. It can be an array of URLs for load balancing.
@@ -60,7 +71,7 @@ instance-name: {{{instance-name}}}
 
 mongo-uri: {{{mongo-uri}}}
 
-## MongoDb resources
+#### MongoDb resources
 
 # Use mongo-mounts to expose MongoDb resources binding them to API URIs.
 #
@@ -125,7 +136,7 @@ static-resources-mounts:
 #    welcome-file: index.html
 #    embedded: false
 
-### Security
+#### Security
 
 ## SSL Configuration
 
