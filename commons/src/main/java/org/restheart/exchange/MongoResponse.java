@@ -307,7 +307,7 @@ public class MongoResponse extends BsonResponse {
                         .replaceAll("\"", "'")
                         .replaceAll("\t", "  ");
     }
-    
+
     /**
      * Helper method to restore a modified document. rollback() can be used when
      * verifing a document after being updated to rollback changes. A common use
@@ -329,8 +329,7 @@ public class MongoResponse extends BsonResponse {
         if (request.isBulkDocuments()
                 || (request.isPost() && request.getContent() != null
                 && request.getContent().isArray())) {
-            throw new UnsupportedOperationException("rollback() does not support "
-                    + "bulk updates");
+            throw new UnsupportedOperationException("rollback() does not support bulk updates");
         }
 
         MongoDatabase mdb = mclient.getDatabase(request.getDBName());
@@ -376,6 +375,9 @@ public class MongoResponse extends BsonResponse {
             Object newId = getDbOperationResult().getNewData().get("_id");
 
             coll.deleteOne(and(eq("_id", newId), eq("_etag", newEtag)));
+
+            response.getHeaders().remove(Headers.LOCATION);
+            response.getHeaders().remove(Headers.ETAG);
         }
     }
 
