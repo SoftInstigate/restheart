@@ -53,8 +53,7 @@ import java.util.function.Function;
 
 public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(GraphQLService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLService.class);
 
     private GraphQL gql;
     private MongoClient mongoClient = null;

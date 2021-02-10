@@ -23,41 +23,31 @@ package org.restheart.graphql.interceptors;
 import org.restheart.ConfigurationKeys;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.graphql.GraphQLAppDeserializer;
-import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 
-import static org.restheart.plugins.InterceptPoint.RESPONSE;
+import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 
 import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.utils.HttpStatus;
-
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-import com.mongodb.MongoClient;
-
-
-@RegisterPlugin(name="graphAppDefinitionChecker",
-        description = "checks GraphQL application definitions",
-        interceptPoint = RESPONSE,
+@RegisterPlugin(name="graphAppDefinitionBulkWriteWarner",
+        description = "logs a warning message when GraphQL app definitions are created or updated with bulk requests",
+        interceptPoint = REQUEST_AFTER_AUTH,
         enabledByDefault = true
 )
-public class GraphAppDefinitionChecker implements MongoInterceptor {
+public class GraphAppDefinitionBulkWriteWarner implements MongoInterceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GraphAppDefinitionBulkWriteWarner.class);
+
     private String db = null;
     private String coll = null;
-    private MongoClient mclient = null;
 
     private boolean enabled = false;
-
-    @InjectMongoClient
-    public void mc(MongoClient mclient) {
-        this.mclient = mclient;
-    }
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void conf(Map<String, Object> args) {
@@ -72,14 +62,7 @@ public class GraphAppDefinitionChecker implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var appDef = response.getDbOperationResult().getNewData();
-
-        try {
-            GraphQLAppDeserializer.fromBsonDocument(appDef);
-        } catch(GraphQLIllegalAppDefinitionException e) {
-            response.rollback(this.mclient);
-            response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition: " + e.getMessage());
-        }
+        LOGGER.warn("The GraphQL App Definition cannot be checked on bulk patch!");
     }
 
     @Override
@@ -87,8 +70,8 @@ public class GraphAppDefinitionChecker implements MongoInterceptor {
         return enabled
             && this.db.equals(request.getDBName())
             && this.coll.equals(request.getCollectionName())
-            && request.isWriteDocument()
-            && response.getDbOperationResult() != null
-            && response.getDbOperationResult().getNewData() != null;
+            && request.getContent() != null
+            && (request.isBulkDocuments()
+                || (request.isPost() && request.getContent().isArray()));
     }
 }
