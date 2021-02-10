@@ -792,7 +792,7 @@ public class BsonUtils {
 
     /**
      * @param json
-     * @return the unflatten json replacing dot notatation fkeys with nested
+     * @return the unflatten json replacing dot notatation keys with nested
      * objects: from {"a.b":2} to {"a":{"b":2}}
      */
     public static BsonValue unflatten(BsonValue json)

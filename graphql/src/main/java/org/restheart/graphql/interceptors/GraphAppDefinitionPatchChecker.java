@@ -42,12 +42,12 @@ import java.util.Map;
 import com.mongodb.MongoClient;
 
 
-@RegisterPlugin(name="graphAppDefinitionChecker",
-        description = "checks GraphQL application definitions",
+@RegisterPlugin(name="graphAppDefinitionPutPatchChecker",
+        description = "checks GraphQL application definitions on PATCH requests",
         interceptPoint = RESPONSE,
         enabledByDefault = true
 )
-public class GraphAppDefinitionChecker implements MongoInterceptor {
+public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
     private String db = null;
     private String coll = null;
     private MongoClient mclient = null;
@@ -72,6 +72,11 @@ public class GraphAppDefinitionChecker implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        if (request.isBulkDocuments()) {
+            response.setInError(HttpStatus.SC_NOT_IMPLEMENTED, "GraphQL App definition cannot be updated with bulk patch requests");
+            return;
+        }
+
         var appDef = response.getDbOperationResult().getNewData();
 
         try {
@@ -87,8 +92,10 @@ public class GraphAppDefinitionChecker implements MongoInterceptor {
         return enabled
             && this.db.equals(request.getDBName())
             && this.coll.equals(request.getCollectionName())
-            && request.isWriteDocument()
+            && (request.isBulkDocuments()
+            || (request.isDocument()
+            && request.isPatch()
             && response.getDbOperationResult() != null
-            && response.getDbOperationResult().getNewData() != null;
+            && response.getDbOperationResult().getNewData() != null));
     }
 }

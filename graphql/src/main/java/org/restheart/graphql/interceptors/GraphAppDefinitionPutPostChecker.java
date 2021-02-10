@@ -23,27 +23,29 @@ package org.restheart.graphql.interceptors;
 import org.restheart.ConfigurationKeys;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.graphql.GraphQLAppDeserializer;
+import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 
 import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.restheart.utils.BsonUtils;
+import org.restheart.utils.HttpStatus;
+
+import static org.restheart.plugins.ConfigurablePlugin.argValue;
 
 import java.util.Map;
 
-@RegisterPlugin(name="graphAppDefinitionBulkWriteWarner",
-        description = "logs a warning message when GraphQL app definitions are created or updated with bulk requests",
+
+@RegisterPlugin(name="graphAppDefinitionPutPostChecker",
+        description = "checks GraphQL application definitions on PUT and POST requests",
         interceptPoint = REQUEST_AFTER_AUTH,
         enabledByDefault = true
 )
-public class GraphAppDefinitionBulkWriteWarner implements MongoInterceptor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GraphAppDefinitionBulkWriteWarner.class);
-
+public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
     private String db = null;
     private String coll = null;
 
@@ -62,7 +64,30 @@ public class GraphAppDefinitionBulkWriteWarner implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        LOGGER.warn("The GraphQL App Definition cannot be checked on bulk patch!");
+        var content = request.getContent();
+
+        if (content.isDocument()) {
+            var appDef = content.asDocument();
+
+            try {
+                GraphQLAppDeserializer.fromBsonDocument(BsonUtils.unflatten(appDef).asDocument());
+            } catch(GraphQLIllegalAppDefinitionException e) {
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition: " + e.getMessage());
+            }
+        } else {
+            var index = 0;
+
+            for (var appDef: content.asArray()) {
+                try {
+                    GraphQLAppDeserializer.fromBsonDocument(BsonUtils.unflatten(appDef).asDocument());
+                } catch(GraphQLIllegalAppDefinitionException e) {
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition in document at index positon " + index + ": " + e.getMessage());
+                    break;
+                }
+
+                index++;
+            }
+        }
     }
 
     @Override
@@ -71,7 +96,7 @@ public class GraphAppDefinitionBulkWriteWarner implements MongoInterceptor {
             && this.db.equals(request.getDBName())
             && this.coll.equals(request.getCollectionName())
             && request.getContent() != null
-            && (request.isBulkDocuments()
-                || (request.isPost() && request.getContent().isArray()));
+            && ((request.isCollection() && request.isPost())
+            || (request.isDocument() && request.isPut()));
     }
 }
