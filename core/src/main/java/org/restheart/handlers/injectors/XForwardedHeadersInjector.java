@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.idm.BaseAccount;
+import org.restheart.security.BaseAccount;
 
 /**
  * Adds the following X-Forwarded custom headers to the proxied request:

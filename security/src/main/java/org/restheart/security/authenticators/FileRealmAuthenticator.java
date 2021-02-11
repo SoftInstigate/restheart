@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.restheart.ConfigurationException;
-import org.restheart.idm.FileRealmAccount;
+import org.restheart.security.FileRealmAccount;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;

@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.idm;
+package org.restheart.security;
 
 import com.google.common.collect.Sets;
 import io.undertow.security.idm.Account;

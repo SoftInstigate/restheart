@@ -17,33 +17,46 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.idm;
+package org.restheart.security;
 
-import java.security.Principal;
+import java.util.Set;
+
 
 /**
- * Base concrete Principal implmentation
- *
+ * Jwt Account
+ * 
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BasePrincipal implements Principal {
-
-    private String name;
+public class JwtAccount extends BaseAccount {
+    /**
+     *
+     */
+    private static final long serialVersionUID = -2405615782892727187L;
+    final private String jwtPayload;
 
     /**
      *
      * @param name
+     * @param roles
+     * @param jwtPayload
      */
-    public BasePrincipal(String name) {
-        if (name == null) {
-            throw new IllegalArgumentException("argument name cannot be null");
-        }
-
-        this.name = name;
+    public JwtAccount(final String name, final Set<String> roles, String jwtPayload) {
+        super(name, roles);
+        this.jwtPayload = jwtPayload;
     }
 
+    /**
+     *
+     * @return the jwtPayload
+     */
+    public String getJwtPayload() {
+        return jwtPayload;
+    }
+    
     @Override
-    public String getName() {
-        return name;
+    public String toString() {
+        return super.toString()
+                .concat(" jwt=")
+                .concat(jwtPayload);
     }
 }

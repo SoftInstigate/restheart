@@ -17,46 +17,44 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.idm;
+package org.restheart.security;
 
+import java.util.Map;
 import java.util.Set;
 
 
 /**
- * Jwt Account
- * 
+ * Account implementation used by FileRealmAuthenticator
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class JwtAccount extends BaseAccount {
-    /**
-     *
-     */
-    private static final long serialVersionUID = -2405615782892727187L;
-    final private String jwtPayload;
+public class FileRealmAccount extends PwdCredentialAccount {
+    private static final long serialVersionUID = -5840534832968478775L;
+
+    private final Map<String, Object> accountProperties;
 
     /**
      *
      * @param name
+     * @param password
      * @param roles
-     * @param jwtPayload
+     * @param accountDocument
      */
-    public JwtAccount(final String name, final Set<String> roles, String jwtPayload) {
-        super(name, roles);
-        this.jwtPayload = jwtPayload;
+    public FileRealmAccount(final String name, final char[] password, final Set<String> roles, Map<String, Object> accountProperties) {
+        super(name, password, roles);
+
+        if (password == null) {
+            throw new IllegalArgumentException("argument password cannot be null");
+        }
+
+        this.accountProperties = accountProperties;
     }
 
     /**
      *
-     * @return the jwtPayload
+     * @return  accountProperties
      */
-    public String getJwtPayload() {
-        return jwtPayload;
-    }
-    
-    @Override
-    public String toString() {
-        return super.toString()
-                .concat(" jwt=")
-                .concat(jwtPayload);
+    public Map<String, Object> getAccountProperties() {
+        return accountProperties;
     }
 }

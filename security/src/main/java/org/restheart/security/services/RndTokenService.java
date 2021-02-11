@@ -32,7 +32,7 @@ import java.util.Map;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
-import org.restheart.idm.BaseAccount;
+import org.restheart.security.BaseAccount;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;

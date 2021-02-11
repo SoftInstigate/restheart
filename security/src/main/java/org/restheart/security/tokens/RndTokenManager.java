@@ -36,7 +36,7 @@ import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.exchange.JsonProxyRequest;
-import org.restheart.idm.PwdCredentialAccount;
+import org.restheart.security.PwdCredentialAccount;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;

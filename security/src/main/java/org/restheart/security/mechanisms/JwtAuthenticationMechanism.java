@@ -50,7 +50,7 @@ import java.util.function.Consumer;
 import org.apache.commons.codec.binary.StringUtils;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
-import org.restheart.idm.JwtAccount;
+import org.restheart.security.JwtAccount;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.ConsumingPlugin;
 import org.restheart.plugins.InjectConfiguration;

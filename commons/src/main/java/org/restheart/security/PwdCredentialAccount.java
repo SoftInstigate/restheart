@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.idm;
+package org.restheart.security;
 
 import io.undertow.security.idm.PasswordCredential;
 import java.util.Set;

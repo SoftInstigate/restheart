@@ -17,44 +17,33 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.idm;
+package org.restheart.security;
 
-import java.util.Map;
-import java.util.Set;
-
+import java.security.Principal;
 
 /**
- * Account implementation used by FileRealmAuthenticator
+ * Base concrete Principal implmentation
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class FileRealmAccount extends PwdCredentialAccount {
-    private static final long serialVersionUID = -5840534832968478775L;
+public class BasePrincipal implements Principal {
 
-    private final Map<String, Object> accountProperties;
+    private String name;
 
     /**
      *
      * @param name
-     * @param password
-     * @param roles
-     * @param accountDocument
      */
-    public FileRealmAccount(final String name, final char[] password, final Set<String> roles, Map<String, Object> accountProperties) {
-        super(name, password, roles);
-
-        if (password == null) {
-            throw new IllegalArgumentException("argument password cannot be null");
+    public BasePrincipal(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("argument name cannot be null");
         }
 
-        this.accountProperties = accountProperties;
+        this.name = name;
     }
 
-    /**
-     *
-     * @return  accountProperties
-     */
-    public Map<String, Object> getAccountProperties() {
-        return accountProperties;
+    @Override
+    public String getName() {
+        return name;
     }
 }
