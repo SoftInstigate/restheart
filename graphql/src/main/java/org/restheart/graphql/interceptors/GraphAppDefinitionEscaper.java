@@ -63,7 +63,7 @@ public class GraphAppDefinitionEscaper implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        request.setContent(BsonUtils.escapeKeys(request.getContent(), false));
+        request.setContent(BsonUtils.escapeKeys(request.getContent(), true, true));
     }
 
     @Override
@@ -72,6 +72,6 @@ public class GraphAppDefinitionEscaper implements MongoInterceptor {
             && this.db.equals(request.getDBName())
             && this.coll.equals(request.getCollectionName())
             && request.getContent() != null
-            && request.isWriteDocument() && request.isPost();
+            && request.isWriteDocument();
     }
 }

@@ -152,10 +152,30 @@ public class BsonUtils {
      *
      * @param json
      * @param escapeDots
-     * @return the json object where the underscore prefixed keys are replaced
-     * with the corresponding keys
+     * @return the json object where the keys are escaped
      */
     public static BsonValue escapeKeys(BsonValue json, boolean escapeDots) {
+        return escapeKeys(json, escapeDots, false);
+    }
+
+    /**
+     * replaces the dollar prefixed keys (eg $exists) with the corresponding
+     * underscore prefixed key (eg _$exists). Also replaces dots if escapeDots
+     * is true. This is needed because MongoDB does not allow to store keys that
+     * starts with $ and that contains dots. Root level keys containing dots can be
+     * escluded from escaping (dontEscapeDotsInRootKeys=true) to allow using the
+     * dot notation to refer to nested keys but still escaping nested keys.
+     * In the following example the root level key is used to refer to a sub document property,
+     * while the nested key with dots must be escaped because it is an aggregation stage:
+     * PATCH { "mappings.Query.TheatersByCity.find": {"location.address.city": { "$arg": "city"} } }
+     *
+     * @param json
+     * @param escapeDots
+     * @param dontEscapeDotsInRootKeys specify if dots in root level keys should not be escaped when escapeDots=true. root level
+     * @return the json object where the keys are escaped
+     * with the corresponding keys
+     */
+    public static BsonValue escapeKeys(BsonValue json, boolean escapeDots, boolean dontEscapeDotsInRootKeys) {
         if (json == null) {
             return null;
         }
@@ -163,22 +183,26 @@ public class BsonUtils {
         if (json.isDocument()) {
             BsonDocument ret = new BsonDocument();
 
+            boolean root[] = { true };
+
             json.asDocument().keySet().stream().forEach(k -> {
                 String newKey = k.startsWith(DOLLAR) ? "_" + k : k;
 
-                if (escapeDots) {
+                if (escapeDots && !(dontEscapeDotsInRootKeys && root[0])) {
                     newKey = newKey.replaceAll("\\.", ESCAPED_DOT);
                 }
+
+                root[0] = false;
 
                 BsonValue value = json.asDocument().get(k);
 
                 if (value.isDocument()) {
-                    ret.put(newKey, escapeKeys(value, escapeDots));
+                    ret.put(newKey, escapeKeys(value, escapeDots, false));
                 } else if (value.isArray()) {
                     BsonArray newList = new BsonArray();
 
                     value.asArray().stream().forEach(v -> {
-                        newList.add(escapeKeys(v, escapeDots));
+                        newList.add(escapeKeys(v, escapeDots, false));
                     });
 
                     ret.put(newKey, newList);
@@ -194,12 +218,12 @@ public class BsonUtils {
 
             json.asArray().stream().forEach(value -> {
                 if (value.isDocument()) {
-                    ret.add(escapeKeys(value, escapeDots));
+                    ret.add(escapeKeys(value, escapeDots, dontEscapeDotsInRootKeys));
                 } else if (value.isArray()) {
                     BsonArray newList = new BsonArray();
 
                     value.asArray().stream().forEach(v -> {
-                        newList.add(escapeKeys(v, escapeDots));
+                        newList.add(escapeKeys(v, escapeDots, false));
                     });
 
                     ret.add(newList);

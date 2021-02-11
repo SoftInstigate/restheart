@@ -25,10 +25,10 @@
       }
     },
     "Movie":{
-      "imdbRate": "imdb::rating",
-      "imdbVotes": "imdb::votes",
-      "tomatoesRate": "tomatoes::viewer::rating",
-      "tomatoesReviewsNum": "tomatoes::viewer::numReviews",
+      "imdbRate": "imdb.rating",
+      "imdbVotes": "imdb.votes",
+      "tomatoesRate": "tomatoes.viewer.rating",
+      "tomatoesReviewsNum": "tomatoes.viewer.numReviews",
       "lastUpdate": "lastupdated",
       "fullPlot": "fullplot",
       "filmType": "type",
@@ -86,15 +86,15 @@
       "MoviesByTomatoesRateRange":{
         "db": "sample_mflix",
         "collection": "movies",
-        "find":{"tomatoes::viewer::rating":{"$gte":{"$arg":"min"}, "$lt":{"$arg":"max"}}},
-        "sort":{"tomatoes::viewer::rating": {"$arg": "sort"}},
+        "find":{"tomatoes.viewer.rating":{"$gte":{"$arg":"min"}, "$lt":{"$arg":"max"}}},
+        "sort":{"tomatoes.viewer.rating": {"$arg": "sort"}},
         "skip":{"$arg": "skip"},
         "limit":{"$arg":"limit"}
       },
       "TheatersByCity":{
         "db": "sample_mflix",
         "collection": "theaters",
-        "find":{"location::address::city": {"$arg": "city"}},
+        "find":{"location.address.city": {"$arg": "city"}},
         "sort":{"theaterId": {"$arg":"sort"}},
         "skip":{"$arg":"skip"},
         "limit":{"$arg":"limit"}
