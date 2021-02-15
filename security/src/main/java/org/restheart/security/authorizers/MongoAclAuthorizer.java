@@ -28,7 +28,6 @@ import static com.mongodb.client.model.Filters.eq;
 import static io.undertow.predicate.Predicate.PREDICATE_CONTEXT;
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.AttachmentKey;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +49,7 @@ import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.security.utils.MongoUtils;
+import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,8 +65,6 @@ public class MongoAclAuthorizer implements Authorizer {
     public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
     public static final String X_FORWARDED_ROLE = "RESTHeart";
 
-    public static final AttachmentKey<AclPermission> MATCHING_ACL_PERMISSION = AttachmentKey.create(AclPermission.class);
-
     public static final String ACL_COLLECTION_NAME = "acl";
 
     public static final String $UNAUTHENTICATED = "$unauthenticated";
@@ -79,7 +77,7 @@ public class MongoAclAuthorizer implements Authorizer {
     private Integer cacheTTL = 60 * 1_000; // 1 minute
     private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
 
-    private LoadingCache<String, LinkedHashSet<AclPermission>> acl = null;
+    private LoadingCache<String, LinkedHashSet<MongoAclPermission>> acl = null;
 
     private MongoClient mclient;
 
@@ -167,17 +165,17 @@ public class MongoAclAuthorizer implements Authorizer {
         // see https://issues.jboss.org/browse/UNDERTOW-1317
         exchange.setRelativePath(exchange.getRequestPath());
 
-        final ArrayList<AclPermission> permissions = new ArrayList<>();
+        final ArrayList<MongoAclPermission> permissions = new ArrayList<>();
 
         // debug roles and predicates evaluation order
         if (LOGGER.isDebugEnabled()) {
             roles(exchange).forEachOrdered(role
                     -> {
-                ArrayList<AclPermission> matched = Lists.newArrayListWithCapacity(1);
+                ArrayList<MongoAclPermission> matched = Lists.newArrayListWithCapacity(1);
 
                 rolePermissions(role)
                         .stream().anyMatch(permission -> {
-                            var resolved = permission.resolve(exchange);
+                            var resolved = permission.allow(exchange);
 
                             String marker;
 
@@ -207,7 +205,7 @@ public class MongoAclAuthorizer implements Authorizer {
                         -> rolePermissions(role)
                         .stream()
                         .anyMatch(r -> {
-                            if (r.resolve(exchange)) {
+                            if (r.allow(exchange)) {
                                 permissions.add(r);
                                 return true;
                             } else {
@@ -247,7 +245,7 @@ public class MongoAclAuthorizer implements Authorizer {
             // see https://issues.jboss.org/browse/UNDERTOW-1317
             exchange.setRelativePath(request.getPath());
 
-            return !ps.stream().anyMatch(r -> r.resolve(exchange));
+            return !ps.stream().anyMatch(r -> r.allow(exchange));
         } else {
             return true;
         }
@@ -270,7 +268,7 @@ public class MongoAclAuthorizer implements Authorizer {
      * @param role
      * @return the acl
      */
-    public LinkedHashSet<AclPermission> rolePermissions(String role) {
+    public LinkedHashSet<MongoAclPermission> rolePermissions(String role) {
         if (this.cacheEnabled) {
             var _rolePermissions = this.acl.getLoading(role);
 
@@ -305,7 +303,7 @@ public class MongoAclAuthorizer implements Authorizer {
     private static final BsonDocument PROJECTION = BsonDocument.parse("{\"_id\":1,\"roles\":1,\"predicate\":1,\"writeFilter\":1,\"readFilter\":1,\"priority\":1,\"mongo\":1}");
     private static final BsonDocument SORT = BsonDocument.parse("{\"priority\":-1,\"_id\":-1}");
 
-    private LinkedHashSet<AclPermission> findRolePermissions(final String role) {
+    private LinkedHashSet<MongoAclPermission> findRolePermissions(final String role) {
         if (this.mclient == null) {
             LOGGER.error("Cannot find acl: mongo service is not enabled.");
             return null;
@@ -319,7 +317,7 @@ public class MongoAclAuthorizer implements Authorizer {
             if (permissions == null) {
                 return new LinkedHashSet<>();
             } else {
-                LinkedHashSet<AclPermission> ret = Sets.newLinkedHashSet();
+                LinkedHashSet<MongoAclPermission> ret = Sets.newLinkedHashSet();
 
                 StreamSupport.stream(permissions.spliterator(), true)
                         .filter(permissionElem -> permissionElem.isDocument())
@@ -327,14 +325,14 @@ public class MongoAclAuthorizer implements Authorizer {
                         .filter(permissionDocument -> {
                             // filter out illegal permissions
                             try {
-                                new AclPermission(permissionDocument);
+                                MongoAclPermission.build(permissionDocument);
                                 return true;
                             } catch (IllegalArgumentException iae) {
                                 LOGGER.warn("invalid permission _id={}", permissionDocument.get("_id"));
                                 return false;
                             }
                         })
-                        .map(permissionDocument -> new AclPermission(permissionDocument))
+                        .map(permissionDocument -> MongoAclPermission.build(permissionDocument))
                         .forEachOrdered(p -> ret.add(p));
 
                 return ret;

@@ -22,7 +22,7 @@ package org.restheart.security.interceptors.mongo;
 
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.AclPermission;
+import org.restheart.security.authorizers.MongoPermissions;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
 
@@ -43,7 +43,7 @@ public class ProtectedProps implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var protectedProps = AclPermission.from(request.getExchange()).getMongoPermissions().getProtectedProps();
+        var protectedProps = MongoPermissions.of(request).getProtectedProps();
 
         boolean contains;
 
@@ -99,10 +99,10 @@ public class ProtectedProps implements MongoInterceptor {
             return false;
         }
 
-        var permission = AclPermission.from(request.getExchange());
+        var mongoPermission = MongoPermissions.of(request);
 
-        if (permission != null && permission.getMongoPermissions() != null) {
-            return !permission.getMongoPermissions().getProtectedProps().isEmpty();
+        if (mongoPermission != null) {
+            return !mongoPermission.getProtectedProps().isEmpty();
         } else {
             return false;
         }

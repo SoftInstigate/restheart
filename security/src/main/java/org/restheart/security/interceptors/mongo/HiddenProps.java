@@ -22,7 +22,7 @@ package org.restheart.security.interceptors.mongo;
 
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.AclPermission;
+import org.restheart.security.authorizers.MongoPermissions;
 
 import java.util.Set;
 
@@ -39,7 +39,7 @@ public class HiddenProps implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var hiddendProps = AclPermission.from(request.getExchange()).getMongoPermissions().getHiddenProps();
+        var hiddendProps = MongoPermissions.of(request).getHiddenProps();
 
         if (response.getContent().isDocument()) {
             hide(response.getContent().asDocument(), hiddendProps);
@@ -69,10 +69,10 @@ public class HiddenProps implements MongoInterceptor {
             return false;
         }
 
-        var permission = AclPermission.from(request.getExchange());
+        var mongoPermission = MongoPermissions.of(request);
 
-        if (permission != null && permission.getMongoPermissions() != null) {
-            return !permission.getMongoPermissions().getHiddenProps().isEmpty();
+        if (mongoPermission != null) {
+            return !mongoPermission.getHiddenProps().isEmpty();
         } else {
             return false;
         }

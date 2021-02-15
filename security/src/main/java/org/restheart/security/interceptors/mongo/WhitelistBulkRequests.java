@@ -23,7 +23,7 @@ package org.restheart.security.interceptors.mongo;
 
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.AclPermission;
+import org.restheart.security.authorizers.MongoPermissions;
 import org.restheart.utils.HttpStatus;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -43,15 +43,13 @@ public class WhitelistBulkRequests implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        var permission = AclPermission.from(request.getExchange());
+        var mongoPermissions = MongoPermissions.of(request);
 
-        if (!request.isHandledBy("mongo")
-            || permission == null
-            || permission.getMongoPermissions() == null) {
+        if (!request.isHandledBy("mongo") || mongoPermissions == null) {
             return false;
         }
 
-        return (!permission.getMongoPermissions().isWhitelistBulkDelete() && request.isBulkDocuments() && request.isDelete())
-            || (!permission.getMongoPermissions().isWhitelistBulkPatch() && request.isBulkDocuments() && request.isPatch());
+        return (!mongoPermissions.isWhitelistBulkDelete() && request.isBulkDocuments() && request.isDelete())
+            || (!mongoPermissions.isWhitelistBulkPatch() && request.isBulkDocuments() && request.isPatch());
     }
 }

@@ -22,7 +22,7 @@ package org.restheart.security.interceptors.mongo;
 
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.AclPermission;
+import org.restheart.security.authorizers.MongoPermissions;
 import org.restheart.utils.HttpStatus;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -56,10 +56,10 @@ public class AllowAllWriteModes implements MongoInterceptor {
             return false;
         }
 
-        var permission = AclPermission.from(request.getExchange());
+        var mongoPermission = MongoPermissions.of(request);
 
-        if (permission != null && permission.getMongoPermissions() != null) {
-            return !permission.getMongoPermissions().isAllowAllWriteModes();
+        if (mongoPermission != null) {
+            return !mongoPermission.isAllowAllWriteModes();
         } else {
             return false;
         }

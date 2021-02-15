@@ -35,6 +35,8 @@ import com.google.gson.JsonParseException;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.ConfigurationException;
+import org.restheart.exchange.Request;
+import org.restheart.security.BaseAclPermission;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.LambdaUtils;
 
@@ -94,11 +96,30 @@ public class MongoPermissions {
         }
     }
 
+    public static MongoPermissions of(Request<?> request) throws ConfigurationException, IllegalArgumentException {
+        return from(BaseAclPermission.getRaw(request));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static MongoPermissions from(Object raw) throws ConfigurationException, IllegalArgumentException {
+        if (raw == null) {
+            return new MongoPermissions();
+        } else if (raw instanceof BsonDocument) {
+            return from((BsonDocument)raw);
+        } else if (raw instanceof Map) {
+            return from((Map<String, Object>)raw);
+        } else {
+            throw new IllegalArgumentException("MongoPemissions cannot be built from " + raw.getClass().getSimpleName());
+        }
+    }
+
     public static MongoPermissions from(BsonDocument args) throws ConfigurationException {
-        if (args == null || args.isEmpty()) {
+        if (args == null || args.isEmpty() || !args.containsKey("mongo") || !args.get("mongo").isDocument()) {
             // return default values
             return new MongoPermissions();
         } else {
+            args = args.get("mongo").asDocument();
+
             var _readFilter = args.get("readFilter");
 
             if (!(_readFilter == null || _readFilter.isNull()) && !_readFilter.isDocument()) {
@@ -137,11 +158,14 @@ public class MongoPermissions {
         return BsonUtils.toBsonDocument(map);
     }
 
+    @SuppressWarnings("unchecked")
     public static MongoPermissions from(Map<String, Object> args) throws ConfigurationException {
-        if (args == null || args.isEmpty()) {
+        if (args == null || args.isEmpty() || !args.containsKey("mongo") || !(args.get("mongo") instanceof Map<?,?>)) {
             // return default values
             return new MongoPermissions();
         } else {
+            args = (Map<String, Object>) args.get("mongo");
+
             BsonDocument readFilter = null;
             BsonDocument writeFilter = null;
 

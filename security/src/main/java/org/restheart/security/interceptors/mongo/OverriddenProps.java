@@ -28,8 +28,8 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.AclPermission;
 import org.restheart.security.authorizers.AclPermissionsVarsInterpolator;
+import org.restheart.security.authorizers.MongoPermissions;
 import org.restheart.utils.BsonUtils;
 
 @RegisterPlugin(name = "mongoPermissionOverriddenProps",
@@ -41,7 +41,7 @@ import org.restheart.utils.BsonUtils;
 public class OverriddenProps implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var overriddenProps = AclPermission.from(request.getExchange()).getMongoPermissions().getOverriddenProps();
+        var overriddenProps = MongoPermissions.of(request).getOverriddenProps();
 
         if (request.getContent().isDocument()) {
             override(request, overriddenProps);
@@ -71,10 +71,10 @@ public class OverriddenProps implements MongoInterceptor {
             return false;
         }
 
-        var permission = AclPermission.from(request.getExchange());
+        var mongoPermission = MongoPermissions.of(request);
 
-        if (permission != null && permission.getMongoPermissions() != null) {
-            return !permission.getMongoPermissions().getOverriddenProps().isEmpty();
+        if (mongoPermission != null) {
+            return !mongoPermission.getOverriddenProps().isEmpty();
         } else {
             return false;
         }

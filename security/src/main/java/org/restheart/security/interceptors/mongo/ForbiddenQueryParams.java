@@ -22,7 +22,7 @@ package org.restheart.security.interceptors.mongo;
 
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.AclPermission;
+import org.restheart.security.authorizers.MongoPermissions;
 import org.restheart.utils.HttpStatus;
 
 import java.util.Deque;
@@ -42,7 +42,7 @@ public class ForbiddenQueryParams implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var forbiddenQueryParams = AclPermission.from(request.getExchange()).getMongoPermissions().getForbiddenQueryParams();
+        var forbiddenQueryParams = MongoPermissions.of(request).getForbiddenQueryParams();
 
         if (contains(request.getQueryParameters(), forbiddenQueryParams)) {
                 response.setStatusCode(HttpStatus.SC_FORBIDDEN);
@@ -63,10 +63,10 @@ public class ForbiddenQueryParams implements MongoInterceptor {
             return false;
         }
 
-        var permission = AclPermission.from(request.getExchange());
+        var mongoPermission = MongoPermissions.of(request);
 
-        if (permission != null && permission.getMongoPermissions() != null) {
-            return !permission.getMongoPermissions().getForbiddenQueryParams().isEmpty();
+        if (mongoPermission != null) {
+            return !mongoPermission.getForbiddenQueryParams().isEmpty();
         } else {
             return false;
         }

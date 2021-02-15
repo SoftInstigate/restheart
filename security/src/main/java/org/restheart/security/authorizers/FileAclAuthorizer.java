@@ -46,6 +46,7 @@ import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
+import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,7 @@ public class FileAclAuthorizer
 
     public static final String $UNAUTHENTICATED = "$unauthenticated";
 
-    private final Set<AclPermission> permissions = new LinkedHashSet<>();
+    private final Set<FileAclPermission> permissions = new LinkedHashSet<>();
 
     @InjectConfiguration
     public void init(Map<String, Object> confArgs)
@@ -71,7 +72,7 @@ public class FileAclAuthorizer
         init(confArgs, "permissions");
 
         // reverse oreder, the first permission in the acl.yml must be on top
-        var list = new ArrayList<AclPermission>(this.permissions);
+        var list = new ArrayList<FileAclPermission>(this.permissions);
         Collections.reverse(list);
         this.permissions.clear();
         list.stream().forEach(permissions::add);
@@ -81,7 +82,7 @@ public class FileAclAuthorizer
     public Consumer<? super Map<String, Object>> consumeConfiguration() {
         return p -> {
             try {
-                this.permissions.add(new AclPermission(p));
+                this.permissions.add(FileAclPermission.build(p));
             } catch (ConfigurationException pce) {
                 LOGGER.error("Wrong permission", pce);
             }
@@ -113,17 +114,17 @@ public class FileAclAuthorizer
         // see https://issues.jboss.org/browse/UNDERTOW-1317
         exchange.setRelativePath(exchange.getRequestPath());
 
-        final ArrayList<AclPermission> machedPermissions = new ArrayList<>();
+        final ArrayList<FileAclPermission> machedPermissions = new ArrayList<>();
 
         // debug roles and permissions evaluation order
         if (LOGGER.isDebugEnabled()) {
             roles(exchange).forEachOrdered(role
                     -> {
-                ArrayList<AclPermission> matched = Lists.newArrayListWithCapacity(1);
+                ArrayList<FileAclPermission> matched = Lists.newArrayListWithCapacity(1);
 
                 rolePermissions(role)
                         .stream().anyMatch(permission -> {
-                            var resolved = permission.resolve(exchange);
+                            var resolved = permission.allow(exchange);
 
                             String marker;
 
@@ -153,7 +154,7 @@ public class FileAclAuthorizer
                 .forEachOrdered(role -> rolePermissions(role)
                         .stream()
                         .anyMatch(r -> {
-                            if (r.resolve(exchange)) {
+                            if (r.allow(exchange)) {
                                 machedPermissions.add(r);
                                 return true;
                             } else {
@@ -164,7 +165,7 @@ public class FileAclAuthorizer
         if (machedPermissions.isEmpty()) {
             return false;
         } else {
-            exchange.putAttachment(MongoAclAuthorizer.MATCHING_ACL_PERMISSION, machedPermissions.get(0));
+            exchange.putAttachment(MATCHING_ACL_PERMISSION, machedPermissions.get(0));
             return true;
         }
     }
@@ -193,7 +194,7 @@ public class FileAclAuthorizer
             // see https://issues.jboss.org/browse/UNDERTOW-1317
             exchange.setRelativePath(request.getPath());
 
-            return !ps.stream().anyMatch(r -> r.resolve(exchange));
+            return !ps.stream().anyMatch(r -> r.allow(exchange));
         } else {
             return true;
         }
@@ -203,12 +204,12 @@ public class FileAclAuthorizer
         return account(exchange).getRoles().stream();
     }
 
-    private LinkedHashSet<AclPermission> rolePermissions(final String role) {
-        LinkedHashSet<AclPermission> ret = Sets.newLinkedHashSet();
+    private LinkedHashSet<FileAclPermission> rolePermissions(final String role) {
+        LinkedHashSet<FileAclPermission> ret = Sets.newLinkedHashSet();
 
         StreamSupport.stream(this.permissions.spliterator(), true)
                 .filter(p -> p.getRoles() != null && p.getRoles().contains(role))
-                .sorted(Comparator.comparingInt(AclPermission::getPriority))
+                .sorted(Comparator.comparingInt(FileAclPermission::getPriority))
                 .forEachOrdered(p -> ret.add(p));
 
         return ret;

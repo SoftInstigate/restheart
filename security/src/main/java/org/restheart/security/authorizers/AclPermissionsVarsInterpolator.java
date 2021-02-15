@@ -159,20 +159,17 @@ public class AclPermissionsVarsInterpolator {
                 }
             }
         } else if (value.equals("@mongoPermissions")) {
-            var permission = AclPermission.from(request.getExchange());
-            if (permission != null && permission.getMongoPermissions() != null) {
-                return permission.getMongoPermissions().asBson();
+            if (MongoPermissions.of(request) != null) {
+                return MongoPermissions.of(request).asBson();
             } else {
                 return BsonNull.VALUE;
             }
         } else if (value.startsWith("@mongoPermissions.") && value.length() > 17) {
-            var permission = AclPermission.from(request.getExchange());
-            if (permission != null && permission.getMongoPermissions() != null) {
-
-                var doc = permission.getMongoPermissions().asBson();
+            if (MongoPermissions.of(request) != null) {
+                var doc = MongoPermissions.of(request).asBson();
                 var prop = value.substring(18);
 
-                LOGGER.debug("permission doc: {}", permission);
+                LOGGER.debug("permission doc: {}", doc);
 
                 if (prop.contains(".")) {
                     try {

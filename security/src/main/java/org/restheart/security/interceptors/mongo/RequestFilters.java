@@ -29,8 +29,8 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.AclPermission;
 import org.restheart.security.authorizers.AclPermissionsVarsInterpolator;
+import org.restheart.security.authorizers.MongoPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,20 +61,19 @@ public class RequestFilters implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var exchange = request.getExchange();
-        var predicate = AclPermission.from(exchange);
+        var mongoPermissions = MongoPermissions.of(request);
 
         if (request.isGet()
-                && predicate.getMongoPermissions().getReadFilter() != null) {
-            LOGGER.debug("read filter: {}", predicate.getMongoPermissions().getReadFilter());
-            addFilter(request, predicate.getMongoPermissions().getReadFilter());
+                && mongoPermissions.getReadFilter() != null) {
+            LOGGER.debug("read filter: {}", mongoPermissions.getReadFilter());
+            addFilter(request, mongoPermissions.getReadFilter());
         } else if ((request.isPatch()
                 || request.isPut()
                 || request.isPost()
                 || request.isDelete())
-                && predicate.getMongoPermissions().getWriteFilter() != null) {
-            LOGGER.debug("write filter to add: {}", predicate.getMongoPermissions().getWriteFilter());
-            addFilter(request, predicate.getMongoPermissions().getWriteFilter());
+                && mongoPermissions.getWriteFilter() != null) {
+            LOGGER.debug("write filter to add: {}", mongoPermissions.getWriteFilter());
+            addFilter(request, mongoPermissions.getWriteFilter());
         } else {
             LOGGER.trace("predicate specifies no filter");
         }
@@ -82,11 +81,9 @@ public class RequestFilters implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        var permission = AclPermission.from(request.getExchange());
         return enabled
                 && request.isHandledBy("mongo")
-                && permission != null
-                && permission.getMongoPermissions() != null;
+                && MongoPermissions.of(request) != null;
     }
 
     private void addFilter(final MongoRequest request, final BsonDocument filter) {

@@ -23,8 +23,6 @@ package org.restheart.graphql.interceptors;
 import org.restheart.ConfigurationKeys;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.graphql.GraphQLAppDeserializer;
-import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 
