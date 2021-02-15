@@ -78,8 +78,8 @@ public abstract class BaseAclPermission {
      * @param exchange
      * @return the acl predicate associated with this request
      */
-    public static BaseAclPermission from(final HttpServerExchange exchange) {
-        return exchange.getAttachment(MATCHING_ACL_PERMISSION);
+    public static BaseAclPermission of(Request<?> request) {
+        return request.getExchange().getAttachment(MATCHING_ACL_PERMISSION);
     }
 
     /**
@@ -95,7 +95,7 @@ public abstract class BaseAclPermission {
      * @return the raw permission data bound to the request
      */
     public static Object getRaw(Request<?> request) {
-        var permission = BaseAclPermission.from(request.getExchange());
+        var permission = BaseAclPermission.of(request);
         if (permission != null) {
             return permission.getRaw();
         } else {
