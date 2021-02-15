@@ -29,11 +29,11 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.plugins.InterceptPoint;
 
-@RegisterPlugin(name = "mongoPermissionAllowAllWriteModes",
-    description = "Allow clients to specify the write mode according to the mongo.allowAllWriteModes ACL permission (otherwise POST only inserts, PUT and PATCH only update)",
+@RegisterPlugin(name = "mongoPermissionAllowWriteMode",
+    description = "Allow clients to specify the write mode according to the mongo.allowWriteMode ACL permission",
     interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
     enabledByDefault = true)
-public class AllowAllWriteModes implements MongoInterceptor {
+public class AllowWriteMode implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
@@ -59,7 +59,7 @@ public class AllowAllWriteModes implements MongoInterceptor {
         var mongoPermission = MongoPermissions.of(request);
 
         if (mongoPermission != null) {
-            return !mongoPermission.isAllowAllWriteModes();
+            return !mongoPermission.isAllowWriteMode();
         } else {
             return false;
         }

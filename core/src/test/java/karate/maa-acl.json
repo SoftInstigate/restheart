@@ -30,8 +30,8 @@
     "mongo": {
         "readFilter": { "status": { "_$eq": "public"} },
         "writeFilter": { "status": { "_$eq": "public"} },
-        "allowAllWriteModes": true,
-        "whitelistBulkPatch": true
+        "allowWriteMode": true,
+        "allowBulkPatch": true
     }
 },{
     "predicate": "path-prefix[/test-db/test-authorization] and method[GET]",

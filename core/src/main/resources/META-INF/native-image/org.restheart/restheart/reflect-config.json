@@ -1264,7 +1264,7 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"org.restheart.security.interceptors.mongo.AllowAllWriteModes",
+  "name":"org.restheart.security.interceptors.mongo.AllowWriteMode",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
@@ -1291,11 +1291,11 @@
   ]
 },
 {
-  "name":"org.restheart.security.interceptors.mongo.WhitelistBulkRequests",
+  "name":"org.restheart.security.interceptors.mongo.AllowBulkRequests",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"org.restheart.security.interceptors.mongo.WhitelistMgmtRequests",
+  "name":"org.restheart.security.interceptors.mongo.AllowMgmtRequests",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {

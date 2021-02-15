@@ -43,10 +43,10 @@ import org.restheart.utils.LambdaUtils;
  * Encapsulates the permissions specific to the MongoService, definined by `mongo` property of the permission
  */
 public class MongoPermissions {
-    final boolean whitelistManagementRequests;
-    final boolean whitelistBulkPatch;
-    final boolean whitelistBulkDelete;
-    final boolean allowAllWriteModes;
+    final boolean allowManagementRequests;
+    final boolean allowBulkPatch;
+    final boolean allowBulkDelete;
+    final boolean allowWriteMode;
     private final BsonDocument readFilter;
     private final BsonDocument writeFilter;
 
@@ -56,16 +56,16 @@ public class MongoPermissions {
     final Set<String> forbiddenQueryParams = Sets.newHashSet();
 
     public MongoPermissions() {
-        this.whitelistManagementRequests = false;
-        this.whitelistBulkPatch = false;
-        this.whitelistBulkDelete = false;
-        this.allowAllWriteModes = false;
+        this.allowManagementRequests = false;
+        this.allowBulkPatch = false;
+        this.allowBulkDelete = false;
+        this.allowWriteMode = false;
         this.readFilter = null;
         this.writeFilter = null;
     }
 
-    MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean whitelistManagementRequests,
-            boolean whitelistBulkPatch, boolean whitelistBulkDelete, boolean allowAllWriteModes,
+    MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean allowManagementRequests,
+            boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode,
             Set<String> hiddenProps, Set<String> protectedProps, Map<String, BsonValue> overriddenProps, Set<String> forbiddenQueryParams) {
         this.readFilter = readFilter == null ? null
                 : readFilter.isNull() ? null : BsonUtils.escapeKeys(readFilter.asDocument(), true).asDocument();
@@ -73,10 +73,10 @@ public class MongoPermissions {
         this.writeFilter = writeFilter == null ? null
                 : writeFilter.isNull() ? null : BsonUtils.escapeKeys(writeFilter.asDocument(), true).asDocument();
 
-        this.whitelistManagementRequests = whitelistManagementRequests;
-        this.whitelistBulkPatch = whitelistBulkPatch;
-        this.whitelistBulkDelete = whitelistBulkDelete;
-        this.allowAllWriteModes = allowAllWriteModes;
+        this.allowManagementRequests = allowManagementRequests;
+        this.allowBulkPatch = allowBulkPatch;
+        this.allowBulkDelete = allowBulkDelete;
+        this.allowWriteMode = allowWriteMode;
 
         if (hiddenProps != null) {
             this.hiddenProps.addAll(hiddenProps);
@@ -137,9 +137,9 @@ public class MongoPermissions {
             var writeFilter = _writeFilter == null ? null
                     : _writeFilter.isNull() ? null : BsonUtils.escapeKeys(_writeFilter.asDocument(), true).asDocument();
 
-            return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "whitelistManagementRequests"),
-                    parseBooleanArg(args, "whitelistBulkPatch"), parseBooleanArg(args, "whitelistBulkDelete"),
-                    parseBooleanArg(args, "allowAllWriteModes"), parseSetArg(args, "hiddenProps"),
+            return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "allowManagementRequests"),
+                    parseBooleanArg(args, "allowBulkPatch"), parseBooleanArg(args, "allowBulkDelete"),
+                    parseBooleanArg(args, "allowWriteMode"), parseSetArg(args, "hiddenProps"),
                     parseSetArg(args, "protectedProps"), parseMapArg(args, "overriddenProps"), parseSetArg(args, "forbiddenQueryParams"));
         }
     }
@@ -147,10 +147,10 @@ public class MongoPermissions {
     public BsonDocument asBson() {
         var map = new HashMap<String, Object>();
 
-        map.put("whitelistManagementRequests", this.whitelistManagementRequests);
-        map.put("whitelistBulkPatch", this.whitelistBulkPatch);
-        map.put("whitelistBulkDelete", this.whitelistBulkDelete);
-        map.put("allowAllWriteModes", this.allowAllWriteModes);
+        map.put("allowManagementRequests", this.allowManagementRequests);
+        map.put("allowBulkPatch", this.allowBulkPatch);
+        map.put("allowBulkDelete", this.allowBulkDelete);
+        map.put("allowWriteMode", this.allowWriteMode);
         map.put("readFilter", this.readFilter);
         map.put("writeFilter", this.writeFilter);
 
@@ -211,9 +211,9 @@ public class MongoPermissions {
                 writeFilter = null;
             }
 
-            return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "whitelistManagementRequests"),
-                    parseBooleanArg(args, "whitelistBulkPatch"), parseBooleanArg(args, "whitelistBulkDelete"),
-                    parseBooleanArg(args, "allowAllWriteModes"), parseSetArg(args, "hiddenProps"),
+            return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "allowManagementRequests"),
+                    parseBooleanArg(args, "allowBulkPatch"), parseBooleanArg(args, "allowBulkDelete"),
+                    parseBooleanArg(args, "allowWriteMode"), parseSetArg(args, "hiddenProps"),
                     parseSetArg(args, "protectedProps"), parseMapArg(args, "overriddenProps"), parseSetArg(args, "forbiddenQueryParams"));
         }
     }
@@ -381,36 +381,36 @@ public class MongoPermissions {
                 : BsonUtils.unescapeKeys(writeFilter).asDocument();
     }
 
-    public boolean getWhitelistManagementRequests() {
-        return this.whitelistManagementRequests;
+    public boolean getAllowManagementRequests() {
+        return this.allowManagementRequests;
     }
 
-    public boolean isWhitelistManagementRequests() {
-        return this.whitelistManagementRequests;
+    public boolean isAllowManagementRequests() {
+        return this.allowManagementRequests;
     }
 
-    public boolean getWhitelistBulkPatch() {
-        return this.whitelistBulkPatch;
+    public boolean getAllowBulkPatch() {
+        return this.allowBulkPatch;
     }
 
-    public boolean isWhitelistBulkPatch() {
-        return this.whitelistBulkPatch;
+    public boolean isAllowBulkPatch() {
+        return this.allowBulkPatch;
     }
 
-    public boolean getWhitelistBulkDelete() {
-        return this.whitelistBulkDelete;
+    public boolean getAllowBulkDelete() {
+        return this.allowBulkDelete;
     }
 
-    public boolean isWhitelistBulkDelete() {
-        return this.whitelistBulkDelete;
+    public boolean isAllowBulkDelete() {
+        return this.allowBulkDelete;
     }
 
-    public boolean getAllowAllWriteModes() {
-        return this.allowAllWriteModes;
+    public boolean getAllowWriteMode() {
+        return this.allowWriteMode;
     }
 
-    public boolean isAllowAllWriteModes() {
-        return this.allowAllWriteModes;
+    public boolean isAllowWriteMode() {
+        return this.allowWriteMode;
     }
 
     public Set<String> getHiddenProps() {

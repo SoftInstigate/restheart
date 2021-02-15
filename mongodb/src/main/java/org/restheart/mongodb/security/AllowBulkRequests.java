@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
+
 package org.restheart.mongodb.security;
 
 import org.restheart.plugins.MongoInterceptor;
@@ -28,34 +29,16 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
 
-@RegisterPlugin(name = "mongoPermissionWhitelistMgmtRequests",
-    description = "Whitelists mongo management requests according to the mongo.whitelistManagementRequests ACL permission",
+@RegisterPlugin(name = "mongoPermissionAllowBulkRequests",
+    description = "Allow bulk PATCH and bulk DELETE according to the mongo.allowBulkPatch and mongo.allowBulkDelete ACL permissions",
     interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
     enabledByDefault = true)
-public class WhitelistMgmtRequests implements MongoInterceptor {
+public class AllowBulkRequests implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        if ((request.isDb() && !request.isGet()) || // create/delete dbs
-                (request.isCollection() && (!request.isGet() && !request.isPost())) || // create/update/delete collections
-
-                (request.isIndex()) || // indexes
-                (request.isCollectionIndexes()) || // indexes
-
-                (request.isFilesBucket() && !request.isGet() && !request.isPost()) || // create/update/delete file buckets
-
-                (request.isSchema()) || // schema store
-                (request.isSchemaStore()) || // schema store
-                (request.isSchemaStoreSize()) || // schema store size
-
-                (request.isDbMeta()) || // db metadata
-                (request.isCollectionMeta()) || // collection metadata
-                (request.isFilesBucketMeta()) || // file bucket metadata
-                (request.isSchemaStoreMeta()) // schema store metadata
-        ) {
-            response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-            response.setInError(true);
-        }
+        response.setStatusCode(HttpStatus.SC_FORBIDDEN);
+        response.setInError(true);
     }
 
     @Override
@@ -66,6 +49,7 @@ public class WhitelistMgmtRequests implements MongoInterceptor {
             return false;
         }
 
-        return !mongoPermissions.isWhitelistManagementRequests();
+        return (!mongoPermissions.isAllowBulkDelete() && request.isBulkDocuments() && request.isDelete())
+            || (!mongoPermissions.isAllowBulkPatch() && request.isBulkDocuments() && request.isPatch());
     }
 }

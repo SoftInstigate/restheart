@@ -6,10 +6,10 @@ permissions:
       predicate: path-prefix[path="/"]
       priority: 0
       mongo:
-        whitelistManagementRequests: true # default false
-        whitelistBulkPatch: true          # default false
-        whitelistBulkDelete: true         # default false
-        allowAllWriteModes: true          # default false
+        allowManagementRequests: true # default false
+        allowBulkPatch: true          # default false
+        allowBulkDelete: true         # default false
+        allowWriteMode: true          # default false
 
     # allow role 'user' access /{username} with read and write filter, cannot use ?filter qparam
     - roles:

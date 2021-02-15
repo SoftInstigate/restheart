@@ -19,8 +19,8 @@
  * =========================LICENSE_END==================================
  */
 /**
- * Interceptors that enforces the ACL MongoPermissions
+ * Interceptors that enforce the ACL MongoPermissions
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-package org.restheart.security.interceptors.mongo;
+package org.restheart.mongodb.security;
