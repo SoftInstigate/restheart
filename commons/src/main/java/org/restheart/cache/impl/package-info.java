@@ -18,8 +18,8 @@
  * =========================LICENSE_END==================================
  */
 /**
- * Wrappers of actual caches implementations.
- * 
+ * Actual caches implementations.
+ *
 * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 package org.restheart.cache.impl;

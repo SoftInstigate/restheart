@@ -19,13 +19,14 @@
  */
 package org.restheart.cache.impl;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalNotification;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.function.Function;
+
+import com.github.benmanes.caffeine.cache.CacheLoader;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 
 /**
  *
@@ -33,13 +34,11 @@ import java.util.function.Consumer;
  * @param <K> the class of the keys.
  * @param <V> the class of the values (is Optional-ized).
  */
-@SuppressWarnings({"unchecked", "rawtypes"})
-public class GuavaCache<K, V> implements org.restheart.cache.Cache<K, V> {
-    private final Cache<K, Optional<V>> wrapped;
+public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCache<K, V> {
+    private final LoadingCache<K, Optional<V>> wrapped;
 
-    public GuavaCache(long size, EXPIRE_POLICY expirePolicy, long ttl) {
-        CacheBuilder builder = CacheBuilder.newBuilder()
-            .concurrencyLevel(Runtime.getRuntime().availableProcessors());
+    public CaffeineLoadingCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Function<K, V> loader) {
+        var builder = Caffeine.newBuilder();
 
         builder.maximumSize(size);
 
@@ -49,30 +48,22 @@ public class GuavaCache<K, V> implements org.restheart.cache.Cache<K, V> {
             builder.expireAfterAccess(ttl, TimeUnit.MILLISECONDS);
         }
 
-        wrapped = builder.build();
-    }
-
-    public GuavaCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Consumer<Map.Entry<K, Optional<V>>> remover) {
-        CacheBuilder builder = CacheBuilder.newBuilder();
-
-        builder.maximumSize(size);
-
-        if (ttl > 0 && expirePolicy == EXPIRE_POLICY.AFTER_WRITE) {
-            builder.expireAfterWrite(ttl, TimeUnit.MILLISECONDS);
-        } else if (ttl > 0 && expirePolicy == EXPIRE_POLICY.AFTER_READ) {
-            builder.expireAfterAccess(ttl, TimeUnit.MILLISECONDS);
-        }
-
-        wrapped = builder
-                .removalListener((RemovalNotification notification) -> {
-                    remover.accept(notification);
-                })
-                .build();
+        wrapped = builder.build(new CacheLoader<K, Optional<V>>() {
+            @Override
+            public Optional<V> load(K key) throws Exception {
+                return Optional.ofNullable(loader.apply(key));
+            }
+        });
     }
 
     @Override
     public Optional<V> get(K key) {
         return wrapped.getIfPresent(key);
+    }
+
+    @Override
+    public Optional<V> getLoading(K key) {
+        return wrapped.get(key);
     }
 
     @Override

@@ -19,14 +19,19 @@
  */
 package org.restheart.cache.impl;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-
+import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.function.Consumer;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
+
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  *
@@ -34,13 +39,11 @@ import java.util.function.Function;
  * @param <K> the class of the keys.
  * @param <V> the class of the values (is Optional-ized).
  */
-@SuppressWarnings({"unchecked", "rawtypes"})
-public class GuavaLoadingCache<K, V> implements org.restheart.cache.LoadingCache<K, V> {
-    private final LoadingCache<K, Optional<V>> wrapped;
+public class CaffeineCache<K, V> implements org.restheart.cache.Cache<K, V> {
+    private final Cache<K, Optional<V>> wrapped;
 
-    public GuavaLoadingCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Function<K, V> loader) {
-        CacheBuilder builder = CacheBuilder.newBuilder()
-            .concurrencyLevel(Runtime.getRuntime().availableProcessors());
+    public CaffeineCache(long size, EXPIRE_POLICY expirePolicy, long ttl) {
+        var builder = Caffeine.newBuilder();
 
         builder.maximumSize(size);
 
@@ -50,22 +53,33 @@ public class GuavaLoadingCache<K, V> implements org.restheart.cache.LoadingCache
             builder.expireAfterAccess(ttl, TimeUnit.MILLISECONDS);
         }
 
-        wrapped = builder.build(new CacheLoader<K, Optional<V>>() {
-            @Override
-            public Optional<V> load(K key) throws Exception {
-                return Optional.ofNullable(loader.apply(key));
-            }
-        });
+        wrapped = builder.build();
+    }
+
+    public CaffeineCache(long size, EXPIRE_POLICY expirePolicy, long ttl, Consumer<Map.Entry<K, Optional<V>>> remover) {
+        var builder = Caffeine.newBuilder();
+
+        builder.maximumSize(size);
+
+        if (ttl > 0 && expirePolicy == EXPIRE_POLICY.AFTER_WRITE) {
+            builder.expireAfterWrite(ttl, TimeUnit.MILLISECONDS);
+        } else if (ttl > 0 && expirePolicy == EXPIRE_POLICY.AFTER_READ) {
+            builder.expireAfterAccess(ttl, TimeUnit.MILLISECONDS);
+        }
+
+
+        wrapped = builder.removalListener(
+            new RemovalListener<K,Optional<V>>() {
+                @Override
+                public void onRemoval(@Nullable K k, @Nullable Optional<V> v, @NonNull RemovalCause cause) {
+                    remover.accept(new AbstractMap.SimpleEntry<K,Optional<V>>(k, v));
+                }
+        }).build();
     }
 
     @Override
     public Optional<V> get(K key) {
         return wrapped.getIfPresent(key);
-    }
-
-    @Override
-    public Optional<V> getLoading(K key) {
-        return wrapped.getUnchecked(key);
     }
 
     @Override

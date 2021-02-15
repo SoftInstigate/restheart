@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.restheart.cache.impl.GuavaCache;
-import org.restheart.cache.impl.GuavaLoadingCache;
+import org.restheart.cache.impl.CaffeineCache;
+import org.restheart.cache.impl.CaffeineLoadingCache;
 
 /**
  *
@@ -42,7 +42,7 @@ public class CacheFactory {
      * @return the cache
     */
     public static <K,V> LoadingCache<K,V> createLocalLoadingCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl, Function<K,V> loader) {
-        return new GuavaLoadingCache<>(size, expirePolicy, ttl, loader);
+        return new CaffeineLoadingCache<>(size, expirePolicy, ttl, loader);
     }
 
     /**
@@ -55,7 +55,7 @@ public class CacheFactory {
      * @return the cache.
     */
     public static <K,V> Cache<K,V> createLocalCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl) {
-        return new GuavaCache<>(size, expirePolicy, ttl);
+        return new CaffeineCache<>(size, expirePolicy, ttl);
     }
     /**
      *
@@ -68,7 +68,7 @@ public class CacheFactory {
      * @return the cache.
     */
     public static <K,V> Cache<K,V> createLocalCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl, Consumer<Map.Entry<K, Optional<V>>> remover) {
-        return new GuavaCache<>(size, expirePolicy, ttl, remover);
+        return new CaffeineCache<>(size, expirePolicy, ttl, remover);
     }
 
     private CacheFactory() {
