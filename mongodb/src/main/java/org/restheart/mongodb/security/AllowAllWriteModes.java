@@ -18,54 +18,50 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.interceptors.mongo;
+package org.restheart.mongodb.security;
 
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.MongoPermissions;
+import org.restheart.security.MongoPermissions;
 import org.restheart.utils.HttpStatus;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.plugins.InterceptPoint;
 
-@RegisterPlugin(name = "mongoPermissionWhitelistMgmtRequests",
-    description = "Whitelists mongo management requests according to the mongo.whitelistManagementRequests ACL permission",
+@RegisterPlugin(name = "mongoPermissionAllowAllWriteModes",
+    description = "Allow clients to specify the write mode according to the mongo.allowAllWriteModes ACL permission (otherwise POST only inserts, PUT and PATCH only update)",
     interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
     enabledByDefault = true)
-public class WhitelistMgmtRequests implements MongoInterceptor {
+public class AllowAllWriteModes implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        if ((request.isDb() && !request.isGet()) || // create/delete dbs
-                (request.isCollection() && (!request.isGet() && !request.isPost())) || // create/update/delete collections
-
-                (request.isIndex()) || // indexes
-                (request.isCollectionIndexes()) || // indexes
-
-                (request.isFilesBucket() && !request.isGet() && !request.isPost()) || // create/update/delete file buckets
-
-                (request.isSchema()) || // schema store
-                (request.isSchemaStore()) || // schema store
-                (request.isSchemaStoreSize()) || // schema store size
-
-                (request.isDbMeta()) || // db metadata
-                (request.isCollectionMeta()) || // collection metadata
-                (request.isFilesBucketMeta()) || // file bucket metadata
-                (request.isSchemaStoreMeta()) // schema store metadata
-        ) {
+        if ((request.isPatch() || request.isDelete()) && request.isBulkDocuments()) {
             response.setStatusCode(HttpStatus.SC_FORBIDDEN);
             response.setInError(true);
+            return;
+        }
+
+        if (request.isPost()) {
+            request.setWriteMode(WRITE_MODE.INSERT);
+        } else if (request.isPatch() || request.isPut()) {
+            request.setWriteMode(WRITE_MODE.UPDATE);
         }
     }
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        var mongoPermissions = MongoPermissions.of(request);
-
-        if (!request.isHandledBy("mongo") || mongoPermissions == null) {
+        if (!request.isHandledBy("mongo") || !request.isWriteDocument()) {
             return false;
         }
 
-        return !mongoPermissions.isWhitelistManagementRequests();
+        var mongoPermission = MongoPermissions.of(request);
+
+        if (mongoPermission != null) {
+            return !mongoPermission.isAllowAllWriteModes();
+        } else {
+            return false;
+        }
     }
 }

@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.authorizers;
+package org.restheart.security;
 
 import java.time.Instant;
 import java.util.List;
@@ -39,8 +39,6 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.Request;
-import org.restheart.security.FileRealmAccount;
-import org.restheart.security.MongoRealmAccount;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +47,12 @@ import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateParser;
 
-public class AclPermissionsVarsInterpolator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AclPermissionsVarsInterpolator.class);
+/**
+ * Helper class that allows to interpolate variables (@user, @request, @now) in
+ * permissions
+ */
+public class AclVarsInterpolator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AclVarsInterpolator.class);
 
     /**
      * Interpolate values in doc like '@user', '@user.property', @now
@@ -94,11 +96,11 @@ public class AclPermissionsVarsInterpolator {
     }
 
     /**
-     * If value is a '@user', '@user.property', '@request',
-     * '@request.remoteIp', '@mongoPermissions', '@mongoPermissions.readFilter',
-     * '@now', returns the interpolated value.
+     * If value is a '@user', '@user.property', '@request', '@request.remoteIp',
+     * '@mongoPermissions', '@mongoPermissions.readFilter', '@now', returns the
+     * interpolated value.
      *
-     * For '@user' and  '@mongoPermissions' supports accounts handled by
+     * For '@user' and '@mongoPermissions' supports accounts handled by
      * MongoRealAuthenticator and FileRealmAuthenticator
      *
      * Legacy variable names %USER, %ROLES and %NOW are supported as well
@@ -227,18 +229,19 @@ public class AclPermissionsVarsInterpolator {
     /**
      * interpolate the permission predicate substituting @user.x variables
      *
-     * @param predicate the predicate containing the placeholder valiable to interpolate
-     * @param request the request
+     * @param predicate the predicate containing the placeholder valiable to
+     *                  interpolate
+     * @param request   the request
      * @return the interpolated predicate
      */
     public static Predicate interpolatePredicate(Request<?> request, String predicate) {
         var a = getAccountDocument(request);
 
         if (a == null || a.isEmpty()) {
-            return PredicateParser.parse(predicate, AclPermissionsVarsInterpolator.class.getClassLoader());
+            return PredicateParser.parse(predicate, AclVarsInterpolator.class.getClassLoader());
         } else {
             var interpolatedPredicate = interpolatePredicate(predicate, "@user.", a);
-            return PredicateParser.parse(interpolatedPredicate, AclPermissionsVarsInterpolator.class.getClassLoader());
+            return PredicateParser.parse(interpolatedPredicate, AclVarsInterpolator.class.getClassLoader());
         }
     }
 
@@ -253,10 +256,12 @@ public class AclPermissionsVarsInterpolator {
     }
 
     /**
-     * interpolate the permission predicate substituting variables with values found in variableValues
+     * interpolate the permission predicate substituting variables with values found
+     * in variableValues
      *
-     * @param predicate the predicate containing the placeholder valiable to interpolate
-     * @param prefix the variable prefix, eg. '@user.' or '@request.'
+     * @param predicate      the predicate containing the placeholder valiable to
+     *                       interpolate
+     * @param prefix         the variable prefix, eg. '@user.' or '@request.'
      * @param variableValues the document that specifies the values of the variables
      * @return
      */
@@ -269,22 +274,20 @@ public class AclPermissionsVarsInterpolator {
 
         String[] ret = { predicate };
 
-        flatten.keySet().stream()
-            .filter(key -> flatten.get(key) != null)
-            .filter(key -> isJsonPrimitive(flatten.get(key)))
-            .forEach(key -> ret[0] = ret[0].replaceAll(prefix.concat(key), quote(jsonPrimitiveValue(flatten.get(key)))));
+        flatten.keySet().stream().filter(key -> flatten.get(key) != null)
+                .filter(key -> isJsonPrimitive(flatten.get(key))).forEach(key -> ret[0] = ret[0]
+                        .replaceAll(prefix.concat(key), quote(jsonPrimitiveValue(flatten.get(key)))));
 
         return ret[0];
     }
 
     private static boolean isJsonPrimitive(BsonValue value) {
-        return value.isNull() || value.isBoolean()
-            || value.isNumber() || value.isString()
-            || value.isObjectId() || value.isTimestamp() || value.isDateTime();
+        return value.isNull() || value.isBoolean() || value.isNumber() || value.isString() || value.isObjectId()
+                || value.isTimestamp() || value.isDateTime();
     }
 
     private static String jsonPrimitiveValue(BsonValue value) {
-        switch(value.getBsonType()) {
+        switch (value.getBsonType()) {
             case NULL:
                 return "null";
             case BOOLEAN:
@@ -311,7 +314,6 @@ public class AclPermissionsVarsInterpolator {
     private static String quote(String s) {
         return "\"".concat(s).concat("\"");
     }
-
 
     @SuppressWarnings("unchecked")
     private static BsonValue fromProperties(Map<String, Object> properties, String key) {

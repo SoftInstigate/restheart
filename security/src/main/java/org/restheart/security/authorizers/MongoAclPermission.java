@@ -28,6 +28,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
+import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.BaseAclPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,7 +117,7 @@ public class MongoAclPermission extends BaseAclPermission {
         if (getPredicate() == null) {
             return false;
         } else {
-            return AclPermissionsVarsInterpolator.interpolatePredicate(Request.of(exchange), getPredicate()).resolve(exchange);
+            return AclVarsInterpolator.interpolatePredicate(Request.of(exchange), getPredicate()).resolve(exchange);
         }
     }
 }

@@ -18,48 +18,61 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.interceptors.mongo;
+package org.restheart.mongodb.security;
 
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.MongoPermissions;
-import org.restheart.utils.HttpStatus;
+import org.restheart.security.MongoPermissions;
+
+import java.util.Set;
+
+import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.plugins.InterceptPoint;
 
-@RegisterPlugin(name = "mongoPermissionAllowAllWriteModes",
-    description = "Allow clients to specify the write mode according to the mongo.allowAllWriteModes ACL permission (otherwise POST only inserts, PUT and PATCH only update)",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+@RegisterPlugin(name = "mongoPermissionHiddenProps",
+    description = "Hides properties from the response according to the mongo.hiddenProps ACL permission",
+    interceptPoint = InterceptPoint.RESPONSE,
     enabledByDefault = true)
-public class AllowAllWriteModes implements MongoInterceptor {
+public class HiddenProps implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        if ((request.isPatch() || request.isDelete()) && request.isBulkDocuments()) {
-            response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-            response.setInError(true);
-            return;
-        }
+        var hiddendProps = MongoPermissions.of(request).getHiddenProps();
 
-        if (request.isPost()) {
-            request.setWriteMode(WRITE_MODE.INSERT);
-        } else if (request.isPatch() || request.isPut()) {
-            request.setWriteMode(WRITE_MODE.UPDATE);
+        if (response.getContent().isDocument()) {
+            hide(response.getContent().asDocument(), hiddendProps);
+        } else if (response.getContent().isArray()) {
+            response.getContent().asArray().forEach(doc -> hide(doc.asDocument(), hiddendProps));
+        }
+    }
+
+    private void hide(BsonDocument doc, Set<String> hiddenProps) {
+        hiddenProps.stream().forEachOrdered(hiddenProp ->  hide(doc, hiddenProp));
+    }
+
+    private void hide(BsonDocument doc, String hiddenProp) {
+        if (hiddenProp.contains(".")) {
+            var first = hiddenProp.substring(0, hiddenProp.indexOf("."));
+            if (first.length() > 0 && doc.containsKey(first) && doc.get(first).isDocument()) {
+                hide(doc.get(first).asDocument(), hiddenProp.substring(hiddenProp.indexOf(".")+1));
+            }
+        } else if (hiddenProp.length() > 0) {
+            doc.remove(hiddenProp);
         }
     }
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        if (!request.isHandledBy("mongo") || !request.isWriteDocument()) {
+        if (!request.isHandledBy("mongo") || response.getContent() == null) {
             return false;
         }
 
         var mongoPermission = MongoPermissions.of(request);
 
         if (mongoPermission != null) {
-            return !mongoPermission.isAllowAllWriteModes();
+            return !mongoPermission.getHiddenProps().isEmpty();
         } else {
             return false;
         }

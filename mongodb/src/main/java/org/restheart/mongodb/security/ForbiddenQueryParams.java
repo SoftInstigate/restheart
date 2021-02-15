@@ -18,11 +18,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.interceptors.mongo;
+package org.restheart.mongodb.security;
 
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.MongoPermissions;
+import org.restheart.security.MongoPermissions;
 import org.restheart.utils.HttpStatus;
 
 import java.util.Deque;

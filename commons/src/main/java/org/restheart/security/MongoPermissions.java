@@ -19,7 +19,7 @@
  * =========================LICENSE_END==================================
  */
 
-package org.restheart.security.authorizers;
+package org.restheart.security;
 
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 
@@ -36,12 +36,11 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
-import org.restheart.security.BaseAclPermission;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.LambdaUtils;
 
 /**
- * Permissions specific for MongoService
+ * Encapsulates the permissions specific to the MongoService, definined by `mongo` property of the permission
  */
 public class MongoPermissions {
     final boolean whitelistManagementRequests;

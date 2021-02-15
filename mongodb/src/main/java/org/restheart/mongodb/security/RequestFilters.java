@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.interceptors.mongo;
+package org.restheart.mongodb.security;
 
 import java.util.ArrayDeque;
 import org.bson.BsonDocument;
@@ -29,8 +29,8 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.AclPermissionsVarsInterpolator;
-import org.restheart.security.authorizers.MongoPermissions;
+import org.restheart.security.AclVarsInterpolator;
+import org.restheart.security.MongoPermissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +91,7 @@ public class RequestFilters implements MongoInterceptor {
             return;
         }
 
-        var resolvedFilter = AclPermissionsVarsInterpolator.interpolateBson(request, filter);
+        var resolvedFilter = AclVarsInterpolator.interpolateBson(request, filter);
 
         if (request.getFilter() == null) {
             request.setFilter(new ArrayDeque<>());

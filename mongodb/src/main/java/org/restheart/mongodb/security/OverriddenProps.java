@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.security.interceptors.mongo;
+package org.restheart.mongodb.security;
 
 import java.util.Map;
 
@@ -28,8 +28,8 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.security.authorizers.AclPermissionsVarsInterpolator;
-import org.restheart.security.authorizers.MongoPermissions;
+import org.restheart.security.AclVarsInterpolator;
+import org.restheart.security.MongoPermissions;
 import org.restheart.utils.BsonUtils;
 
 @RegisterPlugin(name = "mongoPermissionOverriddenProps",
@@ -62,7 +62,7 @@ public class OverriddenProps implements MongoInterceptor {
     }
 
     private void override(MongoRequest request, String key, String value) {
-        request.getContent().asDocument().put(key, AclPermissionsVarsInterpolator.interpolatePropValue(request, key, value));
+        request.getContent().asDocument().put(key, AclVarsInterpolator.interpolatePropValue(request, key, value));
     }
 
     @Override

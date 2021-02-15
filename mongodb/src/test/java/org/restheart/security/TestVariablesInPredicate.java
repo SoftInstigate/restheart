@@ -1,4 +1,4 @@
-package org.restheart.security.authorizers;
+package org.restheart.security;
 
 import org.bson.BsonDocument;
 import org.junit.Assert;
@@ -11,7 +11,7 @@ public class TestVariablesInPredicate {
     @Test
     public void testPredicate() {
         var raw = "path-template('/{tenant}/coll') and equals(@user.tenant, ${tenant})";
-        var interpolated = AclPermissionsVarsInterpolator.interpolatePredicate(raw, "@user.", testUser());
+        var interpolated = AclVarsInterpolator.interpolatePredicate(raw, "@user.", testUser());
 
         //System.out.println("raw predicate " + raw);
         //System.out.println("interpolated predicate " + interpolated);
