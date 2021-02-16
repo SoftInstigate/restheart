@@ -32,8 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonValue;
@@ -59,8 +57,6 @@ public class GridFsDAO implements GridFsRepository {
 
     private final MongoClient client;
     private final CollectionDAO collectionDAO;
-
-    private final Lock deleteLock = new ReentrantLock();
 
     /**
      *
@@ -108,10 +104,7 @@ public class GridFsDAO implements GridFsRepository {
                 GridFSUploadOptions options = new GridFSUploadOptions()
                         .metadata(Document.parse(metadata.toJson()));
 
-                ObjectId _id = gridFSBucket.uploadFromStream(
-                        filename,
-                        sourceStream,
-                        options);
+                ObjectId _id = gridFSBucket.uploadFromStream(filename, sourceStream, options);
 
                 return new OperationResult(SC_CREATED,
                         new BsonObjectId(etag),
@@ -128,9 +121,7 @@ public class GridFsDAO implements GridFsRepository {
                         sourceStream,
                         options);
 
-                return new OperationResult(SC_CREATED,
-                        new BsonObjectId(etag),
-                        _id);
+                return new OperationResult(SC_CREATED, new BsonObjectId(etag), _id);
             }
         }
     }
@@ -191,7 +182,7 @@ public class GridFsDAO implements GridFsRepository {
         String filename = null;
 
         if (properties != null && properties.containsKey(FILENAME)) {
-            BsonValue _filename = properties.get(FILENAME);
+            var _filename = properties.get(FILENAME);
 
             if (_filename != null && _filename.isString()) {
                 filename = _filename.asString().getValue();
@@ -224,51 +215,40 @@ public class GridFsDAO implements GridFsRepository {
             final String requestEtag,
             final boolean checkEtag) {
 
-        final String bucket = extractBucketName(bucketName);
+        final var bucket = extractBucketName(bucketName);
 
-        GridFSBucket gridFSBucket = GridFSBuckets.create(
-                db.getDatabase(dbName),
-                bucket);
+        var gridFSBucket = GridFSBuckets.create(db.getDatabase(dbName), bucket);
 
-        // try to avoid concurrent deletions of the same file as much as possible
-        // Note: this won't help much if RESTHeart is clustered, as the lock is local
-        deleteLock.lock();
-        try {
-            GridFSFile file = getFileForId(gridFSBucket, fileId);
+        var file = getFileForId(gridFSBucket, fileId);
 
-            if (file == null) {
-                return new OperationResult(SC_NOT_FOUND);
-            }
+        if (file == null) {
+            return new OperationResult(SC_NOT_FOUND);
+        }
 
-            if (checkEtag) {
-                Document metadata = file.getMetadata();
-                if (metadata != null) {
-                    Object oldEtag = metadata.get("_etag");
+        if (checkEtag) {
+            var metadata = file.getMetadata();
+            if (metadata != null) {
+                var oldEtag = metadata.get("_etag");
 
-                    if (oldEtag != null) {
-                        if (requestEtag == null) {
-                            return new OperationResult(SC_CONFLICT, oldEtag);
-                        } else if (!Objects.equals(oldEtag.toString(), requestEtag)) {
-                            return new OperationResult(
-                                    SC_PRECONDITION_FAILED, oldEtag);
-                        }
+                if (oldEtag != null) {
+                    if (requestEtag == null) {
+                        return new OperationResult(SC_CONFLICT, oldEtag);
+                    } else if (!Objects.equals(oldEtag.toString(), requestEtag)) {
+                        return new OperationResult(SC_PRECONDITION_FAILED, oldEtag);
                     }
                 }
             }
-
-            try {
-                gridFSBucket.delete(fileId);
-                LOGGER.info("Succesfully deleted fileId {}", fileId);
-            } catch (MongoGridFSException e) {
-                LOGGER.error("Can't delete fileId '{}'", fileId, e);
-                return new OperationResult(SC_NOT_FOUND);
-            }
-
-            return new OperationResult(SC_NO_CONTENT);
-
-        } finally {
-            deleteLock.unlock();
         }
+
+        try {
+            gridFSBucket.delete(fileId);
+            LOGGER.info("Succesfully deleted fileId {}", fileId);
+        } catch (MongoGridFSException e) {
+            LOGGER.error("Can't delete fileId '{}'", fileId, e);
+            return new OperationResult(SC_NOT_FOUND);
+        }
+
+        return new OperationResult(SC_NO_CONTENT);
     }
 
     private GridFSFile getFileForId(GridFSBucket gridFSBucket, BsonValue fileId) {
@@ -291,5 +271,4 @@ public class GridFsDAO implements GridFsRepository {
         String chunksCollName = extractBucketName(bucketName).concat(".chunks");
         collectionDAO.getCollection(dbName, chunksCollName).drop();
     }
-
 }
