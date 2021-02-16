@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.restheart.cache.impl.CaffeineCache;
 import org.restheart.cache.impl.CaffeineLoadingCache;
+import org.restheart.cache.impl.HashMapLoadingCache;
 
 /**
  *
@@ -33,16 +34,28 @@ import org.restheart.cache.impl.CaffeineLoadingCache;
 public class CacheFactory {
     /**
      *
-     * @param <K> the type of the cache keys
-     * @param <V> the type of the cached values
-     * @param size the size of the cache
-     * @param expirePolicy specifies how and when each entry should be automatically removed from the cache
-     * @param ttl Time To Live in milliseconds
+     * @param <K>          the type of the cache keys
+     * @param <V>          the type of the cached values
+     * @param size         the size of the cache
+     * @param expirePolicy specifies how and when each entry should be automatically
+     *                     removed from the cache
+     * @param ttl          Time To Live in milliseconds
+     * @param loader       the cache loader used to obtain new values
+     * @return the cache
+     */
+    public static <K, V> LoadingCache<K, V> createLocalLoadingCache(long size, Cache.EXPIRE_POLICY expirePolicy,
+            long ttl, Function<K, V> loader) {
+        return new CaffeineLoadingCache<>(size, expirePolicy, ttl, loader);
+    }
+
+    /**
+     * @param <K>    the type of the cache keys
+     * @param <V>    the type of the cached values
      * @param loader the cache loader used to obtain new values
      * @return the cache
-    */
-    public static <K,V> LoadingCache<K,V> createLocalLoadingCache(long size, Cache.EXPIRE_POLICY expirePolicy, long ttl, Function<K,V> loader) {
-        return new CaffeineLoadingCache<>(size, expirePolicy, ttl, loader);
+     */
+    public static <K, V> LoadingCache<K, V> createHashMapLoadingCache(Function<K, V> loader) {
+        return new HashMapLoadingCache<>(loader);
     }
 
     /**

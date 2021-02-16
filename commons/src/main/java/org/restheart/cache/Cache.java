@@ -35,6 +35,9 @@ public interface Cache<K,V> {
 
     public void put(K key, V value);
 
+    /**
+     * Performs any pending maintenance operations needed by the cache.
+     */
     public void cleanUp();
 
     public void invalidate(K key);

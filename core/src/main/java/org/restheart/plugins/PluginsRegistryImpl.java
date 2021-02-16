@@ -22,6 +22,7 @@ package org.restheart.plugins;
 
 import static io.undertow.Handlers.path;
 
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -37,7 +38,6 @@ import com.mongodb.MongoClient;
 import org.restheart.ConfigurationException;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
-import org.restheart.cache.Cache.EXPIRE_POLICY;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
@@ -249,35 +249,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     }
 
     @SuppressWarnings("rawtypes")
-    private LoadingCache<ICKey, List<Interceptor>> SRV_INTERCEPTORS_CACHE = CacheFactory
-        .createLocalLoadingCache(Integer.MAX_VALUE, EXPIRE_POLICY.NEVER, 0,
-            (key) -> __interceptors(key.service, key.interceptPoint));
-
-    class ICKey {
-        final Service<?,?> service;
-        final InterceptPoint interceptPoint;
-
-        ICKey(Service<?,?> service, InterceptPoint interceptPoint) {
-            this.service = service;
-            this.interceptPoint = interceptPoint;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(service, interceptPoint);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null) {
-                return false;
-            } else if (obj instanceof ICKey) {
-                return hashCode() == obj.hashCode();
-            } else {
-                return false;
-            }
-        }
-    }
+    private LoadingCache<AbstractMap.SimpleEntry<Service, InterceptPoint>, List<Interceptor>> SRV_INTERCEPTORS_CACHE = CacheFactory
+        .createHashMapLoadingCache((key) -> __interceptors(key.getKey(), key.getValue()));
 
     @SuppressWarnings("rawtypes")
     private List<Interceptor> __interceptors(Service service, InterceptPoint interceptPoint) {
@@ -323,7 +296,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         Objects.requireNonNull(srv);
         Objects.requireNonNull(interceptPoint);
 
-        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new ICKey(srv, interceptPoint));
+        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<Service, InterceptPoint>(srv, interceptPoint));
 
         return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
     }
@@ -336,7 +309,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     @SuppressWarnings("rawtypes")
     public List<Interceptor> getProxyInterceptors(InterceptPoint interceptPoint) {
-        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new ICKey(null, interceptPoint));
+        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<Service, InterceptPoint>(null, interceptPoint));
 
         return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
     }

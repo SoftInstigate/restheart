@@ -23,7 +23,6 @@ import io.undertow.server.HttpServerExchange;
 
 import java.lang.reflect.Type;
 import java.util.Map;
-import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.exchange.Request;
@@ -274,12 +273,10 @@ public class PluginUtils {
     }
 
     @SuppressWarnings("rawtypes")
-    private static LoadingCache<ExchangeTypeResolver, Type> RC = CacheFactory.createLocalLoadingCache(Integer.MAX_VALUE,
-            Cache.EXPIRE_POLICY.NEVER, 0, plugin -> plugin.requestType());
+    private static LoadingCache<ExchangeTypeResolver, Type> RC = CacheFactory.createHashMapLoadingCache(plugin -> plugin.requestType());
 
     @SuppressWarnings("rawtypes")
-    private static LoadingCache<ExchangeTypeResolver, Type> SC = CacheFactory.createLocalLoadingCache(Integer.MAX_VALUE,
-            Cache.EXPIRE_POLICY.NEVER, 0, plugin -> plugin.responseType());
+    private static LoadingCache<ExchangeTypeResolver, Type> SC = CacheFactory.createHashMapLoadingCache(plugin -> plugin.responseType());
 
     /**
      * Plugin.requestType() is heavy. This helper methods speeds up invocation using

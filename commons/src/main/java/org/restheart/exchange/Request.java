@@ -319,6 +319,14 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
+     * @param exchange the exchange to bind the pipelineInfo to
+     * @param pipelineInfo the pipelineInfo to set
+     */
+    public static void setPipelineInfo(HttpServerExchange exchange, PipelineInfo pipelineInfo) {
+        exchange.putAttachment(PIPELINE_INFO_KEY, pipelineInfo);
+    }
+
+    /**
      *
      * @return the PipelineInfo that allows to know which pipeline (service, proxy
      *         or static resource) is handling the exchange
