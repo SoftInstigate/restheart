@@ -416,7 +416,7 @@ public class BsonRequestPropsInjector {
         Deque<String> __eager = exchange.getQueryParameters().get(EAGER_CURSOR_ALLOCATION_POLICY_QPARAM_KEY);
 
         // default value
-        EAGER_CURSOR_ALLOCATION_POLICY eager = EAGER_CURSOR_ALLOCATION_POLICY.LINEAR;
+        EAGER_CURSOR_ALLOCATION_POLICY eager = EAGER_CURSOR_ALLOCATION_POLICY.NONE;
 
         if (__eager != null && !__eager.isEmpty()) {
             String _eager = __eager.getFirst();
