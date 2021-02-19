@@ -38,6 +38,7 @@ import java.util.TreeMap;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
 import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
@@ -50,6 +51,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.security.utils.MongoUtils;
 import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
+import static org.restheart.security.MongoPermissions.ALLOW_ALL_MONGO_PERMISSIONS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,6 +153,11 @@ public class MongoAclAuthorizer implements Authorizer {
             LOGGER.debug("allow request for root user {}", exchange
                     .getSecurityContext()
                     .getAuthenticatedAccount().getPrincipal().getName());
+
+            // for root role add a mongo permissions that allows everything
+            Set<String> roles = Sets.newHashSet();
+            roles.add(this.rootRole);
+            exchange.putAttachment(MATCHING_ACL_PERMISSION, new MongoAclPermission(new BsonObjectId(), "path-prefix('/')", roles, Integer.MAX_VALUE, new BsonDocument("mongo", ALLOW_ALL_MONGO_PERMISSIONS.asBson())));
             return true;
         }
 

@@ -59,6 +59,11 @@ public class MongoPermissions {
     // a forbidden query parameter cannot be specified in the request URL, otherwise 403 FORBBIDEN is returned
     final Set<String> forbidQueryParams = Sets.newHashSet();
 
+    public static final MongoPermissions ALLOW_ALL_MONGO_PERMISSIONS = new MongoPermissions(
+        null, null,
+        true, true, true, true,
+        null, null, null, null);
+
     public MongoPermissions() {
         this.allowManagementRequests = false;
         this.allowBulkPatch = false;
