@@ -23,50 +23,56 @@ package org.restheart.mongodb.security;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.MongoPermissions;
-import org.restheart.utils.HttpStatus;
 
-import java.util.Deque;
-import java.util.Map;
 import java.util.Set;
 
+import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
 
-@RegisterPlugin(name = "mongoPermissionForbiddenQueryParams",
-    description = "Forbids query parameters according to the mongo.forbiddenQueryParams ACL permission",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
-    enabledByDefault = true,
-    priority = 10)
-public class ForbiddenQueryParams implements MongoInterceptor {
+@RegisterPlugin(name = "mongoPermissionHideProps",
+    description = "Hides properties from the response according to the mongo.hideProps ACL permission",
+    interceptPoint = InterceptPoint.RESPONSE,
+    enabledByDefault = true)
+public class HideProps implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var forbiddenQueryParams = MongoPermissions.of(request).getForbiddenQueryParams();
+        var hiddendProps = MongoPermissions.of(request).getHideProps();
 
-        if (contains(request.getQueryParameters(), forbiddenQueryParams)) {
-                response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-                request.setInError(true);
+        if (response.getContent().isDocument()) {
+            hide(response.getContent().asDocument(), hiddendProps);
+        } else if (response.getContent().isArray()) {
+            response.getContent().asArray().forEach(doc -> hide(doc.asDocument(), hiddendProps));
         }
     }
 
-    private boolean contains(Map<String, Deque<String>> queryParams, Set<String>  forbiddenQueryParams) {
-        return queryParams != null
-            && queryParams.keySet().stream().anyMatch(qp -> forbiddenQueryParams.contains(qp));
+    private void hide(BsonDocument doc, Set<String> hideProps) {
+        hideProps.stream().forEachOrdered(hiddenProp ->  hide(doc, hiddenProp));
+    }
+
+    private void hide(BsonDocument doc, String hiddenProp) {
+        if (hiddenProp.contains(".")) {
+            var first = hiddenProp.substring(0, hiddenProp.indexOf("."));
+            if (first.length() > 0 && doc.containsKey(first) && doc.get(first).isDocument()) {
+                hide(doc.get(first).asDocument(), hiddenProp.substring(hiddenProp.indexOf(".")+1));
+            }
+        } else if (hiddenProp.length() > 0) {
+            doc.remove(hiddenProp);
+        }
     }
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        if (!request.isHandledBy("mongo")
-            || request.getQueryParameters() == null
-            || request.getQueryParameters().isEmpty()) {
+        if (!request.isHandledBy("mongo") || response.getContent() == null) {
             return false;
         }
 
         var mongoPermission = MongoPermissions.of(request);
 
         if (mongoPermission != null) {
-            return !mongoPermission.getForbiddenQueryParams().isEmpty();
+            return !mongoPermission.getHideProps().isEmpty();
         } else {
             return false;
         }

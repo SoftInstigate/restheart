@@ -32,22 +32,22 @@ import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.MongoPermissions;
 import org.restheart.utils.BsonUtils;
 
-@RegisterPlugin(name = "mongoPermissionOverriddenProps",
-    description = "Override properties's values in write requests according to the mongo.overriddenProps ACL permission",
+@RegisterPlugin(name = "mongoPermissionOverrideProps",
+    description = "Override properties's values in write requests according to the mongo.overrideProps ACL permission",
     interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
     enabledByDefault = true,
-    // must be lesser priority than mongoProtectedProps
+    // must be lesser priority than mongoprotectProps
     priority = 11)
-public class OverriddenProps implements MongoInterceptor {
+public class OverrideProps implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var overriddenProps = MongoPermissions.of(request).getOverriddenProps();
+        var overrideProps = MongoPermissions.of(request).getOverrideProps();
 
         if (request.getContent().isDocument()) {
-            override(request, overriddenProps);
+            override(request, overrideProps);
         } else if (request.getContent().isArray()) {
             request.getContent().asArray().stream().map(doc -> doc.asDocument())
-                    .forEachOrdered(doc -> override(request, overriddenProps));
+                    .forEachOrdered(doc -> override(request, overrideProps));
         }
 
         if (request.isPost()) {
@@ -55,8 +55,8 @@ public class OverriddenProps implements MongoInterceptor {
         }
     }
 
-    private void override(MongoRequest request, Map<String, BsonValue> overriddenProps) {
-        overriddenProps.entrySet().stream()
+    private void override(MongoRequest request, Map<String, BsonValue> overrideProps) {
+        overrideProps.entrySet().stream()
                 .filter(e -> e.getValue() != null && e.getValue().isString())
                 .forEachOrdered(e -> override(request, e.getKey(), e.getValue().asString().getValue()));
     }
@@ -74,7 +74,7 @@ public class OverriddenProps implements MongoInterceptor {
         var mongoPermission = MongoPermissions.of(request);
 
         if (mongoPermission != null) {
-            return !mongoPermission.getOverriddenProps().isEmpty();
+            return !mongoPermission.getOverrideProps().isEmpty();
         } else {
             return false;
         }

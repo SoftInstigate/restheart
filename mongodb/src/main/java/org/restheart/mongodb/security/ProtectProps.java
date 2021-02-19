@@ -34,23 +34,23 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
 
-@RegisterPlugin(name = "mongoPermissionProtectedProps",
-    description = "Forbids writing properties according to the mongo.protectedProps ACL permission",
+@RegisterPlugin(name = "mongoPermissionProtectProps",
+    description = "Forbids writing properties according to the mongo.protectProps ACL permission",
     interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
     enabledByDefault = true,
     priority = 10)
-public class ProtectedProps implements MongoInterceptor {
+public class ProtectProps implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var protectedProps = MongoPermissions.of(request).getProtectedProps();
+        var protectProps = MongoPermissions.of(request).getProtectProps();
 
         boolean contains;
 
         if (request.getContent().isDocument()) {
-            contains = contains(request.getContent().asDocument(), protectedProps);
+            contains = contains(request.getContent().asDocument(), protectProps);
         } else if (request.getContent().isArray()) {
-            contains = request.getContent().asArray().stream().map(doc -> doc.asDocument()).anyMatch(doc -> contains(doc, protectedProps));
+            contains = request.getContent().asArray().stream().map(doc -> doc.asDocument()).anyMatch(doc -> contains(doc, protectProps));
         } else {
             contains = false;
         }
@@ -61,13 +61,13 @@ public class ProtectedProps implements MongoInterceptor {
         }
     }
 
-    private boolean contains(BsonDocument doc, Set<String> protectedProps) {
+    private boolean contains(BsonDocument doc, Set<String> protectProps) {
         var ufdoc = BsonUtils.unflatten(doc).asDocument();
 
-        return protectedProps.stream().anyMatch(hiddenProp -> contains(ufdoc, hiddenProp));
+        return protectProps.stream().anyMatch(hiddenProp -> contains(ufdoc, hiddenProp));
     }
 
-    private boolean contains(BsonDocument doc, String protectedProps) {
+    private boolean contains(BsonDocument doc, String protectProps) {
         // let's check update operators first, since doc can look like:
         // {
         //    <operator1>: { <field1>: <value1>, ... },
@@ -78,18 +78,18 @@ public class ProtectedProps implements MongoInterceptor {
         if (BsonUtils.containsUpdateOperators(doc)) {
             var updateOperators = doc.keySet().stream().filter(k -> k.startsWith("$")).collect(Collectors.toList());
 
-            return updateOperators.stream().anyMatch(uo -> contains(BsonUtils.unflatten(doc.get(uo)).asDocument(), protectedProps));
+            return updateOperators.stream().anyMatch(uo -> contains(BsonUtils.unflatten(doc.get(uo)).asDocument(), protectProps));
         }
 
-        if (protectedProps.contains(".")) {
-            var first = protectedProps.substring(0, protectedProps.indexOf("."));
+        if (protectProps.contains(".")) {
+            var first = protectProps.substring(0, protectProps.indexOf("."));
             if (first.length() > 0 && doc.containsKey(first) && doc.get(first).isDocument()) {
-                return contains(doc.get(first).asDocument(), protectedProps.substring(protectedProps.indexOf(".")+1));
+                return contains(doc.get(first).asDocument(), protectProps.substring(protectProps.indexOf(".")+1));
             } else {
                 return false;
             }
         } else {
-            return protectedProps.length() > 0 && doc.containsKey(protectedProps);
+            return protectProps.length() > 0 && doc.containsKey(protectProps);
         }
     }
 
@@ -102,7 +102,7 @@ public class ProtectedProps implements MongoInterceptor {
         var mongoPermission = MongoPermissions.of(request);
 
         if (mongoPermission != null) {
-            return !mongoPermission.getProtectedProps().isEmpty();
+            return !mongoPermission.getProtectProps().isEmpty();
         } else {
             return false;
         }

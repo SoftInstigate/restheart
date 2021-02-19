@@ -399,6 +399,23 @@ public class AclVarsInterpolator {
 
         var properties = new BsonDocument();
 
+        // the name of the db
+        properties.put("db", request.getDBName() == null ? BsonNull.VALUE : new BsonString(request.getDBName()));
+
+        // the name of the collection
+        properties.put("collection", request.getDBName() == null ? BsonNull.VALUE : new BsonString(request.getCollectionName()));
+
+        // the _id of the document
+        properties.put("_id", request.getDocumentId() == null ? BsonNull.VALUE : request.getDocumentId());
+
+        // the TYPE of the resource:
+        // - INVALID, ROOT, ROOT_SIZE, DB, DB_SIZE, DB_META, CHANGE_STREAM, COLLECTION,
+        // - COLLECTION_SIZE, COLLECTION_META, DOCUMENT, COLLECTION_INDEXES, INDEX,
+        // - FILES_BUCKET, FILES_BUCKET_SIZE, FILES_BUCKET_META, FILE, FILE_BINARY,
+        // - AGGREGATION, SCHEMA, SCHEMA_STORE, SCHEMA_STORE_SIZE, SCHEMA_STORE_META,
+        // - BULK_DOCUMENTS, METRICS, SESSION, SESSIONS, TRANSACTIONS, TRANSACTION
+        properties.put("resourceType", new BsonString(request.getType().name()));
+
         var _userName = ExchangeAttributes.remoteUser().readAttribute(exchange);
 
         var userName = _userName != null ? new BsonString(_userName) : BsonNull.VALUE;
