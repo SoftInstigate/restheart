@@ -182,7 +182,7 @@ public class MongoAclAuthorizer implements Authorizer {
 
                 rolePermissions(role)
                         .stream().anyMatch(permission -> {
-                            var resolved = permission.allow(exchange);
+                            var resolved = permission.allow(request);
 
                             String marker;
 
@@ -212,7 +212,7 @@ public class MongoAclAuthorizer implements Authorizer {
                         -> rolePermissions(role)
                         .stream()
                         .anyMatch(r -> {
-                            if (r.allow(exchange)) {
+                            if (r.allow(request)) {
                                 permissions.add(r);
                                 return true;
                             } else {
@@ -252,7 +252,7 @@ public class MongoAclAuthorizer implements Authorizer {
             // see https://issues.jboss.org/browse/UNDERTOW-1317
             exchange.setRelativePath(request.getPath());
 
-            return !ps.stream().anyMatch(r -> r.allow(exchange));
+            return !ps.stream().anyMatch(r -> r.allow(request));
         } else {
             return true;
         }

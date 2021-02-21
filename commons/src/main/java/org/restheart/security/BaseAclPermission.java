@@ -21,33 +21,69 @@
 package org.restheart.security;
 
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.restheart.exchange.Request;
-
-import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 
 /**
  * ACL Permission that specifies the conditions that are necessary to perform
  * the request
  *
- * The request is authorized if AclPermission.resolve() to true
+ * The request is authorized if BaseAclPermission.allow() returns true
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class BaseAclPermission {
-    public static final AttachmentKey<BaseAclPermission> MATCHING_ACL_PERMISSION = AttachmentKey.create(BaseAclPermission.class);
+    public static final AttachmentKey<BaseAclPermission> MATCHING_ACL_PERMISSION = AttachmentKey
+            .create(BaseAclPermission.class);
 
-    private final String predicate;
+    private Predicate<Request<?>> predicate;
     private final Set<String> roles;
     private final int priority;
     private final Object raw;
 
-    public BaseAclPermission(String predicate, Set<String> roles, int priority, Object raw) {
+    public BaseAclPermission(Predicate<Request<?>> predicate, Set<String> roles, int priority, Object raw) {
         this.predicate = predicate;
         this.roles = roles;
         this.priority = priority;
         this.raw = raw;
+    }
+
+    /**
+     *
+     * @param exchange
+     * @return the acl predicate associated with this request
+     */
+    public static BaseAclPermission of(Request<?> request) {
+        return request.getExchange().getAttachment(MATCHING_ACL_PERMISSION);
+    }
+
+    /**
+     *
+     * @param request
+     * @return true if this acl authorizes the request
+     */
+    public boolean allow(Request<?> request) {
+        return this.predicate.test(request);
+    }
+
+    /**
+     *
+     * @return the predicate
+     */
+    public Predicate<Request<?>> gePredicate() {
+        return this.predicate;
+    }
+
+    /**
+     *
+     * sets the predicate. A permission can be programmatically extended with
+     * additional condition predicates with
+     * permission.setPredicate(getPredicate().and(additionalPredicate))
+     */
+    public void setPredicate(Predicate<Request<?>> predicate) {
+        this.predicate = predicate;
     }
 
     /**
@@ -58,28 +94,12 @@ public abstract class BaseAclPermission {
     }
 
     /**
-     * @return the predicate
-     */
-    public String getPredicate() {
-        return predicate;
-    }
-
-    /**
      * lesser is higher priority
      *
      * @return the priority
      */
     public int getPriority() {
         return priority;
-    }
-
-    /**
-     *
-     * @param exchange
-     * @return the acl predicate associated with this request
-     */
-    public static BaseAclPermission of(Request<?> request) {
-        return request.getExchange().getAttachment(MATCHING_ACL_PERMISSION);
     }
 
     /**
@@ -102,11 +122,4 @@ public abstract class BaseAclPermission {
             return null;
         }
     }
-
-    /**
-     *
-     * @param exchange
-     * @return true if this acl authorizes the request
-     */
-    public abstract boolean allow(final HttpServerExchange exchange);
 }

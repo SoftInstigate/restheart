@@ -26,14 +26,12 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import org.restheart.ConfigurationException;
-import org.restheart.exchange.Request;
 import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.BaseAclPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.undertow.predicate.PredicateParser;
-import io.undertow.server.HttpServerExchange;
 
 /**
  * ACL Permission that specifies the conditions that are necessary to perform
@@ -45,9 +43,11 @@ import io.undertow.server.HttpServerExchange;
  */
 public class FileAclPermission extends BaseAclPermission {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileAclPermission.class);
+    private final String undertowPredicate;
 
-    private FileAclPermission(String predicate, Set<String> roles, int priority, Map<String, Object> raw) {
-        super(predicate, roles, priority, raw);
+    private FileAclPermission(String undertowPredicate, Set<String> roles, int priority, Map<String, Object> raw) {
+        super(req -> AclVarsInterpolator.interpolatePredicate(req, undertowPredicate).resolve(req.getExchange()), roles, priority, raw);
+        this.undertowPredicate = undertowPredicate;
     }
 
     /**
@@ -75,17 +75,17 @@ public class FileAclPermission extends BaseAclPermission {
             throw new ConfigurationException("Wrong permission: missing 'predicate'");
         }
 
-        String predicate = argValue(args, "predicate");
+        String argPredicate = argValue(args, "predicate");
 
-        if (predicate == null) {
+        if (argPredicate == null) {
             throw new ConfigurationException("Wrong permission: 'predicate' cannot be null");
         }
 
         try {
             // check predicate
-            PredicateParser.parse(predicate, FileAclPermission.class.getClassLoader());
+            PredicateParser.parse(argPredicate, FileAclPermission.class.getClassLoader());
         } catch (Throwable t) {
-            throw new ConfigurationException("Wrong permission: invalid predicate: " + predicate, t);
+            throw new ConfigurationException("Wrong permission: invalid predicate: " + argPredicate, t);
         }
 
         int priority;
@@ -93,18 +93,18 @@ public class FileAclPermission extends BaseAclPermission {
         if (args.containsKey("priority")) {
             priority = argValue(args, "priority");
         } else {
-            LOGGER.warn("Predicate {} {} doesn't have priority; setting it to very low priority", roles, predicate);
+            LOGGER.warn("Predicate {} {} doesn't have priority; setting it to very low priority", roles, argPredicate);
             priority = Integer.MAX_VALUE; // very low priority
         }
 
-        return new FileAclPermission(predicate, roles, priority, args);
+        return new FileAclPermission(argPredicate, roles, priority, args);
     }
 
-    public boolean allow(final HttpServerExchange exchange) {
-        if (getPredicate() == null) {
-            return false;
-        } else {
-            return AclVarsInterpolator.interpolatePredicate(Request.of(exchange), getPredicate()).resolve(exchange);
-        }
+    /**
+     *
+     * @return the undertowPredicate
+     */
+    public String getUndertowPredicate() {
+        return undertowPredicate;
     }
 }

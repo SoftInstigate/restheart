@@ -27,14 +27,12 @@ import java.util.stream.StreamSupport;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.ConfigurationException;
-import org.restheart.exchange.Request;
 import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.BaseAclPermission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.undertow.predicate.PredicateParser;
-import io.undertow.server.HttpServerExchange;
 
 /**
  * ACL Permission that specifies the conditions that are necessary to perform
@@ -48,11 +46,13 @@ public class MongoAclPermission extends BaseAclPermission {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoAclPermission.class);
 
     private final BsonValue _id;
+    private final String undertowPredicate;
 
-    MongoAclPermission(BsonValue _id, String predicate, Set<String> roles, int priority, BsonDocument raw) {
-        super(predicate, roles, priority, raw);
 
+    MongoAclPermission(BsonValue _id, String undertowPredicate, Set<String> roles, int priority, BsonDocument raw) {
+        super(req -> AclVarsInterpolator.interpolatePredicate(req, undertowPredicate).resolve(req.getExchange()), roles, priority, raw);
         this._id = _id;
+        this.undertowPredicate = undertowPredicate;
     }
 
     /**
@@ -76,19 +76,17 @@ public class MongoAclPermission extends BaseAclPermission {
         var roles = StreamSupport.stream(_roles.asArray().spliterator(), true).map(role -> role.asString())
                 .map(role -> role.getValue()).collect(Collectors.toSet());
 
-        String predicate;
-        var _predicate = doc.get("predicate");
+        var argPredicate = doc.get("predicate");
 
-        if (_predicate == null || !_predicate.isString()) {
+        if (argPredicate == null || !argPredicate.isString()) {
             throw new ConfigurationException("Wrong permission: predicate must be a string");
         }
 
         try {
             // check predicate
-            PredicateParser.parse(_predicate.asString().getValue(), MongoAclPermission.class.getClassLoader());
-            predicate = _predicate.asString().getValue();
+            PredicateParser.parse(argPredicate.asString().getValue(), MongoAclPermission.class.getClassLoader());
         } catch (Throwable t) {
-            throw new ConfigurationException("Wrong permission: invalid predicate " + _predicate, t);
+            throw new ConfigurationException("Wrong permission: invalid predicate " + argPredicate, t);
         }
 
         int priority;
@@ -102,7 +100,7 @@ public class MongoAclPermission extends BaseAclPermission {
             priority = _priority.asNumber().intValue();
         }
 
-        return new MongoAclPermission(_id, predicate, roles, priority, doc);
+        return new MongoAclPermission(_id, argPredicate.asString().getValue(), roles, priority, doc);
     }
 
     /**
@@ -112,12 +110,11 @@ public class MongoAclPermission extends BaseAclPermission {
         return _id;
     }
 
-    @Override
-    public boolean allow(final HttpServerExchange exchange) {
-        if (getPredicate() == null) {
-            return false;
-        } else {
-            return AclVarsInterpolator.interpolatePredicate(Request.of(exchange), getPredicate()).resolve(exchange);
-        }
+    /**
+     *
+     * @return the undertowPredicate
+     */
+    public String getUndertowPredicate() {
+        return undertowPredicate;
     }
 }

@@ -124,7 +124,7 @@ public class FileAclAuthorizer
 
                 rolePermissions(role)
                         .stream().anyMatch(permission -> {
-                            var resolved = permission.allow(exchange);
+                            var resolved = permission.allow(request);
 
                             String marker;
 
@@ -139,7 +139,7 @@ public class FileAclAuthorizer
                             LOGGER.debug("role {}, permission (roles={},predicate={}), resolve {} {}",
                                     role,
                                     permission.getRoles(),
-                                    permission.getPredicate(),
+                                    permission.getUndertowPredicate(),
                                     resolved,
                                     marker);
 
@@ -154,7 +154,7 @@ public class FileAclAuthorizer
                 .forEachOrdered(role -> rolePermissions(role)
                         .stream()
                         .anyMatch(r -> {
-                            if (r.allow(exchange)) {
+                            if (r.allow(request)) {
                                 machedPermissions.add(r);
                                 return true;
                             } else {
@@ -194,7 +194,7 @@ public class FileAclAuthorizer
             // see https://issues.jboss.org/browse/UNDERTOW-1317
             exchange.setRelativePath(request.getPath());
 
-            return !ps.stream().anyMatch(r -> r.allow(exchange));
+            return !ps.stream().anyMatch(r -> r.allow(request));
         } else {
             return true;
         }
