@@ -140,36 +140,41 @@ public class RndTokenManager implements TokenManager {
         if (cachedAccount != null && cachedAccount.isPresent()) {
             return cachedAccount.get().getCredentials();
         } else {
-            char[] token = nextToken();
-            PwdCredentialAccount newCachedTokenAccount;
-            if (account instanceof MongoRealmAccount) {
-                var _account = (MongoRealmAccount) account;
-
-                newCachedTokenAccount = new MongoRealmAccount(
-                    account.getPrincipal().getName(),
-                    token,
-                    Sets.newTreeSet(account.getRoles()),
-                    _account.getAccountDocument());
-            } else if (account instanceof FileRealmAccount) {
-                var _account = (FileRealmAccount) account;
-
-                newCachedTokenAccount = new FileRealmAccount(
-                    account.getPrincipal().getName(),
-                    token,
-                    Sets.newTreeSet(account.getRoles()),
-                    _account.getAccountProperties());
-            } else {
-                newCachedTokenAccount = new PwdCredentialAccount(
-                    account.getPrincipal().getName(),
-                    token,
-                    Sets.newTreeSet(account.getRoles()));
-            }
-
+            var newCachedTokenAccount = cloneWithToken(account, nextToken());
 
             CACHE.put(account.getPrincipal().getName(), newCachedTokenAccount);
 
             return newCachedTokenAccount.getCredentials();
         }
+    }
+
+    private PwdCredentialAccount cloneWithToken(Account account, char[] token) {
+        PwdCredentialAccount ret;
+
+        if (account instanceof MongoRealmAccount) {
+            var _account = (MongoRealmAccount) account;
+
+            ret = new MongoRealmAccount(
+                account.getPrincipal().getName(),
+                token,
+                Sets.newTreeSet(account.getRoles()),
+                _account.getAccountDocument());
+        } else if (account instanceof FileRealmAccount) {
+            var _account = (FileRealmAccount) account;
+
+            ret = new FileRealmAccount(
+                account.getPrincipal().getName(),
+                token,
+                Sets.newTreeSet(account.getRoles()),
+                _account.getAccountProperties());
+        } else {
+            ret = new PwdCredentialAccount(
+                account.getPrincipal().getName(),
+                token,
+                Sets.newTreeSet(account.getRoles()));
+        }
+
+        return ret;
     }
 
     @Override
@@ -181,17 +186,12 @@ public class RndTokenManager implements TokenManager {
     public void update(Account account) {
         String id = account.getPrincipal().getName();
 
-        Optional<PwdCredentialAccount> _authTokenAccount
-                = CACHE.get(id);
+        Optional<PwdCredentialAccount> _authTokenAccount = CACHE.get(id);
 
         if (_authTokenAccount != null && _authTokenAccount.isPresent()) {
-            PwdCredentialAccount authTokenAccount = _authTokenAccount.get();
+            var authTokenAccount = _authTokenAccount.get();
 
-            PwdCredentialAccount updatedAuthTokenAccount
-                    = new PwdCredentialAccount(
-                            id,
-                            authTokenAccount.getCredentials().getPassword(),
-                            account.getRoles());
+            var updatedAuthTokenAccount = cloneWithToken(account, authTokenAccount.getCredentials().getPassword());
 
             CACHE.put(id, updatedAuthTokenAccount);
         }
