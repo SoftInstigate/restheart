@@ -36,6 +36,8 @@ import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.exchange.JsonProxyRequest;
+import org.restheart.security.FileRealmAccount;
+import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.PwdCredentialAccount;
 import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
@@ -117,8 +119,7 @@ public class RndTokenManager implements TokenManager {
         return null;
     }
 
-    private boolean verifyToken(final PwdCredentialAccount account,
-            final Credential credential) {
+    private boolean verifyToken(final PwdCredentialAccount account, final Credential credential) {
         if (credential instanceof PasswordCredential) {
             char[] token = ((PasswordCredential) credential).getPassword();
             char[] expectedToken = account.getCredentials().getPassword();
@@ -134,20 +135,38 @@ public class RndTokenManager implements TokenManager {
 
     @Override
     public PasswordCredential get(Account account) {
-        Optional<PwdCredentialAccount> cachedAccount = CACHE
-                .get(account.getPrincipal().getName());
+        Optional<PwdCredentialAccount> cachedAccount = CACHE.get(account.getPrincipal().getName());
 
         if (cachedAccount != null && cachedAccount.isPresent()) {
             return cachedAccount.get().getCredentials();
         } else {
             char[] token = nextToken();
-            PwdCredentialAccount newCachedTokenAccount = new PwdCredentialAccount(
+            PwdCredentialAccount newCachedTokenAccount;
+            if (account instanceof MongoRealmAccount) {
+                var _account = (MongoRealmAccount) account;
+
+                newCachedTokenAccount = new MongoRealmAccount(
+                    account.getPrincipal().getName(),
+                    token,
+                    Sets.newTreeSet(account.getRoles()),
+                    _account.getAccountDocument());
+            } else if (account instanceof FileRealmAccount) {
+                var _account = (FileRealmAccount) account;
+
+                newCachedTokenAccount = new FileRealmAccount(
+                    account.getPrincipal().getName(),
+                    token,
+                    Sets.newTreeSet(account.getRoles()),
+                    _account.getAccountProperties());
+            } else {
+                newCachedTokenAccount = new PwdCredentialAccount(
                     account.getPrincipal().getName(),
                     token,
                     Sets.newTreeSet(account.getRoles()));
+            }
 
-            CACHE.put(account.getPrincipal().getName(),
-                    newCachedTokenAccount);
+
+            CACHE.put(account.getPrincipal().getName(), newCachedTokenAccount);
 
             return newCachedTokenAccount.getCredentials();
         }
