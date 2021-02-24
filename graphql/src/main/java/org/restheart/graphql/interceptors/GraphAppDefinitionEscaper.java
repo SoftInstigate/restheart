@@ -20,9 +20,11 @@
  */
 package org.restheart.graphql.interceptors;
 
+import org.restheart.ConfigurationException;
 import org.restheart.ConfigurationKeys;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.graphql.GraphQLService;
 
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 
@@ -43,18 +45,22 @@ import java.util.Map;
         enabledByDefault = true
 )
 public class GraphAppDefinitionEscaper implements MongoInterceptor {
-    private String db = null;
-    private String coll = null;
+    private String db = GraphQLService.DEFAULT_APP_DEF_DB;
+    private String coll = GraphQLService.DEFAULT_APP_DEF_COLLECTION;
 
     private boolean enabled = false;
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void conf(Map<String, Object> args) {
-        Map<String, Object> pluginsArgs = argValue(args, ConfigurationKeys.PLUGINS_ARGS_KEY);
-        Map<String, Object> graphqlArgs = argValue(pluginsArgs, "graphql");
+        try {
+            Map<String, Object> pluginsArgs = argValue(args, ConfigurationKeys.PLUGINS_ARGS_KEY);
+            Map<String, Object> graphqlArgs = argValue(pluginsArgs, "graphql");
 
-        this.db = argValue(graphqlArgs, "db");
-        this.coll = argValue(graphqlArgs, "collection");
+            this.db = argValue(graphqlArgs, "db");
+            this.coll = argValue(graphqlArgs, "collection");
+        } catch(ConfigurationException ce) {
+            // nothing to do, using default values
+        }
 
         this.enabled = true;
     }

@@ -52,19 +52,30 @@ import java.util.function.Function;
                 defaultURI = "/graphql")
 
 public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
+    public static final String DEFAULT_APP_DEF_DB = "restheart";
+    public static final String DEFAULT_APP_DEF_COLLECTION = "gqlapps";
+
+
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLService.class);
 
     private GraphQL gql;
     private MongoClient mongoClient = null;
-    private String db = null;
-    private String collection = null;
+    private String db = DEFAULT_APP_DEF_DB;
+    private String collection = DEFAULT_APP_DEF_COLLECTION;
 
     @InjectConfiguration
     public void initConf(Map<String, Object> args) throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
         CoercingUtils.replaceBuiltInCoercing();
-        this.db = ConfigurablePlugin.argValue(args, "db");
-        this.collection = ConfigurablePlugin.argValue(args, "collection");
+
+        if (args != null) {
+            try {
+                this.db = ConfigurablePlugin.argValue(args, "db");
+                this.collection = ConfigurablePlugin.argValue(args, "collection");
+            } catch(ConfigurationException ex) {
+                // nothing to do, using default values
+            }
+        }
 
         if(mongoClient != null){
             GraphQLDataFetcher.setMongoClient(mongoClient);
