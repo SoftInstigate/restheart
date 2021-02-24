@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import java.util.Objects;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.mongodb.MongoClient;
 
 import org.restheart.ConfigurationException;
@@ -61,6 +62,7 @@ import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.handlers.SecurityHandler;
 import org.restheart.utils.PluginUtils;
+import org.restheart.security.BaseAclPermissionTransformer;
 import org.restheart.security.authorizers.FullAuthorizer;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_AUTH;
@@ -92,6 +94,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     private Set<PluginRecord<AuthMechanism>> authMechanisms;
 
     private Set<PluginRecord<Authenticator>> authenticators;
+
+    private Set<BaseAclPermissionTransformer> permissionTransformers;
 
     private Set<PluginRecord<Authorizer>> authorizers;
 
@@ -172,6 +176,20 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         } else {
             throw new ConfigurationException("Authenticator " + name + " not found");
         }
+    }
+
+    /**
+     * Can be used by some authenticators to allowo modifyign the permissions with custom logic
+     *
+     * @return the permission transformers
+     */
+    @Override
+    public Set<BaseAclPermissionTransformer> getPermissionTransformers() {
+        if (this.permissionTransformers == null) {
+            this.permissionTransformers = Sets.newLinkedHashSet();
+        }
+
+        return this.permissionTransformers;
     }
 
     /**

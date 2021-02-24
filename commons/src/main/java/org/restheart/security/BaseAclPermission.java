@@ -79,10 +79,9 @@ public abstract class BaseAclPermission {
     /**
      *
      * sets the predicate. A permission can be programmatically extended with
-     * additional condition predicates with
-     * permission.setPredicate(getPredicate().and(additionalPredicate))
+     * additional condition predicates using PermissionTransformer
      */
-    public void setPredicate(Predicate<Request<?>> predicate) {
+    void setPredicate(Predicate<Request<?>> predicate) {
         this.predicate = predicate;
     }
 

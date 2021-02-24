@@ -20,52 +20,84 @@
  */
 package org.restheart.mongodb.security;
 
-import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.BaseAclPermission;
 import org.restheart.security.MongoPermissions;
-import org.restheart.utils.HttpStatus;
+import org.restheart.security.BaseAclPermissionTransformer;
+import java.util.Map;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.InterceptPoint;
+import org.restheart.exchange.Request;
+import org.restheart.exchange.ServiceRequest;
+import org.restheart.plugins.InitPoint;
+import org.restheart.plugins.Initializer;
+import org.restheart.plugins.InjectPluginsRegistry;
 
 @RegisterPlugin(name = "mongoPermissionAllowMgmtRequests",
-    description = "Allow mongo management requests according to the mongo.allowManagementRequests ACL permission",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+    description = "Allow mongo management requests according to the mongo.allowManagementRequests ACL permission", 
+    initPoint = InitPoint.BEFORE_STARTUP,
     enabledByDefault = true)
-public class AllowMgmtRequests implements MongoInterceptor {
+public class AllowMgmtRequests implements Initializer {
+    private PluginsRegistry registry;
 
-    @Override
-    public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        if ((request.isDb() && !request.isGet()) || // create/delete dbs
-                (request.isCollection() && (!request.isGet() && !request.isPost())) || // create/update/delete collections
-
-                (request.isIndex()) || // indexes
-                (request.isCollectionIndexes()) || // indexes
-
-                (request.isFilesBucket() && !request.isGet() && !request.isPost()) || // create/update/delete file buckets
-
-                (request.isSchema()) || // schema store
-                (request.isSchemaStore()) || // schema store
-                (request.isSchemaStoreSize()) || // schema store size
-
-                (request.isDbMeta()) || // db metadata
-                (request.isCollectionMeta()) || // collection metadata
-                (request.isFilesBucketMeta()) || // file bucket metadata
-                (request.isSchemaStoreMeta()) // schema store metadata
-        ) {
-            response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-            response.setInError(true);
-        }
+    @InjectPluginsRegistry
+    public void initRegistry(PluginsRegistry registry) {
+        this.registry = registry;
     }
 
     @Override
-    public boolean resolve(MongoRequest request, MongoResponse response) {
-        var mongoPermissions = MongoPermissions.of(request);
-
-        if (!request.isHandledBy("mongo") || mongoPermissions == null) {
-            return false;
-        }
-
-        return !mongoPermissions.isAllowManagementRequests();
+    public void init() {
+        this.registry.getPermissionTransformers()
+            .add(new BaseAclPermissionTransformer(resolve, additionalPredicate));
     }
+
+    // apply the transformation if the raw permission includes the 'mongo' object
+    private Predicate<BaseAclPermission> resolve = p -> {
+        var raw = p.getRaw();
+        return ((raw instanceof BsonDocument
+            && ((BsonDocument)raw).containsKey("mongo")
+            && ((BsonDocument)raw).get("mongo").isDocument()))
+            ||
+            ((raw instanceof Map
+            && ((Map<?,?>)raw).containsKey("mongo")
+            && ((Map<?,?>)raw).get("mongo") instanceof Map<?,?>));
+    };
+
+    private BiPredicate<BaseAclPermission, Request<?>> additionalPredicate = (permission, _request) -> {
+        if (_request instanceof ServiceRequest) {
+            var request = (ServiceRequest<?>) _request;
+
+            var mongoPermissions = MongoPermissions.from(permission.getRaw());
+
+            if (!request.isHandledBy("mongo") || mongoPermissions == null) {
+                return true; // --> allow
+            } else if (!mongoPermissions.isAllowManagementRequests()) {
+                var mongoRequest = (MongoRequest) _request;
+
+                return !(
+                    (mongoRequest.isDb() && !mongoRequest.isGet()) || // create/delete dbs
+                    (mongoRequest.isCollection() && (!mongoRequest.isGet() && !mongoRequest.isPost())) || // create/update/delete collections
+                    (mongoRequest.isIndex()) || // indexes
+                    (mongoRequest.isCollectionIndexes()) || // indexes
+
+                    (mongoRequest.isFilesBucket() && !mongoRequest.isGet() && !mongoRequest.isPost()) || // create/update/delete file buckets
+
+                    (mongoRequest.isSchema()) || // schema store
+                    (mongoRequest.isSchemaStore()) || // schema store
+                    (mongoRequest.isSchemaStoreSize()) || // schema store size
+
+                    (mongoRequest.isDbMeta()) || // db metadata
+                    (mongoRequest.isCollectionMeta()) || // collection metadata
+                    (mongoRequest.isFilesBucketMeta()) || // file bucket metadata
+                    (mongoRequest.isSchemaStoreMeta()));
+            } else {
+                return true; // --> allow
+            }
+        } else {
+            return true; // --> allow
+        }
+    };
 }

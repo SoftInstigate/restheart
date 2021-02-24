@@ -44,6 +44,8 @@ import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 import static org.restheart.security.BaseAclPermission.MATCHING_ACL_PERMISSION;
@@ -57,18 +59,17 @@ import org.slf4j.LoggerFactory;
         name = "fileAclAuthorizer",
         description = "authorizes requests according to acl defined in a configuration file",
         enabledByDefault = false)
-public class FileAclAuthorizer
-        extends FileConfigurablePlugin
-        implements Authorizer {
+public class FileAclAuthorizer extends FileConfigurablePlugin implements Authorizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileAclAuthorizer.class);
 
     public static final String $UNAUTHENTICATED = "$unauthenticated";
 
     private final Set<FileAclPermission> permissions = new LinkedHashSet<>();
 
+    private PluginsRegistry registry;
+
     @InjectConfiguration
-    public void init(Map<String, Object> confArgs)
-            throws FileNotFoundException, ConfigurationException {
+    public void initConfiguration(Map<String, Object> confArgs) throws FileNotFoundException, ConfigurationException {
         init(confArgs, "permissions");
 
         // reverse oreder, the first permission in the acl.yml must be on top
@@ -76,6 +77,11 @@ public class FileAclAuthorizer
         Collections.reverse(list);
         this.permissions.clear();
         list.stream().forEach(permissions::add);
+    }
+
+    @InjectPluginsRegistry
+    public void initRegistry(PluginsRegistry registry) throws FileNotFoundException, ConfigurationException {
+        this.registry = registry;
     }
 
     @Override
@@ -89,6 +95,11 @@ public class FileAclAuthorizer
         };
     }
 
+    private boolean permissionsTransformed = false;
+    private void transformPermissions() {
+        this.permissions.forEach(p -> this.registry.getPermissionTransformers().stream().forEach(pt -> pt.transform(p)));
+    }
+
     /**
      * @param request
      * @return
@@ -96,6 +107,12 @@ public class FileAclAuthorizer
     @Override
     @SuppressWarnings("rawtypes")
     public boolean isAllowed(Request request) {
+        // on first request, apply the permission transformers
+        if (!permissionsTransformed) {
+            permissionsTransformed = true;
+            transformPermissions();
+        }
+
         // always allow OPTIONS requests
         if (request.isOptions()) {
             return true;
@@ -139,7 +156,7 @@ public class FileAclAuthorizer
                             LOGGER.debug("role {}, permission (roles={},predicate={}), resolve {} {}",
                                     role,
                                     permission.getRoles(),
-                                    permission.getUndertowPredicate(),
+                                    permission.getRequestPredicate(),
                                     resolved,
                                     marker);
 
@@ -153,9 +170,9 @@ public class FileAclAuthorizer
         roles(exchange)
                 .forEachOrdered(role -> rolePermissions(role)
                         .stream()
-                        .anyMatch(r -> {
-                            if (r.allow(request)) {
-                                machedPermissions.add(r);
+                        .anyMatch(p -> {
+                            if (p.allow(request)) {
+                                machedPermissions.add(p);
                                 return true;
                             } else {
                                 return false;

@@ -32,6 +32,7 @@ import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
+import org.restheart.security.BaseAclPermissionTransformer;
 
 /**
  *
@@ -65,6 +66,11 @@ public interface PluginsRegistry {
      * @return the authenticators
      */
     public Set<PluginRecord<Authorizer>> getAuthorizers();
+
+    /**
+     * @return the permission transformers
+     */
+    public Set<BaseAclPermissionTransformer> getPermissionTransformers();
 
     /**
      * @return the initializers

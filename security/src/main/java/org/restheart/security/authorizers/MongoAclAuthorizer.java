@@ -47,6 +47,8 @@ import org.restheart.exchange.Request;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectMongoClient;
+import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.security.utils.MongoUtils;
@@ -83,8 +85,10 @@ public class MongoAclAuthorizer implements Authorizer {
 
     private MongoClient mclient;
 
+    private PluginsRegistry registry;
+
     @InjectConfiguration
-    public void setConf(Map<String, Object> args) {
+    public void initConf(Map<String, Object> args) {
         this.aclDb = argValue(args, "acl-db");
         this.aclCollection = argValue(args, "acl-collection");
         this.rootRole = argValue(args, "root-role");
@@ -121,12 +125,17 @@ public class MongoAclAuthorizer implements Authorizer {
     }
 
     @InjectMongoClient
-    public void setMongoClient(MongoClient mclient) {
+    public void initMongoClient(MongoClient mclient) {
         this.mclient = mclient;
 
         if (!checkAclCollection()) {
             LOGGER.error("ACL collection does not exist and could not be created");
         }
+    }
+
+    @InjectPluginsRegistry
+    public void initRegistry(PluginsRegistry registry) {
+        this.registry = registry;
     }
 
     /**
@@ -340,7 +349,13 @@ public class MongoAclAuthorizer implements Authorizer {
                             }
                         })
                         .map(permissionDocument -> MongoAclPermission.build(permissionDocument))
-                        .forEachOrdered(p -> ret.add(p));
+                        .forEachOrdered(p->  {
+                            this.registry.getPermissionTransformers().stream().forEach(pt -> pt.transform(p));
+                            ret.add(p);
+                        });
+
+                // apply the permission transformers
+                ret.forEach(p -> this.registry.getPermissionTransformers().stream().forEach(pt -> pt.transform(p)));
 
                 return ret;
             }

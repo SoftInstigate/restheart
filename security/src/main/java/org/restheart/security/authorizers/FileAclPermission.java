@@ -43,11 +43,11 @@ import io.undertow.predicate.PredicateParser;
  */
 public class FileAclPermission extends BaseAclPermission {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileAclPermission.class);
-    private final String undertowPredicate;
+    private final String requestPredicate;
 
-    private FileAclPermission(String undertowPredicate, Set<String> roles, int priority, Map<String, Object> raw) {
-        super(req -> AclVarsInterpolator.interpolatePredicate(req, undertowPredicate).resolve(req.getExchange()), roles, priority, raw);
-        this.undertowPredicate = undertowPredicate;
+    private FileAclPermission(String requestPredicate, Set<String> roles, int priority, Map<String, Object> raw) throws ConfigurationException {
+        super(req -> AclVarsInterpolator.interpolatePredicate(req, requestPredicate).resolve(req.getExchange()), roles, priority, raw);
+        this.requestPredicate = requestPredicate;
     }
 
     /**
@@ -102,9 +102,9 @@ public class FileAclPermission extends BaseAclPermission {
 
     /**
      *
-     * @return the undertowPredicate
+     * @return the requestPredicate
      */
-    public String getUndertowPredicate() {
-        return undertowPredicate;
+    public String getRequestPredicate() {
+        return requestPredicate;
     }
 }

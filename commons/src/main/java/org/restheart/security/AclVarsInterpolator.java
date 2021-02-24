@@ -37,6 +37,7 @@ import org.bson.BsonInt64;
 import org.bson.BsonNull;
 import org.bson.BsonString;
 import org.bson.BsonValue;
+import org.restheart.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.Request;
 import org.restheart.utils.BsonUtils;
@@ -234,14 +235,18 @@ public class AclVarsInterpolator {
      * @param request   the request
      * @return the interpolated predicate
      */
-    public static Predicate interpolatePredicate(Request<?> request, String predicate) {
+    public static Predicate interpolatePredicate(Request<?> request, String predicate) throws ConfigurationException {
         var a = getAccountDocument(request);
 
-        if (a == null || a.isEmpty()) {
-            return PredicateParser.parse(predicate, AclVarsInterpolator.class.getClassLoader());
-        } else {
-            var interpolatedPredicate = interpolatePredicate(predicate, "@user.", a);
-            return PredicateParser.parse(interpolatedPredicate, AclVarsInterpolator.class.getClassLoader());
+        try {
+            if (a == null || a.isEmpty()) {
+                return PredicateParser.parse(predicate, AclVarsInterpolator.class.getClassLoader());
+            } else {
+                var interpolatedPredicate = interpolatePredicate(predicate, "@user.", a);
+                return PredicateParser.parse(interpolatedPredicate, AclVarsInterpolator.class.getClassLoader());
+            }
+        } catch(Throwable t) {
+            throw new ConfigurationException("Wrong permission: invalid predicate " + predicate, t);
         }
     }
 

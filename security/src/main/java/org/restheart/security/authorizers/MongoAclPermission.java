@@ -46,13 +46,10 @@ public class MongoAclPermission extends BaseAclPermission {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoAclPermission.class);
 
     private final BsonValue _id;
-    private final String undertowPredicate;
 
-
-    MongoAclPermission(BsonValue _id, String undertowPredicate, Set<String> roles, int priority, BsonDocument raw) {
-        super(req -> AclVarsInterpolator.interpolatePredicate(req, undertowPredicate).resolve(req.getExchange()), roles, priority, raw);
+    MongoAclPermission(BsonValue _id, String requestPredicate, Set<String> roles, int priority, BsonDocument raw) throws ConfigurationException {
+        super(req -> AclVarsInterpolator.interpolatePredicate(req, requestPredicate).resolve(req.getExchange()), roles, priority, raw);
         this._id = _id;
-        this.undertowPredicate = undertowPredicate;
     }
 
     /**
@@ -108,13 +105,5 @@ public class MongoAclPermission extends BaseAclPermission {
      */
     public BsonValue getId() {
         return _id;
-    }
-
-    /**
-     *
-     * @return the undertowPredicate
-     */
-    public String getUndertowPredicate() {
-        return undertowPredicate;
     }
 }
