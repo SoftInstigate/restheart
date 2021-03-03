@@ -20,55 +20,67 @@
  */
 package org.restheart.mongodb.security;
 
-import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.BaseAclPermission;
+import org.restheart.security.BaseAclPermissionTransformer;
 import org.restheart.security.MongoPermissions;
-import org.restheart.utils.HttpStatus;
 
 import java.util.Deque;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.InterceptPoint;
+import org.restheart.exchange.Request;
+import org.restheart.plugins.InitPoint;
+import org.restheart.plugins.Initializer;
+import org.restheart.plugins.InjectPluginsRegistry;
 
 @RegisterPlugin(name = "mongoPermissionForbidQueryParams",
     description = "Forbids query parameters according to the mongo.forbidQueryParams ACL permission",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+    initPoint = InitPoint.BEFORE_STARTUP,
     enabledByDefault = true,
     priority = 10)
-public class ForbidQueryParams implements MongoInterceptor {
+public class ForbidQueryParams extends BaseAllowInitializer implements Initializer {
+    private PluginsRegistry registry;
+
+    @InjectPluginsRegistry
+    public void initRegistry(PluginsRegistry registry) {
+        this.registry = registry;
+    }
 
     @Override
-    public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var forbidQueryParams = MongoPermissions.of(request).getForbidQueryParams();
-
-        if (contains(request.getQueryParameters(), forbidQueryParams)) {
-                response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-                request.setInError(true);
-        }
+    public void init() {
+        this.registry.getPermissionTransformers()
+            .add(new BaseAclPermissionTransformer(resolve, additionalPredicate));
     }
+
+    // apply the transformation if the permission contains fobbidden qparams
+    private Predicate<BaseAclPermission> resolve = p -> {
+        try {
+            return ! MongoPermissions.from(p.getRaw()).getForbidQueryParams().isEmpty();
+        } catch(IllegalArgumentException e) {
+            return false;
+        }
+    };
+
+    private BiPredicate<BaseAclPermission, Request<?>> additionalPredicate = (p, _request) -> {
+        if (!isHandledByMongoService(_request)) {
+            return true;
+        }
+
+        var mr = (MongoRequest) _request;
+        var mp = MongoPermissions.from(p);
+
+        var forbidQueryParams = mp.getForbidQueryParams();
+
+        return !contains(mr.getQueryParameters(), forbidQueryParams);
+    };
 
     private boolean contains(Map<String, Deque<String>> queryParams, Set<String>  forbidQueryParams) {
         return queryParams != null
             && queryParams.keySet().stream().anyMatch(qp -> forbidQueryParams.contains(qp));
-    }
-
-    @Override
-    public boolean resolve(MongoRequest request, MongoResponse response) {
-        if (!request.isHandledBy("mongo")
-            || request.getQueryParameters() == null
-            || request.getQueryParameters().isEmpty()) {
-            return false;
-        }
-
-        var mongoPermission = MongoPermissions.of(request);
-
-        if (mongoPermission != null) {
-            return !mongoPermission.getForbidQueryParams().isEmpty();
-        } else {
-            return false;
-        }
     }
 }
