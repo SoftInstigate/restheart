@@ -32,13 +32,13 @@ import java.util.function.Predicate;
 
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.Request;
+import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.InterceptPoint;
 
 @RegisterPlugin(name = "mongoPermissionAllowBulkRequests",
     description = "Allow bulk PATCH and bulk DELETE according to the mongo.allowBulkPatch and mongo.allowBulkDelete ACL permissions",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+    initPoint = InitPoint.BEFORE_STARTUP,
     enabledByDefault = true)
 public class AllowBulkRequests extends BaseAllowInitializer implements Initializer {
     private PluginsRegistry registry;

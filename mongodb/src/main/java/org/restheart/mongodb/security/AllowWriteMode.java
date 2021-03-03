@@ -20,48 +20,58 @@
  */
 package org.restheart.mongodb.security;
 
-import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.BaseAclPermission;
+import org.restheart.security.BaseAclPermissionTransformer;
 import org.restheart.security.MongoPermissions;
-import org.restheart.utils.HttpStatus;
+
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+
+import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.MongoResponse;
-import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-import org.restheart.plugins.InterceptPoint;
+import org.restheart.exchange.Request;
+import org.restheart.plugins.InitPoint;
+import org.restheart.plugins.Initializer;
+import org.restheart.plugins.InjectPluginsRegistry;
 
 @RegisterPlugin(name = "mongoPermissionAllowWriteMode",
     description = "Allow clients to specify the write mode according to the mongo.allowWriteMode ACL permission",
-    interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
+    initPoint = InitPoint.BEFORE_STARTUP,
     enabledByDefault = true)
-public class AllowWriteMode implements MongoInterceptor {
+public class AllowWriteMode extends BaseAllowInitializer implements Initializer {
+    private PluginsRegistry registry;
 
-    @Override
-    public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        if ((request.isPatch() || request.isDelete()) && request.isBulkDocuments()) {
-            response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-            response.setInError(true);
-            return;
-        }
-
-        if (request.isPost()) {
-            request.setWriteMode(WRITE_MODE.INSERT);
-        } else if (request.isPatch() || request.isPut()) {
-            request.setWriteMode(WRITE_MODE.UPDATE);
-        }
+    @InjectPluginsRegistry
+    public void initRegistry(PluginsRegistry registry) {
+        this.registry = registry;
     }
 
     @Override
-    public boolean resolve(MongoRequest request, MongoResponse response) {
-        if (!request.isHandledBy("mongo") || !request.isWriteDocument()) {
-            return false;
-        }
-
-        var mongoPermission = MongoPermissions.of(request);
-
-        if (mongoPermission != null) {
-            return !mongoPermission.isAllowWriteMode();
-        } else {
-            return false;
-        }
+    public void init() {
+        this.registry.getPermissionTransformers()
+            .add(new BaseAclPermissionTransformer(resolve, additionalPredicate));
     }
+
+    // apply the transformation if the permission does not allow write mode
+    private Predicate<BaseAclPermission> resolve = p -> {
+        try {
+            return ! MongoPermissions.from(p.getRaw()).isAllowWriteMode();
+        } catch(IllegalArgumentException e) {
+            return false;
+        }
+    };
+
+    private BiPredicate<BaseAclPermission, Request<?>> additionalPredicate = (permission, _request) -> {
+        if (!isHandledByMongoService(_request)) {
+            return true;
+        }
+
+        var mr = (MongoRequest) _request;
+
+        return !mr.isWriteDocument()
+        || (mr.getQueryParameterOfDefault(ExchangeKeys.WRITE_MODE_QPARAM_KEY, null) == null
+            && mr.getQueryParameterOfDefault(ExchangeKeys.WRITE_MODE_SHORT_QPARAM_KEY, null) == null);
+    };
 }
