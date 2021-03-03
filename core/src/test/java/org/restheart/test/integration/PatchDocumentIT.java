@@ -136,6 +136,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
     public void testPatchDocumentDotNotation() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid1"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{ 'array': [] }")
                 .asString();
@@ -203,6 +204,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
     public void testPatchDocumentOperators() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{ }")
                 .asString();
@@ -275,6 +277,7 @@ public class PatchDocumentIT extends HttpClientAbstactIT {
     public void testPatchDocumentIssue232() throws Exception {
         resp = Unirest.patch(url(DB, COLL, "issue232"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{ '$addToSet':{ 'addresses':{ 'addressType' : 'N', 'line2':'line 2' } } }")
                 .asString();

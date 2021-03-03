@@ -149,6 +149,7 @@ public class BulkRequestsIT extends AbstactIT {
         resp = Unirest.post(url(DB, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
+                .queryString("wm", "update")
                 .body("[{'_id': 1 },{'_id': 2 },{'_id': 3 },{'_id': 4 }]")
                 .asString();
 

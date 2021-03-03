@@ -15,6 +15,7 @@ Background:
 Scenario: create test acl
     * header Authorization = adminAuthHeader
     Given path '/restheart-test/acl'
+    And param wm = "upsert"
     And request read('maa-acl.json')
     When method POST
     Then status 200
@@ -133,6 +134,7 @@ Scenario: filtered creates a doc with status=private -> OK, than updates it -> F
 
     * header Authorization = filteredAuthHeader
     Given path '/test-db/test-authorization/private'
+    And param wm = "upsert"
     And request { "status": "public" }
     When method PATCH
     Then status 409
@@ -154,6 +156,7 @@ Scenario: filtered creates few docs-> OK, than updates it -> only public ones ar
     * header Authorization = filteredAuthHeader
     Given path '/test-db/test-authorization'
     And param rep = 's'
+    And param wm = "upsert"
     And request [{ "_id":"fd1", "status": "private", "selector": "xyz", "updated1": true }, { "_id":"fd2", "status": "private", "selector": "xyz", "updated1": true },  { "_id":"fd3", "status": "public", "selector": "xyz", "updated1": true }]
     When method POST
     Then status 207

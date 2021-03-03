@@ -23,6 +23,7 @@ package org.restheart.test.integration;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import java.net.URISyntaxException;
+
 import org.apache.http.HttpStatus;
 import org.junit.Assert;
 import org.junit.Before;
@@ -92,6 +93,7 @@ public class ETagIT extends AbstactIT {
         // create documents
         resp = Unirest.put(url(DB_REQUIRED, COLL, "docid"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .asString();
 
         Assert.assertEquals("create document " + DB_REQUIRED.concat("/").concat(COLL).concat("/docid"), HttpStatus.SC_CREATED, resp.getStatus());
@@ -108,6 +110,7 @@ public class ETagIT extends AbstactIT {
         // create document
         resp = Unirest.put(url(DB, COLL_REQUIRED, "docid"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .asString();
 
         Assert.assertEquals("create document " + DB.concat("/").concat(COLL).concat("/docid"), HttpStatus.SC_CREATED, resp.getStatus());
@@ -119,13 +122,20 @@ public class ETagIT extends AbstactIT {
      */
     @Test
     public void testUpdateNotRequired() throws Exception {
+        // makes ure docid does not exists
+        resp = Unirest.delete(url(DB, COLL, "docid"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .asString();
+
         resp = Unirest.put(url(DB, COLL, "docid"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
+                .queryString("wm", "upsert")
                 .body("{'a':1 }")
                 .asString();
 
-        Assert.assertEquals("check response status of create test data", HttpStatus.SC_OK, resp.getStatus());
+        Assert.assertEquals("check response status of create test data", HttpStatus.SC_CREATED, resp.getStatus());
     }
 
     /**
@@ -137,6 +147,7 @@ public class ETagIT extends AbstactIT {
         resp = Unirest.put(url(DB, COLL_REQUIRED, "docid"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
+                .queryString("wm", "upsert")
                 .body("{'a':1 }")
                 .asString();
 
@@ -146,6 +157,7 @@ public class ETagIT extends AbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .header("If-Match", "wrong etag")
+                .queryString("wm", "upsert")
                 .body("{'a':1 }")
                 .asString();
 
@@ -157,6 +169,7 @@ public class ETagIT extends AbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .queryString("checkEtag", "")
+                .queryString("wm", "upsert")
                 .header("If-Match", etag)
                 .body("{'a':1 }")
                 .asString();
@@ -167,6 +180,7 @@ public class ETagIT extends AbstactIT {
         resp = Unirest.put(url(DB_REQUIRED, COLL, "docid"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
+                .queryString("wm", "upsert")
                 .body("{'a':1 }")
                 .asString();
 
@@ -176,6 +190,7 @@ public class ETagIT extends AbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .header("If-Match", "wrong etag")
+                .queryString("wm", "upsert")
                 .body("{'a':1 }")
                 .asString();
 
@@ -187,6 +202,7 @@ public class ETagIT extends AbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .queryString("checkEtag", "")
+                .queryString("wm", "upsert")
                 .header("If-Match", etag)
                 .body("{'a':1 }")
                 .asString();
@@ -200,10 +216,20 @@ public class ETagIT extends AbstactIT {
      */
     @Test
     public void testUpdateEtagQParam() throws Exception {
+        // this makes sure that the document docid exists
         resp = Unirest.put(url(DB, COLL, "docid"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .queryString("checkEtag", "")
+                .queryString("wm", "insert")
+                .body("{'a':1 }")
+                .asString();
+
+        resp = Unirest.put(url(DB, COLL, "docid"))
+                .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .header("content-type", "application/json")
+                .queryString("checkEtag", "")
+                .queryString("wm", "update")
                 .body("{'a':1 }")
                 .asString();
 
@@ -213,6 +239,7 @@ public class ETagIT extends AbstactIT {
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
                 .queryString("checkEtag", "")
+                .queryString("wm", "update")
                 .header("If-Match", "wrong etag")
                 .body("{'a':1 }")
                 .asString();
@@ -223,8 +250,9 @@ public class ETagIT extends AbstactIT {
 
         resp = Unirest.put(url(DB, COLL, "docid"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
-                .header("content-type", "application/json")
                 .queryString("checkEtag", "")
+                .queryString("wm", "update")
+                .header("content-type", "application/json")
                 .header("If-Match", etag)
                 .body("{'a':1 }")
                 .asString();

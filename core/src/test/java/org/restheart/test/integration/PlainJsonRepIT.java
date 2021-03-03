@@ -75,6 +75,7 @@ public class PlainJsonRepIT extends AbstactIT {
         for (int i = 0; i < 10; i++) {
             resp = Unirest.put(url(DB, COLL, "" + i))
                     .basicAuth(ADMIN_ID, ADMIN_PWD)
+                    .queryString("wm", "upsert")
                     .header("content-type", "application/json")
                     .body("{'n': " + i + "}")
                     .asString();

@@ -23,7 +23,7 @@ permissions:
         overrideProps: {"status": '"public"', "user": "@user.userid"}
         forbidQueryParams: [ "filter" ]
 
-        # allow role 'user' access /{username}/{doc} with read and write filter, cannot use ?filter qparam
+        # allow role 'user' access /{userid}/{doc} with read and write filter, cannot use ?filter qparam
     - roles:
         - user
       predicate: path-template[value="/{userid}/{subpath}"] and equals[%u, "${userid}"]

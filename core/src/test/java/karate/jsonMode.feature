@@ -24,6 +24,7 @@ Scenario: Create test data
 
     * header Authorization = authHeader
     Given path doc
+    And param wm = "upsert"
     And request { "int": 1, "double": 1.0, "long": 1000000000, "timestamp": { "$date": 1568295769260 } }
     When method PUT
     Then assert responseStatus == 201

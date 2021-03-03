@@ -193,6 +193,7 @@ public class PostCollectionIT extends HttpClientAbstactIT {
 
         resp = Unirest.post(url(DB, COLL))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{ '_id': 'docid2', '$currentDate': {'timestamp': true } }")
                 .asString();

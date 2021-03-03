@@ -101,6 +101,7 @@ public class RelationshipsIT extends AbstactIT {
         // creat 1 parent document
         resp = Unirest.put(url(DB, COLL_PARENT, "parent"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{'children': [0,1,2,3,4,5,6,7,8,9]}")
                 .asString();

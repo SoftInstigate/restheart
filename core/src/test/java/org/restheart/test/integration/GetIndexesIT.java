@@ -184,6 +184,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         resp = Unirest.put(url(DB, COLL, "one"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
+                .queryString("wm", "upsert")
                 .body("{'a':1}")
                 .asString();
 
@@ -192,6 +193,7 @@ public class GetIndexesIT extends HttpClientAbstactIT {
         resp = Unirest.put(url(DB, COLL, "two"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
+                .queryString("wm", "upsert")
                 .body("{'a':2}")
                 .asString();
 

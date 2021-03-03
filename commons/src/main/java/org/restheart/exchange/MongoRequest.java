@@ -76,7 +76,7 @@ public class MongoRequest extends BsonRequest {
     private int pagesize = 100;
     private boolean count = false;
     private boolean etagCheckRequired = false;
-    private WRITE_MODE writeMode = WRITE_MODE.UPSERT;
+    private WRITE_MODE writeMode = null;
     private EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy;
     private Deque<String> filter = null;
     private BsonDocument aggregationVars = null; // aggregation vars
@@ -189,17 +189,27 @@ public class MongoRequest extends BsonRequest {
                 ? exchange.getQueryParameters().get(WRITE_MODE_QPARAM_KEY).getFirst().toUpperCase()
                 : exchange.getQueryParameters().containsKey(WRITE_MODE_SHORT_QPARAM_KEY)
                 ? exchange.getQueryParameters().get(WRITE_MODE_SHORT_QPARAM_KEY).getFirst().toUpperCase()
-                : WRITE_MODE.UPSERT.name();
+                : defaultWriteMode();
 
         WRITE_MODE mode;
 
         try {
             mode = WRITE_MODE.valueOf(_writeMode.toUpperCase());
         } catch (IllegalArgumentException iae) {
-            mode = WRITE_MODE.UPSERT;
+            mode = WRITE_MODE.valueOf(defaultWriteMode());
         }
 
         this.writeMode = mode;
+    }
+
+    private String defaultWriteMode() {
+        if (isPost()) {
+            return WRITE_MODE.INSERT.name();
+        } else if (isPatch() || isPut()) {
+            return WRITE_MODE.UPDATE.name();
+        } else {
+            return WRITE_MODE.UPSERT.name();
+        }
     }
 
     /**

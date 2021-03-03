@@ -30,12 +30,14 @@ Scenario: Create test data
 
     * header Authorization = authHeader
     Given path doc1
+    And param wm = "upsert"
     And request { "int": 1 }
     When method PUT
     Then assert responseStatus == 201
 
     * header Authorization = authHeader
     Given path doc2
+    And param wm = "upsert"
     And request { "int": 2 }
     When method PUT
     Then assert responseStatus == 201

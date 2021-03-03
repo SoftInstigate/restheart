@@ -132,6 +132,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
     public void testPutDocumentWithNotMatchingFilter() throws Exception {
         resp = Unirest.put(url(DB, COLL, "testPutWithWrongFilter"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{'a':1}")
                 .asString();
@@ -140,6 +141,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
 
         resp = Unirest.put(url(DB, COLL, "testPutWithWrongFilter"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .queryString("filter", "{'a':2}")
                 .body("{'modified':true}")
@@ -156,6 +158,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
     public void testPutDocumentDotNotation() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid1"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{ 'doc.number': 1 }")
                 .asString();
@@ -196,6 +199,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
     public void testPutDocumentOperators() throws Exception {
         resp = Unirest.put(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{ '$push': {'array': 'a'}, '$inc': { 'count': 100 } }")
                 .asString();
@@ -204,6 +208,7 @@ public class PutDocumentIT extends HttpClientAbstactIT {
 
         resp = Unirest.put(url(DB, COLL, "docid2"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{ '$currentDate': {'timestamp': { '$type': 'date' }}}")
                 .asString();

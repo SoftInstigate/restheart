@@ -565,7 +565,8 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         });
 
         collectionTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+            new BasicNameValuePair("hal", "f"),
+            new BasicNameValuePair("wm", "upsert"),
         });
 
         collectionTmpUserUri2 = buildURI("/" + dbTmpName2 + "/" + collectionTmpUserName2, new NameValuePair[]{
@@ -628,7 +629,8 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
         });
 
         documentTmpUri = buildURI("/" + dbTmpName + "/" + collectionTmpName + "/" + documentTmpId, new NameValuePair[]{
-            new BasicNameValuePair("hal", "f")
+            new BasicNameValuePair("hal", "f"),
+            new BasicNameValuePair("wm", "upsert")
         });
 
         document1Uri = buildURI("/" + dbName + "/" + collection1Name + "/" + document1Id, new NameValuePair[]{

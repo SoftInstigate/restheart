@@ -76,6 +76,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         resp = Unirest.put(url(DB, SCHEMA_STORE, "basic"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
+                .queryString("wm", "upsert")
                 .body(getResourceFile("schemas/basic.json"))
                 .asString();
 
@@ -83,6 +84,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
 
         resp = Unirest.put(url(DB, SCHEMA_STORE, "parent"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body(getResourceFile("schemas/parent.json"))
                 .asString();
@@ -91,6 +93,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
 
         resp = Unirest.put(url(DB, SCHEMA_STORE, "child"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body(getResourceFile("schemas/child.json"))
                 .asString();
@@ -100,6 +103,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         // create test collection basic
         resp = Unirest.put(url(DB, COLL_BASIC))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{ 'jsonSchema': { 'schemaId': 'basic', 'skipNotSupported': true } }")
                 .asString();
@@ -109,6 +113,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         // create test child
         resp = Unirest.put(url(DB, COLL_CHILD))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{ 'jsonSchema': { 'schemaId': 'child', 'skipNotSupported': true } }")
                 .asString();
@@ -164,6 +169,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         resp = Unirest.put(url(DB, SCHEMA_STORE, "SchemaWithBsonType"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
+                .queryString("wm", "upsert")
                 .body(getResourceFile("schemas/schemaWithBsonType.json"))
                 .asString();
 
@@ -182,6 +188,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         resp = Unirest.put(url(DB, SCHEMA_STORE, "SchemaWithDollarAsObjectPropertyPrefix"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
+                .queryString("wm", "upsert")
                 .body(getResourceFile("schemas/schemaWithDollarAsObjectPropertyPrefix.json"))
                 .asString();
 
@@ -236,6 +243,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         resp = Unirest.put(url(DB, coll, "doc"))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
+                .queryString("wm", "upsert")
                 .body("{'n': 1, 's': 'string' }")
                 .asString();
 
@@ -336,6 +344,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         resp = Unirest.put(url(DB, COLL_BASIC, new ObjectId().toString()))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
                 .header("content-type", "application/json")
+                .queryString("wm", "upsert")
                 .body("{'n': 1, 's': 'string', 'obj.s': 'string' }")
                 .asString();
 
@@ -371,6 +380,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         // create valid data
         resp = Unirest.put(url(DB, COLL_BASIC, id))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{'n': 1, 's': 'string', 'obj.s': 'string' }")
                 .asString();
@@ -417,6 +427,7 @@ public class JsonSchemaCheckerIT extends AbstactIT {
         // *** test create valid data
         resp = Unirest.put(url(DB, COLL_BASIC, id))
                 .basicAuth(ADMIN_ID, ADMIN_PWD)
+                .queryString("wm", "upsert")
                 .header("content-type", "application/json")
                 .body("{'n': 1, 's': 'string', 'obj.s': 'string' }")
                 .asString();

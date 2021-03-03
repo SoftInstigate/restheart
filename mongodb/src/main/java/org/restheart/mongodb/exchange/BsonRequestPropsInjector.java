@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
 /**
  * initialize the MongoRequest
 
- Assumes that the MongoRequest and MongoRequest are already initialized 
+ Assumes that the MongoRequest and MongoRequest are already initialized
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -137,7 +137,7 @@ public class BsonRequestPropsInjector {
             return;
         }
 
-        // check txnId to be a valid long 
+        // check txnId to be a valid long
         if (request.isTxn()) {
             try {
                 request.getTxnId();
@@ -393,7 +393,7 @@ public class BsonRequestPropsInjector {
 
                     return;
                 }
-                
+
                 // throws SecurityException if aVars contains operators
                 if (MongoServiceConfiguration.get()
                         .getAggregationCheckOperators()) {
@@ -504,7 +504,7 @@ public class BsonRequestPropsInjector {
             if (exchange
                     .getQueryParameters()
                     .get(REPRESENTATION_FORMAT_KEY) == null) {
-                
+
                 request.setRepresentationFormat(MongoServiceConfiguration.get()
                         .getDefaultRepresentationFormat());
             }
