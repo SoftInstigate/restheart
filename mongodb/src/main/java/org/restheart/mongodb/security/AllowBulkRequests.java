@@ -21,35 +21,58 @@
 
 package org.restheart.mongodb.security;
 
-import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.security.BaseAclPermission;
+import org.restheart.security.BaseAclPermissionTransformer;
 import org.restheart.security.MongoPermissions;
-import org.restheart.utils.HttpStatus;
+
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+
 import org.restheart.exchange.MongoRequest;
-import org.restheart.exchange.MongoResponse;
+import org.restheart.exchange.Request;
+import org.restheart.plugins.Initializer;
+import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.InterceptPoint;
 
 @RegisterPlugin(name = "mongoPermissionAllowBulkRequests",
     description = "Allow bulk PATCH and bulk DELETE according to the mongo.allowBulkPatch and mongo.allowBulkDelete ACL permissions",
     interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
     enabledByDefault = true)
-public class AllowBulkRequests implements MongoInterceptor {
+public class AllowBulkRequests extends BaseAllowInitializer implements Initializer {
+    private PluginsRegistry registry;
 
-    @Override
-    public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        response.setStatusCode(HttpStatus.SC_FORBIDDEN);
-        response.setInError(true);
+    @InjectPluginsRegistry
+    public void initRegistry(PluginsRegistry registry) {
+        this.registry = registry;
     }
 
     @Override
-    public boolean resolve(MongoRequest request, MongoResponse response) {
-        var mongoPermissions = MongoPermissions.of(request);
+    public void init() {
+        this.registry.getPermissionTransformers()
+            .add(new BaseAclPermissionTransformer(resolve, additionalPredicate));
+    }
 
-        if (!request.isHandledBy("mongo") || mongoPermissions == null) {
+    // apply the transformation if the permission does not allow bulks requests
+    private Predicate<BaseAclPermission> resolve = p -> {
+        try {
+            var mp = MongoPermissions.from(p);
+            return !(mp.isAllowBulkDelete() && mp.isAllowBulkPatch());
+        } catch(IllegalArgumentException e) {
             return false;
         }
+    };
 
-        return (!mongoPermissions.isAllowBulkDelete() && request.isBulkDocuments() && request.isDelete())
-            || (!mongoPermissions.isAllowBulkPatch() && request.isBulkDocuments() && request.isPatch());
-    }
+    private BiPredicate<BaseAclPermission, Request<?>> additionalPredicate = (p, _request) -> {
+        if (!isHandledByMongoService(_request)) {
+            return true;
+        }
+
+        var mr = (MongoRequest) _request;
+        var mp = MongoPermissions.from(p);
+
+        return !((!mp.isAllowBulkDelete() && mr.isBulkDocuments() && mr.isDelete())
+              || (!mp.isAllowBulkPatch()  && mr.isBulkDocuments() && mr.isPatch()));
+    };
 }

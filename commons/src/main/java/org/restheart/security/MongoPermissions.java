@@ -108,6 +108,10 @@ public class MongoPermissions {
         return from(BaseAclPermission.getRaw(request));
     }
 
+    public static MongoPermissions from(BaseAclPermission p) throws ConfigurationException, IllegalArgumentException {
+        return from(p.getRaw());
+    }
+
     @SuppressWarnings("unchecked")
     public static MongoPermissions from(Object raw) throws ConfigurationException, IllegalArgumentException {
         if (raw == null) {

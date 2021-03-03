@@ -11,26 +11,26 @@ permissions:
         allowBulkDelete: true         # default false
         allowWriteMode: true          # default false
 
-    # allow role 'user' access /{username} with read and write filter, cannot use ?filter qparam
+    # allow role 'user' access /{userid} with read and write filter, cannot use ?filter qparam
     - roles:
         - user
-      predicate: path-template[value="/{username}"] and equals[%u, "${username}"]
+      predicate: path-template[value="/{userid}"] and equals[%u, "${userid}"]
       priority: 100
       mongo:
         readFilter: '{"status": "public"}'
         writeFilter: '{"status": "public"}'
-        protectedProps: ["status", "user"]
-        overriddenProps: {"status": '"public"', "user": "@user.userid"}
-        forbiddenQueryParams: [ "filter" ]
+        protectProps: ["status", "user"]
+        overrideProps: {"status": '"public"', "user": "@user.userid"}
+        forbidQueryParams: [ "filter" ]
 
         # allow role 'user' access /{username}/{doc} with read and write filter, cannot use ?filter qparam
     - roles:
         - user
-      predicate: path-template[value="/{username}/{subpath}"] and equals[%u, "${username}"]
+      predicate: path-template[value="/{userid}/{subpath}"] and equals[%u, "${userid}"]
       priority: 100
       mongo:
         readFilter: '{"status": "public"}'
         writeFilter: '{"status": "public"}'
-        protectedProps: ["status", "user"]
-        overriddenProps: {"status": '"public"', "user": "@user.userid"}
-        forbiddenQueryParams: [ "filter" ]
+        protectProps: ["status", "user"]
+        overrideProps: {"status": '"public"', "user": "@user.userid"}
+        forbidQueryParams: [ "filter" ]
