@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -48,18 +48,18 @@ public class LoggingInitializer {
      */
     public static void setLogLevel(Level level) {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        
+
         Logger orgLogger = loggerContext.getLogger("org.restheart");
 
         String logbackConfigurationFile = System.getProperty("logback.configurationFile");
-        
+
         if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
             orgLogger.info("Loglevel was set via logback configuration file with level {}", orgLogger.getLevel());
             level = orgLogger.getLevel();
         }
 
         orgLogger.setLevel(level);
-        
+
         Logger comLogger = loggerContext.getLogger("com.restheart");
 
         if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {

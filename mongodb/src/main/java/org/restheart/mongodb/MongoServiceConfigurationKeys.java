@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -77,7 +77,7 @@ public interface MongoServiceConfigurationKeys {
      * default value for cursor batch size
      */
     public static final int DEFAULT_CURSOR_BATCH_SIZE = 1000;
-    
+
     /**
      * the key for the plugins-args property.
      */
@@ -142,12 +142,12 @@ public interface MongoServiceConfigurationKeys {
      * the key for the where property.
      */
     public static final String MONGO_MOUNT_WHERE_KEY = "where";
-    
+
     /**
      * the default value for the where mongo-mount property.
      */
     public static final String  DEFAULT_MONGO_MOUNT_WHERE = "/";
-    
+
     /**
      * the default value for the waht mongo-mount property.
      */

@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -43,7 +43,7 @@ public class PutIndexHandler extends PipelinedHandler {
     public PutIndexHandler() {
         super();
     }
-    
+
     /**
      * Creates a new instance of PutIndexHandler
      * @param next
@@ -58,16 +58,16 @@ public class PutIndexHandler extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange) 
+    public void handleRequest(HttpServerExchange exchange)
             throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
-        
+
         if (request.isInError()) {
             next(exchange);
             return;
         }
-        
+
         final String db = request.getDBName();
         final String co = request.getCollectionName();
         final String id = request.getIndexId();
@@ -81,7 +81,7 @@ public class PutIndexHandler extends PipelinedHandler {
         }
 
         final BsonValue _content = request.getContent();
-        
+
         // must be an object
         if (!_content.isDocument()) {
             response.setInError(
@@ -90,12 +90,12 @@ public class PutIndexHandler extends PipelinedHandler {
             next(exchange);
             return;
         }
-        
+
         BsonDocument content = _content.asDocument();
 
         BsonValue _keys = content.get("keys");
         BsonValue _ops = content.get("ops");
-        
+
         // must be an object, mandatory
         if (_keys == null || !_keys.isDocument()) {
             response.setInError(
@@ -104,7 +104,7 @@ public class PutIndexHandler extends PipelinedHandler {
             next(exchange);
             return;
         }
-        
+
         // must be an object, optional
         if (_ops != null && !_ops.isDocument()) {
             response.setInError(
@@ -113,7 +113,7 @@ public class PutIndexHandler extends PipelinedHandler {
             next(exchange);
             return;
         }
-        
+
         BsonDocument keys = _keys.asDocument();
         BsonDocument ops = _ops == null ? null : _ops.asDocument();
 
@@ -138,14 +138,14 @@ public class PutIndexHandler extends PipelinedHandler {
         } catch (Throwable t) {
             response.setInError(
                     HttpStatus.SC_NOT_ACCEPTABLE,
-                    "error creating the index", 
+                    "error creating the index",
                     t);
             next(exchange);
             return;
         }
 
         response.setStatusCode(HttpStatus.SC_CREATED);
-        
+
         next(exchange);
     }
 }

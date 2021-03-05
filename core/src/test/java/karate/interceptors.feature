@@ -119,7 +119,7 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     And match response.note == 'showing up to 20 bytes of the request content'
 
     Scenario: POST /echo with Accept-Encoding=identity
-    Given path '/echo' 
+    Given path '/echo'
     And header Accept-Encoding = identityEncoding
     And request { n: 1 }
     When method POST
@@ -227,4 +227,3 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     When method POST
     Then status 200
     And match responseHeaders['Content-Encoding'][0] == 'identity'
-    

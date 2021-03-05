@@ -32,15 +32,15 @@ public class JsonResponse extends ServiceResponse<JsonElement> {
         super(exchange);
         setContentTypeAsJson();
     }
-    
+
     public static JsonResponse init(HttpServerExchange exchange) {
         return new JsonResponse(exchange);
     }
-    
+
     public static JsonResponse of(HttpServerExchange exchange) {
         return JsonResponse.of(exchange, JsonResponse.class);
     }
-    
+
     @Override
     public String readContent() {
         if (content != null) {
@@ -53,7 +53,7 @@ public class JsonResponse extends ServiceResponse<JsonElement> {
     @Override
     public void setInError(int code, String message, Throwable t) {
         setStatusCode(code);
-        
+
         var resp = new JsonObject();
 
         if (message != null) {

@@ -60,7 +60,7 @@ jobs:
 
       - name: Push "distroless" docker tag
         run: |
-          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart:distroless 
+          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart:distroless
           docker push softinstigate/restheart:distroless
 
       - name: Build and Push Docker image tagged with SHA

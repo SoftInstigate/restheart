@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -68,7 +68,7 @@ public class ClientSessionImpl
             final ClientSessionOptions options) {
         super(serverSessionPool, originator, options);
     }
-    
+
     /**
      *
      * @param <T> generic type
@@ -166,7 +166,7 @@ public class ClientSessionImpl
 
     @Override
     public void close() {
-        // this release the session from the pool, 
+        // this release the session from the pool,
         // not required in our implementation
         // super.close();
     }
@@ -183,7 +183,7 @@ public class ClientSessionImpl
     public UUID getSid() {
         return getSid(this);
     }
-    
+
     /**
      *
      * @param causallyConsistent
@@ -191,7 +191,7 @@ public class ClientSessionImpl
     public void setCausallyConsistent(boolean causallyConsistent) {
         this.causallyConsistent = causallyConsistent;
     }
-    
+
     /**
      *
      * @param messageSentInCurrentTransaction

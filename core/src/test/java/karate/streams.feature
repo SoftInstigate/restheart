@@ -38,7 +38,7 @@ Scenario: test insert (POST) new document (without avars)
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
-    
+
     * callonce sleep 3
     * header Authorization = authHeader
     Given path coll
@@ -51,7 +51,7 @@ Scenario: test insert (POST) new document (without avars)
     And match parsedMsg.fullDocument.a == 1
     And match parsedMsg.fullDocument.b == 2
     And match parsedMsg.fullDocument.c == 'test'
-    
+
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test insert (POST) new document (with avars)
 
@@ -62,7 +62,7 @@ Scenario: test insert (POST) new document (with avars)
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
-    
+
     # This POST shouldn't be notified
     * callonce sleep 3
     * header Authorization = authHeader
@@ -71,7 +71,7 @@ Scenario: test insert (POST) new document (with avars)
     When method POST
     And def firstPostResult = karate.listen(5000)
     Then match firstPostResult == '#null'
-    
+
     * header Authorization = authHeader
     Given path coll
     And request {"targettedProperty": "test", "anotherProp": 1}
@@ -82,17 +82,17 @@ Scenario: test insert (POST) new document (with avars)
     And match parsedMsg.operationType == 'insert'
     And match parsedMsg.fullDocument.targettedProperty == 'test'
     And match parsedMsg.fullDocument.anotherProp == 1
-    
-    
+
+
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PATCH on inserted document (without avars)
-    
+
     * header Authorization = authHeader
     Given path coll
     And request {"a":1, "b":2, "c":"test"}
     When method POST
     Then def location = responseHeaders['Location'][0]
-    
+
     # Establish WebSocket connection to get notified.
     * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStream'
@@ -116,13 +116,13 @@ Scenario: test PATCH on inserted document (without avars)
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PATCH on inserted document (with avars)
-    
+
     * header Authorization = authHeader
     Given path coll
     And request {"targettedProperty": "test", "toBeRemoved": null}
     When method POST
     Then def location = responseHeaders['Location'][0]
-    
+
     # Establish WebSocket connection to get notified.
     * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
@@ -237,7 +237,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
-    
+
     * callonce sleep 3
     * header Authorization = authHeader
     Given path coll
@@ -269,7 +269,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     When method PATCH
     And def firstPatchResult = karate.listen(5000)
     Then def parsedInsertedTargettedPropertyMsg = parseResponse(firstPatchResult)
-    And print parsedInsertedTargettedPropertyMsg  
+    And print parsedInsertedTargettedPropertyMsg
     And match parsedInsertedTargettedPropertyMsg.operationType == 'update'
     And match parsedInsertedTargettedPropertyMsg.updateDescription.updatedFields.a == 'inserted'
 

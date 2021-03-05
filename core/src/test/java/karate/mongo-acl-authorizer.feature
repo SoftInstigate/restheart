@@ -7,7 +7,7 @@ Background:
 * def fullAuthHeader = 'Basic ZnVsbDpzZWNyZXQ='
 * def filteredAuthHeader = 'Basic ZmlsdGVyZWQ6c2VjcmV0'
 * def bothAuthHeader = 'Basic Ym90aDpzZWNyZXQ='
-* def users = 
+* def users =
 * def acl = read('maa-acl.json')
 * def data = read('maa-data.json')
 # credentials is admin:secret

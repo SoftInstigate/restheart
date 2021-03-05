@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -106,7 +106,7 @@ public class BsonUtilsTest {
 
         Assert.assertEquals(minified, BsonUtils.minify(json));
     }
-    
+
     /**
      *
      * @throws Exception
@@ -233,7 +233,7 @@ public class BsonUtilsTest {
 
         // justification of the following: even if "a! is an object, it has all numeric values
         // on mongodb you can use the dot notation on arrays and do the following on RESTHeart
-        // PATCH /db/coll/doc {"a.1", {"e": 1000}} 
+        // PATCH /db/coll/doc {"a.1", {"e": 1000}}
         // the content turns internally to {"a": {"1": {"e":1000}}}
         Assert.assertTrue(checkGetPropsFromPath(json5, "$.a.[*]", "{e: 1}", "{e: 2}", "{e: 3}"));
     }
@@ -668,7 +668,7 @@ public class BsonUtilsTest {
         Assert.assertTrue(parsed.isNumber());
         Assert.assertEquals(parsed.asDouble(), new BsonDouble(3.1415));
     }
-    
+
     /**
      *
      */
@@ -679,7 +679,7 @@ public class BsonUtilsTest {
         Assert.assertTrue(parsed.isString());
         Assert.assertEquals(parsed.asString(), new BsonString("hello"));
     }
-    
+
     /**
      *
      */
@@ -855,35 +855,35 @@ public class BsonUtilsTest {
         Assert.assertTrue(unflatten.asDocument().get("child2")
                 .asDocument().containsKey("grandchild2"));
     }
-    
+
     /**
      *
      */
     @Test
     public void testParseLong() {
         var json = "[{'n':2084824280},{'n':5887391606}]";
-        
+
         var parsed = BsonUtils.parse(json);
-        
+
         System.out.println(BsonUtils.toJson(parsed));
-        
+
         long l = 1111111115887391606l;
-        
+
         var json2 = "[{'n':2084824280},{'n':"+l+"}]";
-        
+
         var parsed2 = BsonUtils.parse(json2);
-        
+
         System.out.println(BsonUtils.toJson(parsed2));
         System.out.println(parsed2);
-        
+
         var json3 = "[{'n':2084824280},{'d':{'$date':"+ System.currentTimeMillis()+"}}]";
-        
+
         var parsed3 = BsonUtils.parse(json3);
-        
+
         System.out.println(BsonUtils.toJson(parsed3));
         System.out.println(parsed3);
     }
-    
+
     /**
      *
      */
@@ -892,17 +892,17 @@ public class BsonUtilsTest {
         System.out.println(BsonUtils.toJson(
                 BsonUtils.parse(
                         "{'n':"+4294967296l+"}")));
-        
+
         var ls = BsonUtils.toJson(
                 BsonUtils.parse(
                         "{'n':"+(5999999999l)+"}"));
-        
+
         System.out.println(ls);
-        
+
         System.out.println(BsonUtils.toJson(
                 BsonUtils.parse(ls)));
     }
-    
+
     /**
      *
      */
@@ -912,7 +912,7 @@ public class BsonUtilsTest {
                 BsonUtils.parse(
                         "{'n':"+10+"}")));
     }
-    
+
     /**
      *
      */

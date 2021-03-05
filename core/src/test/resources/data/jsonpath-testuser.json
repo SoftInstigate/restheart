@@ -1,13 +1,13 @@
 {
     "_id": "a@si.com",
-    "name": "Andrea", 
+    "name": "Andrea",
     "password": "changeit",
     "roles": [
         "ROLE1", "ROLE2"
     ],
     "details": {
-        "country": "Italy", 
-        "city": null, 
+        "country": "Italy",
+        "city": null,
         "address": null
     }
 }

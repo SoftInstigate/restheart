@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -34,7 +34,7 @@ import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
 
 @RegisterPlugin(name = "mongoPermissionAllowMgmtRequests",
-    description = "Allow mongo management requests according to the mongo.allowManagementRequests ACL permission", 
+    description = "Allow mongo management requests according to the mongo.allowManagementRequests ACL permission",
     initPoint = InitPoint.BEFORE_STARTUP,
     enabledByDefault = true)
 public class AllowMgmtRequests extends BaseAllowInitializer implements Initializer  {

@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -457,11 +457,11 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertNull(body.asDocument().get("_embedded"));
 
         Assert.assertNotNull(body.asDocument().get("exception"));
-        
+
         Assert.assertTrue(body.asDocument().get("exception").isString());
 
         Assert.assertNotNull(body.asDocument().get("exception message"));
-        
+
         Assert.assertTrue(body.asDocument().get("exception message").isString());
 
         Assert.assertNotNull(body.asDocument().get("message"));
@@ -490,15 +490,15 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertTrue(body.isDocument());
 
         Assert.assertNotNull(body.asDocument().get("exception"));
-        
+
         Assert.assertTrue(body.asDocument().get("exception").isString());
 
         Assert.assertNotNull(body.asDocument().get("exception message"));
-        
+
         Assert.assertTrue(body.asDocument().get("exception message").isString());
 
         Assert.assertNotNull(body.asDocument().get("message"));
-        
+
         Assert.assertTrue(body.asDocument().get("message").isString());
     }
 
@@ -528,11 +528,11 @@ public class PlainJsonRepIT extends AbstactIT {
         Assert.assertNull(body.asDocument().get("_embedded"));
 
         Assert.assertNotNull(body.asDocument().get("exception"));
-        
+
         Assert.assertTrue(body.asDocument().get("exception").isString());
 
         Assert.assertNotNull(body.asDocument().get("exception message"));
-        
+
         Assert.assertTrue(body.asDocument().get("exception message").isString());
 
         // event if np, in case of error return the props

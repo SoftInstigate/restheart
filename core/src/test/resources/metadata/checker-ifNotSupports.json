@@ -9,7 +9,7 @@
             "delegateTo": {
                 "name": "or",
                 "args": [ {}, {} ],
-                
+
                 "name": "checkContent",
                 "ifNotSupports": {
                     "fail": true

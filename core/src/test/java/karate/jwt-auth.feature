@@ -20,12 +20,12 @@ Scenario: request with wrong Authorization header
 
 Scenario: request with valid Authorization header
     * header Authorization = authHeader
-    Given path '/secho'    
+    Given path '/secho'
     When method GET
     Then status 200
 
 Scenario: request with valid Authorization header but missing the extra properties
     * header Authorization = authHeaderMissingExtraProps
-    Given path '/secho'    
+    Given path '/secho'
     When method GET
     Then status 401

@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -46,7 +46,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
      *
      */
     public static final String ALLOW_DISK_USER_ELEMENT_NAME = "allowDiskUse";
-    
+
     private final BsonArray stages;
     private final BsonBoolean allowDiskUse;
 
@@ -96,9 +96,9 @@ public class AggregationPipeline extends AbstractAggregationOperation {
                     + "': " + _stages
                     + "; must be an array of stage objects");
         }
-        
+
         this.stages = _stages.asArray();
-        
+
         BsonValue _allowDiskUse = properties.get(ALLOW_DISK_USER_ELEMENT_NAME);
 
         if (_allowDiskUse != null && !_allowDiskUse.isBoolean()) {
@@ -108,7 +108,7 @@ public class AggregationPipeline extends AbstractAggregationOperation {
                     + "; must be boolean");
         }
 
-        this.allowDiskUse = _allowDiskUse != null 
+        this.allowDiskUse = _allowDiskUse != null
                 ? _allowDiskUse.asBoolean()
                 : BsonBoolean.FALSE;
     }

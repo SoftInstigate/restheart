@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -33,7 +33,7 @@ import org.restheart.utils.HttpStatus;
  */
 public class DeleteIndexHandler extends PipelinedHandler {
     private final DatabaseImpl dbsDAO = new DatabaseImpl();
-    
+
     /**
      * Creates a new instance of DeleteIndexHandler
      */
@@ -59,12 +59,12 @@ public class DeleteIndexHandler extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
-        
+
         if (request.isInError()) {
             next(exchange);
             return;
         }
-        
+
         String dbName = request.getDBName();
         String collectionName = request.getCollectionName();
 
@@ -72,7 +72,7 @@ public class DeleteIndexHandler extends PipelinedHandler {
 
         if (indexId.startsWith("_") || indexId.equals("_id_")) {
             response.setInError(
-                    HttpStatus.SC_UNAUTHORIZED, 
+                    HttpStatus.SC_UNAUTHORIZED,
                     indexId + " is a default index and cannot be deleted");
             next(exchange);
             return;
@@ -80,12 +80,12 @@ public class DeleteIndexHandler extends PipelinedHandler {
 
         int httpCode = dbsDAO.deleteIndex(
                 request.getClientSession(),
-                dbName, 
-                collectionName, 
+                dbName,
+                collectionName,
                 indexId);
-        
+
         response.setStatusCode(httpCode);
-        
+
         next(exchange);
     }
 }

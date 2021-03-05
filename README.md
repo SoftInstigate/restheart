@@ -29,7 +29,7 @@ RESTHeart provides out-of-the-box:
 1. Secure Identity and Access Management.
 1. Complete REST API with JSON messages.
 
-RESTHeart is a modern backend for Web and Mobile apps, designed to radically simplify server-side development and deployment. 
+RESTHeart is a modern backend for Web and Mobile apps, designed to radically simplify server-side development and deployment.
 
 RESTHeart comes with complete functionalities out of the box, but you can extend it with Java to implement custom services.
 

@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -51,25 +51,25 @@ public class ClientSessionInjector extends PipelinedHandler {
     private static class ClientSessionInjectorHandlerHolder {
         private static ClientSessionInjector INSTANCE = null;
     }
-    
+
     /**
      *
-     * @return 
+     * @return
      */
     public static ClientSessionInjector build() {
         if (ClientSessionInjectorHandlerHolder.INSTANCE != null) {
             throw new IllegalStateException("Singleton already initialized");
         }
-        
-        ClientSessionInjectorHandlerHolder.INSTANCE 
+
+        ClientSessionInjectorHandlerHolder.INSTANCE
                 = new ClientSessionInjector();
-        
+
         return ClientSessionInjectorHandlerHolder.INSTANCE;
     }
-    
-    private ClientSessionFactory clientSessionFactory 
+
+    private ClientSessionFactory clientSessionFactory
             = ClientSessionFactory.getInstance();
-    
+
     /**
      * Creates a new instance of DbPropsInjectorHandler
      *
@@ -78,8 +78,7 @@ public class ClientSessionInjector extends PipelinedHandler {
     private ClientSessionInjector() {
         this(null);
     }
-    
-    
+
     /**
      * Creates a new instance of DbPropsInjectorHandler
      *
@@ -97,7 +96,7 @@ public class ClientSessionInjector extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
-        
+
         if (request.isInError()
                 || !exchange.getQueryParameters()
                         .containsKey(CLIENT_SESSION_KEY)) {

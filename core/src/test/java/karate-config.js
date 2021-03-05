@@ -1,4 +1,4 @@
-function fn() {    
+function fn() {
   var env = karate.env; // get system property 'karate.env'
   karate.log('karate.env system property was:', env);
   if (!env) {
@@ -13,7 +13,7 @@ function fn() {
     contTypeGraphQL: 'application/graphql',
     contTypeJson: 'application/json'
   };
-  
+
   if (env === 'dev') {
     // customize
     // e.g. config.foo = 'bar';

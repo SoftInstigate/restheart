@@ -75,15 +75,15 @@
 {
   "name":"com.google.common.util.concurrent.AbstractFuture",
   "fields":[
-    {"name":"listeners", "allowUnsafeAccess":true}, 
-    {"name":"value", "allowUnsafeAccess":true}, 
+    {"name":"listeners", "allowUnsafeAccess":true},
+    {"name":"value", "allowUnsafeAccess":true},
     {"name":"waiters", "allowUnsafeAccess":true}
   ]
 },
 {
   "name":"com.google.common.util.concurrent.AbstractFuture$Waiter",
   "fields":[
-    {"name":"next", "allowUnsafeAccess":true}, 
+    {"name":"next", "allowUnsafeAccess":true},
     {"name":"thread", "allowUnsafeAccess":true}
   ]
 },
@@ -118,7 +118,7 @@
 {
   "name":"com.sun.akuma.CLibrary",
   "methods":[
-    {"name":"execv","parameterTypes":["java.lang.String","com.sun.jna.StringArray"] }, 
+    {"name":"execv","parameterTypes":["java.lang.String","com.sun.jna.StringArray"] },
     {"name":"readlink","parameterTypes":["java.lang.String","com.sun.jna.Memory","com.sun.jna.NativeLong"] }
   ]
 },
@@ -173,8 +173,8 @@
 {
   "name":"com.sun.jna.NativeLong",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"<init>","parameterTypes":["long"] }, 
+    {"name":"<init>","parameterTypes":[] },
+    {"name":"<init>","parameterTypes":["long"] },
     {"name":"<init>","parameterTypes":["long","boolean"] }
   ]
 },
@@ -421,9 +421,9 @@
 {
   "name":"java.lang.ModuleLayer",
   "methods":[
-    {"name":"boot","parameterTypes":[] }, 
-    {"name":"configuration","parameterTypes":[] }, 
-    {"name":"findLoader","parameterTypes":["java.lang.String"] }, 
+    {"name":"boot","parameterTypes":[] },
+    {"name":"configuration","parameterTypes":[] },
+    {"name":"findLoader","parameterTypes":["java.lang.String"] },
     {"name":"parents","parameterTypes":[] }
   ]
 },
@@ -432,8 +432,8 @@
   "allDeclaredFields":true,
   "allDeclaredMethods":true,
   "methods":[
-    {"name":"equals","parameterTypes":["java.lang.Object"] }, 
-    {"name":"hashCode","parameterTypes":[] }, 
+    {"name":"equals","parameterTypes":["java.lang.Object"] },
+    {"name":"hashCode","parameterTypes":[] },
     {"name":"toString","parameterTypes":[] }
   ]
 },
@@ -451,7 +451,7 @@
 {
   "name":"java.lang.StackWalker",
   "methods":[
-    {"name":"forEach","parameterTypes":["java.util.function.Consumer"] }, 
+    {"name":"forEach","parameterTypes":["java.util.function.Consumer"] },
     {"name":"getInstance","parameterTypes":["java.lang.StackWalker$Option"] }
   ]
 },
@@ -477,7 +477,7 @@
   "name":"java.lang.Throwable",
   "fields":[{"name":"cause", "allowUnsafeAccess":true}],
   "methods":[
-    {"name":"addSuppressed","parameterTypes":["java.lang.Throwable"] }, 
+    {"name":"addSuppressed","parameterTypes":["java.lang.Throwable"] },
     {"name":"getSuppressed","parameterTypes":[] }
   ]
 },
@@ -488,22 +488,22 @@
 {
   "name":"java.lang.invoke.MethodHandle",
   "methods":[
-    {"name":"bindTo","parameterTypes":["java.lang.Object"] }, 
+    {"name":"bindTo","parameterTypes":["java.lang.Object"] },
     {"name":"invokeWithArguments","parameterTypes":["java.lang.Object[]"] }
   ]
 },
 {
   "name":"java.lang.invoke.MethodHandles",
   "methods":[
-    {"name":"lookup","parameterTypes":[] }, 
+    {"name":"lookup","parameterTypes":[] },
     {"name":"privateLookupIn","parameterTypes":["java.lang.Class","java.lang.invoke.MethodHandles$Lookup"] }
   ]
 },
 {
   "name":"java.lang.invoke.MethodHandles$Lookup",
   "methods":[
-    {"name":"findSpecial","parameterTypes":["java.lang.Class","java.lang.String","java.lang.invoke.MethodType","java.lang.Class"] }, 
-    {"name":"in","parameterTypes":["java.lang.Class"] }, 
+    {"name":"findSpecial","parameterTypes":["java.lang.Class","java.lang.String","java.lang.invoke.MethodType","java.lang.Class"] },
+    {"name":"in","parameterTypes":["java.lang.Class"] },
     {"name":"unreflectSpecial","parameterTypes":["java.lang.reflect.Method","java.lang.Class"] }
   ]
 },
@@ -575,23 +575,23 @@
 {
   "name":"java.lang.module.ModuleDescriptor",
   "methods":[
-    {"name":"name","parameterTypes":[] }, 
-    {"name":"packages","parameterTypes":[] }, 
+    {"name":"name","parameterTypes":[] },
+    {"name":"packages","parameterTypes":[] },
     {"name":"rawVersion","parameterTypes":[] }
   ]
 },
 {
   "name":"java.lang.module.ModuleReader",
   "methods":[
-    {"name":"list","parameterTypes":[] }, 
+    {"name":"list","parameterTypes":[] },
     {"name":"open","parameterTypes":["java.lang.String"] }
   ]
 },
 {
   "name":"java.lang.module.ModuleReference",
   "methods":[
-    {"name":"descriptor","parameterTypes":[] }, 
-    {"name":"location","parameterTypes":[] }, 
+    {"name":"descriptor","parameterTypes":[] },
+    {"name":"location","parameterTypes":[] },
     {"name":"open","parameterTypes":[] }
   ]
 },
@@ -607,7 +607,7 @@
 {
   "name":"java.lang.reflect.Method",
   "methods":[
-    {"name":"isDefault","parameterTypes":[] }, 
+    {"name":"isDefault","parameterTypes":[] },
     {"name":"isVarArgs","parameterTypes":[] }
   ]
 },
@@ -686,7 +686,7 @@
 {
   "name":"java.sql.DriverManager",
   "methods":[
-    {"name":"getConnection","parameterTypes":["java.lang.String"] }, 
+    {"name":"getConnection","parameterTypes":["java.lang.String"] },
     {"name":"getDriver","parameterTypes":["java.lang.String"] }
   ]
 },
@@ -779,7 +779,7 @@
 {
   "name":"java.util.Optional",
   "methods":[
-    {"name":"get","parameterTypes":[] }, 
+    {"name":"get","parameterTypes":[] },
     {"name":"isPresent","parameterTypes":[] }
   ]
 },
@@ -874,144 +874,144 @@
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.AntClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.EquinoxClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.EquinoxContextFinderClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.FallbackClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.FelixClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.JBossClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.JPMSClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.OSGiDefaultClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.ParentLastDelegationOrderTestClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.PlexusClassWorldsClassRealmClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.QuarkusClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.SpringBootRestartClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.TomcatWebappClassLoaderBaseHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.URLClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.UnoOneJarClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.WeblogicClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.WebsphereLibertyClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
 {
   "name":"nonapi.io.github.classgraph.classloaderhandler.WebsphereTraditionalClassLoaderHandler",
   "methods":[
-    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] }, 
-    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] }, 
+    {"name":"canHandle","parameterTypes":["java.lang.Class","nonapi.io.github.classgraph.utils.LogNode"] },
+    {"name":"findClassLoaderOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClassLoaderOrder","nonapi.io.github.classgraph.utils.LogNode"] },
     {"name":"findClasspathOrder","parameterTypes":["java.lang.ClassLoader","nonapi.io.github.classgraph.classpath.ClasspathOrder","nonapi.io.github.classgraph.scanspec.ScanSpec","nonapi.io.github.classgraph.utils.LogNode"] }
   ]
 },
@@ -1048,11 +1048,11 @@
 {
   "name":"org.jboss.threads.EnhancedQueueExecutor",
   "fields":[
-    {"name":"activeCount", "allowUnsafeAccess":true}, 
-    {"name":"peakQueueSize", "allowUnsafeAccess":true}, 
-    {"name":"peakThreadCount", "allowUnsafeAccess":true}, 
-    {"name":"queueSize", "allowUnsafeAccess":true}, 
-    {"name":"sequence", "allowUnsafeAccess":true}, 
+    {"name":"activeCount", "allowUnsafeAccess":true},
+    {"name":"peakQueueSize", "allowUnsafeAccess":true},
+    {"name":"peakThreadCount", "allowUnsafeAccess":true},
+    {"name":"queueSize", "allowUnsafeAccess":true},
+    {"name":"sequence", "allowUnsafeAccess":true},
     {"name":"terminationWaiters", "allowUnsafeAccess":true}
   ]
 },
@@ -1063,7 +1063,7 @@
 {
   "name":"org.jboss.threads.EnhancedQueueExecutor$PoolThreadNode",
   "fields":[
-    {"name":"parked", "allowUnsafeAccess":true}, 
+    {"name":"parked", "allowUnsafeAccess":true},
     {"name":"task", "allowUnsafeAccess":true}
   ]
 },
@@ -1074,7 +1074,7 @@
 {
   "name":"org.jboss.threads.EnhancedQueueExecutorBase1",
   "fields":[
-    {"name":"tail", "allowUnsafeAccess":true}, 
+    {"name":"tail", "allowUnsafeAccess":true},
     {"name":"tailLock", "allowUnsafeAccess":true}
   ]
 },
@@ -1114,23 +1114,23 @@
 {
   "name":"org.restheart.graphql.GraphQLService",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"initConf","parameterTypes":["java.util.Map"] }, 
+    {"name":"<init>","parameterTypes":[] },
+    {"name":"initConf","parameterTypes":["java.util.Map"] },
     {"name":"initMongoClient","parameterTypes":["com.mongodb.MongoClient"] }
   ]
 },
 {
   "name":"org.restheart.mongodb.MongoService",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
   "name":"org.restheart.mongodb.MongoServiceInitializer",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"init","parameterTypes":["java.util.Map"] }, 
+    {"name":"<init>","parameterTypes":[] },
+    {"name":"init","parameterTypes":["java.util.Map"] },
     {"name":"injectPluginsRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
@@ -1141,7 +1141,7 @@
 {
   "name":"org.restheart.mongodb.handlers.changestreams.ChangeStreamsActivator",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"setConf","parameterTypes":["java.util.Map"] }
   ]
 },
@@ -1160,7 +1160,7 @@
 {
   "name":"org.restheart.mongodb.interceptors.CollectionPropsInjector",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["com.mongodb.MongoClient"] }
   ]
 },
@@ -1171,7 +1171,7 @@
 {
   "name":"org.restheart.mongodb.interceptors.DbPropsInjector",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["com.mongodb.MongoClient"] }
   ]
 },
@@ -1198,53 +1198,53 @@
 {
   "name":"org.restheart.polyglot.PolyglotDeployer",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"init","parameterTypes":["java.util.Map"] }, 
-    {"name":"mc","parameterTypes":["com.mongodb.MongoClient"] }, 
+    {"name":"<init>","parameterTypes":[] },
+    {"name":"init","parameterTypes":["java.util.Map"] },
+    {"name":"mc","parameterTypes":["com.mongodb.MongoClient"] },
     {"name":"reg","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
   "name":"org.restheart.security.authenticators.DenyFilterOnUserPwd",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
   "name":"org.restheart.security.authenticators.FileRealmAuthenticator",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["java.util.Map"] }
   ]
 },
 {
   "name":"org.restheart.security.authenticators.MongoRealmAuthenticator",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"setConf","parameterTypes":["java.util.Map"] }, 
-    {"name":"setMongoClient","parameterTypes":["com.mongodb.MongoClient"] }, 
+    {"name":"<init>","parameterTypes":[] },
+    {"name":"setConf","parameterTypes":["java.util.Map"] },
+    {"name":"setMongoClient","parameterTypes":["com.mongodb.MongoClient"] },
     {"name":"setRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
   "name":"org.restheart.security.authenticators.UserPwdHasher",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
   "name":"org.restheart.security.authenticators.UserPwdRemover",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
   "name":"org.restheart.security.authorizers.FileAclAuthorizer",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["java.util.Map"] }
   ]
 },
@@ -1254,8 +1254,8 @@
 {
   "name":"org.restheart.security.authorizers.MongoAclAuthorizer",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"setConf","parameterTypes":["java.util.Map"] }, 
+    {"name":"<init>","parameterTypes":[] },
+    {"name":"setConf","parameterTypes":["java.util.Map"] },
     {"name":"setMongoClient","parameterTypes":["com.mongodb.MongoClient"] }
   ]
 },
@@ -1286,7 +1286,7 @@
 {
   "name":"org.restheart.security.interceptors.mongo.RequestFilters",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
@@ -1301,14 +1301,14 @@
 {
   "name":"org.restheart.security.mechanisms.BasicAuthMechanism",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
   "name":"org.restheart.security.mechanisms.DigestAuthMechanism",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }
   ]
 },
@@ -1318,43 +1318,43 @@
 {
   "name":"org.restheart.security.mechanisms.JwtAuthenticationMechanism",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["java.util.Map"] }
   ]
 },
 {
   "name":"org.restheart.security.mechanisms.TokenBasicAuthMechanism",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
   "name":"org.restheart.security.services.GetRoleService",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["java.util.Map"] }
   ]
 },
 {
   "name":"org.restheart.security.services.RndTokenService",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"init","parameterTypes":["java.util.Map"] }, 
+    {"name":"<init>","parameterTypes":[] },
+    {"name":"init","parameterTypes":["java.util.Map"] },
     {"name":"setPluginRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
   "name":"org.restheart.security.tokens.RndTokenManager",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }
   ]
 },
 {
   "name":"org.restheart.services.PingService",
   "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
+    {"name":"<init>","parameterTypes":[] },
     {"name":"init","parameterTypes":["java.util.Map"] }
   ]
 },

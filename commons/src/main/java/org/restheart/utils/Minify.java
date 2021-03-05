@@ -405,12 +405,12 @@ public class Minify {
         /**
          *
          */
-        OUTPUT_CURR, 
+        OUTPUT_CURR,
 
         /**
          *
          */
-        DELETE_CURR, 
+        DELETE_CURR,
 
         /**
          *

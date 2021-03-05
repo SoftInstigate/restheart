@@ -1,7 +1,7 @@
 
 # RESTHeart Commons
 
-This module provides RESTHeart's internal APIs, useful if you want to extend the product with your own plugins. 
+This module provides RESTHeart's internal APIs, useful if you want to extend the product with your own plugins.
 
 > Note that this specific module is distributed under the more permissive Apache v2.0 license, to avoid the implications of the AGPL v3. This is much like what MongoDB is doing, when they distribute the database under the AGPL v3 but, for example, the Java driver is under the Apache v2.0 license.
 

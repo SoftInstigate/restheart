@@ -27,5 +27,4 @@ import org.restheart.exchange.JsonResponse;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface JsonInterceptor extends Interceptor<JsonRequest, JsonResponse> {
-    
 }

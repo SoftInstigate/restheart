@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -110,7 +110,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                     ? new BsonDocument()
                     : request.getAggreationVars();
 
-            // add @page, @pagesize, @limit and @skip to avars to allow handling 
+            // add @page, @pagesize, @limit and @skip to avars to allow handling
             // paging in the aggragation via default page and pagesize qparams
             avars.put("@page", new BsonInt32(request.getPage()));
             avars.put("@pagesize", new BsonInt32(request.getPagesize()));
@@ -201,12 +201,12 @@ public class GetAggregationHandler extends PipelinedHandler {
 
         try {
             var data = new BsonArray();
-            
+
             _data.stream().forEachOrdered(data::add);
 
             response.setContent(data);
             response.setCount(data.size());
-            
+
             response.setContentTypeAsJson();
             response.setStatusCode(HttpStatus.SC_OK);
 

@@ -3,7 +3,7 @@ Feature: test basic authentication mechanism
 Background:
 * url 'http://localhost:8080'
 * def basic =
-""" 
+"""
 function(creds) {
   var temp = creds.username + ':' + creds.password;
   var Base64 = Java.type('java.util.Base64');
@@ -20,7 +20,7 @@ Scenario: use password, get token and use it
     Then status 200
     And def token = responseHeaders['Auth-Token'][0]
 
-    Given path '/secho'  
+    Given path '/secho'
     And def creds = {username: 'admin', password: '#(token)' }
     And header Authorization = basic( creds )
     When method GET
@@ -34,7 +34,7 @@ Scenario: use password, get token and use it. then use password again and the to
     Then status 200
     And def token = responseHeaders['Auth-Token'][0]
 
-    Given path '/secho'  
+    Given path '/secho'
     And def creds = {username: 'admin', password: '#(token)' }
     And header Authorization = basic( creds )
     When method GET

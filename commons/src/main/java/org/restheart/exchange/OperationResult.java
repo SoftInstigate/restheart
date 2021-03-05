@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,7 +32,7 @@ public class OperationResult {
     private final BsonDocument newData;
     private final BsonDocument oldData;
     private final BsonValue newId;
-    
+
     /**
      *
      * @param httpCode
@@ -44,7 +44,7 @@ public class OperationResult {
         this.oldData = null;
         this.newId = null;
     }
-    
+
     /**
      *
      * @param httpCode
@@ -58,7 +58,7 @@ public class OperationResult {
         this.oldData = oldData;
         this.newId = newData == null ? null : newData.get("_id");
     }
-    
+
     /**
      *
      * @param httpCode
@@ -71,7 +71,7 @@ public class OperationResult {
         this.oldData = null;
         this.newId = null;
     }
-    
+
     /**
      *
      * @param httpCode
@@ -85,7 +85,7 @@ public class OperationResult {
         this.newData = null;
         this.oldData = null;
     }
-    
+
     /**
      *
      * @param httpCode
@@ -93,7 +93,7 @@ public class OperationResult {
      * @param oldData
      * @param newData
      */
-    public OperationResult(int httpCode, Object etag, 
+    public OperationResult(int httpCode, Object etag,
             BsonDocument oldData, BsonDocument newData) {
         this.httpCode = httpCode;
         this.etag = etag;
@@ -122,7 +122,7 @@ public class OperationResult {
     public BsonDocument getNewData() {
         return newData;
     }
-    
+
     /**
      * @return the oldData
      */

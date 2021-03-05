@@ -24,9 +24,9 @@ import org.restheart.exchange.BsonResponse;
 
 /**
  * Specialized Interceptor interface for services implementing BsonService
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface BsonInterceptor extends Interceptor<BsonRequest, BsonResponse> {
-    
+
 }

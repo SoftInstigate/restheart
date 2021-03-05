@@ -27,7 +27,7 @@ import org.restheart.utils.BsonUtils;
 
 /**
  * ServiceResponse implementation backed by BsonValue
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class BsonResponse extends ServiceResponse<BsonValue> {

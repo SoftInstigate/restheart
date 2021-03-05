@@ -27,7 +27,7 @@ import org.restheart.exchange.BsonResponse;
 
 /**
  * Specialized Service interface that uses BsonRequest and BsonResponse
- * 
+ *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface BsonService extends Service<BsonRequest, BsonResponse> {

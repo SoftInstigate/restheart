@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -150,7 +150,7 @@ public abstract class Request<T> extends Exchange<T> {
     /**
      * note: an header can have multiple values. This only returns the first one.
      * use getHeaders() to get all the header's values
-     * 
+     *
      * @param name the name of the header to return
      * @return the first value of the header
      */
@@ -222,7 +222,7 @@ public abstract class Request<T> extends Exchange<T> {
      * get a path parameter using a path template
      *
      * eg {@literal paramName=id and URI=/foo/bar => returns bar }
-     * 
+     *
      * @param pathTemplate the path template
      * @param paramName name of parameter
      * @return the path parameter

@@ -27,5 +27,5 @@ import org.restheart.exchange.ByteArrayProxyResponse;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface ProxyInterceptor extends Interceptor<ByteArrayProxyRequest, ByteArrayProxyResponse> {
-    
+
 }

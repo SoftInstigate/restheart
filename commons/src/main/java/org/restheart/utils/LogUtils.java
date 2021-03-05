@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,25 +56,25 @@ public class LogUtils {
             }
         }
     }
-    
+
     public static void boxedError(
             Logger LOGGER,
             String... rows) {
         boxedMessage(LOGGER, Level.ERROR, RED, GREEN, rows);
     }
-    
+
     public static void boxedWarn(
             Logger LOGGER,
             String... rows) {
         boxedMessage(LOGGER, Level.WARN, RED, GREEN, rows);
     }
-    
+
     public static void boxedInfo(
             Logger LOGGER,
             String... rows) {
         boxedMessage(LOGGER, Level.INFO, GREEN, GREEN, rows);
     }
-    
+
     public static void boxedMessage(
             Logger LOGGER,
             Level level,
@@ -90,7 +90,7 @@ public class LogUtils {
                     .a(pad(row, 66))
                     .a(er())
                     .reset();
-            
+
             first = false;
         }
 

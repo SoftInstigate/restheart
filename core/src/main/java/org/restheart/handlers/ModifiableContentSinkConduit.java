@@ -81,7 +81,7 @@ public class ModifiableContentSinkConduit
      * @return
      */
     private void resetBufferPool(HttpServerExchange exchange) {
-        exchange.putAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY, 
+        exchange.putAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY,
             new PooledByteBuffer[MAX_BUFFERS]);
     }
 

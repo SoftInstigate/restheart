@@ -45,7 +45,7 @@ public class PluginUtilsTest {
         assertArrayEquals(expected,
                 PluginUtils.dontIntercept(plugin));
     }
-    
+
     @Test
     public void testDontIntercept() {
         var plugin = new TestPlugin();
@@ -63,7 +63,7 @@ public class PluginUtilsTest {
         assertEquals("/test",
                 PluginUtils.defaultURI(plugin));
     }
-    
+
     @Test
     public void testDefaultUriDefault() {
         var plugin = new TestPluginDefault();
@@ -79,7 +79,7 @@ public class PluginUtilsTest {
         assertEquals(InterceptPoint.REQUEST_BEFORE_AUTH,
                 PluginUtils.interceptPoint(plugin));
     }
-    
+
     @Test
     public void testInterceptPointDefault() {
         var plugin = new TestPluginDefault();
@@ -95,7 +95,7 @@ public class PluginUtilsTest {
         assertEquals(InitPoint.BEFORE_STARTUP,
                 PluginUtils.initPoint(plugin));
     }
-    
+
     @Test
     public void testInitPointDefault() {
         var plugin = new TestPluginDefault();
@@ -111,7 +111,7 @@ public class PluginUtilsTest {
         assertEquals(true,
                 PluginUtils.requiresContent(plugin));
     }
-    
+
     @Test
     public void testRequiresContentDefault() {
         var plugin = new TestPluginDefault();
@@ -129,14 +129,14 @@ public class PluginUtilsTest {
             interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
             initPoint = InitPoint.BEFORE_STARTUP,
             requiresContent = true)
-    private static class TestPlugin implements JsonService, 
-            JsonInterceptor, 
+    private static class TestPlugin implements JsonService,
+            JsonInterceptor,
             Initializer {
         @Override
         public void handle(JsonRequest r, JsonResponse s) throws Exception {
 
         }
-                
+
         @Override
         public boolean resolve(JsonRequest r, JsonResponse s) {
             return true;
@@ -147,7 +147,7 @@ public class PluginUtilsTest {
 
         }
     }
-    
+
     @RegisterPlugin(name = "testDefaultPlugin",
             description = "test description")
     private static class TestPluginDefault implements JsonService,
@@ -156,7 +156,7 @@ public class PluginUtilsTest {
         public void handle(JsonRequest request, JsonResponse response) throws Exception {
 
         }
-        
+
         @Override
         public boolean resolve(JsonRequest r, JsonResponse s) {
             return true;

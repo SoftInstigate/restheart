@@ -8,12 +8,12 @@
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
@@ -57,7 +57,7 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
         PluginRecord<Authenticator> _mra;
-        
+
         try {
             _mra = registry.getAuthenticator("mongoRealmAuthenticator");
         } catch (ConfigurationException ce) {
@@ -69,13 +69,13 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
             enabled = false;
         } else {
             var rhAuth = (MongoRealmAuthenticator) _mra.getInstance();
-            
+
             this.usersDb = rhAuth.getUsersDb();
             this.usersCollection = rhAuth.getUsersCollection();
             this.propNamePassword = rhAuth.getPropPassword();
 
-            if (usersDb == null 
-                    || usersCollection == null 
+            if (usersDb == null
+                    || usersCollection == null
                     || propNamePassword == null) {
                 LOGGER.error("Wrong configuration of mongoRealmAuthenticator! "
                         + "Requests with filters on the password property "
@@ -84,7 +84,7 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
             } else {
                 enabled = true;
             }
-        }   
+        }
     }
 
     @Override
@@ -95,7 +95,7 @@ public class DenyFilterOnUserPwd implements MongoInterceptor {
                 && this.usersCollection.equalsIgnoreCase(request.getCollectionName())
                 && hasFilterOnPassword(request.getFiltersDocument());
     }
-    
+
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
         response.setInError(HttpStatus.SC_FORBIDDEN, "Using filters on the password property is forbidden");
