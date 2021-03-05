@@ -29,6 +29,8 @@ import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +41,7 @@ import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_
         description = "collects metrics for requests handled by mongo service",
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH)
 public class MetricsInstrumentationInterceptor implements MongoInterceptor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetricsInstrumentationInterceptor.class);
 
     @VisibleForTesting
     static boolean isFilledAndNotMetrics(String dbOrCollectionName) {
@@ -63,11 +66,15 @@ public class MetricsInstrumentationInterceptor implements MongoInterceptor {
         final long requestStartTime = request.getRequestStartTime();
 
         if (!exchange.isComplete()) {
-            exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
-                addMetrics(requestStartTime, httpServerExchange);
+            try {
+                exchange.addExchangeCompleteListener((httpServerExchange, nextListener) -> {
+                    addMetrics(requestStartTime, httpServerExchange);
 
-                nextListener.proceed();
-            });
+                    nextListener.proceed();
+                });
+            } catch(Throwable t) {
+                LOGGER.warn("error adding metric collector to request {} {}", request.getMethod(), request.getPath(), t);
+            }
         }
     }
 
@@ -82,7 +89,7 @@ public class MetricsInstrumentationInterceptor implements MongoInterceptor {
 
     private void addDefaultMetrics(MetricRegistry registry, long duration, HttpServerExchange exchange) {
         var request = MongoRequest.of(exchange);
-        
+
         registry.timer(request.getType().toString() + "." + request.getMethod().toString())
                 .update(duration, TimeUnit.MILLISECONDS);
         registry.timer(request.getType().toString() + "." + request.getMethod().toString() + "." + exchange.getStatusCode())
