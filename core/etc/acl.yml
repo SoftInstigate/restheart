@@ -17,20 +17,40 @@ permissions:
       predicate: path-template[value="/{userid}"] and equals[%u, "${userid}"]
       priority: 100
       mongo:
+        # allowManagementRequests: true # default false
+        # allowBulkPatch: true          # default false
+        # allowBulkDelete: true         # default false
+        # allowWriteMode: true          # default false
         readFilter: '{"status": "public"}'
         writeFilter: '{"status": "public"}'
-        protectProps: ["status", "user"]
+
         overrideProps: {"status": '"public"', "user": "@user.userid"}
+        forbidProps: ["status", "user"]
         forbidQueryParams: [ "filter" ]
 
         # allow role 'user' access /{userid}/{doc} with read and write filter, cannot use ?filter qparam
-    - roles:
-        - user
-      predicate: path-template[value="/{userid}/{subpath}"] and equals[%u, "${userid}"]
+
+
+    # WIP new permission format
+    - roles: [ user ]
+      predicate: path-template[value="/{userid}/{subpath}"] and equals[@user.userid, "${userid}"]
       priority: 100
+      queryParameters:
+        add: { "filter": '{"userid": @user._id}', "sort": '{ "date": -1 }' } # # if the conditions (role, predicate and other 'allow' condition) are met, this will make the query parameter be added
+        allow: { "filter": 0, "sort": 0 } # when the verb 'allow' is used, it is a condition that can make the permission not resolving the request
+                                          # any qparam is allowed but 'filter' and 'sort' (cannot have a mix of inclusion and exclusion)
       mongo:
-        readFilter: '{"status": "public"}'
-        writeFilter: '{"status": "public"}'
-        protectProps: ["status", "user"]
-        overrideProps: {"status": '"public"', "user": "@user.userid"}
-        forbidQueryParams: [ "filter" ]
+        # allowManagementRequests: true # default false
+        # allowBulkPatch: true          # default false
+        # allowBulkDelete: true         # default false
+        # allowWriteMode: true          # default false
+        requestContent:
+          set: { "sub.status": '"public"', "user": "@user.userid" }
+          projection: { "content": 1 } # all properties but 'content' will be filtered out from the request content
+        responseContent:
+          set: { "sub.status": '"public"', "user": "@user.userid" }
+          projection: { "hidden": 0 } # the property 'hidden' will be filtered out from the response content
+
+      # to be removed: can use 'queryParameters'
+      readFilter: '{"status": "public"}'  # deprecated. can use 'queryParameters'
+      writeFilter: '{"status": "public"}' # deprecated. can use 'queryParameters'

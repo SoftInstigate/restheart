@@ -53,7 +53,7 @@ public class MongoPermissions {
     // an hidden property is removed from the response a GET requests
     final Set<String> hideProps = Sets.newHashSet();
     // a protected property cannot be in the body of a write request, otherwise 403 FORBBIDEN is returned
-    final Set<String> protectProps = Sets.newHashSet();
+    final Set<String> forbidProps = Sets.newHashSet();
     // the value of an overridden property is set by the server
     final Map<String, BsonValue> overrideProps = Maps.newHashMap();
     // a forbidden query parameter cannot be specified in the request URL, otherwise 403 FORBBIDEN is returned
@@ -75,7 +75,7 @@ public class MongoPermissions {
 
     MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean allowManagementRequests,
             boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode,
-            Set<String> hideProps, Set<String> protectProps, Map<String, BsonValue> overrideProps, Set<String> forbidQueryParams) {
+            Set<String> hideProps, Set<String> forbidProps, Map<String, BsonValue> overrideProps, Set<String> forbidQueryParams) {
         this.readFilter = readFilter == null ? null
                 : readFilter.isNull() ? null : BsonUtils.escapeKeys(readFilter.asDocument(), true).asDocument();
 
@@ -91,8 +91,8 @@ public class MongoPermissions {
             this.hideProps.addAll(hideProps);
         }
 
-        if (protectProps != null) {
-            this.protectProps.addAll(protectProps);
+        if (forbidProps != null) {
+            this.forbidProps.addAll(forbidProps);
         }
 
         if (overrideProps != null) {
@@ -153,7 +153,7 @@ public class MongoPermissions {
             return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "allowManagementRequests"),
                     parseBooleanArg(args, "allowBulkPatch"), parseBooleanArg(args, "allowBulkDelete"),
                     parseBooleanArg(args, "allowWriteMode"), parseSetArg(args, "hideProps"),
-                    parseSetArg(args, "protectProps"), parseMapArg(args, "overrideProps"), parseSetArg(args, "forbidQueryParams"));
+                    parseSetArg(args, "forbidProps"), parseMapArg(args, "overrideProps"), parseSetArg(args, "forbidQueryParams"));
         }
     }
 
@@ -227,7 +227,7 @@ public class MongoPermissions {
             return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "allowManagementRequests"),
                     parseBooleanArg(args, "allowBulkPatch"), parseBooleanArg(args, "allowBulkDelete"),
                     parseBooleanArg(args, "allowWriteMode"), parseSetArg(args, "hideProps"),
-                    parseSetArg(args, "protectProps"), parseMapArg(args, "overrideProps"), parseSetArg(args, "forbidQueryParams"));
+                    parseSetArg(args, "forbidProps"), parseMapArg(args, "overrideProps"), parseSetArg(args, "forbidQueryParams"));
         }
     }
 
@@ -430,8 +430,8 @@ public class MongoPermissions {
         return this.hideProps;
     }
 
-    public Set<String> getProtectProps() {
-        return this.protectProps;
+    public Set<String> getForbidProps() {
+        return this.forbidProps;
     }
 
     public Map<String, BsonValue> getOverrideProps() {

@@ -36,7 +36,7 @@ import org.restheart.utils.BsonUtils;
     description = "Override properties's values in write requests according to the mongo.overrideProps ACL permission",
     interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
     enabledByDefault = true,
-    // must be lesser priority than mongoprotectProps
+    // must be lesser priority than mongoPermissionForbidProps
     priority = 11)
 public class OverrideProps implements MongoInterceptor {
     @Override
