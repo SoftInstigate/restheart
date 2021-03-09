@@ -51,7 +51,7 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
      */
     public static final String CVS_CONTENT_TYPE = "text/csv";
 
-    private BsonFromCsvRequest(HttpServerExchange exchange) {
+    protected BsonFromCsvRequest(HttpServerExchange exchange) {
         super(exchange);
     }
 

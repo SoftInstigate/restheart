@@ -28,7 +28,7 @@ import java.nio.charset.StandardCharsets;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ByteArrayResponse extends ServiceResponse<byte[]> {
-    private ByteArrayResponse(HttpServerExchange exchange) {
+    protected ByteArrayResponse(HttpServerExchange exchange) {
         super(exchange);
     }
 
