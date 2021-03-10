@@ -46,7 +46,7 @@ public class FileAclPermission extends BaseAclPermission {
     private final String requestPredicate;
 
     private FileAclPermission(String requestPredicate, Set<String> roles, int priority, Map<String, Object> raw) throws ConfigurationException {
-        super(req -> AclVarsInterpolator.interpolatePredicate(req, requestPredicate).resolve(req.getExchange()), roles, priority, raw);
+        super(req -> AclVarsInterpolator.interpolatePredicate(req, requestPredicate, FileAclPermission.class.getClassLoader()).resolve(req.getExchange()), roles, priority, raw);
         this.requestPredicate = requestPredicate;
     }
 

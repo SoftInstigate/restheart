@@ -69,7 +69,7 @@ public class HttpServerExchange extends AbstractAttachable {
 
     public HttpServerExchange addQueryParam(final String name, final String param) {
         if (queryParameters == null) {
-            queryParameters = new TreeMap<>();
+            this.queryParameters = new TreeMap<>();
         }
         Deque<String> list = queryParameters.get(name);
         if (list == null) {

@@ -52,17 +52,13 @@ public class MongoPermissions {
 
     // an hidden property is removed from the response a GET requests
     final Set<String> hideProps = Sets.newHashSet();
-    // a protected property cannot be in the body of a write request, otherwise 403 FORBBIDEN is returned
-    final Set<String> forbidProps = Sets.newHashSet();
     // the value of an overridden property is set by the server
     final Map<String, BsonValue> overrideProps = Maps.newHashMap();
-    // a forbidden query parameter cannot be specified in the request URL, otherwise 403 FORBBIDEN is returned
-    final Set<String> forbidQueryParams = Sets.newHashSet();
 
     public static final MongoPermissions ALLOW_ALL_MONGO_PERMISSIONS = new MongoPermissions(
         null, null,
         true, true, true, true,
-        null, null, null, null);
+        null, null);
 
     public MongoPermissions() {
         this.allowManagementRequests = false;
@@ -75,7 +71,7 @@ public class MongoPermissions {
 
     MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean allowManagementRequests,
             boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode,
-            Set<String> hideProps, Set<String> forbidProps, Map<String, BsonValue> overrideProps, Set<String> forbidQueryParams) {
+            Set<String> hideProps, Map<String, BsonValue> overrideProps) {
         this.readFilter = readFilter == null ? null
                 : readFilter.isNull() ? null : BsonUtils.escapeKeys(readFilter.asDocument(), true).asDocument();
 
@@ -91,16 +87,8 @@ public class MongoPermissions {
             this.hideProps.addAll(hideProps);
         }
 
-        if (forbidProps != null) {
-            this.forbidProps.addAll(forbidProps);
-        }
-
         if (overrideProps != null) {
             this.overrideProps.putAll(overrideProps);
-        }
-
-        if (overrideProps != null) {
-            this.forbidQueryParams.addAll(forbidQueryParams);
         }
     }
 
@@ -153,7 +141,7 @@ public class MongoPermissions {
             return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "allowManagementRequests"),
                     parseBooleanArg(args, "allowBulkPatch"), parseBooleanArg(args, "allowBulkDelete"),
                     parseBooleanArg(args, "allowWriteMode"), parseSetArg(args, "hideProps"),
-                    parseSetArg(args, "forbidProps"), parseMapArg(args, "overrideProps"), parseSetArg(args, "forbidQueryParams"));
+                    parseMapArg(args, "overrideProps"));
         }
     }
 
@@ -227,7 +215,7 @@ public class MongoPermissions {
             return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "allowManagementRequests"),
                     parseBooleanArg(args, "allowBulkPatch"), parseBooleanArg(args, "allowBulkDelete"),
                     parseBooleanArg(args, "allowWriteMode"), parseSetArg(args, "hideProps"),
-                    parseSetArg(args, "forbidProps"), parseMapArg(args, "overrideProps"), parseSetArg(args, "forbidQueryParams"));
+                    parseMapArg(args, "overrideProps"));
         }
     }
 
@@ -259,8 +247,7 @@ public class MongoPermissions {
                     if (_entry instanceof String) {
                         ret.add((String) _entry);
                     } else {
-                        throw new ConfigurationException(
-                                "Wrong permission: mongo." + key + " must be a list of strings");
+                        throw new ConfigurationException("Wrong permission: mongo." + key + " must be a list of strings");
                     }
                 }
                 return ret;
@@ -430,15 +417,7 @@ public class MongoPermissions {
         return this.hideProps;
     }
 
-    public Set<String> getForbidProps() {
-        return this.forbidProps;
-    }
-
     public Map<String, BsonValue> getOverrideProps() {
         return this.overrideProps;
-    }
-
-    public Set<String> getForbidQueryParams() {
-        return this.forbidQueryParams;
     }
 }

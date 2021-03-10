@@ -32,6 +32,8 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.TreeMap;
 
+import org.xnio.channels.StreamSourceChannel;
+
 /**
  * A mock for io.undertow.server.HttpServerExchange The original class is final
  * so it can't be mocked directly. Then use Mockito:
@@ -148,6 +150,10 @@ public class HttpServerExchange extends AbstractAttachable {
 
     public InputStream getInputStream() {
         return new ByteArrayInputStream("FAKE_STREAM".getBytes());
+    }
+
+    public StreamSourceChannel getRequestChannel() {
+        return null;
     }
 
     public HeaderMap getRequestHeaders() {

@@ -1,0 +1,7 @@
+org.restheart.security.predicates.QParamsContainPredicate$Builder
+org.restheart.security.predicates.QParamsSizePredicate$Builder
+org.restheart.security.predicates.QParamsWhitelistPredicate$Builder
+org.restheart.security.predicates.QParamsBlacklistPredicate$Builder
+org.restheart.security.predicates.BsonRequestContainsPredicate$Builder
+org.restheart.security.predicates.BsonRequestWhitelistPredicate$Builder
+org.restheart.security.predicates.BsonRequestBlacklistPredicate$Builder

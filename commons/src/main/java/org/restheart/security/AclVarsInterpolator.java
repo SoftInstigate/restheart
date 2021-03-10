@@ -79,7 +79,9 @@ public class AclVarsInterpolator {
                 } else if (value.isDocument()) {
                     ret.put(k, interpolateBson(request, value));
                 } else if (value.isArray()) {
-                    value.asArray().stream().forEachOrdered(e -> ret.put(k, interpolateBson(request, e)));
+                    var array = new BsonArray();
+                    value.asArray().stream().forEachOrdered(e -> array.add(interpolateBson(request, e)));
+                    ret.put(k, array);
                 } else {
                     ret.put(k, value);
                 }
@@ -233,17 +235,18 @@ public class AclVarsInterpolator {
      * @param predicate the predicate containing the placeholder valiable to
      *                  interpolate
      * @param request   the request
+     * @param classLoader the classloader to resolve the predicates, see java.util.ServiceLoader
      * @return the interpolated predicate
      */
-    public static Predicate interpolatePredicate(Request<?> request, String predicate) throws ConfigurationException {
+    public static Predicate interpolatePredicate(Request<?> request, String predicate, ClassLoader classLoader) throws ConfigurationException {
         var a = getAccountDocument(request);
 
         try {
             if (a == null || a.isEmpty()) {
-                return PredicateParser.parse(predicate, AclVarsInterpolator.class.getClassLoader());
+                return PredicateParser.parse(predicate, classLoader);
             } else {
                 var interpolatedPredicate = interpolatePredicate(predicate, "@user.", a);
-                return PredicateParser.parse(interpolatedPredicate, AclVarsInterpolator.class.getClassLoader());
+                return PredicateParser.parse(interpolatedPredicate, classLoader);
             }
         } catch(Throwable t) {
             throw new ConfigurationException("Wrong permission: invalid predicate " + predicate, t);

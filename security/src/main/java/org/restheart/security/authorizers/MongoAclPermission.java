@@ -48,7 +48,7 @@ public class MongoAclPermission extends BaseAclPermission {
     private final BsonValue _id;
 
     MongoAclPermission(BsonValue _id, String requestPredicate, Set<String> roles, int priority, BsonDocument raw) throws ConfigurationException {
-        super(req -> AclVarsInterpolator.interpolatePredicate(req, requestPredicate).resolve(req.getExchange()), roles, priority, raw);
+        super(req -> AclVarsInterpolator.interpolatePredicate(req, requestPredicate, MongoAclPermission.class.getClassLoader()).resolve(req.getExchange()), roles, priority, raw);
         this._id = _id;
     }
 

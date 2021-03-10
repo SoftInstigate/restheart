@@ -20,6 +20,7 @@
 
 package org.restheart.utils;
 
+import com.google.common.collect.Sets;
 import com.mongodb.MongoClient;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
@@ -834,8 +836,7 @@ public class BsonUtils {
      * {"my.field": true}}
      */
     public static BsonDocument flatten(BsonDocument json, boolean ignoreUpdateOperators) {
-        List<String> keys = json
-                .keySet()
+        List<String> keys = json.keySet()
                 .stream()
                 .filter(key -> !ignoreUpdateOperators || !isUpdateOperator(key))
                 .collect(Collectors.toList());
@@ -844,10 +845,10 @@ public class BsonUtils {
             BsonDocument ret = new BsonDocument();
 
             // add update operators
-            keys
-                    .stream()
-                    .filter(key -> BsonUtils.isUpdateOperator(key))
-                    .forEach(key -> ret.put(key, json.get(key)));
+            json.keySet()
+                .stream()
+                .filter(key -> BsonUtils.isUpdateOperator(key))
+                .forEach(key -> ret.put(key, json.get(key)));
 
             // add properties to $set update operator
             keys
@@ -873,6 +874,81 @@ public class BsonUtils {
                     set));
         } else {
             set.append(newPrefix, value);
+        }
+    }
+
+    /**
+     * Verifies if the bson contains the given keys.
+     * It also takes into account the cases where the bson cotains keys using the dot notation
+     * or update operators.
+     *
+     * @param docOrArray the bson to check
+     * @param keys the keys
+     * @param all true to check the bson to contain all given keys, false for any of the given keys
+     * @return true if the bson cotains the given keys
+     */
+    public static boolean containsKeys(BsonValue docOrArray, Set<String> keys, boolean all) {
+        if (docOrArray == null) {
+            return false;
+        } else if (docOrArray.isArray()) {
+            var array = docOrArray.asArray();
+
+            if (array.isEmpty()) {
+                return false;
+            } else {
+                return all
+                    ? array.stream().allMatch(doc -> containsKeys(doc, keys, all))
+                    : array.stream().anyMatch(doc -> containsKeys(doc, keys, all));
+            }
+        } else if (docOrArray.isDocument()) {
+            return _containsKeys(docOrArray.asDocument(), keys, all);
+        } else {
+            return false;
+        }
+    }
+
+    private static boolean _containsKeys(BsonDocument doc, Set<String> keys, boolean all) {
+        var ufdoc = BsonUtils.unflatten(doc).asDocument();
+
+        return all
+            ? keys.stream().allMatch(key -> _containsKeys(ufdoc, key, all))
+            : keys.stream().anyMatch(key -> _containsKeys(ufdoc, key, all));
+    }
+
+    private static boolean _containsKeys(BsonDocument doc, String key, boolean all) {
+        // let's check update operators first, since doc can look like:
+        // {
+        // <operator1>: { <field1>: <value1>, ... },
+        // <operator2>: { <field2>: <value2>, ... },
+        // ...
+        // }
+
+        if (BsonUtils.containsUpdateOperators(doc)) {
+            // here we check if the doc contains the key in a update operator
+            var updateOperators = doc.keySet().stream().filter(k -> k.startsWith("$")).collect(Collectors.toList());
+
+            var checkInUO = updateOperators.stream().anyMatch(uo -> _containsKeys(BsonUtils.unflatten(doc.get(uo)).asDocument(), key, all));
+
+            if (checkInUO) {
+                return true;
+            }
+        }
+
+        if (key.contains(".")) {
+            var first = key.substring(0, key.indexOf("."));
+            if (first.length() > 0 && doc.containsKey(first) && doc.get(first).isDocument()) {
+                var remaining = key.substring(key.indexOf(".") + 1);
+
+                return _containsKeys(doc.get(first).asDocument(), remaining, all);
+            } else if (first.length() > 0 && doc.containsKey(first) && doc.get(first).isArray()) {
+                var remaining = key.substring(key.indexOf(".") + 1);
+
+                return containsKeys(doc.get(first).asArray(), Sets.newHashSet(remaining), all);
+            } {
+                return false;
+            }
+        } else {
+            return key.length() > 0 && doc.containsKey(key);
         }
     }
 }

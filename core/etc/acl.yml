@@ -3,7 +3,7 @@
 permissions:
     # admin role can do everything
     - role: admin
-      predicate: path-prefix[path="/"]
+      predicate: path-prefix('/')
       priority: 0
       mongo:
         allowManagementRequests: true # default false
@@ -11,46 +11,70 @@ permissions:
         allowBulkDelete: true         # default false
         allowWriteMode: true          # default false
 
-    # allow role 'user' access /{userid} with read and write filter, cannot use ?filter qparam
-    - roles:
-        - user
-      predicate: path-template[value="/{userid}"] and equals[%u, "${userid}"]
-      priority: 100
-      mongo:
-        # allowManagementRequests: true # default false
-        # allowBulkPatch: true          # default false
-        # allowBulkDelete: true         # default false
-        # allowWriteMode: true          # default false
-        readFilter: '{"status": "public"}'
-        writeFilter: '{"status": "public"}'
-
-        overrideProps: {"status": '"public"', "user": "@user.userid"}
-        forbidProps: ["status", "user"]
-        forbidQueryParams: [ "filter" ]
-
-        # allow role 'user' access /{userid}/{doc} with read and write filter, cannot use ?filter qparam
-
-
-    # WIP new permission format
+    # allow role 'user' GET document from /{userid}
+    # a read filter apply, so only document with status=public or author=userid are returned <- readFilter
+    # must use 'page' and 'pagesize' qparams <- qparams-contain(page, pagesize)
+    # cannot use 'filter' and 'sort' qparams <- qparams-blacklist(filter, sort)
+    # the property 'log' is removed from the response
     - roles: [ user ]
-      predicate: path-template[value="/{userid}/{subpath}"] and equals[@user.userid, "${userid}"]
-      priority: 100
-      queryParameters:
-        add: { "filter": '{"userid": @user._id}', "sort": '{ "date": -1 }' } # # if the conditions (role, predicate and other 'allow' condition) are met, this will make the query parameter be added
-        allow: { "filter": 0, "sort": 0 } # when the verb 'allow' is used, it is a condition that can make the permission not resolving the request
-                                          # any qparam is allowed but 'filter' and 'sort' (cannot have a mix of inclusion and exclusion)
-      mongo:
-        # allowManagementRequests: true # default false
-        # allowBulkPatch: true          # default false
-        # allowBulkDelete: true         # default false
-        # allowWriteMode: true          # default false
-        requestContent:
-          set: { "sub.status": '"public"', "user": "@user.userid" }
-          projection: { "content": 1 } # all properties but 'content' will be filtered out from the request content
-        responseContent:
-          set: { "sub.status": '"public"', "user": "@user.userid" }
-          projection: { "hidden": 0 } # the property 'hidden' will be filtered out from the response content
+      predicate: >
+        method(GET)
+        and path-template('/{userid}')
+        and equals(@user.userid, ${userid})
+        and qparams-contain(page, pagesize)
+        and qparams-blacklist(filter, sort)
 
-      # to be removed: can use 'queryParameters'
-      readFilter: '{"status": "public"}'  # deprecated. can use 'queryParameters'
-      writeFilter: '{"status": "public"}' # deprecated. can use 'queryParameters'
+      priority: 100
+      mongo:
+        readFilter: >
+          { "$or": [
+            {"status": "public"},
+            {"author": "@user.userid" }
+            ]}
+        hideProps: [ log ]
+
+    # allow role 'user' to create documents under /{userid}
+    # the request content must contain 'title' and 'content' <- bson-request-contains(title, content)
+    # the request content cannot contain any property other than 'title' and 'content' <- bson-request-whitelist(title, content)
+    # no qparams can be specified <- qparams-whitelist()
+    # the property 'author' and 'status' are added to the request at server-side <- overrideProps
+    # the property 'log' with some request values is added to the request at server-side <- overrideProps
+    - roles: [ user ]
+      predicate: >
+        method(POST)
+        and path-template('/{userid}')
+        and equals(@user.userid, ${userid})
+        and bson-request-whitelist(title, content)
+        and bson-request-contains(title, content)
+        and qparams-whitelist()
+      priority: 100
+
+      mongo:
+        overrideProps:
+          author: '@user.userid'
+          status: '"draft"'
+          log.remoteIp: '@request.remoteIp'
+          log.method: '@request.method'
+
+    # allow role 'user' to modify documents under /{userid}
+    # the request content must contain 'title' and 'content' or 'status' <- (bson-request-contains(title, content) or bson-request-contains(status))
+    # the request content cannot contain any property other than 'title', 'content' and 'status' <- bson-request-whitelist(title, content, status)
+    # no qparams can be specified <- qparams-whitelist()
+    # the property 'author' is added to the request at server-side <- overrideProps
+    # a write filter applies so that user can only modify document with author=userid <- writeFilter
+    - roles: [ user ]
+      predicate: >
+        method(PATCH)
+        and path-template('/{userid}/{docid}')
+        and equals(@user.userid, ${userid})
+        and bson-request-whitelist(title, content, status)
+        and (bson-request-contains(title, content)
+        or bson-request-contains(status))
+        and qparams-whitelist()
+      priority: 100
+
+      mongo:
+        overrideProps:
+          author: '@user.userid'
+        writeFilter: >
+          {"status": "draft"}
