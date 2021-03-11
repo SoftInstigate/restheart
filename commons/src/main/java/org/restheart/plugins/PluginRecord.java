@@ -29,6 +29,7 @@ import java.util.Map;
 public class PluginRecord<T extends Plugin> {
     private final String name;
     private final String description;
+    private final boolean secure;
     private final boolean enabledByDefault;
     private final String className;
     private final T instance;
@@ -39,14 +40,18 @@ public class PluginRecord<T extends Plugin> {
      */
     public static final String PLUGIN_ENABLED_KEY = "enabled";
 
+    public static final String PLUGIN_SECURE_KEY = "secured";
+
     public PluginRecord(String name,
             String description,
+            final boolean secure,
             boolean enabledByDefault,
             String className,
             T instance,
             Map<String, Object> confArgs) {
         this.name = name;
         this.description = description;
+        this.secure = secure;
         this.enabledByDefault = enabledByDefault;
         this.instance = instance;
         this.className = className;
@@ -75,7 +80,14 @@ public class PluginRecord<T extends Plugin> {
     }
 
     /**
-     * @return the disabled
+     * @return true if secure taking into accout the configuration overrides
+     */
+    public boolean isSecure() {
+        return isSecure(secure, getConfArgs());
+    }
+
+    /**
+     * @return true if enabled taking into accout the configuration overrides
      */
     public boolean isEnabled() {
         return isEnabled(enabledByDefault, getConfArgs());
@@ -84,10 +96,9 @@ public class PluginRecord<T extends Plugin> {
     /**
      * @param enabledByDefault
      * @param confArgs
-     * @return the disabled
+     * @return true if enabled taking into accout the configuration overrides
      */
-    public static boolean isEnabled(boolean enabledByDefault,
-            Map<String, Object> confArgs) {
+    public static boolean isEnabled(boolean enabledByDefault, Map<String, Object> confArgs) {
         return confArgs == null
                 ? enabledByDefault
                 : confArgs.containsKey(PLUGIN_ENABLED_KEY)
@@ -95,6 +106,21 @@ public class PluginRecord<T extends Plugin> {
                 && confArgs.get(PLUGIN_ENABLED_KEY) instanceof Boolean
                 ? (Boolean) confArgs.get(PLUGIN_ENABLED_KEY)
                 : enabledByDefault;
+    }
+
+    /**
+     * @param secure
+     * @param confArgs
+     * @return true if secure taking into accout the configuration overrides
+     */
+    public static boolean isSecure(boolean secure, Map<String, Object> confArgs) {
+        return confArgs == null
+                ? secure
+                : confArgs.containsKey(PLUGIN_SECURE_KEY)
+                && confArgs.get(PLUGIN_SECURE_KEY) != null
+                && confArgs.get(PLUGIN_SECURE_KEY) instanceof Boolean
+                ? (Boolean) confArgs.get(PLUGIN_SECURE_KEY)
+                : secure;
     }
 
     /**

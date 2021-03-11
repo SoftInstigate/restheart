@@ -303,34 +303,21 @@ plugins-directory: {{{plugins-directory}}}
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).
 # The property 'enabled' allows enabling plugins that are not enabled by default,
 # i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false)
+# The property 'secured' allows overriding the secure attribute of the service defined
+# by @RegisterPlugin( .., secure=false)
 
 plugins-args:
   mongo:
-    enabled: true
     uri: /
-    secured: true
-  csvLoader:
-    secured: true
   rndTokenService:
-    enabled: true
     uri: /tokens
-    secured: false
   ping:
     enabled: true
-    secured: false
     msg: Greetings from RESTHeart!
   roles:
-    enabled: true
     uri: /roles
-    secured: false
-  echo:
-    enabled: false
-    uri: /echo
-    secured: false
   graphql:
-    enabled: true
     uri: /graphql
-    secured: false
     db: restheart
     collection: apps
 

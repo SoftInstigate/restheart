@@ -1090,11 +1090,7 @@ public class Bootstrapper {
                 return;
             }
 
-            boolean secured = srvConfArgs != null
-                    && srvConfArgs.containsKey("secured")
-                    && srvConfArgs.get("secured") instanceof Boolean
-                    ? (boolean) srvConfArgs.get("secured")
-                    : false;
+            boolean secured = srv.isSecure();
 
             PluginsRegistryImpl
                     .getInstance()

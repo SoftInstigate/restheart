@@ -30,6 +30,7 @@ import org.restheart.plugins.RegisterPlugin;
 @RegisterPlugin(
         name = "secho",
         description = "only used for automatic testing purposes",
+        secure = true,
         enabledByDefault = false,
         defaultURI = "/secho")
 public class SEchoService extends EchoService {

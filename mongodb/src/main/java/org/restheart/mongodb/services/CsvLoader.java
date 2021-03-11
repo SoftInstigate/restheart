@@ -61,6 +61,7 @@ import org.restheart.utils.BsonUtils;
 @SuppressWarnings("unchecked")
 @RegisterPlugin(name = "csvLoader",
         description = "Uploads a csv file in a collection",
+        secure = true,
         defaultURI = "/csv")
 public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
     /**

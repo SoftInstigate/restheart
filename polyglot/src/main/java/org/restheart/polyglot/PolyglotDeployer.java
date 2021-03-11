@@ -349,7 +349,7 @@ public class PolyglotDeployer implements Initializer {
 
                     var srv = srvf.get();
 
-                    var record = new PluginRecord<Service>(srv.getName(), "description", true,
+                    var record = new PluginRecord<Service>(srv.getName(), "description", srv.isSecured(), true,
                             srv.getClass().getName(), srv, new HashMap<>());
 
                     registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
@@ -369,6 +369,7 @@ public class PolyglotDeployer implements Initializer {
 
             var record = new PluginRecord<Service>(srv.getName(),
                 srv.getDescription(),
+                srv.isSecured(),
                 true,
                 srv.getClass().getName(),
                 srv,

@@ -408,6 +408,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                 PluginRecord<Authorizer> _fauthorizer = new PluginRecord<>(
                         "fullAuthorizer",
                         "authorize any operation to any user",
+                        false, // secure, only applies to services
                         true,
                         FullAuthorizer.class
                                 .getName(),

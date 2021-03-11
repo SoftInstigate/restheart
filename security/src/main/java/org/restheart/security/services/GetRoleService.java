@@ -46,6 +46,7 @@ import org.restheart.utils.URLUtils;
 @RegisterPlugin(
         name = "roles",
         description = "returns the roles of the authenticated client",
+        secure = false,
         enabledByDefault = true,
         defaultURI = "/roles")
 public class GetRoleService implements JsonService {

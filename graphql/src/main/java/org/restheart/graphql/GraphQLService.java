@@ -48,6 +48,7 @@ import java.util.function.Function;
 
 @RegisterPlugin(name= "graphql",
                 description = "Service that handles GraphQL requests",
+                secure = true,
                 enabledByDefault = true,
                 defaultURI = "/graphql")
 

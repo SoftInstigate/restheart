@@ -52,6 +52,16 @@ public @interface RegisterPlugin {
     int priority() default 10;
 
     /**
+     * Only used by Services
+     *
+     * Set to true to execute the service only if authentication and authorization succeed.
+     * The value can be overridden setting the configuration argument 'secure'
+     *
+     * @return true if secured
+     */
+    boolean secure() default false;
+
+    /**
      * Set to true to enable the plugin by default. Otherwise it can be enabled
      * setting the configuration argument 'enabled'
      *

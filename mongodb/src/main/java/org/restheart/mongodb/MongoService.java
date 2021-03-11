@@ -66,6 +66,7 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(name = "mongo",
         description = "handles requests to mongodb resources",
+        secure = true,
         enabledByDefault = true,
         defaultURI = "/",
         priority = Integer.MIN_VALUE)

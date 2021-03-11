@@ -226,40 +226,31 @@ plugins-directory: plugins
 # i.e. that are registered with @RegisterPlugin( .., enabledByDefault=false)
 # The property 'uri' optionally sets the uri of Service plugins overwriting its
 # default value if specified with the Service.defaultUri() method.
+# The property 'secured' allows overriding the secure attribute of the service defined
+# by @RegisterPlugin( .., secure=false)
 
 plugins-args:
     mongo:
-        enabled: true
-        secured: true
+        uri: /
     graphql:
-        enabled: true
         uri: /graphql
-        secured: false
         db: restheart
         collection: test-apps
-    csvLoader:
-        secured: true
     testInitializer:
         enabled: true
     rndTokenService:
         uri: /tokens
-        secured: false
     ping:
-        secured: false
         msg: 'Ping!'
     roles:
         uri: /roles
-        secured: true
     echo:
         uri: /echo
-        secured: false
     secho:
         uri: /secho
-        secured: true
         enabled: true
     iecho:
         uri: /iecho
-        secured: false
         enabled: true
     echoRequestInterceptor:
         enabled: true

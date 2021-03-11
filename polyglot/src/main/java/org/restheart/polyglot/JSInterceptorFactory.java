@@ -282,6 +282,7 @@ public class JSInterceptorFactory {
 
             return new PluginRecord<Interceptor>(interceptor.getName(),
                 interceptor.getDescription(),
+                false,
                 true,
                 interceptor.getClass().getName(),
                 interceptor,

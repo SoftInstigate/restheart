@@ -220,13 +220,14 @@ public class PluginsFactory {
 
                 var name = name(clazz);
                 var description = description(clazz);
+                var secure = secure(clazz);
                 var enabledByDefault = enabledByDefault(clazz);
                 var enabled = PluginRecord.isEnabled(enabledByDefault, confs != null ? confs.get(name) : null);
 
                 if (enabled) {
                     i = instantiatePlugin(clazz, type, name, confs);
 
-                    var pr = new PluginRecord<>(name, description, enabledByDefault, name, (T) i,
+                    var pr = new PluginRecord<>(name, description, secure, enabledByDefault, name, (T) i,
                             confs != null ? confs.get(name) : null);
 
                     if (pr.isEnabled()) {
@@ -498,6 +499,10 @@ public class PluginsFactory {
 
     private Boolean enabledByDefault(Class<Plugin> p) {
         return p.getAnnotation(RegisterPlugin.class).enabledByDefault();
+    }
+
+    private Boolean secure(Class<Plugin> p) {
+        return p.getAnnotation(RegisterPlugin.class).secure();
     }
 
     @SuppressWarnings("rawtypes")
