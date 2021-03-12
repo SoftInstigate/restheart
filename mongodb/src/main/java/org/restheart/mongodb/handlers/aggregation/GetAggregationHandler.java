@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.bson.BsonNull;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.MongoRequest;
@@ -39,6 +40,10 @@ import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.security.FileRealmAccount;
+import org.restheart.security.MongoPermissions;
+import org.restheart.security.MongoRealmAccount;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -117,6 +122,33 @@ public class GetAggregationHandler extends PipelinedHandler {
             avars.put("@limit", new BsonInt32(request.getPagesize()));
             avars.put("@skip", new BsonInt32(request.getPagesize()
                     * (request.getPage() - 1)));
+
+            // add @mongoPermissions to avars
+            var mongoPermissions = MongoPermissions.of(request);
+            if (mongoPermissions != null) {
+                var mongo = new BsonDocument();
+                mongo.put("projectResponse", mongoPermissions.getProjectResponse());
+                mongo.put("mergeRequest", mongoPermissions.getMergeRequest());
+                mongo.put("readFilter", mongoPermissions.getReadFilter());
+                mongo.put("writeFilter", mongoPermissions.getWriteFilter());
+                avars.put("@mongoPermissions", mongo);
+            } else {
+                avars.put("@mongoPermissions", new MongoPermissions().asBson());
+            }
+
+            // add @user to avars
+            var account = request.getAuthenticatedAccount();
+
+            if (account != null && account instanceof MongoRealmAccount) {
+                    var ma = (MongoRealmAccount) account;
+                    avars.put("@user", ma.getAccountDocument());
+
+            } else if (account != null && account instanceof FileRealmAccount) {
+                var fa = (FileRealmAccount) account;
+                avars.put("@user", BsonUtils.toBsonDocument(fa.getAccountProperties()));
+            } else {
+                avars.put("@user", BsonNull.VALUE);
+            }
 
             switch (query.getType()) {
                 case MAP_REDUCE:
