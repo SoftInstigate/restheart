@@ -127,10 +127,10 @@ public class GetAggregationHandler extends PipelinedHandler {
             var mongoPermissions = MongoPermissions.of(request);
             if (mongoPermissions != null) {
                 var mongo = new BsonDocument();
-                mongo.put("projectResponse", mongoPermissions.getProjectResponse());
-                mongo.put("mergeRequest", mongoPermissions.getMergeRequest());
-                mongo.put("readFilter", mongoPermissions.getReadFilter());
-                mongo.put("writeFilter", mongoPermissions.getWriteFilter());
+                mongo.put("projectResponse", mongoPermissions.getProjectResponse() == null ? BsonNull.VALUE : mongoPermissions.getProjectResponse());
+                mongo.put("mergeRequest", mongoPermissions.getMergeRequest() == null ? BsonNull.VALUE : mongoPermissions.getMergeRequest());
+                mongo.put("readFilter", mongoPermissions.getReadFilter() == null ? BsonNull.VALUE : mongoPermissions.getReadFilter());
+                mongo.put("writeFilter", mongoPermissions.getWriteFilter() == null ? BsonNull.VALUE : mongoPermissions.getWriteFilter());
                 avars.put("@mongoPermissions", mongo);
             } else {
                 avars.put("@mongoPermissions", new MongoPermissions().asBson());
