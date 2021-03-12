@@ -1,0 +1,79 @@
+[
+  {
+    "_id": "admonCanDoEverything",
+    "description": [
+        "admin role can do everything"
+    ],
+    "predicate": "path-prefix('/')",
+    "roles": ["admin"],
+    "priority": 0,
+    "mongo": {
+      "allowManagementRequests": true,
+      "allowBulkPatch": true,
+      "allowBulkDelete": true,
+      "allowWriteMode": true
+    }
+  },
+  {
+    "_id": "userCanGetOwnCollection",
+    "description": [
+        "**** DESCRIPTION PROPERTY IS NOT REQUIRED, HERE ONLY FOR DOCUMENTATION PURPOSES",
+        "allow role 'user' GET document from /{userid}",
+        "a read filter apply, so only document with status=public or author=userid are returned <- readFilter",
+        "must use 'page' qparam <- qparams-contain(page)",
+        "cannot use 'filter' and 'sort' qparams <- qparams-blacklist(filter, sort)",
+        "the property 'log' is removed from the response <- projectResponse"
+    ],
+    "roles": ["user"],
+    "predicate": "method(GET) and path-template('/{userid}') and equals(@user.userid, ${userid}) and qparams-contain(page) and qparams-blacklist(filter, sort)",
+    "priority": 100,
+    "mongo": {
+      "readFilter": {
+        "_$or": [{ "status": "public" }, { "author": "@user.userid" }]
+      },
+      "projectResponse": { "log": 0 }
+    }
+  },
+  {
+    "_id": "userCanCreateDocumentsInOwnCollection",
+    "description": [
+        "**** DESCRIPTION PROPERTY IS NOT REQUIRED, HERE ONLY FOR DOCUMENTATION PURPOSES",
+        "allow role 'user' to create documents under /{userid}",
+        "the request content must contain 'title' and 'content' <- bson-request-contains(title, content)",
+        "the request content cannot contain any property other than 'title' and 'content' <- bson-request-whitelist(title, content)",
+        "no qparams can be specified <- qparams-whitelist()",
+        "the property 'author' and 'status' are added to the request at server-side <- mergeRequest",
+        "the property 'log' with some request values is added to the request at server-side <- mergeRequest"
+    ],
+    "roles": ["user"],
+    "priority": 100,
+    "predicate": "method(POST) and path-template('/{userid}') and equals(@user.userid, ${userid}) and bson-request-whitelist(title, content) and bson-request-contains(title, content) and qparams-whitelist()",
+    "mongo": {
+      "mergeRequest": {
+        "author": "@user.userid",
+        "status": "draft",
+        "log": "@request"
+      }
+    }
+  },
+  {
+    "_id": "userCanModifyDraftsInOwnCollection",
+    "description": [
+        "**** DESCRIPTION PROPERTY IS NOT REQUIRED, HERE ONLY FOR DOCUMENTATION PURPOSES",
+        "allow role 'user' to modify documents under /{userid}",
+        "the request content must contain 'title' and 'content' or 'status' <- (bson-request-contains(title, content) or bson-request-contains(status))",
+        "the request content cannot contain any property other than 'title', 'content' and 'status' <- bson-request-whitelist(title, content, status)",
+        "no qparams can be specified <- qparams-whitelist()",
+        "the property 'author' is added to the request at server-side <- mergeRequest",
+        "a write filter applies so that user can only modify document with author=userid <- writeFilter"
+
+    ],
+    "roles": ["user"],
+    "priority": 100,
+    "predicate": "method(PATCH) and path-template('/{userid}/{docid}') and equals(@user.userid, ${userid}) and bson-request-whitelist(title, content, status) and (bson-request-contains(title, content) or bson-request-contains(status)) and qparams-whitelist()",
+    "mongo": {
+      "mergeRequest": { "author": "@user.userid" },
+      "writeFilter": { "status": "draft" }
+    }
+  }
+]

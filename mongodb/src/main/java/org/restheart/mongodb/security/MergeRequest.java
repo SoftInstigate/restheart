@@ -20,9 +20,7 @@
  */
 package org.restheart.mongodb.security;
 
-import java.util.Map;
-
-import org.bson.BsonValue;
+import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.plugins.InterceptPoint;
@@ -30,39 +28,29 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.MongoPermissions;
-import org.restheart.utils.BsonUtils;
 
-@RegisterPlugin(name = "mongoPermissionOverrideProps",
-    description = "Override properties's values in write requests according to the mongo.overrideProps ACL permission",
+@RegisterPlugin(name = "mongoPermissionMergeRequest",
+    description = "Override properties's values in write requests according to the mongo.mergeRequest ACL permission",
     interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH,
     enabledByDefault = true,
-    // must be lesser priority than mongoPermissionForbidProps
     priority = 11)
-public class OverrideProps implements MongoInterceptor {
+public class MergeRequest implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        var overrideProps = MongoPermissions.of(request).getOverrideProps();
+        var toMerge = MongoPermissions.of(request).getMergeRequest();
 
         if (request.getContent().isDocument()) {
-            override(request, overrideProps);
+            merge(request, toMerge);
         } else if (request.getContent().isArray()) {
             request.getContent().asArray().stream().map(doc -> doc.asDocument())
-                    .forEachOrdered(doc -> override(request, overrideProps));
-        }
-
-        if (request.isPost()) {
-            request.setContent(BsonUtils.unflatten(request.getContent()));
+                    .forEachOrdered(doc -> merge(request, toMerge));
         }
     }
 
-    private void override(MongoRequest request, Map<String, BsonValue> overrideProps) {
-        overrideProps.entrySet().stream()
-                .filter(e -> e.getValue() != null && e.getValue().isString())
-                .forEachOrdered(e -> override(request, e.getKey(), e.getValue().asString().getValue()));
-    }
+    private void merge(MongoRequest request, BsonDocument toMerge) {
+        var iToMegere = AclVarsInterpolator.interpolateBson(request, toMerge).asDocument();
 
-    private void override(MongoRequest request, String key, String value) {
-        request.getContent().asDocument().put(key, AclVarsInterpolator.interpolatePropValue(request, key, value));
+        request.getContent().asDocument().putAll(iToMegere);
     }
 
     @Override
@@ -71,10 +59,14 @@ public class OverrideProps implements MongoInterceptor {
             return false;
         }
 
+        if (request.isGet() || request.isDelete()) {
+            return false;
+        }
+
         var mongoPermission = MongoPermissions.of(request);
 
         if (mongoPermission != null) {
-            return !mongoPermission.getOverrideProps().isEmpty();
+            return mongoPermission.getMergeRequest() != null;
         } else {
             return false;
         }

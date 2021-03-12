@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonDocumentReader;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonJavaScript;
 import org.bson.BsonMaxKey;
@@ -43,6 +44,7 @@ import org.bson.Document;
 import org.bson.codecs.BsonArrayCodec;
 import org.bson.codecs.BsonValueCodecProvider;
 import org.bson.codecs.DecoderContext;
+import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.json.Converter;
 import org.bson.json.JsonMode;
@@ -742,8 +744,7 @@ public class BsonUtils {
 
         var d = new Document(map);
 
-        return d.toBsonDocument(BsonDocument.class,
-                MongoClient.getDefaultCodecRegistry());
+        return d.toBsonDocument(BsonDocument.class, MongoClient.getDefaultCodecRegistry());
     }
 
     private static final String _UPDATE_OPERATORS[] = {
@@ -950,5 +951,17 @@ public class BsonUtils {
         } else {
             return key.length() > 0 && doc.containsKey(key);
         }
+    }
+
+    private final static DocumentCodec codec = new DocumentCodec();
+
+    /**
+     * convert BsonDocument to Document
+     * @param bsonDocument
+     * @return
+     */
+    public static Document bsonToDocument(BsonDocument bsonDocument) {
+        DecoderContext decoderContext = DecoderContext.builder().build();
+        return codec.decode(new BsonDocumentReader(bsonDocument), decoderContext);
     }
 }

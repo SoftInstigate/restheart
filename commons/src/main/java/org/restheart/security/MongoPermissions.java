@@ -24,36 +24,26 @@ package org.restheart.security;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.gson.JsonParseException;
 
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
 import org.restheart.utils.BsonUtils;
-import org.restheart.utils.LambdaUtils;
 
 /**
  * Encapsulates the permissions specific to the MongoService, definined by `mongo` property of the permission
  */
 public class MongoPermissions {
-    final boolean allowManagementRequests;
-    final boolean allowBulkPatch;
-    final boolean allowBulkDelete;
-    final boolean allowWriteMode;
+    private final boolean allowManagementRequests;
+    private final boolean allowBulkPatch;
+    private final boolean allowBulkDelete;
+    private final boolean allowWriteMode;
+    private final BsonDocument mergeRequest;
+    private final BsonDocument projectResponse;
     private final BsonDocument readFilter;
     private final BsonDocument writeFilter;
-
-    // an hidden property is removed from the response a GET requests
-    final Set<String> hideProps = Sets.newHashSet();
-    // the value of an overridden property is set by the server
-    final Map<String, BsonValue> overrideProps = Maps.newHashMap();
 
     public static final MongoPermissions ALLOW_ALL_MONGO_PERMISSIONS = new MongoPermissions(
         null, null,
@@ -67,11 +57,13 @@ public class MongoPermissions {
         this.allowWriteMode = false;
         this.readFilter = null;
         this.writeFilter = null;
+        this.mergeRequest = null;
+        this.projectResponse = null;
     }
 
     MongoPermissions(BsonDocument readFilter, BsonDocument writeFilter, boolean allowManagementRequests,
             boolean allowBulkPatch, boolean allowBulkDelete, boolean allowWriteMode,
-            Set<String> hideProps, Map<String, BsonValue> overrideProps) {
+            BsonDocument mergeRequest, BsonDocument projectResponse) {
         this.readFilter = readFilter == null ? null
                 : readFilter.isNull() ? null : BsonUtils.escapeKeys(readFilter.asDocument(), true).asDocument();
 
@@ -83,13 +75,8 @@ public class MongoPermissions {
         this.allowBulkDelete = allowBulkDelete;
         this.allowWriteMode = allowWriteMode;
 
-        if (hideProps != null) {
-            this.hideProps.addAll(hideProps);
-        }
-
-        if (overrideProps != null) {
-            this.overrideProps.putAll(overrideProps);
-        }
+        this.mergeRequest = mergeRequest;
+        this.projectResponse = projectResponse;
     }
 
     public static MongoPermissions of(Request<?> request) throws ConfigurationException, IllegalArgumentException {
@@ -138,10 +125,59 @@ public class MongoPermissions {
             var writeFilter = _writeFilter == null ? null
                     : _writeFilter.isNull() ? null : BsonUtils.escapeKeys(_writeFilter.asDocument(), true).asDocument();
 
+            var _mergeRequest = args.get("mergeRequest");
+
+            if (!(_mergeRequest == null || _mergeRequest.isNull()) && !_mergeRequest.isDocument()) {
+                throw new ConfigurationException("Wrong permission: mergeRequest must be a JSON object or null");
+            }
+
+            var mergeRequest = _mergeRequest == null ? null
+                    : _mergeRequest.isNull() ? null : _mergeRequest.asDocument();
+
+            var _projectResponse = args.get("projectResponse");
+
+            if (!(_projectResponse == null || _projectResponse.isNull()) && !_projectResponse.isDocument()) {
+                throw new ConfigurationException("Wrong permission: _projectResponse must be a JSON object or null");
+            }
+
+            var projectResponse = _projectResponse == null ? null
+                    : _projectResponse.isNull() ? null : _projectResponse.asDocument();
+
+            if (projectResponse != null && projectResponse.isDocument()) {
+                var zeros= false;
+                var ones= false;
+
+                for (var key: projectResponse.keySet()) {
+                    if (projectResponse.get(key).isInt32()) {
+                        if (projectResponse.get(key).asInt32().getValue() == 0) {
+                            if (ones) {
+                                throw new ConfigurationException(
+                                "Wrong permission: the projectResponse contains invalid projection options, cannot have a mix of inclusion and exclusion");
+                            }
+                            zeros = true;
+                        } else if (projectResponse.get(key).asInt32().getValue() == 1) {
+                            if (zeros) {
+                                throw new ConfigurationException(
+                                "Wrong permission: the projectResponse contains invalid projection options, cannot have a mix of inclusion and exclusion");
+                            }
+                            ones = true;
+                        } else {
+                            throw new ConfigurationException(
+                                "Wrong permission: the projectResponse contains invalid projection options, valid values are 0 and 1");
+                        }
+                    } else {
+                        throw new ConfigurationException(
+                            "Wrong permission: the projectResponse contains invalid projection options, valid values are 0 and 1");
+                    }
+                }
+            } else {
+                projectResponse = null;
+            }
+
             return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "allowManagementRequests"),
                     parseBooleanArg(args, "allowBulkPatch"), parseBooleanArg(args, "allowBulkDelete"),
-                    parseBooleanArg(args, "allowWriteMode"), parseSetArg(args, "hideProps"),
-                    parseMapArg(args, "overrideProps"));
+                    parseBooleanArg(args, "allowWriteMode"),
+                    mergeRequest, projectResponse);
         }
     }
 
@@ -206,16 +242,91 @@ public class MongoPermissions {
                                     : BsonUtils.escapeKeys(_writeFilter.asDocument(), true).asDocument();
                 } catch (ClassCastException | JsonParseException jpe) {
                     throw new ConfigurationException(
-                            "Wrong permission: the writeFilter is not a string containing a JSON Object", jpe);
+                            "Wrong permission: the writeFilter is not a string defining a JSON Object", jpe);
                 }
             } else {
                 writeFilter = null;
             }
 
+            BsonDocument mergeRequest = null;
+
+            if (args.containsKey("mergeRequest")) {
+                try {
+                    String __mergeRequest = argValue(args, "mergeRequest");
+
+                    var _mergeRequest = BsonDocument.parse(__mergeRequest);
+
+                    if (!(_mergeRequest == null || _mergeRequest.isNull()) && !_mergeRequest.isDocument()) {
+                        throw new ConfigurationException("mergeRequest must be a JSON object or null");
+                    }
+
+                    mergeRequest = _mergeRequest == null ? null
+                            : _mergeRequest.isNull() ? null : _mergeRequest.asDocument();
+                } catch (ClassCastException | JsonParseException jpe) {
+                    throw new ConfigurationException(
+                            "Wrong permission: the mergeRequest is not a string defining a JSON Object", jpe);
+                }
+            } else {
+                mergeRequest = null;
+            }
+
+            BsonDocument projectResponse = null;
+
+            if (args.containsKey("projectResponse")) {
+                try {
+                    String __projectResponse = argValue(args, "projectResponse");
+
+                    var _projectResponse = BsonDocument.parse(__projectResponse);
+
+                    if (!(_projectResponse == null || _projectResponse.isNull()) && !_projectResponse.isDocument()) {
+                        throw new ConfigurationException("projectResponse must be a JSON object or null");
+                    }
+
+                    _projectResponse = _projectResponse == null ? null
+                            : _projectResponse.isNull() ? null : _projectResponse.asDocument();
+
+                    if (_projectResponse != null && _projectResponse.isDocument()) {
+                        var zeros= false;
+                        var ones= false;
+
+                        for (var key: _projectResponse.keySet()) {
+                            if (_projectResponse.get(key).isInt32()) {
+                                if (_projectResponse.get(key).asInt32().getValue() == 0) {
+                                    if (ones) {
+                                        throw new ConfigurationException(
+                                        "Wrong permission: the projectResponse contains invalid projection options, cannot have a mix of inclusion and exclusion");
+                                    }
+                                    zeros = true;
+                                } else if (_projectResponse.get(key).asInt32().getValue() == 1) {
+                                    if (zeros) {
+                                        throw new ConfigurationException(
+                                        "Wrong permission: the projectResponse contains invalid projection options, cannot have a mix of inclusion and exclusion");
+                                    }
+                                    ones = true;
+                                } else {
+                                    throw new ConfigurationException(
+                                        "Wrong permission: the projectResponse contains invalid projection options, valid values are 0 and 1");
+                                }
+                            } else {
+                                throw new ConfigurationException(
+                                    "Wrong permission: the projectResponse contains invalid projection options, valid values are 0 and 1");
+                            }
+                        }
+
+                        projectResponse = _projectResponse.asDocument();
+                    }
+                } catch (ClassCastException | JsonParseException jpe) {
+                    throw new ConfigurationException(
+                            "Wrong permission: the projectResponse is not a string defining a JSON Object", jpe);
+                }
+            } else {
+                projectResponse = null;
+            }
+
             return new MongoPermissions(readFilter, writeFilter, parseBooleanArg(args, "allowManagementRequests"),
                     parseBooleanArg(args, "allowBulkPatch"), parseBooleanArg(args, "allowBulkDelete"),
-                    parseBooleanArg(args, "allowWriteMode"), parseSetArg(args, "hideProps"),
-                    parseMapArg(args, "overrideProps"));
+                    parseBooleanArg(args, "allowWriteMode"),
+                    mergeRequest, projectResponse);
         }
     }
 
@@ -234,77 +345,6 @@ public class MongoPermissions {
         }
     }
 
-    private static Set<String> parseSetArg(Map<String, Object> args, String key) throws ConfigurationException {
-        if (args.containsKey(key)) {
-            Object _value = argValue(args, key);
-
-            if (_value != null && _value instanceof List<?>) {
-                HashSet<String> ret = Sets.newHashSet();
-                ;
-                List<?> _set = (List<?>) _value;
-
-                for (var _entry : _set) {
-                    if (_entry instanceof String) {
-                        ret.add((String) _entry);
-                    } else {
-                        throw new ConfigurationException("Wrong permission: mongo." + key + " must be a list of strings");
-                    }
-                }
-                return ret;
-            } else {
-                throw new ConfigurationException("Wrong permission: mongo." + key + " must be a list of strings");
-            }
-        } else {
-            return Sets.newHashSet();
-        }
-    }
-
-    private static Map<String, BsonValue> parseMapArg(Map<String, Object> args, String key)
-            throws ConfigurationException {
-        if (args.containsKey(key)) {
-            Object _value = argValue(args, key);
-
-            if (_value != null && _value instanceof Map<?, ?>) {
-                Map<String, BsonValue> ret = Maps.newHashMap();
-                var item = (Map<?, ?>) _value;
-                item.entrySet().stream().forEach(e -> {
-                    var ikey = e.getKey();
-                    var ivalue = e.getValue();
-
-                    if (ikey instanceof String && ivalue instanceof String) {
-                        try {
-                            var svalue = ((String) ivalue).trim();
-
-                            if (svalue.startsWith("@")) {
-                                // quote value if starts with @
-                                // this allows to use variables as follows
-                                // userId: '@user._id' (and not the annoying userId: '"@user._id"')
-                                svalue = "\"".concat(svalue).concat("\"");
-                            }
-                            ret.put((String) ikey, BsonUtils.parse(svalue));
-                        } catch (Throwable t) {
-                            var ex = new ConfigurationException("Wrong permission: mongo." + key
-                                    + " must be an object. A valid example is:\n\toverrideProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'\n\t\tuser: \"@user._id\"",
-                                    t);
-                            LambdaUtils.throwsSneakyException(ex);
-                        }
-                    } else {
-                        var ex = new ConfigurationException("Wrong permission: mongo." + key
-                                + " must be an object. A valid example is:\n\toverrideProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'\n\t\tuser: \"@user._id\"");
-                        LambdaUtils.throwsSneakyException(ex);
-                    }
-                });
-
-                return ret;
-            } else {
-                throw new ConfigurationException("Wrong permission: mongo." + key
-                        + " must be an object. A valid example is:\n\toverrideProps:\n\t\tfoo: '\"bar\"'\n\t\tfoo: '{\"bar\": 1}'\n\t\tuser: \"@user._id\"");
-            }
-        } else {
-            return Maps.newHashMap();
-        }
-    }
-
     private static boolean parseBooleanArg(BsonDocument args, String key) throws ConfigurationException {
         if (args.containsKey(key)) {
             var _value = args.get(key);
@@ -317,52 +357,6 @@ public class MongoPermissions {
         } else {
             // default value
             return false;
-        }
-    }
-
-    private static Set<String> parseSetArg(BsonDocument args, String key) throws ConfigurationException {
-        if (args.containsKey(key)) {
-            var _value = args.get(key);
-
-            if (_value != null && _value.isArray()) {
-                HashSet<String> ret = Sets.newHashSet();
-                ;
-                var _array = _value.asArray();
-
-                for (var _entry : _array) {
-                    if (_entry != null && _entry.isString()) {
-                        ret.add(_entry.asString().getValue());
-                    } else {
-                        throw new ConfigurationException(
-                                "Wrong permission: mongo." + key + " must be an array of strings");
-                    }
-                }
-                return ret;
-            } else {
-                throw new ConfigurationException("Wrong permission: mongo." + key + " must be an array of strings");
-            }
-        } else {
-            return Sets.newHashSet();
-        }
-    }
-
-    private static Map<String, BsonValue> parseMapArg(BsonDocument args, String key) throws ConfigurationException {
-        if (args.containsKey(key)) {
-            var _value = args.get(key);
-
-            if (_value.isDocument()) {
-                HashMap<String, BsonValue> ret = Maps.newHashMap();
-                var doc = _value.asDocument();
-
-                doc.entrySet().stream().forEach(e -> ret.put(e.getKey(), e.getValue()));
-
-                return ret;
-            } else {
-                throw new ConfigurationException(
-                        "Wrong permission: mongo." + key + " must be a JSON object {key1:json, key2:json, ..}");
-            }
-        } else {
-            return Maps.newHashMap();
         }
     }
 
@@ -379,6 +373,20 @@ public class MongoPermissions {
     public BsonDocument getWriteFilter() {
         return writeFilter == null || writeFilter.isNull() ? writeFilter
                 : BsonUtils.unescapeKeys(writeFilter).asDocument();
+    }
+
+    /**
+     * @return the mergeRequest
+     */
+    public BsonDocument getMergeRequest() {
+        return mergeRequest;
+    }
+
+    /**
+     * @return the projectResponse
+     */
+    public BsonDocument getProjectResponse() {
+        return projectResponse;
     }
 
     public boolean getAllowManagementRequests() {
@@ -411,13 +419,5 @@ public class MongoPermissions {
 
     public boolean isAllowWriteMode() {
         return this.allowWriteMode;
-    }
-
-    public Set<String> getHideProps() {
-        return this.hideProps;
-    }
-
-    public Map<String, BsonValue> getOverrideProps() {
-        return this.overrideProps;
     }
 }

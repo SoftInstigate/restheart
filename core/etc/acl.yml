@@ -13,15 +13,15 @@ permissions:
 
     # allow role 'user' GET document from /{userid}
     # a read filter apply, so only document with status=public or author=userid are returned <- readFilter
-    # must use 'page' and 'pagesize' qparams <- qparams-contain(page, pagesize)
+    # must use 'page' qparam <- qparams-contain(page)
     # cannot use 'filter' and 'sort' qparams <- qparams-blacklist(filter, sort)
-    # the property 'log' is removed from the response
+    # the property 'log' is removed from the response <- projectResponse
     - roles: [ user ]
       predicate: >
         method(GET)
         and path-template('/{userid}')
         and equals(@user.userid, ${userid})
-        and qparams-contain(page, pagesize)
+        and qparams-contain(page)
         and qparams-blacklist(filter, sort)
 
       priority: 100
@@ -31,14 +31,15 @@ permissions:
             {"status": "public"},
             {"author": "@user.userid" }
             ]}
-        hideProps: [ log ]
+        projectResponse: >
+          { "log": 0 }
 
     # allow role 'user' to create documents under /{userid}
     # the request content must contain 'title' and 'content' <- bson-request-contains(title, content)
     # the request content cannot contain any property other than 'title' and 'content' <- bson-request-whitelist(title, content)
     # no qparams can be specified <- qparams-whitelist()
-    # the property 'author' and 'status' are added to the request at server-side <- overrideProps
-    # the property 'log' with some request values is added to the request at server-side <- overrideProps
+    # the property 'author' and 'status' are added to the request at server-side <- mergeRequest
+    # the property 'log' with some request values is added to the request at server-side <- mergeRequest
     - roles: [ user ]
       predicate: >
         method(POST)
@@ -50,17 +51,14 @@ permissions:
       priority: 100
 
       mongo:
-        overrideProps:
-          author: '@user.userid'
-          status: '"draft"'
-          log.remoteIp: '@request.remoteIp'
-          log.method: '@request.method'
+        mergeRequest: >
+          {"author": "@user.userid", "status": "draft", "log": "@request"}
 
     # allow role 'user' to modify documents under /{userid}
     # the request content must contain 'title' and 'content' or 'status' <- (bson-request-contains(title, content) or bson-request-contains(status))
     # the request content cannot contain any property other than 'title', 'content' and 'status' <- bson-request-whitelist(title, content, status)
     # no qparams can be specified <- qparams-whitelist()
-    # the property 'author' is added to the request at server-side <- overrideProps
+    # the property 'author' is added to the request at server-side <- mergeRequest
     # a write filter applies so that user can only modify document with author=userid <- writeFilter
     - roles: [ user ]
       predicate: >
@@ -74,7 +72,7 @@ permissions:
       priority: 100
 
       mongo:
-        overrideProps:
-          author: '@user.userid'
+        mergeRequest: >
+          {"author": "@user.userid"}
         writeFilter: >
           {"status": "draft"}
