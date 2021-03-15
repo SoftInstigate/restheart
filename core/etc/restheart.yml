@@ -1,4 +1,6 @@
 ## RESTHeart Configuration File.
+## See https://restheart.org/docs/setup/#configuration-files
+
 ---
 #### Listeners
 
@@ -121,7 +123,7 @@ mongo-mounts:
 ## PLAIN_JSON or HAL are aliases for SHAL
 ## S is an alias for STANDARD
 
-default-representation-format: {{{default-representation-format}}}
+#default-representation-format: STANDARD
 
 #### Static Web Resources
 

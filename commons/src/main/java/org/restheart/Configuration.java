@@ -90,7 +90,7 @@ import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * Utility class to help dealing with the configuration file.
+ * Class that holds the configuration.
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -107,6 +107,11 @@ public class Configuration {
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 
     public static final String DEFAULT_ROUTE = "0.0.0.0";
+
+    /**
+     * hold the path of the configuration file
+     */
+    private static Path PATH = null;
 
     private static Map<String, Object> getDefaultConf() {
         var defaultConf = new HashMap<String, Object>();
@@ -381,7 +386,7 @@ public class Configuration {
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
-        this(getDefaultConf(), true);
+        this(null, getDefaultConf(), true);
         this.conf = getDefaultConf();
     }
 
@@ -405,7 +410,7 @@ public class Configuration {
      * @throws org.restheart.ConfigurationException
      */
     public Configuration(final Path confFilePath, boolean silent) throws ConfigurationException {
-        this(getConfigurationFromFile(confFilePath), silent);
+        this(confFilePath, getConfigurationFromFile(confFilePath), silent);
     }
 
     /**
@@ -417,9 +422,10 @@ public class Configuration {
      * @throws org.restheart.ConfigurationException
      */
     @SuppressWarnings({ "deprecation", "unchecked", "rawtypes" })
-    public Configuration(Map<String, Object> conf, boolean silent) throws ConfigurationException {
-        this.conf = conf;
+    public Configuration(final Path confFilePath, Map<String, Object> conf, boolean silent) throws ConfigurationException {
+        PATH = confFilePath;
 
+        this.conf = conf;
         this.silent = silent;
 
         // check if service configuration follows old (<2.0)format
@@ -541,8 +547,8 @@ public class Configuration {
 
     @Override
     public String toString() {
-        return "Configuration{" + "instanceName=" + instanceName + ", silent=" + silent + ", httpsListener="
-                + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener="
+        return "Configuration{" + "instanceName=" + instanceName + ", silent=" + silent + ", configurationFilePath=" + PATH
+                + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener="
                 + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost + ", ajpListener=" + ajpListener
                 + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost + ", pluginsDirectory=" + pluginsDirectory
                 + ", keystoreFile=" + keystoreFile
@@ -826,6 +832,14 @@ public class Configuration {
 
     public boolean isAllowUnescapedCharactersInUrl() {
         return allowUnescapedCharactersInUrl;
+    }
+
+    /**
+     *
+     * @return the path of the configuration file
+     */
+    public static Path getPath() {
+        return PATH;
     }
 
     /**

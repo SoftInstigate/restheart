@@ -1,6 +1,8 @@
-# RESTHeart Configuration File.
----
+# RESTHeart Configuration File for Integration Tests.
+# Used by `mvn clean verify`
+## See https://restheart.org/docs/setup/#configuration-files
 
+---
 instance-name: integration-test
 
 #instance-base-url: http://localhost
@@ -107,7 +109,7 @@ auth-mechanisms:
 authenticators:
   fileRealmAuthenticator:
     enabled: true
-    conf-file: ../../etc/test/users.yml
+    conf-file: ./users.yml
   mongoRealmAuthenticator:
     users-db: restheart-test
     users-collection: users
@@ -137,7 +139,7 @@ authenticators:
 authorizers:
   fileAclAuthorizer:
     enabled: true
-    conf-file: ../../etc/test/acl.yml
+    conf-file: ./acl.yml
   mongoAclAuthorizer:
     acl-db: restheart-test
     acl-collection: acl

@@ -120,7 +120,7 @@ public class FileUtils {
                 }
 
                 Map<String, Object> obj = new Yaml().load(writer.toString());
-                return new Configuration(obj, silent);
+                return new Configuration(configurationFilePath, obj, silent);
             } else {
                 return new Configuration(configurationFilePath, silent);
             }

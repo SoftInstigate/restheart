@@ -417,7 +417,7 @@ public class Bootstrapper {
             }
 
             Map<String, Object> obj = new Yaml().load(writer.toString());
-            return new Configuration(obj, false);
+            return new Configuration(CONFIGURATION_FILE, obj, false);
         }
     }
 
