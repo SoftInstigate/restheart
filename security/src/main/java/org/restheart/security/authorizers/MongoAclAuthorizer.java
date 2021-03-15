@@ -88,7 +88,7 @@ public class MongoAclAuthorizer implements Authorizer {
     private PluginsRegistry registry;
 
     @InjectConfiguration
-    public void initConf(Map<String, Object> args) {
+    public void initConfiguration(Map<String, Object> args) {
         this.aclDb = argValue(args, "acl-db");
         this.aclCollection = argValue(args, "acl-collection");
         this.rootRole = argValue(args, "root-role");
