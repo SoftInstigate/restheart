@@ -129,7 +129,7 @@ public class CursorPool {
                 }
         );
 
-        if (LOGGER.isDebugEnabled()) {
+        if (LOGGER.isTraceEnabled()) {
             // print stats every 1 minute
             Executors.newSingleThreadScheduledExecutor()
                     .scheduleAtFixedRate(() -> {
@@ -137,8 +137,7 @@ public class CursorPool {
                             LOGGER.debug("db cursor pool size: {}\t{}", s, c);
                         });
 
-                        LOGGER.trace(""
-                                + "db cursor pool entries: {}",
+                        LOGGER.trace("db cursor pool entries: {}",
                                 cache.asMap().keySet());
                     }, 1, 1, TimeUnit.MINUTES);
         }
