@@ -44,6 +44,7 @@ import static org.restheart.mongodb.MongoServiceConfigurationKeys.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  * Utility class to help dealing with the restheart configuration file.
@@ -116,7 +117,7 @@ public class MongoServiceConfiguration {
 
     @SuppressWarnings("unchecked")
     private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
-        Yaml yaml = new Yaml();
+        Yaml yaml = new Yaml(new SafeConstructor());
 
         Map<String, Object> conf = null;
 
