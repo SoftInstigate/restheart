@@ -16,11 +16,16 @@ import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateBuilder;
 import io.undertow.server.HttpServerExchange;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * a predicate that resolve to true if the request content is bson and
  * all keys in the request content are in the specified whitelist
  */
 public class BsonRequestWhitelistPredicate implements Predicate {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BsonRequestWhitelistPredicate.class);
+
     private final Set<String> whitelist;
 
     public BsonRequestWhitelistPredicate(String[] whitelist) {
@@ -31,7 +36,8 @@ public class BsonRequestWhitelistPredicate implements Predicate {
     public boolean resolve(HttpServerExchange exchange) {
         var _request = Request.of(exchange);
 
-        if (!(_request instanceof BsonRequest)) {
+        if (_request == null || !(_request instanceof BsonRequest)) {
+            LOGGER.warn("bson-request-whitelist predicate not invoked on BsonRequest but {}, it won't allow the request", _request == null ? _request: _request.getClass().getSimpleName());
             return false;
         } else {
             return areAllKeysWhitelisted(this.whitelist, ((BsonRequest)_request).getContent());

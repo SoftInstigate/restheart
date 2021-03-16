@@ -14,11 +14,15 @@ import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateBuilder;
 import io.undertow.server.HttpServerExchange;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * a predicate that resolve to true if the request content is bson and
  * all keys in the request content are mot in the specified blacklist
  */
 public class BsonRequestBlacklistPredicate implements Predicate {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BsonRequestBlacklistPredicate.class);
     private final Set<String> whitelist;
 
     public BsonRequestBlacklistPredicate(String[] whitelist) {
@@ -29,7 +33,8 @@ public class BsonRequestBlacklistPredicate implements Predicate {
     public boolean resolve(HttpServerExchange exchange) {
         var _request = Request.of(exchange);
 
-        if (!(_request instanceof BsonRequest)) {
+        if (_request == null || !(_request instanceof BsonRequest)) {
+            LOGGER.warn("bson-request-blacklist predicate not invoked on BsonRequest but {}, it won't allow the request", _request == null ? _request: _request.getClass().getSimpleName());
             return false;
         }
 

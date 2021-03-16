@@ -14,11 +14,16 @@ import io.undertow.predicate.Predicate;
 import io.undertow.predicate.PredicateBuilder;
 import io.undertow.server.HttpServerExchange;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * a predicate that resolve to true if the request content is bson and
  * contains all specified keys
  */
 public class BsonRequestContainsPredicate implements Predicate {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BsonRequestContainsPredicate.class);
+
     private final Set<String> keys;
 
     public BsonRequestContainsPredicate(String[] qparams) {
@@ -29,7 +34,8 @@ public class BsonRequestContainsPredicate implements Predicate {
     public boolean resolve(HttpServerExchange exchange) {
         var _request = Request.of(exchange);
 
-        if (!(_request instanceof BsonRequest)) {
+        if (_request == null || !(_request instanceof BsonRequest)) {
+            LOGGER.warn("bson-request-contains predicate not invoked on BsonRequest but {}, it won't allow the request", _request == null ? _request: _request.getClass().getSimpleName());
             return false;
         }
 

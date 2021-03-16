@@ -156,8 +156,7 @@ import picocli.CommandLine.Parameters;
  */
 public class Bootstrapper {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(Bootstrapper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Bootstrapper.class);
 
     private static boolean IS_FORKED;
 
