@@ -27,6 +27,7 @@ import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  *
@@ -49,7 +50,7 @@ public abstract class AbstractPT {
 
         StringBuilder ymlSB = new StringBuilder();
 
-        Yaml yaml = new Yaml();
+        Yaml yaml = new Yaml(new SafeConstructor());
 
         yaml.load(ymlSB.toString());
 

@@ -130,6 +130,7 @@ import org.xnio.SslClientAuthMode;
 import org.xnio.Xnio;
 import org.xnio.ssl.XnioSsl;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
@@ -415,7 +416,7 @@ public class Bootstrapper {
                 logErrorAndExit("Error reading configuration file " + CONFIGURATION_FILE, null, false, -1);
             }
 
-            Map<String, Object> obj = new Yaml().load(writer.toString());
+            Map<String, Object> obj = new Yaml(new SafeConstructor()).load(writer.toString());
             return new Configuration(CONFIGURATION_FILE, obj, false);
         }
     }

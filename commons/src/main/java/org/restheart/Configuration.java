@@ -88,6 +88,7 @@ import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  * Class that holds the configuration.
@@ -172,7 +173,7 @@ public class Configuration {
 
     @SuppressWarnings("unchecked")
     private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
-        Yaml yaml = new Yaml();
+        var yaml = new Yaml(new SafeConstructor());
         Map<String, Object> conf = null;
 
         try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {

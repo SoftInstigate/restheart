@@ -52,6 +52,7 @@ import org.restheart.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  *
@@ -119,7 +120,7 @@ public class FileUtils {
                     throw new ConfigurationException("Error reading configuration file: " + configurationFilePath, iex);
                 }
 
-                Map<String, Object> obj = new Yaml().load(writer.toString());
+                Map<String, Object> obj = new Yaml(new SafeConstructor()).load(writer.toString());
                 return new Configuration(configurationFilePath, obj, silent);
             } else {
                 return new Configuration(configurationFilePath, silent);

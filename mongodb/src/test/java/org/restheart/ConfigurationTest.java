@@ -30,6 +30,7 @@ import java.util.Properties;
 import static org.junit.Assert.*;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  *
@@ -69,7 +70,7 @@ public class ConfigurationTest {
         StringWriter writer = new StringWriter();
         m.execute(writer, p);
         writer.flush();
-        Yaml yaml = new Yaml();
+        Yaml yaml = new Yaml(new SafeConstructor());
         Map<String, Object> obj = yaml.load(writer.toString());
         return obj;
     }
