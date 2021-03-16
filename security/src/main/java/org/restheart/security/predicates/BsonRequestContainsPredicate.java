@@ -26,8 +26,12 @@ public class BsonRequestContainsPredicate implements Predicate {
 
     private final Set<String> keys;
 
-    public BsonRequestContainsPredicate(String[] qparams) {
-        this.keys = qparams == null ? Sets.newHashSet() : Sets.newHashSet(qparams);
+    public BsonRequestContainsPredicate(String[] keys) {
+        if (keys == null || keys.length < 1) {
+            throw new IllegalArgumentException("bson-request-contains predicate must specify a list of json properties");
+        }
+
+        this.keys = Sets.newHashSet(keys);
     }
 
     @Override

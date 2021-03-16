@@ -25,8 +25,12 @@ public class QParamsWhitelistPredicate implements Predicate {
     public boolean resolve(HttpServerExchange exchange) {
         var qparamsInExchange = exchange.getQueryParameters();
 
-        return qparamsInExchange == null
+        if (whitelist.isEmpty()) {
+            return qparamsInExchange.isEmpty();
+        } else {
+            return qparamsInExchange == null
                 || qparamsInExchange.keySet().stream().allMatch(this.whitelist::contains);
+        }
     }
 
     public static class Builder implements PredicateBuilder {

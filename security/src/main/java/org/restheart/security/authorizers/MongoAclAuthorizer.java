@@ -344,7 +344,7 @@ public class MongoAclAuthorizer implements Authorizer {
                                 MongoAclPermission.build(permissionDocument);
                                 return true;
                             } catch (IllegalArgumentException iae) {
-                                LOGGER.warn("invalid permission _id={}", permissionDocument.get("_id"));
+                                LOGGER.warn("invalid permission _id={}: {}", permissionDocument.get("_id"), iae);
                                 return false;
                             }
                         })

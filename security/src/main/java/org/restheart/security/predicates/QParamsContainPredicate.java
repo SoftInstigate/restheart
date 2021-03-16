@@ -17,7 +17,11 @@ public class QParamsContainPredicate implements Predicate {
     private final Set<String> qparams;
 
     public QParamsContainPredicate(String[] qparams) {
-        this.qparams = qparams == null ? Sets.newHashSet() : Sets.newHashSet(qparams);
+        if (qparams == null || qparams.length < 1) {
+            throw new IllegalArgumentException("qparams-contains predicate must specify a list of query parameters");
+        }
+
+        this.qparams = Sets.newHashSet(qparams);
     }
 
     @Override

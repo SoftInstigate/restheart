@@ -200,7 +200,7 @@ public class AclVarsInterpolator {
                 var accountDoc = maccount.getAccountDocument();
                 var prop = value.substring(6);
 
-                LOGGER.debug("account doc: {}", accountDoc.toJson());
+                LOGGER.trace("account doc: {}", accountDoc.toJson());
 
                 if (prop.contains(".")) {
                     try {

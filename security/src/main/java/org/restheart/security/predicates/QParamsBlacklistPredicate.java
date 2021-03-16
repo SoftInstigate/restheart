@@ -18,7 +18,11 @@ public class QParamsBlacklistPredicate implements Predicate {
     private final Set<String> blacklist;
 
     public QParamsBlacklistPredicate(String[] blacklist) {
-        this.blacklist = blacklist == null ? Sets.newHashSet() : Sets.newHashSet(blacklist);
+        if (blacklist == null || blacklist.length < 1) {
+            throw new IllegalArgumentException("qparams-blacklist predicate must specify a list of query parameters");
+        }
+
+        this.blacklist = Sets.newHashSet(blacklist);
     }
 
     @Override

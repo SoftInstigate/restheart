@@ -23,10 +23,14 @@ import org.slf4j.LoggerFactory;
  */
 public class BsonRequestBlacklistPredicate implements Predicate {
     private static final Logger LOGGER = LoggerFactory.getLogger(BsonRequestBlacklistPredicate.class);
-    private final Set<String> whitelist;
+    private final Set<String> blacklist;
 
-    public BsonRequestBlacklistPredicate(String[] whitelist) {
-        this.whitelist = whitelist == null ? Sets.newHashSet() : Sets.newHashSet(whitelist);
+    public BsonRequestBlacklistPredicate(String[] blacklist) {
+        if (blacklist == null || blacklist.length < 1) {
+            throw new IllegalArgumentException("bson-request-blacklist predicate must specify a list of json properties");
+        }
+
+        this.blacklist = Sets.newHashSet(blacklist);
     }
 
     @Override
@@ -38,7 +42,7 @@ public class BsonRequestBlacklistPredicate implements Predicate {
             return false;
         }
 
-        return !BsonUtils.containsKeys(((BsonRequest)_request).getContent(), this.whitelist, false);
+        return !BsonUtils.containsKeys(((BsonRequest)_request).getContent(), this.blacklist, false);
     }
 
 

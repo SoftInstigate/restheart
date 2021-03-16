@@ -45,7 +45,9 @@ public class BsonRequestWhitelistPredicate implements Predicate {
     }
 
     private boolean areAllKeysWhitelisted(Set<String> whitelist, BsonValue docArArrayOfDocs) {
-        if (docArArrayOfDocs.isDocument()) {
+        if (docArArrayOfDocs == null ) {
+            return true;
+        } else if (docArArrayOfDocs.isDocument()) {
             return areAllKeysWhitelisted(whitelist, docArArrayOfDocs.asDocument());
         } else if (docArArrayOfDocs.isArray()){
             return docArArrayOfDocs.asArray().stream().filter(BsonValue::isDocument).map(BsonValue::asDocument)
@@ -58,6 +60,8 @@ public class BsonRequestWhitelistPredicate implements Predicate {
     private boolean areAllKeysWhitelisted(Set<String> whitelist, BsonDocument doc) {
         if (doc == null || doc.isEmpty()) {
             return true;
+        } if (whitelist == null || whitelist.isEmpty() ) {
+            return false;
         } else {
             return getLeafsKeys(doc).stream().allMatch(key -> isWhitelisted(whitelist, key));
         }

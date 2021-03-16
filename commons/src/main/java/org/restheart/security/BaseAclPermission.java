@@ -26,6 +26,9 @@ import java.util.function.Predicate;
 import org.restheart.exchange.Request;
 import io.undertow.util.AttachmentKey;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * ACL Permission that specifies the conditions that are necessary to perform
  * the request
@@ -35,6 +38,8 @@ import io.undertow.util.AttachmentKey;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public abstract class BaseAclPermission {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseAclPermission.class);
+
     public static final AttachmentKey<BaseAclPermission> MATCHING_ACL_PERMISSION = AttachmentKey
             .create(BaseAclPermission.class);
 
@@ -65,7 +70,12 @@ public abstract class BaseAclPermission {
      * @return true if this acl authorizes the request
      */
     public boolean allow(Request<?> request) {
-        return this.predicate.test(request);
+        try {
+            return this.predicate.test(request);
+        } catch(Throwable t) {
+            LOGGER.error("Error testing predicate {}", t);
+            return false;
+        }
     }
 
     /**
