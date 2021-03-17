@@ -52,6 +52,7 @@ public class JsonResponse extends ServiceResponse<JsonElement> {
 
     @Override
     public void setInError(int code, String message, Throwable t) {
+        setInError(true);
         setStatusCode(code);
 
         var resp = new JsonObject();

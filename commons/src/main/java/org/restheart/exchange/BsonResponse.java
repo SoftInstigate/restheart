@@ -55,6 +55,7 @@ public class BsonResponse extends ServiceResponse<BsonValue> {
 
     @Override
     public void setInError(int code, String message, Throwable t) {
+        setInError(true);
         setStatusCode(code);
 
         var resp = new BsonDocument();

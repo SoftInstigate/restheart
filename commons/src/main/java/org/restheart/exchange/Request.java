@@ -221,7 +221,7 @@ public abstract class Request<T> extends Exchange<T> {
     /**
      * get a path parameter using a path template
      *
-     * eg {@literal paramName=id and URI=/foo/bar => returns bar }
+     * eg {@literal pathTemplate=/foo/{id}, paramName=id and URI=/foo/bar => returns bar }
      *
      * @param pathTemplate the path template
      * @param paramName name of parameter

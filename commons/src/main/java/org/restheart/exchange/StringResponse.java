@@ -50,6 +50,7 @@ public class StringResponse extends ServiceResponse<String> {
 
     @Override
     public void setInError(int code, String message, Throwable t) {
+        setInError(true);
         setStatusCode(code);
 
         var resp = new JsonObject();
