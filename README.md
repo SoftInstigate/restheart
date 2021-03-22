@@ -70,7 +70,7 @@ You can also have a look at our [RESTHeart's presentation on Slideshare](https:/
     <tr>
       <td align="center" valign="middle">
         <a href="https://www.softinstigate.com" target="_blank">
-          <img width="222px" src="https://www.softinstigate.com/images/softinstigate-logo-lg.png">
+          <img width="222px" src="https://www.softinstigate.com/images/logo.png">
         </a>
       </td>
     </tr>
