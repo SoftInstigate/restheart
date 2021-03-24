@@ -40,6 +40,7 @@ import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.FileRealmAccount;
 import org.restheart.security.MongoPermissions;
 import org.restheart.security.MongoRealmAccount;
@@ -126,10 +127,21 @@ public class GetAggregationHandler extends PipelinedHandler {
             // add @mongoPermissions to avars
             var mongoPermissions = MongoPermissions.of(request);
             if (mongoPermissions != null) {
-                avars.put("@mongoPermissions.projectResponse", mongoPermissions.getProjectResponse() == null ? BsonNull.VALUE : mongoPermissions.getProjectResponse());
-                avars.put("@mongoPermissions.mergeRequest", mongoPermissions.getMergeRequest() == null ? BsonNull.VALUE : mongoPermissions.getMergeRequest());
-                avars.put("@mongoPermissions.readFilter", mongoPermissions.getReadFilter() == null ? BsonNull.VALUE : mongoPermissions.getReadFilter());
-                avars.put("@mongoPermissions.writeFilter", mongoPermissions.getWriteFilter() == null ? BsonNull.VALUE : mongoPermissions.getWriteFilter());
+                avars.put("@mongoPermissions.projectResponse", mongoPermissions.getProjectResponse() == null
+                    ? BsonNull.VALUE
+                    : mongoPermissions.getProjectResponse());
+
+                avars.put("@mongoPermissions.mergeRequest", mongoPermissions.getMergeRequest() == null
+                    ? BsonNull.VALUE
+                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getMergeRequest()));
+
+                avars.put("@mongoPermissions.readFilter", mongoPermissions.getReadFilter() == null
+                    ? BsonNull.VALUE
+                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getReadFilter()));
+
+                avars.put("@mongoPermissions.writeFilter", mongoPermissions.getWriteFilter() == null
+                    ? BsonNull.VALUE
+                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getWriteFilter()));
             } else {
                 avars.put("@mongoPermissions.projectResponse", BsonNull.VALUE);
                 avars.put("@mongoPermissions.mergeRequest", BsonNull.VALUE);
