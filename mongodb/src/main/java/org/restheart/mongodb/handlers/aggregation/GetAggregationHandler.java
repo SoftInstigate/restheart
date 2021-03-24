@@ -127,6 +127,8 @@ public class GetAggregationHandler extends PipelinedHandler {
             // add @mongoPermissions to avars
             var mongoPermissions = MongoPermissions.of(request);
             if (mongoPermissions != null) {
+                avars.put("@mongoPermissions" ,mongoPermissions.asBson());
+
                 avars.put("@mongoPermissions.projectResponse", mongoPermissions.getProjectResponse() == null
                     ? BsonNull.VALUE
                     : mongoPermissions.getProjectResponse());
@@ -143,6 +145,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                     ? BsonNull.VALUE
                     : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getWriteFilter()));
             } else {
+                avars.put("@mongoPermissions", new MongoPermissions().asBson());
                 avars.put("@mongoPermissions.projectResponse", BsonNull.VALUE);
                 avars.put("@mongoPermissions.mergeRequest", BsonNull.VALUE);
                 avars.put("@mongoPermissions.readFilter", BsonNull.VALUE);
@@ -153,12 +156,16 @@ public class GetAggregationHandler extends PipelinedHandler {
             var account = request.getAuthenticatedAccount();
 
             if (account != null && account instanceof MongoRealmAccount) {
-                    var ma = (MongoRealmAccount) account;
-                    avars.put("@user", ma.getAccountDocument());
+                var ba = ((MongoRealmAccount) account).getAccountDocument();
 
+                avars.put("@user", ba);
+                ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
             } else if (account != null && account instanceof FileRealmAccount) {
                 var fa = (FileRealmAccount) account;
-                avars.put("@user", BsonUtils.toBsonDocument(fa.getAccountProperties()));
+                var ba = BsonUtils.toBsonDocument(fa.getAccountProperties());
+
+                avars.put("@user", ba);
+                ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
             } else {
                 avars.put("@user", BsonNull.VALUE);
             }
