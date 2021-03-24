@@ -24,19 +24,28 @@ import com.google.gson.Gson;
 import com.mongodb.MongoClient;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
+import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
+import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentationOptions;
 import io.undertow.server.HttpServerExchange;
+import org.bson.BsonValue;
+import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderRegistry;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.graphql.cache.AppDefinitionLoader;
 import org.restheart.graphql.cache.AppDefinitionLoadingCache;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
+import org.restheart.graphql.dataloaders.QueryBatchLoader;
 import org.restheart.graphql.exchange.GraphQLRequest;
 import org.restheart.graphql.models.GraphQLApp;
+import org.restheart.graphql.models.QueryMapping;
+import org.restheart.graphql.models.TypeMapping;
 import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
 import org.restheart.plugins.*;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
+import org.restheart.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +88,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         }
 
         if(mongoClient != null){
+            QueryBatchLoader.setMongoClient(mongoClient);
             GraphQLDataFetcher.setMongoClient(mongoClient);
             AppDefinitionLoader.setup(db, collection, mongoClient);
         }
@@ -88,6 +98,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     public void initMongoClient(MongoClient mClient){
         this.mongoClient = mClient;
         if (db!= null && collection != null){
+            QueryBatchLoader.setMongoClient(mongoClient);
             GraphQLDataFetcher.setMongoClient(mongoClient);
             AppDefinitionLoader.setup(db, collection, mongoClient);
         }
@@ -99,7 +110,13 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     public void handle(GraphQLRequest request, MongoResponse response) throws Exception {
 
         GraphQLApp graphQLApp = request.getAppDefinition();
-        ExecutionInput.Builder inputBuilder = ExecutionInput.newExecutionInput().query(request.getQuery());
+
+        DataLoaderRegistry dataLoaderRegistry = setDataloaderRegistry(graphQLApp.getMappings());
+
+        ExecutionInput.Builder inputBuilder = ExecutionInput.newExecutionInput()
+                .query(request.getQuery())
+                .dataLoaderRegistry(dataLoaderRegistry);
+
         inputBuilder.operationName(request.getOperationName());
         if (request.hasVariables()){
             inputBuilder.variables((new Gson()).fromJson(request.getVariables(), Map.class));
@@ -108,12 +125,42 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         this.gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema()).build();
 
         var result = this.gql.execute(inputBuilder.build());
+        logDataLoadersStatistics(dataLoaderRegistry);
 
         if (!result.getErrors().isEmpty()){
             response.setInError(400, "Bad Request");
         }
         response.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
     }
+
+
+    private void logDataLoadersStatistics(DataLoaderRegistry dataLoaderRegistry){
+        LOGGER.debug("##### DATALOADERS STATISTICS #####");
+        dataLoaderRegistry.getKeys().forEach(key -> {
+            LOGGER.debug(key.toUpperCase() + ": " + dataLoaderRegistry.getDataLoader(key).getStatistics());
+        });
+        LOGGER.debug("##################################");
+    }
+
+    private DataLoaderRegistry setDataloaderRegistry(Map<String, TypeMapping> mappings){
+
+        DataLoaderRegistry dataLoaderRegistry = new DataLoaderRegistry();
+
+        mappings.forEach((type, typeMapping) -> {
+            typeMapping.getFieldMappingMap().forEach((field, fieldMapping) -> {
+                if (fieldMapping instanceof QueryMapping){
+                    DataLoader<BsonValue, BsonValue> dataLoader = ((QueryMapping) fieldMapping).getDataloader();
+                    if (dataLoader != null){
+                        dataLoaderRegistry.register(type + "_" + field, dataLoader);
+                    }
+                }
+            } );
+        });
+
+        return dataLoaderRegistry;
+
+    }
+
 
     @Override
     public Consumer<HttpServerExchange> requestInitializer() {

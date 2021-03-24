@@ -22,6 +22,7 @@ package org.restheart.graphql.models;
 
 import graphql.schema.DataFetcher;
 import org.bson.BsonValue;
+import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 
 public abstract class FieldMapping {
 
@@ -31,6 +32,12 @@ public abstract class FieldMapping {
         this.fieldName = fieldName;
     }
 
-    public abstract DataFetcher<BsonValue> getDataFetcher();
+    public String getFieldName() {
+        return fieldName;
+    }
+
+    public abstract GraphQLDataFetcher getDataFetcher();
+
 
 }
+

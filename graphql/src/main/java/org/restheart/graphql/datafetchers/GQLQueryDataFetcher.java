@@ -24,7 +24,11 @@ import com.mongodb.client.FindIterable;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLList;
 import org.bson.*;
+import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.models.QueryMapping;
+
+import java.util.concurrent.CompletableFuture;
 
 public class GQLQueryDataFetcher extends GraphQLDataFetcher {
 
@@ -38,41 +42,51 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
     }
 
     @Override
-    public BsonValue get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
+    public Object get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
 
-        QueryMapping queryMapping = (QueryMapping) this.fieldMapping;
+        return CompletableFuture.supplyAsync(() ->{
 
-        BsonDocument int_args = queryMapping.interpolateArgs(dataFetchingEnvironment);
+            QueryMapping queryMapping = (QueryMapping) this.fieldMapping;
 
-        FindIterable<BsonValue> query = mongoClient.getDatabase(queryMapping.getDb())
-                .getCollection(queryMapping.getCollection(), BsonValue.class)
-                .find(
-                        int_args.containsKey(FIND_FIELD) ?
-                                 int_args.get(FIND_FIELD).asDocument(): new BsonDocument()
-                );
+            BsonDocument int_args = null;
+            try {
+                int_args = queryMapping.interpolateArgs(dataFetchingEnvironment);
+            } catch (IllegalAccessException | QueryVariableNotBoundException e) {
+                e.printStackTrace();
+            }
 
-        if (int_args.containsKey(SORT_FIELD) && int_args.get(SORT_FIELD) != null){
-            query = query.sort(int_args.get(SORT_FIELD).asDocument());
-        }
+            FindIterable<BsonValue> query = mongoClient.getDatabase(queryMapping.getDb())
+                    .getCollection(queryMapping.getCollection(), BsonValue.class)
+                    .find(
+                            int_args.containsKey(FIND_FIELD) ?
+                                    int_args.get(FIND_FIELD).asDocument(): new BsonDocument()
+                    );
 
-        if (int_args.containsKey(SKIP_FIELD) && int_args.get(SKIP_FIELD) != null){
-            query = query.skip(int_args.get(SKIP_FIELD).asInt32().getValue());
-        }
+            if (int_args.containsKey(SORT_FIELD) && int_args.get(SORT_FIELD) != null){
+                query = query.sort(int_args.get(SORT_FIELD).asDocument());
+            }
 
-        if (int_args.containsKey(LIMIT_FIELD) && int_args.get(LIMIT_FIELD) != null){
-            query = query.limit(int_args.get(LIMIT_FIELD).asInt32().getValue());
-        }
+            if (int_args.containsKey(SKIP_FIELD) && int_args.get(SKIP_FIELD) != null){
+                query = query.skip(int_args.get(SKIP_FIELD).asInt32().getValue());
+            }
 
-        boolean isMultiple = dataFetchingEnvironment.getFieldDefinition().getType() instanceof GraphQLList;
+            if (int_args.containsKey(LIMIT_FIELD) && int_args.get(LIMIT_FIELD) != null){
+                query = query.limit(int_args.get(LIMIT_FIELD).asInt32().getValue());
+            }
 
-        BsonValue queryResult;
-        if (isMultiple) {
-            BsonArray results = new BsonArray();
-            query.into(results);
-            queryResult = results;
-        }
-        else queryResult = query.first();
+            boolean isMultiple = dataFetchingEnvironment.getFieldDefinition().getType() instanceof GraphQLList;
 
-        return queryResult;
+            BsonValue queryResult;
+            if (isMultiple) {
+                BsonArray results = new BsonArray();
+                query.into(results);
+                queryResult = results;
+            }
+            else queryResult = query.first();
+
+            return queryResult;
+
+        });
+
     }
 }

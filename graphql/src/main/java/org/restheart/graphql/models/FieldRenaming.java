@@ -19,10 +19,8 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.graphql.models;
-
-import graphql.schema.DataFetcher;
-import org.bson.BsonValue;
 import org.restheart.graphql.datafetchers.GQLRenamingDataFetcher;
+import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 
 public class FieldRenaming extends FieldMapping{
 
@@ -42,7 +40,7 @@ public class FieldRenaming extends FieldMapping{
     }
 
     @Override
-    public DataFetcher<BsonValue> getDataFetcher() {
+    public GraphQLDataFetcher getDataFetcher() {
         return new GQLRenamingDataFetcher(this);
     }
 }

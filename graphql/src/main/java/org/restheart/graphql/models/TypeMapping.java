@@ -40,4 +40,5 @@ public abstract class TypeMapping {
     }
 
     public abstract TypeRuntimeWiring.Builder getTypeWiring(TypeDefinitionRegistry typeRegistry);
+
 }

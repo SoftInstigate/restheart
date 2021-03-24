@@ -21,21 +21,25 @@
 package org.restheart.graphql.models;
 
 import graphql.Assert;
-import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderOptions;
 import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.graphql.datafetchers.GQLBatchDataFetcher;
 import org.restheart.graphql.datafetchers.GQLQueryDataFetcher;
-import org.restheart.utils.BsonUtils;
+import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
+import org.restheart.graphql.dataloaders.QueryBatchLoader;
+import org.restheart.utils.JsonUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
 
-public class QueryMapping extends FieldMapping{
+public class QueryMapping extends FieldMapping implements Batchable{
 
     private static final String[] OPERATORS = {"$arg", "$fk"};
 
@@ -44,11 +48,14 @@ public class QueryMapping extends FieldMapping{
     private String collection;
     private BsonDocument find;
     private BsonDocument sort;
-    private BsonDocument limit;
-    private BsonDocument skip;
+    private BsonValue limit;
+    private BsonValue skip;
+    private DataLoaderSettings dataLoaderSettings;
 
 
-    private QueryMapping(String fieldName, String db, String collection, BsonDocument find, BsonDocument sort, BsonDocument limit, BsonDocument skip) {
+
+    private QueryMapping(String fieldName, String db, String collection, BsonDocument find, BsonDocument sort,
+                         BsonValue limit, BsonValue skip, DataLoaderSettings dataLoaderSettings) {
         super(fieldName);
         this.db = db;
         this.collection = collection;
@@ -56,16 +63,41 @@ public class QueryMapping extends FieldMapping{
         this.sort = sort;
         this.limit = limit;
         this.skip = skip;
+        this.dataLoaderSettings = dataLoaderSettings;
     }
+
+
+
 
     public static Builder newBuilder(){
         return new Builder();
     }
 
     @Override
-    public DataFetcher<BsonValue> getDataFetcher() {
-        return new GQLQueryDataFetcher(this);
+    public GraphQLDataFetcher getDataFetcher() {
+        return this.dataLoaderSettings.getBatching() ? new GQLBatchDataFetcher(this) : new GQLQueryDataFetcher(this);
     }
+
+    @Override
+    public DataLoader<BsonValue, BsonValue> getDataloader() {
+        if (this.dataLoaderSettings.getCaching() || this.dataLoaderSettings.getBatching()){
+
+            DataLoaderOptions options = new DataLoaderOptions().setCacheKeyFunction(bsonValue -> String.valueOf(bsonValue.hashCode()));
+
+            if (this.dataLoaderSettings.getMax_batch_size() > 0){
+                options.setMaxBatchSize(this.dataLoaderSettings.getMax_batch_size());
+            }
+
+            options.setBatchingEnabled(this.dataLoaderSettings.getBatching());
+            options.setCachingEnabled(this.dataLoaderSettings.getCaching());
+
+            return new DataLoader<BsonValue, BsonValue>(new QueryBatchLoader(this.db, this.collection), options);
+
+        }
+        return null;
+    }
+
+
 
     public String getDb() {
         return db;
@@ -83,14 +115,17 @@ public class QueryMapping extends FieldMapping{
         return sort;
     }
 
-    public BsonDocument getLimit() {
+    public BsonValue getLimit() {
         return limit;
     }
 
-    public BsonDocument getSkip() {
+    public BsonValue getSkip() {
         return skip;
     }
 
+    public DataLoaderSettings getDataLoaderSettings() {
+        return dataLoaderSettings;
+    }
 
     public BsonDocument interpolateArgs(DataFetchingEnvironment env) throws IllegalAccessException, QueryVariableNotBoundException {
 
@@ -98,10 +133,10 @@ public class QueryMapping extends FieldMapping{
 
         Field[] fields = (QueryMapping.class).getDeclaredFields();
         for (Field field: fields){
-            if(field.getType() == BsonDocument.class){
-                BsonDocument fieldValue = (BsonDocument) field.get(this);
-                if (fieldValue != null){
-                    result.put(field.getName(), searchOperators(fieldValue, env));
+            if(field.getType() == BsonValue.class || field.getType() == BsonDocument.class){
+                BsonValue bsonValue = (BsonValue) field.get(this);
+                if (bsonValue != null && bsonValue.isDocument()){
+                    result.put(field.getName(), searchOperators((BsonDocument) bsonValue, env));
                 }
             }
         }
@@ -116,7 +151,7 @@ public class QueryMapping extends FieldMapping{
 
                 switch (operator){
                     case "$arg": {
-                        BsonDocument arguments = BsonUtils.toBsonDocument(env.getArguments());
+                        BsonDocument arguments = JsonUtils.toBsonDocument(env.getArguments());
                         if (arguments == null || arguments.get(valueToInterpolate) == null) {
                             throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not bound");
                         }
@@ -150,7 +185,7 @@ public class QueryMapping extends FieldMapping{
                 }
                 result.put(key, array);
             }
-            else result = docToAnalyze.clone();
+            else result.put(key, docToAnalyze.get(key));
         }
 
         return result;
@@ -190,8 +225,6 @@ public class QueryMapping extends FieldMapping{
 
 
 
-
-
     public static class Builder{
 
         private String fieldName;
@@ -199,8 +232,9 @@ public class QueryMapping extends FieldMapping{
         private String collection;
         private BsonDocument find;
         private BsonDocument sort;
-        private BsonDocument limit;
-        private BsonDocument skip;
+        private BsonValue limit;
+        private BsonValue skip;
+        private DataLoaderSettings dataLoaderSettings;
 
         private Builder(){}
 
@@ -230,13 +264,18 @@ public class QueryMapping extends FieldMapping{
             return this;
         }
 
-        public Builder limit(BsonDocument limit){
+        public Builder limit(BsonValue limit){
             this.limit = limit;
             return this;
         }
 
-        public Builder skip(BsonDocument skip){
+        public Builder skip(BsonValue skip){
             this.skip = skip;
+            return this;
+        }
+
+        public Builder DataLoaderSettings(DataLoaderSettings settings){
+            this.dataLoaderSettings = settings;
             return this;
         }
 
@@ -250,14 +289,18 @@ public class QueryMapping extends FieldMapping{
                 throwIllegalException("collection");
             }
 
+            if (this.dataLoaderSettings == null){
+                this.dataLoaderSettings = DataLoaderSettings.newBuilder().build();
+            }
 
-            return new QueryMapping(this.fieldName, this.db, this.collection, this.find, this.sort, this.limit, this.skip);
+
+            return new QueryMapping(this.fieldName, this.db, this.collection, this.find, this.sort, this.limit, this.skip, this.dataLoaderSettings);
         }
 
         private static void throwIllegalException(String varName){
 
             throw  new IllegalStateException(
-                varName + "could not be null!"
+                    varName + "could not be null!"
             );
 
         }

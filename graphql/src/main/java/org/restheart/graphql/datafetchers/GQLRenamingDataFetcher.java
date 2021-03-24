@@ -24,9 +24,12 @@ import graphql.schema.DataFetchingEnvironment;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.exchange.QueryVariableNotBoundException;
+import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.models.FieldRenaming;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
@@ -36,12 +39,14 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
     }
 
     @Override
-    public BsonValue get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
+    public Object get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
 
-        String alias = ((FieldRenaming) this.fieldMapping).getAlias();
+        return CompletableFuture.supplyAsync(() -> {
+            String alias = ((FieldRenaming) this.fieldMapping).getAlias();
 
-        BsonDocument parentDocument = dataFetchingEnvironment.getSource();
-        return getValues(parentDocument, alias);
+            BsonDocument parentDocument = dataFetchingEnvironment.getSource();
+            return getValues(parentDocument, alias);
+        });
     }
 
 
@@ -55,7 +60,7 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
                 current = current.asDocument().get(splitPath[i]);
             } else if (current.isArray()) {
                 try {
-                    Integer index = Integer.parseInt(splitPath[i]);
+                    int index = Integer.parseInt(splitPath[i]);
                     current = current.asArray().get(index);
                 } catch (NumberFormatException nfe) {
                     BsonArray array = new BsonArray();
@@ -77,3 +82,4 @@ public class GQLRenamingDataFetcher extends GraphQLDataFetcher {
 
     }
 }
+
