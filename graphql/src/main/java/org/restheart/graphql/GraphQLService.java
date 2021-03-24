@@ -32,6 +32,7 @@ import org.dataloader.DataLoader;
 import org.dataloader.DataLoaderRegistry;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.BadRequestException;
+import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.graphql.cache.AppDefinitionLoader;
 import org.restheart.graphql.cache.AppDefinitionLoadingCache;
@@ -108,6 +109,10 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     @Override
     @SuppressWarnings("unchecked")
     public void handle(GraphQLRequest request, MongoResponse response) throws Exception {
+        if (request.isOptions()) {
+            handleOptions(request);
+            return;
+        }
 
         GraphQLApp graphQLApp = request.getAppDefinition();
 
@@ -165,23 +170,21 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     @Override
     public Consumer<HttpServerExchange> requestInitializer() {
         return e -> {
-
-            try{
-                if (e.getRequestMethod().equalToString("POST")){
-                    AppDefinitionLoadingCache cache = AppDefinitionLoadingCache.getInstance();
+            try {
+                if (e.getRequestMethod().equalToString(ExchangeKeys.METHOD.POST.name())
+                    || e.getRequestMethod().equalToString(ExchangeKeys.METHOD.OPTIONS.name())){
+                    var cache = AppDefinitionLoadingCache.getInstance();
                     String[] splitPath = e.getRequestPath().split("/");
-                    String appUri = String.join("/", Arrays.copyOfRange(splitPath, 2, splitPath.length));
-                    GraphQLApp appDef = cache.get(appUri);
+                    var appUri = String.join("/", Arrays.copyOfRange(splitPath, 2, splitPath.length));
+                    var appDef = cache.get(appUri);
                     GraphQLRequest.init(e, appUri, appDef);
-                }
-                else{
+                } else {
                     throw new BadRequestException(HttpStatus.SC_METHOD_NOT_ALLOWED);
                 }
-
-            }catch (GraphQLAppDefNotFoundException notFoundException){
+            } catch (GraphQLAppDefNotFoundException notFoundException){
                 LOGGER.error(notFoundException.getMessage());
                 throw new BadRequestException(HttpStatus.SC_NOT_FOUND);
-            }catch (GraphQLIllegalAppDefinitionException illegalException){
+            } catch (GraphQLIllegalAppDefinitionException illegalException){
                 LOGGER.error(illegalException.getMessage());
                 throw new BadRequestException(illegalException.getMessage(), HttpStatus.SC_BAD_REQUEST);
             }
