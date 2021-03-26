@@ -55,23 +55,23 @@ jobs:
 
       - name: Build and Push "distroless" docker tag with SHA
         run: |
-          docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless ./core/.
-          docker push softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless
+          docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless ./core/.
+          docker push softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
 
       - name: Push "distroless" docker tag
         run: |
-          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart:distroless
-          docker push softinstigate/restheart:distroless
+          docker tag softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart-snapshot:distroless
+          docker push softinstigate/restheart-snapshot:distroless
 
       - name: Build and Push Docker image tagged with SHA
         run: |
-          docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.SHA}} ./core/.
-          docker push softinstigate/restheart:${{steps.vars.outputs.SHA}}
+          docker build --file ./core/Dockerfile -t softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}} ./core/.
+          docker push softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
 
       - name: Push "latest" docker tag
         run: |
-          docker tag softinstigate/restheart:${{steps.vars.outputs.SHA}} softinstigate/restheart:latest
-          docker push softinstigate/restheart:latest
+          docker tag softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}} softinstigate/restheart-snapshot:latest
+          docker push softinstigate/restheart-snapshot:latest
 
       - name: Import private gpg key
         run: |
