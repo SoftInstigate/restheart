@@ -37,7 +37,7 @@ jobs:
         id: vars
         run: |
           echo "::set-output name=VERSION::$(echo ${GITHUB_REF:10})"
-          echo "::set-output name=SHA::$(echo ${GITHUB_SHA:0:7})"
+          echo "::set-output name=SHA::$(echo ${GITHUB_SHA:0:8})"
 
       - name: Print the version and SHA
         run: |
