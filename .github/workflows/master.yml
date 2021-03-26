@@ -33,14 +33,11 @@ jobs:
         with:
           java-version: 11
 
-      - name: Set the version and SHA
+      - name: Set VERSION and SHA
         id: vars
         run: |
           echo "::set-output name=VERSION::$(echo ${GITHUB_REF:10})"
           echo "::set-output name=SHA::$(echo ${GITHUB_SHA:0:7})"
-
-      - name: Print the version and SHA
-        run: |
           echo "VERSION=${{steps.vars.outputs.VERSION}}"
           echo "SHA=${{steps.vars.outputs.SHA}}"
 
