@@ -197,7 +197,7 @@
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <!-- TODO: fails from 27.0.1-jre -->
-                <version>27.0-jre</version>
+                <version>29.0-jre</version>
             </dependency>
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>
