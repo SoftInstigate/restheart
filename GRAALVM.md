@@ -83,7 +83,11 @@ The following fields must be configured with `allowWrite: true`
 
 ## issues
 
-### runtime error due to jboss-threads required by xnio
+### [OPEN] build error upgrading caffeine
+
+upgrading caffeine above 2.8.8 breaks native-image build
+
+### [FIXED] runtime error due to jboss-threads required by xnio
 
 see:
 
@@ -93,7 +97,7 @@ see:
 
 fixed by remove unsafe calls and disable jboss enhanced executor on native build: https://github.com/SoftInstigate/graalvm-undertow-issue/commit/ad36bd2d5b5397800f3494613e7fecc22615beab
 
-### build fails due to ClassNotFoundException from mongodb-driver
+### [FIXED] build fails due to ClassNotFoundException from mongodb-driver
 
 resolved adding the following dependencies in native profile:
 

@@ -9,6 +9,7 @@
     {"pattern":"\\QMETA-INF/services/io.undertow.client.ClientProvider\\E"}, 
     {"pattern":"\\QMETA-INF/services/io.undertow.predicate.PredicateBuilder\\E"}, 
     {"pattern":"\\QMETA-INF/services/java.nio.file.spi.FileSystemProvider\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.tika.metadata.filter.MetadataFilter\\E"}, 
     {"pattern":"\\QMETA-INF/services/org.xnio.XnioProvider\\E"}, 
     {"pattern":"\\Qcom/oracle/truffle/nfi/impl/NFILanguageImpl.class\\E"}, 
     {"pattern":"\\Qcom/sun/jna/darwin/libjnidispatch.jnilib\\E"}, 
