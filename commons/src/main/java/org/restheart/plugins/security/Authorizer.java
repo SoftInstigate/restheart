@@ -28,7 +28,7 @@ import org.restheart.plugins.ConfigurablePlugin;
  */
 public interface Authorizer extends ConfigurablePlugin {
     /**
-     * A request is allowed when no VETOER denies it and any ALLOWER allows it
+     * A secured request is allowed when no VETOER denies it and at least one ALLOWER allows it
      */
     public enum TYPE {
         ALLOWER,

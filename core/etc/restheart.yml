@@ -249,6 +249,12 @@ authorizers:
     cache-size: 1000
     cache-ttl: 5000
     cache-expire-policy: AFTER_WRITE
+  # originVetoer protects from CSRF attacks by forbidding requests whose Origin header is not whitelisted
+  originVetoer:
+      enabled: false
+      whitelist:
+        - https://restheart.org
+        - http://localhost
   fullAuthorizer:
     enabled: false
     authentication-required: true
