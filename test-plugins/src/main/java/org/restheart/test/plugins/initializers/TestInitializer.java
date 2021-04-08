@@ -28,7 +28,7 @@ import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
-import org.restheart.utils.URLUtils;
+import static org.restheart.utils.URLUtils.removeTrailingSlashes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,9 +70,7 @@ public class TestInitializer implements Initializer {
         this.pluginRegistry.getGlobalSecurityPredicates()
                 .add((Predicate) (HttpServerExchange exchange) -> {
                     var request = JsonProxyRequest.of(exchange);
-                    return !(request.isGet()
-                            && "/secho/foo".equals(URLUtils.removeTrailingSlashes(
-                                    exchange.getRequestPath())));
+                    return !(request.isGet() && "/secho/foo".equals(removeTrailingSlashes(request.getPath())));
                 });
     }
 }

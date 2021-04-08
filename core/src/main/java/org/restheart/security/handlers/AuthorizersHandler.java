@@ -20,48 +20,34 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
 import org.restheart.exchange.Request;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
-import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.plugins.security.Authorizer;
+import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.PluginUtils;
 
 /**
+ * Executes isAllowed() on all enabled authorizer to check the request
+ * An Authorizer can be either a VETOER or an ALLOWER
+ * A request is allowed when no VETOER denies it and any ALLOWER allows it
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
-
-    /**
-     * global security predicates must all resolve to true to allow the request
-     *
-     * @deprecated use
-     * PluginsRegistry.getInstance().getGlobalSecurityPredicates() instead
-     * @return the globalSecurityPredicates allow to get and set the global
-     * security predicates to apply to all requests
-     */
-    @Deprecated
-    public static Set<Predicate> getGlobalSecurityPredicates() {
-        return PluginsRegistryImpl.getInstance()
-                .getGlobalSecurityPredicates();
-    }
-
+public class AuthorizersHandler extends PipelinedHandler {
     private final Set<PluginRecord<Authorizer>> authorizers;
 
     /**
-     * Creates a new instance of AccessManagerHandler
+     * Creates a new instance of AuthorizersHandler
      *
      * @param authorizers
      * @param next
      */
-    public GlobalSecurityPredicatesAuthorizer(
-            Set<PluginRecord<Authorizer>> authorizers,
-            PipelinedHandler next) {
+    public AuthorizersHandler(Set<PluginRecord<Authorizer>> authorizers, PipelinedHandler next) {
         super(next);
         this.authorizers = authorizers;
     }
@@ -75,11 +61,9 @@ public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = Request.of(exchange);
 
-        if (isAllowed(request)
-                && checkGlobalPredicates(request)) {
+        if (isAllowed(request)) {
             next(exchange);
         } else {
-
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);
             // set status code and end exchange
@@ -90,38 +74,30 @@ public class GlobalSecurityPredicatesAuthorizer extends PipelinedHandler {
 
     /**
      *
-     * @param exchange
-     * @return true if no global security predicate denies the request and any
-     * accessManager allows the request
+     * @param request
+     * @return true if no vetoer vetoes the request and any allower allows it
      */
     @SuppressWarnings("rawtypes")
     private boolean isAllowed(final Request request) {
-        if (getGlobalSecurityPredicates() != null
-                && !checkGlobalPredicates(request)) {
-            return false;
-        }
+        var requestIsAuthenticated = request.isAuthenticated();
 
-        if (authorizers == null) {
+        if (authorizers == null || authorizers.isEmpty()) {
             return true;
         } else {
             return authorizers.stream()
-                    .filter(a -> a.getInstance() != null)
+                    // at least one ALLOWER must authorize it
                     .filter(a -> a.isEnabled())
-                    .anyMatch(a -> a.getInstance().isAllowed(request));
+                    .filter(a -> a.getInstance() != null)
+                    .map(a -> a.getInstance())
+                    .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
+                    .anyMatch(a -> a.isAllowed(request))
+                    // all VETOERs must authorize it
+                    && authorizers.stream()
+                    .filter(a -> a.isEnabled())
+                    .filter(a -> a.getInstance() != null)
+                    .map(a -> a.getInstance())
+                    .filter(a -> PluginUtils.authorizerType(a) == TYPE.VETOER)
+                    .allMatch(a -> a.isAllowed(request));
         }
     }
-
-    /**
-     *
-     * @param exchange
-     * @return true if all global security predicates resolve the request
-     */
-    @SuppressWarnings("rawtypes")
-    private boolean checkGlobalPredicates(final Request request) {
-        return PluginsRegistryImpl.getInstance()
-                .getGlobalSecurityPredicates()
-                .stream()
-                .allMatch(predicate -> predicate.resolve(request.getExchange()));
-    }
-
 }

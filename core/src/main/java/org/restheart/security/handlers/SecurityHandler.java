@@ -52,7 +52,7 @@ public class SecurityHandler extends PipelinedHandler {
             }
 
             handler = new TokenInjector(
-                    new GlobalSecurityPredicatesAuthorizer(authorizers, next),
+                    new AuthorizersHandler(authorizers, next),
                     tokenManager != null
                             ? tokenManager.getInstance()
                             : null);
@@ -60,9 +60,7 @@ public class SecurityHandler extends PipelinedHandler {
             handler = new SecurityInitialHandler(
                     AuthenticationMode.PRO_ACTIVE,
                     new AuthenticatorMechanismsHandler(
-                            new AuthenticationConstraintHandler(
-                                    new AuthenticationCallHandler(handler),
-                                    authorizers),
+                            new AuthenticationConstraintHandler(new AuthenticationCallHandler(handler), authorizers),
                             mechanisms));
 
             return handler;
@@ -81,9 +79,7 @@ public class SecurityHandler extends PipelinedHandler {
      * @param authorizers
      * @param tokenManager
      */
-    public SecurityHandler(final Set<PluginRecord<AuthMechanism>> mechanisms,
-            final Set<PluginRecord<Authorizer>> authorizers,
-            final PluginRecord<TokenManager> tokenManager) {
+    public SecurityHandler(final Set<PluginRecord<AuthMechanism>> mechanisms, final Set<PluginRecord<Authorizer>> authorizers, final PluginRecord<TokenManager> tokenManager) {
         super();
 
         this.mechanisms = mechanisms;
@@ -98,10 +94,6 @@ public class SecurityHandler extends PipelinedHandler {
 
     @Override
     protected void setNext(PipelinedHandler next) {
-        super.setNext(buildSecurityHandlersChain(next,
-                mechanisms,
-                authorizers,
-                tokenManager));
+        super.setNext(buildSecurityHandlersChain(next, mechanisms, authorizers, tokenManager));
     }
-
 }

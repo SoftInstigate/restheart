@@ -22,6 +22,8 @@ package org.restheart.plugins;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import org.restheart.plugins.security.Authorizer;
+
 /**
  * Annotation to register a Plugin
  *
@@ -54,8 +56,9 @@ public @interface RegisterPlugin {
     /**
      * Only used by Services
      *
-     * Set to true to execute the service only if authentication and authorization succeed.
-     * The value can be overridden setting the configuration argument 'secure'
+     * Set to true to execute the service only if authentication and authorization
+     * succeed. The value can be overridden setting the configuration argument
+     * 'secure'
      *
      * @return true if secured
      */
@@ -72,8 +75,8 @@ public @interface RegisterPlugin {
     /**
      * Only used by Services
      *
-     * Sets the default URI of the Service. If not specified the Service default
-     * URI is /&lt;name&gt;
+     * Sets the default URI of the Service. If not specified the Service default URI
+     * is /&lt;name&gt;
      *
      * @return the URI of the Service
      */
@@ -88,7 +91,10 @@ public @interface RegisterPlugin {
      */
     MATCH_POLICY uriMatchPolicy() default MATCH_POLICY.PREFIX;
 
-    public enum MATCH_POLICY { EXACT, PREFIX };
+    public enum MATCH_POLICY {
+        EXACT, PREFIX
+    };
+
     /**
      * Only used by Interceptors
      *
@@ -116,11 +122,20 @@ public @interface RegisterPlugin {
     boolean requiresContent() default false;
 
     /**
-     * Set to true to avoid interceptors to be executed on requests handled by
-     * this plugin. Interceptor with interceptPoint=BEFORE_AUTH
+     * Set to true to avoid interceptors to be executed on requests handled by this
+     * plugin. Interceptor with interceptPoint=BEFORE_AUTH
      *
      * @return an array containing the InterceptPoints of the Interceptors to not
-     * execute
+     *         execute
      */
     InterceptPoint[] dontIntercept() default {};
+
+    /**
+     * Only used by Authorizers
+     *
+     * A request is allowed when no VETOER denies it and any ALLOWER allows it
+     *
+     * @return the authorizer type
+     */
+    Authorizer.TYPE authorizerType() default Authorizer.TYPE.ALLOWER;
 }

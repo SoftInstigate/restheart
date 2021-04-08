@@ -48,6 +48,11 @@ import org.restheart.utils.HttpStatus;
 public class EchoService implements ByteArrayService {
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
+        if (request.isOptions()) {
+            handleOptions(request);
+            return;
+        }
+
         var exchange = request.getExchange();
         JsonObject resp = new JsonObject();
         response.setContentTypeAsJson();

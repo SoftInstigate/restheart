@@ -23,10 +23,16 @@ import org.restheart.exchange.Request;
 import org.restheart.plugins.ConfigurablePlugin;
 
 /**
- * Seehttps://restheart.org/docs/plugins/security-plugins/#authorizers
+ * See https://restheart.org/docs/plugins/security-plugins/#authorizers
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface Authorizer extends ConfigurablePlugin {
+    /**
+     * A request is allowed when no VETOER denies it and any ALLOWER allows it
+     */
+    public enum TYPE {
+        ALLOWER,
+        VETOER }
 
     /**
      *
