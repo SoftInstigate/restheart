@@ -24,7 +24,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonValue;
 import org.restheart.graphql.models.*;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -61,7 +61,7 @@ public class GraphQLAppDeserializer {
 
         if(appDef.containsKey("mappings")){
             if (appDef.get("mappings").isDocument()){
-                mappingsMap = getMappings(JsonUtils.unescapeKeys(appDef.getDocument("mappings")).asDocument());
+                mappingsMap = getMappings(BsonUtils.unescapeKeys(appDef.getDocument("mappings")).asDocument());
             }
             else{
                 throw new GraphQLIllegalAppDefinitionException(

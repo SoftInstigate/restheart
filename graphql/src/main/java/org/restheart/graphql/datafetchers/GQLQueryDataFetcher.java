@@ -25,7 +25,6 @@ import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLList;
 import org.bson.*;
 import org.restheart.exchange.QueryVariableNotBoundException;
-import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.models.QueryMapping;
 
 import java.util.concurrent.CompletableFuture;

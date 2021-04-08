@@ -32,7 +32,7 @@ import org.restheart.graphql.datafetchers.GQLBatchDataFetcher;
 import org.restheart.graphql.datafetchers.GQLQueryDataFetcher;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
-import org.restheart.utils.JsonUtils;
+import org.restheart.utils.BsonUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -151,7 +151,7 @@ public class QueryMapping extends FieldMapping implements Batchable{
 
                 switch (operator){
                     case "$arg": {
-                        BsonDocument arguments = JsonUtils.toBsonDocument(env.getArguments());
+                        BsonDocument arguments = BsonUtils.toBsonDocument(env.getArguments());
                         if (arguments == null || arguments.get(valueToInterpolate) == null) {
                             throw new QueryVariableNotBoundException("variable " + valueToInterpolate + " not bound");
                         }

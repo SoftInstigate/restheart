@@ -79,8 +79,6 @@ public class AuthorizersHandler extends PipelinedHandler {
      */
     @SuppressWarnings("rawtypes")
     private boolean isAllowed(final Request request) {
-        var requestIsAuthenticated = request.isAuthenticated();
-
         if (authorizers == null || authorizers.isEmpty()) {
             return true;
         } else {

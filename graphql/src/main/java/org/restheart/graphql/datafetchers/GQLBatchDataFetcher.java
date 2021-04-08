@@ -6,7 +6,6 @@ import graphql.schema.GraphQLObjectType;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
-import org.dataloader.DataLoaderRegistry;
 import org.restheart.graphql.models.QueryMapping;
 
 
@@ -21,8 +20,6 @@ public class GQLBatchDataFetcher extends GraphQLDataFetcher{
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
 
         QueryMapping queryMapping = (QueryMapping) this.fieldMapping;
-
-        DataLoaderRegistry dataLoaderRegistry = dataFetchingEnvironment.getDataLoaderRegistry();
 
         DataLoader<BsonValue, BsonValue> dataLoader;
 
