@@ -97,6 +97,8 @@ see:
 
 fixed by remove unsafe calls and disable jboss enhanced executor on native build: https://github.com/SoftInstigate/graalvm-undertow-issue/commit/ad36bd2d5b5397800f3494613e7fecc22615beab
 
+> reported "f97bdb5 adds the missing substitutions" https://github.com/oracle/graal/issues/3020#issuecomment-815098289 should be fixed in next (>21.0.0.r11) release
+
 ### [FIXED] build fails due to ClassNotFoundException from mongodb-driver
 
 resolved adding the following dependencies in native profile:
