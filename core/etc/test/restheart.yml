@@ -235,9 +235,10 @@ plugins-args:
     mongo:
         uri: /
     graphql:
-        uri: /graphql
-        db: restheart
-        collection: test-apps
+      uri: /graphql
+      db: test-graphql
+      collection: gql-apps
+      verbose: true
     testInitializer:
         enabled: true
     rndTokenService:

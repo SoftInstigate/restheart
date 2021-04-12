@@ -1,0 +1,10 @@
+[
+  {"_id": 1, "name":  "name1", "surname": "surname1", "contacts": {"phone": "3314567888", "emails": ["email11@example.com", "email12@example.com"]}, "friends_ids": [2, 3, 4, 8], "posts_ids": [1, 9]},
+  {"_id": 2, "name":  "name2", "surname": "surname2", "contacts": {"phone": "3324567888", "emails": ["email21@example.com", "email22@example.com"]}, "friends_ids": [1, 3, 4, 7], "posts_ids": [2, 10, 11, 12]},
+  {"_id": 3, "name":  "name3", "surname": "surname3", "contacts": {"phone": "3334567888", "emails": ["email31@example.com", "email32@example.com"]}, "friends_ids": [1, 2, 4], "posts_ids": [3, 13]},
+  {"_id": 4, "name":  "name4", "surname": "surname4", "contacts": {"phone": "3344567888", "emails": ["email41@example.com", "email42@example.com"]}, "friends_ids": [1, 2, 3, 5], "posts_ids": [4, 14]},
+  {"_id": 5, "name":  "name5", "surname": "surname5", "contacts": {"phone": "3354567888", "emails": ["email51@example.com", "email52@example.com"]}, "friends_ids": [4, 6, 7, 8], "posts_ids": [5, 15, 16]},
+  {"_id": 6, "name":  "name6", "surname": "surname6", "contacts": {"phone": "3364567888", "emails": ["email61@example.com", "email62@example.com"]}, "friends_ids": [5, 7, 8], "posts_ids": [6]},
+  {"_id": 7, "name":  "name7", "surname": "surname7", "contacts": {"phone": "3374567888", "emails": ["email71@example.com", "email72@example.com"]}, "friends_ids": [2, 5, 6, 8], "posts_ids": [7]},
+  {"_id": 8, "name":  "name8", "surname": "surname8", "contacts": {"phone": "3384567888", "emails": ["email81@example.com", "email82@example.com"]}, "friends_ids": [1, 5, 6, 7], "posts_ids": [8]}
+]

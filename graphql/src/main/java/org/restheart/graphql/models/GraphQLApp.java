@@ -113,12 +113,20 @@ public class GraphQLApp {
         public GraphQLApp build() throws IllegalStateException {
 
             if (this.descriptor == null){
-                throw new IllegalStateException("App descriptor must be not null!");
+                throw new IllegalStateException("app descriptor must be not null!");
             }
 
             if (this.schema == null){
-                throw new IllegalStateException("App schema must be not null");
+                throw new IllegalStateException("app schema must be not null");
             }
+
+            if (this.mappings == null ){
+                throw new IllegalStateException("app mappings must be not null");
+            }
+            else if(!this.mappings.containsKey("Query")){
+                throw new IllegalStateException("mappings for type Query are mandatory");
+            }
+
 
             String schemaWithBsonScalars = BsonScalars.getBsonScalarHeader() + this.schema;
 
@@ -133,13 +141,9 @@ public class GraphQLApp {
                     RWBuilder.scalar(graphQLScalarType);
                 }));
 
-                if(mappings != null){
-
-                    this.mappings.forEach(((type, typeMapping) ->
-                            RWBuilder.type(typeMapping.getTypeWiring(typeRegistry))
-                    ));
-
-                }
+                this.mappings.forEach(((type, typeMapping) ->
+                        RWBuilder.type(typeMapping.getTypeWiring(typeRegistry))
+                ));
 
                 RuntimeWiring runtimeWiring = RWBuilder.build();
 
@@ -150,7 +154,7 @@ public class GraphQLApp {
                 return new GraphQLApp(this.descriptor, this.schema, this.mappings, execSchema);
 
             } catch (SchemaProblem schemaProblem){
-                throw new IllegalArgumentException("Given String is not a valid GraphQL schema");
+                throw new IllegalArgumentException("given String is not a valid GraphQL schema");
             }
         }
 

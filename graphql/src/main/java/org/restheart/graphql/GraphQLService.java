@@ -65,6 +65,7 @@ import java.util.function.Function;
 public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     public static final String DEFAULT_APP_DEF_DB = "restheart";
     public static final String DEFAULT_APP_DEF_COLLECTION = "gqlapps";
+    public static final Boolean DEFAULT_VERBOSE = false;
 
 
 
@@ -74,6 +75,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     private MongoClient mongoClient = null;
     private String db = DEFAULT_APP_DEF_DB;
     private String collection = DEFAULT_APP_DEF_COLLECTION;
+    private Boolean verbose = DEFAULT_VERBOSE;
 
     @InjectConfiguration
     public void initConf(Map<String, Object> args) throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
@@ -83,6 +85,7 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             try {
                 this.db = ConfigurablePlugin.argValue(args, "db");
                 this.collection = ConfigurablePlugin.argValue(args, "collection");
+                this.verbose = ConfigurablePlugin.argValue(args, "verbose");
             } catch(ConfigurationException ex) {
                 // nothing to do, using default values
             }
@@ -127,10 +130,24 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
             inputBuilder.variables((new Gson()).fromJson(request.getVariables(), Map.class));
         }
 
-        this.gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema()).build();
+        DataLoaderDispatcherInstrumentationOptions dispatcherInstrumentationOptions
+                = DataLoaderDispatcherInstrumentationOptions.newOptions();
+
+        if(this.verbose){
+            dispatcherInstrumentationOptions = dispatcherInstrumentationOptions.includeStatistics(true);
+        }
+
+        DataLoaderDispatcherInstrumentation dispatcherInstrumentation
+                = new DataLoaderDispatcherInstrumentation(dispatcherInstrumentationOptions);
+
+        this.gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema())
+                .instrumentation(dispatcherInstrumentation).build();
 
         var result = this.gql.execute(inputBuilder.build());
-        logDataLoadersStatistics(dataLoaderRegistry);
+
+        if(this.verbose){
+            logDataLoadersStatistics(dataLoaderRegistry);
+        }
 
         if (!result.getErrors().isEmpty()){
             response.setInError(400, "Bad Request");

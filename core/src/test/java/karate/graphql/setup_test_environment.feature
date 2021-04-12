@@ -1,5 +1,5 @@
 @ignore
-Feature: Utils feature to upload App Definition on MongoDB
+Feature: Utils feature to upload GraphQL test App Definition and test data
 
   Background:
 
@@ -9,27 +9,7 @@ Feature: Utils feature to upload App Definition on MongoDB
     * def data2 = (__arg.data2 == null) ? read('data2.json') : __arg.data2
     * configure charset = null
 
-
-  Scenario: upload GraphQL App definition
-
-    * header Authorization = rhBasicAuth
-
-    # create test-apps collection
-    Given path '/restheart/gql-apps'
-    And request {}
-    When method PUT
-    Then assert responseStatus == 201 || responseStatus == 200
-
-    * header Authorization = rhBasicAuth
-
-
-    # upload GraphQL app definition
-    Given path '/restheart/gql-apps'
-    And request appDef
-    When method POST
-    Then assert responseStatus == 201 || responseStatus == 200
-
-  Scenario: upload Data
+  Scenario: create test-graphql db
 
     * header Authorization = rhBasicAuth
 
@@ -38,6 +18,26 @@ Feature: Utils feature to upload App Definition on MongoDB
     When method PUT
     Then assert responseStatus == 201 || responseStatus == 200
 
+  Scenario: create GraphQL App definition db and upload test configuration
+
+    * header Authorization = rhBasicAuth
+
+    # create test-apps collection
+    Given path '/test-graphql/gql-apps'
+    And request {}
+    When method PUT
+    Then assert responseStatus == 201 || responseStatus == 200
+
+    * header Authorization = rhBasicAuth
+
+
+    # upload GraphQL app definition
+    Given path '/test-graphql/gql-apps'
+    And request appDef
+    When method POST
+    Then assert responseStatus == 201 || responseStatus == 200
+
+  Scenario: upload Data
 
     * header Authorization = rhBasicAuth
 
