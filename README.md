@@ -77,8 +77,6 @@ You can also have a look at our [RESTHeart's presentation on Slideshare](https:/
   </tbody>
 </table>
 
-You can join our sponsors by supporting RESTHeart on [Patreon](https://www.patreon.com/restheart).
-
 ---
 
 _Made with :heart: by [SoftInstigate](http://www.softinstigate.com/). Follow us on [Twitter](https://twitter.com/softinstigate)_.
