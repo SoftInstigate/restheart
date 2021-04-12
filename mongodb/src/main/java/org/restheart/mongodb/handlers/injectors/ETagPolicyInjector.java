@@ -40,8 +40,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ETagPolicyInjector extends PipelinedHandler {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(ETagPolicyInjector.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ETagPolicyInjector.class);
 
     /**
      * Creates a new instance of ETagPolicyInjector
@@ -80,9 +79,6 @@ public class ETagPolicyInjector extends PipelinedHandler {
      * @return
      */
     public boolean isETagCheckRequired(MongoRequest request) {
-        var collectionProps = request.getCollectionProps();
-        var dbProps = request.getDbProps();
-
         // if client specifies the If-Match header, than check it
         if (request.getETag() != null) {
             return true;
@@ -93,6 +89,9 @@ public class ETagPolicyInjector extends PipelinedHandler {
             return true;
         }
 
+        var collectionProps = request.getCollectionProps();
+        var dbProps = request.getDbProps();
+
         // for documents consider db and coll etagDocPolicy metadata
         if (request.isDocument() || request.isFile()) {
             // check the coll metadata
@@ -100,26 +99,21 @@ public class ETagPolicyInjector extends PipelinedHandler {
                     ? collectionProps.get(ETAG_DOC_POLICY_METADATA_KEY)
                     : null;
 
-            LOGGER.trace(
-                    "collection etag policy (from coll properties) {}",
-                    _policy);
+            LOGGER.trace("collection etag policy (from coll properties) {}",_policy);
 
             if (_policy == null) {
                 // check the db metadata
-                _policy = dbProps != null ? dbProps.get(ETAG_DOC_POLICY_METADATA_KEY)
-                        : null;
-                LOGGER.trace(
-                        "collection etag policy (from db properties) {}",
-                        _policy);
+                _policy = dbProps != null
+                    ? dbProps.get(ETAG_DOC_POLICY_METADATA_KEY)
+                    : null;
+                LOGGER.trace("collection etag policy (from db properties) {}", _policy);
             }
 
             ExchangeKeys.ETAG_CHECK_POLICY policy = null;
 
             if (_policy != null && _policy.isString()) {
                 try {
-                    policy = ExchangeKeys.ETAG_CHECK_POLICY
-                            .valueOf(_policy.asString().getValue()
-                                    .toUpperCase());
+                    policy = ExchangeKeys.ETAG_CHECK_POLICY.valueOf(_policy.asString().getValue().toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
@@ -145,9 +139,7 @@ public class ETagPolicyInjector extends PipelinedHandler {
 
             if (_policy != null && _policy.isString()) {
                 try {
-                    policy = ExchangeKeys.ETAG_CHECK_POLICY.valueOf(
-                            _policy.asString().getValue()
-                                    .toUpperCase());
+                    policy = ExchangeKeys.ETAG_CHECK_POLICY.valueOf(_policy.asString().getValue().toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
@@ -167,27 +159,22 @@ public class ETagPolicyInjector extends PipelinedHandler {
             // check the coll  metadata
             BsonValue _policy = collectionProps.get(ETAG_POLICY_METADATA_KEY);
 
-            LOGGER.trace(
-                    "coll etag policy (from coll properties) {}",
-                    _policy);
+            LOGGER.trace("coll etag policy (from coll properties) {}", _policy);
 
             if (_policy == null) {
                 // check the db metadata
-                _policy = dbProps != null ? dbProps.get(ETAG_POLICY_METADATA_KEY)
-                        : null;
+                _policy = dbProps != null
+                    ? dbProps.get(ETAG_POLICY_METADATA_KEY)
+                    : null;
 
-                LOGGER.trace(
-                        "coll etag policy (from db properties) {}",
-                        _policy);
+                LOGGER.trace("coll etag policy (from db properties) {}", _policy);
             }
 
             ExchangeKeys.ETAG_CHECK_POLICY policy = null;
 
             if (_policy != null && _policy.isString()) {
                 try {
-                    policy = ExchangeKeys.ETAG_CHECK_POLICY.valueOf(
-                            _policy.asString().getValue()
-                                    .toUpperCase());
+                    policy = ExchangeKeys.ETAG_CHECK_POLICY.valueOf(_policy.asString().getValue().toUpperCase());
                 } catch (IllegalArgumentException iae) {
                     policy = null;
                 }
@@ -203,14 +190,11 @@ public class ETagPolicyInjector extends PipelinedHandler {
         }
 
         // apply the default policy from configuration
-        var dbP = MongoServiceConfiguration.get()
-                .getDbEtagCheckPolicy();
+        var dbP = MongoServiceConfiguration.get().getDbEtagCheckPolicy();
 
-        var collP = MongoServiceConfiguration.get()
-                .getCollEtagCheckPolicy();
+        var collP = MongoServiceConfiguration.get().getCollEtagCheckPolicy();
 
-        var docP = MongoServiceConfiguration.get()
-                .getDocEtagCheckPolicy();
+        var docP = MongoServiceConfiguration.get().getDocEtagCheckPolicy();
 
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("default etag db check (from conf) {}", dbP);

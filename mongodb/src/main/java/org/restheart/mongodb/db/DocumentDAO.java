@@ -183,8 +183,7 @@ public class DocumentDAO implements DocumentRepository {
                     ? updateResult.getHttpCode()
                     : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
         } else {
-            BsonDocument newDocument = mcoll.find(
-                    eq("_id", documentId)).first();
+            BsonDocument newDocument = mcoll.find(eq("_id", documentId)).first();
 
             return new OperationResult(
                     updateResult.getHttpCode() > 0
