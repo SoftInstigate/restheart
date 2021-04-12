@@ -2,7 +2,6 @@ package org.restheart.graphql.datafetchers;
 
 import com.mongodb.MongoClient;
 import graphql.schema.DataFetcher;
-import org.bson.BsonValue;
 import org.restheart.graphql.models.FieldMapping;
 
 public abstract class GraphQLDataFetcher implements DataFetcher<Object> {

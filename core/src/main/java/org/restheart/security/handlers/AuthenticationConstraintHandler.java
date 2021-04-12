@@ -27,6 +27,8 @@ import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.Authorizer;
+import org.restheart.plugins.security.Authorizer.TYPE;
+import org.restheart.utils.PluginUtils;
 
 /**
  *
@@ -41,12 +43,16 @@ public class AuthenticationConstraintHandler extends PipelinedHandler {
      * @param next
      * @param authorizers
      */
-    public AuthenticationConstraintHandler(PipelinedHandler next,
-            Set<PluginRecord<Authorizer>> authorizers) {
+    public AuthenticationConstraintHandler(PipelinedHandler next, Set<PluginRecord<Authorizer>> authorizers) {
         super(next);
         this.authorizers = authorizers;
     }
 
+    /**
+     *
+     * @param exchange
+     * @return true if all defined authorizers requires authentication
+     */
     protected boolean isAuthenticationRequired(final HttpServerExchange exchange) {
         return authorizers == null
                 ? false
@@ -54,8 +60,9 @@ public class AuthenticationConstraintHandler extends PipelinedHandler {
                         .stream()
                         .filter(a -> a.isEnabled())
                         .filter(a -> a.getInstance() != null)
-                        .allMatch(a -> a.getInstance()
-                                .isAuthenticationRequired(Request.of(exchange)));
+                        .map(a -> a.getInstance())
+                        .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
+                        .allMatch(a -> a.isAuthenticationRequired(Request.of(exchange)));
     }
 
     @Override

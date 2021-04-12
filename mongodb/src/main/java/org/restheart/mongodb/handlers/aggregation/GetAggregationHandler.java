@@ -40,6 +40,7 @@ import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.FileRealmAccount;
 import org.restheart.security.MongoPermissions;
 import org.restheart.security.MongoRealmAccount;
@@ -126,26 +127,45 @@ public class GetAggregationHandler extends PipelinedHandler {
             // add @mongoPermissions to avars
             var mongoPermissions = MongoPermissions.of(request);
             if (mongoPermissions != null) {
-                var mongo = new BsonDocument();
-                mongo.put("projectResponse", mongoPermissions.getProjectResponse() == null ? BsonNull.VALUE : mongoPermissions.getProjectResponse());
-                mongo.put("mergeRequest", mongoPermissions.getMergeRequest() == null ? BsonNull.VALUE : mongoPermissions.getMergeRequest());
-                mongo.put("readFilter", mongoPermissions.getReadFilter() == null ? BsonNull.VALUE : mongoPermissions.getReadFilter());
-                mongo.put("writeFilter", mongoPermissions.getWriteFilter() == null ? BsonNull.VALUE : mongoPermissions.getWriteFilter());
-                avars.put("@mongoPermissions", mongo);
+                avars.put("@mongoPermissions" ,mongoPermissions.asBson());
+
+                avars.put("@mongoPermissions.projectResponse", mongoPermissions.getProjectResponse() == null
+                    ? BsonNull.VALUE
+                    : mongoPermissions.getProjectResponse());
+
+                avars.put("@mongoPermissions.mergeRequest", mongoPermissions.getMergeRequest() == null
+                    ? BsonNull.VALUE
+                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getMergeRequest()));
+
+                avars.put("@mongoPermissions.readFilter", mongoPermissions.getReadFilter() == null
+                    ? BsonNull.VALUE
+                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getReadFilter()));
+
+                avars.put("@mongoPermissions.writeFilter", mongoPermissions.getWriteFilter() == null
+                    ? BsonNull.VALUE
+                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getWriteFilter()));
             } else {
                 avars.put("@mongoPermissions", new MongoPermissions().asBson());
+                avars.put("@mongoPermissions.projectResponse", BsonNull.VALUE);
+                avars.put("@mongoPermissions.mergeRequest", BsonNull.VALUE);
+                avars.put("@mongoPermissions.readFilter", BsonNull.VALUE);
+                avars.put("@mongoPermissions.writeFilter", BsonNull.VALUE);
             }
 
             // add @user to avars
             var account = request.getAuthenticatedAccount();
 
             if (account != null && account instanceof MongoRealmAccount) {
-                    var ma = (MongoRealmAccount) account;
-                    avars.put("@user", ma.getAccountDocument());
+                var ba = ((MongoRealmAccount) account).getAccountDocument();
 
+                avars.put("@user", ba);
+                ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
             } else if (account != null && account instanceof FileRealmAccount) {
                 var fa = (FileRealmAccount) account;
-                avars.put("@user", BsonUtils.toBsonDocument(fa.getAccountProperties()));
+                var ba = BsonUtils.toBsonDocument(fa.getAccountProperties());
+
+                avars.put("@user", ba);
+                ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
             } else {
                 avars.put("@user", BsonNull.VALUE);
             }

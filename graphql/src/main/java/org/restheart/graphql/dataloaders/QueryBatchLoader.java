@@ -8,8 +8,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.dataloader.BatchLoader;
-import org.dataloader.BatchLoaderEnvironment;
-import org.dataloader.DataLoader;
 
 import java.util.ArrayList;
 import java.util.List;

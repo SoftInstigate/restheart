@@ -24,8 +24,6 @@ import graphql.schema.DataFetchingEnvironment;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
-import org.restheart.exchange.QueryVariableNotBoundException;
-import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 import org.restheart.graphql.models.FieldRenaming;
 
 import java.util.Arrays;

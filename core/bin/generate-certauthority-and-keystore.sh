@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # credits to:
 # - Lorenzo Fontana
-     https://gist.github.com/fntlnz/cf14feb5a46b2eda428e000157447309
+#    https://gist.github.com/fntlnz/cf14feb5a46b2eda428e000157447309
 # - Maciej
 #    https://betterdev.blog/minimal-safe-bash-script-template/
 
@@ -12,7 +12,7 @@ script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
 
 usage() {
   cat <<EOF
-Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-v] [--no-color] -d mydomain.io -a /tmp/letsencrypt/archive -p mysecret
+Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-v] [--no-color] -d mydomain.io -a /tmp -p mysecret
 
 Creates a Certificate Authority, issues a certificate and import it a the java keystore to be used by RESTHeart
 The Certificate Authority root certificate must be imported in OS or browsers.
@@ -91,9 +91,9 @@ parse_params() {
   args=("$@")
 
   # check required params and arguments
-  [[ -z "${password-}" ]] && die "Missing required parameter: password"
-  [[ -z "${archive-}" ]] && die "Missing required parameter: archive"
-  [[ -z "${domain-}" ]] && die "Missing required parameter: domain"
+  [[ -z "${password-}" ]] && die "Missing required parameter: password\nGet help with: $0 -h"
+  [[ -z "${archive-}" ]] && die "Missing required parameter: archive\nGet help with: $0 -h"
+  [[ -z "${domain-}" ]] && die "Missing required parameter: domain\nGet help with: $0 -h"
 
   return 0
 }

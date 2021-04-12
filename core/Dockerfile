@@ -1,4 +1,4 @@
-FROM adoptopenjdk:11-jre-hotspot-bionic
+FROM adoptopenjdk:11-jre-hotspot
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 

@@ -27,11 +27,8 @@ import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.errors.SchemaProblem;
-import org.bson.BsonValue;
-import org.dataloader.DataLoader;
 import org.restheart.graphql.scalars.BsonScalars;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class GraphQLApp {
@@ -90,8 +87,6 @@ public class GraphQLApp {
         private AppDescriptor descriptor;
         private String schema;
         private Map<String, TypeMapping> mappings;
-        private GraphQLSchema executableSchema;
-
 
         private Builder(){}
 

@@ -38,6 +38,7 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
+import org.restheart.plugins.security.Authorizer;
 
 /**
  *
@@ -229,6 +230,25 @@ public class PluginUtils {
             return new InterceptPoint[0];
         } else {
             return a.dontIntercept();
+        }
+    }
+
+    /**
+     *
+     * @param authorizer
+     * @return the Authorizer type
+     */
+    public static Authorizer.TYPE authorizerType(Authorizer authorizer) {
+        if (authorizer == null) {
+            return Authorizer.TYPE.ALLOWER;
+        }
+
+        var a = authorizer.getClass().getDeclaredAnnotation(RegisterPlugin.class);
+
+        if (a == null) {
+            return Authorizer.TYPE.ALLOWER;
+        } else {
+            return a.authorizerType();
         }
     }
 

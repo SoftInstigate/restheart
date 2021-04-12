@@ -20,8 +20,6 @@
  */
 package org.restheart.graphql.models;
 
-import graphql.schema.DataFetcher;
-import org.bson.BsonValue;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
 
 public abstract class FieldMapping {
