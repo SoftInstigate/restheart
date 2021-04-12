@@ -120,7 +120,7 @@ public class GraphQLAppDeserializer {
             return descBuilder.build();
 
         }catch (BsonInvalidOperationException | IllegalStateException e){
-            throw new GraphQLIllegalAppDefinitionException("Error with app descriptor. " + e.getMessage());
+            throw new GraphQLIllegalAppDefinitionException("Error with GraphQL App Descriptor", e);
         }
     }
 

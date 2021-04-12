@@ -38,4 +38,8 @@ public class GraphQLIllegalAppDefinitionException extends Exception {
         super(message);
     }
 
+    public GraphQLIllegalAppDefinitionException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
 }
