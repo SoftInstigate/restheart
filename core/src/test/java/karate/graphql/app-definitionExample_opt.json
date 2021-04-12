@@ -1,0 +1,112 @@
+{
+  "_id": "test",
+  "descriptor": {
+    "name": "test-app",
+    "description": "This is a GraphQL application to test plugin features",
+    "enabled": true,
+    "uri": "testapp_opt"
+  },
+  "schema": "type User{id: Int!, firstName: String, lastName: String, phone: String, mainEmail: String, friends: [User], posts(limit: Int = 0, skip: Int = 0): [Post]} type Post{text: String, date: DateTime, authorCache: User, authorNoCache: User, authorBatch4: User, authorNoBatch: User} type Query{users(limit: Int = 0, skip: Int = 0, sort: Int = 1): [User], posts(limit:Int = 0, skip: Int = 0): [Post]}",
+  "mappings": {
+    "User": {
+      "id": "_id" ,
+      "firstName": "name",
+      "lastName": "surname",
+      "phone": "contacts.phone",
+      "mainEmail": "contacts.emails.0",
+      "friends": {
+        "db": "test-graphql",
+        "collection": "users",
+        "find": {
+          "_id": {"$in": {"$fk": "friends_ids"}}
+        },
+        "limit": {"$arg": "limit"},
+        "skip": {"$arg": "skip"},
+        "dataLoader": {
+          "batching":false,
+          "caching":false,
+          "maxBatchSize": 2
+        }
+      },
+      "posts": {
+        "db": "test-graphql",
+        "collection": "posts",
+        "find": {
+          "_id": {"$in":  {"$fk": "posts_ids"}}
+        },
+        "limit": {"$arg": "limit"},
+        "skip": {"$arg": "skip"},
+        "dataLoader": {
+          "batching":true,
+          "caching":false,
+          "maxBatchSize": 2
+        }
+      }
+    },
+    "Post": {
+      "authorCache": {
+        "db": "test-graphql",
+        "collection": "users",
+        "find": {
+          "_id": {"$fk":  "author_id"}
+        },
+        "dataLoader": {
+          "batching":true,
+          "caching":true,
+          "maxBatchSize": 2
+        }
+      },
+      "authorNoCache": {
+        "db": "test-graphql",
+        "collection": "users",
+        "find": {
+          "_id": {"$fk":  "author_id"}
+        },
+        "dataLoader": {
+          "batching":true,
+          "caching":false,
+          "maxBatchSize": 2
+        }
+      },
+      "authorBatch4": {
+        "db": "test-graphql",
+        "collection": "users",
+        "find": {
+          "_id": {"$fk":  "author_id"}
+        },
+        "dataLoader": {
+          "batching":true,
+          "caching":false,
+          "maxBatchSize": 4
+        }
+      },
+      "authorNoBatch": {
+        "db": "test-graphql",
+        "collection": "users",
+        "find": {
+          "_id": {"$fk":  "author_id"}
+        },
+        "dataLoader": {
+          "batching":false,
+          "caching":false,
+          "maxBatchSize": 4
+        }
+      }
+    },
+    "Query": {
+      "users": {
+        "db": "test-graphql",
+        "collection": "users",
+        "limit": {"$arg":  "limit"},
+        "skip": {"$arg": "skip"},
+        "sort": {"_id":  {"$arg": "sort"}}
+      },
+      "posts": {
+        "db": "test-graphql",
+        "collection": "posts",
+        "limit": {"$arg":  "limit"},
+        "skip": {"$arg": "skip"}
+      }
+    }
+  }
+}

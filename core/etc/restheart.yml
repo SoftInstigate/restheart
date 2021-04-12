@@ -328,6 +328,7 @@ plugins-args:
     uri: /graphql
     db: restheart
     collection: gql-apps
+    verbose: true
 
 #### Logging
 

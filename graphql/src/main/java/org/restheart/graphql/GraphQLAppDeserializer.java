@@ -25,7 +25,6 @@ import org.bson.BsonInvalidOperationException;
 import org.bson.BsonValue;
 import org.restheart.graphql.models.*;
 import org.restheart.utils.BsonUtils;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -91,18 +90,27 @@ public class GraphQLAppDeserializer {
         try{
             BsonDocument descriptor = doc.getDocument("descriptor");
 
-            AppDescriptor.Builder descBuilder = AppDescriptor.newBuilder()
-                    .appName(descriptor.getString("name").getValue())
-                    .description(descriptor.getString("description").getValue());
+            AppDescriptor.Builder descBuilder = AppDescriptor.newBuilder();
 
-            if (descriptor.containsKey("uri") && descriptor.get("uri").isString()) {
+            if (descriptor.containsKey("name")){
+                descBuilder.appName(descriptor.getString("name").getValue());
+            }
+
+            if (descriptor.containsKey("uri")) {
 
                 descBuilder.uri(descriptor.getString("uri").getValue());
-            } else {
+            } else if (descriptor.containsKey("name")){
                 descBuilder.uri(descriptor.getString("name").getValue());
             }
 
-            if (descriptor.containsKey("enabled") && descriptor.get("enabled").isBoolean()) {
+            if (descriptor.containsKey("description")){
+                descBuilder.description(descriptor.getString("description").getValue());
+            }
+            else {
+                descBuilder.description("");
+            }
+
+            if (descriptor.containsKey("enabled")) {
 
                 descBuilder.enabled(descriptor.getBoolean("enabled").getValue());
             } else {
@@ -111,8 +119,8 @@ public class GraphQLAppDeserializer {
 
             return descBuilder.build();
 
-        }catch (BsonInvalidOperationException bsonEx){
-            throw new GraphQLIllegalAppDefinitionException("Error with app descriptor. " + bsonEx.getMessage());
+        }catch (BsonInvalidOperationException | IllegalStateException e){
+            throw new GraphQLIllegalAppDefinitionException("Error with app descriptor. " + e.getMessage());
         }
     }
 

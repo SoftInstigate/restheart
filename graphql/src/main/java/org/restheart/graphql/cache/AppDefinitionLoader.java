@@ -33,6 +33,7 @@ import org.restheart.graphql.models.*;
 public class AppDefinitionLoader {
 
     private static final String APP_URI_FIELD = "descriptor.uri";
+    private static final String APP_NAME_FIELD = "descriptor.name";
     private static final String APP_ENABLED_FIELD = "descriptor.enabled";
 
     private static MongoClient mongoClient;
@@ -47,8 +48,12 @@ public class AppDefinitionLoader {
 
     public static GraphQLApp loadAppDefinition(String appURI) throws GraphQLIllegalAppDefinitionException {
 
+
         BsonArray conditions = new BsonArray();
-        conditions.add(new BsonDocument(APP_URI_FIELD, new BsonString(appURI)));
+        BsonArray uriOrNameCond = new BsonArray();
+        uriOrNameCond.add(new BsonDocument(APP_URI_FIELD, new BsonString(appURI)));
+        uriOrNameCond.add(new BsonDocument(APP_NAME_FIELD, new BsonString(appURI)));
+        conditions.add(new BsonDocument("$or", uriOrNameCond));
         conditions.add(new BsonDocument(APP_ENABLED_FIELD, new BsonBoolean(true)));
         BsonDocument findArg = new BsonDocument("$and",conditions);
 

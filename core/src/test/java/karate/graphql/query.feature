@@ -1,13 +1,16 @@
-@ignore
 Feature: GraphQL query response test
 
   Background:
 
     * url graphQLBaseURL
-    * path 'mflix'
+    * path 'testapp'
     * configure charset = null
     * def appDef = read('app-definitionExample.json')
-    * call read('upload_app_definition.feature') {appDef: #(appDef)}
+    * def data1 = read('data1.json')
+    * def data2 = read('data2.json')
+    * call read('setup_test_environment.feature') {appDef: #(appDef), data1: #(data1), data2: #(data2)}
+    * def confDestroyer = read('delete_app_definition.feature')
+    * header Authorization = rhBasicAuth
 
 
   Scenario: Illegal Content-Type
@@ -17,7 +20,7 @@ Feature: GraphQL query response test
     When method POST
     Then status 400
 
-
+    * call confDestroyer
 
 
   Scenario: Content-Type application/graphql
@@ -25,8 +28,8 @@ Feature: GraphQL query response test
     * text query =
      """
     {
-      TheatersByCity(city: "New York"){
-        location
+      users(limit: 2, skip:1){
+        id
       }
     }
     """
@@ -36,7 +39,7 @@ Feature: GraphQL query response test
     When method POST
     Then status 200
 
-
+    * call confDestroyer
 
 
   Scenario: Illegal HTTP method
@@ -45,7 +48,7 @@ Feature: GraphQL query response test
     When method GET
     Then status 405
 
-
+    * call confDestroyer
 
 
   Scenario: Correct HTTP method
@@ -54,8 +57,8 @@ Feature: GraphQL query response test
     * text query =
     """
     {
-      TheatersByCity(city: "New York"){
-        location
+      users(limit: 2, skip:1){
+        id
       }
     }
     """
@@ -64,7 +67,7 @@ Feature: GraphQL query response test
     When method POST
     Then status 200
 
-
+    * call confDestroyer
 
 
   Scenario: Undefined GraphQL query
@@ -84,6 +87,7 @@ Feature: GraphQL query response test
     Then status 400
     And match each response.errors[*].extensions.classification == 'ValidationError'
 
+    * call confDestroyer
 
 
 
@@ -91,10 +95,10 @@ Feature: GraphQL query response test
 
 
       * text query =
-      """
+       """
       {
-        TheatersByCity(city: "New York"){
-          name
+        users(limit: 2, skip:1){
+          id
           pippo
         }
       }
@@ -105,16 +109,16 @@ Feature: GraphQL query response test
       Then status 400
       And match each response.errors[*].extensions.classification == 'ValidationError'
 
-
+    * call confDestroyer
 
 
   Scenario: Incorrect type argument passed to query
 
     * text query =
-    """
+     """
     {
-      TheatersByCity(city: 1){
-        location
+      users(limit: "ciao", skip:1){
+        id
       }
     }
     """
@@ -124,15 +128,16 @@ Feature: GraphQL query response test
     Then status 400
     And match each response.errors[*].extensions.classification == 'ValidationError'
 
+    * call confDestroyer
 
 
   Scenario: Undefined argument passed to query
 
     * text query =
-    """
+     """
     {
-      TheatersByCity(zipcode: "10001"){
-        location
+      users(limit: 2, skip:1, pippo: 1){
+        id
       }
     }
     """
@@ -141,95 +146,211 @@ Feature: GraphQL query response test
     Then status 400
     And match each response.errors[*].extensions.classification == 'ValidationError'
 
+    * call confDestroyer
 
 
-    Scenario: Query with variables
+  Scenario: Query with variables
 
-      * text query =
-       """
-       query TheaterOperation($city: String!)
+    * text query =
+      """
+      query operation($limit: Int, $skip: Int)
+      {
+        users(limit: $limit, skip:$skip){
+          id
+        }
+      }
+    """
+
+    * json variables = {"limit": 2, "skip": 1}
+
+    Given request {query: '#(query)', variables: #(variables)}
+    When method POST
+    Then status 200
+
+    * call confDestroyer
+
+
+  Scenario: Query with multiple operations
+
+    * text query =
+        """
+        query operation1
         {
-          TheatersByCity(city: $city){
-            location
+          users(limit: 3){
+            id
           }
         }
-       """
-
-      * json variables = {"city": "New York"}
-
-      Given request {query: '#(query)', variables: #(variables)}
-      When method POST
-      Then status 200
-
-
-
-    Scenario: Query with ascendant sort field
-
-      * text query =
+        query operation2
+        {
+          users(limit: 4){
+            id
+          }
+        }
       """
+
+    Given request {query: '#(query)', variables: {}, operationName: 'operation1'}
+    When method POST
+    Then status 200
+    And match response.data.users == '#[3]'
+
+    * call confDestroyer
+
+
+  Scenario: Query with ascendant sort field
+
+    * text query =
+     """
+  {
+    users(sort: 1){
+      id
+    }
+  }
+  """
+
+    Given request {query: '#(query)'}
+    When method POST
+    Then status 200
+    And match response.data.users[0].id == 1
+
+    * call confDestroyer
+
+
+  Scenario: Query with descendant sort field
+
+    * text query =
+     """
+  {
+    users(sort: -1){
+      id
+    }
+  }
+  """
+
+    Given request {query: '#(query)'}
+    When method POST
+    Then status 200
+    And match response.data.users[0].id == 8
+
+    * call confDestroyer
+
+
+  Scenario: Query with limit field
+
+    * text query =
+     """
+  {
+    users(limit:2){
+      id
+    }
+  }
+  """
+
+    Given request {query: '#(query)'}
+    When method POST
+    Then status 200
+    And match response.data.users == '#[2]'
+
+    * call confDestroyer
+
+
+  Scenario: Query with skip field
+
+    * text query =
+      """
+  {
+    users(skip: 1, sort: 1){
+      id
+    }
+  }
+  """
+    Given request {query: '#(query)'}
+    When method POST
+    Then status 200
+    And match response.data.users[0].id == 2
+
+    * call confDestroyer
+
+
+  Scenario: Query containing field mapped with MongoDB document field having a different name
+
+    * text query =
+      """
+    {
+      users(limit: 1){
+        firstName
+      }
+    }
+    """
+
+    Given request {query: '#(query)'}
+    When method POST
+    Then status 200
+    And match response.data.users[0].firstName == 'name1'
+
+    * call confDestroyer
+
+
+  Scenario: Query containing field mapped with field in a nested MongoDB document
+
+    * text query =
+        """
       {
-        TheatersByCity(city: "New York", sort: 1){
-          theaterId
-          location
+        users(limit: 1){
+          phone
         }
       }
       """
 
-      Given request {query: '#(query)'}
-      When method POST
-      Then status 200
-      And match response.data.TheatersByCity[0].theaterId == 482
+    Given request {query: '#(query)'}
+    When method POST
+    Then status 200
+    And match response.data.users[0].phone == '3314567888'
+
+    * call confDestroyer
 
 
-    Scenario: Query with descendant sort field
+  Scenario: Query containing field mapped with a specific array element
 
-      * text query =
-      """
+    * text query =
+        """
       {
-        TheatersByCity(city: "New York", sort: -1){
-          theaterId
+        users(limit: 1){
+          mainEmail
         }
       }
       """
 
-      Given request {query: '#(query)'}
-      When method POST
-      Then status 200
-      And match response.data.TheatersByCity[0].theaterId == 1908
+    Given request {query: '#(query)'}
+    When method POST
+    Then status 200
+    And match response.data.users[0].mainEmail == 'email11@example.com'
+
+    * call confDestroyer
 
 
-    Scenario: Query with limit field
+  Scenario: Query containing fields mapped with relations
 
-      * text query =
-      """
+    * text query =
+        """
       {
-        TheatersByCity(city: "New York", limit: 2){
-          theaterId
+        users(limit: 1){
+          posts{
+            text
+            author{
+              firstName
+            }
+          }
         }
       }
       """
 
-      Given request {query: '#(query)'}
-      When method POST
-      Then status 200
-      And match response.data.TheatersByCity == '#[2]'
+    Given request {query: '#(query)'}
+    When method POST
+    Then status 200
+    And match response.data.users[0].posts[0].text == 'text1'
+    And match response.data.users[0].posts[0].author.firstName == 'name1'
 
-
-
-    Scenario: Query with skip field
-
-      * text query =
-      """
-      {
-        TheatersByCity(city: "New York", sort: 1, skip: 1){
-          theaterId
-        }
-      }
-      """
-      Given request {query: '#(query)'}
-      When method POST
-      Then status 200
-      And match response.data.TheatersByCity[0].theaterId == 609
+    * call confDestroyer
 
 
 

@@ -106,7 +106,7 @@ public class AppDescriptor {
 
             if (appName == null && uri == null){
                 throw new IllegalStateException(
-                        "At least one of 'appName' and 'uri' must be not null!"
+                        "At least one of 'name' and 'uri' must be not null!"
                 );
             }
 
