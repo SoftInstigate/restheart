@@ -24,6 +24,8 @@ import com.google.gson.Gson;
 import com.mongodb.MongoClient;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
+import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;
+import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentationOptions;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonValue;
 import org.dataloader.DataLoader;
