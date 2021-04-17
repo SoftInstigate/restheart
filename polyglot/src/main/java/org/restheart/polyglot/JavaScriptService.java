@@ -33,6 +33,7 @@ import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.StringService;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
+import static org.restheart.polyglot.PolyglotDeployer.initRequireCdw;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,12 +57,12 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
 
     private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {}\n})";
 
-    JavaScriptService(Path scriptPath, Path requireCdw, MongoClient mclient, Map<String, Object> pluginsArgs) throws IOException {
+    JavaScriptService(Path scriptPath, MongoClient mclient, Map<String, Object> pluginsArgs) throws IOException {
         this.mclient = mclient;
         this.pluginsArgs = pluginsArgs;
 
         OPTS.put("js.commonjs-require", "true");
-        OPTS.put("js.commonjs-require-cwd", requireCdw.toAbsolutePath().toString());
+        OPTS.put("js.commonjs-require-cwd", initRequireCdw(scriptPath).toAbsolutePath().toString());
 
         var language = Source.findLanguage(scriptPath.toFile());
 
@@ -76,7 +77,8 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
         // check plugin definition
 
         try (Context ctx = Context.newBuilder().engine(engine).allowAllAccess(true)
-                .allowHostClassLookup(className -> true).allowIO(true).allowExperimentalOptions(true).options(OPTS)
+                .allowHostClassLookup(className -> true).allowIO(true).allowExperimentalOptions(true)
+                .options(OPTS)
                 .build()) {
             Value parsed;
 

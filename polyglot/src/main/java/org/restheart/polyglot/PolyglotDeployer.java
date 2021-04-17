@@ -61,7 +61,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "polyglotDeployer", description = "handles GraalVM polyglot plugins", enabledByDefault = true, defaultURI = "/graal")
+@RegisterPlugin(name = "polyglotDeployer",
+    description = "handles GraalVM polyglot plugins",
+    enabledByDefault = true
+)
 public class PolyglotDeployer implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(PolyglotDeployer.class);
 
@@ -72,8 +75,6 @@ public class PolyglotDeployer implements Initializer {
     private static final Map<Path, AbstractJSPlugin> DEPLOYEES = new HashMap<>();
 
     private WatchService watchService;
-
-    private Path requireCdw;
 
     private MongoClient mclient;
 
@@ -87,7 +88,7 @@ public class PolyglotDeployer implements Initializer {
 
         // make sure to invoke this after all @Injected methods are invoked
         if (pluginsDirectory != null && mclient != null) {
-            this.jsInterceptorFactory = new JSInterceptorFactory(this.requireCdw, this.mclient, this.pluginsArgs);
+            this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.pluginsArgs);
             deployAll(pluginsDirectory);
             watch(pluginsDirectory);
         }
@@ -103,26 +104,6 @@ public class PolyglotDeployer implements Initializer {
         pluginsDirectory = getPluginsDirectory(args);
 
         this.pluginsArgs = getPluginsArgs(args);
-
-        this.requireCdw = pluginsDirectory.resolve("node_modules").toAbsolutePath();
-
-        if (!Files.exists(requireCdw)) {
-            LOGGER.debug("Creating CommonJS modules directory {}", requireCdw);
-            try {
-                Files.createDirectory(requireCdw);
-            } catch (IOException ioe) {
-                LOGGER.warn("Cound not create CommonJS modules directory {}", requireCdw);
-            }
-        }
-
-        LOGGER.info("Folder where the CommonJS modules are located: {}", requireCdw.toAbsolutePath());
-
-        // make sure to invoke this after all @Injected methods are invoked
-        if (registry != null && mclient != null) {
-            this.jsInterceptorFactory = new JSInterceptorFactory(this.requireCdw, this.mclient, this.pluginsArgs);
-            deployAll(pluginsDirectory);
-            watch(pluginsDirectory);
-        }
     }
 
     @InjectMongoClient
@@ -131,7 +112,7 @@ public class PolyglotDeployer implements Initializer {
 
         // make sure to invoke this after all @Injected methods are invoked
         if (pluginsDirectory != null && registry != null) {
-            this.jsInterceptorFactory = new JSInterceptorFactory(this.requireCdw, this.mclient, this.pluginsArgs);
+            this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.pluginsArgs);
             deployAll(pluginsDirectory);
             watch(pluginsDirectory);
         }
@@ -341,7 +322,7 @@ public class PolyglotDeployer implements Initializer {
             var executor = Executors.newSingleThreadExecutor();
             executor.submit(() -> {
                 try {
-                    var srvf = NodeService.get(pluginPath, this.requireCdw, this.mclient);
+                    var srvf = NodeService.get(pluginPath, this.mclient);
 
                     while (!srvf.isDone()) {
                         Thread.sleep(300);
@@ -365,7 +346,7 @@ public class PolyglotDeployer implements Initializer {
             });
 
         } else {
-            var srv = new JavaScriptService(pluginPath, this.requireCdw, this.mclient, this.pluginsArgs);
+            var srv = new JavaScriptService(pluginPath, this.mclient, this.pluginsArgs);
 
             var record = new PluginRecord<Service>(srv.getName(),
                 srv.getDescription(),
@@ -435,5 +416,71 @@ public class PolyglotDeployer implements Initializer {
 
     private boolean isRunningOnNode() {
         return NodeQueue.instance().isRunningOnNode();
+    }
+
+    static Path getRequireCdw(Path scriptPath) {
+        var scriptFileName = scriptPath.getFileName().toString();
+
+        String requireCdwDirName;
+
+        if (scriptFileName.endsWith(".js")) {
+            requireCdwDirName = scriptFileName.substring(0, scriptFileName.length()-3);
+        } else if (scriptFileName.endsWith(".mjs")) {
+            requireCdwDirName = scriptFileName.substring(0, scriptFileName.length()-4);
+        } else {
+            throw new IllegalArgumentException("plugin file name must end with '.js' or '.mjs'");
+        }
+
+        var requireCdw = scriptPath.getParent().resolve(requireCdwDirName).resolve("node_modules").toAbsolutePath();
+
+        return requireCdw;
+    }
+
+    static Path initRequireCdw(Path scriptPath) {
+        var scriptFileName = scriptPath.getFileName().toString();
+
+        String requireCdwDirName;
+
+        if (scriptFileName.endsWith(".js")) {
+            requireCdwDirName = scriptFileName.substring(0, scriptFileName.length()-3);
+        } else if (scriptFileName.endsWith(".mjs")) {
+            requireCdwDirName = scriptFileName.substring(0, scriptFileName.length()-4);
+        } else {
+            throw new IllegalArgumentException("plugin file name must end with '.js' or '.mjs'");
+        }
+
+        var requireCdw = scriptPath.getParent().resolve(requireCdwDirName).resolve("node_modules").toAbsolutePath();
+
+        if (!Files.exists(requireCdw.getParent())) {
+            LOGGER.debug("Creating CommonJS modules directory {}", requireCdw.getParent());
+            try {
+                Files.createDirectory(requireCdw.getParent());
+            } catch (IOException ioe) {
+                LOGGER.warn("Cound not create CommonJS modules directory {}", requireCdw.getParent());
+            }
+        }
+
+        if (!Files.exists(requireCdw)) {
+            LOGGER.debug("Creating CommonJS modules directory {}", requireCdw);
+            try {
+                Files.createDirectory(requireCdw);
+            } catch (IOException ioe) {
+                LOGGER.warn("Cound not create CommonJS modules directory {}", requireCdw);
+            }
+        }
+
+        var readmePath = requireCdw.getParent().resolve("README");
+
+        if (!Files.exists(readmePath)) {
+            try {
+                Files.writeString(readmePath, "To install a dependency for this plugin, from within this directory:\n $ npm init\n $ npm install <package>\n");
+            } catch (IOException e) {
+                LOGGER.warn("error writing README in {}", scriptPath.getParent().resolve("README.md"));
+            }
+        }
+
+        LOGGER.info("CommonJS modules of {} are located in {}", scriptPath.getFileName(), requireCdw.toAbsolutePath());
+
+        return requireCdw;
     }
 }

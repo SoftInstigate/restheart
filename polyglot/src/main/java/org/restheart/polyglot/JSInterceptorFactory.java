@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.google.common.collect.Maps;
 import com.mongodb.MongoClient;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -39,6 +41,7 @@ import org.restheart.polyglot.interceptors.CsvJSInterceptor;
 import org.restheart.polyglot.interceptors.JsonJSInterceptor;
 import org.restheart.polyglot.interceptors.MongoJSInterceptor;
 import org.restheart.polyglot.interceptors.StringJSInterceptor;
+import static org.restheart.polyglot.PolyglotDeployer.initRequireCdw;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,11 +60,10 @@ public class JSInterceptorFactory {
 
     private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {},\n\tresolve: (request) => {}\n})";
 
-    public JSInterceptorFactory(Path requireCdw, MongoClient mclient, Map<String, Object> pluginsArgs) {
+    public JSInterceptorFactory(MongoClient mclient, Map<String, Object> pluginsArgs) {
         this.mclient = mclient;
         this.pluginsArgs = pluginsArgs;
         OPTS.put("js.commonjs-require", "true");
-        OPTS.put("js.commonjs-require-cwd", requireCdw.toAbsolutePath().toString());
     }
 
     @SuppressWarnings("rawtypes")
@@ -71,14 +73,20 @@ public class JSInterceptorFactory {
         Source source;
 
         if ("js".equals(language)) {
-            if (scriptPath.getFileName().toString().endsWith(".mjs")) {
+            var fileName = scriptPath.getFileName().toString();
+            if (fileName.endsWith(".mjs")) {
                 source = Source.newBuilder("js", scriptPath.toFile()).mimeType("application/javascript+module").build();
-            } else {
+            } else if (fileName.endsWith(".js")) {
                 source = Source.newBuilder("js", scriptPath.toFile()).build();
+            } else {
+                throw new IllegalArgumentException("Interceptor file name must end with '.js' or '.mjs' " + scriptPath);
             }
         } else {
             throw new IllegalArgumentException("Interceptor is not javascript " + scriptPath);
         }
+
+        // set the require-cwd for this script
+        OPTS.put("js.commonjs-require-cwd", initRequireCdw(scriptPath).toAbsolutePath().toString());
 
         // check plugin definition
 
@@ -197,6 +205,17 @@ public class JSInterceptorFactory {
                 ? (Map<String, Object>) this.pluginsArgs.getOrDefault(name, new HashMap<String, Object>())
                 : new HashMap<String, Object>();
 
+
+            Map<String, String> opts = Maps.newHashMap();
+            opts.putAll(OPTS);
+
+            if (modulesReplacements != null) {
+                LOGGER.debug("modules-replacements: {} ", modulesReplacements);
+                opts.put("js.commonjs-core-modules-replacements", modulesReplacements);
+            } else {
+                opts.remove("js.commonjs-core-modules-replacements");
+            }
+
             switch (pluginClass) {
                 case "StringInterceptor":
                 case "org.restheart.plugins.StringInterceptor":
@@ -207,7 +226,7 @@ public class JSInterceptorFactory {
                         source,
                         mclient,
                         args,
-                        modulesReplacements);
+                        opts);
                         break;
                 case "BsonInterceptor":
                 case "org.restheart.plugins.BsonInterceptor":
@@ -218,7 +237,7 @@ public class JSInterceptorFactory {
                         source,
                         mclient,
                         args,
-                        modulesReplacements);
+                        opts);
                         break;
                 case "ByteArrayInterceptor":
                 case "org.restheart.plugins.ByteArrayInterceptor":
@@ -229,7 +248,7 @@ public class JSInterceptorFactory {
                         source,
                         mclient,
                         args,
-                        modulesReplacements);
+                        opts);
                         break;
                 case "ByteArrayProxyInterceptor":
                 case "org.restheart.plugins.ByteArrayProxyInterceptor":
@@ -240,7 +259,7 @@ public class JSInterceptorFactory {
                         source,
                         mclient,
                         args,
-                        modulesReplacements);
+                        opts);
                         break;
                 case "CsvInterceptor":
                 case "org.restheart.plugins.CsvInterceptor":
@@ -251,7 +270,7 @@ public class JSInterceptorFactory {
                         source,
                         mclient,
                         args,
-                        modulesReplacements);
+                        opts);
                         break;
                 case "JsonInterceptor":
                 case "org.restheart.plugins.JsonInterceptor":
@@ -262,7 +281,7 @@ public class JSInterceptorFactory {
                         source,
                         mclient,
                         args,
-                        modulesReplacements);
+                        opts);
                         break;
                 case "MongoInterceptor":
                 case "org.restheart.plugins.MongoInterceptor":
@@ -273,7 +292,7 @@ public class JSInterceptorFactory {
                         source,
                         mclient,
                         args,
-                        modulesReplacements);
+                        opts);
                         break;
                 default:
                     throw new IllegalArgumentException(

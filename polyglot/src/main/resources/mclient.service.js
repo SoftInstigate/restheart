@@ -48,7 +48,6 @@
             results.add(it.next());
         }
 
-        //setContent(String content)
         response.setContent(BsonUtils.toJson(results));
         response.setContentTypeAsJson();
     }

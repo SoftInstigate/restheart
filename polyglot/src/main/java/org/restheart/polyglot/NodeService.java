@@ -55,12 +55,12 @@ public class NodeService extends AbstractJSPlugin implements StringService {
 
     private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {}\n})";
 
-    public static Future<NodeService> get(Path scriptPath, Path requireCdw, MongoClient mclient) throws IOException {
+    public static Future<NodeService> get(Path scriptPath, MongoClient mclient) throws IOException {
         var executor = Executors.newSingleThreadExecutor();
-        return executor.submit(() -> new NodeService(scriptPath, requireCdw, mclient));
+        return executor.submit(() -> new NodeService(scriptPath, mclient));
     }
 
-    private NodeService(Path scriptPath, Path requireCdw, MongoClient mclient) throws IOException {
+    private NodeService(Path scriptPath, MongoClient mclient) throws IOException {
         this.mclient = mclient;
 
         this.source = Files.readString(scriptPath);

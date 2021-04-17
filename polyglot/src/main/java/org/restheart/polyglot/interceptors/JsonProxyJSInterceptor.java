@@ -37,7 +37,7 @@ public class JsonProxyJSInterceptor extends AbstractJSInterceptor<JsonProxyReque
         Source source,
         MongoClient mclient,
         Map<String, Object> args,
-        String modulesReplacements) {
-            super(name, pluginClass, description, interceptPoint, source ,mclient, args, modulesReplacements);
+        Map<String, String> OPTS) {
+            super(name, pluginClass, description, interceptPoint, source ,mclient, args, OPTS);
     }
 }

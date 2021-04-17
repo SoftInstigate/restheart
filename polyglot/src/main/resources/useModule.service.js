@@ -1,9 +1,10 @@
 /* How to run:
 $ cd plugins
+$ mkdir useModule.service
 $ npm init
 $ npm install one-liner-joke
 
-(not needed to install moment since it's a builtin module)
+(no need to install moment since it's a builtin module)
 */
 
 const moment = require('moment');

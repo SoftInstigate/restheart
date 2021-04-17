@@ -37,12 +37,10 @@ import org.slf4j.LoggerFactory;
 public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> extends AbstractJSPlugin implements Interceptor<R, S> {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractJSInterceptor.class);
 
-    Map<String, String> OPTS = new HashMap<>();
+    final Map<String, String> OPTS;
 
     private final Engine engine = Engine.create();
     private final Source source;
-
-    private final String modulesReplacements;
 
     private final MongoClient mclient;
 
@@ -63,9 +61,9 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
         Source source,
         MongoClient mclient,
         Map<String, Object> args,
-        String modulesReplacements) {
+        Map<String, String> OPTS) {
             super(name, pluginClass, description, null, false, null, interceptPoint);
-            this.modulesReplacements = modulesReplacements;
+            this.OPTS = OPTS;
             this.mclient = mclient;
             this.args = args;
             this.source = source;
@@ -75,13 +73,6 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
      *
      */
     public void handle(R request, S response) {
-        if (modulesReplacements != null) {
-            LOGGER.debug("modules-replacements: {} ", modulesReplacements);
-            OPTS.put("js.commonjs-core-modules-replacements", modulesReplacements);
-        } else {
-            OPTS.remove("js.commonjs-core-modules-replacements");
-        }
-
         try (var ctx = context(engine, OPTS)) {
             ctx.getBindings("js").putMember("LOGGER", LOGGER);
 
@@ -99,13 +90,6 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
 
     @Override
     public boolean resolve(R request, S response) {
-        if (modulesReplacements != null) {
-            LOGGER.debug("modules-replacements: {} ", modulesReplacements);
-            OPTS.put("js.commonjs-core-modules-replacements", modulesReplacements);
-        } else {
-            OPTS.remove("js.commonjs-core-modules-replacements");
-        }
-
         try (var ctx = context(engine, OPTS)) {
             ctx.getBindings("js").putMember("LOGGER", LOGGER);
 
