@@ -1,0 +1,20 @@
+{
+  "name": "hello-world",
+  "version": "1.0.0",
+  "description": "just another fancy hello world",
+  "main": "index.mjs",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "rhService": {
+    "name": "helloWorldService",
+    "description": "just another Hello World",
+    "uri": "/hello",
+    "secured": false,
+    "matchPolicy": "PREFIX"
+  }
+}

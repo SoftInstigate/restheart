@@ -20,7 +20,6 @@
  */
 package org.restheart.polyglot.interceptors;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import com.mongodb.MongoClient;

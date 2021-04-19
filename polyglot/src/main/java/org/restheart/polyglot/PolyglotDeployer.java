@@ -28,8 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 import com.google.common.base.Objects;
+import com.google.gson.JsonParser;
 import com.mongodb.MongoClient;
 
 import static org.fusesource.jansi.Ansi.ansi;
@@ -73,8 +72,6 @@ public class PolyglotDeployer implements Initializer {
     private PluginsRegistry registry = null;
 
     private static final Map<Path, AbstractJSPlugin> DEPLOYEES = new HashMap<>();
-
-    private WatchService watchService;
 
     private MongoClient mclient;
 
@@ -145,20 +142,15 @@ public class PolyglotDeployer implements Initializer {
 
     private void watch(Path pluginsDirectory) {
         try {
-            watchService = FileSystems.getDefault().newWatchService();
+            var watchService = FileSystems.getDefault().newWatchService();
+
             pluginsDirectory.register(watchService, StandardWatchEventKinds.ENTRY_CREATE,
                     StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
 
-            var watchThread = new Thread(() -> {
+            var watchThread = new Thread(() -> { while(true) {
                 try {
-                    Thread.sleep(1000);
-                } catch (Throwable t) {
-                    // nothing to do
-                }
-
-                WatchKey key;
-                try {
-                    while ((key = watchService.take()) != null) {
+                    var key = watchService.take();
+                    while (key != null) {
                         for (var event : key.pollEvents()) {
                             var eventContext = event.context();
                             var pluginPath = pluginsDirectory.resolve(eventContext.toString());
@@ -166,27 +158,21 @@ public class PolyglotDeployer implements Initializer {
                             LOGGER.trace("fs event {} {}", event.kind(), eventContext.toString());
 
                             if (!isService(pluginPath) && !isInterceptor(pluginPath)) {
-                                return;
+                                break;
                             }
 
                             if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                                var language = Source.findLanguage(pluginPath.toFile());
-                                if ("js".equals(language)) {
-                                    try {
-                                        deploy(pluginPath);
-                                    } catch (Throwable t) {
-                                        LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
-                                    }
+                                try {
+                                    deploy(pluginPath);
+                                } catch (Throwable t) {
+                                    LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
                                 }
                             } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
-                                var language = Source.findLanguage(pluginPath.toFile());
-                                if ("js".equals(language)) {
-                                    try {
-                                        undeploy(pluginPath);
-                                        deploy(pluginPath);
-                                    } catch (Throwable t) {
-                                        LOGGER.warn("Error updating {}", pluginPath.toAbsolutePath(), t);
-                                    }
+                                try {
+                                    undeploy(pluginPath);
+                                    deploy(pluginPath);
+                                } catch (Throwable t) {
+                                    LOGGER.warn("Error updating {}", pluginPath.toAbsolutePath(), t);
                                 }
                             } else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
                                 undeploy(pluginPath);
@@ -195,10 +181,10 @@ public class PolyglotDeployer implements Initializer {
 
                         key.reset();
                     }
-                } catch (IOException | InterruptedException ex) {
+                } catch (InterruptedException ex) {
                     LOGGER.error("Error watching {}" + pluginsDirectory.toAbsolutePath(), ex);
                 }
-            });
+            }});
 
             watchThread.start();
 
@@ -251,18 +237,12 @@ public class PolyglotDeployer implements Initializer {
 
         var paths = new ArrayList<Path>();
 
-        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(pluginsDirectory, "*.js")) {
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(pluginsDirectory)) {
             for (Path path : directoryStream) {
                 if (isService(path) || isInterceptor(path)) {
                     if (!Files.isReadable(path)) {
                         LOGGER.error("Plugin script {} is not readable", path);
                         throw new IllegalStateException("Plugin script " + path + " is not readable");
-                    }
-
-                    var language = Source.findLanguage(path.toFile());
-
-                    if (!"js".equals(language)) {
-                        throw new IllegalStateException("Plugin script " + path + " is not in JavaScript");
                     }
 
                     paths.add(path);
@@ -289,7 +269,51 @@ public class PolyglotDeployer implements Initializer {
     }
 
     private boolean isService(Path path) {
-        return path.getFileName().toString().endsWith(".service.js") || path.getFileName().toString().endsWith(".service.mjs");
+        if (!Files.isDirectory(path)) {
+            return false;
+        }
+
+        var jsIndexPath = path.resolve("index.js");
+        var mjsIndexPath = path.resolve("index.mjs");
+
+        var indexPath = Files.exists(jsIndexPath)
+            ? jsIndexPath
+            : Files.exists(mjsIndexPath)
+            ? mjsIndexPath
+            : null;
+
+        if (!Files.isRegularFile(indexPath)) {
+            return false;
+        };
+
+        var packagePath = path.resolve("package.json");
+
+        if (!Files.exists(packagePath) || !Files.isRegularFile(packagePath)) {
+            return false;
+        };
+
+        try {
+            var packageJson = JsonParser.parseReader(Files.newBufferedReader(packagePath));
+
+            if (packageJson.isJsonObject() && packageJson.getAsJsonObject().has("rhService")) {
+                return packageJson.getAsJsonObject().getAsJsonObject("rhService").isJsonObject();
+            };
+        } catch(Throwable t) {
+            LOGGER.warn("Error parsing {}", packagePath);
+            return false;
+        }
+
+        try {
+            var language = Source.findLanguage(indexPath.toFile());
+            if (!"js".equals(language)) {
+                LOGGER.warn("File {} is not javascript", indexPath.toAbsolutePath());
+                return false;
+            }
+        } catch (IOException e) {
+            LOGGER.warn("File {} is not javascript", indexPath.toAbsolutePath(), e);
+        }
+
+        return true;
     }
 
     private boolean isInterceptor(Path path) {
@@ -298,12 +322,6 @@ public class PolyglotDeployer implements Initializer {
 
     private void deploy(Path pluginPath) throws IOException {
         if (isService(pluginPath)) {
-            var language = Source.findLanguage(pluginPath.toFile());
-
-            if (!"js".equals(language)) {
-                LOGGER.warn("{} not deployed, it is not JavaScript", pluginPath.toAbsolutePath());
-            }
-
             deployService(pluginPath);
         } else if (isInterceptor(pluginPath)) {
             var language = Source.findLanguage(pluginPath.toFile());
@@ -436,50 +454,17 @@ public class PolyglotDeployer implements Initializer {
         return requireCdw;
     }
 
-    static Path initRequireCdw(Path scriptPath) {
-        var scriptFileName = scriptPath.getFileName().toString();
+    static Path initRequireCdw(Path pluginDirPath) {
+        var requireCdw = pluginDirPath.resolve("node_modules").toAbsolutePath();
 
-        String requireCdwDirName;
-
-        if (scriptFileName.endsWith(".js")) {
-            requireCdwDirName = scriptFileName.substring(0, scriptFileName.length()-3);
-        } else if (scriptFileName.endsWith(".mjs")) {
-            requireCdwDirName = scriptFileName.substring(0, scriptFileName.length()-4);
-        } else {
-            throw new IllegalArgumentException("plugin file name must end with '.js' or '.mjs'");
-        }
-
-        var requireCdw = scriptPath.getParent().resolve(requireCdwDirName).resolve("node_modules").toAbsolutePath();
-
-        if (!Files.exists(requireCdw.getParent())) {
+        if (!Files.exists(requireCdw)) {
             LOGGER.debug("Creating CommonJS modules directory {}", requireCdw.getParent());
             try {
-                Files.createDirectory(requireCdw.getParent());
+                Files.createDirectory(requireCdw);
             } catch (IOException ioe) {
                 LOGGER.warn("Cound not create CommonJS modules directory {}", requireCdw.getParent());
             }
         }
-
-        if (!Files.exists(requireCdw)) {
-            LOGGER.debug("Creating CommonJS modules directory {}", requireCdw);
-            try {
-                Files.createDirectory(requireCdw);
-            } catch (IOException ioe) {
-                LOGGER.warn("Cound not create CommonJS modules directory {}", requireCdw);
-            }
-        }
-
-        var readmePath = requireCdw.getParent().resolve("README");
-
-        if (!Files.exists(readmePath)) {
-            try {
-                Files.writeString(readmePath, "To install a dependency for this plugin, from within this directory:\n $ npm init\n $ npm install <package>\n");
-            } catch (IOException e) {
-                LOGGER.warn("error writing README in {}", scriptPath.getParent().resolve("README.md"));
-            }
-        }
-
-        LOGGER.info("CommonJS modules of {} are located in {}", scriptPath.getFileName(), requireCdw.toAbsolutePath());
 
         return requireCdw;
     }
