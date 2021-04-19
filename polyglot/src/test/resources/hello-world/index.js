@@ -1,5 +1,4 @@
-
-export function xxx(request, response) {
+export function handle(request, response) {
     LOGGER.debug('request {}', request.getContent());
     const rc = JSON.parse(request.getContent() || '{}');
 
@@ -9,8 +8,4 @@ export function xxx(request, response) {
 
     response.setContent(JSON.stringify(body));
     response.setContentTypeAsJson();
-};
-
-export var handle = 1;
-
-LOGGER.debug("************************* function {}", handle);
+}

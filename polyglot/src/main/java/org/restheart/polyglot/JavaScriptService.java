@@ -60,7 +60,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
     private final Map<String, Object> pluginsArgs;
 
     private static final String errorHint = "the plugin module must export the function handle(request, response)";
-    private static final String packageHint = "hint: add to package.json an object like \n\"rhService\": {\n" +
+    private static final String packageHint = "hint: add to package.json an object like \n\"rh:service\": {\n" +
         "\t\"name\": \"foo\",\n" +
         "\t\"description\": \"a fancy description\",\n" +
         "\t\"uri\": \"/foo\",\n" +
@@ -84,37 +84,37 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
         contextOptions.put("js.commonjs-require", "true");
         contextOptions.put("js.commonjs-require-cwd", initRequireCdw(pluginPath).toAbsolutePath().toString());
 
-        // check rhService object in package.json
+        // check rh:service object in package.json
 
         var packagePath = pluginPath.resolve("package.json");
 
         try {
             var packageJson = JsonParser.parseReader(Files.newBufferedReader(packagePath));
 
-            if (!packageJson.isJsonObject() || !(packageJson.getAsJsonObject().has("rhService")) || !packageJson.getAsJsonObject().get("rhService").isJsonObject()) {
-                throw new IllegalArgumentException(packagePath.toAbsolutePath().toString() + " does not contain the object 'rhService'");
+            if (!packageJson.isJsonObject() || !(packageJson.getAsJsonObject().has("rh:service")) || !packageJson.getAsJsonObject().get("rh:service").isJsonObject()) {
+                throw new IllegalArgumentException(packagePath.toAbsolutePath().toString() + " does not contain the object 'rh:service'");
             }
 
-            var specs = packageJson.getAsJsonObject().getAsJsonObject("rhService");
+            var specs = packageJson.getAsJsonObject().getAsJsonObject("rh:service");
 
             // name is mandatory
             if (!specs.has("name")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'rhService.name', " + packageHint);
+                throw new IllegalArgumentException("wrong js plugin, missing member 'rh:service.name', " + packageHint);
             }
 
             if (!specs.get("name").isJsonPrimitive() || !specs.getAsJsonPrimitive("name").isString()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'rhService.name', it must be a string, " + packageHint);
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.name', it must be a string, " + packageHint);
             }
 
             this.name = specs.get("name").getAsString();
 
             // description is mandatory
             if (!specs.has("description")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'rhService.description', " + packageHint);
+                throw new IllegalArgumentException("wrong js plugin, missing member 'rh:service.description', " + packageHint);
             }
 
             if (!specs.get("description").isJsonPrimitive() || !specs.getAsJsonPrimitive("description").isString()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'rhService.description', it must be a string, " + packageHint);
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.description', it must be a string, " + packageHint);
             }
 
             this.description = specs.get("description").getAsString();
@@ -124,11 +124,11 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
                 this.uri = "/".concat(this.name);
             } else {
                 if (!specs.get("uri").isJsonPrimitive() || !specs.getAsJsonPrimitive("uri").isString()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rhService.uri', it must be a string, " + packageHint);
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.uri', it must be a string, " + packageHint);
                 }
 
                 if (!specs.get("uri").getAsString().startsWith("/")) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rhService.uri', it must start with '/', " + packageHint);
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.uri', it must start with '/', " + packageHint);
                 }
 
                 this.uri = specs.get("uri").getAsString();
@@ -139,7 +139,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
                 this.secured = false;
             } else {
                 if (!specs.get("secured").isJsonPrimitive() || !specs.getAsJsonPrimitive("secured").isBoolean()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rhService.secured', it must be a boolean, " + packageHint);
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.secured', it must be a boolean, " + packageHint);
                 }
 
                 this.secured = specs.get("secured").getAsBoolean();
@@ -150,13 +150,13 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
                 this.matchPolicy = MATCH_POLICY.PREFIX;
             } else {
                 if (!specs.get("matchPolicy").isJsonPrimitive() || !specs.getAsJsonPrimitive("matchPolicy").isString()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rhService.matchPolicy', it must be " + MATCH_POLICY.values() + ", " + packageHint);
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.matchPolicy', it must be " + MATCH_POLICY.values() + ", " + packageHint);
                 }
 
                 try {
                     this.matchPolicy = MATCH_POLICY.valueOf(specs.get("matchPolicy").getAsString());
                 } catch(Throwable t) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rhService.matchPolicy', it must be " + MATCH_POLICY.values() + ", " + packageHint);
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.matchPolicy', it must be " + MATCH_POLICY.values() + ", " + packageHint);
                 }
             }
 
@@ -165,7 +165,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
                 this.modulesReplacements = null;
             } else {
                 if (!specs.get("modulesReplacements").isJsonPrimitive() || !specs.getAsJsonPrimitive("modulesReplacements").isString()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rhService.modulesReplacements', it must be a string, " + packageHint);
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.modulesReplacements', it must be a string, " + packageHint);
                 }
 
                 this.modulesReplacements = specs.get("modulesReplacements").getAsString();

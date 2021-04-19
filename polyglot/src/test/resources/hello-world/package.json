@@ -1,7 +1,7 @@
 {
   "name": "hello-world",
   "version": "1.0.0",
-  "description": "just another fancy hello world",
+  "description": "just another JavaScript Hello World service for RESTHeart",
   "main": "index.mjs",
   "dependencies": {},
   "devDependencies": {},
@@ -10,7 +10,7 @@
   },
   "author": "",
   "license": "ISC",
-  "rhService": {
+  "rh:service": {
     "name": "helloWorldService",
     "description": "just another Hello World",
     "uri": "/hello",
