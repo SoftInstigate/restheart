@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.mongodb.handlers.files;
+package org.restheart.mongodb.db;
 
 import static org.junit.Assert.*;
 import org.junit.Rule;
@@ -59,6 +59,15 @@ public class GetFileHandlerTest {
      */
     @Test
     public void testExtractBucket() {
-        assertEquals("mybucket", GetFileBinaryHandler.extractBucketName("mybucket.files"));
+        assertEquals("mybucket", GridFsDAO.extractBucketName("mybucket.files"));
+    }
+
+     /**
+     *
+     */
+    @Test
+    public void testExtractBucketWithDots() {
+        assertEquals("mybucket.foo", GridFsDAO.extractBucketName("mybucket.foo.files"));
+        assertEquals("mybucket.foo.bar", GridFsDAO.extractBucketName("mybucket.foo.bar.files"));
     }
 }
