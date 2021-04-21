@@ -38,6 +38,7 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.GridFsDAO;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -91,10 +92,9 @@ public class GetDocumentHandler extends PipelinedHandler {
         if (request.isDbMeta()) {
             collName = META_COLLNAME;
             docId = new BsonString(DB_META_DOCID);
-        } else if (request.isCollectionMeta()) {
+        } else if (request.isCollectionMeta() || request.isFilesBucketMeta() || request.isSchemaStoreMeta()) {
             collName = META_COLLNAME;
-            docId = new BsonString(COLL_META_DOCID_PREFIX.concat(
-                    request.getCollectionName()));
+            docId = new BsonString(COLL_META_DOCID_PREFIX.concat(request.getCollectionName()));
         } else {
             collName = request.getCollectionName();
             docId = request.getDocumentId();
@@ -134,26 +134,16 @@ public class GetDocumentHandler extends PipelinedHandler {
         }
 
         var cs = request.getClientSession();
-        var coll = dbsDAO.getCollection(
-                request.getDBName(),
-                collName);
+        var coll = dbsDAO.getCollection(request.getDBName(), collName);
 
-        BsonDocument document = cs == null
-                ? coll
-                        .find(query)
-                        .projection(fieldsToReturn)
-                        .first()
-                : coll
-                        .find(cs, query)
-                        .projection(fieldsToReturn)
-                        .first();
+        var document = cs == null
+                ? coll.find(query).projection(fieldsToReturn).first()
+                : coll.find(cs, query).projection(fieldsToReturn).first();
 
         if (document == null) {
             String errMsg = request.getDocumentId() == null
                     ? " does not exist"
-                    : " ".concat(BsonUtils.getIdAsString(
-                            request.getDocumentId(), true))
-                            .concat(" does not exist");
+                    : " ".concat(BsonUtils.getIdAsString(request.getDocumentId(), true)).concat(" does not exist");
 
             if (null != request.getType()) {
                 switch (request.getType()) {

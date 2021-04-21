@@ -35,6 +35,7 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.mongodb.utils.ResponseHelper;
+import static org.restheart.mongodb.db.GridFsDAO.extractBucketName;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,21 +49,14 @@ public class GetFileBinaryHandler extends PipelinedHandler {
     /**
      *
      */
-    public static final String APPLICATION_OCTET_STREAM
-            = "application/octet-stream";
+    public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
 
     /**
      *
      */
-    public static final String CONTENT_TRANSFER_ENCODING_BINARY
-            = "binary";
+    public static final String CONTENT_TRANSFER_ENCODING_BINARY = "binary";
 
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(GetFileBinaryHandler.class);
-
-    static String extractBucketName(final String collectionName) {
-        return collectionName.split("\\.")[0];
-    }
+    private static final Logger LOGGER = LoggerFactory.getLogger(GetFileBinaryHandler.class);
 
     /**
      * Creates a new instance of GetFileBinaryHandler
@@ -97,15 +91,11 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         }
 
         LOGGER.trace("GET " + exchange.getRequestURL());
-        final String bucket = extractBucketName(request.getCollectionName());
+        final var bucket = extractBucketName(request.getCollectionName());
 
-        GridFSBucket gridFSBucket = GridFSBuckets.create(MongoClientSingleton.getInstance().getClient()
-                .getDatabase(request.getDBName()),
-                bucket);
+        var gridFSBucket = GridFSBuckets.create(MongoClientSingleton.getInstance().getClient().getDatabase(request.getDBName()), bucket);
 
-        GridFSFile dbsfile = gridFSBucket
-                .find(eq("_id", request.getDocumentId()))
-                .limit(1).iterator().tryNext();
+        var dbsfile = gridFSBucket.find(eq("_id", request.getDocumentId())).limit(1).iterator().tryNext();
 
         if (dbsfile == null) {
             fileNotFound(request, exchange);
@@ -120,17 +110,16 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         if (dbsfile != null) {
             Object etag;
 
-            if (dbsfile.getMetadata() != null
-                    && dbsfile.getMetadata().containsKey("_etag")) {
+            if (dbsfile.getMetadata() != null && dbsfile.getMetadata().containsKey("_etag")) {
                 etag = dbsfile.getMetadata().get("_etag");
             } else {
                 etag = null;
             }
 
             if (etag != null && etag instanceof ObjectId) {
-                ObjectId _etag = (ObjectId) etag;
+                var _etag = (ObjectId) etag;
 
-                BsonObjectId __etag = new BsonObjectId(_etag);
+                var __etag = new BsonObjectId(_etag);
 
                 // in case the request contains the IF_NONE_MATCH header with the current etag value,
                 // just return 304 NOT_MODIFIED code
@@ -151,9 +140,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         final String errMsg = String.format(
                 "File with ID <%s> not found", request.getDocumentId());
         LOGGER.trace(errMsg);
-        MongoResponse.of(exchange).setInError(
-                HttpStatus.SC_NOT_FOUND,
-                errMsg);
+        MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_FOUND, errMsg);
         next(exchange);
     }
 
@@ -167,30 +154,19 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         LOGGER.trace("Filename = {}", file.getFilename());
         LOGGER.trace("Content length = {}", file.getLength());
 
-        if (file.getMetadata() != null
-                && file.getMetadata().get("contentType") != null) {
-            response.getHeaders().put(Headers.CONTENT_TYPE,
-                    file.getMetadata().get("contentType").toString());
-        } else if (file.getMetadata() != null
-                && file.getMetadata().get("contentType") != null) {
-            response.getHeaders().put(Headers.CONTENT_TYPE,
-                    file.getMetadata().get("contentType").toString());
+        if (file.getMetadata() != null && file.getMetadata().get("contentType") != null) {
+            response.getHeaders().put(Headers.CONTENT_TYPE, file.getMetadata().get("contentType").toString());
+        } else if (file.getMetadata() != null && file.getMetadata().get("contentType") != null) {
+            response.getHeaders().put(Headers.CONTENT_TYPE, file.getMetadata().get("contentType").toString());
         } else {
-            response.getHeaders().put(
-                    Headers.CONTENT_TYPE,
-                    APPLICATION_OCTET_STREAM);
+            response.getHeaders().put(Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM);
         }
 
         response.getHeaders().put(Headers.CONTENT_LENGTH, file.getLength());
 
-        response.getHeaders().put(
-                Headers.CONTENT_DISPOSITION,
-                String.format("inline; filename=\"%s\"",
-                        extractFilename(file)));
+        response.getHeaders().put(Headers.CONTENT_DISPOSITION, String.format("inline; filename=\"%s\"", extractFilename(file)));
 
-            response.getHeaders().put(
-                Headers.CONTENT_TRANSFER_ENCODING,
-                CONTENT_TRANSFER_ENCODING_BINARY);
+        response.getHeaders().put(Headers.CONTENT_TRANSFER_ENCODING,CONTENT_TRANSFER_ENCODING_BINARY);
 
         ResponseHelper.injectEtagHeader(exchange, file.getMetadata());
 
@@ -198,14 +174,9 @@ public class GetFileBinaryHandler extends PipelinedHandler {
 
         response.setCustomerSender(() -> {
             if (request.getClientSession() != null) {
-                gridFSBucket.downloadToStream(
-                        request.getClientSession(),
-                        file.getId(),
-                        exchange.getOutputStream());
+                gridFSBucket.downloadToStream(request.getClientSession(), file.getId(), exchange.getOutputStream());
             } else {
-                gridFSBucket.downloadToStream(
-                        file.getId(),
-                        exchange.getOutputStream());
+                gridFSBucket.downloadToStream(file.getId(), exchange.getOutputStream());
             }
         });
     }
