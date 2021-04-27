@@ -2,7 +2,7 @@
 
 ## prerequisites
 
-> GraalVM required version: >= 21.1.0 (https://www.graalvm.org/downloads/)
+> GraalVM required version: >= 21.1.0 Java 16 based (https://www.graalvm.org/downloads/)
 
 Also install `native-image`
 
