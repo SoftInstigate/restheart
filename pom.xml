@@ -314,7 +314,6 @@
                 <groupId>org.graalvm.js</groupId>
                 <artifactId>js-scriptengine</artifactId>
                 <version>${graalvm.version}</version>
-                <scope>provided</scope>
             </dependency>
             <!-- https://mvnrepository.com/artifact/com.oracle.substratevm/svm -->
             <dependency>
