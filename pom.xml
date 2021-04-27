@@ -303,7 +303,7 @@
                 <groupId>org.graalvm.truffle</groupId>
                 <artifactId>truffle-api</artifactId>
                 <version>${graalvm.version}</version>
-                <scope>runtime</scope>
+                <scope>provided</scope>
               </dependency>
             <dependency>
                 <groupId>org.graalvm.js</groupId>
