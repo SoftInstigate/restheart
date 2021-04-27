@@ -30,11 +30,14 @@ import java.nio.file.Paths;
 import java.nio.file.StandardWatchEventKinds;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
 import com.google.gson.JsonParser;
 import com.mongodb.MongoClient;
 
@@ -131,9 +134,11 @@ public class PolyglotDeployer implements Initializer {
     }
 
     private void deployAll(Path pluginsDirectory) {
-        for (var pluginPath : findJsPlugins(pluginsDirectory)) {
+        for (var pluginPath : findJsPluginDirectories(pluginsDirectory)) {
             try {
-                deploy(pluginPath);
+                var services = findServices(pluginPath);
+                var interceptors = findInterceptors(pluginPath);
+                deploy(pluginPath, services, interceptors);
             } catch (Throwable t) {
                 LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
             }
@@ -157,20 +162,16 @@ public class PolyglotDeployer implements Initializer {
 
                             LOGGER.trace("fs event {} {}", event.kind(), eventContext.toString());
 
-                            if (!isService(pluginPath) && !isInterceptor(pluginPath)) {
-                                break;
-                            }
-
                             if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                                 try {
-                                    deploy(pluginPath);
+                                    deploy(pluginPath, findServices(pluginPath), findInterceptors(pluginPath));
                                 } catch (Throwable t) {
                                     LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
                                 }
                             } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
                                 try {
                                     undeploy(pluginPath);
-                                    deploy(pluginPath);
+                                    deploy(pluginPath, findServices(pluginPath), findInterceptors(pluginPath));
                                 } catch (Throwable t) {
                                     LOGGER.warn("Error updating {}", pluginPath.toAbsolutePath(), t);
                                 }
@@ -228,9 +229,9 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
-    private ArrayList<Path> findJsPlugins(Path pluginsDirectory) {
+    private List<Path> findJsPluginDirectories(Path pluginsDirectory) {
         if (pluginsDirectory == null) {
-            return new ArrayList<>();
+            return Lists.newArrayList();
         } else {
             checkPluginDirectory(pluginsDirectory);
         }
@@ -239,18 +240,15 @@ public class PolyglotDeployer implements Initializer {
 
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(pluginsDirectory)) {
             for (Path path : directoryStream) {
-                if (isService(path) || isInterceptor(path)) {
-                    if (!Files.isReadable(path)) {
-                        LOGGER.error("Plugin script {} is not readable", path);
-                        throw new IllegalStateException("Plugin script " + path + " is not readable");
-                    }
-
+                var services = findServices(pluginsDirectory);
+                var interceptors = findServices(pluginsDirectory);
+                if (!services.isEmpty() || !interceptors.isEmpty()) {
                     paths.add(path);
-                    LOGGER.info("Found plugin script {}", path);
+                    LOGGER.info("Found js plugin directory {}", path);
                 }
             }
         } catch (IOException ex) {
-            LOGGER.error("Cannot read scritps in plugins directory", pluginsDirectory, ex);
+            LOGGER.error("Cannot read js plugin directory {}", pluginsDirectory, ex);
         }
 
         return paths;
@@ -268,69 +266,70 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
-    private boolean isService(Path path) {
+    private List<Path> findServices(Path path) {
+        return findDeclaredPlugins(path, "rh:services");
+    }
+
+    private List<Path> findInterceptors(Path path) {
+        return findDeclaredPlugins(path, "rh:interceptors");
+    }
+
+    private List<Path> findDeclaredPlugins(Path path, String prop) {
         if (!Files.isDirectory(path)) {
-            return false;
+            return Lists.newArrayList();
         }
-
-        var jsIndexPath = path.resolve("index.js");
-        var mjsIndexPath = path.resolve("index.mjs");
-
-        var indexPath = Files.exists(jsIndexPath)
-            ? jsIndexPath
-            : Files.exists(mjsIndexPath)
-            ? mjsIndexPath
-            : null;
-
-        if (!Files.isRegularFile(indexPath)) {
-            return false;
-        };
 
         var packagePath = path.resolve("package.json");
 
-        if (!Files.exists(packagePath) || !Files.isRegularFile(packagePath)) {
-            return false;
-        };
+        if (!Files.isRegularFile(packagePath)) {
+            return Lists.newArrayList();
+        }
 
         try {
-            var packageJson = JsonParser.parseReader(Files.newBufferedReader(packagePath));
+            var p = JsonParser.parseReader(Files.newBufferedReader(packagePath));
 
-            if (packageJson.isJsonObject() && packageJson.getAsJsonObject().has("rhService")) {
-                return packageJson.getAsJsonObject().getAsJsonObject("rhService").isJsonObject();
-            };
+            if (p.isJsonObject()
+                && p.getAsJsonObject().has(prop)
+                && p.getAsJsonObject().get(prop).isJsonArray()
+                && p.getAsJsonObject().getAsJsonArray(prop).size() > 0) {
+                List<Path> ret = Lists.newArrayList();
+
+                p.getAsJsonObject().getAsJsonArray(prop).forEach(item -> {
+                    if (item.isJsonPrimitive() && item.getAsJsonPrimitive().isString()) {
+                        var servicePath = path.resolve(item.getAsString());
+
+                        if (Files.isRegularFile(servicePath)) {
+                            try {
+                                var language = Source.findLanguage(servicePath.toFile());
+                                if ("js".equals(language)) {
+                                    ret.add(servicePath);
+                                } else {
+                                    LOGGER.warn("File {} is not javascript", servicePath.toAbsolutePath());
+                                }
+                            } catch (IOException e) {
+                                LOGGER.warn("File {} is not javascript", servicePath.toAbsolutePath(), e);
+                            }
+                        }
+                    }
+                });
+
+                return ret;
+            } else {
+                return Lists.newArrayList();
+            }
         } catch(Throwable t) {
-            LOGGER.warn("Error parsing {}", packagePath);
-            return false;
+            LOGGER.error("Error reading {}", packagePath, t);
+            return Lists.newArrayList();
         }
-
-        try {
-            var language = Source.findLanguage(indexPath.toFile());
-            if (!"js".equals(language)) {
-                LOGGER.warn("File {} is not javascript", indexPath.toAbsolutePath());
-                return false;
-            }
-        } catch (IOException e) {
-            LOGGER.warn("File {} is not javascript", indexPath.toAbsolutePath(), e);
-        }
-
-        return true;
     }
 
-    private boolean isInterceptor(Path path) {
-        return path.getFileName().toString().endsWith(".interceptor.js") || path.getFileName().toString().endsWith(".interceptor.mjs");
-    }
+    private void deploy(Path pluginPath, List<Path> services, List<Path> interceptors) throws IOException {
+        for (Path service: services) {
+            deployService(service);
+        }
 
-    private void deploy(Path pluginPath) throws IOException {
-        if (isService(pluginPath)) {
-            deployService(pluginPath);
-        } else if (isInterceptor(pluginPath)) {
-            var language = Source.findLanguage(pluginPath.toFile());
-
-            if (!"js".equals(language)) {
-                LOGGER.warn("{} not deployed, it is not JavaScript", pluginPath.toAbsolutePath());
-            }
-
-            deployInterceptor(pluginPath);
+        for (Path interceptor: interceptors) {
+            deployInterceptor(interceptor);
         }
     }
 
@@ -400,34 +399,42 @@ public class PolyglotDeployer implements Initializer {
     }
 
     private void undeploy(Path pluginPath) {
-        if (isService(pluginPath)) {
-            undeployService(pluginPath);
-        } else if (isInterceptor(pluginPath)) {
-            undeployInterceptor(pluginPath);
+        undeployServices(pluginPath);
+        undeployInterceptors(pluginPath);
+    }
+
+    private void undeployServices(Path pluginPath) {
+        var pathsToUndeploy = DEPLOYEES.keySet().stream()
+            .filter(path -> DEPLOYEES.get(path).isService)
+            .filter(path -> path.startsWith(pluginPath))
+            .collect(Collectors.toList());
+
+        for (var pathToUndeploy: pathsToUndeploy) {
+            var toUndeploy = DEPLOYEES.remove(pathToUndeploy);
+
+            if (toUndeploy != null) {
+                registry.unplug(toUndeploy.getUri(), toUndeploy.getMatchPolicy());
+
+                LOGGER.info(ansi().fg(GREEN).a("removed service {} bound to URI {}").reset().toString(),
+                toUndeploy.getName(), toUndeploy.getUri());
+            }
         }
     }
 
-    private void undeployService(Path pluginPath) {
-        var srvToUndeploy = DEPLOYEES.remove(pluginPath.toAbsolutePath());
+    private void undeployInterceptors(Path pluginPath) {
+        var pathsToUndeploy = DEPLOYEES.keySet().stream()
+            .filter(path -> DEPLOYEES.get(path).isInterceptor)
+            .filter(path -> path.startsWith(pluginPath))
+            .collect(Collectors.toList());
 
-        if (srvToUndeploy != null) {
-            registry.unplug(srvToUndeploy.getUri(), srvToUndeploy.getMatchPolicy());
-
-            LOGGER.info(ansi().fg(GREEN).a("removed service {} bound to URI {}").reset().toString(),
-                    srvToUndeploy.getName(), srvToUndeploy.getUri());
-        }
-    }
-
-    private void undeployInterceptor(Path pluginPath) {
-        var interceptorToUndeploy = DEPLOYEES.remove(pluginPath.toAbsolutePath());
-
-        if (interceptorToUndeploy != null) {
-            var removed = registry.removeInterceptorIf(interceptor -> Objects.equal(interceptor.getName(), interceptorToUndeploy.getName()));
+        for (var pathToUndeploy: pathsToUndeploy) {
+            var toUndeploy = DEPLOYEES.remove(pathToUndeploy);
+            var removed = registry.removeInterceptorIf(interceptor -> Objects.equal(interceptor.getName(), toUndeploy.getName()));
 
             if (removed) {
-                LOGGER.info(ansi().fg(GREEN).a("removed interceptor {}").reset().toString(), interceptorToUndeploy.getName());
+                LOGGER.info(ansi().fg(GREEN).a("removed interceptor {}").reset().toString(), toUndeploy.getName());
             } else {
-                LOGGER.warn("interceptor {} was not removed", interceptorToUndeploy.getName());
+                LOGGER.warn("interceptor {} was not removed", toUndeploy.getName());
             }
         }
     }
@@ -450,21 +457,6 @@ public class PolyglotDeployer implements Initializer {
         }
 
         var requireCdw = scriptPath.getParent().resolve(requireCdwDirName).resolve("node_modules").toAbsolutePath();
-
-        return requireCdw;
-    }
-
-    static Path initRequireCdw(Path pluginDirPath) {
-        var requireCdw = pluginDirPath.resolve("node_modules").toAbsolutePath();
-
-        if (!Files.exists(requireCdw)) {
-            LOGGER.debug("Creating CommonJS modules directory {}", requireCdw.getParent());
-            try {
-                Files.createDirectory(requireCdw);
-            } catch (IOException ioe) {
-                LOGGER.warn("Cound not create CommonJS modules directory {}", requireCdw.getParent());
-            }
-        }
 
         return requireCdw;
     }

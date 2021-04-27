@@ -1,3 +1,11 @@
+export const options = {
+    "name": "helloWorldService",
+    "description": "just another Hello World",
+    "uri": "/hello",
+    "secured": false,
+    "matchPolicy": "EXACT"
+}
+
 export function handle(request, response) {
     LOGGER.debug('request {}', request.getContent());
     const rc = JSON.parse(request.getContent() || '{}');
@@ -8,4 +16,4 @@ export function handle(request, response) {
 
     response.setContent(JSON.stringify(body));
     response.setContentTypeAsJson();
-}
+};

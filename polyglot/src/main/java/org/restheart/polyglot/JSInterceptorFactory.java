@@ -21,6 +21,7 @@
 package org.restheart.polyglot;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +42,6 @@ import org.restheart.polyglot.interceptors.CsvJSInterceptor;
 import org.restheart.polyglot.interceptors.JsonJSInterceptor;
 import org.restheart.polyglot.interceptors.MongoJSInterceptor;
 import org.restheart.polyglot.interceptors.StringJSInterceptor;
-import static org.restheart.polyglot.PolyglotDeployer.initRequireCdw;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
 public class JSInterceptorFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(JSInterceptorFactory.class);
 
-    Map<String, String> OPTS = new HashMap<>();
+    Map<String, String> contextOptions = new HashMap<>();
 
     private final MongoClient mclient;
 
@@ -63,7 +63,6 @@ public class JSInterceptorFactory {
     public JSInterceptorFactory(MongoClient mclient, Map<String, Object> pluginsArgs) {
         this.mclient = mclient;
         this.pluginsArgs = pluginsArgs;
-        OPTS.put("js.commonjs-require", "true");
     }
 
     @SuppressWarnings("rawtypes")
@@ -86,7 +85,12 @@ public class JSInterceptorFactory {
         }
 
         // set the require-cwd for this script
-        OPTS.put("js.commonjs-require-cwd", initRequireCdw(scriptPath).toAbsolutePath().toString());
+        var requireCwdPath = scriptPath.resolve("node_modules");
+        if (Files.isDirectory(requireCwdPath)) {
+            contextOptions.put("js.commonjs-require", "true");
+            contextOptions.put("js.commonjs-require-cwd", scriptPath.resolve("node_modules").toAbsolutePath().toString());
+            LOGGER.debug("Enabling require for plugin {} with require-cwd {} ", scriptPath, requireCwdPath);
+        }
 
         // check plugin definition
 
@@ -96,7 +100,7 @@ public class JSInterceptorFactory {
                 .allowHostClassLookup(className -> true)
                 .allowIO(true)
                 .allowExperimentalOptions(true)
-                .options(OPTS)
+                .options(contextOptions)
                 .build()) {
             Value parsed;
 
@@ -207,7 +211,7 @@ public class JSInterceptorFactory {
 
 
             Map<String, String> opts = Maps.newHashMap();
-            opts.putAll(OPTS);
+            opts.putAll(contextOptions);
 
             if (modulesReplacements != null) {
                 LOGGER.debug("modules-replacements: {} ", modulesReplacements);

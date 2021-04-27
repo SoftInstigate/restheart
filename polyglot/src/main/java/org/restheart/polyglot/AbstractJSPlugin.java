@@ -36,6 +36,9 @@ public abstract class AbstractJSPlugin {
     protected MATCH_POLICY matchPolicy;
     protected InterceptPoint interceptPoint;
 
+    protected boolean isService;
+    protected boolean isInterceptor;
+
     // TODO remove this and make fields final
     protected AbstractJSPlugin() {
         this.name = null;
@@ -45,6 +48,8 @@ public abstract class AbstractJSPlugin {
         this.secured = false;
         this.matchPolicy = null;
         this.interceptPoint = null;
+        this.isService = true;
+        this.isInterceptor = false;
     }
 
     protected AbstractJSPlugin(String name,
@@ -53,7 +58,9 @@ public abstract class AbstractJSPlugin {
         String uri,
         boolean secured,
         MATCH_POLICY matchPolicy,
-        InterceptPoint interceptPoint) {
+        InterceptPoint interceptPoint,
+        boolean isService,
+        boolean isInterceptor) {
         this.name = name;
         this.pluginClass = pluginClass;
         this.description = description;
@@ -61,6 +68,8 @@ public abstract class AbstractJSPlugin {
         this.secured = secured;
         this.matchPolicy = matchPolicy;
         this.interceptPoint = interceptPoint;
+        this.isService = isService;
+        this.isInterceptor = isInterceptor;
     }
 
     protected Context context(Engine engine, Map<String, String> OPTS) {

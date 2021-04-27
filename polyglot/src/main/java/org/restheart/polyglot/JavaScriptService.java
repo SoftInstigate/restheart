@@ -26,8 +26,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
 import com.mongodb.MongoClient;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -37,7 +35,6 @@ import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.StringService;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
-import static org.restheart.polyglot.PolyglotDeployer.initRequireCdw;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +48,6 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
     Map<String, String> contextOptions = new HashMap<>();
 
     private Engine engine = Engine.create();
-    private Source source;
 
     private final String modulesReplacements;
 
@@ -59,148 +55,184 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
 
     private final Map<String, Object> pluginsArgs;
 
-    private static final String errorHint = "the plugin module must export the function handle(request, response)";
-    private static final String packageHint = "hint: add to package.json an object like \n\"rh:service\": {\n" +
-        "\t\"name\": \"foo\",\n" +
-        "\t\"description\": \"a fancy description\",\n" +
-        "\t\"uri\": \"/foo\",\n" +
-        "\t\"secured\": false,\n" +
-        "\t\"matchPolicy\": \"PREFIX\"\n" +
-        "}";
+    private final Source handleSource;
 
-    JavaScriptService(Path pluginPath, MongoClient mclient, Map<String, Object> pluginsArgs) throws IOException {
-        var jsIndexPath = pluginPath.resolve("index.js");
-        var mjsIndexPath = pluginPath.resolve("index.mjs");
+    private static final String handleHint = """
+    the plugin module must export the function 'handle', example:
+    export function handle(request, response) {
+        LOGGER.debug('request {}', request.getContent());
+        const rc = JSON.parse(request.getContent() || '{}');
 
-        var indexPath = Files.exists(jsIndexPath)
-            ? jsIndexPath
-            : Files.exists(mjsIndexPath)
-            ? mjsIndexPath
-            : null;
-
-        this.mclient = mclient;
-        this.pluginsArgs = pluginsArgs;
-
-        contextOptions.put("js.commonjs-require", "true");
-        contextOptions.put("js.commonjs-require-cwd", initRequireCdw(pluginPath).toAbsolutePath().toString());
-
-        // check rh:service object in package.json
-
-        var packagePath = pluginPath.resolve("package.json");
-
-        try {
-            var packageJson = JsonParser.parseReader(Files.newBufferedReader(packagePath));
-
-            if (!packageJson.isJsonObject() || !(packageJson.getAsJsonObject().has("rh:service")) || !packageJson.getAsJsonObject().get("rh:service").isJsonObject()) {
-                throw new IllegalArgumentException(packagePath.toAbsolutePath().toString() + " does not contain the object 'rh:service'");
-            }
-
-            var specs = packageJson.getAsJsonObject().getAsJsonObject("rh:service");
-
-            // name is mandatory
-            if (!specs.has("name")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'rh:service.name', " + packageHint);
-            }
-
-            if (!specs.get("name").isJsonPrimitive() || !specs.getAsJsonPrimitive("name").isString()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.name', it must be a string, " + packageHint);
-            }
-
-            this.name = specs.get("name").getAsString();
-
-            // description is mandatory
-            if (!specs.has("description")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'rh:service.description', " + packageHint);
-            }
-
-            if (!specs.get("description").isJsonPrimitive() || !specs.getAsJsonPrimitive("description").isString()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.description', it must be a string, " + packageHint);
-            }
-
-            this.description = specs.get("description").getAsString();
-
-            // uri is optional, default is /<name>
-            if (!specs.has("uri")) {
-                this.uri = "/".concat(this.name);
-            } else {
-                if (!specs.get("uri").isJsonPrimitive() || !specs.getAsJsonPrimitive("uri").isString()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.uri', it must be a string, " + packageHint);
-                }
-
-                if (!specs.get("uri").getAsString().startsWith("/")) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.uri', it must start with '/', " + packageHint);
-                }
-
-                this.uri = specs.get("uri").getAsString();
-            }
-
-            // secured is optional, default is false
-            if (!specs.has("secured")) {
-                this.secured = false;
-            } else {
-                if (!specs.get("secured").isJsonPrimitive() || !specs.getAsJsonPrimitive("secured").isBoolean()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.secured', it must be a boolean, " + packageHint);
-                }
-
-                this.secured = specs.get("secured").getAsBoolean();
-            }
-
-            // matchPolicy is optional, default is PREFIX
-            if (!specs.has("matchPolicy")) {
-                this.matchPolicy = MATCH_POLICY.PREFIX;
-            } else {
-                if (!specs.get("matchPolicy").isJsonPrimitive() || !specs.getAsJsonPrimitive("matchPolicy").isString()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.matchPolicy', it must be " + MATCH_POLICY.values() + ", " + packageHint);
-                }
-
-                try {
-                    this.matchPolicy = MATCH_POLICY.valueOf(specs.get("matchPolicy").getAsString());
-                } catch(Throwable t) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.matchPolicy', it must be " + MATCH_POLICY.values() + ", " + packageHint);
-                }
-            }
-
-            // modulesReplacements is optional, default is null
-            if (!specs.has("modulesReplacements")) {
-                this.modulesReplacements = null;
-            } else {
-                if (!specs.get("modulesReplacements").isJsonPrimitive() || !specs.getAsJsonPrimitive("modulesReplacements").isString()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'rh:service.modulesReplacements', it must be a string, " + packageHint);
-                }
-
-                this.modulesReplacements = specs.get("modulesReplacements").getAsString();
-            }
-        } catch(JsonParseException jpe) {
-            throw new IllegalArgumentException("Error parsing " + packagePath.toAbsolutePath().toString(), jpe);
+        let body = {
+            msg: `Hello ${rc.name || 'Cruel World'}`
         }
 
-        // check index.js
+        response.setContent(JSON.stringify(body));
+        response.setContentTypeAsJson();
+    };
+    """;
 
-        var language = Source.findLanguage(indexPath.toFile());
+    private static final String packageHint = """
+    the plugin module must export the object 'options', example:
+    export const options = {
+        "name": "hello"
+        "description": "a fancy description"
+        "uri": "/hello"
+        "secured": false
+        "matchPolicy": "PREFIX"
+    }
+    """;
+
+    JavaScriptService(Path pluginPath, MongoClient mclient, Map<String, Object> pluginsArgs) throws IOException {
+        this.mclient = mclient;
+        this.pluginsArgs = pluginsArgs;
+        this.isService = true;
+        this.isInterceptor = false;
+
+        // find plugin root, i.e the parent dir that contains package.json
+        var pluginRoot = pluginPath.getParent();
+        while(true) {
+            var p = pluginRoot.resolve("package.json");
+            if (Files.exists(p)) {
+                break;
+            } else {
+                pluginRoot = pluginRoot.getParent();
+            }
+        }
+
+        // set js.commonjs-require-cwd (if the pluginRoot contains the directory 'node_modules') 
+        var requireCwdPath = pluginRoot.resolve("node_modules");
+        if (Files.isDirectory(requireCwdPath)) {
+            contextOptions.put("js.commonjs-require", "true");
+            contextOptions.put("js.commonjs-require-cwd", requireCwdPath.toAbsolutePath().toString());
+            LOGGER.debug("Enabling require for plugin {} with require-cwd {} ", pluginPath, requireCwdPath);
+        }
+
+        // check that the plugin script is js
+        var language = Source.findLanguage(pluginPath.toFile());
 
         if (!"js".equals(language)) {
             throw new IllegalArgumentException("wrong js plugin, not javascript");
         }
 
-        var sindexPath = indexPath.toAbsolutePath().toString();
+        var sindexPath = pluginPath.toAbsolutePath().toString();
+        try (var ctx = Context.newBuilder().engine(engine)
+                .allowAllAccess(true)
+                .allowHostClassLookup(className -> true)
+                .allowIO(true)
+                .allowExperimentalOptions(true)
+                .options(contextOptions)
+                .build()) {
 
-        var wrappingScript = "import { handle } from '" + sindexPath + "'; handle;";
+            // add bindings to contenxt
+            addBindings(ctx);
 
-        this.source = Source.newBuilder(language, wrappingScript, "wrappingScript").mimeType("application/javascript+module").build();
+            // ******** evaluate and check options
 
-        try (var ctx = Context.newBuilder().engine(engine).allowAllAccess(true).allowHostClassLookup(className -> true)
-                .allowIO(true).allowExperimentalOptions(true).options(contextOptions).build()) {
+            var optionsScript = "import { options } from '" + sindexPath + "'; options;";
+            var optionsSource = Source.newBuilder(language, optionsScript, "optionsScript").mimeType("application/javascript+module").build();
+
+            Value options;
+
+            try {
+                options = ctx.eval(optionsSource);
+            } catch (Throwable t) {
+                throw new IllegalArgumentException("wrong js plugin, " + t.getMessage());
+            }
+
+            if (options.getMemberKeys().isEmpty()) {
+                throw new IllegalArgumentException("wrong js plugin, " + packageHint);
+            }
+
+            if (!options.getMemberKeys().contains("name")) {
+                throw new IllegalArgumentException("wrong js plugin, missing member 'options.name', " + packageHint);
+            }
+
+            if (!options.getMember("name").isString()) {
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.name', " + packageHint);
+            }
+
+            this.name = options.getMember("name").asString();
+
+            if (!options.getMemberKeys().contains("description")) {
+                throw new IllegalArgumentException(
+                        "wrong js plugin, missing member 'options.description', " + packageHint);
+            }
+
+            if (!options.getMember("description").isString()) {
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.description', " + packageHint);
+            }
+
+            this.description = options.getMember("description").asString();
+
+            if (!options.getMemberKeys().contains("uri")) {
+                throw new IllegalArgumentException("wrong js plugin, missing member 'options.uri', " + packageHint);
+            }
+
+            if (!options.getMember("uri").isString()) {
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.uri', " + packageHint);
+            }
+
+            if (!options.getMember("uri").asString().startsWith("/")) {
+                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.uri', " + packageHint);
+            }
+
+            this.uri = options.getMember("uri").asString();
+
+            if (!options.getMemberKeys().contains("secured")) {
+                this.secured = false;
+            } else {
+                if (!options.getMember("secured").isBoolean()) {
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.secured', " + packageHint);
+                } else {
+                    this.secured = options.getMember("secured").asBoolean();
+                }
+            }
+
+            if (!options.getMemberKeys().contains("matchPolicy")) {
+                this.matchPolicy = MATCH_POLICY.PREFIX;
+            } else {
+                if (!options.getMember("matchPolicy").isString()) {
+                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.matchPolicy', " + packageHint);
+                } else {
+                    var _matchPolicy = options.getMember("matchPolicy").asString();
+                    try {
+                        this.matchPolicy = MATCH_POLICY.valueOf(_matchPolicy);
+                    } catch (Throwable t) {
+                        throw new IllegalArgumentException(
+                                "wrong js plugin, wrong member 'options.matchPolicy', " + packageHint);
+                    }
+                }
+            }
+
+            if (!options.getMemberKeys().contains("modulesReplacements")) {
+                this.modulesReplacements = null;
+            } else {
+                var sb = new StringBuilder();
+
+                options.getMember("modulesReplacements").getMemberKeys().stream()
+                        .forEach(k -> sb.append(k).append(":")
+                                .append(options.getMember("modulesReplacements").getMember(k))
+                                .append(","));
+
+                this.modulesReplacements = sb.toString();
+            }
+
+            // ******** evaluate and check handle
+
+            var handleScript = "import { handle } from '" + sindexPath + "'; handle;";
+            this.handleSource = Source.newBuilder(language, handleScript, "handleScript").mimeType("application/javascript+module").build();
+
             Value handle;
 
             try {
-                addBindings(ctx);
-                handle = ctx.eval(source);
+                handle = ctx.eval(this.handleSource);
             } catch (Throwable t) {
                 throw new IllegalArgumentException("wrong js plugin, " + t.getMessage());
             }
 
             if (!handle.canExecute()) {
-                throw new IllegalArgumentException("wrong js plugin, " + errorHint);
+                throw new IllegalArgumentException("wrong js plugin, " + handleHint);
             }
         }
     }
@@ -216,11 +248,16 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             contextOptions.remove("js.commonjs-core-modules-replacements");
         }
 
-        try (var ctx = Context.newBuilder().engine(engine).allowAllAccess(true).allowHostClassLookup(className -> true)
-                .allowIO(true).allowExperimentalOptions(true).options(contextOptions).build()) {
+        try (var ctx = Context.newBuilder().engine(engine)
+                .allowAllAccess(true)
+                .allowHostClassLookup(className -> true)
+                .allowIO(true)
+                .allowExperimentalOptions(true)
+                .options(contextOptions)
+                .build()) {
 
             addBindings(ctx);
-            ctx.eval(source).executeVoid(request, response);
+            ctx.eval(this.handleSource).executeVoid(request, response);
         }
     }
 

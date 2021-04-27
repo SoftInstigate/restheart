@@ -61,7 +61,7 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
         MongoClient mclient,
         Map<String, Object> args,
         Map<String, String> OPTS) {
-            super(name, pluginClass, description, null, false, null, interceptPoint);
+            super(name, pluginClass, description, null, false, null, interceptPoint, false, true);
             this.OPTS = OPTS;
             this.mclient = mclient;
             this.args = args;
