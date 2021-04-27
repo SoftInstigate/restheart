@@ -20,9 +20,10 @@
  */
 package karate;
 
-import com.intuit.karate.KarateOptions;
-import com.intuit.karate.junit4.Karate;
-import org.junit.runner.RunWith;
+import static org.junit.Assert.assertEquals;
+import com.intuit.karate.Runner;
+
+import org.junit.Test;
 import org.restheart.test.integration.AbstactIT;
 
 /**
@@ -30,11 +31,14 @@ import org.restheart.test.integration.AbstactIT;
  * to enable them, remove 'ignore' tag from streams.feature
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RunWith(Karate.class)
-// use KarateOptions to limit test to execute
-@KarateOptions(
-        //features = { "classpath:karate/txns" },
-        tags = "~@ignore")
-public class RunnerIT extends AbstactIT {
 
+public class RunnerIT extends AbstactIT {
+    @Test
+    public void run() {
+        var results = Runner.path("classpath:karate")
+                .tags("~@ignore")
+                .parallel(1);
+
+        assertEquals(0, results.getFailCount());
+    }
 }

@@ -49,7 +49,6 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     Given path '/iecho'
     And header Authorization = authHeader
     And header Accept-Encoding = identityEncoding
-    And request { n: 1, s: "test" }
     And form field n = '1'
     And form field s = 'test'
     And param key1 = 'key1'
