@@ -15,6 +15,7 @@
 ## Table of Contents
 
 -   [Introduction](#introduction)
+-   [Build](#build)
 -   [Documentation](#documentation)
 -   [License and support options](#license-and-support-options)
 -   [Sponsors](#sponsors)
@@ -32,6 +33,20 @@ RESTHeart provides out-of-the-box:
 RESTHeart is a modern backend for Web and Mobile apps, designed to radically simplify server-side development and deployment.
 
 RESTHeart comes with complete functionalities out of the box, but you can extend it with Java to implement custom services.
+
+## Download
+
+Download prebuilt packages from [releases](https://github.com/SoftInstigate/restheart/releases)
+
+Find setup instructions at [Setup](https://restheart.org/docs/setup/) documentation page.
+
+## Build
+
+> Building RESTHeart 6.0 requires JDK 16!
+
+```bash
+$ mvn clean package
+```
 
 ## Documentation
 
