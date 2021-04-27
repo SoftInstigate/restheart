@@ -27,13 +27,6 @@
   </licenses>
 
   <dependencies>
-    <!-- https://mvnrepository.com/artifact/com.oracle.substratevm/svm -->
-    <dependency>
-      <groupId>com.oracle.substratevm</groupId>
-      <artifactId>svm</artifactId>
-      <version>19.2.1</version>
-      <scope>provided</scope>
-    </dependency>
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-commons</artifactId>
@@ -105,6 +98,10 @@
     <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.oracle.substratevm</groupId>
+      <artifactId>svm</artifactId>
     </dependency>
     <dependency>
       <groupId>com.graphql-java</groupId>

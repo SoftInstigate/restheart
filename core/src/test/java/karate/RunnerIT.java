@@ -19,6 +19,7 @@
  * =========================LICENSE_END==================================
  */
 package karate;
+
 import com.intuit.karate.KarateOptions;
 import com.intuit.karate.junit4.Karate;
 import org.junit.runner.RunWith;
@@ -26,7 +27,7 @@ import org.restheart.test.integration.AbstactIT;
 
 /**
  * streams tests are disabled because can fail on slow hosts
- * to enable them, remove from streams.feature
+ * to enable them, remove 'ignore' tag from streams.feature
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RunWith(Karate.class)

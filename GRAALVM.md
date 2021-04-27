@@ -1,8 +1,16 @@
 # RESTHeart native image with GraalVM
 
-## build native image
+## prerequisites
 
-> GraalVM required version: >= 21.0.0 (https://www.graalvm.org/downloads/)
+> GraalVM required version: >= 21.1.0 (https://www.graalvm.org/downloads/)
+
+Also install `native-image`
+
+```bash
+$ gu install native-image
+```
+
+## build native image
 
 Build image for local OS
 

@@ -33,7 +33,7 @@
             mvn install -Dmongodb.version=3.8   : Test with mongo:3.8 container
         -->
         <mongodb.version>4.2</mongodb.version>
-        <graalvm.version>21.0.0</graalvm.version>
+        <graalvm.version>21.1.0</graalvm.version>
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
@@ -299,15 +299,28 @@
                 <scope>provided</scope>
             </dependency>
             <dependency>
+                <groupId>org.graalvm.truffle</groupId>
+                <artifactId>truffle-api</artifactId>
+                <version>${graalvm.version}</version>
+                <scope>runtime</scope>
+              </dependency>
+            <dependency>
                 <groupId>org.graalvm.js</groupId>
                 <artifactId>js</artifactId>
                 <version>${graalvm.version}</version>
-                <scope>provided</scope>
+                <scope>runtime</scope>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.js</groupId>
                 <artifactId>js-scriptengine</artifactId>
                 <version>${graalvm.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <!-- https://mvnrepository.com/artifact/com.oracle.substratevm/svm -->
+            <dependency>
+                <groupId>com.oracle.substratevm</groupId>
+                <artifactId>svm</artifactId>
+                <version>19.2.1</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>
