@@ -31,7 +31,7 @@
         <skipUTs>${skipTests}</skipUTs>
         <!--
             MongoDB default version to test with
-            mvn install -Dmongodb.version=3.8   : Test with mongo:3.8 container
+            mvn install -Dmongodb.version=4.2   : Test with mongo:4.2 container
         -->
         <mongodb.version>4.2</mongodb.version>
         <graalvm.version>21.1.0</graalvm.version>
@@ -299,23 +299,21 @@
                 <version>${graalvm.version}</version>
                 <scope>provided</scope>
             </dependency>
-            <dependency>
-                <groupId>org.graalvm.js</groupId>
-                <artifactId>js</artifactId>
-                <version>${graalvm.version}</version>
-                <scope>runtime</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.graalvm.js</groupId>
-                <artifactId>js-scriptengine</artifactId>
-                <version>${graalvm.version}</version>
-            </dependency>
             <!-- https://mvnrepository.com/artifact/com.oracle.substratevm/svm -->
             <dependency>
                 <groupId>com.oracle.substratevm</groupId>
                 <artifactId>svm</artifactId>
                 <version>19.2.1</version>
                 <scope>provided</scope>
+                <!-- remove transitive dependencies
+                     that break karate tests execution
+                     we just need the package com.oracle.svm.core.annotate -->
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.graphql-java</groupId>
