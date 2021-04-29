@@ -34,10 +34,11 @@ public class StringJSInterceptor extends AbstractJSInterceptor<StringRequest, St
         String pluginClass,
         String description,
         InterceptPoint interceptPoint,
-        Source source,
+        Source handleSource,
+        Source resolveSource,
         MongoClient mclient,
-        Map<String, Object> args,
-        Map<String, String> OPTS) {
-            super(name, pluginClass, description, interceptPoint, source, mclient, args, OPTS);
+        Map<String, Object> pluginArgs,
+        Map<String, String> contextOptions) {
+            super(name, pluginClass, description, interceptPoint, handleSource, resolveSource, mclient, pluginArgs, contextOptions);
     }
 }

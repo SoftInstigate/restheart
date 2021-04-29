@@ -296,19 +296,21 @@ public class PolyglotDeployer implements Initializer {
 
                 p.getAsJsonObject().getAsJsonArray(prop).forEach(item -> {
                     if (item.isJsonPrimitive() && item.getAsJsonPrimitive().isString()) {
-                        var servicePath = path.resolve(item.getAsString());
+                        var pluginPath = path.resolve(item.getAsString());
 
-                        if (Files.isRegularFile(servicePath)) {
+                        if (Files.isRegularFile(pluginPath)) {
                             try {
-                                var language = Source.findLanguage(servicePath.toFile());
+                                var language = Source.findLanguage(pluginPath.toFile());
                                 if ("js".equals(language)) {
-                                    ret.add(servicePath);
+                                    ret.add(pluginPath);
                                 } else {
-                                    LOGGER.warn("File {} is not javascript", servicePath.toAbsolutePath());
+                                    LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath());
                                 }
                             } catch (IOException e) {
-                                LOGGER.warn("File {} is not javascript", servicePath.toAbsolutePath(), e);
+                                LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath(), e);
                             }
+                        } else {
+                            LOGGER.warn("pluging not found {}, it is declared in {}", pluginPath.toAbsolutePath(), packagePath.toAbsolutePath());
                         }
                     }
                 });
@@ -441,23 +443,5 @@ public class PolyglotDeployer implements Initializer {
 
     private boolean isRunningOnNode() {
         return NodeQueue.instance().isRunningOnNode();
-    }
-
-    static Path getRequireCdw(Path scriptPath) {
-        var scriptFileName = scriptPath.getFileName().toString();
-
-        String requireCdwDirName;
-
-        if (scriptFileName.endsWith(".js")) {
-            requireCdwDirName = scriptFileName.substring(0, scriptFileName.length()-3);
-        } else if (scriptFileName.endsWith(".mjs")) {
-            requireCdwDirName = scriptFileName.substring(0, scriptFileName.length()-4);
-        } else {
-            throw new IllegalArgumentException("plugin file name must end with '.js' or '.mjs'");
-        }
-
-        var requireCdw = scriptPath.getParent().resolve(requireCdwDirName).resolve("node_modules").toAbsolutePath();
-
-        return requireCdw;
     }
 }

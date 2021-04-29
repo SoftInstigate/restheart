@@ -20,14 +20,26 @@
  */
 package org.restheart.polyglot;
 
+import java.util.HashMap;
 import java.util.Map;
+
+import com.mongodb.MongoClient;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.Source;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
+import org.slf4j.Logger;
 
 public abstract class AbstractJSPlugin {
+    protected Map<String, String> contextOptions = new HashMap<>();
+
+    protected Engine engine = Engine.create();
+
+    protected String modulesReplacements;
+    protected Source handleSource;
+
     protected String name;
     protected String pluginClass;
     protected String description;
@@ -39,6 +51,9 @@ public abstract class AbstractJSPlugin {
     protected boolean isService;
     protected boolean isInterceptor;
 
+    protected MongoClient mclient;
+    protected Map<String, Object> pluginArgs;
+
     // TODO remove this and make fields final
     protected AbstractJSPlugin() {
         this.name = null;
@@ -48,6 +63,7 @@ public abstract class AbstractJSPlugin {
         this.secured = false;
         this.matchPolicy = null;
         this.interceptPoint = null;
+        this.pluginArgs = null;
         this.isService = true;
         this.isInterceptor = false;
     }
@@ -59,6 +75,7 @@ public abstract class AbstractJSPlugin {
         boolean secured,
         MATCH_POLICY matchPolicy,
         InterceptPoint interceptPoint,
+        Map<String, Object> pluginArgs,
         boolean isService,
         boolean isInterceptor) {
         this.name = name;
@@ -68,6 +85,7 @@ public abstract class AbstractJSPlugin {
         this.secured = secured;
         this.matchPolicy = matchPolicy;
         this.interceptPoint = interceptPoint;
+        this.pluginArgs = pluginArgs;
         this.isService = isService;
         this.isInterceptor = isInterceptor;
     }
@@ -107,5 +125,24 @@ public abstract class AbstractJSPlugin {
 
     public InterceptPoint getInterceptPoint() {
         return interceptPoint;
+    }
+
+    public static void addBindings(Context ctx,
+        String pluginName,
+        Map<String, Object> pluginsArgs,
+        Logger LOGGER,
+        MongoClient mclient) {
+        ctx.getBindings("js").putMember("LOGGER", LOGGER);
+
+        if (mclient != null) {
+            ctx.getBindings("js").putMember("mclient", mclient);
+        }
+
+        @SuppressWarnings("unchecked")
+        var args = pluginsArgs != null
+            ? (Map<String, Object>) pluginsArgs.getOrDefault(pluginName, new HashMap<String, Object>())
+            : new HashMap<String, Object>();
+
+        ctx.getBindings("js").putMember("pluginArgs", args);
     }
 }

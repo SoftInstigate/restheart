@@ -20,6 +20,8 @@
  */
 package org.restheart.polyglot;
 
+import static org.restheart.polyglot.AbstractJSPlugin.addBindings;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,11 +56,11 @@ public class JSInterceptorFactory {
 
     Map<String, String> contextOptions = new HashMap<>();
 
+    private Engine engine = Engine.create();
+
     private final MongoClient mclient;
 
     private final Map<String, Object> pluginsArgs;
-
-    private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {},\n\tresolve: (request) => {}\n})";
 
     public JSInterceptorFactory(MongoClient mclient, Map<String, Object> pluginsArgs) {
         this.mclient = mclient;
@@ -66,140 +68,162 @@ public class JSInterceptorFactory {
     }
 
     @SuppressWarnings("rawtypes")
-    public PluginRecord<Interceptor> create(Path scriptPath) throws IOException {
-        var language = Source.findLanguage(scriptPath.toFile());
-
-        Source source;
-
-        if ("js".equals(language)) {
-            var fileName = scriptPath.getFileName().toString();
-            if (fileName.endsWith(".mjs")) {
-                source = Source.newBuilder("js", scriptPath.toFile()).mimeType("application/javascript+module").build();
-            } else if (fileName.endsWith(".js")) {
-                source = Source.newBuilder("js", scriptPath.toFile()).build();
+    public PluginRecord<Interceptor> create(Path pluginPath) throws IOException {
+        // find plugin root, i.e the parent dir that contains package.json
+        var pluginRoot = pluginPath.getParent();
+        while(true) {
+            var p = pluginRoot.resolve("package.json");
+            if (Files.exists(p)) {
+                break;
             } else {
-                throw new IllegalArgumentException("Interceptor file name must end with '.js' or '.mjs' " + scriptPath);
+                pluginRoot = pluginRoot.getParent();
             }
-        } else {
-            throw new IllegalArgumentException("Interceptor is not javascript " + scriptPath);
         }
 
-        // set the require-cwd for this script
-        var requireCwdPath = scriptPath.resolve("node_modules");
+        // set js.commonjs-require-cwd (if the pluginRoot contains the directory 'node_modules')
+        var requireCwdPath = pluginRoot.resolve("node_modules");
         if (Files.isDirectory(requireCwdPath)) {
             contextOptions.put("js.commonjs-require", "true");
-            contextOptions.put("js.commonjs-require-cwd", scriptPath.resolve("node_modules").toAbsolutePath().toString());
-            LOGGER.debug("Enabling require for plugin {} with require-cwd {} ", scriptPath, requireCwdPath);
+            contextOptions.put("js.commonjs-require-cwd", requireCwdPath.toAbsolutePath().toString());
+            LOGGER.debug("Enabling require for interceptor {} with require-cwd {} ", pluginPath, requireCwdPath);
+        }
+
+        // check that the plugin script is js
+        var language = Source.findLanguage(pluginPath.toFile());
+
+        if (!"js".equals(language)) {
+            throw new IllegalArgumentException("wrong js interceptor, not javascript");
         }
 
         // check plugin definition
 
-        var engine = Engine.create();
-
-        try (Context ctx = Context.newBuilder().engine(engine).allowAllAccess(true)
+        var sindexPath = pluginPath.toAbsolutePath().toString();
+        try (var ctx = Context.newBuilder().engine(engine)
+                .allowAllAccess(true)
                 .allowHostClassLookup(className -> true)
                 .allowIO(true)
                 .allowExperimentalOptions(true)
                 .options(contextOptions)
                 .build()) {
-            Value parsed;
+
+            // add bindings to contenxt
+            addBindings(ctx, "foo", null, LOGGER, this.mclient);
+
+            // ******** evaluate and check options
+
+            var optionsScript = "import { options } from '" + sindexPath + "'; options;";
+            var optionsSource = Source.newBuilder(language, optionsScript, "optionsScript").mimeType("application/javascript+module").build();
+
+            Value options;
 
             try {
-                ctx.getBindings("js").putMember("LOGGER", LOGGER);
-                ctx.getBindings("js").putMember("mclient", this.mclient);
-                ctx.getBindings("js").putMember("args", null);
-
-                parsed = ctx.eval(source);
+                options = ctx.eval(optionsSource);
             } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong js plugin, " + t.getMessage());
+                throw new IllegalArgumentException("wrong js interceptor, " + t.getMessage());
             }
 
-            if (parsed.getMemberKeys().isEmpty()) {
-                throw new IllegalArgumentException("wrong js plugin, " + errorHint);
+            if (options.getMemberKeys().isEmpty()) {
+                throw new IllegalArgumentException("wrong js interceptor, " + packageHint);
             }
 
-            if (!parsed.getMemberKeys().contains("options")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'options', " + errorHint);
+            if (!options.getMemberKeys().contains("name")) {
+                throw new IllegalArgumentException("wrong js interceptor, missing member 'options.name', " + packageHint);
             }
 
-            if (!parsed.getMember("options").getMemberKeys().contains("name")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'options.name', " + errorHint);
+            if (!options.getMember("name").isString()) {
+                throw new IllegalArgumentException("wrong js interceptor, wrong member 'options.name', " + packageHint);
             }
 
-            if (!parsed.getMember("options").getMember("name").isString()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.name', " + errorHint);
-            }
+            var name = options.getMember("name").asString();
 
-            var name = parsed.getMember("options").getMember("name").asString();
-
-            if (!parsed.getMember("options").getMemberKeys().contains("description")) {
+            if (!options.getMemberKeys().contains("description")) {
                 throw new IllegalArgumentException(
-                        "wrong js plugin, missing member 'options.description', " + errorHint);
+                        "wrong js interceptor, missing member 'options.description', " + packageHint);
             }
 
-            if (!parsed.getMember("options").getMember("description").isString()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.description', " + errorHint);
+            if (!options.getMember("description").isString()) {
+                throw new IllegalArgumentException("wrong js interceptor, wrong member 'options.description', " + packageHint);
             }
 
-            var description = parsed.getMember("options").getMember("description").asString();
+            var description = options.getMember("description").asString();
 
-            InterceptPoint interceptPoint;
-            String pluginClass;
             String modulesReplacements;
 
-            if (!parsed.getMember("options").getMemberKeys().contains("interceptPoint")) {
-                interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH;
-            } else {
-                if (!parsed.getMember("options").getMember("interceptPoint").isString()) {
-                    throw new IllegalArgumentException(
-                            "wrong js plugin, wrong member 'options.interceptPoint', " + errorHint);
-                } else {
-                    var _interceptPoint = parsed.getMember("options").getMember("interceptPoint").asString();
-                    try {
-                        interceptPoint = InterceptPoint.valueOf(_interceptPoint);
-                    } catch (Throwable t) {
-                        throw new IllegalArgumentException(
-                                "wrong js plugin, wrong member 'options.interceptPoint', " + errorHint);
-                    }
-                }
-            }
-
-            if (!parsed.getMember("options").getMemberKeys().contains("modulesReplacements")) {
+            if (!options.getMemberKeys().contains("modulesReplacements")) {
                 modulesReplacements = null;
             } else {
                 var sb = new StringBuilder();
 
-                parsed.getMember("options").getMember("modulesReplacements").getMemberKeys().stream()
+                options.getMember("modulesReplacements").getMemberKeys().stream()
                         .forEach(k -> sb.append(k).append(":")
-                                .append(parsed.getMember("options").getMember("modulesReplacements").getMember(k))
+                                .append(options.getMember("modulesReplacements").getMember(k))
                                 .append(","));
 
                 modulesReplacements = sb.toString();
             }
 
-            if (!parsed.getMemberKeys().contains("handle")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'handle', " + errorHint);
-            }
+            InterceptPoint interceptPoint;
 
-            if (!parsed.getMember("handle").canExecute()) {
-                throw new IllegalArgumentException("wrong js plugin, member 'handle' is not a function, " + errorHint);
-            }
-
-            if (!parsed.getMemberKeys().contains("resolve")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'resolve', " + errorHint);
-            }
-
-            if (!parsed.getMember("resolve").canExecute()) {
-                throw new IllegalArgumentException("wrong js plugin, member 'resolve' is not a function, " + errorHint);
-            }
-
-            if (!parsed.getMember("options").getMemberKeys().contains("pluginClass")) {
-                pluginClass = "StringInterceptor";
-            } else if (!parsed.getMember("options").getMember("pluginClass").isString()) {
-                throw new IllegalArgumentException(
-                        "wrong js plugin, wrong member 'options.pluginClass', " + errorHint);
+            if (!options.getMemberKeys().contains("interceptPoint")) {
+                interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH;
             } else {
-                pluginClass = parsed.getMember("options").getMember("pluginClass").asString();
+                if (!options.getMember("interceptPoint").isString()) {
+                    throw new IllegalArgumentException(
+                            "wrong js interceptor, wrong member 'options.interceptPoint', " + handleResolveHint);
+                } else {
+                    var _interceptPoint = options.getMember("interceptPoint").asString();
+                    try {
+                        interceptPoint = InterceptPoint.valueOf(_interceptPoint);
+                    } catch (Throwable t) {
+                        throw new IllegalArgumentException(
+                                "wrong js interceptor, wrong member 'options.interceptPoint', " + handleResolveHint);
+                    }
+                }
+            }
+
+            String pluginClass;
+
+            if (!options.getMemberKeys().contains("pluginClass")) {
+                pluginClass = "StringInterceptor";
+            } else if (!options.getMember("pluginClass").isString()) {
+                throw new IllegalArgumentException(
+                        "wrong js interceptor, wrong member 'options.pluginClass', " + handleResolveHint);
+            } else {
+                pluginClass = options.getMember("pluginClass").asString();
+            }
+
+            // ******** evaluate and check handle
+
+            var handleScript = "import { handle } from '" + sindexPath + "'; handle;";
+            var handleSource = Source.newBuilder(language, handleScript, "handleScript").mimeType("application/javascript+module").build();
+
+            Value handle;
+
+            try {
+                handle = ctx.eval(handleSource);
+            } catch (Throwable t) {
+                throw new IllegalArgumentException("wrong js interceptor, " + t.getMessage());
+            }
+
+            if (!handle.canExecute()) {
+                throw new IllegalArgumentException("wrong js interceptor, " + handleResolveHint);
+            }
+
+            // ******** evaluate and check resolve
+
+            var resolveScript = "import { resolve } from '" + sindexPath + "'; resolve;";
+            var resolveSource = Source.newBuilder(language, resolveScript, "resolveScript").mimeType("application/javascript+module").build();
+
+            Value resolve;
+
+            try {
+                resolve = ctx.eval(resolveSource);
+            } catch (Throwable t) {
+                throw new IllegalArgumentException("wrong js interceptor, " + t.getMessage());
+            }
+
+            if (!resolve.canExecute()) {
+                throw new IllegalArgumentException("wrong js interceptor, " + handleResolveHint);
             }
 
             AbstractJSInterceptor<?,?> interceptor;
@@ -227,7 +251,8 @@ public class JSInterceptorFactory {
                         pluginClass,
                         description,
                         interceptPoint,
-                        source,
+                        handleSource,
+                        resolveSource,
                         mclient,
                         args,
                         opts);
@@ -238,7 +263,8 @@ public class JSInterceptorFactory {
                         pluginClass,
                         description,
                         interceptPoint,
-                        source,
+                        handleSource,
+                        resolveSource,
                         mclient,
                         args,
                         opts);
@@ -249,7 +275,8 @@ public class JSInterceptorFactory {
                         pluginClass,
                         description,
                         interceptPoint,
-                        source,
+                        handleSource,
+                        resolveSource,
                         mclient,
                         args,
                         opts);
@@ -260,7 +287,8 @@ public class JSInterceptorFactory {
                         pluginClass,
                         description,
                         interceptPoint,
-                        source,
+                        handleSource,
+                        resolveSource,
                         mclient,
                         args,
                         opts);
@@ -271,7 +299,8 @@ public class JSInterceptorFactory {
                         pluginClass,
                         description,
                         interceptPoint,
-                        source,
+                        handleSource,
+                        resolveSource,
                         mclient,
                         args,
                         opts);
@@ -282,7 +311,8 @@ public class JSInterceptorFactory {
                         pluginClass,
                         description,
                         interceptPoint,
-                        source,
+                        handleSource,
+                        resolveSource,
                         mclient,
                         args,
                         opts);
@@ -293,14 +323,15 @@ public class JSInterceptorFactory {
                         pluginClass,
                         description,
                         interceptPoint,
-                        source,
+                        handleSource,
+                        resolveSource,
                         mclient,
                         args,
                         opts);
                         break;
                 default:
                     throw new IllegalArgumentException(
-                            "wrong js plugin, wrong member 'options.pluginClass', " + errorHint);
+                            "wrong js interceptor, wrong member 'options.pluginClass', " + packageHint);
             }
 
             return new PluginRecord<Interceptor>(interceptor.getName(),
@@ -312,4 +343,28 @@ public class JSInterceptorFactory {
                 new HashMap<>());
         }
     }
+
+    private static final String handleResolveHint = """
+    the interceptor js module must export the functions 'handle' and 'resolve', example:
+    export function handle(request, response) {
+        const BsonUtils = Java.type("org.restheart.utils.BsonUtils");
+        var bson = response.getContent();
+
+        bson.asDocument().put("injectedDoc", BsonUtils.parse("{ 'n': 1, 's': 'foo' }"));
+    };
+
+    export function resolve(request) {
+        return request.isGet() && request.isDocument() && "coll" === request.getCollectionName();
+    };
+    """;
+
+    private static final String packageHint = """
+    the plugin module must export the object 'options', example:
+    export const options = {
+        "name": "mongoCollInterceptor",
+        "description": "modifies the response of GET /coll/<docid>",
+        "interceptPoint": "RESPONSE",
+        "pluginClass": "MongoInterceptor"
+    }
+    """;
 }

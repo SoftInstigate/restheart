@@ -11,7 +11,7 @@ export function handle(request, response) {
     const rc = JSON.parse(request.getContent() || '{}');
 
     let body = {
-        msg: `Hello ${rc.name || 'Cruel World'}`
+        msg: `Hello ${rc.name || 'World'}`
     }
 
     response.setContent(JSON.stringify(body));

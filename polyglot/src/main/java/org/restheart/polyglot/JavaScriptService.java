@@ -23,12 +23,10 @@ package org.restheart.polyglot;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
 
 import com.mongodb.MongoClient;
 import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.restheart.exchange.StringRequest;
@@ -44,18 +42,6 @@ import org.slf4j.LoggerFactory;
  */
 public class JavaScriptService extends AbstractJSPlugin implements StringService {
     private static final Logger LOGGER = LoggerFactory.getLogger(JavaScriptService.class);
-
-    Map<String, String> contextOptions = new HashMap<>();
-
-    private Engine engine = Engine.create();
-
-    private final String modulesReplacements;
-
-    private MongoClient mclient;
-
-    private final Map<String, Object> pluginsArgs;
-
-    private final Source handleSource;
 
     private static final String handleHint = """
     the plugin module must export the function 'handle', example:
@@ -83,9 +69,9 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
     }
     """;
 
-    JavaScriptService(Path pluginPath, MongoClient mclient, Map<String, Object> pluginsArgs) throws IOException {
+    JavaScriptService(Path pluginPath, MongoClient mclient, Map<String, Object> pluginArgs) throws IOException {
         this.mclient = mclient;
-        this.pluginsArgs = pluginsArgs;
+        this.pluginArgs = pluginArgs;
         this.isService = true;
         this.isInterceptor = false;
 
@@ -100,12 +86,12 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             }
         }
 
-        // set js.commonjs-require-cwd (if the pluginRoot contains the directory 'node_modules') 
+        // set js.commonjs-require-cwd (if the pluginRoot contains the directory 'node_modules')
         var requireCwdPath = pluginRoot.resolve("node_modules");
         if (Files.isDirectory(requireCwdPath)) {
             contextOptions.put("js.commonjs-require", "true");
             contextOptions.put("js.commonjs-require-cwd", requireCwdPath.toAbsolutePath().toString());
-            LOGGER.debug("Enabling require for plugin {} with require-cwd {} ", pluginPath, requireCwdPath);
+            LOGGER.debug("Enabling require for service {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
         // check that the plugin script is js
@@ -125,7 +111,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
                 .build()) {
 
             // add bindings to contenxt
-            addBindings(ctx);
+            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
 
             // ******** evaluate and check options
 
@@ -137,44 +123,44 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             try {
                 options = ctx.eval(optionsSource);
             } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong js plugin, " + t.getMessage());
+                throw new IllegalArgumentException("wrong js service, " + t.getMessage());
             }
 
             if (options.getMemberKeys().isEmpty()) {
-                throw new IllegalArgumentException("wrong js plugin, " + packageHint);
+                throw new IllegalArgumentException("wrong js service, " + packageHint);
             }
 
             if (!options.getMemberKeys().contains("name")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'options.name', " + packageHint);
+                throw new IllegalArgumentException("wrong js service, missing member 'options.name', " + packageHint);
             }
 
             if (!options.getMember("name").isString()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.name', " + packageHint);
+                throw new IllegalArgumentException("wrong js service, wrong member 'options.name', " + packageHint);
             }
 
             this.name = options.getMember("name").asString();
 
             if (!options.getMemberKeys().contains("description")) {
                 throw new IllegalArgumentException(
-                        "wrong js plugin, missing member 'options.description', " + packageHint);
+                        "wrong js service, missing member 'options.description', " + packageHint);
             }
 
             if (!options.getMember("description").isString()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.description', " + packageHint);
+                throw new IllegalArgumentException("wrong js service, wrong member 'options.description', " + packageHint);
             }
 
             this.description = options.getMember("description").asString();
 
             if (!options.getMemberKeys().contains("uri")) {
-                throw new IllegalArgumentException("wrong js plugin, missing member 'options.uri', " + packageHint);
+                throw new IllegalArgumentException("wrong js service, missing member 'options.uri', " + packageHint);
             }
 
             if (!options.getMember("uri").isString()) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.uri', " + packageHint);
+                throw new IllegalArgumentException("wrong js service, wrong member 'options.uri', " + packageHint);
             }
 
             if (!options.getMember("uri").asString().startsWith("/")) {
-                throw new IllegalArgumentException("wrong js plugin, wrong member 'options.uri', " + packageHint);
+                throw new IllegalArgumentException("wrong js service, wrong member 'options.uri', " + packageHint);
             }
 
             this.uri = options.getMember("uri").asString();
@@ -183,7 +169,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
                 this.secured = false;
             } else {
                 if (!options.getMember("secured").isBoolean()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.secured', " + packageHint);
+                    throw new IllegalArgumentException("wrong js service, wrong member 'options.secured', " + packageHint);
                 } else {
                     this.secured = options.getMember("secured").asBoolean();
                 }
@@ -193,14 +179,14 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
                 this.matchPolicy = MATCH_POLICY.PREFIX;
             } else {
                 if (!options.getMember("matchPolicy").isString()) {
-                    throw new IllegalArgumentException("wrong js plugin, wrong member 'options.matchPolicy', " + packageHint);
+                    throw new IllegalArgumentException("wrong js service, wrong member 'options.matchPolicy', " + packageHint);
                 } else {
                     var _matchPolicy = options.getMember("matchPolicy").asString();
                     try {
                         this.matchPolicy = MATCH_POLICY.valueOf(_matchPolicy);
                     } catch (Throwable t) {
                         throw new IllegalArgumentException(
-                                "wrong js plugin, wrong member 'options.matchPolicy', " + packageHint);
+                                "wrong js service, wrong member 'options.matchPolicy', " + packageHint);
                     }
                 }
             }
@@ -228,11 +214,11 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             try {
                 handle = ctx.eval(this.handleSource);
             } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong js plugin, " + t.getMessage());
+                throw new IllegalArgumentException("wrong js service, " + t.getMessage());
             }
 
             if (!handle.canExecute()) {
-                throw new IllegalArgumentException("wrong js plugin, " + handleHint);
+                throw new IllegalArgumentException("wrong js service, " + handleHint);
             }
         }
     }
@@ -256,27 +242,12 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
                 .options(contextOptions)
                 .build()) {
 
-            addBindings(ctx);
+            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
             ctx.eval(this.handleSource).executeVoid(request, response);
         }
     }
 
     public String getModulesReplacements() {
         return this.modulesReplacements;
-    }
-
-    private void addBindings(Context ctx) {
-        ctx.getBindings("js").putMember("LOGGER", LOGGER);
-
-        if (this.mclient != null) {
-            ctx.getBindings("js").putMember("mclient", this.mclient);
-        }
-
-        @SuppressWarnings("unchecked")
-        var args = this.pluginsArgs != null
-            ? (Map<String, Object>) this.pluginsArgs.getOrDefault(this.name, new HashMap<String, Object>())
-            : new HashMap<String, Object>();
-
-        ctx.getBindings("js").putMember("pluginArgs", args);
     }
 }

@@ -10,5 +10,6 @@
   },
   "author": "",
   "license": "ISC",
-  "rh:services": [ "hello.js", "./sub/hello.js" ]
+  "rh:services": [ "hello.js", "./sub/hello.js" ],
+  "rh:interceptors": [ "hello-interceptor.js", "mongo-coll-interceptor.js" ]
 }

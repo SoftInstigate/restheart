@@ -23,7 +23,6 @@ package org.restheart.polyglot.interceptors;
 import java.util.Map;
 
 import com.mongodb.MongoClient;
-import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
@@ -36,14 +35,7 @@ import org.slf4j.LoggerFactory;
 public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> extends AbstractJSPlugin implements Interceptor<R, S> {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractJSInterceptor.class);
 
-    final Map<String, String> OPTS;
-
-    private final Engine engine = Engine.create();
-    private final Source source;
-
-    private final MongoClient mclient;
-
-    private final Map<String, Object> args;
+    private final Source resolveSource;
 
     /**
      * @param name
@@ -57,51 +49,42 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
         String pluginClass,
         String description,
         InterceptPoint interceptPoint,
-        Source source,
+        Source handleSource,
+        Source resolveSource,
         MongoClient mclient,
-        Map<String, Object> args,
-        Map<String, String> OPTS) {
-            super(name, pluginClass, description, null, false, null, interceptPoint, false, true);
-            this.OPTS = OPTS;
+        Map<String, Object> pluginArgs,
+        Map<String, String> contextOptions) {
+            super(name, pluginClass, description, null, false, null, interceptPoint, pluginArgs, false, true);
+            this.contextOptions = contextOptions;
             this.mclient = mclient;
-            this.args = args;
-            this.source = source;
+            this.pluginArgs = pluginArgs;
+
+            this.handleSource = handleSource;
+            this.resolveSource = resolveSource;
     }
 
     /**
      *
      */
     public void handle(R request, S response) {
-        try (var ctx = context(engine, OPTS)) {
-            ctx.getBindings("js").putMember("LOGGER", LOGGER);
+        try (var ctx = context(engine, contextOptions)) {
+            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
 
-            if (this.mclient != null) {
-                ctx.getBindings("js").putMember("mclient", this.mclient);
-            }
-
-            if (this.args != null) {
-                ctx.getBindings("js").putMember("pluginArgs", this.args);
-            }
-
-            ctx.eval(source).getMember("handle").executeVoid(request, response);
+            ctx.eval(this.handleSource).executeVoid(request, response);
         }
     }
 
     @Override
     public boolean resolve(R request, S response) {
-        try (var ctx = context(engine, OPTS)) {
-            ctx.getBindings("js").putMember("LOGGER", LOGGER);
+        try (var ctx = context(engine, this.contextOptions)) {
+            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
 
-            if (this.mclient != null) {
-                ctx.getBindings("js").putMember("mclient", this.mclient);
-            }
-
-            var ret = ctx.eval(source).getMember("resolve").execute(request);
+            var ret = ctx.eval(this.resolveSource).execute(request);
 
             if (ret.isBoolean()) {
                 return ret.asBoolean();
             } else {
-                LOGGER.error("resolve() of plugin did not returned a boolean", name);
+                LOGGER.error("resolve() of interceptor did not returned a boolean", name);
                 return false;
             }
         }
