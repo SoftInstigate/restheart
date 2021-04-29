@@ -3,13 +3,23 @@
   "version": "1.0.0",
   "description": "just another JavaScript Hello World service for RESTHeart",
   "main": "index.mjs",
-  "dependencies": {},
+  "dependencies": {
+    "one-liner-joke": "^1.2.0"
+  },
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
-  "rh:services": [ "hello.js", "./sub/hello.js" ],
-  "rh:interceptors": [ "hello-interceptor.js", "mongo-coll-interceptor.js" ]
+  "rh:services": [
+    "hello.js",
+    "./sub/hello.js",
+    "require-module-service.js",
+    "mclient-service.js"
+  ],
+  "rh:interceptors": [
+    "hello-interceptor.js",
+    "mongo-get-doc-interceptor.js"
+  ]
 }

@@ -104,6 +104,13 @@ public class PolyglotDeployer implements Initializer {
         pluginsDirectory = getPluginsDirectory(args);
 
         this.pluginsArgs = getPluginsArgs(args);
+
+        // make sure to invoke this after all @Injected methods are invoked
+        if (registry != null && mclient != null) {
+            this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.pluginsArgs);
+            deployAll(pluginsDirectory);
+            watch(pluginsDirectory);
+        }
     }
 
     @InjectMongoClient
@@ -240,8 +247,8 @@ public class PolyglotDeployer implements Initializer {
 
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(pluginsDirectory)) {
             for (Path path : directoryStream) {
-                var services = findServices(pluginsDirectory);
-                var interceptors = findServices(pluginsDirectory);
+                var services = findServices(path, false);
+                var interceptors = findServices(path, false);
                 if (!services.isEmpty() || !interceptors.isEmpty()) {
                     paths.add(path);
                     LOGGER.info("Found js plugin directory {}", path);
@@ -267,14 +274,22 @@ public class PolyglotDeployer implements Initializer {
     }
 
     private List<Path> findServices(Path path) {
-        return findDeclaredPlugins(path, "rh:services");
+        return findServices(path, true);
+    }
+
+    private List<Path> findServices(Path path, boolean checkPluginFiles) {
+        return findDeclaredPlugins(path, "rh:services", checkPluginFiles);
     }
 
     private List<Path> findInterceptors(Path path) {
-        return findDeclaredPlugins(path, "rh:interceptors");
+        return findInterceptors(path, true);
     }
 
-    private List<Path> findDeclaredPlugins(Path path, String prop) {
+    private List<Path> findInterceptors(Path path, boolean checkPluginFiles) {
+        return findDeclaredPlugins(path, "rh:interceptors", checkPluginFiles);
+    }
+
+    private List<Path> findDeclaredPlugins(Path path, String prop, boolean checkPluginFiles) {
         if (!Files.isDirectory(path)) {
             return Lists.newArrayList();
         }
@@ -298,19 +313,23 @@ public class PolyglotDeployer implements Initializer {
                     if (item.isJsonPrimitive() && item.getAsJsonPrimitive().isString()) {
                         var pluginPath = path.resolve(item.getAsString());
 
-                        if (Files.isRegularFile(pluginPath)) {
-                            try {
-                                var language = Source.findLanguage(pluginPath.toFile());
-                                if ("js".equals(language)) {
-                                    ret.add(pluginPath);
-                                } else {
-                                    LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath());
+                        if (checkPluginFiles) {
+                            if (Files.isRegularFile(pluginPath)) {
+                                try {
+                                    var language = Source.findLanguage(pluginPath.toFile());
+                                    if ("js".equals(language)) {
+                                        ret.add(pluginPath);
+                                    } else {
+                                        LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath());
+                                    }
+                                } catch (IOException e) {
+                                    LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath(), e);
                                 }
-                            } catch (IOException e) {
-                                LOGGER.warn("{} is not javascript", pluginPath.toAbsolutePath(), e);
+                            } else {
+                                LOGGER.warn("pluging not found {}, it is declared in {}", pluginPath.toAbsolutePath(), packagePath.toAbsolutePath());
                             }
                         } else {
-                            LOGGER.warn("pluging not found {}, it is declared in {}", pluginPath.toAbsolutePath(), packagePath.toAbsolutePath());
+                            ret.add(pluginPath);
                         }
                     }
                 });

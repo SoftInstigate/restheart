@@ -15,6 +15,9 @@ jsconfig.json
 .project
 /bin
 
+### node_modules ###
+**/node_modules/
+
 ### Eclipse ###
 
 .metadata

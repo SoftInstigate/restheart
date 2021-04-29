@@ -55,17 +55,17 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
 
         response.setContent(JSON.stringify(body));
         response.setContentTypeAsJson();
-    };
+    }
     """;
 
     private static final String packageHint = """
     the plugin module must export the object 'options', example:
     export const options = {
-        "name": "hello"
-        "description": "a fancy description"
-        "uri": "/hello"
-        "secured": false
-        "matchPolicy": "PREFIX"
+        name: "hello"
+        description: "a fancy description"
+        uri: "/hello"
+        secured: false
+        matchPolicy: "PREFIX"
     }
     """;
 
@@ -91,7 +91,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
         if (Files.isDirectory(requireCwdPath)) {
             contextOptions.put("js.commonjs-require", "true");
             contextOptions.put("js.commonjs-require-cwd", requireCwdPath.toAbsolutePath().toString());
-            LOGGER.debug("Enabling require for service {} with require-cwd {} ", pluginPath, requireCwdPath);
+            LOGGER.trace("Enabling require for service {} with require-cwd {} ", pluginPath, requireCwdPath);
         }
 
         // check that the plugin script is js
@@ -123,44 +123,44 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             try {
                 options = ctx.eval(optionsSource);
             } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong js service, " + t.getMessage());
+                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage() + ", " + packageHint);
             }
 
             if (options.getMemberKeys().isEmpty()) {
-                throw new IllegalArgumentException("wrong js service, " + packageHint);
+                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + " , " + packageHint);
             }
 
             if (!options.getMemberKeys().contains("name")) {
-                throw new IllegalArgumentException("wrong js service, missing member 'options.name', " + packageHint);
+                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", missing member 'options.name', " + packageHint);
             }
 
             if (!options.getMember("name").isString()) {
-                throw new IllegalArgumentException("wrong js service, wrong member 'options.name', " + packageHint);
+                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.name', " + packageHint);
             }
 
             this.name = options.getMember("name").asString();
 
             if (!options.getMemberKeys().contains("description")) {
                 throw new IllegalArgumentException(
-                        "wrong js service, missing member 'options.description', " + packageHint);
+                    "wrong js service " + pluginPath.toAbsolutePath() + ", missing member 'options.description', " + packageHint);
             }
 
             if (!options.getMember("description").isString()) {
-                throw new IllegalArgumentException("wrong js service, wrong member 'options.description', " + packageHint);
+                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.description', " + packageHint);
             }
 
             this.description = options.getMember("description").asString();
 
             if (!options.getMemberKeys().contains("uri")) {
-                throw new IllegalArgumentException("wrong js service, missing member 'options.uri', " + packageHint);
+                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", missing member 'options.uri', " + packageHint);
             }
 
             if (!options.getMember("uri").isString()) {
-                throw new IllegalArgumentException("wrong js service, wrong member 'options.uri', " + packageHint);
+                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.uri', " + packageHint);
             }
 
             if (!options.getMember("uri").asString().startsWith("/")) {
-                throw new IllegalArgumentException("wrong js service, wrong member 'options.uri', " + packageHint);
+                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.uri', " + packageHint);
             }
 
             this.uri = options.getMember("uri").asString();
@@ -169,7 +169,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
                 this.secured = false;
             } else {
                 if (!options.getMember("secured").isBoolean()) {
-                    throw new IllegalArgumentException("wrong js service, wrong member 'options.secured', " + packageHint);
+                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.secured', " + packageHint);
                 } else {
                     this.secured = options.getMember("secured").asBoolean();
                 }
@@ -179,14 +179,14 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
                 this.matchPolicy = MATCH_POLICY.PREFIX;
             } else {
                 if (!options.getMember("matchPolicy").isString()) {
-                    throw new IllegalArgumentException("wrong js service, wrong member 'options.matchPolicy', " + packageHint);
+                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.matchPolicy', " + packageHint);
                 } else {
                     var _matchPolicy = options.getMember("matchPolicy").asString();
                     try {
                         this.matchPolicy = MATCH_POLICY.valueOf(_matchPolicy);
                     } catch (Throwable t) {
                         throw new IllegalArgumentException(
-                                "wrong js service, wrong member 'options.matchPolicy', " + packageHint);
+                            "wrong js service " + pluginPath.toAbsolutePath() + ", wrong member 'options.matchPolicy', " + packageHint);
                     }
                 }
             }
@@ -214,11 +214,11 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             try {
                 handle = ctx.eval(this.handleSource);
             } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong js service, " + t.getMessage());
+                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
             }
 
             if (!handle.canExecute()) {
-                throw new IllegalArgumentException("wrong js service, " + handleHint);
+                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ", " + handleHint);
             }
         }
     }

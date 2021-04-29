@@ -92,7 +92,7 @@ public class JSInterceptorFactory {
         var language = Source.findLanguage(pluginPath.toFile());
 
         if (!"js".equals(language)) {
-            throw new IllegalArgumentException("wrong js interceptor, not javascript");
+            throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", not javascript");
         }
 
         // check plugin definition
@@ -123,26 +123,26 @@ public class JSInterceptorFactory {
             }
 
             if (options.getMemberKeys().isEmpty()) {
-                throw new IllegalArgumentException("wrong js interceptor, " + packageHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + packageHint);
             }
 
             if (!options.getMemberKeys().contains("name")) {
-                throw new IllegalArgumentException("wrong js interceptor, missing member 'options.name', " + packageHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", missing member 'options.name', " + packageHint);
             }
 
             if (!options.getMember("name").isString()) {
-                throw new IllegalArgumentException("wrong js interceptor, wrong member 'options.name', " + packageHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.name', " + packageHint);
             }
 
             var name = options.getMember("name").asString();
 
             if (!options.getMemberKeys().contains("description")) {
                 throw new IllegalArgumentException(
-                        "wrong js interceptor, missing member 'options.description', " + packageHint);
+                        "wrong js interceptor " + pluginPath.toAbsolutePath() + ", missing member 'options.description', " + packageHint);
             }
 
             if (!options.getMember("description").isString()) {
-                throw new IllegalArgumentException("wrong js interceptor, wrong member 'options.description', " + packageHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.description', " + packageHint);
             }
 
             var description = options.getMember("description").asString();
@@ -169,14 +169,14 @@ public class JSInterceptorFactory {
             } else {
                 if (!options.getMember("interceptPoint").isString()) {
                     throw new IllegalArgumentException(
-                            "wrong js interceptor, wrong member 'options.interceptPoint', " + handleResolveHint);
+                        "wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.interceptPoint', " + handleResolveHint);
                 } else {
                     var _interceptPoint = options.getMember("interceptPoint").asString();
                     try {
                         interceptPoint = InterceptPoint.valueOf(_interceptPoint);
                     } catch (Throwable t) {
                         throw new IllegalArgumentException(
-                                "wrong js interceptor, wrong member 'options.interceptPoint', " + handleResolveHint);
+                            "wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.interceptPoint', " + handleResolveHint);
                     }
                 }
             }
@@ -187,7 +187,7 @@ public class JSInterceptorFactory {
                 pluginClass = "StringInterceptor";
             } else if (!options.getMember("pluginClass").isString()) {
                 throw new IllegalArgumentException(
-                        "wrong js interceptor, wrong member 'options.pluginClass', " + handleResolveHint);
+                    "wrong js interceptor " + pluginPath.toAbsolutePath() + ", wrong member 'options.pluginClass', " + handleResolveHint);
             } else {
                 pluginClass = options.getMember("pluginClass").asString();
             }
@@ -202,11 +202,11 @@ public class JSInterceptorFactory {
             try {
                 handle = ctx.eval(handleSource);
             } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong js interceptor, " + t.getMessage());
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
             }
 
             if (!handle.canExecute()) {
-                throw new IllegalArgumentException("wrong js interceptor, " + handleResolveHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + handleResolveHint);
             }
 
             // ******** evaluate and check resolve
@@ -219,11 +219,11 @@ public class JSInterceptorFactory {
             try {
                 resolve = ctx.eval(resolveSource);
             } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong js interceptor, " + t.getMessage());
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + t.getMessage());
             }
 
             if (!resolve.canExecute()) {
-                throw new IllegalArgumentException("wrong js interceptor, " + handleResolveHint);
+                throw new IllegalArgumentException("wrong js interceptor " + pluginPath.toAbsolutePath() + ", " + handleResolveHint);
             }
 
             AbstractJSInterceptor<?,?> interceptor;
@@ -351,20 +351,20 @@ public class JSInterceptorFactory {
         var bson = response.getContent();
 
         bson.asDocument().put("injectedDoc", BsonUtils.parse("{ 'n': 1, 's': 'foo' }"));
-    };
+    }
 
     export function resolve(request) {
         return request.isGet() && request.isDocument() && "coll" === request.getCollectionName();
-    };
+    }
     """;
 
     private static final String packageHint = """
     the plugin module must export the object 'options', example:
     export const options = {
-        "name": "mongoCollInterceptor",
-        "description": "modifies the response of GET /coll/<docid>",
-        "interceptPoint": "RESPONSE",
-        "pluginClass": "MongoInterceptor"
+        name: "mongoCollInterceptor",
+        description: "modifies the response of GET /coll/<docid>",
+        interceptPoint: "RESPONSE",
+        pluginClass: "MongoInterceptor"
     }
     """;
 }

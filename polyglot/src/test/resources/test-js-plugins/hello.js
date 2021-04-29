@@ -1,9 +1,9 @@
 export const options = {
-    "name": "helloWorldService",
-    "description": "just another Hello World",
-    "uri": "/hello",
-    "secured": false,
-    "matchPolicy": "EXACT"
+    name: "helloWorldService",
+    description: "just another Hello World",
+    uri: "/hello",
+    secured: false, // optional, default false
+    matchPolicy: "EXACT" // optional, default PREFIX
 }
 
 export function handle(request, response) {
@@ -16,4 +16,4 @@ export function handle(request, response) {
 
     response.setContent(JSON.stringify(body));
     response.setContentTypeAsJson();
-};
+}
