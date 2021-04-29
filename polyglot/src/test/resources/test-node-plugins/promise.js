@@ -2,9 +2,9 @@ const http = require('http');
 
 ({
     options: {
-        name: "nodeModuleSrv",
-        description: "just an example node service that requires http",
-        uri: '/test',
+        name: "nodePromiseSrv",
+        description: "just an example node service that requires http and returns a promise",
+        uri: '/promise',
         secured: false, // optional, default false
         matchPolicy: "PREFIX" // optional, default PREFIX
     },

@@ -1,0 +1,16 @@
+{
+  "name": "restheart-test-node-plugins",
+  "version": "1.0.0",
+  "description": "test node plugins for RESTHeart",
+  "main": "index.mjs",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "rh:node-services": [
+    "hello.js", "promise.js"
+  ]
+}

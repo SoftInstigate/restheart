@@ -144,8 +144,9 @@ public class PolyglotDeployer implements Initializer {
         for (var pluginPath : findJsPluginDirectories(pluginsDirectory)) {
             try {
                 var services = findServices(pluginPath);
+                var nodeServices = findNodeServices(pluginPath);
                 var interceptors = findInterceptors(pluginPath);
-                deploy(pluginPath, services, interceptors);
+                deploy(pluginPath, services, nodeServices, interceptors);
             } catch (Throwable t) {
                 LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
             }
@@ -171,14 +172,20 @@ public class PolyglotDeployer implements Initializer {
 
                             if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                                 try {
-                                    deploy(pluginPath, findServices(pluginPath), findInterceptors(pluginPath));
+                                    deploy(pluginPath,
+                                        findServices(pluginPath),
+                                        findNodeServices(pluginPath),
+                                        findInterceptors(pluginPath));
                                 } catch (Throwable t) {
                                     LOGGER.error("Error deploying {}", pluginPath.toAbsolutePath(), t);
                                 }
                             } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
                                 try {
                                     undeploy(pluginPath);
-                                    deploy(pluginPath, findServices(pluginPath), findInterceptors(pluginPath));
+                                    deploy(pluginPath,
+                                        findServices(pluginPath),
+                                        findNodeServices(pluginPath),
+                                        findInterceptors(pluginPath));
                                 } catch (Throwable t) {
                                     LOGGER.warn("Error updating {}", pluginPath.toAbsolutePath(), t);
                                 }
@@ -249,7 +256,8 @@ public class PolyglotDeployer implements Initializer {
             for (Path path : directoryStream) {
                 var services = findServices(path, false);
                 var interceptors = findServices(path, false);
-                if (!services.isEmpty() || !interceptors.isEmpty()) {
+                var nodeServices = findNodeServices(path, false);
+                if (!services.isEmpty() || !nodeServices.isEmpty() || !interceptors.isEmpty()) {
                     paths.add(path);
                     LOGGER.info("Found js plugin directory {}", path);
                 }
@@ -279,6 +287,14 @@ public class PolyglotDeployer implements Initializer {
 
     private List<Path> findServices(Path path, boolean checkPluginFiles) {
         return findDeclaredPlugins(path, "rh:services", checkPluginFiles);
+    }
+
+    private List<Path> findNodeServices(Path path) {
+        return findNodeServices(path, true);
+    }
+
+    private List<Path> findNodeServices(Path path, boolean checkPluginFiles) {
+        return findDeclaredPlugins(path, "rh:node-services", checkPluginFiles);
     }
 
     private List<Path> findInterceptors(Path path) {
@@ -344,9 +360,13 @@ public class PolyglotDeployer implements Initializer {
         }
     }
 
-    private void deploy(Path pluginPath, List<Path> services, List<Path> interceptors) throws IOException {
+    private void deploy(Path pluginPath, List<Path> services, List<Path> nodeServices, List<Path> interceptors) throws IOException {
         for (Path service: services) {
             deployService(service);
+        }
+
+        for (Path nodeService: nodeServices) {
+            deployNodeService(nodeService);
         }
 
         for (Path interceptor: interceptors) {
@@ -357,10 +377,38 @@ public class PolyglotDeployer implements Initializer {
     @SuppressWarnings("rawtypes")
     private void deployService(Path pluginPath) throws IOException {
         if (isRunningOnNode()) {
-            var executor = Executors.newSingleThreadExecutor();
+            throw new IllegalStateException("Cannot deploy a CommonJs service, RESTHeart is running on Node");
+        }
+
+        var srv = new JavaScriptService(pluginPath, this.mclient, this.pluginsArgs);
+
+        var record = new PluginRecord<Service>(srv.getName(),
+            srv.getDescription(),
+            srv.isSecured(),
+            true,
+            srv.getClass().getName(),
+            srv,
+            new HashMap<>());
+
+        registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
+
+        DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
+
+        LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
+            srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
+    }
+
+    @SuppressWarnings("rawtypes")
+    private void deployNodeService(Path pluginPath) throws IOException {
+        if (!isRunningOnNode()) {
+            throw new IllegalStateException("Cannot deploy a node service, RESTHeart is not running on Node");
+        }
+
+        LOGGER.warn("Node JS plugins are experimental and are likely to change in future");
+        var executor = Executors.newSingleThreadExecutor();
             executor.submit(() -> {
                 try {
-                    var srvf = NodeService.get(pluginPath, this.mclient);
+                    var srvf = NodeService.get(pluginPath, this.mclient, this.pluginsArgs);
 
                     while (!srvf.isDone()) {
                         Thread.sleep(300);
@@ -378,45 +426,27 @@ public class PolyglotDeployer implements Initializer {
                     LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
                         srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
                 } catch (IOException | InterruptedException | ExecutionException ex) {
-                    LOGGER.error("Error deployng node plugin {}", pluginPath, ex);
+                    LOGGER.error("Error deployng node service {}", pluginPath, ex);
                     return;
                 }
             });
-
-        } else {
-            var srv = new JavaScriptService(pluginPath, this.mclient, this.pluginsArgs);
-
-            var record = new PluginRecord<Service>(srv.getName(),
-                srv.getDescription(),
-                srv.isSecured(),
-                true,
-                srv.getClass().getName(),
-                srv,
-                new HashMap<>());
-
-            registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
-
-            DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
-
-            LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
-                srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
-        }
     }
+
 
     private void deployInterceptor(Path pluginPath) throws IOException {
         if (isRunningOnNode()) {
-            throw new IllegalStateException("interceptors on node are not yet implemented");
-        } else {
-            var interceptorRecord = this.jsInterceptorFactory.create(pluginPath);
-
-            registry.addInterceptor(interceptorRecord);
-
-            DEPLOYEES.put(pluginPath.toAbsolutePath(), (AbstractJSPlugin) interceptorRecord.getInstance());
-
-            LOGGER.info(ansi().fg(GREEN).a("Added interceptor {}, description: {}").reset().toString(),
-                interceptorRecord.getName(),
-                interceptorRecord.getDescription());
+            throw new IllegalStateException("Cannot deploy a CommonJs interceptor, RESTHeart is running on Node");
         }
+
+        var interceptorRecord = this.jsInterceptorFactory.create(pluginPath);
+
+        registry.addInterceptor(interceptorRecord);
+
+        DEPLOYEES.put(pluginPath.toAbsolutePath(), (AbstractJSPlugin) interceptorRecord.getInstance());
+
+        LOGGER.info(ansi().fg(GREEN).a("Added interceptor {}, description: {}").reset().toString(),
+            interceptorRecord.getName(),
+            interceptorRecord.getDescription());
     }
 
     private void undeploy(Path pluginPath) {

@@ -27,6 +27,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import com.google.common.collect.Maps;
 import com.google.gson.JsonParser;
 import com.mongodb.MongoClient;
 import org.restheart.exchange.StringRequest;
@@ -45,23 +47,41 @@ public class NodeService extends AbstractJSPlugin implements StringService {
 
     private String source;
 
-    // TODO pass this to node runtime
-    private MongoClient mclient;
-
-    // TODO pass this to node runtime
-    private Map<String, Object> configuration;
-
     private int codeHash = 0;
 
-    private static final String errorHint = "hint: the last statement in the script should be:\n({\n\toptions: {..},\n\thandle: (request, response) => {}\n})";
+    private static final String errorHint = """
+    hint: the last statement in the script something like:
+    ({
+        options: {
+            name: "hello"
+            description: "a fancy description"
+            uri: "/hello"
+            secured: false
+            matchPolicy: "PREFIX"
+        }
 
-    public static Future<NodeService> get(Path scriptPath, MongoClient mclient) throws IOException {
+        handle: (request, response) => {
+            LOGGER.debug('request {}', request.getContent());
+            const rc = JSON.parse(request.getContent() || '{}');
+
+            let body = {
+                msg: `Hello ${rc.name || 'Cruel World'}`
+            }
+
+            response.setContent(JSON.stringify(body));
+            response.setContentTypeAsJson();
+        }
+    })
+    """;
+
+    public static Future<NodeService> get(Path scriptPath, MongoClient mclient, Map<String, Object> pluginArgs) throws IOException {
         var executor = Executors.newSingleThreadExecutor();
-        return executor.submit(() -> new NodeService(scriptPath, mclient));
+        return executor.submit(() -> new NodeService(scriptPath, mclient, pluginArgs));
     }
 
-    private NodeService(Path scriptPath, MongoClient mclient) throws IOException {
+    private NodeService(Path scriptPath, MongoClient mclient, Map<String, Object> pluginArgs) throws IOException {
         this.mclient = mclient;
+        this.pluginArgs = pluginArgs;
 
         this.source = Files.readString(scriptPath);
         this.codeHash = this.source.hashCode();
@@ -179,7 +199,15 @@ public class NodeService extends AbstractJSPlugin implements StringService {
      */
     public void handle(StringRequest request, StringResponse response) {
         var out = new LinkedBlockingDeque<Object>();
-        Object[] message = { "handle", this.codeHash, this.source, request, response, out };
+        Object[] message = { "handle",
+            this.codeHash, this.source,
+            request, response,
+            out,
+            LOGGER,                  // pass LOGGER to node runtime
+            this.mclient,            // pass mclient to node runtime
+            this.pluginArgs == null  // pass pluginArgs to node runtime
+                ? Maps.newHashMap() : this.pluginArgs.get(this.name)
+        };
 
         try {
             NodeQueue.instance().queue().offer(message);

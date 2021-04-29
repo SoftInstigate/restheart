@@ -105,6 +105,9 @@ asyncJavaEvents.worker.on('message', (n) => {
         const request = n[3];
         const response = n[4];
         const out = n[5];
+        const LOGGER = n[6];
+        const mclient = n[7];
+        const pluginsArgs = n[8];
 
         try {
             CACHE.gc();
@@ -120,9 +123,9 @@ asyncJavaEvents.worker.on('message', (n) => {
             // timeout 60 seconds
             const timeout = new Promise((resolve, reject) => setTimeout(function() { reject('timeout'); }, 60*1000) );
 
-            Promise.race([ timeout, result ]).then(() => {
-                out.offer('done');
-            }).catch(error => out.offer(new RuntimeException("Error " + error)));
+            Promise.race([ timeout, result ])
+                .then(() => out.offer('done'))
+                .catch(error => out.offer(new RuntimeException("Error " + error)));
         } catch (error) {
             out.offer(new RuntimeException("Error " + error));
         }
