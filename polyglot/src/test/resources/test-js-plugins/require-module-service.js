@@ -1,7 +1,5 @@
 /* How to run:
-$ npm install one-liner-joke
-
-(no need to install moment since it's a builtin module)
+$ npm install
 */
 
 const moment = require('moment');
