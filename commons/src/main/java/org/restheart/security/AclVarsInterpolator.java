@@ -100,8 +100,8 @@ public class AclVarsInterpolator {
 
     /**
      * If value is a '@user', '@user.property', '@request', '@request.remoteIp',
-     * '@mongoPermissions', '@mongoPermissions.readFilter', '@now', returns the
-     * interpolated value.
+     * '@mongoPermissions', '@mongoPermissions.readFilter', '@now', '@filter'
+     * returns the interpolated value.
      *
      * For '@user' and '@mongoPermissions' supports accounts handled by
      * MongoRealAuthenticator and FileRealmAuthenticator
@@ -140,6 +140,8 @@ public class AclVarsInterpolator {
             } else {
                 return BsonNull.VALUE;
             }
+        } else if (value.equals("@filter")) {
+            return request.getFiltersDocument();
         } else if (value.equals("@request")) {
             return getRequestObject(request);
         } else if (value.startsWith("@request.") && value.length() > 8) {
