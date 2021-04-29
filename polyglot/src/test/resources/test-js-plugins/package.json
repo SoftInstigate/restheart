@@ -17,7 +17,8 @@
     "hello.js",
     "./sub/hello.js",
     "require-module-service.js",
-    "mclient-service.js"
+    "mclient-service.js",
+    "unirest.js"
   ],
   "rh:interceptors": [
     "hello-interceptor.js",

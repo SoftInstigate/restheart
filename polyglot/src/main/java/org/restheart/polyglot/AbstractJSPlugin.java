@@ -144,5 +144,8 @@ public abstract class AbstractJSPlugin {
             : new HashMap<String, Object>();
 
         ctx.getBindings("js").putMember("pluginArgs", args);
+
+        ctx.getBindings("js").putMember("Unirest", new UnirestWrapper());
     }
 }
+

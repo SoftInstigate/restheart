@@ -380,22 +380,26 @@ public class PolyglotDeployer implements Initializer {
             throw new IllegalStateException("Cannot deploy a CommonJs service, RESTHeart is running on Node");
         }
 
-        var srv = new JavaScriptService(pluginPath, this.mclient, this.pluginsArgs);
+        try {
+            var srv = new JavaScriptService(pluginPath, this.mclient, this.pluginsArgs);
 
-        var record = new PluginRecord<Service>(srv.getName(),
-            srv.getDescription(),
-            srv.isSecured(),
-            true,
-            srv.getClass().getName(),
-            srv,
-            new HashMap<>());
+            var record = new PluginRecord<Service>(srv.getName(),
+                srv.getDescription(),
+                srv.isSecured(),
+                true,
+                srv.getClass().getName(),
+                srv,
+                new HashMap<>());
 
-        registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
+            registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
 
-        DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
+            DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
-        LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
-            srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
+            LOGGER.info(ansi().fg(GREEN).a("URI {} bound to service {}, description: {}, secured: {}, uri match {}").reset().toString(),
+                srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
+        } catch(IllegalArgumentException | IllegalStateException e) {
+            LOGGER.error("Error deploying plugin {}", pluginPath, e);
+        }
     }
 
     @SuppressWarnings("rawtypes")

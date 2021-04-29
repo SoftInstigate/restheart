@@ -106,7 +106,10 @@
     <dependency>
       <groupId>com.graphql-java</groupId>
       <artifactId>graphql-java</artifactId>
-      <version>15.0</version>
+    </dependency>
+    <dependency>
+        <groupId>com.mashape.unirest</groupId>
+        <artifactId>unirest-java</artifactId>
     </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
@@ -133,11 +136,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>fluent-hc</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.mashape.unirest</groupId>
-      <artifactId>unirest-java</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

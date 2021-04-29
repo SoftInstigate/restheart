@@ -320,6 +320,11 @@
                 <artifactId>graphql-java</artifactId>
                 <version>15.0</version>
             </dependency>
+            <dependency>
+                <groupId>com.mashape.unirest</groupId>
+                <artifactId>unirest-java</artifactId>
+                <version>1.4.9</version>
+            </dependency>
             <!-- BEGIN Test dependencies -->
             <dependency>
                 <groupId>junit</groupId>
@@ -343,12 +348,6 @@
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>fluent-hc</artifactId>
                 <version>4.5.13</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.mashape.unirest</groupId>
-                <artifactId>unirest-java</artifactId>
-                <version>1.4.9</version>
                 <scope>test</scope>
             </dependency>
             <dependency>

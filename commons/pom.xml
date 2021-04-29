@@ -67,6 +67,10 @@
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
     </dependency>
+    <dependency>
+        <groupId>com.mashape.unirest</groupId>
+        <artifactId>unirest-java</artifactId>
+    </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>junit</groupId>
