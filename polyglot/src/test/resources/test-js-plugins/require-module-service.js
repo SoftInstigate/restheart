@@ -11,7 +11,7 @@ export const options = {
     uri: '/requireModuleService',
     secured: false, // optional, default false
     matchPolicy: "PREFIX", // optional, default PREFIX,
-    modulesReplacements: [ "" ] // optional
+    modulesReplacements: "" // optional
 }
 
 export function handle(request, response) {

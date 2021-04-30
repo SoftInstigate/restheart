@@ -1,5 +1,5 @@
 {
-"name": "restheart-test-js-plugins",
+  "name": "restheart-test-js-plugins",
   "version": "1.0.0",
   "description": "test js plugins for RESTHeart",
   "main": "index.mjs",
@@ -18,7 +18,7 @@
     "./sub/hello.js",
     "require-module-service.js",
     "mclient-service.js",
-    "unirest.js"
+    "http-client.js"
   ],
   "rh:interceptors": [
     "hello-interceptor.js",

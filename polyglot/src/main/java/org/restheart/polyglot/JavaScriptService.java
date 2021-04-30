@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import com.mongodb.MongoClient;
-import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.restheart.exchange.StringRequest;
@@ -102,13 +101,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
         }
 
         var sindexPath = pluginPath.toAbsolutePath().toString();
-        try (var ctx = Context.newBuilder().engine(engine)
-                .allowAllAccess(true)
-                .allowHostClassLookup(className -> true)
-                .allowIO(true)
-                .allowExperimentalOptions(true)
-                .options(contextOptions)
-                .build()) {
+        try (var ctx = context(engine, contextOptions)) {
 
             // add bindings to contenxt
             addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
@@ -121,7 +114,13 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             try {
                 options = ctx.eval(optionsSource);
             } catch (Throwable t) {
-                throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage() + ", " + packageHint);
+                if (t.getMessage() != null && t.getMessage().contains("Cannot load CommonJS module")) {
+                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
+                } else if (t.getMessage() != null && t.getMessage().contains("Access to host class")) {
+                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage());
+                } else {
+                    throw new IllegalArgumentException("wrong js service " + pluginPath.toAbsolutePath() + ": " + t.getMessage() + ", " + packageHint);
+                }
             }
 
             checkOptions(options, pluginPath);
@@ -184,14 +183,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             contextOptions.remove("js.commonjs-core-modules-replacements");
         }
 
-        try (var ctx = Context.newBuilder().engine(engine)
-                .allowAllAccess(true)
-                .allowHostClassLookup(className -> true)
-                .allowIO(true)
-                .allowExperimentalOptions(true)
-                .options(contextOptions)
-                .build()) {
-
+        try (var ctx = context(engine, contextOptions)) {
             addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
             ctx.eval(this.handleSource).executeVoid(request, response);
         }

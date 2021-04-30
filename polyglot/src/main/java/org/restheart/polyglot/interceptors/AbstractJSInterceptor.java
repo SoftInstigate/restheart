@@ -67,7 +67,7 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
      *
      */
     public void handle(R request, S response) {
-        try (var ctx = context(engine, contextOptions)) {
+        try (var ctx = AbstractJSPlugin.context(engine, contextOptions)) {
             addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
 
             ctx.eval(this.handleSource).executeVoid(request, response);
@@ -76,7 +76,7 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
 
     @Override
     public boolean resolve(R request, S response) {
-        try (var ctx = context(engine, this.contextOptions)) {
+        try (var ctx = AbstractJSPlugin.context(engine, this.contextOptions)) {
             addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
 
             var ret = ctx.eval(this.resolveSource).execute(request);

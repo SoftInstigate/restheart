@@ -89,6 +89,16 @@ The following fields must be configured with `allowWrite: true`
 }
 ```
 
+### allow restheart-native js plugins access java classes via reflection
+
+restheart-native js plugins access java classes via reflection, the following utility generates the reflect-config entries to add to the native image's `reflect-config.json`
+
+```bash
+$ java -cp core/target/restheart.jar org.restheart.utils.GenerateGraalvmReflectConfig
+```
+
+it will print out the entries to add to `commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json`
+
 ## issues
 
 ### [OPEN] build error upgrading caffeine

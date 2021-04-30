@@ -1,3 +1,8 @@
+const BsonDocument = Java.type("org.bson.BsonDocument");
+const BsonUtils = Java.type("org.restheart.utils.BsonUtils");
+//const MongoCollectionImpl = Java.type('com.mongodb.client.internal.MongoCollectionImpl');
+const BsonArray = Java.type("org.bson.BsonArray");
+
 export const options = {
     name: "mclientService",
     description: "just an example JavaScript service that uses the MongoClient",
@@ -25,8 +30,6 @@ export function handle(request, response) {
 
     const _filter = request.getQueryParameterOfDefault("filter", "{}");
 
-    const BsonUtils = Java.type("org.restheart.utils.BsonUtils");
-
     let filter;
 
     try {
@@ -36,11 +39,14 @@ export function handle(request, response) {
         return;
     }
 
-    const BsonDocument = Java.type("org.bson.BsonDocument");
-    // mclient is the Java mongodb driver => find() expects a Java BsonDocument
-    let it = mclient.getDatabase("restheart").getCollection("coll", BsonDocument.class).find(filter).limit(limit).skip(skip).iterator();
+    const db = mclient.getDatabase("restheart");
+    LOGGER.debug("db {}", db);
+    const coll = db.getCollection("coll", BsonDocument.class);
+    LOGGER.debug("coll {}", coll);
 
-    const BsonArray = Java.type("org.bson.BsonArray");
+    // mclient is the Java mongodb driver => find() expects a Java BsonDocument
+    let it = coll.find(filter).limit(limit).skip(skip).iterator();
+
     let results = new BsonArray();
 
     while(it.hasNext()) {

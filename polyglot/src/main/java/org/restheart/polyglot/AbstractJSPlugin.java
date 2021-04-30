@@ -27,6 +27,7 @@ import com.mongodb.MongoClient;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Source;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
@@ -90,13 +91,15 @@ public abstract class AbstractJSPlugin {
         this.isInterceptor = isInterceptor;
     }
 
-    protected Context context(Engine engine, Map<String, String> OPTS) {
-        return Context.newBuilder().engine(engine).allowAllAccess(true)
-                .allowHostClassLookup(className -> true)
-                .allowIO(true)
-                .allowExperimentalOptions(true)
-                .options(OPTS)
-                .build();
+    public static Context context(Engine engine, Map<String, String> OPTS) {
+        return Context.newBuilder().engine(engine)
+            .allowAllAccess(true)
+            .allowHostAccess(HostAccess.ALL)
+            .allowHostClassLookup(className -> true)
+            .allowIO(true)
+            .allowExperimentalOptions(true)
+            .options(OPTS)
+            .build();
     }
 
     public String getName() {
@@ -144,8 +147,6 @@ public abstract class AbstractJSPlugin {
             : new HashMap<String, Object>();
 
         ctx.getBindings("js").putMember("pluginArgs", args);
-
-        ctx.getBindings("js").putMember("Unirest", new UnirestWrapper());
     }
 }
 

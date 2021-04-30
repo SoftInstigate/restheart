@@ -17,7 +17,7 @@
         <finalName>${project.artifactId}-${project.version}</finalName>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.release>16</maven.compiler.release>
+        <maven.compiler.target>16</maven.compiler.target>
         <maven.compiler.source>16</maven.compiler.source>
         <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
         <dependency.locations.enabled>false</dependency.locations.enabled>
@@ -320,11 +320,6 @@
                 <artifactId>graphql-java</artifactId>
                 <version>15.0</version>
             </dependency>
-            <dependency>
-                <groupId>com.mashape.unirest</groupId>
-                <artifactId>unirest-java</artifactId>
-                <version>1.4.9</version>
-            </dependency>
             <!-- BEGIN Test dependencies -->
             <dependency>
                 <groupId>junit</groupId>
@@ -354,6 +349,12 @@
                 <groupId>com.eclipsesource.minimal-json</groupId>
                 <artifactId>minimal-json</artifactId>
                 <version>0.9.5</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.mashape.unirest</groupId>
+                <artifactId>unirest-java</artifactId>
+                <version>1.4.9</version>
                 <scope>test</scope>
             </dependency>
             <!-- END Test dependencies -->

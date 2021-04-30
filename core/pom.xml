@@ -107,10 +107,6 @@
       <groupId>com.graphql-java</groupId>
       <artifactId>graphql-java</artifactId>
     </dependency>
-    <dependency>
-        <groupId>com.mashape.unirest</groupId>
-        <artifactId>unirest-java</artifactId>
-    </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>org.restheart</groupId>
@@ -142,6 +138,11 @@
       <groupId>com.eclipsesource.minimal-json</groupId>
       <artifactId>minimal-json</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>com.mashape.unirest</groupId>
+        <artifactId>unirest-java</artifactId>
+        <scope>test</scope>
     </dependency>
     <!-- END Test dependencies -->
   </dependencies>

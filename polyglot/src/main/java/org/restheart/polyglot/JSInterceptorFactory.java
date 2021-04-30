@@ -30,7 +30,6 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 import com.mongodb.MongoClient;
-import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -98,14 +97,7 @@ public class JSInterceptorFactory {
         // check plugin definition
 
         var sindexPath = pluginPath.toAbsolutePath().toString();
-        try (var ctx = Context.newBuilder().engine(engine)
-                .allowAllAccess(true)
-                .allowHostClassLookup(className -> true)
-                .allowIO(true)
-                .allowExperimentalOptions(true)
-                .options(contextOptions)
-                .build()) {
-
+        try (var ctx = AbstractJSPlugin.context(engine, contextOptions)) {
             // add bindings to contenxt
             addBindings(ctx, "foo", null, LOGGER, this.mclient);
 

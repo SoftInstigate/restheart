@@ -9,7 +9,8 @@ export function handle(request, response) {
     const rc = JSON.parse(response.getContent() || '{}');
 
     let modifiedBody = {
-        msg: rc.msg + ' from Italy with Love'
+        msg: rc.msg + ' from Italy with Love',
+        note: '\'from Italy with Love\' was added by \'helloWorldInterceptor\' that modifies the response of \'helloWorldService\''
     }
 
     response.setContent(JSON.stringify(modifiedBody));

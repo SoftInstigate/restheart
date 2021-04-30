@@ -1,15 +1,18 @@
 [
-    {
-        "name":"org.restheart.polyglot.PolyglotDeployer",
-        "methods":[
-          {"name":"<init>","parameterTypes":[] },
-          {"name":"init","parameterTypes":["java.util.Map"] },
-          {"name":"mc","parameterTypes":["com.mongodb.MongoClient"] },
-          {"name":"reg","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
-        ]
-    },
-    {
-        "name":"graphql.schema.GraphQLScalarType",
-        "fields":[{"name":"coercing", "allowWrite":true}]
-    }
+  {
+    "name": "org.restheart.polyglot.AbstractJSPlugin",
+    "fields": [{ "name": "interceptPoint" }, { "name": "name" }]
+  },
+  {
+    "name": "org.restheart.polyglot.PolyglotDeployer",
+    "methods": [
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "init", "parameterTypes": ["java.util.Map"] },
+      { "name": "mc", "parameterTypes": ["com.mongodb.MongoClient"] },
+      {
+        "name": "reg",
+        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
+      }
+    ]
+  }
 ]
