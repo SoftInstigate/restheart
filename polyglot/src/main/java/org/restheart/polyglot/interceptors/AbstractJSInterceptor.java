@@ -23,7 +23,10 @@ package org.restheart.polyglot.interceptors;
 import java.util.Map;
 
 import com.mongodb.MongoClient;
+
+import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.Value;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
 import org.restheart.plugins.InterceptPoint;
@@ -67,25 +70,51 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
      *
      */
     public void handle(R request, S response) {
-        try (var ctx = AbstractJSPlugin.context(engine, contextOptions)) {
-            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
-
-            ctx.eval(this.handleSource).executeVoid(request, response);
+        if (ctx == null) {
+            this.ctx = context(engine, contextOptions);
+            addBindings(this.ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
         }
+
+        if (this.handle == null) {
+            this.handle = ctx.eval(this.handleSource);
+        }
+
+        this.handle.executeVoid(request, response);
     }
 
     @Override
     public boolean resolve(R request, S response) {
-        try (var ctx = AbstractJSPlugin.context(engine, this.contextOptions)) {
-            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
+        if (ctx == null) {
+            this.ctx = context(engine, contextOptions);
+            addBindings(this.ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
+        }
 
-            var ret = ctx.eval(this.resolveSource).execute(request);
+        if (this.resolve == null) {
+            this.resolve = ctx.eval(this.resolveSource);
+        }
 
-            if (ret.isBoolean()) {
-                return ret.asBoolean();
-            } else {
-                LOGGER.error("resolve() of interceptor did not returned a boolean", name);
-                return false;
+        var ret = this.resolve.execute(request);
+
+        if (ret.isBoolean()) {
+            return ret.asBoolean();
+        } else {
+            LOGGER.error("resolve() of interceptor did not returned a boolean", name);
+            return false;
+        }
+    }
+
+    // cache Context and Value for performace
+    private Context ctx = null;
+    private Value handle = null;
+    private Value resolve = null;
+
+    @Override
+    protected void finalize() throws Throwable {
+        if (this.ctx != null) {
+            try {
+                this.ctx.close();
+            } catch(Throwable t) {
+                // nothing to do
             }
         }
     }

@@ -26,6 +26,8 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import com.mongodb.MongoClient;
+
+import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.restheart.exchange.StringRequest;
@@ -183,14 +185,35 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             contextOptions.remove("js.commonjs-core-modules-replacements");
         }
 
-        try (var ctx = context(engine, contextOptions)) {
-            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
-            ctx.eval(this.handleSource).executeVoid(request, response);
+        if (this.ctx == null) {
+            this.ctx = context(this.engine, this.contextOptions);
+            addBindings(this.ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
         }
+
+        if (this.handle == null) {
+            this.handle = ctx.eval(this.handleSource);
+        }
+
+        handle.executeVoid(request, response);
     }
+
+    // cache Context and Value for performace
+    private Context ctx = null;
+    private Value handle = null;
 
     public String getModulesReplacements() {
         return this.modulesReplacements;
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        if (this.ctx != null) {
+            try {
+                this.ctx.close();
+            } catch(Throwable t) {
+                // nothing to do
+            }
+        }
     }
 
     static void checkOptions(Value options, Path pluginPath) {
