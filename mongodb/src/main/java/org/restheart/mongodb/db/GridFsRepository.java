@@ -60,6 +60,7 @@ public interface GridFsRepository {
      * @param metadata
      * @param filePath
      * @param fileId
+     * @param filter
      * @param requestEtag
      * @param checkEtag
      * @return
@@ -72,6 +73,7 @@ public interface GridFsRepository {
             final BsonDocument metadata,
             final Path filePath,
             final BsonValue fileId,
+            final BsonDocument filter,
             final String requestEtag,
             final boolean checkEtag)
             throws IOException;
@@ -82,6 +84,7 @@ public interface GridFsRepository {
      * @param dbName
      * @param bucketName
      * @param fileId
+     * @param filter
      * @param requestEtag
      * @param checkEtag
      * @return
@@ -91,6 +94,7 @@ public interface GridFsRepository {
             String dbName,
             String bucketName,
             BsonValue fileId,
+            BsonDocument filter,
             String requestEtag,
             final boolean checkEtag);
 

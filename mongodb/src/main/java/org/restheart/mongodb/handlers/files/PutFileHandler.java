@@ -122,6 +122,7 @@ public class PutFileHandler extends PipelinedHandler {
                                 metadata,
                                 request.getFilePath(),
                                 id,
+                                request.getFiltersDocument(),
                                 request.getETag(),
                                 request.isETagCheckRequired());
             } else {
