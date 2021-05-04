@@ -53,7 +53,7 @@ Scenario: Test qparams-whitelist(filter)
   Then status 200
 
 # allowed keys are "title" and "content". Every request must contain "title" key
-Scenario: Test bson-request-contains, request must contain specified keys in acl
+Scenario: Test bson-request-contains and bson-request-whitelist
 
   * def setupData = call read('predicate-acl-setup.feature')
 
