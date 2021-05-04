@@ -7,7 +7,7 @@ users:
 
     - userid: test
       password: secret
-      roles: [ testQParams ]
+      roles: [ test ]
 
     - userid: user1
       password: secret

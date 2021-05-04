@@ -33,3 +33,11 @@ Scenario: Create db and collection
   Then status 201
 
 
+  # create projectResponse collection
+  * header Authorization = admin
+  Given path 'test-predicates/projectResponse'
+  When method PUT
+  Then status 201
+
+
+

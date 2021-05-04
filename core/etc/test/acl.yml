@@ -93,7 +93,9 @@ permissions:
         allowBulkDelete: true         # default false
         allowWriteMode: true          # default false
 
-  - role: testQParams
+
+
+  - role: test
     # qparams-whitelist() === qparams-size(0)
     predicate: >
       method(GET)
@@ -104,19 +106,61 @@ permissions:
     priority: 0
 
 
-  - role : testQParams
+
+  - role : test
     predicate: >
       method(GET) 
       and qparams-whitelist(rep)
       and path-prefix[path="/test-predicates/coll"]
-      
-    priority: 0
+    mongo:
+      projectResponse: >
+        {"log": 0}
+    priority: 100
 
-  - role: testQParams
+
+
+  - role : test
+    predicate: >
+      method(GET) 
+      and qparams-whitelist(rep)
+      and path-template(value="/test-predicates/coll/{id}")
+    priority: 100
+
+
+
+  - role: test
     predicate: >
       method(POST)
       and bson-request-contains(title)
       and bson-request-whitelist(title, content)
       and path-prefix[path="/test-predicates/coll"]
-    priority: 0
+    mongo:
+      mergeRequest: >
+        {"author": "@user.userid", "status": "draft", "log": "@request"}
+    priority: 100
+
+
+  # projectResponse
+
+  - role : test
+    predicate: >
+      method(GET)
+      and path-prefix[path="/test-predicates/projectResponse"]
+    mongo:
+      projectResponse: >
+        {"user": 1}
+    priority: 100
+
+
+  - role : test
+    predicate: >
+      method(POST)
+      and path-prefix[path="/test-predicates/projectResponse"]
+    mongo:
+      mergeRequest: >
+        {"user" : "@user.userid"}
+    priority: 100
+
+
+
 

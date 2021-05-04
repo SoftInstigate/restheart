@@ -53,16 +53,10 @@ Scenario: Test qparams-whitelist(filter)
   When method GET
   Then status 200
 
-
+# allowed keys are "title" and "content". Every request must contain "title" key
 Scenario: Test bson-request-contains, request must contain specified keys in acl
 
   * def setupData = call read('predicate-acl-setup.feature')
-
-  * print "After setup data"
-
-  * print setupData.ETag
-
-  * print "last print"
 
   # valid request
   * header Authorization = test
@@ -91,6 +85,69 @@ Scenario: Test bson-request-contains, request must contain specified keys in acl
   And request { example: "Hello", test: "test value" }
   When method POST
   Then status 403
+
+  And call read('predicate-acl-cleanup.feature') { ETag: '#(setupData.ETag)' }
+
+
+# every post request will get merged with {"author": "@user.userid", "status": "draft", "log": "@request"}
+Scenario: Test mongodb mergeRequest
+
+  * def setupData = call read('predicate-acl-setup.feature')
+
+  # create a document
+  * headers { Authorization: '#(test)'}
+  Given path 'test-predicates/coll'
+  And request { title: 'Test mergeRequest' }
+  When method POST
+  Then status 201
+
+
+  # check inserted document
+  * headers { Authorization: '#(test)'}
+  Given url responseHeaders['Location'][0]
+  When method GET
+  Then status 200
+  And match response contains {log: '#notnull', author: 'test', status: 'draft', title: 'Test mergeRequest'}
+
+
+  And call read('predicate-acl-cleanup.feature') { ETag: '#(setupData.ETag)' }
+
+
+Scenario: Test mongodb projectResponse
+
+  * def setupData = call read('predicate-acl-setup.feature')
+
+  # create a document in coll collection
+  * headers { Authorization: '#(test)'}
+  Given path 'test-predicates/coll'
+  And request { title: 'Test projectResponse' }
+  When method POST
+  Then status 201
+
+
+  * headers { Authorization: '#(test)'}
+  And path '/test-predicates/coll'
+  * params {rep: 's'}
+  When method GET
+  Then status 200
+  And match response[0] contains {log: '#notpresent'}
+
+
+  # create a document in projectResponse collection
+  * headers { Authorization: '#(test)'}
+  Given path 'test-predicates/projectResponse'
+  And request { title: 'Test projectResponse' }
+  When method POST
+  Then status 201
+
+  # check that response contains ONLY user key
+  * headers { Authorization: '#(test)'}
+  And path '/test-predicates/projectResponse'
+  * params {rep: 's'}
+  When method GET
+  Then status 200
+  And match response[0] contains only {user: '#notnull'}
+
 
   And call read('predicate-acl-cleanup.feature') { ETag: '#(setupData.ETag)' }
 
