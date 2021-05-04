@@ -5,6 +5,10 @@ users:
       password: secret
       roles: [user, admin]
 
+    - userid: test
+      password: secret
+      roles: [ testQParams ]
+
     - userid: user1
       password: secret
       roles: [poweruser]

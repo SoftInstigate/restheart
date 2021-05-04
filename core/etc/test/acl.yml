@@ -92,3 +92,31 @@ permissions:
         allowBulkPatch: true          # default false
         allowBulkDelete: true         # default false
         allowWriteMode: true          # default false
+
+  - role: testQParams
+    # qparams-whitelist() === qparams-size(0)
+    predicate: >
+      method(GET)
+      and qparams-size(2)
+      and qparams-blacklist(size)
+      and qparams-whitelist(filter, page, q1)
+      and path[path="/secho"]
+    priority: 0
+
+
+  - role : testQParams
+    predicate: >
+      method(GET) 
+      and qparams-whitelist(rep)
+      and path-prefix[path="/test-predicates/coll"]
+      
+    priority: 0
+
+  - role: testQParams
+    predicate: >
+      method(POST)
+      and bson-request-contains(title)
+      and bson-request-whitelist(title, content)
+      and path-prefix[path="/test-predicates/coll"]
+    priority: 0
+
