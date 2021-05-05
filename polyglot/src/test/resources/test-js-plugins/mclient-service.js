@@ -1,6 +1,5 @@
 const BsonDocument = Java.type("org.bson.BsonDocument");
 const BsonUtils = Java.type("org.restheart.utils.BsonUtils");
-//const MongoCollectionImpl = Java.type('com.mongodb.client.internal.MongoCollectionImpl');
 const BsonArray = Java.type("org.bson.BsonArray");
 
 export const options = {

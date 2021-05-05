@@ -40,10 +40,6 @@
       <artifactId>mongodb-driver-reactivestreams</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.kohsuke</groupId>
-      <artifactId>akuma</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.github.everit-org.json-schema</groupId>
       <artifactId>org.everit.json.schema</artifactId>
     </dependency>
