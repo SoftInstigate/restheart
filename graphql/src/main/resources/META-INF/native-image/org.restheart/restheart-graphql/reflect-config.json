@@ -44,9 +44,8 @@
     ]
   },
   {
-    "name": "org.restheart.graphql.scalars.bsonCoercing.CoercingUtils",
-    "methods": [
-      { "name": "replaceBuiltInCoercing", "parameterTypes": [] }
-    ]
+    "name": "org.restheart.graphql.models.QueryMapping",
+    "allPublicFields": true,
+    "allDeclaredFields": true
   }
 ]

@@ -19,13 +19,14 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.graphql.scalars;
-import graphql.Assert;
 import graphql.schema.GraphQLScalarType;
 import org.restheart.graphql.scalars.bsonCoercing.*;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+
+import com.google.common.collect.Sets;
 
 
 public class BsonScalars {
@@ -48,34 +49,28 @@ public class BsonScalars {
     public static final GraphQLScalarType GraphQLBsonRegularExpression = GraphQLScalarType.newScalar()
             .name("Regex").description("Bson regular expression scalar").coercing(new GraphQLBsonRegexCoercing()).build();
 
-    public static Map<String, GraphQLScalarType> getBsonScalars(){
-        try{
-            Field[] scalarFields =  BsonScalars.class.getDeclaredFields();
-            Map<String, GraphQLScalarType> bsonScalars = new HashMap<>();
-            for(Field scalar: scalarFields){
-                bsonScalars.put(scalar.getName(), (GraphQLScalarType) scalar.get(null));
-            }
-            return bsonScalars;
-        } catch (IllegalAccessException e){
-            return Assert.assertShouldNeverHappen();
-        }
+    public static final Set<GraphQLScalarType> BSON_SCALARS = Sets.newHashSet(
+        GraphQLBsonObjectId,
+        GraphQLBsonDecimal128,
+        GraphQLBsonTimestamp,
+        GraphQLBsonDocument,
+        GraphQLBsonDate,
+        GraphQLBsonRegularExpression
+    );
 
+    public static Map<String, GraphQLScalarType> getBsonScalars(){
+        Map<String, GraphQLScalarType> bsonScalars = new HashMap<>();
+        for(var scalar: BSON_SCALARS){
+            bsonScalars.put(scalar.getName(), scalar);
+        }
+        return bsonScalars;
     }
 
     public static String getBsonScalarHeader(){
-        try{
-            Field[] scalarFields = BsonScalars.class.getDeclaredFields();
-            String header = "";
-            for (Field scalar: scalarFields){
-                header += "scalar " + ((GraphQLScalarType) scalar.get(null)).getName() +" ";
-            }
-            return header;
-        } catch (IllegalAccessException e){
-            return Assert.assertShouldNeverHappen();
+        var header = "";
+        for (var scalar: BSON_SCALARS){
+            header += "scalar " + scalar.getName() +" ";
         }
+        return header;
     }
-
-
-
-
 }
