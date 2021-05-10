@@ -69,20 +69,15 @@ public class GraphQLAppDeserializer {
             }
         }
 
-        try{
+        try {
             return GraphQLApp.newBuilder()
                     .appDescriptor(descriptor)
                     .schema(schema)
                     .mappings(mappingsMap)
                     .build();
-
         } catch (IllegalStateException | IllegalArgumentException e){
-            throw  new GraphQLIllegalAppDefinitionException(
-                    e.getMessage()
-            );
+            throw new GraphQLIllegalAppDefinitionException(e.getMessage(), e);
         }
-
-
     }
 
     private static AppDescriptor getAppDescriptor(BsonDocument doc) throws GraphQLIllegalAppDefinitionException {
@@ -119,7 +114,7 @@ public class GraphQLAppDeserializer {
 
             return descBuilder.build();
 
-        }catch (BsonInvalidOperationException | IllegalStateException e){
+        } catch (BsonInvalidOperationException | IllegalStateException e){
             throw new GraphQLIllegalAppDefinitionException("Error with GraphQL App Descriptor", e);
         }
     }

@@ -105,9 +105,7 @@ public class AppDescriptor {
         public AppDescriptor build(){
 
             if (appName == null && uri == null){
-                throw new IllegalStateException(
-                        "At least one of 'name' and 'uri' must be not null!"
-                );
+                throw new IllegalStateException("At least one of 'name' and 'uri' must be not null!");
             }
 
             return new AppDescriptor(this.appName, this.enabled, this.description, this.uri);

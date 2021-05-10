@@ -44,7 +44,7 @@ import java.util.Map;
 import com.mongodb.MongoClient;
 
 
-@RegisterPlugin(name="graphAppDefinitionPutPatchChecker",
+@RegisterPlugin(name="graphAppDefinitionPatchChecker",
         description = "checks GraphQL application definitions on PATCH requests",
         interceptPoint = RESPONSE,
         enabledByDefault = true
@@ -89,7 +89,7 @@ public class GraphAppDefinitionPatchChecker implements MongoInterceptor {
             GraphQLAppDeserializer.fromBsonDocument(appDef);
         } catch(GraphQLIllegalAppDefinitionException e) {
             response.rollback(this.mclient);
-            response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition: " + e.getMessage());
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition: " + e.getMessage(), e);
         }
     }
 

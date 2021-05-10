@@ -20,17 +20,21 @@
  */
 package org.restheart.graphql.scalars.bsonCoercing;
 
-import graphql.Assert;
-import graphql.schema.*;
+import graphql.schema.Coercing;
+import graphql.schema.GraphQLScalarType;
 import java.lang.reflect.Field;
-import java.util.*;
-import static graphql.Scalars.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Map;
+import java.util.HashMap;
+
+import org.restheart.utils.LambdaUtils;
+
+import static graphql.Scalars.GraphQLString;
+import static graphql.Scalars.GraphQLInt;
+import static graphql.Scalars.GraphQLFloat;
+import static graphql.Scalars.GraphQLBoolean;
+import static graphql.Scalars.GraphQLLong;
 
 public class CoercingUtils {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CoercingUtils.class);
-
     private static final Map<String, GraphQLScalarType> builtInScalars = Map.ofEntries(
             Map.entry("String", GraphQLString),
             Map.entry("Int", GraphQLInt),
@@ -72,8 +76,7 @@ public class CoercingUtils {
             try {
                 coercingField.set(builtInScalars.get(s), coercing);
             } catch (IllegalAccessException e) {
-                LOGGER.error("Error replacing built-in scalars", e);
-                Assert.assertShouldNeverHappen();
+                LambdaUtils.throwsSneakyException(new RuntimeException("Error replacing built-in scalars", e));
             }
         }));
         coercingField.setAccessible(false);
