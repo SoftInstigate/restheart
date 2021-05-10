@@ -443,7 +443,7 @@
           <groupId>org.restheart</groupId>
           <artifactId>restheart-graphql</artifactId>
         </dependency>
-        <!-- uncomment to add test plugins, need also to regenerate native-image build configuration, see GRAAL.md -->
+        <!-- uncomment to add test plugins to the native image -->
         <!-- <dependency>
           <groupId>org.restheart</groupId>
           <artifactId>restheart-test-plugins</artifactId>
