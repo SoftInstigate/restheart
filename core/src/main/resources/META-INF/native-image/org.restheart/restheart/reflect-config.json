@@ -238,10 +238,6 @@
     "methods": [{ "name": "<init>", "parameterTypes": [] }]
   },
   {
-    "name": "com.sun.crypto.provider.HmacPKCS12PBESHA1",
-    "methods": [{ "name": "<init>", "parameterTypes": [] }]
-  },
-  {
     "name": "com.sun.crypto.provider.PBEKeyFactory$PBEWithMD5AndDES",
     "methods": [{ "name": "<init>", "parameterTypes": [] }]
   },
