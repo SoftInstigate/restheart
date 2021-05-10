@@ -41,8 +41,7 @@ import org.slf4j.LoggerFactory;
         interceptPoint = RESPONSE_ASYNC)
 public class EchoAsyncResponseInterceptor implements ByteArrayInterceptor {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(EchoAsyncResponseInterceptor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EchoAsyncResponseInterceptor.class);
 
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
