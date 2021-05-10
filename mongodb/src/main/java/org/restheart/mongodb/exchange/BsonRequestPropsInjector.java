@@ -343,7 +343,7 @@ public class BsonRequestPropsInjector {
                 } catch (Throwable t) {
                     response.setInError(
                             HttpStatus.SC_BAD_REQUEST,
-                            "illegal filter paramenter: " + f, t);
+                            "illegal filter paramenter: " + f + ", " + t.getMessage(), t);
                     return true;
                 }
 
