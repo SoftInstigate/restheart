@@ -29,6 +29,14 @@ $ docker run -it --rm \
 
 native-image arguments are defined in file `core/src/main/resources/META-INF/native-image/org.restheart/restheart/native-image.properties`
 
+### build linux based container
+
+```bash
+$ cd core
+$ docker build -f Dockerfile.native . -t softinstigate/restheart:6.0.0-RC1-native
+$ docker push softinstigate/restheart:6.0.0-RC1-native
+```
+
 ## start native image
 
 Start RESTHeart
