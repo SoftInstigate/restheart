@@ -78,3 +78,27 @@ Scenario: Create test data
     And request { "n": 1, "s": "foo", "timestamp": 1568295769260 } }
     When method POST
     Then assert responseStatus == 400
+
+    * header Authorization = authHeader
+    Given path coll + "/609a4a069dacff2e6014d89f"
+    And request { "n": "s" }
+    When method PATCH
+    Then assert responseStatus == 400
+
+    * header Authorization = authHeader
+    Given path coll + "/609a4a069dacff2e6014d89f"
+    And request { "n": 2 }
+    When method PATCH
+    Then assert responseStatus == 200
+
+    * header Authorization = authHeader
+    Given path coll + "/609a4a069dacff2e6014d89f"
+    And request { "timestamp": "1568295769260" }
+    When method PATCH
+    Then assert responseStatus == 400
+
+    * header Authorization = authHeader
+    Given path coll + "/609a4a069dacff2e6014d89f"
+    And request { "timestamp": { "$date": 1568295769260 } }
+    When method PATCH
+    Then assert responseStatus == 200
