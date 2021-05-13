@@ -162,5 +162,16 @@ permissions:
     priority: 100
 
 
+# mongo permissions
+
+  - role: mongoPermissions
+    predicate: path-prefix[path="/"]
+    priority: 0
+    mongo:
+        allowManagementRequests: true # default false
+        allowBulkPatch: true          # default false
+        allowBulkDelete: true         # default false
+        allowWriteMode: true          # default false
+
 
 
