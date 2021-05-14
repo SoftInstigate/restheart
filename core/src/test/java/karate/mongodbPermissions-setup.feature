@@ -14,24 +14,19 @@ Background:
     """
 
     * def admin = basic({username: 'admin', password: 'secret'})
-
+    * def dbName = '/test-all-permissions/'
 
 Scenario: Prepare data
 
-    # create db test-mongoPermissions
+    # create db test-db
     * header Authorization = admin
-    Given path '/test-mongoPermissions'
+    Given path db
+    # Given path dbName
     When method PUT
     * def ETAG = responseHeaders['ETag'][0]
 
 
     # create allowAll collection
     * header Authorization = admin
-    Given path '/test-mongoPermissions/allowAll'
-    When method PUT
-
-
-    # create allowNone collection
-    * header Authorization = admin
-    Given path '/test-mongoPermissions/allowNone'
+    Given path db + coll
     When method PUT
