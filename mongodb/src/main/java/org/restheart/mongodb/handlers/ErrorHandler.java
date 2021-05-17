@@ -73,18 +73,12 @@ public class ErrorHandler implements HttpHandler {
         try {
             next.handleRequest(exchange);
         } catch (MongoTimeoutException nte) {
-            response.setInError(
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Timeout connecting to MongoDB, is it running?",
-                    nte);
+            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Timeout connecting to MongoDB, is it running?", nte);
         } catch (MongoExecutionTimeoutException mete) {
-            response.setInError(
-                    HttpStatus.SC_REQUEST_TIMEOUT,
-                    "Operation exceeded time limit");
+            response.setInError(HttpStatus.SC_REQUEST_TIMEOUT, "Operation exceeded time limit");
         } catch (MongoBulkWriteException mce) {
             response.setInError(true);
-            var error = new BulkResultRepresentationFactory()
-                    .getRepresentation(MongoRequest.of(exchange).getPath(), mce);
+            var error = new BulkResultRepresentationFactory().getRepresentation(MongoRequest.of(exchange).getPath(), mce);
 
             response.setStatusCode(HttpStatus.SC_MULTI_STATUS);
             response.setContent(error);
@@ -93,25 +87,15 @@ public class ErrorHandler implements HttpHandler {
 
             LOGGER.error("Error handling the request", mce);
 
-            if (httpCode >= 500
-                    && mce.getMessage() != null
-                    && !mce.getMessage().trim().isEmpty()) {
-
-                response.setInError(
-                        httpCode,
-                        mce.getMessage());
-
+            if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().trim().isEmpty()) {
+                response.setInError(httpCode, mce.getMessage());
             } else {
-                response.setInError(
-                        httpCode,
-                        ResponseHelper.getMessageFromErrorCode(mce.getCode()));
+                response.setInError(httpCode, ResponseHelper.getMessageFromErrorCode(mce.getCode()));
             }
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
 
-            response.setInError(
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Error handling the request, see log for more information", t);
+            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see log for more information", t);
         }
     }
 }

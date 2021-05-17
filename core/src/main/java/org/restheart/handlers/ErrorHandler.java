@@ -60,17 +60,15 @@ public class ErrorHandler implements HttpHandler {
         try {
             next.handleRequest(exchange);
         } catch (NoClassDefFoundError ncdfe) {
-            // this occurs with plugins missing external dependencies
+            // this can occur with plugins missing external dependencies
 
-            Response.of(exchange).setInError(
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Error handling the request, see logs for more information");
+            Response.of(exchange).setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see logs for more information");
 
             var pi = Request.of(exchange).getPipelineInfo();
 
             if (pi != null) {
                 var errMsg = "Error handling the request. "
-                        + "An external dependency is missing for "
+                        + "An external dependency could be missing for "
                         + pi.getType().name().toLowerCase()
                         + " "
                         + pi.getName()
@@ -106,17 +104,13 @@ public class ErrorHandler implements HttpHandler {
                 LOGGER.error("Error handling the request", le);
             }
 
-            Response.of(exchange).setInError(
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Error handling the request, see logs for more information", le);
+            Response.of(exchange).setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see logs for more information", le);
 
             sender.handleRequest(exchange);
         } catch (Throwable t) {
             LOGGER.error("Error handling the request", t);
 
-            Response.of(exchange).setInError(
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                    "Error handling the request, see logs for more information", t);
+            Response.of(exchange).setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error handling the request, see logs for more information", t);
 
             sender.handleRequest(exchange);
         }

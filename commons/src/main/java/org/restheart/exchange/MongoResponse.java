@@ -186,20 +186,10 @@ public class MongoResponse extends BsonResponse {
      * @param t
      */
     @Override
-    public void setInError(
-            int code,
-            String message,
-            Throwable t) {
+    public void setInError(int code, String message, Throwable t) {
         setStatusCode(code);
-
-        String httpStatusText = HttpStatus.getStatusText(code);
-
         setInError(true);
-
-        setContent(getErrorContent(code,
-                httpStatusText,
-                message,
-                t, false));
+        setContent(getErrorContent(code, HttpStatus.getStatusText(code), message, t, false));
     }
 
     /**
@@ -234,27 +224,21 @@ public class MongoResponse extends BsonResponse {
             boolean includeStackTrace) {
         var rep = new BsonDocument();
 
-        rep.put("http status code",
-                new BsonInt32(code));
-        rep.put("http status description",
-                new BsonString(httpStatusText));
+        rep.put("http status code", new BsonInt32(code));
+        rep.put("http status description", new BsonString(httpStatusText));
+
         if (message != null) {
-            rep.put("message", new BsonString(
-                    avoidEscapedChars(message)));
+            rep.put("message", new BsonString(avoidEscapedChars(message)));
         }
 
         if (t != null) {
-            rep.put(
-                    "exception",
-                    new BsonString(t.getClass().getName()));
+            rep.put("exception", new BsonString(t.getClass().getName()));
 
             if (t.getMessage() != null) {
                 if (t instanceof JsonParseException) {
-                    rep.put("exception message",
-                            new BsonString("invalid json"));
+                    rep.put("exception message", new BsonString("invalid json"));
                 } else {
-                    rep.put("exception message",
-                            new BsonString(avoidEscapedChars(t.getMessage())));
+                    rep.put("exception message", new BsonString(avoidEscapedChars(t.getMessage())));
                 }
             }
 
@@ -303,9 +287,7 @@ public class MongoResponse extends BsonResponse {
     private String avoidEscapedChars(String s) {
         return s == null
                 ? null
-                : s
-                        .replaceAll("\"", "'")
-                        .replaceAll("\t", "  ");
+                : s.replaceAll("\"", "'").replaceAll("\t", "  ");
     }
 
     /**
