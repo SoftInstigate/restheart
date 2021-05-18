@@ -27,7 +27,7 @@ import io.github.classgraph.ClassGraph;
  * this utility generates the entries to add to
  * commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json
  *
- * run java -cp core/target/restheart.jar org.restheart.utils.GenerateGraalvmReflectConfig
+ * run: java -cp core/target/restheart.jar org.restheart.utils.GenerateGraalvmReflectConfig
  */
 public class GenerateGraalvmReflectConfig {
     private static final String entry = """
@@ -59,6 +59,15 @@ public class GenerateGraalvmReflectConfig {
             .rejectClasses("jdk.internal.net.http.common.SSLFlowDelegate", "jdk.internal.net.http.common.SSLFlowDelegate$Monitor")
             // exchange classes, such as StringRequest
             .acceptPackages("org.restheart.exchange")
+            // security classes, such as BaseAccount
+            .acceptClasses( "org.restheart.security.BaseAccount",
+                            "org.restheart.security.BaseAclPermission",
+                            "org.restheart.security.BasePrincipal",
+                            "org.restheart.security.FileRealmAccount",
+                            "org.restheart.security.JwtAccount",
+                            "org.restheart.security.MongoPermissions",
+                            "org.restheart.security.MongoRealmAccount",
+                            "org.restheart.security.PwdCredentialAccount")
             // BsonUtils
             .acceptClasses("org.restheart.utils.BsonUtils")
             // Bson classes, such as BsonDocument
