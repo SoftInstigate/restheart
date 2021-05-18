@@ -1,4 +1,4 @@
-@onlyme
+@ignore
 @parallel=false
 Feature: Test Change Streams
 
