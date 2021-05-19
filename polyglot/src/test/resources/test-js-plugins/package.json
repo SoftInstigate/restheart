@@ -23,6 +23,6 @@
   "rh:interceptors": [
     "hello-interceptor.js",
     "mongo-get-doc-interceptor.js",
-    "mongo-post-coll-interceptor"
+    "mongo-post-coll-interceptor.js"
   ]
 }
