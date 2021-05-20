@@ -15,20 +15,21 @@ volumes:
 
 services:
     restheart:
-        image: softinstigate/restheart:6.0.0-native
+        image: softinstigate/restheart:6.0.0-graalvm
         container_name: restheart
         environment:
             MONGO_URI: mongodb://restheart:R3ste4rt!@restheart-mongo
-        command: [ "/rh/etc/restheart.yml", "-e", "/rh/etc/default.properties"]
+        command: ["--envFile", "/opt/restheart/etc/default.properties"]
         depends_on:
             - mongodb
         networks:
             - restheart-backend
-        volumes:
-            - ./etc:/rh/etc
-            - ./plugins:/rh/plugins
         ports:
             - "8080:8080"
+        # can add plugins as follows
+        # volumes:
+        #     - my-plugin.jar:/opt/restheart/plugins/my-plugin.jar
+        #     - my-js-plugin:/opt/restheart/plugins/my-js-plugin
 
     mongodb:
         image: mongo:4.2

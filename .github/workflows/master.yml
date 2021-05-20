@@ -54,7 +54,7 @@ jobs:
       - name: Build and Push distroless docker image
         if: ${{ false }} # temporarily disabled becuase there's no JDK 16 for distroless images
         run: |
-          docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless ./core/.
+          docker build --file ./core/Dockerfile.distroless -t softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless ./core/.
           docker push softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
           docker tag softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart-snapshot:distroless
           docker push softinstigate/restheart-snapshot:distroless
