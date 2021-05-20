@@ -28,8 +28,8 @@ services:
             - "8080:8080"
         # can add plugins as follows
         # volumes:
-        #     - my-plugin.jar:/opt/restheart/plugins/my-plugin.jar
-        #     - my-js-plugin:/opt/restheart/plugins/my-js-plugin
+        #     - ./my-plugin.jar:/opt/restheart/plugins/my-plugin.jar
+        #     - ./my-js-plugin:/opt/restheart/plugins/my-js-plugin
 
     mongodb:
         image: mongo:4.2
