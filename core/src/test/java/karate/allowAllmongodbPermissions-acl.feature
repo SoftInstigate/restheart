@@ -14,20 +14,7 @@ Background:
     """
 
 
-    * def addressSchema = 
-    """
-    {
-        "$schema": "https://json-schema.org/draft-04/schema#",
-        "type": "object",
-        "properties": {
-            "address": { "type": "string" },
-            "city": { "type": "string" },
-            "postal-code": { "type": "string" },
-            "country": { "type": "string"}
-        },
-        "required": ["address", "city", "country"]
-    }
-    """
+    * def addressSchema = { _id: "address", "$schema": "https://json-schema.org/draft-04/schema#","type": "object","properties": { "address": { "type": "string" },"city": { "type": "string" },"postal-code": { "type": "string" },"country": { "type": "string"}},"required": ["address", "city", "country"]}
     
     
     * def admin = basic({username: 'admin', password: 'secret'})
@@ -377,9 +364,9 @@ Scenario: [Allowed] Create, modify and delete a schema
 
     # create a schema for address
     * headers { Authorization: '#(mongo)' }
-    Given path dbName + "_schemas/address"
+    Given path dbName + "_schemas/"
     And request addressSchema
-    When method PUT
+    When method POST
     Then status 201
 
 

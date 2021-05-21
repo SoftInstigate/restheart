@@ -252,7 +252,7 @@ Scenario: [NOT Allowed] Create and delete a collection
 Scenario: [NOT Allowed] Get meta of db
 
     # get meta of a db
-    * header Authorization = admin
+    * header Authorization = mongo
     Given path dbName + "_meta"
     When method GET
     Then status 403
@@ -260,7 +260,7 @@ Scenario: [NOT Allowed] Get meta of db
 Scenario: [NOT Allowed] Get meta of collection
 
     # get meta of a collection
-    * header Authorization = admin
+    * header Authorization = mongo
     Given path dbName + "allowNone/_meta"
     When method GET
     Then status 403

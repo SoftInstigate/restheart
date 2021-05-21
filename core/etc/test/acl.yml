@@ -173,6 +173,7 @@ permissions:
         allowBulkDelete: true         # default false
         allowWriteMode: true          # default false
 
+
   - role: mongoPermissions
     predicate: path-prefix[path="/test-no-permissions"]
     priority: 0
