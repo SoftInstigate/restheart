@@ -1,4 +1,4 @@
-@only
+
 Feature: Test mongodb permissions in acl file
   
 Background:
