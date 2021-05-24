@@ -11,6 +11,7 @@ import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
+import org.restheart.exchange.Request;
 import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;
@@ -41,7 +42,15 @@ public class FilterOperatorsBlacklist implements Initializer {
     public void init() {
         this.registry
                 .getGlobalSecurityPredicates()
-                .add((Predicate) (HttpServerExchange exchange) -> !contains(MongoRequest.of(exchange).getFiltersDocument(), blacklist));
+                .add((Predicate) (HttpServerExchange exchange) -> {
+                    var request = Request.of(exchange);
+
+                    if (request instanceof MongoRequest) {
+                        return !contains(((MongoRequest)request).getFiltersDocument(), blacklist);
+                    } else {
+                        return true;
+                    }
+                });
     }
 
     /**
