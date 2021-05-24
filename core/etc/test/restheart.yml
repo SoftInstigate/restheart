@@ -239,10 +239,6 @@ plugins-args:
       db: test-graphql
       collection: gql-apps
       verbose: true
-    # a global blacklist for mongodb operators in filter query parameter
-    filterOperatorsBlacklist:
-      blacklist: [ "$where" ]
-      enabled: false
     testInitializer:
         enabled: true
     rndTokenService:

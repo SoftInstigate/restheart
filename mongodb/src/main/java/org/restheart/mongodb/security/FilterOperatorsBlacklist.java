@@ -22,7 +22,8 @@ import org.restheart.plugins.RegisterPlugin;
  * Forbids all requests to Mongo API that use an blacklisted operator in the filter query paramter
  */
 @RegisterPlugin(name = "filterOperatorsBlacklist",
-    description = "forbids requests containing filter qparameter using operator in blacklist")
+    description = "forbids requests containing filter qparameter using operator in blacklist",
+    enabledByDefault = false)
 public class FilterOperatorsBlacklist implements Initializer {
     private PluginsRegistry registry;
     private List<String> blacklist;
