@@ -317,9 +317,6 @@ plugins-directory: {{{plugins-directory}}}
 plugins-args:
   mongo:
     uri: /
-  # a global blacklist for mongodb operators in filter query parameter
-  filterOperatorsBlacklist:
-    blacklist: [ "$where" ]
   rndTokenService:
     uri: /tokens
   ping:
@@ -332,6 +329,10 @@ plugins-args:
     db: restheart
     collection: gql-apps
     verbose: true
+  # a global blacklist for mongodb operators in filter query parameter
+  filterOperatorsBlacklist:
+    blacklist: [ "$where" ]
+    enabled: false
 
 #### Logging
 
