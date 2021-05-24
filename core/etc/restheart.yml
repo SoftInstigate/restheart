@@ -317,6 +317,9 @@ plugins-directory: {{{plugins-directory}}}
 plugins-args:
   mongo:
     uri: /
+  # a global blacklist for mongodb operators in filter query parameter
+  filterOperatorsBlacklist:
+    blacklist: [ "$where" ]
   rndTokenService:
     uri: /tokens
   ping:
