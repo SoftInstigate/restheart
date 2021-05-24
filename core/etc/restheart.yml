@@ -322,6 +322,7 @@ plugins-args:
   # a global blacklist for mongodb operators in filter query parameter
   filterOperatorsBlacklist:
     blacklist: [ "$where" ]
+    enabled: falsecore/etc/restheart.yml
 
 #### Logging
 

@@ -19,7 +19,8 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 
 @RegisterPlugin(name = "filterOperatorsBlacklist",
-    description = "forbids requests containing filter qparameter using operator in blacklist")
+    description = "forbids requests containing filter qparameter using operator in blacklist",
+    enabledByDefault = false)
 public class FilterOperatorsBlacklist implements Initializer {
     private PluginsRegistry registry;
     private List<String> blacklist;
