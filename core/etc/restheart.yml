@@ -319,6 +319,9 @@ plugins-args:
     enabled: false
     uri: /echo
     secured: false
+  # a global blacklist for mongodb operators in filter query parameter
+  filterOperatorsBlacklist:
+    blacklist: [ "$where" ]
 
 #### Logging
 
