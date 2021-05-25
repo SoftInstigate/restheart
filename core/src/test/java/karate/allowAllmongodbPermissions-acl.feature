@@ -337,7 +337,7 @@ Scenario: [Allowed] Create and delete a collection
 Scenario: [Allowed] Get meta of db
 
     # get meta of a db
-    * header Authorization = admin
+    * header Authorization = mongo
     Given path dbName + "_meta"
     When method GET
     Then status 200
@@ -345,7 +345,7 @@ Scenario: [Allowed] Get meta of db
 Scenario: [Allowed] Get meta of collection
 
     # get meta of a collection
-    * header Authorization = admin
+    * header Authorization = mongo
     Given path dbName + "allowAll/_meta"
     When method GET
     Then status 200

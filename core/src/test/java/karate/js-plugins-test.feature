@@ -26,7 +26,7 @@ Background:
 
 Scenario:
     * call copyJsPluginDir
-    * call sleep 5
+    * call sleep 2
     Given path '/hello'
     When method GET
     Then status 200

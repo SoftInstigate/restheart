@@ -3,6 +3,7 @@ package karate;
 import static java.nio.file.StandardCopyOption.*;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,12 +35,12 @@ public class CopyFolderRecursively {
                 .forEach(File::delete);
         }     
 
-        // Thread.sleep(5000);
 
         try (Stream<Path> stream = Files.walk(src)) {
             stream.forEach(source -> copy(source, dest.resolve(src.relativize(source))) );
         }
-        
+        // file set last modified
+        setLastModified(jsPluginDir.toFile(), System.currentTimeMillis());
     }
 
     private void copy(Path source, Path dest) {
@@ -50,5 +51,9 @@ public class CopyFolderRecursively {
         }
     }
 
+
+    public void setLastModified(File file, long timestamp) {
+        file.setLastModified(timestamp);
+    }
     
 }
