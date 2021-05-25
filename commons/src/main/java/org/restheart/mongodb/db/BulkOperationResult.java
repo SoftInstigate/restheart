@@ -21,7 +21,6 @@
 package org.restheart.mongodb.db;
 
 import com.mongodb.bulk.BulkWriteResult;
-import org.restheart.exchange.OperationResult;
 
 /**
  *

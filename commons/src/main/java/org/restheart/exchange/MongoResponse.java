@@ -31,6 +31,7 @@ import io.undertow.util.Headers;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonParseException;
 import org.restheart.utils.HttpStatus;
+import org.restheart.mongodb.db.OperationResult;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.LoggerFactory;
 

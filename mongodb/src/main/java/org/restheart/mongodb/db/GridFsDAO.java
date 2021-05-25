@@ -39,7 +39,7 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.OperationResult;
+
 import static org.restheart.utils.HttpStatus.*;
 import org.slf4j.LoggerFactory;
 

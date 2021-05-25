@@ -17,7 +17,7 @@
  * limitations under the License.
  * =========================LICENSE_END==================================
  */
-package org.restheart.exchange;
+package org.restheart.mongodb.db;
 
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
