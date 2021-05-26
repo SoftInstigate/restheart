@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.utils;
+package org.restheart.graal;
 
 import io.github.classgraph.ClassGraph;
 
@@ -27,7 +27,7 @@ import io.github.classgraph.ClassGraph;
  * this utility generates the entries to add to
  * commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json
  *
- * run: java -cp core/target/restheart.jar org.restheart.utils.GenerateGraalvmReflectConfig
+ * run: java -cp core/target/restheart.jar org.restheart.graal.GenerateGraalvmReflectConfig
  */
 public class GenerateGraalvmReflectConfig {
     private static final String entry = """
@@ -57,8 +57,9 @@ public class GenerateGraalvmReflectConfig {
             // HttpClient
             .acceptPackages("java.net.http", "jdk.internal.net.http")
             .rejectClasses("jdk.internal.net.http.common.SSLFlowDelegate", "jdk.internal.net.http.common.SSLFlowDelegate$Monitor")
-            // exchange classes, such as StringRequest
+            // commons classes in package org.restheart.mongodb.db
             .acceptPackages("org.restheart.exchange")
+            .acceptClasses( "org.restheart.mongodb.db.OperationResult", "org.restheart.mongodb.db.BulkOperationResult")
             // security classes, such as BaseAccount
             .acceptClasses( "org.restheart.security.BaseAccount",
                             "org.restheart.security.BaseAclPermission",

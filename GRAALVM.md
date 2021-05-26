@@ -97,6 +97,16 @@ The following fields must be configured with `allowWrite: true`
 }
 ```
 
+#### Generate reflect configuration needed to access Java types from JavaScript
+
+Run
+
+```bash
+$ java -cp core/target/restheart.jar org.restheart.graal.GenerateGraalvmReflectConfig
+```
+
+And add output to `commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json`
+
 ### allow restheart-native js plugins access java classes via reflection
 
 restheart-native js plugins access java classes via reflection, the following utility generates the reflect-config entries to add to the native image's `reflect-config.json`
