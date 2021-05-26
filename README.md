@@ -22,13 +22,13 @@
 
 ## Introduction
 
-RESTHeart is the most popular **REST API** for **MongoDB**. All MongoDB's capabilities can be automatically accessed via a complete REST API.
+RESTHeart is the most popular **API** for **MongoDB**. All MongoDB's capabilities can be automatically accessed via REST, GraphQL and WebSocket APIs.
 
 RESTHeart provides out-of-the-box:
 
 1. Data persistence via MongoDB.
 1. Secure Identity and Access Management.
-1. Complete REST API with JSON messages.
+1. API with JSON messages.
 
 RESTHeart is a modern backend for Web and Mobile apps, designed to radically simplify server-side development and deployment.
 
