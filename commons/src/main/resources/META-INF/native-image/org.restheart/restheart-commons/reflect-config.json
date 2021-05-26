@@ -4817,16 +4817,6 @@
     "allDeclaredClasses": true
   },
   {
-    "name": "org.restheart.exchange.OperationResult",
-    "allPublicFields": true,
-    "allPublicConstructors": true,
-    "allDeclaredConstructors": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicClasses": true,
-    "allDeclaredClasses": true
-  },
-  {
     "name": "org.restheart.exchange.PipelineInfo",
     "allPublicFields": true,
     "allPublicConstructors": true,
@@ -4948,6 +4938,26 @@
   },
   {
     "name": "org.restheart.exchange.UnsupportedDocumentIdException",
+    "allPublicFields": true,
+    "allPublicConstructors": true,
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true,
+    "allPublicClasses": true,
+    "allDeclaredClasses": true
+  },
+  {
+    "name": "org.restheart.mongodb.db.OperationResult",
+    "allPublicFields": true,
+    "allPublicConstructors": true,
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true,
+    "allPublicClasses": true,
+    "allDeclaredClasses": true
+  },
+  {
+    "name": "org.restheart.mongodb.db.BulkOperationResult",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
