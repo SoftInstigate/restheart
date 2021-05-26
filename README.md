@@ -1,4 +1,4 @@
-# RESTHeart - The REST API for MongoDB.
+# RESTHeart - The Runtime for Microservices with Declarative Security and Instant API on MongoDB
 
 [![Donate](https://img.shields.io/badge/Donate-Patreon-orange.svg?colorB=F96854)](https://www.patreon.com/restheart)
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
@@ -22,17 +22,13 @@
 
 ## Introduction
 
-RESTHeart is the most popular **API** for **MongoDB**. All MongoDB's capabilities can be automatically accessed via REST, GraphQL and WebSocket APIs.
+RESTHeart is a modern bRuntime for Microservices, designed to radically simplify server-side development and deployment.
 
 RESTHeart provides out-of-the-box:
 
-1. Data persistence via MongoDB.
-1. Secure Identity and Access Management.
-1. API with JSON messages.
-
-RESTHeart is a modern backend for Web and Mobile apps, designed to radically simplify server-side development and deployment.
-
-RESTHeart comes with complete functionalities out of the box, but you can extend it with Java to implement custom services.
+1. Polyglot Development Framework supporting Java, Kotlin, JavaScript and TypeScript
+2. Data persistence on MongoDB with REST, GraphQL and WebSocket APIs
+3. Secure Identity and Access Management
 
 ## Download
 
