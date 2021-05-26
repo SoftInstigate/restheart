@@ -21,7 +21,6 @@ Scenario: Prepare data
     # create db test-db
     * header Authorization = admin
     Given path db
-    # Given path dbName
     When method PUT
     * def ETAG = responseHeaders['ETag'][0]
 
