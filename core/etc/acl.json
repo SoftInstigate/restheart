@@ -2,7 +2,12 @@
   {
     "_id": "admonCanDoEverything",
     "description": [
-        "admin role can do everything"
+        "admin role can do everything",
+        "WARNING: mongoAclAuthorizer is enabled by default",
+                 "it defines 'admin' as the root-role that can execute any request",
+                 "if a permission does not authorize a request for the admin role,",
+                 "the mongoAclAuthorizer will authorize it anyway",
+                 "set 'root-role: null' in restheart.yml to avoid this"
     ],
     "predicate": "path-prefix('/')",
     "roles": ["admin"],
