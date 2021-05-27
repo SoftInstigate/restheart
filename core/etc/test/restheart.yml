@@ -130,9 +130,8 @@ authenticators:
  # Authorizers verify if a request is allowed.
 
  # As an in-bound request is received and authenticated the isAllowed() method is
- # called on each authenticator in turn until one of the following occurs:
- # an authenticator allows the incoming request or the list of authenticators is
- # exhausted. In the latter case, the request ends and 403 Forbidden is returned.
+ # called on each authorizers. A secured request is allowed when no `VETOER` denies
+ # it and at least one `ALLOWER` allows it.
 
  # See README.md for the list of available Authorizers
 
