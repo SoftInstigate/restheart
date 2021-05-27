@@ -9,7 +9,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "transpile" : "npx tsc test.ts --module ES2015 --target ES2015"
   },
   "author": "",
   "license": "ISC",
@@ -18,7 +19,8 @@
     "./sub/hello.js",
     "require-module-service.js",
     "mclient-service.js",
-    "http-client.js"
+    "http-client.js",
+    "test.js"
   ],
   "rh:interceptors": [
     "hello-interceptor.js",
