@@ -1,4 +1,4 @@
-
+@only
 Feature: Test javascript plugins
 
 Background:
@@ -14,6 +14,17 @@ Background:
     }
     """
 
+
+    * def basic =
+    """
+    function(creds) {
+    var temp = creds.username + ':' + creds.password;
+    var Base64 = Java.type('java.util.Base64');
+    var encoded = Base64.getEncoder().encodeToString(temp.toString().getBytes());
+    return 'Basic ' + encoded;
+    }
+    """
+
     * def copyJsPluginDir = 
     """
     function() {
@@ -23,11 +34,12 @@ Background:
     }
     """
 
-
     * def admin = basic({username: 'admin', password: 'secret'})
 
 
 Scenario: Test hello
+    * call copyJsPluginDir
+    * call sleep 2
     Given path '/hello'
     When method GET
     Then status 200
@@ -39,7 +51,6 @@ Scenario: Test sub hello
     Given path '/sub/hello'
     When method GET
     Then status 200
-    And match response == { msg: "Hello World, I\'m the script in the sub directory" }
 
 
 Scenario: Test http client
@@ -48,11 +59,12 @@ Scenario: Test http client
     When method GET
     Then status 200
 
+
 Scenario: Test mclient-service
 
     # create test-db
     * header Authorization = admin
-    Given path 'test-db'
+    Given path '/test-db'
     When method PUT
     * def ETAG = responseHeaders['ETag'][0]
     
@@ -63,16 +75,17 @@ Scenario: Test mclient-service
     When method PUT
     
 
+    # send request
+    * header Authorization = admin
     Given path '/mclientService'
     When method GET
     Then status 200
 
 
-
     # delete test-db
-    * headers { "Authorization" : '#(admin)', 'If-Match': '#(ETag)' }
-    And param filter = '{"_id":{"$exists":true}}'
+    * headers { "Authorization" : '#(admin)', "If-Match" : "#(ETAG)" }
+    Given path '/test-db'
     When method DELETE
-    Then status 204
+    And status 204
 
 
