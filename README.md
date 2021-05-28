@@ -1,6 +1,5 @@
 # RESTHeart - The Runtime for Microservices with Declarative Security and Instant API on MongoDB
 
-[![Donate](https://img.shields.io/badge/Donate-Patreon-orange.svg?colorB=F96854)](https://www.patreon.com/restheart)
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 ![Release build](https://github.com/SoftInstigate/restheart/workflows/Build%20stable%20release/badge.svg)
 ![Snapshot build](https://github.com/SoftInstigate/restheart/workflows/Build%20snapshot%20release/badge.svg)
@@ -9,8 +8,6 @@
 [![javadoc](https://javadoc.io/badge2/org.restheart/restheart/javadoc.svg)](https://javadoc.io/doc/org.restheart/restheart)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat at https://gitter.im/SoftInstigate/restheart](https://badges.gitter.im/SoftInstigate/restheart.svg)](https://gitter.im/SoftInstigate/restheart?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-<!-- [![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/) -->
 
 ## Table of Contents
 
