@@ -19,7 +19,7 @@
 
 ## Introduction
 
-RESTHeart is a modern bRuntime for Microservices, designed to radically simplify server-side development and deployment.
+RESTHeart is a modern Runtime for Microservices, designed to radically simplify server-side development and deployment.
 
 RESTHeart provides out-of-the-box:
 
@@ -39,6 +39,12 @@ Find setup instructions at [Setup](https://restheart.org/docs/setup/) documentat
 
 ```bash
 $ mvn clean package
+```
+
+You can then run it with (make sure to have mongod running):
+
+```bash
+$ java -jar core/target/restheart.jar core/etc/restheart.yml -e core/etc/default.properties
 ```
 
 ## Documentation
