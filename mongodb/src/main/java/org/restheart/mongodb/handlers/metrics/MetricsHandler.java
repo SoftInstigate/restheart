@@ -44,6 +44,8 @@ import static org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT_KEY;
 import static org.restheart.exchange.ExchangeKeys._METRICS;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.exchange.Response;
+import org.restheart.exchange.ServiceResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL;
@@ -52,6 +54,7 @@ import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.OFF;
 import static org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT;
 import org.restheart.utils.HttpStatus;
+import org.restheart.utils.LambdaUtils;
 
 /**
  * A handler for dropwizard.io metrics that can return both default metrics JSON
@@ -401,12 +404,15 @@ public class MetricsHandler extends PipelinedHandler {
             var body = generateResponse(metricsLevel, registry);
 
             if (body != null) {
-                ByteArrayProxyResponse.of(exchange).writeContent(body.getBytes());
-
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, getOutputContentType());
+                ServiceResponse.of(exchange).setCustomerSender(() -> {
+                    try {
+                        exchange.getResponseSender().send(body);
+                    } catch(Throwable t) {
+                        LambdaUtils.throwsSneakyException(t);
+                    }
+                });
             }
-
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, getOutputContentType());
-            exchange.getResponseSender().send(generateResponse(metricsLevel, registry));
         }
 
         /**
