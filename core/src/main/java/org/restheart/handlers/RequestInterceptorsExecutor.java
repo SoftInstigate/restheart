@@ -152,7 +152,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                                 interceptPoint,
                                 ex);
                         Exchange.setInError(exchange);
-                        LambdaUtils.throwsSneakyExcpetion(ex);
+                        LambdaUtils.throwsSneakyException(ex);
                     }
                 });
 

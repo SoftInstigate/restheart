@@ -30,7 +30,7 @@ public class LambdaUtils {
      * Seehttps://www.baeldung.com/java-sneaky-throws
      * @param ex
      */
-    public static void throwsSneakyExcpetion(Throwable ex) {
+    public static void throwsSneakyException(Throwable ex) {
         sneakyThrow(ex);
     }
 
