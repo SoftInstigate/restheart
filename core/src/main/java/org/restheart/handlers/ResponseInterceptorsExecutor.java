@@ -163,7 +163,7 @@ public class ResponseInterceptorsExecutor
                                 ex);
 
                         Exchange.setInError(exchange);
-                        LambdaUtils.throwsSneakyExcpetion(ex);
+                        LambdaUtils.throwsSneakyException(ex);
                     }
                 });
     }
@@ -230,7 +230,7 @@ public class ResponseInterceptorsExecutor
                                     ex);
 
                             Exchange.setInError(exchange);
-                            LambdaUtils.throwsSneakyExcpetion(ex);
+                            LambdaUtils.throwsSneakyException(ex);
                         }
                     });
                 });
