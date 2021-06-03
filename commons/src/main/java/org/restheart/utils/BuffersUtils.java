@@ -35,16 +35,14 @@ import org.xnio.Buffers;
  */
 public class BuffersUtils {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(BuffersUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BuffersUtils.class);
 
     /**
      * @param srcs
      * @return
      * @throws IOException
      */
-    public static ByteBuffer toByteBuffer(final PooledByteBuffer[] srcs)
-            throws IOException {
+    public static ByteBuffer toByteBuffer(final PooledByteBuffer[] srcs) throws IOException {
         if (srcs == null) {
             return null;
         }
@@ -75,8 +73,7 @@ public class BuffersUtils {
         return dst.flip();
     }
 
-    public static byte[] toByteArray(final PooledByteBuffer[] srcs)
-            throws IOException {
+    public static byte[] toByteArray(final PooledByteBuffer[] srcs) throws IOException {
         ByteBuffer content = toByteBuffer(srcs);
 
         byte[] ret = new byte[content.limit()];
@@ -86,13 +83,11 @@ public class BuffersUtils {
         return ret;
     }
 
-    public static String toString(final PooledByteBuffer[] srcs, Charset cs)
-            throws IOException {
+    public static String toString(final PooledByteBuffer[] srcs, Charset cs) throws IOException {
         return new String(toByteArray(srcs), cs);
     }
 
-    public static String toString(final byte[] src, Charset cs)
-            throws IOException {
+    public static String toString(final byte[] src, Charset cs) throws IOException {
         return new String(src, cs);
     }
 
@@ -104,9 +99,7 @@ public class BuffersUtils {
      * @param exchange
      * @return
      */
-    public static int transfer(final ByteBuffer src,
-            final PooledByteBuffer[] dest,
-            HttpServerExchange exchange) {
+    public static int transfer(final ByteBuffer src, final PooledByteBuffer[] dest, HttpServerExchange exchange) {
         int copied = 0;
         int pidx = 0;
 
@@ -115,8 +108,7 @@ public class BuffersUtils {
             ByteBuffer _dest;
 
             if (dest[pidx] == null) {
-                dest[pidx] = exchange.getConnection()
-                        .getByteBufferPool().allocate();
+                dest[pidx] = exchange.getConnection().getByteBufferPool().allocate();
                 _dest = dest[pidx].getBuffer();
             } else {
                 _dest = dest[pidx].getBuffer();
@@ -166,9 +158,7 @@ public class BuffersUtils {
      * @param exchange
      * @return
      */
-    public static int append(final ByteBuffer src,
-            final PooledByteBuffer[] dest,
-            HttpServerExchange exchange) {
+    public static int append(final ByteBuffer src, final PooledByteBuffer[] dest, HttpServerExchange exchange) {
         int copied = 0;
         int pidx = 0;
 
@@ -177,8 +167,7 @@ public class BuffersUtils {
             ByteBuffer _dest;
 
             if (dest[pidx] == null) {
-                dest[pidx] = exchange.getConnection()
-                        .getByteBufferPool().allocate();
+                dest[pidx] = exchange.getConnection().getByteBufferPool().allocate();
                 _dest = dest[pidx].getBuffer();
             } else {
                 _dest = dest[pidx].getBuffer();
@@ -202,17 +191,14 @@ public class BuffersUtils {
         return copied;
     }
 
-    public static int transfer(final PooledByteBuffer[] src,
-            final PooledByteBuffer[] dest,
-            HttpServerExchange exchange) {
+    public static int transfer(final PooledByteBuffer[] src, final PooledByteBuffer[] dest, final HttpServerExchange exchange) {
         int copied = 0;
         int idx = 0;
 
         while (idx < src.length && idx < dest.length) {
             if (src[idx] != null) {
                 if (dest[idx] == null) {
-                    dest[idx] = exchange.getConnection()
-                            .getByteBufferPool().allocate();
+                    dest[idx] = exchange.getConnection().getByteBufferPool().allocate();
                 }
 
                 ByteBuffer _dest = dest[idx].getBuffer();

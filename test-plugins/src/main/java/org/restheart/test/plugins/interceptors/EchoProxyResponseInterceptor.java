@@ -21,7 +21,6 @@
 
 package org.restheart.test.plugins.interceptors;
 
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.undertow.util.HttpString;
 import java.nio.charset.Charset;
@@ -48,11 +47,10 @@ import org.slf4j.LoggerFactory;
         interceptPoint = RESPONSE)
 public class EchoProxyResponseInterceptor implements ProxyInterceptor {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(EchoProxyResponseInterceptor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EchoProxyResponseInterceptor.class);
 
     /**
-     * shows how to inject configuration via @OnInit
+     * shows how to inject configuration via @InjectConfiguration
      *
      * @param args
      */
@@ -63,29 +61,22 @@ public class EchoProxyResponseInterceptor implements ProxyInterceptor {
 
     @Override
     public void handle(ByteArrayProxyRequest request, ByteArrayProxyResponse response) throws Exception {
-        response.getHeaders().add(HttpString.tryFromString("header"),
-                        "added by echoProxyResponseInterceptor "
-                        + request.getPath());
+        response.getHeaders().add(HttpString.tryFromString("header"), "added by echoProxyResponseInterceptor " + request.getPath());
 
         var content = response.readContent();
         if (content != null && response.isContentTypeJson()) {
-            var _content = JsonParser.parseString(
-                    BuffersUtils.toString(content,
-                            Charset.forName("utf-8")));
+            var jsonContent = JsonParser.parseString(BuffersUtils.toString(content,Charset.forName("utf-8")));
 
-            JsonObject __content = _content
-                    .getAsJsonObject();
+            var jsonObjectContent = jsonContent.getAsJsonObject();
 
-            __content.addProperty("prop3",
-                    "property added by echoProxyResponseInterceptor");
+            jsonObjectContent.addProperty("prop3", "property added by echoProxyResponseInterceptor");
 
-            response.writeContent(__content.toString().getBytes());
-
+            response.writeContent(jsonObjectContent.toString().getBytes());
         }
     }
 
     @Override
     public boolean resolve(ByteArrayProxyRequest request, ByteArrayProxyResponse response) {
-        return request.getPath().equals("/piecho");
+        return request.getPath().equals("/piecho") && response.isContentAvailable();
     }
 }

@@ -41,7 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Executes response interceptors t
+ * Executes response interceptors
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
@@ -99,8 +99,7 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private void executeResponseInterceptor(HttpServerExchange exchange, Service handlingService, Request request,
-            Response response) {
+    private void executeResponseInterceptor(HttpServerExchange exchange, Service handlingService, Request request, Response response) {
 
         Exchange.setResponseInterceptorsExecuted(exchange);
 
@@ -113,40 +112,29 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         }
 
         inteceptors.stream()
-                .filter(ri -> !this.filterRequiringContent || !requiresContent(ri)).filter(ri -> {
-                    try {
-                        return ri.resolve(request, response);
-                    } catch (Exception e) {
-                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
-                                ri.getClass().getSimpleName(), exchange.getRequestPath(), InterceptPoint.RESPONSE, e);
+            .filter(ri -> !this.filterRequiringContent || !requiresContent(ri)).filter(ri -> {
+                try {
+                    return ri.resolve(request, response);
+                } catch (Exception e) {
+                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), InterceptPoint.RESPONSE, e);
+                    return false;
+                }
+            }).forEachOrdered(ri -> {
+                LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE);
 
-                        return false;
-                    }
-                }).forEachOrdered(ri -> {
-                    LOGGER.debug("Executing interceptor {} for {} on intercept point {}",
-                                PluginUtils.name(ri),
-                        exchange.getRequestPath(),
-                        InterceptPoint.RESPONSE);
+                try {
+                    ri.handle(request, response);
+                } catch (Exception ex) {
+                    LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE, ex);
 
-                    try {
-                        ri.handle(request, response);
-                    } catch (Exception ex) {
-                        LOGGER.error("Error executing interceptor {} for {} on intercept point {}",
-                            PluginUtils.name(ri),
-                            exchange.getRequestPath(),
-                            InterceptPoint.RESPONSE, ex);
-
-                        Exchange.setInError(exchange);
-                        LambdaUtils.throwsSneakyException(ex);
-                    }
-                });
+                    Exchange.setInError(exchange);
+                    LambdaUtils.throwsSneakyException(ex);
+                }
+            });
     }
 
     @SuppressWarnings({"unchecked","rawtypes"})
-    private void executeAsyncResponseInterceptor(HttpServerExchange exchange,
-            Service handlingService,
-            Request request,
-            Response response) {
+    private void executeAsyncResponseInterceptor(HttpServerExchange exchange, Service handlingService, Request request, Response response) {
 
         List<Interceptor> inteceptors;
 
@@ -159,40 +147,30 @@ public class ResponseInterceptorsExecutor extends PipelinedHandler {
         Exchange.setResponseInterceptorsExecuted(exchange);
 
         inteceptors.stream()
-                .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
-                .filter(ri -> {
+            .filter(ri -> !this.filterRequiringContent || !requiresContent(ri))
+            .filter(ri -> {
+                try {
+                    return ri.resolve(request, response);
+                } catch (Exception e) {
+                    LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), InterceptPoint.RESPONSE_ASYNC);
+
+                    return false;
+                }
+            })
+            .forEachOrdered(ri -> {
+                exchange.getConnection().getWorker().execute(() -> {
+                    LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE_ASYNC);
+
                     try {
-                        return ri.resolve(request, response);
-                    } catch (Exception e) {
-                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
-                            ri.getClass().getSimpleName(),
-                            exchange.getRequestPath(),
-                            InterceptPoint.RESPONSE_ASYNC);
+                        ri.handle(request, response);
+                    } catch (Exception ex) {
+                        LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), InterceptPoint.RESPONSE_ASYNC, ex);
 
-                        return false;
+                        Exchange.setInError(exchange);
+                        LambdaUtils.throwsSneakyException(ex);
                     }
-                })
-                .forEachOrdered(ri -> {
-                    exchange.getConnection().getWorker().execute(() -> {
-                        LOGGER.debug("Executing interceptor {} for {} on intercept point {}",
-                            PluginUtils.name(ri),
-                            exchange.getRequestPath(),
-                            InterceptPoint.RESPONSE_ASYNC);
-
-                        try {
-                            ri.handle(request, response);
-                        } catch (Exception ex) {
-                            LOGGER.error("Error executing interceptor {} for {} on intercept point {}",
-                                PluginUtils.name(ri),
-                                exchange.getRequestPath(),
-                                InterceptPoint.RESPONSE_ASYNC,
-                                ex);
-
-                            Exchange.setInError(exchange);
-                            LambdaUtils.throwsSneakyException(ex);
-                        }
-                    });
                 });
+            });
     }
 
 }

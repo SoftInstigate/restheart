@@ -38,10 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(
         name = "secretHider",
-        description = "forbis write requests "
-        + "on '/coll' "
-        + "containing the property 'secret' "
-        + "to users does not have the role 'admin'",
+        description = "forbis write requests on '/coll' containing the property 'secret' to users does not have the role 'admin'",
         enabledByDefault = false,
         interceptPoint = InterceptPoint.REQUEST_AFTER_AUTH)
 public class SecretHider implements MongoInterceptor {
