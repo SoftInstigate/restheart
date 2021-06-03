@@ -23,6 +23,7 @@ import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.Headers;
+
 import java.io.IOException;
 import org.restheart.utils.HttpStatus;
 
@@ -35,10 +36,8 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <T> generic type
  */
-public abstract class ProxyResponse<T> extends Response<T>
-        implements BufferedExchange<T> {
-    public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA_KEY
-            = AttachmentKey.create(PooledByteBuffer[].class);
+public abstract class ProxyResponse<T> extends Response<T> implements BufferedExchange<T>, AutoCloseable {
+    public static final AttachmentKey<PooledByteBuffer[]> BUFFERED_RESPONSE_DATA_KEY = AttachmentKey.create(PooledByteBuffer[].class);
 
     protected ProxyResponse(HttpServerExchange exchange) {
         super(exchange);
@@ -93,11 +92,7 @@ public abstract class ProxyResponse<T> extends Response<T>
         setContentTypeAsJson();
         setInError(true);
         try {
-            writeContent(getErrorContent(code,
-                    HttpStatus.getStatusText(code),
-                    message,
-                    t,
-                    false));
+            writeContent(getErrorContent(code, HttpStatus.getStatusText(code), message, t, false));
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
@@ -118,4 +113,19 @@ public abstract class ProxyResponse<T> extends Response<T>
             String message,
             Throwable t,
             boolean includeStackTrace) throws IOException;
+
+    /**
+     * Closes this resource, relinquishing any underlying PooledByteBuffer.
+     */
+    public void close() {
+        if (isContentAvailable()) {
+            for (var b: this.getBuffer()) {
+                if (b != null) {
+                    b.close();
+                }
+            }
+
+            this.setBuffer(null);
+        }
+    }
 }
