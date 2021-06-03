@@ -29,10 +29,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 
-import org.fusesource.jansi.Ansi.Color;
 import org.restheart.utils.BuffersUtils;
-import org.restheart.utils.LogUtils;
-import org.restheart.utils.LogUtils.Level;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -89,10 +86,6 @@ public class ByteArrayProxyRequest extends ProxyRequest<byte[]>{
             }
 
             int copied = BuffersUtils.transfer(ByteBuffer.wrap(content), dest, wrapped);
-
-            LogUtils.boxedMessage(LOGGER, Level.DEBUG, Color.RED, Color.WHITE,
-                "ByteArrayProxyRequest.writeContent() called",
-                "this might lead to a memory leak");
 
             // updated request content length
             // this is not needed in Response.writeContent() since done

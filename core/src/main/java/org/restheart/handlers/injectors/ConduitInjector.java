@@ -91,19 +91,17 @@ public class ConduitInjector extends PipelinedHandler {
      */
     private void forceIdentityEncodingForInterceptors(HttpServerExchange exchange) {
         if (this.inteceptors.stream().anyMatch(ri -> requiresContent(ri))) {
-            if (LOGGER.isDebugEnabled()) {
-                var before = new HeaderMap();
+            var before = new HeaderMap();
 
-                if (exchange.getRequestHeaders().contains(Headers.ACCEPT_ENCODING)) {
-                    exchange.getRequestHeaders().get(Headers.ACCEPT_ENCODING).forEach((value) -> {
-                        before.add(Headers.ACCEPT_ENCODING, value);
-                    });
-                }
-
-                exchange.putAttachment(ORIGINAL_ACCEPT_ENCODINGS_KEY, before);
-
-                LOGGER.debug("{} setting encoding to identity because request involves response interceptors.", before);
+            if (exchange.getRequestHeaders().contains(Headers.ACCEPT_ENCODING)) {
+                exchange.getRequestHeaders().get(Headers.ACCEPT_ENCODING).forEach((value) -> {
+                    before.add(Headers.ACCEPT_ENCODING, value);
+                });
             }
+
+            exchange.putAttachment(ORIGINAL_ACCEPT_ENCODINGS_KEY, before);
+
+            LOGGER.debug("{} setting encoding to identity because request involves response interceptors.", before);
 
             exchange.getRequestHeaders().put(Headers.ACCEPT_ENCODING, "identity");
         }
