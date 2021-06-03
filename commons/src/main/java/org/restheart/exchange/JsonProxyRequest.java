@@ -29,6 +29,7 @@ import io.undertow.util.Headers;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
 
@@ -64,8 +65,7 @@ public class JsonProxyRequest extends ProxyRequest<JsonElement> {
             return JsonNull.INSTANCE;
         } else {
             try {
-                return JsonParser.parseString(BuffersUtils.toString(getBuffer(),
-                        StandardCharsets.UTF_8));
+                return JsonParser.parseString(BuffersUtils.toString(getBuffer(), StandardCharsets.UTF_8));
             } catch (JsonParseException ex) {
                 // dump bufferd content
                 BuffersUtils.dump("Error parsing content", getBuffer());
@@ -75,6 +75,12 @@ public class JsonProxyRequest extends ProxyRequest<JsonElement> {
         }
     }
 
+    /**
+     * updates the request content
+     *
+     * allocates the PooledByteBuffer array so close() must be invoked
+     * to avoid memory leacks
+     */
     @Override
     public void writeContent(JsonElement content) throws IOException {
         setContentTypeAsJson();
@@ -90,10 +96,7 @@ public class JsonProxyRequest extends ProxyRequest<JsonElement> {
                 setBuffer(dest);
             }
 
-            int copied = BuffersUtils.transfer(
-                    ByteBuffer.wrap(content.toString().getBytes()),
-                    dest,
-                    wrapped);
+            int copied = BuffersUtils.transfer(ByteBuffer.wrap(content.toString().getBytes()), dest, wrapped);
 
             // updated request content length
             // this is not needed in Response.writeContent() since done

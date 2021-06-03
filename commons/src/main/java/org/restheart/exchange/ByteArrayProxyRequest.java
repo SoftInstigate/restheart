@@ -24,17 +24,22 @@ import com.google.common.reflect.TypeToken;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+
+import org.fusesource.jansi.Ansi.Color;
 import org.restheart.utils.BuffersUtils;
+import org.restheart.utils.LogUtils;
+import org.restheart.utils.LogUtils.Level;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ByteArrayProxyRequest extends ProxyRequest<byte[]> {
+public class ByteArrayProxyRequest extends ProxyRequest<byte[]>{
     static {
         LOGGER = LoggerFactory.getLogger(ByteArrayProxyRequest.class);
     }
@@ -60,11 +65,16 @@ public class ByteArrayProxyRequest extends ProxyRequest<byte[]> {
      * @throws java.io.IOException
      */
     @Override
-    public byte[] readContent()
-            throws IOException {
+    public byte[] readContent() throws IOException {
         return BuffersUtils.toByteArray(getBuffer());
     }
 
+    /**
+     * updates the request content
+     *
+     * allocates the PooledByteBuffer array so close() must be invoked
+     * to avoid memory leacks
+     */
     @Override
     public void writeContent(byte[] content) throws IOException {
         if (content == null) {
@@ -78,10 +88,11 @@ public class ByteArrayProxyRequest extends ProxyRequest<byte[]> {
                 setBuffer(dest);
             }
 
-            int copied = BuffersUtils.transfer(
-                    ByteBuffer.wrap(content),
-                    dest,
-                    wrapped);
+            int copied = BuffersUtils.transfer(ByteBuffer.wrap(content), dest, wrapped);
+
+            LogUtils.boxedMessage(LOGGER, Level.DEBUG, Color.RED, Color.WHITE,
+                "ByteArrayProxyRequest.writeContent() called",
+                "this might lead to a memory leak");
 
             // updated request content length
             // this is not needed in Response.writeContent() since done
