@@ -26,6 +26,7 @@ import io.undertow.server.handlers.RequestBufferingHandler;
 import io.undertow.util.AttachmentKey;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
+
 import static org.restheart.exchange.Exchange.MAX_BUFFERS;
 import org.restheart.exchange.Request;
 import org.restheart.exchange.Response;
@@ -57,10 +58,8 @@ import org.slf4j.LoggerFactory;
  */
 public class RequestContentInjector extends PipelinedHandler {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(RequestContentInjector.class);
-    private static final AttachmentKey<Boolean> INJECTED_KEY
-            = AttachmentKey.create(Boolean.class);
+    private static final Logger LOGGER = LoggerFactory .getLogger(RequestContentInjector.class);
+    private static final AttachmentKey<Boolean> INJECTED_KEY = AttachmentKey.create(Boolean.class);
 
     private final Policy policy;
 
@@ -99,32 +98,34 @@ public class RequestContentInjector extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (this.bufferingHandler == null) {
-            throw new IllegalStateException("Cannot invoke handleRequest next "
-                    + "if not set via setNext()");
+            throw new IllegalStateException("Cannot invoke handleRequest next if not set via setNext()");
         }
 
         if (shallInject(exchange, this.policy)) {
-
-            LOGGER.trace("Request content available for Request.getContent()");
+            if (LOGGER.isTraceEnabled()) {
+                var ip = this.policy == Policy.ON_REQUIRES_CONTENT_AFTER_AUTH ? "AFTER_AUTH" : "BEFORE_AUTH";
+                LOGGER.trace("Request content available for Request.getContent() at {}", ip);
+            }
 
             markInjected(exchange);
 
             bufferingHandler.handleRequest(exchange);
         } else {
-            LOGGER.trace("Request content is not available for Request.getContent()");
+            if (LOGGER.isTraceEnabled()) {
+                var ip = this.policy == Policy.ON_REQUIRES_CONTENT_AFTER_AUTH ? "AFTER_AUTH" : "BEFORE_AUTH";
+                LOGGER.trace("Request content is not available for Request.getContent() at {}", ip);
+            }
             next(exchange);
         }
     }
 
     private boolean shallInject(HttpServerExchange exchange, Policy policy) {
         return !isAlreadyInjected(exchange) && (policy == ALWAYS
-                || (policy == ON_REQUIRES_CONTENT_AFTER_AUTH
-                && isContentRequired(exchange, InterceptPoint.REQUEST_AFTER_AUTH))
-                || (policy == ON_REQUIRES_CONTENT_BEFORE_AUTH
-                && isContentRequired(exchange, InterceptPoint.REQUEST_BEFORE_AUTH)));
+                || (policy == ON_REQUIRES_CONTENT_AFTER_AUTH && isContentRequired(exchange, InterceptPoint.REQUEST_AFTER_AUTH))
+                || (policy == ON_REQUIRES_CONTENT_BEFORE_AUTH && isContentRequired(exchange, InterceptPoint.REQUEST_BEFORE_AUTH)));
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private boolean isContentRequired(HttpServerExchange exchange,
             InterceptPoint interceptPoint) {
         Request request;
@@ -177,13 +178,11 @@ public class RequestContentInjector extends PipelinedHandler {
     }
 
     private void markInjected(HttpServerExchange exchange) {
-        exchange
-                .putAttachment(INJECTED_KEY, true);
+        exchange.putAttachment(INJECTED_KEY, true);
     }
 
     private boolean isAlreadyInjected(HttpServerExchange exchange) {
-        return exchange.getAttachment(INJECTED_KEY) != null
-                && exchange.getAttachment(INJECTED_KEY);
+        return exchange.getAttachment(INJECTED_KEY) != null && exchange.getAttachment(INJECTED_KEY);
     }
 
     public enum Policy {

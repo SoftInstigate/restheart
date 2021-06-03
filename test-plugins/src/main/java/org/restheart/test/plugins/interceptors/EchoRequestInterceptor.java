@@ -30,6 +30,7 @@ import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BuffersUtils;
+import org.restheart.utils.HttpStatus;
 
 /**
  *
@@ -50,22 +51,17 @@ public class EchoRequestInterceptor implements ByteArrayInterceptor {
 
         if (request.isContentTypeJson()) {
             try {
-                JsonElement requestContent = JsonParser.parseString(
-                        BuffersUtils.toString(request.getContent(),
-                                Charset.forName("utf-8")));
+                var requestContent = JsonParser.parseString(BuffersUtils.toString(request.getContent(), Charset.forName("utf-8")));
 
                 if (requestContent.isJsonObject()) {
-                    requestContent.getAsJsonObject()
-                            .addProperty("prop1",
-                                    "property added by echoRequestInterceptor");
+                    requestContent.getAsJsonObject().addProperty("prop1", "property added by echoRequestInterceptor");
                 }
 
                 request.setContent(requestContent.toString().getBytes());
             } catch (Throwable t) {
-
+                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, t.getMessage(), t);
             }
         }
-
     }
 
     @Override

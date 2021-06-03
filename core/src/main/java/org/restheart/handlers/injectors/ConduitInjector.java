@@ -37,6 +37,8 @@ import static org.restheart.utils.PluginUtils.cachedRequestType;
 import static org.restheart.utils.PluginUtils.cachedResponseType;
 import static org.restheart.utils.PluginUtils.interceptPoint;
 import static org.restheart.utils.PluginUtils.requiresContent;
+
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -57,17 +59,15 @@ public class ConduitInjector extends PipelinedHandler {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ConduitInjector.class);
 
-    public static final AttachmentKey<ModifiableContentSinkConduit> MCSC_KEY
-            = AttachmentKey.create(ModifiableContentSinkConduit.class);
+    public static final AttachmentKey<ModifiableContentSinkConduit> MCSC_KEY = AttachmentKey.create(ModifiableContentSinkConduit.class);
 
-    public static final AttachmentKey<HeaderMap> ORIGINAL_ACCEPT_ENCODINGS_KEY
-            = AttachmentKey.create(HeaderMap.class);
+    public static final AttachmentKey<HeaderMap> ORIGINAL_ACCEPT_ENCODINGS_KEY = AttachmentKey.create(HeaderMap.class);
 
     /**
      *
      */
     public ConduitInjector() {
-        super();
+        this(null);
     }
 
     /**
@@ -85,9 +85,7 @@ public class ConduitInjector extends PipelinedHandler {
      * @param exchange
      */
     @SuppressWarnings("unchecked")
-    private static void forceIdentityEncodingForInterceptors(
-            HttpServerExchange exchange) {
-
+    private void forceIdentityEncodingForInterceptors(HttpServerExchange exchange) {
         if (PluginsRegistryImpl.getInstance()
                 .getInterceptors()
                 .stream()
@@ -113,14 +111,13 @@ public class ConduitInjector extends PipelinedHandler {
                     }
                 })
                 .anyMatch(ri -> requiresContent(ri))) {
-            var _before = exchange.getRequestHeaders()
-                    .get(Headers.ACCEPT_ENCODING);
+            var _before = exchange.getRequestHeaders().get(Headers.ACCEPT_ENCODING);
 
             var before = new HeaderMap();
 
-            _before.forEach((value) -> {
-                before.add(Headers.ACCEPT_ENCODING, value);
-            });
+            if (_before != null) {
+                _before.forEach((value) -> before.add(Headers.ACCEPT_ENCODING, value));
+            }
 
             exchange.putAttachment(ORIGINAL_ACCEPT_ENCODINGS_KEY, before);
 
@@ -128,9 +125,7 @@ public class ConduitInjector extends PipelinedHandler {
                     + "setting encoding to identity because request involves "
                     + "response interceptors.", before);
 
-            exchange.getRequestHeaders().put(
-                    Headers.ACCEPT_ENCODING,
-                    "identity");
+            exchange.getRequestHeaders().put(Headers.ACCEPT_ENCODING, "identity");
         }
     }
 
@@ -144,8 +139,7 @@ public class ConduitInjector extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         // of the response buffering it if any interceptor resolvers the request
         // and requires the content from the backend
-        exchange.addResponseWrapper((ConduitFactory<StreamSinkConduit> factory,
-                HttpServerExchange cexchange) -> {
+        exchange.addResponseWrapper((ConduitFactory<StreamSinkConduit> factory, HttpServerExchange cexchange) -> {
             // restore MDC context
             // MDC context is put in the thread context
             // For proxied requests a thread switch in the request handling happens,
@@ -185,13 +179,11 @@ public class ConduitInjector extends PipelinedHandler {
                     })
                     .anyMatch(ri -> requiresContent(ri))) {
 
-                var mcsc = new ModifiableContentSinkConduit(factory.create(),
-                        cexchange);
+                var mcsc = new ModifiableContentSinkConduit(factory.create(), cexchange);
                 cexchange.putAttachment(MCSC_KEY, mcsc);
                 return mcsc;
             } else {
-                return new ContentStreamSinkConduit(factory.create(),
-                        cexchange);
+                return new ContentStreamSinkConduit(factory.create(), cexchange);
             }
         });
 
@@ -199,5 +191,4 @@ public class ConduitInjector extends PipelinedHandler {
 
         next(exchange);
     }
-
 }

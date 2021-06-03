@@ -68,6 +68,16 @@ public abstract class ProxyResponse<T> extends Response<T> implements BufferedEx
 
     @Override
     public void setBuffer(PooledByteBuffer[] raw) {
+        var oldBuffers = getWrappedExchange().getAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY);
+        // close the current buffer pool
+        if (oldBuffers != null) {
+            for (var oldBuffer: oldBuffers) {
+                if (oldBuffer != null) {
+                    oldBuffer.close();
+                }
+            }
+        }
+
         getWrappedExchange().putAttachment(getRawContentKey(), raw);
     }
 

@@ -76,7 +76,6 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     Then status 200
     And match response.content == 'n=1&s=test'
     And match response.prop2 == 'property added by echoResponseInterceptor'
-    And match response.prop3 == 'property added by echoProxyResponseInterceptor'
     And match response.qparams.param == [ "param added by echoRequestInterceptor"]
     And match response.qparams == { key1:["key1"], key2:["key2"], param:["param added by echoRequestInterceptor"]} }
     And match responseHeaders['header'][0] == 'added by echoResponseInterceptor /iecho'
@@ -111,7 +110,6 @@ Scenario: POST /iecho { n: 1, s: "test" } with request and response interceptors
     When method POST
     Then status 200
     And match response.prop2 == 'property added by echoResponseInterceptor'
-    And match response.prop3 == 'property added by echoProxyResponseInterceptor'
     And match response.qparams.param == [ "param added by echoRequestInterceptor"]
     And match response.qparams == { key1:["key1"], key2:["key2"], param:["param added by echoRequestInterceptor"]} }
     And match responseHeaders['header'][0] == 'added by echoResponseInterceptor /iecho'

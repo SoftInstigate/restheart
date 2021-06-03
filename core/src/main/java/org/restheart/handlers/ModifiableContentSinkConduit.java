@@ -49,12 +49,10 @@ import org.xnio.conduits.StreamSinkConduit;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ModifiableContentSinkConduit
-        extends AbstractStreamSinkConduit<StreamSinkConduit> {
+public class ModifiableContentSinkConduit extends AbstractStreamSinkConduit<StreamSinkConduit> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ModifiableContentSinkConduit.class);
 
-    //private ByteBuffer data = null;
     private final HttpServerExchange exchange;
 
     private final ResponseInterceptorsExecutor interceptorsExecutor;
@@ -65,8 +63,7 @@ public class ModifiableContentSinkConduit
      * @param next the delegate conduit to set
      * @param exchange
      */
-    public ModifiableContentSinkConduit(StreamSinkConduit next,
-            HttpServerExchange exchange) {
+    public ModifiableContentSinkConduit(StreamSinkConduit next, HttpServerExchange exchange) {
         super(next);
         this.exchange = exchange;
         this.interceptorsExecutor = new ResponseInterceptorsExecutor();
@@ -81,16 +78,21 @@ public class ModifiableContentSinkConduit
      * @return
      */
     private void resetBufferPool(HttpServerExchange exchange) {
-        var buffers = new PooledByteBuffer[MAX_BUFFERS];
-        exchange.putAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY,
-                buffers);
+        var oldBuffers = exchange.getAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY);
+        // close the current buffer pool
+        if (oldBuffers != null) {
+            for (var oldBuffer: oldBuffers) {
+                if (oldBuffer != null) {
+                    oldBuffer.close();
+                }
+            }
+        }
+        exchange.putAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY, new PooledByteBuffer[MAX_BUFFERS]);
     }
 
     @Override
     public int write(ByteBuffer src) throws IOException {
-        return BuffersUtils.append(src, exchange
-                .getAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY),
-                exchange);
+        return BuffersUtils.append(src, exchange.getAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY), exchange);
     }
 
     @Override
@@ -131,8 +133,7 @@ public class ModifiableContentSinkConduit
             throw new IOException(e);
         }
 
-        PooledByteBuffer[] dests = ByteArrayProxyResponse.of(exchange)
-                .getBuffer();
+        var dests = ByteArrayProxyResponse.of(exchange).getBuffer();
 
         updateContentLenght(exchange, dests);
 
@@ -161,10 +162,7 @@ public class ModifiableContentSinkConduit
             Method m;
 
             try {
-                m = ServerFixedLengthStreamSinkConduit.class.getDeclaredMethod(
-                        "reset",
-                        long.class,
-                        HttpServerExchange.class);
+                m = ServerFixedLengthStreamSinkConduit.class.getDeclaredMethod("reset", long.class, HttpServerExchange.class);
                 m.setAccessible(true);
             } catch (NoSuchMethodException | SecurityException ex) {
                 LOGGER.error("could not find ServerFixedLengthStreamSinkConduit.reset method", ex);

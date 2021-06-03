@@ -37,12 +37,13 @@ import org.xnio.conduits.StreamSinkConduit;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ContentStreamSinkConduit
-        extends AbstractStreamSinkConduit<StreamSinkConduit> {
+public class ContentStreamSinkConduit extends AbstractStreamSinkConduit<StreamSinkConduit> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ContentStreamSinkConduit.class);
 
     private final StreamSinkConduit _next;
+
+    private final ResponseInterceptorsExecutor responseInterceptorsExecutor = new ResponseInterceptorsExecutor(true);
 
     /**
      * Construct a new instance.
@@ -55,10 +56,8 @@ public class ContentStreamSinkConduit
         super(next);
         this._next = next;
 
-        var interceptorsExecutor = new ResponseInterceptorsExecutor(true);
-
         try {
-            interceptorsExecutor.handleRequest(exchange);
+            this.responseInterceptorsExecutor.handleRequest(exchange);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -46,8 +46,7 @@ import org.slf4j.LoggerFactory;
  */
 public class RequestInterceptorsExecutor extends PipelinedHandler {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(RequestInterceptorsExecutor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestInterceptorsExecutor.class);
 
     private final ResponseSender sender = new ResponseSender();
 
@@ -66,8 +65,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
      * @param next
      * @param interceptPoint
      */
-    public RequestInterceptorsExecutor(PipelinedHandler next,
-            InterceptPoint interceptPoint) {
+    public RequestInterceptorsExecutor(PipelinedHandler next, InterceptPoint interceptPoint) {
         super(next);
         this.interceptPoint = interceptPoint;
     }
@@ -78,7 +76,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         // if the request is handled by a service set to not execute interceptors
         // at this interceptPoint, skip interceptors execution
@@ -111,10 +109,10 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                 .stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
-                // IMPORTANT: An interceptor can intercept 
-                // - requests handled by a Service when its request and response 
+                // IMPORTANT: An interceptor can intercept
+                // - requests handled by a Service when its request and response
                 //   types are equal to the ones declared by the Service
-                // - request handled by a Proxy when its request and response 
+                // - request handled by a Proxy when its request and response
                 //   are ByteArrayProxyRequest and ByteArrayProxyResponse
                 .filter(ri
                         -> (handlingService == null
@@ -128,29 +126,19 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                     try {
                         return ri.resolve(request, response);
                     } catch (Exception e) {
-                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
-                                ri.getClass().getSimpleName(),
-                                exchange.getRequestPath(),
-                                interceptPoint,
-                                e);
+                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, e);
 
                         return false;
                     }
                 })
                 .forEachOrdered(ri -> {
                     try {
-                        LOGGER.debug("Executing interceptor {} for {} on intercept point {}",
-                                ri.getClass().getSimpleName(),
-                                exchange.getRequestPath(),
-                                interceptPoint);
+                        LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), interceptPoint);
 
                         ri.handle(request, response);
                     } catch (Exception ex) {
-                        LOGGER.error("Error executing interceptor {} for {} on intercept point {}",
-                                ri.getClass().getSimpleName(),
-                                exchange.getRequestPath(),
-                                interceptPoint,
-                                ex);
+                        LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), interceptPoint, ex);
+
                         Exchange.setInError(exchange);
                         LambdaUtils.throwsSneakyException(ex);
                     }
@@ -158,12 +146,11 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
 
         // If an interceptor sets the response as errored
         // stop processing the request and send the response
-        // This happens AFTER_AUTH, otherwise not authenticated requests 
+        // This happens AFTER_AUTH, otherwise not authenticated requests
         // might snoop information. For instance, a request to MongoService might
-        // be able to check if a collection exists (this check is done by 
+        // be able to check if a collection exists (this check is done by
         // BEFORE_AUTH interceptor CollectionPropsInjector)
-        if (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH
-                && Exchange.isInError(exchange)) {
+        if (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH && Exchange.isInError(exchange)) {
             // if in error but no status code use 400 Bad Request
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
@@ -172,10 +159,9 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             // if this is a service, handle OPTIONS
             // otherwise requests with bad content receive CORS errors
             if (handlingService != null && request.isOptions()) {
-                handlingService.handleOptions(ServiceRequest.of(exchange,
-                        ServiceRequest.class));
+                handlingService.handleOptions(ServiceRequest.of(exchange, ServiceRequest.class));
             }
-            
+
             sender.handleRequest(exchange);
         } else {
             next(exchange);

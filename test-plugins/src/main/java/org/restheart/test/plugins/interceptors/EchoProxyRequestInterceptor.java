@@ -21,7 +21,6 @@
 
 package org.restheart.test.plugins.interceptors;
 
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.undertow.util.HttpString;
 import java.nio.charset.Charset;
@@ -42,38 +41,36 @@ import org.slf4j.LoggerFactory;
 @RegisterPlugin(name = "echoProxyRequestInterceptor", description = "used for testing purposes", enabledByDefault = false, requiresContent = true, interceptPoint = REQUEST_AFTER_AUTH)
 public class EchoProxyRequestInterceptor implements ProxyInterceptor {
 
-        private static final Logger LOGGER = LoggerFactory.getLogger(EchoProxyRequestInterceptor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EchoProxyRequestInterceptor.class);
 
-        /**
-         * shows how to inject configuration via @OnInit
-         *
-         * @param args
-         */
-        @InjectConfiguration
-        public void init(Map<String, Object> args) {
-                LOGGER.trace("got args {}", args);
+    /**
+     * shows how to inject configuration via @OnInit
+     *
+     * @param args
+     */
+    @InjectConfiguration
+    public void init(Map<String, Object> args) {
+        LOGGER.trace("got args {}", args);
+    }
+
+    @Override
+    public void handle(ByteArrayProxyRequest request, ByteArrayProxyResponse response) throws Exception {
+        request.getHeaders().add(HttpString.tryFromString("header"), "added by echoProxyRequestInterceptor " + request.getPath());
+
+        if (request.isContentAvailable() && request.isContentTypeJson()) {
+            var content = new String(request.readContent(), Charset.forName("utf-8"));
+            var jsonContent = JsonParser.parseString(content);
+
+            var jsonObjectContent = jsonContent.getAsJsonObject();
+
+            jsonObjectContent.addProperty("prop3", "property added by echoProxyRequestInterceptor");
+
+            request.writeContent(jsonObjectContent.toString().getBytes());
         }
+    }
 
-        @Override
-        public void handle(ByteArrayProxyRequest request, ByteArrayProxyResponse response) throws Exception {
-                request.getHeaders().add(HttpString.tryFromString("header"),
-                                "added by echoProxyRequestInterceptor " + request.getPath());
-
-                var content = request.readContent();
-
-                if (content != null && request.isContentTypeJson()) {
-                        var _content = JsonParser.parseString(new String(content, Charset.forName("utf-8")));
-
-                        JsonObject __content = _content.getAsJsonObject();
-
-                        __content.addProperty("prop3", "property added by echoProxyRequestInterceptor");
-
-                        request.writeContent(__content.toString().getBytes());
-                }
-        }
-
-        @Override
-        public boolean resolve(ByteArrayProxyRequest request, ByteArrayProxyResponse response) {
-                return request.getPath().equals("/piecho");
-        }
+    @Override
+    public boolean resolve(ByteArrayProxyRequest request, ByteArrayProxyResponse response) {
+        return request.getPath().equals("/piecho");
+    }
 }

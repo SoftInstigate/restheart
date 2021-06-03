@@ -34,7 +34,6 @@ import org.restheart.plugins.PluginsRegistryImpl;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseSender extends PipelinedHandler {
-
     /**
      *
      */
@@ -68,8 +67,7 @@ public class ResponseSender extends PipelinedHandler {
                     .findAny();
 
             if (srv.isPresent()) {
-                var response = (ServiceResponse) srv.get().getInstance()
-                        .response().apply(exchange);
+                var response = (ServiceResponse) srv.get().getInstance().response().apply(exchange);
 
                 if (response.getStatusCode() > 0) {
                     exchange.setStatusCode(response.getStatusCode());
@@ -84,7 +82,6 @@ public class ResponseSender extends PipelinedHandler {
                     exchange.getResponseSender().send(response.readContent());
                 }
             }
-
         } else if (pi.getType() == PipelineInfo.PIPELINE_TYPE.PROXY) {
             var response = ByteArrayProxyResponse.of(exchange);
 
