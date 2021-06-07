@@ -45,9 +45,9 @@ public class SecurityHandler extends PipelinedHandler {
             PipelinedHandler handler;
 
             if (authorizers == null || authorizers.isEmpty()) {
-                throw new IllegalArgumentException("Error, accessManagers cannot "
+                throw new IllegalArgumentException("Error, authorizers cannot "
                         + "be null or empty. "
-                        + "Eventually use FullAccessManager "
+                        + "Eventually use FullAuthorizer "
                         + "that gives full access power");
             }
 

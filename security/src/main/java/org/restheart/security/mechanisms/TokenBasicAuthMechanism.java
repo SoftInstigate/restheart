@@ -21,7 +21,6 @@
 package org.restheart.security.mechanisms;
 
 import io.undertow.security.api.SecurityContext;
-import io.undertow.security.idm.Account;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpServerExchange;
@@ -30,9 +29,7 @@ import static io.undertow.util.Headers.AUTHORIZATION;
 import static io.undertow.util.Headers.BASIC;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.List;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
@@ -47,18 +44,16 @@ import org.restheart.plugins.security.TokenManager;
  * this extends the undertow BasicAuthenticationMechanism and authenticates
  * requests using AuthTokenIdentityManager.
  *
- * if user already authenticated via a different mechanism, that a token is
+ * if user already authenticated via a different mechanism, a token is
  * generated so that later calls can be use the token instead of the actual
  * password
  *
  */
-@RegisterPlugin(
-        name = "tokenBasicAuthMechanism",
-        description = "authenticates the requests using the configured Token Manager",
-        enabledByDefault = false)
-public class TokenBasicAuthMechanism
-        extends BasicAuthenticationMechanism
-        implements AuthMechanism {
+@RegisterPlugin(name = "tokenBasicAuthMechanism",
+                description = "authenticates the requests using the configured Token Manager",
+                enabledByDefault = false,
+                priority = Integer.MIN_VALUE)
+public class TokenBasicAuthMechanism extends BasicAuthenticationMechanism implements AuthMechanism {
 
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
@@ -78,44 +73,41 @@ public class TokenBasicAuthMechanism
      *
      * @throws org.restheart.ConfigurationException
      */
-    public TokenBasicAuthMechanism()
-            throws ConfigurationException {
+    public TokenBasicAuthMechanism() throws ConfigurationException {
         super("RESTHeart Realm", "tokenBasicAuthMechanism", true);
     }
 
     @InjectPluginsRegistry
-    public void init(PluginsRegistry pluginsRegistry)
-            throws ConfigurationException {
+    public void init(PluginsRegistry pluginsRegistry) throws ConfigurationException {
         this.tokenManager = pluginsRegistry.getTokenManager() != null
                 ? pluginsRegistry.getTokenManager().getInstance()
                 : null;
     }
 
     @Override
-    public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange,
-            final SecurityContext securityContext) {
-
-        List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
+    public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange, final SecurityContext securityContext) {
+        var authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
         if (authHeaders != null) {
-            for (String current : authHeaders) {
+            for (var current : authHeaders) {
                 if (current.startsWith(BASIC_PREFIX)) {
-                    String base64Challenge = current.substring(PREFIX_LENGTH);
+                    var base64Challenge = current.substring(PREFIX_LENGTH);
                     String plainChallenge = null;
                     try {
-                        ByteBuffer decode = FlexBase64.decode(base64Challenge);
+                        var decode = FlexBase64.decode(base64Challenge);
                         plainChallenge = new String(decode.array(), decode.arrayOffset(), decode.limit(), UTF_8);
                     } catch (IOException e) {
+                        // nothing to do
                     }
                     int colonPos;
                     if (plainChallenge != null && (colonPos = plainChallenge.indexOf(COLON)) > -1) {
-                        String userName = plainChallenge.substring(0, colonPos);
-                        char[] password = plainChallenge.substring(colonPos + 1).toCharArray();
+                        var userName = plainChallenge.substring(0, colonPos);
+                        var password = plainChallenge.substring(colonPos + 1).toCharArray();
 
-                        PasswordCredential credential = new PasswordCredential(password);
+                        var credential = new PasswordCredential(password);
                         try {
                             final AuthenticationMechanismOutcome result;
                             // this is where the token cache comes into play
-                            Account account = tokenManager.verify(userName, credential);
+                            var account = tokenManager.verify(userName, credential);
                             if (account != null) {
                                 securityContext.authenticationComplete(account, getMechanismName(), false);
                                 result = AuthenticationMechanismOutcome.AUTHENTICATED;
@@ -138,7 +130,7 @@ public class TokenBasicAuthMechanism
 
     @Override
     public ChallengeResult sendChallenge(final HttpServerExchange exchange, final SecurityContext securityContext) {
-        String authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION);
+        var authHeader = exchange.getRequestHeaders().getFirst(AUTHORIZATION);
 
         if (authHeader == null) {
             return new ChallengeResult(false); // --> FORBIDDEN

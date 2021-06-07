@@ -37,26 +37,21 @@ import org.restheart.plugins.security.AuthMechanism;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(
-        name = "basicAuthMechanism",
-        description = "handles the basic authentication scheme",
-        enabledByDefault = false)
-public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthenticationMechanism
-        implements AuthMechanism {
+@RegisterPlugin(name = "basicAuthMechanism",
+                description = "handles the basic authentication scheme",
+                enabledByDefault = false)
+public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthenticationMechanism implements AuthMechanism {
 
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";
 
-    public BasicAuthMechanism()
-            throws ConfigurationException {
+    public BasicAuthMechanism() throws ConfigurationException {
         super("RESTHeart Realm", "basicAuthMechanism", false);
     }
 
     @InjectConfiguration
     @InjectPluginsRegistry
-    public void init(final Map<String, Object> args,
-            PluginsRegistry pluginsRegistry)
-            throws ConfigurationException {
+    public void init(final Map<String, Object> args, PluginsRegistry pluginsRegistry) throws ConfigurationException {
 
         // the authenticator specified in auth mechanism configuration
         setIdentityManager(pluginsRegistry
@@ -90,8 +85,7 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     }
 
     @Override
-    public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange,
-            final SecurityContext securityContext) {
+    public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange, final SecurityContext securityContext) {
         return super.authenticate(exchange, securityContext);
     }
 }

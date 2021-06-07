@@ -20,7 +20,6 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
 import org.restheart.handlers.PipelinedHandler;
@@ -38,27 +37,23 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
 
     private final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms;
 
-    public AuthenticatorMechanismsHandler(final PipelinedHandler next,
-            final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
+    public AuthenticatorMechanismsHandler(final PipelinedHandler next, final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
         super(next);
         this.authenticatorMechanisms = authenticatorMechanisms;
     }
 
-    public AuthenticatorMechanismsHandler(
-            final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
+    public AuthenticatorMechanismsHandler(final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
         this.authenticatorMechanisms = authenticatorMechanisms;
     }
 
     @Override
     @SuppressWarnings("deprecation")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        final SecurityContext sc = exchange.getSecurityContext();
+        final var sc = exchange.getSecurityContext();
 
         if (sc != null) {
             authenticatorMechanisms.stream().forEachOrdered((mechanism) -> {
-                sc.addAuthenticationMechanism(
-                        new AuthenticatorMechanismWrapper(
-                                mechanism.getInstance()));
+                sc.addAuthenticationMechanism(new AuthenticatorMechanismWrapper(mechanism.getInstance()));
             });
         }
 
