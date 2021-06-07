@@ -58,10 +58,8 @@ jobs:
 
       - name: Build and Push Docker image
         run: |
-          docker build --file ./core/Dockerfile -t softinstigate/restheart:latest ./core/.
-          docker tag softinstigate/restheart:latest softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+          docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}} ./core/.
           docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}
-          docker push softinstigate/restheart:latest
 
       - name: Upload GitHub release
         uses: softprops/action-gh-release@v1
