@@ -120,6 +120,11 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
         DataLoaderRegistry dataLoaderRegistry = setDataloaderRegistry(graphQLApp.getMappings());
 
+        if (request.getQuery() == null) {
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "query cannot be null");
+            return;
+        }
+
         ExecutionInput.Builder inputBuilder = ExecutionInput.newExecutionInput()
                 .query(request.getQuery())
                 .dataLoaderRegistry(dataLoaderRegistry);
