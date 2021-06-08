@@ -43,14 +43,12 @@ You can also have a look at our [introductory video](https://youtu.be/9KroH-RvjS
     <tr>
       <td align="center" valign="middle">
         <a href="https://www.softinstigate.com" target="_blank">
-          <img width="222px" src="https://www.softinstigate.com/images/softinstigate-logo-lg.png">
+          <img width="222px" src="https://www.softinstigate.com/images/logo.png">
         </a>
       </td>
     </tr>
   </tbody>
 </table>
-
-You can join our sponsors by supporting RESTHeart on [Patreon](https://www.patreon.com/restheart).
 
 ---
 
