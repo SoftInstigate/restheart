@@ -58,9 +58,9 @@ jobs:
 
       - name: Build and Push Docker image
         run: |
-          docker build --file ./core/Dockerfile -t softinstigate/restheart:latest ./core/.
-          docker tag softinstigate/restheart:latest softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+          docker build --file ./core/Dockerfile -t softinstigate/restheart:${{steps.vars.outputs.VERSION}} ./core/.
           docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+          docker tag softinstigate/restheart:${{steps.vars.outputs.VERSION}} softinstigate/restheart:latest
           docker push softinstigate/restheart:latest
 
       - name: Upload GitHub release
@@ -85,7 +85,7 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Deploy to Maven Central
-        run: mvn -B deploy -Pdeploy -DskipTests -s settings.xml
+        run: MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" mvn -B deploy -Pdeploy -DskipTests -s settings.xml
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
