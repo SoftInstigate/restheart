@@ -27,7 +27,8 @@
         "a read filter apply, so only document with status=public or author=userid are returned <- readFilter",
         "must use 'page' qparam <- qparams-contain(page)",
         "cannot use 'filter' and 'sort' qparams <- qparams-blacklist(filter, sort)",
-        "the property 'log' is removed from the response <- projectResponse"
+        "the property 'log' is removed from the response <- projectResponse",
+        "NOTE: the id of the user is @user.userid with fileRealmAuthenticator and @user._id with mongoRealmAuthenticator"
     ],
     "roles": ["user"],
     "predicate": "method(GET) and path-template('/{userid}') and equals(@user.userid, ${userid}) and qparams-contain(page) and qparams-blacklist(filter, sort)",
@@ -48,7 +49,8 @@
         "the request content cannot contain any property other than 'title' and 'content' <- bson-request-whitelist(title, content)",
         "no qparams can be specified <- qparams-whitelist()",
         "the property 'author' and 'status' are added to the request at server-side <- mergeRequest",
-        "the property 'log' with some request values is added to the request at server-side <- mergeRequest"
+        "the property 'log' with some request values is added to the request at server-side <- mergeRequest",
+        "NOTE: the id of the user is @user.userid with fileRealmAuthenticator and @user._id with mongoRealmAuthenticator"
     ],
     "roles": ["user"],
     "priority": 100,
@@ -70,8 +72,8 @@
         "the request content cannot contain any property other than 'title', 'content' and 'status' <- bson-request-whitelist(title, content, status)",
         "no qparams can be specified <- qparams-whitelist()",
         "the property 'author' is added to the request at server-side <- mergeRequest",
-        "a write filter applies so that user can only modify document with author=userid <- writeFilter"
-
+        "a write filter applies so that user can only modify document with author=userid <- writeFilter",
+        "NOTE: the id of the user is @user.userid with fileRealmAuthenticator and @user._id with mongoRealmAuthenticator"
     ],
     "roles": ["user"],
     "priority": 100,
