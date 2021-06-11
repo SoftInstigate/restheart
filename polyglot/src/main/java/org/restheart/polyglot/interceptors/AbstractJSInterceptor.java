@@ -22,6 +22,7 @@ package org.restheart.polyglot.interceptors;
 
 import java.util.Map;
 
+import com.google.common.collect.Maps;
 import com.mongodb.MongoClient;
 
 import org.graalvm.polyglot.Context;
@@ -70,30 +71,12 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
      *
      */
     public void handle(R request, S response) {
-        if (ctx == null) {
-            this.ctx = context(engine, contextOptions);
-            addBindings(this.ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
-        }
-
-        if (this.handle == null) {
-            this.handle = ctx.eval(this.handleSource);
-        }
-
-        this.handle.executeVoid(request, response);
+        handle().executeVoid(request, response);
     }
 
     @Override
     public boolean resolve(R request, S response) {
-        if (ctx == null) {
-            this.ctx = context(engine, contextOptions);
-            addBindings(this.ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
-        }
-
-        if (this.resolve == null) {
-            this.resolve = ctx.eval(this.resolveSource);
-        }
-
-        var ret = this.resolve.execute(request);
+        var ret = resolve().execute(request);
 
         if (ret.isBoolean()) {
             return ret.asBoolean();
@@ -103,19 +86,23 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
         }
     }
 
-    // cache Context and Value for performace
-    private Context ctx = null;
-    private Value handle = null;
-    private Value resolve = null;
+    // each working thread is associates with one resolve
+    // because js Context does not allow multithreaded access
+    protected Map<String, Value> resolves = Maps.newHashMap();
 
-    @Override
-    protected void finalize() throws Throwable {
-        if (this.ctx != null) {
-            try {
-                this.ctx.close();
-            } catch(Throwable t) {
-                // nothing to do
-            }
+    /**
+     *
+     * @return the resolve Value associated with this thread. If not existing, it instanitates it.
+     */
+    private Value resolve() {
+        var workingThreadName = Thread.currentThread().getName();
+
+        if (this.resolves.containsKey(workingThreadName)) {
+            return this.resolves.get(workingThreadName);
+        } else {
+            var resolve = ctx().eval(this.resolveSource);
+            this.resolves.put(workingThreadName, resolve);
+            return resolve;
         }
     }
 }
