@@ -178,6 +178,15 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
      *
      */
     public void handle(StringRequest request, StringResponse response) {
+        handle().executeVoid(request, response);
+    }
+
+    /**
+     *
+     * @return the Context associated with this thread. If not existing, it instanitates it.
+     */
+    @Override
+    protected Context ctx() {
         if (getModulesReplacements() != null) {
             LOGGER.debug("modules-replacements: {} ", getModulesReplacements());
             contextOptions.put("js.commonjs-core-modules-replacements", getModulesReplacements());
@@ -185,35 +194,20 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
             contextOptions.remove("js.commonjs-core-modules-replacements");
         }
 
-        if (this.ctx == null) {
-            this.ctx = context(this.engine, this.contextOptions);
-            addBindings(this.ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
+        var workingThreadName = Thread.currentThread().getName();
+
+        if (this.ctxs.get(workingThreadName) == null) {
+            var ctx = context(engine, contextOptions);
+            this.ctxs.put(workingThreadName, ctx);
+
+            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
         }
 
-        if (this.handle == null) {
-            this.handle = ctx.eval(this.handleSource);
-        }
-
-        handle.executeVoid(request, response);
+        return this.ctxs.get(workingThreadName);
     }
-
-    // cache Context and Value for performace
-    private Context ctx = null;
-    private Value handle = null;
 
     public String getModulesReplacements() {
         return this.modulesReplacements;
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        if (this.ctx != null) {
-            try {
-                this.ctx.close();
-            } catch(Throwable t) {
-                // nothing to do
-            }
-        }
     }
 
     static void checkOptions(Value options, Path pluginPath) {

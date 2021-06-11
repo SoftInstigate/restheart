@@ -23,17 +23,22 @@ package org.restheart.polyglot;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.collect.Maps;
 import com.mongodb.MongoClient;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.Value;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin.MATCH_POLICY;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractJSPlugin {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractJSPlugin.class);
+
     protected Map<String, String> contextOptions = new HashMap<>();
 
     protected Engine engine = Engine.create();
@@ -147,6 +152,60 @@ public abstract class AbstractJSPlugin {
             : new HashMap<String, Object>();
 
         ctx.getBindings("js").putMember("pluginArgs", args);
+    }
+
+    // cache Context and handles for performace
+    // each working thread is associates with one context and one handle
+    // because js Context does not allow multithreaded access
+    protected Map<String, Context> ctxs = Maps.newHashMap();
+    protected Map<String, Value> handles = Maps.newHashMap();
+
+    /**
+     *
+     * @return the Context associated with this thread. If not existing, it instanitates it.
+     */
+    protected Context ctx() {
+        var workingThreadName = Thread.currentThread().getName();
+
+        if (this.ctxs.get(workingThreadName) == null) {
+            var ctx = context(engine, contextOptions);
+            this.ctxs.put(workingThreadName, ctx);
+
+            addBindings(ctx, this.name, this.pluginArgs, LOGGER, this.mclient);
+        }
+
+        return this.ctxs.get(workingThreadName);
+    }
+
+    /**
+     *
+     * @return the handle Value associated with this thread. If not existing, it instanitates it.
+     */
+    protected Value handle() {
+        var workingThreadName = Thread.currentThread().getName();
+
+        if (this.handles.containsKey(workingThreadName)) {
+            return this.handles.get(workingThreadName);
+        } else {
+            var handle = ctx().eval(this.handleSource);
+            this.handles.put(workingThreadName, handle);
+            return handle;
+        }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        if (this.ctxs != null) {
+            this.ctxs.entrySet().stream().map(e -> e.getValue())
+            .filter(ctx -> ctx != null)
+            .forEach(ctx -> {
+                try {
+                    ctx.close();
+                } catch(Throwable t) {
+                    // nothing to do
+                }
+            });
+        }
     }
 }
 
