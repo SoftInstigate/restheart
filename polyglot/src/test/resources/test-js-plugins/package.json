@@ -18,7 +18,8 @@
     "./sub/hello.js",
     "require-module-service.js",
     "mclient-service.js",
-    "http-client.js"
+    "http-client.js",
+    "test.js"
   ],
   "rh:interceptors": [
     "hello-interceptor.js",

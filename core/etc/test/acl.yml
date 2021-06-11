@@ -161,6 +161,21 @@ permissions:
         {"user" : "@user.userid"}
     priority: 100
 
+# mongo permissions
+
+  - role: mongoPermissions
+    predicate: path-prefix[path="/test-all-permissions"]
+    priority: 0
+    mongo:
+        allowManagementRequests: true # default false
+        allowBulkPatch: true          # default false
+        allowBulkDelete: true         # default false
+        allowWriteMode: true          # default false
+
+
+  - role: mongoPermissions
+    predicate: path-prefix[path="/test-no-permissions"]
+    priority: 0
 
 
 

@@ -9,6 +9,11 @@ users:
       password: secret
       roles: [ test ]
 
+    - userid: mongoPermissions
+      password: secret
+      roles: [mongoPermissions]
+
+
     - userid: user1
       password: secret
       roles: [poweruser]
