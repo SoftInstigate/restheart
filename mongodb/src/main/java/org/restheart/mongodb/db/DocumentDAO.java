@@ -41,7 +41,6 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.OperationResult;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 
 import static org.restheart.mongodb.db.DAOUtils.BAD_VALUE_KEY_ERROR;

@@ -69,8 +69,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
      * @param next
      * @param interceptPoint
      */
-    public RequestInterceptorsExecutor(PipelinedHandler next,
-            InterceptPoint interceptPoint) {
+    public RequestInterceptorsExecutor(PipelinedHandler next, InterceptPoint interceptPoint) {
         super(next);
         this.interceptPoint = interceptPoint;
         this.pluginsRegistry = PluginsRegistryImpl.getInstance();
@@ -105,29 +104,18 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
                     try {
                         return ri.resolve(request, response);
                     } catch (Exception e) {
-                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}",
-                                ri.getClass().getSimpleName(),
-                                exchange.getRequestPath(),
-                                interceptPoint,
-                                e);
+                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, e);
 
                         return false;
                     }
                 })
                 .forEachOrdered(ri -> {
                     try {
-                        LOGGER.debug("Executing interceptor {} for {} on intercept point {}",
-                            PluginUtils.name(ri),
-                            exchange.getRequestPath(),
-                            interceptPoint);
+                        LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), interceptPoint);
 
                         ri.handle(request, response);
                     } catch (Exception ex) {
-                        LOGGER.error("Error executing interceptor {} for {} on intercept point {}",
-                            PluginUtils.name(ri),
-                            exchange.getRequestPath(),
-                            interceptPoint,
-                            ex);
+                        LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), interceptPoint, ex);
 
                         Exchange.setInError(exchange);
                         LambdaUtils.throwsSneakyException(ex);
@@ -140,8 +128,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         // might snoop information. For instance, a request to MongoService might
         // be able to check if a collection exists (this check is done by
         // BEFORE_AUTH interceptor CollectionPropsInjector)
-        if (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH
-                && Exchange.isInError(exchange)) {
+        if (this.interceptPoint == InterceptPoint.REQUEST_AFTER_AUTH && Exchange.isInError(exchange)) {
             // if in error but no status code use 400 Bad Request
             if (response.getStatusCode() < 0) {
                 response.setStatusCode(HttpStatus.SC_BAD_REQUEST);
@@ -150,8 +137,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
             // if this is a service, handle OPTIONS
             // otherwise requests with bad content receive CORS errors
             if (handlingService != null && request.isOptions()) {
-                handlingService.handleOptions(ServiceRequest.of(exchange,
-                        ServiceRequest.class));
+                handlingService.handleOptions(ServiceRequest.of(exchange, ServiceRequest.class));
             }
 
             sender.handleRequest(exchange);

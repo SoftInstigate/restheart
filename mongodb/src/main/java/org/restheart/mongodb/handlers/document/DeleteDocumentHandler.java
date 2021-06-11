@@ -24,9 +24,9 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 

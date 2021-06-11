@@ -47,8 +47,7 @@ public class JsonMetaSchemaChecker extends PipelinedHandler {
 
     static final String JSON_METASCHEMA_FILENAME = "json-schema-draft-v4.json";
 
-    static final Logger LOGGER
-            = LoggerFactory.getLogger(JsonMetaSchemaChecker.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(JsonMetaSchemaChecker.class);
 
     private static Schema schema;
 

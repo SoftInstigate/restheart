@@ -13,6 +13,7 @@ users:
       password: secret
       roles: [mongoPermissions]
 
+
     - userid: user1
       password: secret
       roles: [poweruser]

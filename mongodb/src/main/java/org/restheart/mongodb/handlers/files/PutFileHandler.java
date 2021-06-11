@@ -27,11 +27,11 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.db.GridFsDAO;
 import org.restheart.mongodb.db.GridFsRepository;
+import org.restheart.mongodb.db.OperationResult;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +122,7 @@ public class PutFileHandler extends PipelinedHandler {
                                 metadata,
                                 request.getFilePath(),
                                 id,
+                                request.getFiltersDocument(),
                                 request.getETag(),
                                 request.isETagCheckRequired());
             } else {

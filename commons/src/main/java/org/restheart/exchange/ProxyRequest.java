@@ -22,6 +22,7 @@ package org.restheart.exchange;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 
@@ -35,7 +36,7 @@ import java.lang.reflect.Field;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  * @param <T> generic type
  */
-public abstract class ProxyRequest<T> extends Request<T> implements BufferedExchange<T> {
+public abstract class ProxyRequest<T> extends Request<T> implements BufferedExchange<T>, AutoCloseable {
     public ProxyRequest(HttpServerExchange exchange) {
         super(exchange);
     }
@@ -66,6 +67,16 @@ public abstract class ProxyRequest<T> extends Request<T> implements BufferedExch
 
     @Override
     public void setBuffer(PooledByteBuffer[] raw) {
+        // close the current buffer pool
+        var oldBuffers = getWrappedExchange().getAttachment(ProxyResponse.BUFFERED_RESPONSE_DATA_KEY);
+        if (oldBuffers != null) {
+            for (var oldBuffer: oldBuffers) {
+                if (oldBuffer != null) {
+                    oldBuffer.close();
+                }
+            }
+        }
+
         getWrappedExchange().putAttachment(getRawContentKey(), raw);
     }
 
@@ -84,5 +95,20 @@ public abstract class ProxyRequest<T> extends Request<T> implements BufferedExch
     @Override
     public boolean isContentAvailable() {
         return null != getWrappedExchange().getAttachment(getRawContentKey());
+    }
+
+    /**
+     * Closes this resource, relinquishing any underlying resources.
+     */
+    public void close() {
+        if (isContentAvailable()) {
+            for (var b: this.getBuffer()) {
+                if (b != null) {
+                    b.close();
+                }
+            }
+
+            this.setBuffer(null);
+        }
     }
 }

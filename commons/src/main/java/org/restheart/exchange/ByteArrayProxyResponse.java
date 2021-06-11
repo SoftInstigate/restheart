@@ -25,11 +25,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.undertow.connector.PooledByteBuffer;
 import io.undertow.server.HttpServerExchange;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
 
@@ -63,11 +65,16 @@ public class ByteArrayProxyResponse extends ProxyResponse<byte[]> {
      * @throws java.io.IOException
      */
     @Override
-    public byte[] readContent()
-            throws IOException {
+    public byte[] readContent() throws IOException {
         return BuffersUtils.toByteArray(getBuffer());
     }
 
+    /**
+     * writes the response content
+     *
+     * allocates the PooledByteBuffer array so close() must be invoked
+     * to avoid memory leacks
+     */
     @Override
     public void writeContent(byte[] content) throws IOException {
         if (content == null) {
@@ -81,26 +88,19 @@ public class ByteArrayProxyResponse extends ProxyResponse<byte[]> {
                 setBuffer(dest);
             }
 
-            BuffersUtils.transfer(
-                    ByteBuffer.wrap(content),
-                    dest,
-                    wrapped);
+            BuffersUtils.transfer(ByteBuffer.wrap(content), dest, wrapped);
         }
     }
 
     @Override
-    protected byte[] getErrorContent(int code,
-            String httpStatusText,
-            String message,
-            Throwable t,
-            boolean includeStackTrace) throws IOException {
-        JsonObject resp = new JsonObject();
+    protected byte[] getErrorContent(int code, String httpStatusText, String message, Throwable t, boolean includeStackTrace) throws IOException {
+        var resp = new JsonObject();
         resp.add("http status code", new JsonPrimitive(code));
         resp.add("http status description", new JsonPrimitive(httpStatusText));
         if (message != null) {
             resp.add("message", new JsonPrimitive(avoidEscapedChars(message)));
         }
-        JsonObject nrep = new JsonObject();
+        var nrep = new JsonObject();
         if (t != null) {
             nrep.add("class", new JsonPrimitive(t.getClass().getName()));
             if (includeStackTrace) {
@@ -122,14 +122,14 @@ public class ByteArrayProxyResponse extends ProxyResponse<byte[]> {
         if (t == null || t.getStackTrace() == null) {
             return null;
         }
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
+        var sw = new StringWriter();
+        var pw = new PrintWriter(sw);
         t.printStackTrace(pw);
-        String st = sw.toString();
+        var st = sw.toString();
         st = avoidEscapedChars(st);
         String[] lines = st.split("\n");
-        JsonArray list = new JsonArray();
-        for (String line : lines) {
+        var list = new JsonArray();
+        for (var line : lines) {
             list.add(new JsonPrimitive(line));
         }
         return list;

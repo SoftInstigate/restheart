@@ -31,7 +31,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
 import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
@@ -50,14 +49,12 @@ import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@RegisterPlugin(
-        name = "rndTokenManager",
-        description = "generates random auth tokens",
-        enabledByDefault = false)
+@RegisterPlugin(name = "rndTokenManager",
+                description = "generates random auth tokens",
+                enabledByDefault = false)
 public class RndTokenManager implements TokenManager {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(RndTokenManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RndTokenManager.class);
 
     private static final SecureRandom RND_GENERATOR = new SecureRandom();
 
@@ -68,33 +65,25 @@ public class RndTokenManager implements TokenManager {
 
     @InjectConfiguration
     @InjectPluginsRegistry
-    public void init(Map<String, Object> confArgs,
-            PluginsRegistry pluginsRegistry) throws ConfigurationException {
+    public void init(Map<String, Object> confArgs, PluginsRegistry pluginsRegistry) throws ConfigurationException {
         this.ttl = ConfigurablePlugin.argValue(confArgs, "ttl");
 
         this.srvURI = ConfigurablePlugin.argValue(confArgs, "srv-uri");
 
-        CACHE = CacheFactory.createLocalCache(Long.MAX_VALUE,
-                Cache.EXPIRE_POLICY.AFTER_READ,
-                ttl * 60 * 1_000);
+        CACHE = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, ttl * 60 * 1_000);
 
         // add the auth token header to CORS header Access-Control-Expose-Headers
         // using helper interceptor tokenCORSResponseInterceptor
-        String[] headers = {AUTH_TOKEN_HEADER.toString(),
-            AUTH_TOKEN_VALID_HEADER.toString(),
-            AUTH_TOKEN_LOCATION_HEADER.toString()};
+        String[] headers = {AUTH_TOKEN_HEADER.toString(), AUTH_TOKEN_VALID_HEADER.toString(), AUTH_TOKEN_LOCATION_HEADER.toString()};
 
         var ti = pluginsRegistry.getInterceptors()
-                .stream().filter(i
-                        -> "tokenCORSResponseInterceptor".equals(i.getName()))
+                .stream().filter(i -> "tokenCORSResponseInterceptor".equals(i.getName()))
                 .findFirst();
 
         if (ti.isPresent()) {
-            ((TokenCORSResponseInterceptor) ti.get().getInstance())
-                    .setHeaders(headers);
+            ((TokenCORSResponseInterceptor) ti.get().getInstance()).setHeaders(headers);
         } else {
-            LOGGER.warn("Cound not find tokenCORSResponseInterceptor. "
-                    + "Auth token headers are not added to CORS");
+            LOGGER.warn("Cound not find tokenCORSResponseInterceptor. Auth token headers are not added to CORS");
         }
     }
 
@@ -105,11 +94,9 @@ public class RndTokenManager implements TokenManager {
 
     @Override
     public Account verify(final String id, final Credential credential) {
-        final Optional<PwdCredentialAccount> _account = CACHE.get(id);
+        final var _account = CACHE.get(id);
 
-        return _account != null
-                && _account.isPresent()
-                && verifyToken(_account.get(), credential)
+        return _account != null && _account.isPresent() && verifyToken(_account.get(), credential)
                 ? _account.get()
                 : null;
     }
@@ -135,7 +122,7 @@ public class RndTokenManager implements TokenManager {
 
     @Override
     public PasswordCredential get(Account account) {
-        Optional<PwdCredentialAccount> cachedAccount = CACHE.get(account.getPrincipal().getName());
+        var cachedAccount = CACHE.get(account.getPrincipal().getName());
 
         if (cachedAccount != null && cachedAccount.isPresent()) {
             return cachedAccount.get().getCredentials();
@@ -154,24 +141,13 @@ public class RndTokenManager implements TokenManager {
         if (account instanceof MongoRealmAccount) {
             var _account = (MongoRealmAccount) account;
 
-            ret = new MongoRealmAccount(
-                account.getPrincipal().getName(),
-                token,
-                Sets.newTreeSet(account.getRoles()),
-                _account.getAccountDocument());
+            ret = new MongoRealmAccount( account.getPrincipal().getName(), token, Sets.newTreeSet(account.getRoles()), _account.getAccountDocument());
         } else if (account instanceof FileRealmAccount) {
             var _account = (FileRealmAccount) account;
 
-            ret = new FileRealmAccount(
-                account.getPrincipal().getName(),
-                token,
-                Sets.newTreeSet(account.getRoles()),
-                _account.getAccountProperties());
+            ret = new FileRealmAccount(account.getPrincipal().getName(), token, Sets.newTreeSet(account.getRoles()), _account.getAccountProperties());
         } else {
-            ret = new PwdCredentialAccount(
-                account.getPrincipal().getName(),
-                token,
-                Sets.newTreeSet(account.getRoles()));
+            ret = new PwdCredentialAccount(account.getPrincipal().getName(), token, Sets.newTreeSet(account.getRoles()));
         }
 
         return ret;
@@ -186,7 +162,7 @@ public class RndTokenManager implements TokenManager {
     public void update(Account account) {
         String id = account.getPrincipal().getName();
 
-        Optional<PwdCredentialAccount> _authTokenAccount = CACHE.get(id);
+        var _authTokenAccount = CACHE.get(id);
 
         if (_authTokenAccount != null && _authTokenAccount.isPresent()) {
             var authTokenAccount = _authTokenAccount.get();
@@ -198,33 +174,23 @@ public class RndTokenManager implements TokenManager {
     }
 
     @Override
-    public void injectTokenHeaders(HttpServerExchange exchange,
-            PasswordCredential token) {
-        exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER,
-                new String(token.getPassword()));
+    public void injectTokenHeaders(HttpServerExchange exchange, PasswordCredential token) {
+        exchange.getResponseHeaders().add(AUTH_TOKEN_HEADER, new String(token.getPassword()));
 
-        exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER,
-                Instant.now().plus(ttl, ChronoUnit.MINUTES).toString());
+        exchange.getResponseHeaders().add(AUTH_TOKEN_VALID_HEADER, Instant.now().plus(ttl, ChronoUnit.MINUTES).toString());
 
         var request = JsonProxyRequest.of(exchange);
 
         if (request.getAuthenticatedAccount() != null
                 && request.getAuthenticatedAccount().getPrincipal() != null
                 && request.getAuthenticatedAccount().getPrincipal().getName() != null) {
-            String cid = request
-                    .getAuthenticatedAccount()
-                    .getPrincipal()
-                    .getName();
+            var cid = request.getAuthenticatedAccount().getPrincipal().getName();
 
-            exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER,
-                    URLUtils.removeTrailingSlashes(srvURI)
-                            .concat("/")
-                            .concat(cid));
+            exchange.getResponseHeaders().add(AUTH_TOKEN_LOCATION_HEADER, URLUtils.removeTrailingSlashes(srvURI).concat("/").concat(cid));
         }
     }
 
     private static char[] nextToken() {
-        return new BigInteger(256, RND_GENERATOR)
-                .toString(Character.MAX_RADIX).toCharArray();
+        return new BigInteger(256, RND_GENERATOR).toString(Character.MAX_RADIX).toCharArray();
     }
 }

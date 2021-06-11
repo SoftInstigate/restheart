@@ -78,7 +78,7 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
             try {
                 GraphQLAppDeserializer.fromBsonDocument(BsonUtils.unflatten(appDef).asDocument());
             } catch(GraphQLIllegalAppDefinitionException e) {
-                response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition: " + e.getMessage());
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition: " + e.getMessage(), e);
             }
         } else {
             var index = 0;
@@ -87,7 +87,7 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
                 try {
                     GraphQLAppDeserializer.fromBsonDocument(BsonUtils.unflatten(appDef).asDocument());
                 } catch(GraphQLIllegalAppDefinitionException e) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition in document at index positon " + index + ": " + e.getMessage());
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong GraphQL App definition in document at index positon " + index + ": " + e.getMessage(), e);
                     break;
                 }
 

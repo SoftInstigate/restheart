@@ -54,9 +54,7 @@ public class PingService implements ByteArrayService {
      */
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
-        if (!request.isGet()) {
-            response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
-        } else {
+        if (request.isGet()) {
             var accept = request.getHeader("Accept");
 
             if (accept != null && accept.startsWith("text/html")) {
@@ -67,6 +65,10 @@ public class PingService implements ByteArrayService {
                 response.setContentType("text/plain");
                 response.setContent(msg.getBytes());
             }
+        } else if (request.isOptions()) {
+            handleOptions(request);
+        } else {
+            response.setStatusCode(HttpStatus.SC_NOT_IMPLEMENTED);
         }
     }
 }

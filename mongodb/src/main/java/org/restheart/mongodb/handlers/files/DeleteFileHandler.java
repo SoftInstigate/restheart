@@ -22,14 +22,13 @@ package org.restheart.mongodb.handlers.files;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.exchange.OperationResult;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.mongodb.db.GridFsDAO;
 import org.restheart.mongodb.db.GridFsRepository;
+import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -85,11 +84,11 @@ public class DeleteFileHandler extends PipelinedHandler {
             return;
         }
 
-        BsonValue id = request.getDocumentId();
-
         OperationResult result = this.gridFsDAO
                 .deleteFile(dbsDAO, request.getDBName(),
-                        request.getCollectionName(), id,
+                        request.getCollectionName(),
+                        request.getDocumentId(),
+                        request.getFiltersDocument(),
                         request.getETag(),
                         request.isETagCheckRequired());
 

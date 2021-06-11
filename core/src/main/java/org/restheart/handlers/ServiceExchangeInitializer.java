@@ -30,6 +30,8 @@ import org.restheart.exchange.Exchange;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Initializes the Request and the Response invoking requestInitializer() and
@@ -38,6 +40,7 @@ import org.restheart.utils.BsonUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ServiceExchangeInitializer extends PipelinedHandler {
+    private final Logger LOGGER = LoggerFactory.getLogger(ServiceExchangeInitializer.class);
     /**
      * Creates a new instance of RequestInitializer
      *
@@ -60,21 +63,13 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
 
         if (srv.isPresent()) {
             try {
-                srv.get().getInstance()
-                        .requestInitializer()
-                        .accept(exchange);
-
-                srv.get().getInstance()
-                        .responseInitializer()
-                        .accept(exchange);
-
+                srv.get().getInstance().requestInitializer().accept(exchange);
+                srv.get().getInstance().responseInitializer().accept(exchange);
             } catch (BadRequestException bre) {
+                LOGGER.debug("Error handling the request: " + bre.getMessage(), bre);
                 exchange.setStatusCode(bre.getStatusCode());
-                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
-                        Exchange.JSON_MEDIA_TYPE);
-                exchange.getResponseSender().send(BsonUtils.toJson(
-                        getErrorDocument(bre.getStatusCode(),
-                                bre.getMessage())));
+                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Exchange.JSON_MEDIA_TYPE);
+                exchange.getResponseSender().send(BsonUtils.toJson(getErrorDocument(bre.getStatusCode(), bre.getMessage())));
                 return;
             } catch (Throwable t) {
                 exchange.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);

@@ -53,8 +53,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     private final String UPGRADE_HEADER_VALUE = "websocket";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetChangeStreamHandler.class);
-    private static final HttpHandler WEBSOCKET_HANDSHAKE_HANDLER
-            = Handlers.websocket(new ChangeStreamWebsocketCallback());
+    private static final HttpHandler WEBSOCKET_HANDSHAKE_HANDLER = Handlers.websocket(new ChangeStreamWebsocketCallback());
 
     public static final AttachmentKey<BsonDocument> AVARS_ATTACHMENT_KEY = AttachmentKey.create(BsonDocument.class);
     public static final AttachmentKey<JsonMode> JSON_MODE_ATTACHMENT_KEY = AttachmentKey.create(JsonMode.class);
@@ -89,8 +88,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             response.setInError(HttpStatus.SC_NOT_FOUND,
                     "Stream does not exist");
 
-            LOGGER.debug("Requested stream {} does not exist",
-                    request.getUnmappedRequestUri());
+            LOGGER.debug("Requested stream {} does not exist", request.getUnmappedRequestUri());
 
             next(exchange);
         } catch (QueryVariableNotBoundException ex) {
@@ -116,6 +114,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                 response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, error);
             }
         } catch (Throwable t) {
+            LOGGER.error("Error handling the change stream request", t);
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, t.getMessage());
         }
     }

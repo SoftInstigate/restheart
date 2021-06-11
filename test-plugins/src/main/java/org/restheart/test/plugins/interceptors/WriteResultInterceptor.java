@@ -30,8 +30,7 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 
 @RegisterPlugin(name = "writeResult",
-        description = "Adds a body to write responses with "
-        + "updated and old version of the written document.",
+        description = "Adds a body to write responses with updated and old version of the written document.",
         interceptPoint = InterceptPoint.RESPONSE,
         enabledByDefault = false)
 public class WriteResultInterceptor implements MongoInterceptor {
@@ -47,15 +46,13 @@ public class WriteResultInterceptor implements MongoInterceptor {
             response.setContent(resp);
         }
 
-        resp.append("oldData", response.getDbOperationResult().getOldData()
-                == null
-                        ? new BsonNull()
-                        : response.getDbOperationResult().getOldData());
+        resp.append("oldData", response.getDbOperationResult().getOldData() == null
+            ? new BsonNull()
+            : response.getDbOperationResult().getOldData());
 
-        resp.append("newData", response.getDbOperationResult().getNewData()
-                == null
-                        ? new BsonNull()
-                        : response.getDbOperationResult().getNewData());
+        resp.append("newData", response.getDbOperationResult().getNewData() == null
+            ? new BsonNull()
+            : response.getDbOperationResult().getNewData());
     }
 
     @Override

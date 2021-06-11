@@ -48,23 +48,33 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
 
-      - name: Docker login
-        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1 
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and Push distroless docker image
         if: ${{ false }} # temporarily disabled becuase there's no JDK 16 for distroless images
         run: |
-          docker build --file ./core/distroless.Dockerfile -t softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless ./core/.
+          docker build --file ./core/Dockerfile.distroless -t softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless ./core/.
           docker push softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
           docker tag softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart-snapshot:distroless
           docker push softinstigate/restheart-snapshot:distroless
 
-      - name: Build and Push Docker image
-        run: |
-          docker build --file ./core/Dockerfile -t softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}} ./core/.
-          docker push softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
-          docker tag softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}} softinstigate/restheart-snapshot:latest
-          docker push softinstigate/restheart-snapshot:latest
+      - name: Build and Push multi-arch Docker images
+        uses: docker/build-push-action@v2
+        with:
+          context: ./core/
+          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
+          push: true
+          tags: softinstigate/restheart-snapshot:latest,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
 
       - name: Import private gpg key
         run: |

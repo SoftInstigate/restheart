@@ -46,8 +46,7 @@ public class JsonSchemaTransformer extends PipelinedHandler {
     static final Logger LOGGER = LoggerFactory
             .getLogger(JsonSchemaTransformer.class);
 
-    private static final BsonString $SCHEMA
-            = new BsonString("http://json-schema.org/draft-04/schema#");
+    private static final BsonString $SCHEMA = new BsonString("http://json-schema.org/draft-04/schema#");
 
     private final boolean phase;
 
@@ -106,9 +105,7 @@ public class JsonSchemaTransformer extends PipelinedHandler {
                 }
 
                 // generate id as specs mandates
-                SchemaStoreURL uri = new SchemaStoreURL(
-                        request.getDBName(),
-                        request.getDocumentId());
+                SchemaStoreURL uri = new SchemaStoreURL(request.getDBName(), request.getDocumentId());
 
                 content.put("id", new BsonString(uri.toString()));
 

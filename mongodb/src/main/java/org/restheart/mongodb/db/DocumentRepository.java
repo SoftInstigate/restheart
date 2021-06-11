@@ -23,7 +23,6 @@ package org.restheart.mongodb.db;
 import com.mongodb.client.ClientSession;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
-import org.restheart.exchange.OperationResult;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 
 /**

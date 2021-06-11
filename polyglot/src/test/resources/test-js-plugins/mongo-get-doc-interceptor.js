@@ -1,8 +1,7 @@
 export const options = {
     name: "mongoGetDocInteceptor",
     description: "a js interceptor that modified the response of GET /coll/<docid>",
-    secured: false, // optional, default false
-    matchPolicy: "EXACT", // optional, default PREFIX
+    interceptPoint: "RESPONSE",
     pluginClass: "MongoInterceptor"
 }
 

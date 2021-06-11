@@ -1,0 +1,87 @@
+[
+    {
+        "name": "org.restheart.test.plugins.services.EchoService",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.services.IEchoService",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.services.SEchoService",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.interceptors.EchoAsyncResponseInterceptor",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] },
+          { "name": "init", "parameterTypes": ["java.util.Map"] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] },
+          { "name": "init", "parameterTypes": ["java.util.Map"] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.interceptors.EchoRequestInterceptor",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.interceptors.EchoResponseInterceptor",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] },
+          { "name": "init", "parameterTypes": ["java.util.Map"] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.interceptors.SecretHider",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.interceptors.SnooperHook",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] },
+          { "name": "init", "parameterTypes": ["java.util.Map"] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.interceptors.WriteResultInterceptor",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.initializers.TestInitializer",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] },
+          {"name":"setPluginRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+        ]
+    },
+    {
+        "name": "org.restheart.test.plugins.initializers.ExtraJwtVerifier",
+        "methods": [
+          { "name": "<init>", "parameterTypes": [] },
+          {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+        ]
+    }
+]
+

@@ -25,6 +25,11 @@ import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayInterceptor;
 import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,19 +45,13 @@ import org.slf4j.LoggerFactory;
         requiresContent = true,
         interceptPoint = RESPONSE_ASYNC)
 public class EchoAsyncResponseInterceptor implements ByteArrayInterceptor {
+    private static ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(EchoAsyncResponseInterceptor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EchoAsyncResponseInterceptor.class);
 
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
-        try {
-            Thread.sleep(2 * 1000);
-            LOGGER.info("This log message is written 2 seconds after response "
-                    + "by echoAsyncResponseInterceptor");
-        } catch (InterruptedException ie) {
-            LOGGER.warn("error ", ie);
-        }
+        scheduler.schedule(() -> LOGGER.info("This log message is written 2 seconds after response by echoAsyncResponseInterceptor"), 2, TimeUnit.SECONDS);
     }
 
     @Override

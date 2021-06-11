@@ -149,9 +149,12 @@ public class GraphQLApp {
                 return new GraphQLApp(this.descriptor, this.schema, this.mappings, execSchema);
 
             } catch (SchemaProblem schemaProblem){
-                throw new IllegalArgumentException("given String is not a valid GraphQL schema");
+                var errorMSg = schemaProblem.getMessage() != null
+                    ? "Invalid GraphQL schema: " + schemaProblem.getMessage()
+                    : "Invalid GraphQL schema";
+
+                throw new IllegalArgumentException(errorMSg, schemaProblem);
             }
         }
-
     }
 }

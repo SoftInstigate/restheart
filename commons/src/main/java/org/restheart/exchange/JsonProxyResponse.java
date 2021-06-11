@@ -33,6 +33,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+
 import org.restheart.utils.BuffersUtils;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +59,7 @@ public class JsonProxyResponse extends ProxyResponse<JsonElement> {
      * @throws java.io.IOException
      */
     @Override
-    public JsonElement readContent()
-            throws IOException {
+    public JsonElement readContent() throws IOException {
         if (!isContentAvailable()) {
             return null;
         }
@@ -68,17 +68,19 @@ public class JsonProxyResponse extends ProxyResponse<JsonElement> {
             return JsonNull.INSTANCE;
         } else {
             try {
-                String rawContentAsString = BuffersUtils.toString(
-                        getBuffer(),
-                        StandardCharsets.UTF_8);
-
-                return JsonParser.parseString(rawContentAsString);
+                return JsonParser.parseString(BuffersUtils.toString(getBuffer(), StandardCharsets.UTF_8));
             } catch (JsonParseException ex) {
                 throw new IOException("Error parsing json", ex);
             }
         }
     }
 
+    /**
+     * writes the response content
+     *
+     * allocates the PooledByteBuffer array so close() must be invoked
+     * to avoid memory leacks
+     */
     @Override
     public void writeContent(JsonElement content) throws IOException {
         setContentTypeAsJson();
@@ -93,10 +95,7 @@ public class JsonProxyResponse extends ProxyResponse<JsonElement> {
                 setBuffer(dest);
             }
 
-            BuffersUtils.transfer(
-                    ByteBuffer.wrap(content.toString().getBytes()),
-                    dest,
-                    wrapped);
+            BuffersUtils.transfer(ByteBuffer.wrap(content.toString().getBytes()), dest, wrapped);
         }
     }
 
@@ -106,13 +105,13 @@ public class JsonProxyResponse extends ProxyResponse<JsonElement> {
             String message,
             Throwable t,
             boolean includeStackTrace) throws IOException {
-        JsonObject resp = new JsonObject();
+        var resp = new JsonObject();
         resp.add("http status code", new JsonPrimitive(code));
         resp.add("http status description", new JsonPrimitive(httpStatusText));
         if (message != null) {
             resp.add("message", new JsonPrimitive(avoidEscapedChars(message)));
         }
-        JsonObject nrep = new JsonObject();
+        var nrep = new JsonObject();
         if (t != null) {
             nrep.add("class", new JsonPrimitive(t.getClass().getName()));
             if (includeStackTrace) {
@@ -134,13 +133,13 @@ public class JsonProxyResponse extends ProxyResponse<JsonElement> {
         if (t == null || t.getStackTrace() == null) {
             return null;
         }
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
+
+        var sw = new StringWriter();
+        var pw = new PrintWriter(sw);
         t.printStackTrace(pw);
-        String st = sw.toString();
-        st = avoidEscapedChars(st);
-        String[] lines = st.split("\n");
-        JsonArray list = new JsonArray();
+        var st = avoidEscapedChars(sw.toString());
+        var lines = st.split("\n");
+        var list = new JsonArray();
         for (String line : lines) {
             list.add(new JsonPrimitive(line));
         }

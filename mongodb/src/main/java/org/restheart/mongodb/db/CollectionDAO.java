@@ -42,7 +42,7 @@ import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
-import org.restheart.exchange.OperationResult;
+
 import org.restheart.mongodb.MongoServiceConfiguration;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_CURSOR_BATCH_SIZE;
 import org.restheart.utils.HttpStatus;

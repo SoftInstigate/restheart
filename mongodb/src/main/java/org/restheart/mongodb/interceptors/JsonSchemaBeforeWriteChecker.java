@@ -218,12 +218,12 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
                 : request.getContent();
 
         if (content.isDocument()) {
-            ret.add(new JSONObject(content.asDocument().toJson()));
+            ret.add(new JSONObject(BsonUtils.toJson(content, request.getJsonMode())));
         } else if (content.isArray()) {
             content.asArray()
                     .stream()
                     .filter(doc -> doc.isDocument())
-                    .map(doc -> doc.asDocument().toJson())
+                    .map(doc -> BsonUtils.toJson(doc, request.getJsonMode()))
                     .map(doc -> new JSONObject(doc))
                     .forEachOrdered(ret::add);
         }

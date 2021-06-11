@@ -1,0 +1,10 @@
+FROM debian:buster-slim
+
+LABEL maintainer="SoftInstigate <info@softinstigate.com>"
+
+WORKDIR /rh
+COPY target/restheart-native .
+RUN mkdir etc plugins
+
+ENTRYPOINT [ "./restheart-native" ]
+EXPOSE 8009 8080 4443

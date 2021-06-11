@@ -47,8 +47,7 @@ import org.slf4j.LoggerFactory;
         interceptPoint = RESPONSE)
 public class EchoResponseInterceptor implements ByteArrayInterceptor {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(EchoResponseInterceptor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EchoResponseInterceptor.class);
 
     /**
      * shows how to inject configuration via @OnInit
