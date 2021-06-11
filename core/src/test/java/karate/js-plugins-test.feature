@@ -1,4 +1,4 @@
-@only
+
 Feature: Test javascript plugins
 
 Background:
