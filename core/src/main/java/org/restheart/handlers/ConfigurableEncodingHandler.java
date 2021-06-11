@@ -26,7 +26,6 @@ import io.undertow.server.handlers.encoding.ContentEncodingRepository;
 import io.undertow.server.handlers.encoding.DeflateEncodingProvider;
 import io.undertow.server.handlers.encoding.EncodingHandler;
 import io.undertow.server.handlers.encoding.GzipEncodingProvider;
-import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import java.util.Arrays;
 
@@ -41,8 +40,7 @@ import org.restheart.utils.HttpStatus;
  */
 public class ConfigurableEncodingHandler extends EncodingHandler {
 
-    private final ResponseSender sender
-            = new ResponseSender(null);
+    private final ResponseSender sender = new ResponseSender(null);
 
     private boolean forceCompression = false;
 
@@ -66,23 +64,17 @@ public class ConfigurableEncodingHandler extends EncodingHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (forceCompression) {
-            HeaderValues acceptedEncodings = exchange
-                    .getRequestHeaders()
-                    .get(Headers.ACCEPT_ENCODING_STRING);
+            var acceptedEncodings = exchange.getRequestHeaders().get(Headers.ACCEPT_ENCODING_STRING);
 
             for (String values : acceptedEncodings) {
-                if (Arrays.stream(values.split(",")).anyMatch((v)
-                        -> Headers.GZIP.toString().equals(v)
-                        || Headers.DEFLATE.toString().equals(v))) {
+                if (Arrays.stream(values.split(",")).anyMatch((v) -> Headers.GZIP.toString().equals(v) || Headers.DEFLATE.toString().equals(v))) {
                     super.handleRequest(exchange);
                     return;
                 }
             }
 
             Exchange.setInError(exchange);
-            ByteArrayProxyResponse.of(exchange).setInError(
-                    HttpStatus.SC_BAD_REQUEST,
-                    "Accept-Encoding header must include gzip or deflate");
+            ByteArrayProxyResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "Accept-Encoding header must include gzip or deflate");
 
             sender.handleRequest(exchange);
         } else {

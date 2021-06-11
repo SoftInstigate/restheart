@@ -36,7 +36,7 @@ public class RunnerIT extends AbstactIT {
     @Test
     public void run() {
         var results = Runner.path("classpath:karate")
-                .tags("~@ignore", "@only")
+                .tags("~@ignore")
                 .parallel(1);
 
         assertEquals(0, results.getFailCount());

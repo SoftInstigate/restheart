@@ -1,0 +1,25 @@
+{
+    "_id": "coll",
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "_id": {
+            "$ref": "http://schema-store/test-json-schema/mongo#/definitions/ObjectId"
+        },
+        "etag": {
+            "$ref": "http://schema-store/test-json-schema/mongo#/definitions/ObjectId"
+        },
+        "n": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+        },
+        "s": {
+            "type": "string"
+        },
+        "timestamp": {
+            "$ref": "http://schema-store/test-json-schema/mongo#/definitions/BsonDate"
+        }
+    },
+    "required": ["n", "s", "timestamp"]
+}

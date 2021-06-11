@@ -29,6 +29,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
+import org.restheart.utils.BsonUtils;
 
 /**
  *
@@ -79,7 +80,7 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
     String documentToCheck(MongoRequest request, MongoResponse response) {
         return response.getDbOperationResult().getNewData() == null
                 ? "{}"
-                : response.getDbOperationResult().getNewData().toJson();
+                : BsonUtils.toJson(response.getDbOperationResult().getNewData(), request.getJsonMode());
     }
 
     @Override
@@ -90,7 +91,7 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
                 ? new BsonDocument()
                 : response.getDbOperationResult().getNewData();
 
-        ret.add(new JSONObject(content.asDocument().toJson()));
+        ret.add(new JSONObject(BsonUtils.toJson(content, request.getJsonMode())));
 
         return ret;
     }

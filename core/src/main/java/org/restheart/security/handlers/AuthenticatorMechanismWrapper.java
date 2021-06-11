@@ -65,14 +65,10 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
     }
 
     @Override
-    public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange,
-            SecurityContext securityContext) {
-        AuthenticationMechanismOutcome outcome = wrapped.authenticate(exchange,
-                securityContext);
+    public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
+        var outcome = wrapped.authenticate(exchange, securityContext);
 
-        LOGGER.debug(wrapped.getMechanismName()
-                + " -> "
-                + outcome.name());
+        LOGGER.debug("{} -> {}", wrapped.getMechanismName(), outcome.name());
 
         switch (outcome) {
             case NOT_AUTHENTICATED:
@@ -83,8 +79,7 @@ public class AuthenticatorMechanismWrapper implements AuthMechanism {
     }
 
     @Override
-    public ChallengeResult sendChallenge(HttpServerExchange exchange,
-            SecurityContext securityContext) {
+    public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
         return wrapped.sendChallenge(exchange, securityContext);
     }
 

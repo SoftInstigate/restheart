@@ -43,45 +43,9 @@
       { "name": "conf", "parameterTypes": ["java.util.Map"] }
     ]
   },
-
   {
-    "name": "org.restheart.graphql.GraphQLService",
-    "methods": [
-      { "name": "<init>", "parameterTypes": [] },
-      { "name": "initConf", "parameterTypes": ["java.util.Map"] },
-      {
-        "name": "initMongoClient",
-        "parameterTypes": ["com.mongodb.MongoClient"]
-      }
-    ]
-  },
-  {
-    "name": "org.restheart.graphql.interceptors.GraphAppDefinitionEscaper",
-    "methods": [
-      { "name": "<init>", "parameterTypes": [] },
-      { "name": "conf", "parameterTypes": ["java.util.Map"] }
-    ]
-  },
-  {
-    "name": "org.restheart.graphql.interceptors.GraphAppDefinitionPatchChecker",
-    "methods": [
-      { "name": "<init>", "parameterTypes": [] },
-      { "name": "conf", "parameterTypes": ["java.util.Map"] },
-      { "name": "mc", "parameterTypes": ["com.mongodb.MongoClient"] }
-    ]
-  },
-  {
-    "name": "org.restheart.graphql.interceptors.GraphAppDefinitionPutPostChecker",
-    "methods": [
-      { "name": "<init>", "parameterTypes": [] },
-      { "name": "conf", "parameterTypes": ["java.util.Map"] }
-    ]
-  },
-  {
-    "name": "org.restheart.graphql.interceptors.GraphAppDefinitionPutPostEscaper",
-    "methods": [
-      { "name": "<init>", "parameterTypes": [] },
-      { "name": "conf", "parameterTypes": ["java.util.Map"] }
-    ]
+    "name": "org.restheart.graphql.models.QueryMapping",
+    "allPublicFields": true,
+    "allDeclaredFields": true
   }
 ]

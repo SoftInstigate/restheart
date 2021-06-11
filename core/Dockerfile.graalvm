@@ -1,0 +1,16 @@
+FROM softinstigate/graalvm:latest
+
+LABEL maintainer="SoftInstigate <info@softinstigate.com>"
+
+COPY bin/entrypoint-graalvm.sh /root/entrypoint.sh
+
+WORKDIR /opt/restheart
+COPY etc/restheart.yml etc/default.properties etc/acl.yml etc/users.yml etc/
+COPY target/restheart.jar /opt/restheart/
+COPY target/plugins/* /opt/restheart/plugins/
+
+SHELL ["/bin/bash", "-i", "-c"]
+
+ENTRYPOINT [ "/root/entrypoint.sh" ]
+CMD ["--envFile", "etc/default.properties"]
+EXPOSE 8009 8080 4443

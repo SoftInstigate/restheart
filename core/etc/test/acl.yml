@@ -161,7 +161,6 @@ permissions:
         {"user" : "@user.userid"}
     priority: 100
 
-
 # mongo permissions
 
   - role: mongoPermissions
@@ -177,5 +176,6 @@ permissions:
   - role: mongoPermissions
     predicate: path-prefix[path="/test-no-permissions"]
     priority: 0
+
 
 

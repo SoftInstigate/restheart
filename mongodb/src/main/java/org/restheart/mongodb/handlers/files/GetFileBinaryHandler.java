@@ -23,11 +23,13 @@ package org.restheart.mongodb.handlers.files;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.model.GridFSFile;
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import java.io.IOException;
 import org.bson.BsonObjectId;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -95,7 +97,17 @@ public class GetFileBinaryHandler extends PipelinedHandler {
 
         var gridFSBucket = GridFSBuckets.create(MongoClientSingleton.getInstance().getClient().getDatabase(request.getDBName()), bucket);
 
-        var dbsfile = gridFSBucket.find(eq("_id", request.getDocumentId())).limit(1).iterator().tryNext();
+        Bson filter;
+
+        var filterQparam = request.getFiltersDocument();
+
+        if (filterQparam != null && filterQparam.isNull()) {
+            filter = and(eq("_id", request.getDocumentId()), filterQparam);
+        } else {
+            filter = eq("_id", request.getDocumentId());
+        }
+
+        var dbsfile = gridFSBucket.find(filter).limit(1).iterator().tryNext();
 
         if (dbsfile == null) {
             fileNotFound(request, exchange);

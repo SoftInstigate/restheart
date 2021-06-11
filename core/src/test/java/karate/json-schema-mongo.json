@@ -1,0 +1,24 @@
+{
+    "_id": "mongo",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "BsonDate": {
+            "type": "object",
+            "properties": {
+                "_$date": {
+                    "type": "number"
+                }
+            },
+            "additionalProperties": false
+        },
+        "ObjectId": {
+            "type": "object",
+            "properties": {
+                "_$oid": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}

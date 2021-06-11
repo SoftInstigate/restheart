@@ -50,15 +50,15 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
     public static GraphQLRequest init(HttpServerExchange exchange, String appUri, GraphQLApp appDefinition) {
         var ret = new GraphQLRequest(exchange, appUri, appDefinition);
 
-        try{
+        try {
 
             if (isContentTypeGraphQL(exchange)){
                 ret.injectContentGraphQL();
-            }
-            else if (isContentTypeJson(exchange)){
+            } else if (isContentTypeJson(exchange)){
                 ret.injectContentJson();
+            } else if (!exchange.getRequestMethod().equalToString("OPTIONS")) {
+                ret.setInError(true);
             }
-            else ret.setInError(true);
 
         } catch (IOException ioe){
             ret.setInError(true);

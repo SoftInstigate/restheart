@@ -22,7 +22,6 @@ package org.restheart.mongodb.db;
 
 import com.mongodb.client.ClientSession;
 import org.bson.BsonDocument;
-import org.restheart.exchange.OperationResult;
 public interface FileMetadataRepository {
 
     /**

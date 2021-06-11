@@ -1,16 +1,10 @@
-# RESTHeart - The REST API for MongoDB.
+# RESTHeart - The Runtime for Microservices with Declarative Security and Instant API on MongoDB
 
-[![Donate](https://img.shields.io/badge/Donate-Patreon-orange.svg?colorB=F96854)](https://www.patreon.com/restheart)
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
-![Release build](https://github.com/SoftInstigate/restheart/workflows/Build%20stable%20release/badge.svg)
-![Snapshot build](https://github.com/SoftInstigate/restheart/workflows/Build%20snapshot%20release/badge.svg)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
 [![Maven Central](https://img.shields.io/maven-central/v/org.restheart/restheart.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.restheart%22%20AND%20a:%22restheart%22)
-[![javadoc](https://javadoc.io/badge2/org.restheart/restheart/javadoc.svg)](https://javadoc.io/doc/org.restheart/restheart)
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat at https://gitter.im/SoftInstigate/restheart](https://badges.gitter.im/SoftInstigate/restheart.svg)](https://gitter.im/SoftInstigate/restheart?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-<!-- [![Docker Stars](https://img.shields.io/docker/stars/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/) -->
 
 ## Table of Contents
 
@@ -22,17 +16,13 @@
 
 ## Introduction
 
-RESTHeart is the most popular **REST API** for **MongoDB**. All MongoDB's capabilities can be automatically accessed via a complete REST API.
+RESTHeart is a modern Runtime for Microservices, designed to radically simplify server-side development and deployment.
 
 RESTHeart provides out-of-the-box:
 
-1. Data persistence via MongoDB.
-1. Secure Identity and Access Management.
-1. Complete REST API with JSON messages.
-
-RESTHeart is a modern backend for Web and Mobile apps, designed to radically simplify server-side development and deployment.
-
-RESTHeart comes with complete functionalities out of the box, but you can extend it with Java to implement custom services.
+1. Polyglot Development Framework supporting Java, Kotlin, JavaScript and TypeScript
+2. Data persistence on MongoDB with REST, GraphQL and WebSocket APIs
+3. Secure Identity and Access Management
 
 ## Download
 
@@ -46,6 +36,12 @@ Find setup instructions at [Setup](https://restheart.org/docs/setup/) documentat
 
 ```bash
 $ mvn clean package
+```
+
+You can then run it with (make sure to have mongod running):
+
+```bash
+$ java -jar core/target/restheart.jar core/etc/restheart.yml -e core/etc/default.properties
 ```
 
 ## Documentation

@@ -1,9 +1,14 @@
-package org.restheart.graal;
+/** WIP
+ * Automate reflect configuratio currently done via GenerateGraalvmReflectConfig
+ *
+ */
 
-import com.oracle.svm.core.annotate.AutomaticFeature;
+// package org.restheart.graal;
 
-import org.graalvm.nativeimage.hosted.Feature;
-import org.graalvm.nativeimage.hosted.RuntimeReflection;
+// import com.oracle.svm.core.annotate.AutomaticFeature;
+
+// import org.graalvm.nativeimage.hosted.Feature;
+// import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
 //@AutomaticFeature
 /** WIP automate reflect conf currently done via GenerateGraalvmReflectConfig

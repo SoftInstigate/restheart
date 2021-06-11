@@ -1,0 +1,17 @@
+{
+  "candies": [
+    {
+      "name": "j4ts",
+      "version": "2.0.0",
+      "lastUpdateTimestamp": 1608229096000,
+      "modelVersion": "unknown",
+      "transpilerVersion": "3.0.0",
+      "jsOutputDirPath": "/home/stas/rh-git/restheart/commons/.jsweet/candies/js",
+      "jsDirPath": "META-INF/resources/webjars/j4ts/2.0.0",
+      "jsFilesPaths": [
+        "META-INF/resources/webjars/j4ts/2.0.0/bundle.js",
+        "META-INF/resources/webjars/j4ts/2.0.0/Manifest.js"
+      ]
+    }
+  ]
+}

@@ -1,4 +1,3 @@
-
 Feature: Test predicates in acl
   
 Background:

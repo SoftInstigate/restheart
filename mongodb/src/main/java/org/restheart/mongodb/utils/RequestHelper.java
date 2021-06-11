@@ -27,7 +27,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.exchange.OperationResult;
+import org.restheart.mongodb.db.OperationResult;
 import org.restheart.utils.HttpStatus;
 
 /**

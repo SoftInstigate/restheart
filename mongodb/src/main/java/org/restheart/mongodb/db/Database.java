@@ -31,7 +31,6 @@ import org.bson.BsonObjectId;
 import org.bson.json.JsonParseException;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.IllegalQueryParamenterException;
-import org.restheart.exchange.OperationResult;
 
 /**
  *

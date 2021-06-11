@@ -20,8 +20,6 @@
  */
 package org.restheart.handlers.injectors;
 
-import io.undertow.security.idm.Account;
-import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.security.TokenManager;
@@ -34,7 +32,7 @@ public class TokenInjector extends PipelinedHandler {
     private final TokenManager tokenManager;
 
     /**
-     * Creates a new instance of AuthTokenInjecterHandler
+     * Creates a new instance of TokenInjector
      *
      * @param next
      * @param tokenManager
@@ -54,10 +52,9 @@ public class TokenInjector extends PipelinedHandler {
         if (this.tokenManager != null
                 && exchange.getSecurityContext() != null
                 && exchange.getSecurityContext().isAuthenticated()) {
-            Account authenticatedAccount = exchange
-                    .getSecurityContext().getAuthenticatedAccount();
+            var authenticatedAccount = exchange.getSecurityContext().getAuthenticatedAccount();
 
-            PasswordCredential token = tokenManager.get(authenticatedAccount);
+            var token = tokenManager.get(authenticatedAccount);
 
             tokenManager.injectTokenHeaders(exchange, token);
         }

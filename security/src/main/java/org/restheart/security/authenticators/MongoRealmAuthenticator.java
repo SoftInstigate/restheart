@@ -35,12 +35,10 @@ import io.undertow.util.HexConverter;
 import io.undertow.util.HttpString;
 import static io.undertow.util.RedirectBuilder.UTF_8;
 import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Optional;
 import org.bson.BsonDocument;
 import org.mindrot.jbcrypt.BCrypt;
 import org.restheart.ConfigurationException;
@@ -65,10 +63,9 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @RegisterPlugin(name = "mongoRealmAuthenticator",
-        description = "authenticate requests against client credentials stored in mongodb")
+                description = "authenticate requests against client credentials stored in mongodb")
 public class MongoRealmAuthenticator implements Authenticator {
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(MongoRealmAuthenticator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoRealmAuthenticator.class);
 
     public static final String X_FORWARDED_ACCOUNT_ID = "rhAuthenticator";
     public static final String X_FORWARDED_ROLE = "RESTHeart";
@@ -85,16 +82,11 @@ public class MongoRealmAuthenticator implements Authenticator {
     private Boolean cacheEnabled = false;
     private Integer cacheSize = 1_000; // 1000 entries
     private Integer cacheTTL = 60 * 1_000; // 1 minute
-    private Cache.EXPIRE_POLICY cacheExpirePolicy
-            = Cache.EXPIRE_POLICY.AFTER_WRITE;
+    private Cache.EXPIRE_POLICY cacheExpirePolicy = Cache.EXPIRE_POLICY.AFTER_WRITE;
 
     private LoadingCache<String, MongoRealmAccount> USERS_CACHE = null;
 
-    private static final transient Cache<String, String> USERS_PWDS_CACHE
-            = CacheFactory.createLocalCache(
-                    1_000l,
-                    Cache.EXPIRE_POLICY.AFTER_READ,
-                    20 * 60 * 1_000l);
+    private static final transient Cache<String, String> USERS_PWDS_CACHE = CacheFactory.createLocalCache(1_000l, Cache.EXPIRE_POLICY.AFTER_READ, 20 * 60 * 1_000l);
 
     private PluginsRegistry registry;
     private MongoClient mclient;
@@ -110,13 +102,9 @@ public class MongoRealmAuthenticator implements Authenticator {
         String _cacheExpirePolicy = argValue(args, "cache-expire-policy");
         if (_cacheExpirePolicy != null) {
             try {
-                this.cacheExpirePolicy = Cache.EXPIRE_POLICY
-                        .valueOf((String) _cacheExpirePolicy);
+                this.cacheExpirePolicy = Cache.EXPIRE_POLICY.valueOf((String) _cacheExpirePolicy);
             } catch (IllegalArgumentException iae) {
-                throw new ConfigurationException(
-                        "wrong configuration file format. "
-                        + "cache-expire-policy valid values are "
-                        + Arrays.toString(Cache.EXPIRE_POLICY.values()));
+                throw new ConfigurationException("wrong configuration file format. cache-expire-policy valid values are ".concat(Arrays.toString(Cache.EXPIRE_POLICY.values())));
             }
         }
 
@@ -131,24 +119,19 @@ public class MongoRealmAuthenticator implements Authenticator {
         try {
             this.createUserDocument = BsonDocument.parse(_createUserDocument);
         } catch (JsonParseException ex) {
-            throw new ConfigurationException(
-                    "wrong configuration file format. "
-                    + "create-user-document must be a json document", ex);
+            throw new ConfigurationException("wrong configuration file format. create-user-document must be a json document", ex);
         }
 
         this.propId = argValue(args, "prop-id");
 
         if (this.propId.startsWith("$")) {
-            throw new ConfigurationException("prop-id must be "
-                    + "a root property name not a json path expression. "
-                    + "It can use the dot notation.");
+            throw new ConfigurationException("prop-id must be a root property name not a json path expression. It can use the dot notation.");
         }
 
         this.propPassword = argValue(args, "prop-password");
 
         if (this.propPassword.contains(".")) {
-            throw new ConfigurationException("prop-password must be "
-                    + "a root level property and cannot contain the char '.'");
+            throw new ConfigurationException("prop-password must be a root level property and cannot contain the char '.'");
         }
 
         this.jsonPathRoles = argValue(args, "json-path-roles");
@@ -162,9 +145,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             this.USERS_CACHE = CacheFactory.createLocalLoadingCache(
                     this.cacheSize,
                     this.cacheExpirePolicy,
-                    this.cacheTTL, (String key) -> {
-                        return findAccount(accountIdTrasformer(key));
-                    });
+                    this.cacheTTL, key -> findAccount(accountIdTrasformer(key)));
         }
 
         if (!checkUserCollection()) {
@@ -203,17 +184,12 @@ public class MongoRealmAuthenticator implements Authenticator {
 
         boolean verified;
 
-        if (credential instanceof PasswordCredential) {
-            verified = verifyPasswordCredential(
-                    ref,
-                    (PasswordCredential) credential);
-        } else if (credential instanceof DigestCredential) {
-            verified = verifyDigestCredential(
-                    ref,
-                    (DigestCredential) credential);
+        if (credential instanceof PasswordCredential passwordCredential) {
+            verified = verifyPasswordCredential(ref, passwordCredential);
+        } else if (credential instanceof DigestCredential digestCredential) {
+            verified = verifyDigestCredential(ref, digestCredential);
         } else {
-            LOGGER.warn("mongoRealmAuthenticator does not support credential of type {}",
-                    credential.getClass().getSimpleName());
+            LOGGER.warn("mongoRealmAuthenticator does not support credential of type {}", credential.getClass().getSimpleName());
             verified = false;
         }
 
@@ -254,11 +230,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             return false;
         }
 
-        return checkPassword(
-                ref.getPrincipal().getName(),
-                this.bcryptHashedPassword,
-                credential.getPassword(),
-                ref.getCredentials().getPassword());
+        return checkPassword(ref.getPrincipal().getName(), this.bcryptHashedPassword, credential.getPassword(), ref.getCredentials().getPassword());
     }
 
     /**
@@ -268,12 +240,9 @@ public class MongoRealmAuthenticator implements Authenticator {
      * @param credential
      * @return true if password verified successfully
      */
-    private boolean verifyDigestCredential(
-            PwdCredentialAccount ref,
-            DigestCredential credential) {
+    private boolean verifyDigestCredential(PwdCredentialAccount ref, DigestCredential credential) {
         if (this.bcryptHashedPassword) {
-            LOGGER.error("Digest authentication cannot support bcryped stored "
-                    + "password, consider using basic authetication over TLS");
+            LOGGER.error("Digest authentication cannot support bcryped stored password, consider using basic authetication over TLS");
             return false;
         }
 
@@ -287,7 +256,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         }
 
         try {
-            MessageDigest digest = credential.getAlgorithm().getMessageDigest();
+            var digest = credential.getAlgorithm().getMessageDigest();
 
             digest.update(ref.getPrincipal().getName().getBytes(UTF_8));
             digest.update((byte) ':');
@@ -295,7 +264,7 @@ public class MongoRealmAuthenticator implements Authenticator {
             digest.update((byte) ':');
             digest.update(new String(ref.getCredentials().getPassword()).getBytes(UTF_8));
 
-            byte[] ha1 = HexConverter.convertToHexBytes(digest.digest());
+            var ha1 = HexConverter.convertToHexBytes(digest.digest());
 
             return credential.verifyHA1(ha1);
         } catch (NoSuchAlgorithmException ne) {
@@ -312,10 +281,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         return null;
     }
 
-    static boolean checkPassword(String username,
-            boolean hashed,
-            char[] password,
-            char[] expected) {
+    static boolean checkPassword(String username, boolean hashed, char[] password, char[] expected) {
         if (hashed) {
             if (username == null || password == null || expected == null) {
                 return false;
@@ -362,7 +328,7 @@ public class MongoRealmAuthenticator implements Authenticator {
         if (USERS_CACHE == null) {
             return findAccount(this.accountIdTrasformer(id));
         } else {
-            Optional<MongoRealmAccount> _account = USERS_CACHE.getLoading(id);
+            var _account = USERS_CACHE.getLoading(id);
 
             if (_account != null && _account.isPresent()) {
                 return _account.get();
@@ -453,9 +419,7 @@ public class MongoRealmAuthenticator implements Authenticator {
 
     public long countAccounts() {
         try {
-            return mclient.getDatabase(this.getUsersDb())
-                    .getCollection(this.getUsersCollection())
-                    .estimatedDocumentCount();
+            return mclient.getDatabase(this.getUsersDb()).getCollection(this.getUsersCollection()).estimatedDocumentCount();
         } catch (Throwable t) {
             LOGGER.error("Error counting accounts", t);
             return 1;
@@ -470,9 +434,8 @@ public class MongoRealmAuthenticator implements Authenticator {
 
         if (this.createUserDocument != null) {
             try {
-                mclient.getDatabase(this.getUsersDb())
-                        .getCollection(this.getUsersCollection(), BsonDocument.class)
-                        .insertOne(this.createUserDocument);
+                mclient.getDatabase(this.getUsersDb()).getCollection(this.getUsersCollection()).withDocumentClass(BsonDocument.class)
+                    .insertOne(this.createUserDocument);
             } catch (Throwable t) {
                 LOGGER.error("Error creating default account", t);
             }
@@ -480,9 +443,7 @@ public class MongoRealmAuthenticator implements Authenticator {
     }
 
     public MongoRealmAccount findAccount(String accountId) {
-        var coll = mclient
-                .getDatabase(this.getUsersDb())
-                .getCollection(this.getUsersCollection(), BsonDocument.class);
+        var coll = mclient.getDatabase(this.getUsersDb()).getCollection(this.getUsersCollection()).withDocumentClass(BsonDocument.class);
 
         BsonDocument _account;
 

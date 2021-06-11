@@ -26,6 +26,7 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,8 +37,9 @@ import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonValue;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import org.restheart.exchange.OperationResult;
+
 import static org.restheart.utils.HttpStatus.*;
 import org.slf4j.LoggerFactory;
 
@@ -134,6 +136,7 @@ public class GridFsDAO implements GridFsRepository {
      * @param metadata
      * @param filePath
      * @param fileId
+     * @param filter
      * @param requestEtag
      * @param checkEtag
      * @return
@@ -146,10 +149,11 @@ public class GridFsDAO implements GridFsRepository {
             final BsonDocument metadata,
             final Path filePath,
             final BsonValue fileId,
+            final BsonDocument filter,
             final String requestEtag,
             final boolean checkEtag) throws IOException {
 
-        OperationResult deletionResult = deleteFile(db, dbName, bucketName, fileId, requestEtag, checkEtag);
+        OperationResult deletionResult = deleteFile(db, dbName, bucketName, fileId, filter, requestEtag, checkEtag);
 
         //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7
         final boolean deleteOperationWasSuccessful = deletionResult.getHttpCode() == SC_NO_CONTENT || deletionResult.getHttpCode() == SC_OK;
@@ -202,6 +206,7 @@ public class GridFsDAO implements GridFsRepository {
      * @param dbName
      * @param bucketName
      * @param fileId
+     * @param filter
      * @param requestEtag
      * @param checkEtag
      * @return the OperationResult
@@ -212,6 +217,7 @@ public class GridFsDAO implements GridFsRepository {
             final String dbName,
             final String bucketName,
             final BsonValue fileId,
+            final BsonDocument filter,
             final String requestEtag,
             final boolean checkEtag) {
 
@@ -219,7 +225,7 @@ public class GridFsDAO implements GridFsRepository {
 
         var gridFSBucket = GridFSBuckets.create(db.getDatabase(dbName), bucket);
 
-        var file = getFileForId(gridFSBucket, fileId);
+        var file = getFileForId(gridFSBucket, fileId, filter);
 
         if (file == null) {
             return new OperationResult(SC_NOT_FOUND);
@@ -241,20 +247,26 @@ public class GridFsDAO implements GridFsRepository {
         }
 
         try {
-            gridFSBucket.delete(fileId);
-            LOGGER.info("Succesfully deleted fileId {}", fileId);
+            gridFSBucket.delete(file.getId());
+            LOGGER.debug("Succesfully deleted fileId {}", file.getId());
         } catch (MongoGridFSException e) {
-            LOGGER.error("Can't delete fileId '{}'", fileId, e);
+            LOGGER.error("Can't delete fileId '{}'", file.getId(), e);
             return new OperationResult(SC_NOT_FOUND);
         }
 
         return new OperationResult(SC_NO_CONTENT);
     }
 
-    private GridFSFile getFileForId(GridFSBucket gridFSBucket, BsonValue fileId) {
-        return gridFSBucket
-                .find(eq("_id", fileId))
-                .limit(1).iterator().tryNext();
+    private GridFSFile getFileForId(GridFSBucket gridFSBucket, BsonValue fileId, BsonDocument filter) {
+        Bson cfilter;
+
+        if (filter != null && !filter.isNull()) {
+            cfilter = and(eq("_id", fileId), filter);
+        } else {
+            cfilter = eq("_id", fileId);
+        }
+
+        return gridFSBucket.find(cfilter).limit(1).iterator().tryNext();
     }
 
     /**
