@@ -1,4 +1,4 @@
-
+@only
 Feature: Test javascript plugins
 
 Background:
@@ -39,7 +39,7 @@ Background:
 
 Scenario: Test hello
     * call copyJsPluginDir
-    * call sleep 2
+    * call sleep 10
     Given path '/hello'
     When method GET
     Then status 200

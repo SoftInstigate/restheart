@@ -34,7 +34,6 @@ public class CopyFolderRecursively {
                 .forEach(File::delete);
         }     
 
-
         try (Stream<Path> stream = Files.walk(src)) {
             stream.forEach(source -> copy(source, dest.resolve(src.relativize(source))) );
         }
