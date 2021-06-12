@@ -132,5 +132,13 @@
   {
     "name": "org.restheart.mongodb.services.CsvLoader",
     "methods": [{ "name": "<init>", "parameterTypes": [] }]
+  },
+  {
+    "name":"org.restheart.mongodb.security.FilterOperatorsBlacklist",
+    "methods":[
+      {"name":"<init>","parameterTypes":[] }, 
+      {"name":"registry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] },
+      {"name":"configuration", "parameterTypes": ["java.util.Map"] }
+    ]
   }
 ]
