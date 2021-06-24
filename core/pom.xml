@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.restheart</groupId>
     <artifactId>restheart-parent</artifactId>
-    <version>6.0.4-SNAPSHOT</version>
+    <version>6.0.3</version>
   </parent>
 
   <groupId>org.restheart</groupId>
@@ -301,7 +301,12 @@
                   <port>27017:27017</port>
                 </ports>
                 <wait>
-                  <log>waiting for connections on port</log>
+                  <tcp>
+                    <host>0.0.0.0</host>
+                    <ports>
+                      <port>27017</port>
+                    </ports>
+                  </tcp>
                   <time>10000</time>
                 </wait>
               </run>
