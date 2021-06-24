@@ -11,6 +11,14 @@ jobs:
   build:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        include:
+          - mongodb-version: 3.6
+            karate-options: "--tags ~@requires-mongodb-4 ~@requires-replica-set"
+          - mongodb-version: 4.2
+          - mongodb-version: 4.4
+            deploy: true
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v2
@@ -35,14 +43,26 @@ jobs:
           echo "VERSION=${{steps.vars.outputs.VERSION}}"
           echo "SHA=${{steps.vars.outputs.SHA}}"
 
-      - name: Build and verify
+      - name: Build and Test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B clean verify
+        run: mvn -B verify -Dmongodb.version="${{ matrix.mongodb-version }}" -Dkarate.options="${{ matrix.karate-options }}"
 
-      - name: Docker login
-        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+      - name: Set up QEMU
+        if: ${{ matrix.deploy }}
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        if: ${{ matrix.deploy }}
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to DockerHub
+        if: ${{ matrix.deploy }}
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and Push distroless docker image
         if: ${{ false }} # temporarily disabled becuase there's no JDK 16 for distroless images
@@ -52,14 +72,17 @@ jobs:
           docker tag softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart-snapshot:distroless
           docker push softinstigate/restheart-snapshot:distroless
 
-      - name: Build and Push Docker image
-        run: |
-          docker build --file ./core/Dockerfile -t softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}} ./core/.
-          docker push softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
-          docker tag softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}} softinstigate/restheart-snapshot:latest
-          docker push softinstigate/restheart-snapshot:latest
+      - name: Build and Push multi-arch Docker images
+        if: ${{ matrix.deploy }}
+        uses: docker/build-push-action@v2
+        with:
+          context: ./core/
+          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
+          push: true
+          tags: softinstigate/restheart-snapshot:latest,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
 
       - name: Import private gpg key
+        if: ${{ matrix.deploy }}
         run: |
           printf "%s" "$GPG_PRIVATE_KEY" > private.key
           gpg --pinentry-mode=loopback --batch --yes --fast-import private.key
@@ -67,6 +90,7 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Deploy to Maven Central
+        if: ${{ matrix.deploy }}
         run: MAVEN_OPTS="--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.desktop/java.awt.font=ALL-UNNAMED" mvn -B deploy -Pdeploy -DskipTests -s settings.xml
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}

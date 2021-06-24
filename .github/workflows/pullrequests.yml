@@ -1,31 +1,39 @@
 name: Build pull request
 
 on:
-    pull_request:
-        branches: [master]
-        types: [opened, synchronize, reopened]
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
 
 jobs:
-    build:
-        if: "!contains(github.event.head_commit.message, 'skip ci')"
-        runs-on: ubuntu-20.04
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/cache@v2
-              with:
-                  path: ~/.m2/repository
-                  key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-                  restore-keys: |
-                      ${{ runner.os }}-maven-
+  build:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        include:
+          - mongodb-version: 3.6
+            karate-options: "--tags ~@requires-mongodb-4 ~@requires-replica-set"
+          - mongodb-version: 4.2
+          - mongodb-version: 4.4
+            deploy: true
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
-            - name: Set up JDK 16
-              uses: actions/setup-java@v2
-              with:
-                  distribution: "adopt"
-                  java-version: 16
+      - name: Set up JDK 16
+        uses: actions/setup-java@v2
+        with:
+          distribution: "adopt"
+          java-version: 16
 
-            - name: Build and analyze
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-              run: mvn -B clean verify
+      - name: Build and Test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+        run: mvn -B verify -Dmongodb.version="${{ matrix.mongodb-version }}" -Dkarate.options="${{ matrix.karate-options }}"
