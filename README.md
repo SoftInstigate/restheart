@@ -1,4 +1,6 @@
-# RESTHeart - Instant REST, GraphQL and WebSocket API for Web and Mobile applications.
+# RESTHeart - Instant REST, GraphQL and WebSocket API for MongoDB.
+
+## The low-code backend for modern Web and Mobile applications.
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
