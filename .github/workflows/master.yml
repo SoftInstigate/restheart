@@ -11,6 +11,11 @@ jobs:
   build:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        include:
+          - mongodb-version: 4.2
+          - mongodb-version: 4.4
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v2
@@ -35,11 +40,11 @@ jobs:
           echo "VERSION=${{steps.vars.outputs.VERSION}}"
           echo "SHA=${{steps.vars.outputs.SHA}}"
 
-      - name: Build and verify
+      - name: Build and Test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B clean verify
+        run: mvn -B verify -Dmongodb.version="${{ matrix.mongodb-version }}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
