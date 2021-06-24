@@ -16,7 +16,7 @@ Additionally, the [GraphQL](https://restheart.org/docs/graphql/) plugin works si
 
 The embeded WebSocket server can then expose MongoDB's [Change Streams](https://docs.mongodb.com/manual/changeStreams/), which allow applications to access real-time data changes.
 
-RESTHeart fully supports [GraalVM](https://restheart.org/docs/graalvm/). GraalVM is a new virtual machine from Oracle that supports a polyglot runtime environment and the ability to compile Java applications to __native images__.
+RESTHeart fully supports [GraalVM](https://restheart.org/docs/graalvm/), a new virtual machine from Oracle that offers a polyglot runtime environment and the ability to compile Java applications to __native binary images__.
 
 RESTHeart __works out-of-the-box__ by merely installing and configuring it, but you can easily extend it by developing custom [plugins](https://restheart.org/docs/plugins/overview/).
 
