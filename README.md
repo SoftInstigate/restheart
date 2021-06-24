@@ -12,6 +12,8 @@ RESTHeart is a open source runtime which embeds [Undertow](https://undertow.io),
 
 RESTHeart connects automatically to [MongoDB](https://www.mongodb.com) or any compatible database (e.g. Percona Server for MongoDB, AWS DocumentDB and Azure Cosmos DB) exposing all database's features through a comprehensive REST API. 
 
+![RESTHeart in action](https://github.com/SoftInstigate/restheart-website/raw/aa2a9be0fc13c5d70f3ad4ed9e337875525394bc/images/restheart.gif)
+
 Additionally, the [GraphQL](https://restheart.org/docs/graphql/) plugin works side by side with the already existing REST endpoints to get a managed, unified GraphQL API for modern applications. 
 
 The embeded WebSocket server can then expose MongoDB's [Change Streams](https://docs.mongodb.com/manual/changeStreams/), which allow applications to access real-time data changes.
@@ -29,6 +31,7 @@ In summary, RESTHeart provides:
 3. Authentication, authorization and user management for your applications.
 
 __NOTE__: RESTHeart is also available as a [Docker image](https://hub.docker.com/r/softinstigate/restheart). It works perfectly in Kubernetes and AWS ECS clusters.
+
 
 ## Download
 
