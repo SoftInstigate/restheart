@@ -1,6 +1,6 @@
 # RESTHeart - Ready to use backend for the modern Web.
 
-## Instant REST, GraphQL and WebSocket API on MongoDB.
+##  Declarative authentication and authorization. Instant REST, GraphQL and WebSocket API on MongoDB. Fully customizable with Java, Kotlin, JavaScript or TypeScript.
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/softinstigate/restheart)](https://github.com/SoftInstigate/restheart/commits/master)
 [![Github stars](https://img.shields.io/github/stars/SoftInstigate/restheart?label=Github%20Stars)](https://github.com/SoftInstigate/restheart)
@@ -10,28 +10,39 @@
 
 RESTHeart is an open-source runtime that embeds [Undertow](https://undertow.io), a flexible performant web server written in Java, providing both blocking and non-blocking API’s based on NIO. 
 
-RESTHeart connects automatically to [MongoDB](https://www.mongodb.com) or any compatible database (e.g. Percona Server for MongoDB, AWS DocumentDB and Azure Cosmos DB) exposing all database's features through a comprehensive REST API. 
+Imagine a __ready to use microservice__ that provides developers with 80% of the most common features but also a modern development framework to implement the remaining 20%.
 
-![RESTHeart in action](https://github.com/SoftInstigate/restheart-website/raw/aa2a9be0fc13c5d70f3ad4ed9e337875525394bc/images/restheart.gif)
-
-Additionally, the [GraphQL](https://restheart.org/docs/graphql/) plugin works side by side with the already existing REST endpoints to get a managed, unified GraphQL API for modern applications. 
-
-The embedded WebSocket server can then expose MongoDB's [Change Streams](https://docs.mongodb.com/manual/changeStreams/), which allow applications to access real-time data changes.
-
-RESTHeart fully supports [GraalVM](https://restheart.org/docs/graalvm/), a new virtual machine from Oracle that offers a polyglot runtime environment and the ability to compile Java applications to __native binary images__.
+![RESTHeart use cases](https://restheart.org/images/clients.png)
 
 RESTHeart __works out-of-the-box__ by merely installing and configuring it, but you can easily extend it by developing custom [plugins](https://restheart.org/docs/plugins/overview/).
 
-For all these reasons, __RESTHeart is the perfect low code backend for most modern Web and Mobile apps__, designed to radically simplify development and deployment.
+It connects automatically to [MongoDB](https://www.mongodb.com) or any compatible database (e.g. Percona Server for MongoDB, AWS DocumentDB and Azure Cosmos DB) exposing all database's features through a comprehensive REST API. 
+
+![RESTHeart in action](https://github.com/SoftInstigate/restheart-website/raw/aa2a9be0fc13c5d70f3ad4ed9e337875525394bc/images/restheart.gif)
+
+RESTHeart fully supports [GraalVM](https://restheart.org/docs/graalvm/), a new virtual machine from Oracle that offers a polyglot runtime environment and the ability to compile Java applications to __native binary images__.
+
+Its internal architecture is based on plugins and exposes an API that allows to implement additional custom services in Java, Kotlin, JavaScript or TypeScript.
+
+To extend the default behavior you can implement the following interfaces:
+
+- __Service__ - to develop custom business logic and web services.
+- __Interceptor__ - to snoop and modify requests and responses "on the fly", at different stages of the HTTP lifecycle.
+- __Initializer__ - to execute any kind of initialization logic at system startup time.
+
+The [GraphQL](https://restheart.org/docs/graphql/) default plugin works side by side with the already existing REST endpoints to get a managed, unified GraphQL API for modern applications. 
+
+The embedded WebSocket server can expose MongoDB's [Change Streams](https://docs.mongodb.com/manual/changeStreams/), which allow applications to access real-time data changes.
+
+For all these reasons, __RESTHeart is the perfect "low code", self-contanined backend for modern Web and Mobile apps__, designed to radically simplify development and deployment.
 
 In summary, RESTHeart provides:
 
-1. Polyglot Development Framework supporting Java, Kotlin, JavaScript and TypeScript.
-2. Data persistence on MongoDB with REST, GraphQL and WebSocket APIs.
-3. Authentication, authorization and user management for your applications.
+1. Polyglot development framework supporting Java, Kotlin, JavaScript and TypeScript.
+2. Out of the box data persistence on MongoDB with REST, GraphQL and WebSocket APIs.
+3. Declarative authentication, authorization and user management for your applications.
 
 __NOTE__: RESTHeart is also available as a [Docker image](https://hub.docker.com/r/softinstigate/restheart). It works perfectly in Kubernetes and AWS ECS clusters.
-
 
 ## Download
 
