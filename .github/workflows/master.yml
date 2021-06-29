@@ -5,7 +5,10 @@ name: Build snapshot release
 
 on:
   push:
-    branches: [master]
+    branches:
+      - "*"
+    tags-ignore:
+      - "*"
 
 jobs:
   build:
@@ -54,8 +57,6 @@ jobs:
         run: |
           docker build --file ./core/Dockerfile -t softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}} ./core/.
           docker push softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
-          docker tag softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}} softinstigate/restheart-snapshot:latest
-          docker push softinstigate/restheart-snapshot:latest
 
       - name: Import private gpg key
         run: |
