@@ -72,7 +72,7 @@ jobs:
           push: true
           tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
 
-      - name: Build and Push multi-arch Docker images for GraalVM
+      - name: Build and Push GraalVM Docker image
         if: ${{ matrix.deploy }}
         uses: docker/build-push-action@v2
         with:
