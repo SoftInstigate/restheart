@@ -1,8 +1,11 @@
+# This workflow build and test pull requests
+
 name: Build pull request
 
 on:
   pull_request:
-    branches: [master]
+    branches:
+      - "*"
     types: [opened, synchronize, reopened]
 
 jobs:
