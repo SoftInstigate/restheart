@@ -77,6 +77,15 @@ jobs:
           push: true
           tags: softinstigate/restheart:latest,softinstigate/restheart:${{steps.vars.outputs.VERSION}}
 
+      - name: Build and Push GraalVM Docker image
+        if: ${{ matrix.deploy }}
+        uses: docker/build-push-action@v2
+        with:
+          context: ./core/
+          file: ./core/Dockerfile.graalvm
+          push: true
+          tags: softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
+
       - name: Upload GitHub release
         if: ${{ matrix.deploy }}
         uses: softprops/action-gh-release@v1
