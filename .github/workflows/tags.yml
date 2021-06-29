@@ -84,7 +84,7 @@ jobs:
           context: ./core/
           file: ./core/Dockerfile.graalvm
           push: true
-          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.VERSION}}-graalvm
+          tags: softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
 
       - name: Upload GitHub release
         if: ${{ matrix.deploy }}
