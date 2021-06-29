@@ -81,6 +81,15 @@ jobs:
           push: true
           tags: softinstigate/restheart-snapshot:latest,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
 
+      - name: Build and Push GraalVM Docker image
+        if: ${{ matrix.deploy }}
+        uses: docker/build-push-action@v2
+        with:
+          context: ./core/
+          file: ./core/Dockerfile.graalvm
+          push: true
+          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm
+
       - name: Import private gpg key
         if: ${{ matrix.deploy }}
         run: |
