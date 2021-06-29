@@ -8,21 +8,21 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/softinstigate/restheart.svg?maxAge=2592000)](https://hub.docker.com/r/softinstigate/restheart/)
 [![Join the chat at https://gitter.im/SoftInstigate/restheart](https://badges.gitter.im/SoftInstigate/restheart.svg)](https://gitter.im/SoftInstigate/restheart?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-RESTHeart is an open-source runtime that embeds [Undertow](https://undertow.io), a flexible performant web server written in Java, providing both blocking and non-blocking API’s based on NIO. 
+RESTHeart is an open-source __runtime__ and a low-code __SDK for Microservices__ with declarative security and instant Data APIs on __MongoDB__ or any compatible database (e.g. Percona Server for MongoDB, AWS DocumentDB and Azure Cosmos DB). It immediately exposes all of MongoDB’s capabilities through a comprehensive set of __REST__, __GraphQL__ and __WebSocket__ APIs.
 
-Imagine a __ready to use microservice__ that provides developers with 80% of the most common features but also a modern development framework to implement the remaining 20%.
+RESTHeart embeds [Undertow](https://undertow.io), a flexible performant web server written in Java, providing both blocking and non-blocking API’s based on NIO. 
+
+Developers can save at least 80% of backend code to manage security and serve content to Mobile Apps and Angular, React, Vue or other SPA frameworks.
 
 ![RESTHeart use cases](https://restheart.org/images/clients.png)
 
-RESTHeart __works out-of-the-box__ by merely installing and configuring it, but you can easily extend it by developing custom [plugins](https://restheart.org/docs/plugins/overview/).
-
-It connects automatically to [MongoDB](https://www.mongodb.com) or any compatible database (e.g. Percona Server for MongoDB, AWS DocumentDB and Azure Cosmos DB) exposing all database's features through a comprehensive REST API. 
+RESTHeart works out-of-the-box by merely installing and configuring it.
 
 ![RESTHeart in action](https://github.com/SoftInstigate/restheart-website/raw/aa2a9be0fc13c5d70f3ad4ed9e337875525394bc/images/restheart.gif)
 
 RESTHeart fully supports [GraalVM](https://restheart.org/docs/graalvm/), a new virtual machine from Oracle that offers a polyglot runtime environment and the ability to compile Java applications to __native binary images__.
 
-Its internal architecture is based on plugins and exposes an API that allows to implement additional custom services in Java, Kotlin, JavaScript or TypeScript.
+Its architecture is based on [plugins](https://restheart.org/docs/plugins/overview/) and exposes an internal API that allows to implement additional custom services in Java, Kotlin, JavaScript or TypeScript.
 
 To extend the default behavior you can implement the following interfaces:
 
