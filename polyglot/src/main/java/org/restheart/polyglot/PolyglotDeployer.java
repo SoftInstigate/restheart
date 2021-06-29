@@ -255,7 +255,7 @@ public class PolyglotDeployer implements Initializer {
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(pluginsDirectory)) {
             for (Path path : directoryStream) {
                 var services = findServices(path, false);
-                var interceptors = findServices(path, false);
+                var interceptors = findInterceptors(path, false);
                 var nodeServices = findNodeServices(path, false);
                 if (!services.isEmpty() || !nodeServices.isEmpty() || !interceptors.isEmpty()) {
                     paths.add(path);
