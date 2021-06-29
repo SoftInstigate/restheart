@@ -1,11 +1,13 @@
-# This workflow will build a Java project with Maven
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+# This workflow builds SNAPSHOT releases
 
 name: Build snapshot release
 
 on:
   push:
-    branches: [master]
+    branches:
+      - "*"
+    tags-ignore:
+      - "*"
 
 jobs:
   build:
@@ -79,7 +81,7 @@ jobs:
           context: ./core/
           platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
           push: true
-          tags: softinstigate/restheart-snapshot:latest,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
+          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
 
       - name: Build and Push GraalVM Docker image
         if: ${{ matrix.deploy }}
