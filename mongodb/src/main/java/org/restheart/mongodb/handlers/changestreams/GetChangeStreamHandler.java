@@ -25,6 +25,7 @@ import io.undertow.Handlers;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.bson.BsonDocument;
@@ -80,7 +81,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
             } else {
                 response.setInError(HttpStatus.SC_BAD_REQUEST,
                         "The stream connection requires WebSocket, "
-                        + "no 'Upgrade' request header found");
+                        + "no 'Upgrade' or 'Connection' request header found");
 
                 next(exchange);
             }
@@ -120,14 +121,12 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     }
 
     private boolean isWebSocketHandshakeRequest(HttpServerExchange exchange) {
-        return exchange.getRequestHeaders()
+        return Arrays.stream(exchange.getRequestHeaders()
                 .get(CONNECTION_HEADER_KEY)
-                .getFirst().toLowerCase()
-                .equals(CONNECTION_HEADER_VALUE)
-                && exchange.getRequestHeaders()
+                .toArray()).anyMatch(val -> val.toLowerCase().contains(CONNECTION_HEADER_VALUE))
+                && Arrays.stream(exchange.getRequestHeaders()
                         .get(UPGRADE_HEADER_KEY)
-                        .getFirst().toLowerCase()
-                        .equals(UPGRADE_HEADER_VALUE);
+                        .toArray()).anyMatch(val -> val.toLowerCase().contains(UPGRADE_HEADER_VALUE));
     }
 
     private List<BsonDocument> getResolvedStagesAsList(MongoRequest request)
