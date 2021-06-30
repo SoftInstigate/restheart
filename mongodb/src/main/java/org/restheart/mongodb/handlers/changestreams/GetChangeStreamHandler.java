@@ -121,12 +121,18 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     }
 
     private boolean isWebSocketHandshakeRequest(HttpServerExchange exchange) {
-        return Arrays.stream(exchange.getRequestHeaders()
-                .get(CONNECTION_HEADER_KEY)
-                .toArray()).anyMatch(val -> val.toLowerCase().contains(CONNECTION_HEADER_VALUE))
-                && Arrays.stream(exchange.getRequestHeaders()
-                        .get(UPGRADE_HEADER_KEY)
-                        .toArray()).anyMatch(val -> val.toLowerCase().contains(UPGRADE_HEADER_VALUE));
+        
+        var chVals = exchange.getRequestHeaders()
+            .get(CONNECTION_HEADER_KEY);
+
+        var uhVals = exchange.getRequestHeaders()
+            .get(UPGRADE_HEADER_KEY);
+
+        return chVals != null && uhVals != null && 
+                Arrays.stream(chVals.toArray())
+                    .anyMatch(val -> val.toLowerCase().contains(CONNECTION_HEADER_VALUE)) &&
+                Arrays.stream(uhVals.toArray())
+                    .anyMatch(val -> val.toLowerCase().contains(UPGRADE_HEADER_VALUE));
     }
 
     private List<BsonDocument> getResolvedStagesAsList(MongoRequest request)
