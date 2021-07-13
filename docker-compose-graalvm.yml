@@ -15,7 +15,7 @@ volumes:
 
 services:
     restheart:
-        image: softinstigate/restheart:6.0.3-graalvm
+        image: softinstigate/restheart:latest-graalvm
         container_name: restheart
         environment:
             MONGO_URI: mongodb://restheart:R3ste4rt!@restheart-mongo
