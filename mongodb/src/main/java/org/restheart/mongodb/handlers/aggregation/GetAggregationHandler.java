@@ -25,8 +25,6 @@ import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MapReduceIterable;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -85,117 +83,57 @@ public class GetAggregationHandler extends PipelinedHandler {
             return;
         }
 
-        String queryUri = request.getAggregationOperation();
+        var queryUri = request.getAggregationOperation();
 
-        List<AbstractAggregationOperation> aggregations
-                = AbstractAggregationOperation
-                        .getFromJson(request.getCollectionProps());
+        var aggregations = AbstractAggregationOperation.getFromJson(request.getCollectionProps());
 
-        Optional<AbstractAggregationOperation> _query
-                = aggregations.stream().filter(q
-                        -> q.getUri().equals(queryUri)).findFirst();
+        var _query = aggregations.stream().filter(q -> q.getUri().equals(queryUri)).findFirst();
 
         if (!_query.isPresent()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_FOUND, "query does not exist");
+            response.setInError(HttpStatus.SC_NOT_FOUND, "query does not exist");
             next(exchange);
             return;
         }
 
-        ArrayList<BsonDocument> _data = new ArrayList<>();
-
-        AbstractAggregationOperation query = _query.get();
+        var _data = new ArrayList<BsonDocument>();
+        var query = _query.get();
 
         if (null == query.getType()) {
-            response.setInError(
-                    HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
+            response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
             next(exchange);
             return;
         } else {
             var avars = request.getAggreationVars() == null
-                    ? new BsonDocument()
-                    : request.getAggreationVars();
+                ? new BsonDocument()
+                : request.getAggreationVars();
 
-            // add @page, @pagesize, @limit and @skip to avars to allow handling
-            // paging in the aggragation via default page and pagesize qparams
-            avars.put("@page", new BsonInt32(request.getPage()));
-            avars.put("@pagesize", new BsonInt32(request.getPagesize()));
-            avars.put("@limit", new BsonInt32(request.getPagesize()));
-            avars.put("@skip", new BsonInt32(request.getPagesize()
-                    * (request.getPage() - 1)));
-
-            // add @mongoPermissions to avars
-            var mongoPermissions = MongoPermissions.of(request);
-            if (mongoPermissions != null) {
-                avars.put("@mongoPermissions" ,mongoPermissions.asBson());
-
-                avars.put("@mongoPermissions.projectResponse", mongoPermissions.getProjectResponse() == null
-                    ? BsonNull.VALUE
-                    : mongoPermissions.getProjectResponse());
-
-                avars.put("@mongoPermissions.mergeRequest", mongoPermissions.getMergeRequest() == null
-                    ? BsonNull.VALUE
-                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getMergeRequest()));
-
-                avars.put("@mongoPermissions.readFilter", mongoPermissions.getReadFilter() == null
-                    ? BsonNull.VALUE
-                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getReadFilter()));
-
-                avars.put("@mongoPermissions.writeFilter", mongoPermissions.getWriteFilter() == null
-                    ? BsonNull.VALUE
-                    : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getWriteFilter()));
-            } else {
-                avars.put("@mongoPermissions", new MongoPermissions().asBson());
-                avars.put("@mongoPermissions.projectResponse", BsonNull.VALUE);
-                avars.put("@mongoPermissions.mergeRequest", BsonNull.VALUE);
-                avars.put("@mongoPermissions.readFilter", BsonNull.VALUE);
-                avars.put("@mongoPermissions.writeFilter", BsonNull.VALUE);
-            }
-
-            // add @user to avars
-            var account = request.getAuthenticatedAccount();
-
-            if (account != null && account instanceof MongoRealmAccount) {
-                var ba = ((MongoRealmAccount) account).getAccountDocument();
-
-                avars.put("@user", ba);
-                ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
-            } else if (account != null && account instanceof FileRealmAccount) {
-                var fa = (FileRealmAccount) account;
-                var ba = BsonUtils.toBsonDocument(fa.getAccountProperties());
-
-                avars.put("@user", ba);
-                ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
-            } else {
-                avars.put("@user", BsonNull.VALUE);
-            }
+            // add the default variables to the avars document
+            injectAvars(request, avars);
 
             switch (query.getType()) {
                 case MAP_REDUCE:
                     MapReduceIterable<BsonDocument> mrOutput;
-                    MapReduce mapReduce = (MapReduce) query;
+                    var mapReduce = (MapReduce) query;
                     try {
-                        mrOutput = dbsDAO.getCollection(request.getDBName(),
-                                        request.getCollectionName())
-                                .mapReduce(
-                                        mapReduce.getResolvedMap(avars),
-                                        mapReduce.getResolvedReduce(avars))
-                                .filter(
-                                        mapReduce.getResolvedQuery(avars))
-                                .maxTime(MongoServiceConfiguration.get()
-                                        .getAggregationTimeLimit(),
-                                        TimeUnit.MILLISECONDS);
+                        var clientSession = request.getClientSession();
+
+                        if (clientSession == null) {
+                            mrOutput = dbsDAO.getCollection(request.getDBName(), request.getCollectionName())
+                                .mapReduce(mapReduce.getResolvedMap(avars), mapReduce.getResolvedReduce(avars))
+                                .filter(mapReduce.getResolvedQuery(avars))
+                                .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
+                        } else {
+                            mrOutput = dbsDAO.getCollection(request.getDBName(), request.getCollectionName())
+                                .mapReduce(clientSession, mapReduce.getResolvedMap(avars), mapReduce.getResolvedReduce(avars))
+                                .filter(mapReduce.getResolvedQuery(avars))
+                                .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
+                        }
                     } catch (MongoCommandException | InvalidMetadataException ex) {
-                        response.setInError(
-                                HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                                "error executing mapReduce", ex);
+                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing mapReduce", ex);
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
-                        response.setInError(
-                                HttpStatus.SC_BAD_REQUEST,
-                                "error executing mapReduce: "
-                                + qvnbe.getMessage());
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "error executing mapReduce: " + qvnbe.getMessage());
                         next(exchange);
                         return;
                     }
@@ -206,30 +144,27 @@ public class GetAggregationHandler extends PipelinedHandler {
                     break;
                 case AGGREGATION_PIPELINE:
                     AggregateIterable<BsonDocument> agrOutput;
-                    AggregationPipeline pipeline = (AggregationPipeline) query;
+                    var pipeline = (AggregationPipeline) query;
                     try {
-                        agrOutput = dbsDAO.getCollection(
-                                        request.getDBName(),
-                                        request.getCollectionName())
-                                .aggregate(
-                                        pipeline.getResolvedStagesAsList(avars))
-                                .maxTime(MongoServiceConfiguration.get()
-                                        .getAggregationTimeLimit(),
-                                        TimeUnit.MILLISECONDS)
-                                .allowDiskUse(pipeline
-                                        .getAllowDiskUse().getValue());
-                    } catch (MongoCommandException
-                            | InvalidMetadataException ex) {
-                        response.setInError(
-                                HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                                "error executing aggreation pipeline", ex);
+                        var clientSession = request.getClientSession();
+
+                        if (clientSession == null) {
+                            agrOutput = dbsDAO.getCollection(request.getDBName(), request.getCollectionName())
+                                .aggregate(pipeline.getResolvedStagesAsList(avars))
+                                .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
+                                .allowDiskUse(pipeline.getAllowDiskUse().getValue());
+                        } else {
+                            agrOutput = dbsDAO.getCollection(request.getDBName(), request.getCollectionName())
+                                .aggregate(clientSession, pipeline.getResolvedStagesAsList(avars))
+                                .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
+                                .allowDiskUse(pipeline.getAllowDiskUse().getValue());
+                        }
+                    } catch (MongoCommandException | InvalidMetadataException ex) {
+                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggreation pipeline", ex);
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
-                        response.setInError(
-                                HttpStatus.SC_BAD_REQUEST,
-                                "error executing aggreation pipeline: "
-                                + qvnbe.getMessage());
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "error executing aggreation pipeline: " + qvnbe.getMessage());
                         next(exchange);
                         return;
                     }
@@ -239,8 +174,7 @@ public class GetAggregationHandler extends PipelinedHandler {
                     }
                     break;
                 default:
-                    response.setInError(
-                            HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
+                    response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "unknown query type");
                     next(exchange);
                     return;
             }
@@ -268,6 +202,66 @@ public class GetAggregationHandler extends PipelinedHandler {
             response.setInError(
                     HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
             next(exchange);
+        }
+    }
+
+    /**
+     * adds the default variables to the avars document
+     * @param request
+     * @param avars
+     */
+    private void injectAvars(MongoRequest request, BsonDocument avars) {
+        // add @page, @pagesize, @limit and @skip to avars to allow handling
+        // paging in the aggragation via default page and pagesize qparams
+        avars.put("@page", new BsonInt32(request.getPage()));
+        avars.put("@pagesize", new BsonInt32(request.getPagesize()));
+        avars.put("@limit", new BsonInt32(request.getPagesize()));
+        avars.put("@skip", new BsonInt32(request.getPagesize() * (request.getPage() - 1)));
+
+        // add @mongoPermissions to avars
+        var mongoPermissions = MongoPermissions.of(request);
+        if (mongoPermissions != null) {
+            avars.put("@mongoPermissions" ,mongoPermissions.asBson());
+
+            avars.put("@mongoPermissions.projectResponse", mongoPermissions.getProjectResponse() == null
+                ? BsonNull.VALUE
+                : mongoPermissions.getProjectResponse());
+
+            avars.put("@mongoPermissions.mergeRequest", mongoPermissions.getMergeRequest() == null
+                ? BsonNull.VALUE
+                : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getMergeRequest()));
+
+            avars.put("@mongoPermissions.readFilter", mongoPermissions.getReadFilter() == null
+                ? BsonNull.VALUE
+                : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getReadFilter()));
+
+            avars.put("@mongoPermissions.writeFilter", mongoPermissions.getWriteFilter() == null
+                ? BsonNull.VALUE
+                : AclVarsInterpolator.interpolateBson(request, mongoPermissions.getWriteFilter()));
+        } else {
+            avars.put("@mongoPermissions", new MongoPermissions().asBson());
+            avars.put("@mongoPermissions.projectResponse", BsonNull.VALUE);
+            avars.put("@mongoPermissions.mergeRequest", BsonNull.VALUE);
+            avars.put("@mongoPermissions.readFilter", BsonNull.VALUE);
+            avars.put("@mongoPermissions.writeFilter", BsonNull.VALUE);
+        }
+
+        // add @user to avars
+        var account = request.getAuthenticatedAccount();
+
+        if (account != null && account instanceof MongoRealmAccount) {
+            var ba = ((MongoRealmAccount) account).getAccountDocument();
+
+            avars.put("@user", ba);
+            ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
+        } else if (account != null && account instanceof FileRealmAccount) {
+            var fa = (FileRealmAccount) account;
+            var ba = BsonUtils.toBsonDocument(fa.getAccountProperties());
+
+            avars.put("@user", ba);
+            ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
+        } else {
+            avars.put("@user", BsonNull.VALUE);
         }
     }
 }
