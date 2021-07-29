@@ -182,12 +182,12 @@ public class TxnsUtils {
     }
 
     /**
-     * from MongoDB 5, the error message contains 'with txnNumber X'
+     * from MongoDB 5, the error message contains the string 'with txnNumber '
      * @param s
      * @return
      */
     private static String removeWithTxnNumber(String s) {
-        return s.replaceAll("with txnNumber", "").trim();
+        return s == null ? null : s.replaceAll("with txnNumber", "").trim();
     }
 
     /**
