@@ -19,6 +19,7 @@ jobs:
             karate-options: "--tags ~@requires-mongodb-4 ~@requires-replica-set"
           - mongodb-version: 4.2
           - mongodb-version: 4.4
+          - mongodb-version: 5.0.1
             deploy: true
     timeout-minutes: 20
     steps:
