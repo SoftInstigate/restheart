@@ -135,6 +135,7 @@ public class TxnsUtils {
 
             if (start >= 0 && end >= 0) {
                 String numStr = mqe.getErrorMessage().substring(start, end).trim();
+                numStr = removeWithTxnNumber(numStr);
 
                 return Long.parseLong(numStr);
             }
@@ -145,6 +146,7 @@ public class TxnsUtils {
 
             if (start >= 0 && end >= 0) {
                 String numStr = mqe.getErrorMessage().substring(start, end).trim();
+                numStr = removeWithTxnNumber(numStr);
 
                 return Long.parseLong(numStr);
             }
@@ -155,6 +157,7 @@ public class TxnsUtils {
 
             if (start >= 0 && end >= 0) {
                 String numStr = mqe.getErrorMessage().substring(start, end).trim();
+                numStr = removeWithTxnNumber(numStr);
 
                 return Long.parseLong(numStr);
             }
@@ -165,6 +168,7 @@ public class TxnsUtils {
 
             if (start >= 0 && end >= 0) {
                 String numStr = mqe.getErrorMessage().substring(start, end).trim();
+                numStr = removeWithTxnNumber(numStr);
 
                 return Long.parseLong(numStr);
             }
@@ -175,6 +179,15 @@ public class TxnsUtils {
                 mqe.getErrorMessage());
 
         throw mqe;
+    }
+
+    /**
+     * from MongoDB 5, the error message contains 'with txnNumber X'
+     * @param s
+     * @return
+     */
+    private static String removeWithTxnNumber(String s) {
+        return s.replaceAll("with txnNumber", "").trim();
     }
 
     /**
