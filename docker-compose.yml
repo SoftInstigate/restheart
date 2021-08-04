@@ -1,26 +1,26 @@
 version: "3"
 
 services:
-    restheart:
-        image: softinstigate/restheart:latest
-        environment:
-            MONGO_URI: mongodb://mongodb
-        command: ["--envFile", "/opt/restheart/etc/default.properties"]
-        depends_on:
-            - mongodb
-            - mongodb-init
-        ports:
-            - "8080:8080"
-            
-    mongodb:
-        image: mongo:4.4
-        command: ["--bind_ip_all", "--replSet", "rs0"]
+  restheart:
+    image: softinstigate/restheart:latest
+    environment:
+      MONGO_URI: mongodb://mongodb
+    command: ["--envFile", "/opt/restheart/etc/default.properties"]
+    depends_on:
+      - mongodb
+      - mongodb-init
+    ports:
+      - "8080:8080"
 
-    ### Initialize MongoDB as a single node Replica Set
-    mongodb-init:
-      image: mongo:4.4
-      depends_on:
-         - mongodb
-      entrypoint: >-
-        bash -c "for i in {1..10}; do mongo --host mongodb --eval 
-        'if (!rs.status().ok) rs.initiate();' && break || sleep 3; done"
+  mongodb:
+    image: mongo:4.4
+    command: ["--bind_ip_all", "--replSet", "rs0"]
+
+  ### Initialize MongoDB as a single node Replica Set
+  mongodb-init:
+    image: mongo:4.4
+    depends_on:
+      - mongodb
+    entrypoint: >-
+      bash -c "for i in {1..10}; do mongo --host mongodb --eval 
+      'if (!rs.status().ok) rs.initiate();' && break || sleep 3; done"
