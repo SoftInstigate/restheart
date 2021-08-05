@@ -17,12 +17,12 @@ services:
       - "8080:8080"
 
   mongodb:
-    image: mongo:4.4
+    image: mongo:5.0
     command: ["--bind_ip_all", "--replSet", "rs0"]
 
   ### Initialize MongoDB as a single node Replica Set
   mongodb-init:
-    image: mongo:4.4
+    image: mongo:5.0
     depends_on:
       - mongodb
     entrypoint: >-
