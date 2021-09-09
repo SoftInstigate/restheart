@@ -100,19 +100,16 @@ public class Minify {
      * string
      */
     public String minify(String json) {
-        InputStream ins = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        var ins = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
+        var bout = new ByteArrayOutputStream();
 
         try {
             minify(ins, bout);
-        } catch (IOException
-                | UnterminatedCommentException
-                | UnterminatedRegExpLiteralException
-                | UnterminatedStringLiteralException e) {
+        } catch (Exception e) {
             return null;
         }
 
-        return bout.toString().trim();
+        return bout.toString();
     }
 
     /**
@@ -134,15 +131,14 @@ public class Minify {
      * @throws UnterminatedCommentException
      * @throws UnterminatedStringLiteralException
      */
-    public void minify(InputStream in, OutputStream out) throws IOException, UnterminatedRegExpLiteralException,
-            UnterminatedCommentException,
-            UnterminatedStringLiteralException {
+    public void minify(InputStream in, OutputStream out) throws IOException, UnterminatedRegExpLiteralException, UnterminatedCommentException, UnterminatedStringLiteralException {
 
         // Initialize
         this.in = new PushbackInputStream(in);
         this.out = out;
         this.line = 0;
         this.column = 0;
+        var onFirstChar = true;
         currChar = '\n';
         action(Action.DELETE_NEXT);
 
@@ -165,16 +161,27 @@ public class Minify {
                         case '(':
                         case '+':
                         case '-':
-                            action(Action.OUTPUT_CURR);
+                            if (!onFirstChar) {
+                                action(Action.OUTPUT_CURR);
+                            } else {
+                                action(Action.DELETE_CURR);
+                                onFirstChar = false;
+                            }
                             break;
                         case ' ':
                             action(Action.DELETE_NEXT);
                             break;
                         default:
                             if (isAlphanum(nextChar)) {
-                                action(Action.OUTPUT_CURR);
+                                if (!onFirstChar) {
+                                    action(Action.OUTPUT_CURR);
+                                } else {
+                                    action(Action.DELETE_CURR);
+                                    onFirstChar = false;
+                                }
                             } else {
                                 action(Action.DELETE_CURR);
+                                onFirstChar = false;
                             }
                     }
                     break;
@@ -236,12 +243,9 @@ public class Minify {
      * @throws UnterminatedCommentException
      * @throws UnterminatedStringLiteralException
      */
-    private void action(Action action) throws IOException, UnterminatedRegExpLiteralException, UnterminatedCommentException,
-            UnterminatedStringLiteralException {
-
+    private void action(Action action) throws IOException, UnterminatedRegExpLiteralException, UnterminatedCommentException, UnterminatedStringLiteralException {
         // Process action
         switch (action) {
-
             case OUTPUT_CURR:
                 out.write(currChar);
 
@@ -256,8 +260,7 @@ public class Minify {
                             break;
                         }
                         if (currChar <= '\n') {
-                            throw new UnterminatedStringLiteralException(line,
-                                    column);
+                            throw new UnterminatedStringLiteralException(line, column);
                         }
                         if (currChar == '\\') {
                             out.write(currChar);
@@ -268,8 +271,7 @@ public class Minify {
 
             case DELETE_NEXT:
                 nextChar = next();
-                if (nextChar == '/'
-                        && (currChar == '(' || currChar == ',' || currChar == '=' || currChar == ':')) {
+                if (nextChar == '/' && (currChar == '(' || currChar == ',' || currChar == '=' || currChar == ':')) {
                     out.write(currChar);
                     out.write(nextChar);
                     for (;;) {
@@ -280,8 +282,7 @@ public class Minify {
                             out.write(currChar);
                             currChar = get();
                         } else if (currChar <= '\n') {
-                            throw new UnterminatedRegExpLiteralException(line,
-                                    column);
+                            throw new UnterminatedRegExpLiteralException(line, column);
                         }
                         out.write(currChar);
                     }
