@@ -25,10 +25,10 @@ import com.mongodb.MongoCommandException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import static com.mongodb.client.model.Filters.eq;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.StreamSupport;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
@@ -40,9 +40,7 @@ import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
-
 import org.restheart.mongodb.MongoServiceConfiguration;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.DEFAULT_CURSOR_BATCH_SIZE;
 import org.restheart.utils.HttpStatus;
@@ -58,11 +56,8 @@ import org.slf4j.LoggerFactory;
  */
 class CollectionDAO {
 
-    private static final int BATCH_SIZE = MongoServiceConfiguration
-            .get() != null
-                    ? MongoServiceConfiguration
-                            .get()
-                            .getCursorBatchSize()
+    private static final int BATCH_SIZE = MongoServiceConfiguration.get() != null
+                    ? MongoServiceConfiguration.get().getCursorBatchSize()
                     : DEFAULT_CURSOR_BATCH_SIZE;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
@@ -88,29 +83,8 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the mongodb DBCollection object for the collection in db dbName
      */
-    MongoCollection<BsonDocument> getCollection(
-            final String dbName,
-            final String collName) {
-        return client.getDatabase(dbName)
-                .getCollection(collName, BsonDocument.class);
-    }
-
-    /**
-     * Checks if the given collection is empty. Note that RESTHeart creates a
-     * reserved properties document in every collection (with _id
-     * '_properties'). This method returns true even if the collection contains
-     * such document.
-     *
-     * @param cs the session id, can be null
-     * @param coll the mongodb DBCollection object
-     * @return true if the commection is empty
-     */
-    public boolean isCollectionEmpty(
-            final ClientSession cs,
-            final MongoCollection<BsonDocument> coll) {
-        return cs == null
-                ? coll.countDocuments() == 0
-                : coll.countDocuments(cs) == 0;
+    MongoCollection<BsonDocument> getCollection(final String dbName, final String collName) {
+        return client.getDatabase(dbName).getCollection(collName, BsonDocument.class);
     }
 
     /**
@@ -124,10 +98,7 @@ class CollectionDAO {
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
      */
-    public long getCollectionSize(
-            final ClientSession cs,
-            final MongoCollection<BsonDocument> coll,
-            final BsonDocument filters) {
+    public long getCollectionSize(final ClientSession cs, final MongoCollection<BsonDocument> coll, final BsonDocument filters) {
         return cs == null
                 ? coll.countDocuments(filters)
                 : coll.countDocuments(cs, filters);
@@ -161,8 +132,7 @@ class CollectionDAO {
                 .sort(sortBy)
                 .batchSize(BATCH_SIZE)
                 .hint(hint)
-                .maxTime(MongoServiceConfiguration.get()
-                        .getQueryTimeLimit(), TimeUnit.MILLISECONDS);
+                .maxTime(MongoServiceConfiguration.get().getQueryTimeLimit(), TimeUnit.MILLISECONDS);
     }
 
     BsonArray getCollectionData(
@@ -184,18 +154,7 @@ class CollectionDAO {
         SkippedFindIterable _cursor = null;
 
         if (eager != EAGER_CURSOR_ALLOCATION_POLICY.NONE) {
-
-            _cursor = CursorPool.getInstance().get(
-                    new CursorPoolEntryKey(
-                            cs,
-                            coll,
-                            sortBy,
-                            filters,
-                            hint,
-                            keys,
-                            toskip,
-                            0),
-                    eager);
+            _cursor = CursorPool.getInstance().get(new CursorPoolEntryKey(cs, coll, sortBy, filters, hint, keys, toskip,0), eager);
         }
 
         // in case there is not cursor in the pool to reuse
@@ -205,11 +164,7 @@ class CollectionDAO {
             cursor = getFindIterable(cs, coll, sortBy, filters, hint, keys);
             cursor.skip(toskip).limit(pagesize);
 
-            MongoCursor<BsonDocument> mc = cursor.iterator();
-
-            while (mc.hasNext()) {
-                ret.add(mc.next());
-            }
+            StreamSupport.stream(cursor.spliterator(),false).forEachOrdered(c -> ret.add(c));
         } else {
             int alreadySkipped;
 
@@ -223,12 +178,9 @@ class CollectionDAO {
                 startSkipping = System.currentTimeMillis();
             }
 
-            LOGGER.debug("got cursor from pool with skips {}. "
-                    + "need to reach {} skips.",
-                    alreadySkipped,
-                    toskip);
+            LOGGER.debug("got cursor from pool with skips {}. need to reach {} skips.", alreadySkipped, toskip);
 
-            MongoCursor<BsonDocument> mc = cursor.iterator();
+            var mc = cursor.iterator();
 
             while (toskip > alreadySkipped && mc.hasNext()) {
                 mc.next();
@@ -236,9 +188,7 @@ class CollectionDAO {
             }
 
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("skipping {} times took {} msecs",
-                        toskip - cursorSkips,
-                        System.currentTimeMillis() - startSkipping);
+                LOGGER.debug("skipping {} times took {} msecs",toskip - cursorSkips, System.currentTimeMillis() - startSkipping);
             }
 
             for (int cont = pagesize; cont > 0 && mc.hasNext(); cont--) {
@@ -248,9 +198,7 @@ class CollectionDAO {
 
         // the pool is populated here because, skipping with cursor.next() is heavy operation
         // and we want to minimize the chances that pool cursors are allocated in parallel
-        CursorPool.getInstance().populateCache(
-                new CursorPoolEntryKey(cs, coll, sortBy, filters, hint, keys, toskip, 0),
-                eager);
+        CursorPool.getInstance().populateCache(new CursorPoolEntryKey(cs, coll, sortBy, filters, hint, keys, toskip, 0), eager);
 
         return ret;
     }
@@ -263,14 +211,10 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the collection properties document
      */
-    public BsonDocument getCollectionProps(
-            final ClientSession cs,
-            final String dbName,
-            final String collName) {
+    public BsonDocument getCollectionProps(final ClientSession cs, final String dbName, final String collName) {
         var propsColl = getCollection(dbName, META_COLLNAME);
 
-        var query = new BsonDocument("_id",
-                new BsonString("_properties.".concat(collName)));
+        var query = new BsonDocument("_id", new BsonString("_properties.".concat(collName)));
 
         var props = cs == null
                 ? propsColl.find(query).limit(1).first()
@@ -293,23 +237,13 @@ class CollectionDAO {
      * @param collName the collection name
      * @return true if the collection exists
      */
-    public boolean doesCollectionExist(
-            final ClientSession cs,
-            final String dbName,
-            final String collName) {
-        MongoCursor<String> dbCollections = cs == null
-                ? client.getDatabase(dbName).listCollectionNames().iterator()
-                : client.getDatabase(dbName).listCollectionNames(cs).iterator();
+    public boolean doesCollectionExist(final ClientSession cs, final String dbName, final String collName) {
+        var dbCollections = cs == null
+                ? client.getDatabase(dbName).listCollectionNames()
+                : client.getDatabase(dbName).listCollectionNames(cs);
 
-        while (dbCollections.hasNext()) {
-            String dbCollection = dbCollections.next();
-
-            if (collName.equals(dbCollection)) {
-                return true;
-            }
-        }
-
-        return false;
+        return StreamSupport.stream(dbCollections.spliterator(),false)
+            .anyMatch(dbCollection -> collName.equals(dbCollection));
     }
 
     /**
@@ -364,7 +298,7 @@ class CollectionDAO {
 
         ObjectId newEtag = new ObjectId();
 
-        final BsonDocument content = DAOUtils.validContent(properties);
+        final var content = DAOUtils.validContent(properties);
 
         content.put("_etag", new BsonObjectId(newEtag));
         content.remove("_id"); // make sure we don't change this field
@@ -374,15 +308,12 @@ class CollectionDAO {
         if (checkEtag && updating) {
             var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
 
-            BsonDocument oldProperties
-                    = cs == null
-                            ? mcoll.find(query)
-                                    .projection(FIELDS_TO_RETURN).first()
-                            : mcoll.find(cs, query)
-                                    .projection(FIELDS_TO_RETURN).first();
+            var oldProperties = cs == null
+                            ? mcoll.find(query).projection(FIELDS_TO_RETURN).first()
+                            : mcoll.find(cs, query).projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
-                BsonValue oldEtag = oldProperties.get("_etag");
+                var oldEtag = oldProperties.get("_etag");
 
                 if (oldEtag != null && requestEtag == null) {
                     return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag);
@@ -399,40 +330,17 @@ class CollectionDAO {
                 }
 
                 if (Objects.equals(_requestEtag, oldEtag)) {
-                    return doCollPropsUpdate(
-                            cs,
-                            collName,
-                            patching,
-                            updating,
-                            mcoll,
-                            content,
-                            newEtag);
+                    return doCollPropsUpdate(cs, collName, patching, updating, mcoll, content, newEtag);
                 } else {
-                    return new OperationResult(
-                            HttpStatus.SC_PRECONDITION_FAILED,
-                            oldEtag);
+                    return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
                 }
             } else {
                 // this is the case when the coll does not have properties
                 // e.g. it has not been created by restheart
-                return doCollPropsUpdate(
-                        cs,
-                        collName,
-                        patching,
-                        updating,
-                        mcoll,
-                        content,
-                        newEtag);
+                return doCollPropsUpdate(cs, collName, patching, updating, mcoll, content, newEtag);
             }
         } else {
-            return doCollPropsUpdate(
-                    cs,
-                    collName,
-                    patching,
-                    updating,
-                    mcoll,
-                    content,
-                    newEtag);
+            return doCollPropsUpdate(cs, collName, patching, updating, mcoll, content, newEtag);
         }
     }
 
@@ -445,7 +353,7 @@ class CollectionDAO {
             final BsonDocument dcontent,
             final ObjectId newEtag) {
         if (patching) {
-            OperationResult ret = DAOUtils.writeDocument(
+            var ret = DAOUtils.writeDocument(
                     cs,
                     mcoll,
                     "_properties.".concat(collName),
@@ -454,11 +362,10 @@ class CollectionDAO {
                     dcontent,
                     false,
                     WRITE_MODE.UPSERT);
-            return new OperationResult(ret.getHttpCode() > 0
-                    ? ret.getHttpCode()
-                    : HttpStatus.SC_OK, newEtag);
+
+            return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK, newEtag);
         } else if (updating) {
-            OperationResult ret = DAOUtils.writeDocument(
+            var ret = DAOUtils.writeDocument(
                     cs,
                     mcoll,
                     "_properties.".concat(collName),
@@ -467,14 +374,13 @@ class CollectionDAO {
                     dcontent,
                     true,
                     WRITE_MODE.UPSERT);
-            return new OperationResult(ret.getHttpCode() > 0
-                    ? ret.getHttpCode()
-                    : HttpStatus.SC_OK,
+            return new OperationResult(
+                    ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK,
                     newEtag,
                     ret.getOldData(),
                     ret.getNewData());
         } else {
-            OperationResult ret = DAOUtils.writeDocument(
+            var ret = DAOUtils.writeDocument(
                     cs,
                     mcoll,
                     "_properties.".concat(collName),
@@ -483,12 +389,8 @@ class CollectionDAO {
                     dcontent,
                     false,
                     WRITE_MODE.UPSERT);
-            return new OperationResult(ret.getHttpCode() > 0
-                    ? ret.getHttpCode()
-                    : HttpStatus.SC_CREATED,
-                    newEtag,
-                    ret.getOldData(),
-                    ret.getNewData());
+
+            return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_CREATED, newEtag, ret.getOldData(), ret.getNewData());
         }
     }
 
@@ -518,21 +420,13 @@ class CollectionDAO {
 
         if (checkEtag) {
             if (properties != null) {
-                BsonValue oldEtag = properties.get("_etag");
+                var oldEtag = properties.get("_etag");
 
                 if (oldEtag != null) {
                     if (requestEtag == null) {
-                        return new OperationResult(
-                                HttpStatus.SC_CONFLICT,
-                                oldEtag,
-                                properties,
-                                properties);
+                        return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, properties, properties);
                     } else if (!requestEtag.equals(oldEtag)) {
-                        return new OperationResult(
-                                HttpStatus.SC_PRECONDITION_FAILED,
-                                oldEtag,
-                                properties,
-                                properties);
+                        return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag, properties, properties);
                     }
                 }
             }
