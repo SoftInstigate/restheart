@@ -49,10 +49,6 @@ jobs:
       - name: Build and Test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-<<<<<<< HEAD
-=======
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
->>>>>>> master
         run: mvn -B verify -Dmongodb.version="${{ matrix.mongodb-version }}" -Dkarate.options="${{ matrix.karate-options }}"
 
       - name: Set up QEMU
