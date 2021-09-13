@@ -20,6 +20,7 @@ jobs:
             karate-options: "--tags ~@requires-mongodb-4 ~@requires-replica-set"
           - mongodb-version: 4.2
           - mongodb-version: 4.4
+          - mongodb-version: 5.0
             deploy: true
     timeout-minutes: 20
     steps:
@@ -48,6 +49,10 @@ jobs:
       - name: Build and Test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+<<<<<<< HEAD
+=======
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+>>>>>>> master
         run: mvn -B verify -Dmongodb.version="${{ matrix.mongodb-version }}" -Dkarate.options="${{ matrix.karate-options }}"
 
       - name: Set up QEMU

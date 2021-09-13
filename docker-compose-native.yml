@@ -1,52 +1,30 @@
 version: "3"
 
-### Creates a named network with the default bridge driver
-# The network is shared between restheart and mongodb only
-# See: https://docs.docker.com/engine/userguide/networking/dockernetworks/
-# See: https://docs.docker.com/engine/reference/commandline/network_create/
-networks:
-   restheart-backend:
-
-### Create a permanent, named data volume
-# This makes much easier to identify where the mongodb data is stored on host
-# See: https://docs.docker.com/engine/userguide/containers/dockervolumes/#mount-a-shared-storage-volume-as-a-data-volume
-volumes:
-   restheart-mongo-volume:
-
 services:
-    restheart:
-        image: softinstigate/restheart:6.0.0-native
-        container_name: restheart
-        environment:
-            MONGO_URI: mongodb://restheart:R3ste4rt!@restheart-mongo
-        command: [ "/rh/etc/restheart.yml", "-e", "/rh/etc/default.properties"]
-        depends_on:
-            - mongodb
-        networks:
-            - restheart-backend
-        volumes:
-            - ./etc:/rh/etc
-            - ./plugins:/rh/plugins
-        ports:
-            - "8080:8080"
+  restheart:
+    image: softinstigate/restheart:latest-native
+    environment:
+      INSTANCE_NAME: native
+      MONGO_URI: mongodb://mongodb
+    command: ["/rh/etc/restheart.yml", "-e", "/rh/etc/default.properties"]
+    depends_on:
+      - mongodb
+      - mongodb-init
+    volumes:
+      - ./etc:/rh/etc
+      - ./plugins:/rh/plugins
+    ports:
+      - "8080:8080"
 
-    mongodb:
-        image: mongo:4.2
-        container_name: restheart-mongo
-        command: ["--bind_ip", "restheart-mongo", "--auth", "--replSet", "rs0"]
-        environment:
-            MONGO_INITDB_ROOT_USERNAME: restheart
-            MONGO_INITDB_ROOT_PASSWORD: R3ste4rt!
-        volumes:
-            - restheart-mongo-volume:/data/db
-        networks:
-            - restheart-backend
+  mongodb:
+    image: mongo:5.0
+    command: ["--bind_ip_all", "--replSet", "rs0"]
 
-### Initiate MongoDB as a single node replica set
-    mongodb-initiate:
-      image: mongo:4.2
-      networks:
-         - restheart-backend
-      depends_on:
-         - mongodb
-      entrypoint: bash -c "for i in {1..100}; do mongo  --host mongodb --username restheart --password 'R3ste4rt!' --eval 'if (!rs.status().ok) rs.initiate();' && break || sleep 2; done"
+  ### Initialize MongoDB as a single node Replica Set
+  mongodb-init:
+    image: mongo:5.0
+    depends_on:
+      - mongodb
+    entrypoint: >-
+      bash -c "for i in {1..10}; do mongo --host mongodb --eval 
+      'if (!rs.status().ok) rs.initiate();' && break || sleep 3; done"

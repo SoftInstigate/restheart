@@ -31,7 +31,7 @@
         <skipUTs>${skipTests}</skipUTs>
         <!--
             MongoDB default version to test with
-            mvn install -Dmongodb.version=4.2   : Test with mongo:4.2 container
+            mvn clean verify -Dmongodb.version="4.2"   : Test with mongo:4.2 container
         -->
         <mongodb.version>4.2</mongodb.version>
         <graalvm.version>21.1.0</graalvm.version>
@@ -196,7 +196,7 @@
             <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-core</artifactId>
-                <version>2.2.7.Final</version>
+                <version>2.2.10.Final</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>

@@ -301,13 +301,12 @@
                   <port>27017:27017</port>
                 </ports>
                 <wait>
-                  <tcp>
-                    <host>0.0.0.0</host>
-                    <ports>
-                      <port>27017</port>
-                    </ports>
-                  </tcp>
-                  <time>10000</time>
+                  <http>
+                    <url>http://0.0.0.0:27017</url>
+                    <method>GET</method>
+                    <status>200</status>
+                  </http>
+                  <time>60000</time>
                 </wait>
               </run>
             </image>
@@ -357,7 +356,7 @@
               <skip>${skipITs}</skip>
               <target>
                 <copy file="../test-plugins/target/restheart-test-plugins.jar" todir="./target/plugins" overwrite="true" />
-                <echo>***** Initiliazing MongoDB cluster...</echo>
+                <echo>***** Initializing MongoDB cluster...</echo>
                 <exec executable="docker">
                   <arg value="run" />
                   <arg value="--rm" />

@@ -77,9 +77,12 @@ public class ResponseSender extends PipelinedHandler {
                 if (response.getCustomerSender() != null) {
                     // use the custom sender if it has been set
                     response.getCustomerSender().run();
-                } else if (response.readContent() != null) {
-                    // send the content via default exchange response sender
-                    exchange.getResponseSender().send(response.readContent());
+                } else {
+                    var content = response.readContent();
+                    if (content != null) {
+                        // send the content via default exchange response sender
+                        exchange.getResponseSender().send(content);
+                    }
                 }
             }
         } else if (pi.getType() == PipelineInfo.PIPELINE_TYPE.PROXY) {
