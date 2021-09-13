@@ -2,7 +2,7 @@ version: "3"
 
 services:
   restheart:
-    image: softinstigate/restheart:latest
+    image: softinstigate/restheart:6.0
     environment:
       MONGO_URI: mongodb://mongodb
     command: ["--envFile", "/opt/restheart/etc/default.properties"]
