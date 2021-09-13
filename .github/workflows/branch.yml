@@ -27,6 +27,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v2
         with:
+          distribution: "adopt"
           java-version: 11
 
       - name: Set VERSION and SHA

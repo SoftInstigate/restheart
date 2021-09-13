@@ -1,31 +1,32 @@
 name: Build pull request
 
 on:
-    pull_request:
-        branches:
-            - "*"
-        types: [opened, synchronize, reopened]
+  pull_request:
+    branches:
+      - "*"
+    types: [opened, synchronize, reopened]
 
 jobs:
-    build:
-        if: "!contains(github.event.head_commit.message, 'skip ci')"
-        runs-on: ubuntu-20.04
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/cache@v1.1.2
-              with:
-                  path: ~/.m2/repository
-                  key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-                  restore-keys: |
-                      ${{ runner.os }}-maven-
+  build:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-20.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v1.1.2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
 
-            - name: Set up JDK
-              uses: actions/setup-java@v2
-              with:
-                  java-version: 11
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          distribution: "adopt"
+          java-version: 11
 
-            - name: Build and analyze
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
-              run: mvn -B clean verify
+      - name: Build and analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information, if any
+        run: mvn -B clean verify
