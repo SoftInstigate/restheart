@@ -317,8 +317,12 @@
                   <port>27017:27017</port>
                 </ports>
                 <wait>
-                  <log>waiting for connections on port</log>
-                  <time>10000</time>
+                  <http>
+                    <url>http://0.0.0.0:27017</url>
+                    <method>GET</method>
+                    <status>200</status>
+                  </http>
+                  <time>60000</time>
                 </wait>
               </run>
             </image>
