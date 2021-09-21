@@ -47,8 +47,7 @@ public class MongoClientSingleton {
     private String serverVersion = null;
     private boolean replicaSet = false;
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(MongoClientSingleton.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoClientSingleton.class);
 
     /**
      *
@@ -116,12 +115,9 @@ public class MongoClientSingleton {
         // get the db version
         // this also is the first time we check the connection
         try {
-            Document res = mongoClient.getDatabase("admin")
-                    .runCommand(
-                            new BsonDocument("buildInfo",
-                                    new BsonInt32(1)));
+            var res = mongoClient.getDatabase("admin").runCommand(new BsonDocument("buildInfo", new BsonInt32(1)));
 
-            Object _version = res.get("version");
+            var _version = res.get("version");
 
             if (_version != null && _version instanceof String) {
                 serverVersion = (String) _version;
@@ -151,10 +147,10 @@ public class MongoClientSingleton {
 
             LOGGER.info("MongoDB version {}",
                     ansi()
-                            .fg(MAGENTA)
-                            .a(getServerVersion())
-                            .reset()
-                            .toString());
+                        .fg(MAGENTA)
+                        .a(getServerVersion())
+                        .reset()
+                        .toString());
 
             if (isReplicaSet()) {
                 LOGGER.info("MongoDB is a replica set.");

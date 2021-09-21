@@ -97,16 +97,13 @@ public class TxnsUtils {
      * @param cs
      * @throws MongoQueryException
      */
-    public static void propagateSession(ClientSessionImpl cs)
-            throws MongoQueryException {
+    public static void propagateSession(ClientSessionImpl cs) throws MongoQueryException {
         LOGGER.trace("*********** round trip to server to propagate session");
-        MCLIENT
-                .getDatabase("foo")
-                .getCollection("bar")
-                .find(cs)
-                .limit(1)
-                .projection(eq("_id", 1))
-                .first();
+        MCLIENT.getDatabase("foo").getCollection("bar")
+            .find(cs)
+            .limit(1)
+            .projection(eq("_id", 1))
+            .first();
     }
 
     private static final String TXT_NUM_ERROR_MSG_PREFIX_STARTED = "because a newer transaction ";
