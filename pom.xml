@@ -168,12 +168,12 @@
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-legacy</artifactId>
-                <version>4.1.1</version>
+                <version>4.3.2</version>
             </dependency>
             <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-reactivestreams</artifactId>
-                <version>4.1.1</version>
+                <version>4.3.2</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>

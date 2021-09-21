@@ -39,7 +39,7 @@ public class SimpleServerSessionPool extends ServerSessionPool {
      */
     @SuppressWarnings("deprecation")
     public SimpleServerSessionPool(Cluster cluster, UUID sid) {
-        super(cluster);
+        super(cluster, null);
         this.sid = sid;
     }
 

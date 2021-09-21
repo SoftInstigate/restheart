@@ -23,7 +23,6 @@ import com.mongodb.ClientSessionOptions;
 import com.mongodb.TransactionOptions;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.TransactionBody;
-import com.mongodb.client.internal.MongoClientDelegate;
 import com.mongodb.internal.session.BaseClientSessionImpl;
 import com.mongodb.internal.session.ServerSessionPool;
 import java.util.Objects;
@@ -33,9 +32,7 @@ import java.util.UUID;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ClientSessionImpl
-        extends BaseClientSessionImpl
-        implements ClientSession {
+public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSession {
 
     /**
      *
@@ -48,25 +45,9 @@ public class ClientSessionImpl
      * @param serverSessionPool
      * @param originator
      * @param options
-     * @param delegate
      */
-    public ClientSessionImpl(final ServerSessionPool serverSessionPool,
-            final Object originator,
-            final ClientSessionOptions options,
-            final MongoClientDelegate delegate) {
-        super(serverSessionPool, originator, options);
-    }
-
-    /**
-     *
-     * @param serverSessionPool
-     * @param originator
-     * @param options
-     */
-    public ClientSessionImpl(final ServerSessionPool serverSessionPool,
-            final Object originator,
-            final ClientSessionOptions options) {
-        super(serverSessionPool, originator, options);
+    public ClientSessionImpl(final ServerSessionPool serverSessionPool, final Object originator, final ClientSessionOptions options) {
+        super(serverSessionPool, delegate(originator), options);
     }
     
     /**
@@ -116,8 +97,7 @@ public class ClientSessionImpl
      */
     @Override
     public boolean notifyMessageSent() {
-        boolean firstMessageInCurrentTransaction
-                = !messageSentInCurrentTransaction;
+        boolean firstMessageInCurrentTransaction = !messageSentInCurrentTransaction;
         messageSentInCurrentTransaction = true;
         return firstMessageInCurrentTransaction;
     }
@@ -198,8 +178,7 @@ public class ClientSessionImpl
      *
      * @param messageSentInCurrentTransaction
      */
-    public void setMessageSentInCurrentTransaction(
-            boolean messageSentInCurrentTransaction) {
+    public void setMessageSentInCurrentTransaction(boolean messageSentInCurrentTransaction) {
         this.messageSentInCurrentTransaction = messageSentInCurrentTransaction;
     }
 
@@ -219,14 +198,10 @@ public class ClientSessionImpl
     public static UUID getSid(ClientSession cs) {
         if (cs != null
                 && cs.getServerSession() != null
-                && cs.getServerSession()
-                        .getIdentifier() != null
-                && cs.getServerSession()
-                        .getIdentifier().isDocument()
-                && cs.getServerSession()
-                        .getIdentifier().asDocument().containsKey("id")
-                && cs.getServerSession()
-                        .getIdentifier().asDocument().get("id").isBinary()) {
+                && cs.getServerSession().getIdentifier() != null
+                && cs.getServerSession().getIdentifier().isDocument()
+                && cs.getServerSession().getIdentifier().asDocument().containsKey("id")
+                && cs.getServerSession().getIdentifier().asDocument().get("id").isBinary()) {
             return cs.getServerSession()
                     .getIdentifier()
                     .asDocument()
@@ -235,6 +210,29 @@ public class ClientSessionImpl
                     .asUuid();
         } else {
             return null;
+        }
+    }
+
+    @Override
+    public void notifyOperationInitiated(Object operation) {
+        // nothing to do
+    }
+
+    /**
+     * MongoDelegate checks the operation to be executed by the same MongoClient that created the session
+     * comparing originator to the value of MongoClient.delegate
+     * this utility method returns MongoClient.delegate to be used as originator
+     *
+     * @param o
+     * @return the value of field delegate of o or o if not exists
+     */
+    private static Object delegate(Object o) {
+        try {
+            var delegateF = o.getClass().getDeclaredField("delegate");
+            delegateF.setAccessible(true);
+            return delegateF.get(o);
+        } catch(Throwable t) {
+            return o;
         }
     }
 }

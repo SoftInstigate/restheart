@@ -161,8 +161,7 @@ public class ClientSessionFactory {
         ClientSessionImpl cs = new ClientSessionImpl(
                 new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
                 mClient,
-                mergedOptions,
-                SessionsUtils.getMongoClientDelegate());
+                mergedOptions);
 
         return cs;
     }

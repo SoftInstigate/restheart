@@ -31,6 +31,8 @@ import static org.bson.assertions.Assertions.notNull;
 import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 import static org.restheart.exchange.ExchangeKeys.TXNID_KEY;
 import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.IN;
+
+import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,16 +41,14 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class TxnClientSessionFactory extends ClientSessionFactory {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(TxnClientSessionFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TxnClientSessionFactory.class);
 
     public static TxnClientSessionFactory getInstance() {
         return TxnClientSessionFactoryHolder.INSTANCE;
     }
 
     private static class TxnClientSessionFactoryHolder {
-        private static final TxnClientSessionFactory INSTANCE
-                = new TxnClientSessionFactory();
+        private static final TxnClientSessionFactory INSTANCE = new TxnClientSessionFactory();
     }
 
     private TxnClientSessionFactory() {
@@ -61,23 +61,19 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
      * @throws IllegalArgumentException
      */
     @Override
-    public ClientSessionImpl getClientSession(HttpServerExchange exchange)
-            throws IllegalArgumentException {
-        String _sid = exchange.getQueryParameters()
-                .get(CLIENT_SESSION_KEY).getFirst();
+    public ClientSessionImpl getClientSession(HttpServerExchange exchange) throws IllegalArgumentException {
+        var _sid = exchange.getQueryParameters().get(CLIENT_SESSION_KEY).getFirst();
 
         UUID sid;
-        
+
         try {
             sid = UUID.fromString(_sid);
         } catch (IllegalArgumentException iae) {
             throw new IllegalArgumentException("Invalid session id");
         }
 
-        if (exchange.getQueryParameters()
-                .containsKey(TXNID_KEY)) {
-            String _txnId = exchange.getQueryParameters()
-                    .get(TXNID_KEY).getFirst();
+        if (exchange.getQueryParameters().containsKey(TXNID_KEY)) {
+            var _txnId = exchange.getQueryParameters().get(TXNID_KEY).getFirst();
 
             long txnId = -1;
 
@@ -87,8 +83,7 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
                 throw new IllegalArgumentException("Invalid txn");
             }
 
-            var cs = getTxnClientSession(sid,
-                    new Txn(txnId, Txn.TransactionStatus.IN));
+            var cs = getTxnClientSession(sid, new Txn(txnId, Txn.TransactionStatus.IN));
 
             LOGGER.debug("Request is executed in session {} with {}",
                     _sid,
@@ -129,9 +124,10 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
      * @return
      */
     public TxnClientSessionImpl getTxnClientSession(UUID sid, Txn txnServerStatus) {
+        var mClient = MongoClientSingleton.getInstance().getClient();
         var options = Sid.getSessionOptions(sid);
 
-        ClientSessionOptions cso = ClientSessionOptions
+        var cso = ClientSessionOptions
                 .builder()
                 .causallyConsistent(options.isCausallyConsistent())
                 .build();
@@ -149,8 +145,7 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
             cs.setTransactionState(txnServerStatus.getStatus());
             cs.setServerSessionTransactionNumber(txnServerStatus.getTxnId());
 
-            ((ServerSessionImpl) cs.getServerSession())
-                    .setTransactionNumber(txnServerStatus.getTxnId());
+            ((ServerSessionImpl) cs.getServerSession()).setTransactionNumber(txnServerStatus.getTxnId());
         }
 
         return cs;
@@ -167,8 +162,7 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
         notNull("writeConcern", writeConcern);
         notNull("readPreference", readPreference);
 
-        // TODO allow request to specify session and txn options
-        ClientSessionOptions mergedOptions = ClientSessionOptions
+        var mergedOptions = ClientSessionOptions
                 .builder(options)
                 .causallyConsistent(true)
                 .defaultTransactionOptions(
@@ -183,9 +177,9 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
 
         return new TxnClientSessionImpl(
                 new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
-                mClient,
+                MongoClientSingleton.getInstance().getClient(),
                 mergedOptions,
-                SessionsUtils.getMongoClientDelegate(),
+                SessionsUtils.getOperationExecutor(),
                 txnServerStatus);
     }
 }

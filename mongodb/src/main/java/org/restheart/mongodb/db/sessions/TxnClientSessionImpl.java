@@ -26,7 +26,7 @@ import com.mongodb.MongoInternalException;
 import com.mongodb.ReadConcern;
 import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
-import com.mongodb.client.internal.MongoClientDelegate;
+import com.mongodb.client.internal.OperationExecutor;
 import com.mongodb.internal.session.ServerSessionPool;
 import com.mongodb.internal.operation.AbortTransactionOperation;
 import com.mongodb.internal.operation.CommitTransactionOperation;
@@ -39,7 +39,7 @@ import org.restheart.mongodb.db.sessions.Txn.TransactionStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class TxnClientSessionImpl extends ClientSessionImpl {
-    private final MongoClientDelegate delegate;
+    private final OperationExecutor executor;
     private TransactionStatus transactionState = TransactionStatus.NONE;
     private boolean commitInProgress;
     private TransactionOptions transactionOptions;
@@ -48,10 +48,10 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
     public TxnClientSessionImpl(final ServerSessionPool serverSessionPool,
             final Object originator,
             final ClientSessionOptions options,
-            final MongoClientDelegate delegate,
+            final OperationExecutor executor,
             final Txn txnServerStatus) {
         super(serverSessionPool, originator, options);
-        this.delegate = delegate;
+        this.executor = executor;
         this.txnServerStatus = txnServerStatus;
     }
 
@@ -66,9 +66,7 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
 
     @Override
     public boolean hasActiveTransaction() {
-        return transactionState == TransactionStatus.IN
-                || (transactionState == TransactionStatus.COMMITTED
-                && commitInProgress);
+        return transactionState == TransactionStatus.IN || (transactionState == TransactionStatus.COMMITTED && commitInProgress);
     }
 
     public boolean isTransacted() {
@@ -78,13 +76,11 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
     @Override
     public boolean notifyMessageSent() {
         if (hasActiveTransaction()) {
-            boolean firstMessageInCurrentTransaction
-                    = !messageSentInCurrentTransaction;
+            boolean firstMessageInCurrentTransaction = !messageSentInCurrentTransaction;
             messageSentInCurrentTransaction = true;
             return firstMessageInCurrentTransaction;
         } else {
-            if (transactionState == TransactionStatus.COMMITTED
-                    || transactionState == TransactionStatus.ABORTED) {
+            if (transactionState == TransactionStatus.COMMITTED || transactionState == TransactionStatus.ABORTED) {
                 cleanupTransaction(TransactionStatus.NONE);
             }
             return false;
@@ -93,8 +89,7 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
 
     @Override
     public TransactionOptions getTransactionOptions() {
-        isTrue("in transaction", transactionState == TransactionStatus.IN
-                || transactionState == TransactionStatus.COMMITTED);
+        isTrue("in transaction", transactionState == TransactionStatus.IN || transactionState == TransactionStatus.COMMITTED);
         return transactionOptions;
     }
 
@@ -116,19 +111,14 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
         }
 
         //getServerSession().advanceTransactionNumber();
-        this.transactionOptions = TransactionOptions.merge(
-                transactionOptions,
-                getOptions().getDefaultTransactionOptions());
+        this.transactionOptions = TransactionOptions.merge(transactionOptions, getOptions().getDefaultTransactionOptions());
 
         WriteConcern writeConcern = this.transactionOptions.getWriteConcern();
         if (writeConcern == null) {
-            throw new MongoInternalException(
-                    "Invariant violated. "
-                    + "Transaction options write concern can not be null");
+            throw new MongoInternalException("Invariant violated. Transaction options write concern can not be null");
         }
         if (!writeConcern.isAcknowledged()) {
-            throw new MongoClientException("Transactions do not support "
-                    + "unacknowledged write concern");
+            throw new MongoClientException("Transactions do not support unacknowledged write concern");
         }
     }
 
@@ -145,8 +135,7 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
     @SuppressWarnings("deprecation")
     public void commitTransaction() {
         if (transactionState == TransactionStatus.ABORTED) {
-            throw new IllegalStateException(
-                    "Cannot call commitTransaction after calling abortTransaction");
+            throw new IllegalStateException("Cannot call commitTransaction after calling abortTransaction");
         }
         if (transactionState == TransactionStatus.NONE) {
             throw new IllegalStateException("There is no transaction started");
@@ -155,14 +144,10 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
             if (messageSentInCurrentTransaction) {
                 ReadConcern readConcern = transactionOptions.getReadConcern();
                 if (readConcern == null) {
-                    throw new MongoInternalException("Invariant violated."
-                            + " Transaction options read concern can not be null");
+                    throw new MongoInternalException("Invariant violated. Transaction options read concern can not be null");
                 }
                 commitInProgress = true;
-                delegate.getOperationExecutor().execute(
-                        new CommitTransactionOperation(
-                                transactionOptions.getWriteConcern()),
-                        readConcern, this);
+                executor.execute(new CommitTransactionOperation(transactionOptions.getWriteConcern()), readConcern, this);
             }
         } finally {
             commitInProgress = false;
@@ -177,8 +162,7 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
             throw new IllegalStateException("Cannot call abortTransaction twice");
         }
         if (transactionState == TransactionStatus.COMMITTED) {
-            throw new IllegalStateException(
-                    "Cannot call abortTransaction after calling commitTransaction");
+            throw new IllegalStateException("Cannot call abortTransaction after calling commitTransaction");
         }
         if (transactionState == TransactionStatus.NONE) {
             throw new IllegalStateException("There is no transaction started");
@@ -187,13 +171,9 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
             if (messageSentInCurrentTransaction) {
                 ReadConcern readConcern = transactionOptions.getReadConcern();
                 if (readConcern == null) {
-                    throw new MongoInternalException("Invariant violated."
-                            + " Transaction options read concern can not be null");
+                    throw new MongoInternalException("Invariant violated. Transaction options read concern can not be null");
                 }
-                delegate.getOperationExecutor().execute(
-                        new AbortTransactionOperation(
-                                transactionOptions.getWriteConcern()),
-                        readConcern, this);
+                executor.execute(new AbortTransactionOperation(transactionOptions.getWriteConcern()), readConcern, this);
             }
         } catch (Exception e) {
             // ignore errors
