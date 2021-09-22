@@ -47,7 +47,6 @@ import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonTimestamp;
-import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
@@ -81,62 +80,52 @@ public class DAOUtils {
     /**
      *
      */
-    public final static FindOneAndUpdateOptions FAU_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(true)
-            .returnDocument(ReturnDocument.AFTER);
+    public final static FindOneAndUpdateOptions FAU_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER);
 
     /**
      *
      */
-    public final static FindOneAndUpdateOptions FAU_NOT_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(false)
-            .returnDocument(ReturnDocument.AFTER);
+    public final static FindOneAndUpdateOptions FAU_NOT_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER);
 
     /**
      *
      */
-    public final static FindOneAndUpdateOptions FOU_AFTER_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(true)
-            .returnDocument(ReturnDocument.AFTER);
+    public final static FindOneAndUpdateOptions FOU_AFTER_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(true).returnDocument(ReturnDocument.AFTER);
 
     /**
      *
      */
-    public final static FindOneAndReplaceOptions FOR_AFTER_UPSERT_OPS = new FindOneAndReplaceOptions()
-            .upsert(true).returnDocument(ReturnDocument.AFTER);
+    public final static FindOneAndReplaceOptions FOR_AFTER_UPSERT_OPS = new FindOneAndReplaceOptions().upsert(true).returnDocument(ReturnDocument.AFTER);
 
     /**
      *
      */
-    public final static FindOneAndUpdateOptions FOU_AFTER_NOT_UPSERT_OPS = new FindOneAndUpdateOptions()
-            .upsert(false).returnDocument(ReturnDocument.AFTER);
+    public final static FindOneAndUpdateOptions FOU_AFTER_NOT_UPSERT_OPS = new FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER);
 
     /**
      *
      */
-    public final static FindOneAndReplaceOptions FOR_AFTER_NOT_UPSERT_OPS = new FindOneAndReplaceOptions()
-            .upsert(false).returnDocument(ReturnDocument.AFTER);
+    public final static FindOneAndReplaceOptions FOR_AFTER_NOT_UPSERT_OPS = new FindOneAndReplaceOptions().upsert(false).returnDocument(ReturnDocument.AFTER);
 
     /**
      *
      */
-    public final static UpdateOptions U_UPSERT_OPS = new UpdateOptions()
-            .upsert(true);
+    public final static UpdateOptions U_UPSERT_OPS = new UpdateOptions().upsert(true);
 
     /**
      *
      */
-    public final static UpdateOptions U_NOT_UPSERT_OPS = new UpdateOptions()
-            .upsert(false);
+    public final static UpdateOptions U_NOT_UPSERT_OPS = new UpdateOptions().upsert(false);
 
     /**
      *
      */
-    public final static ReplaceOptions R_NOT_UPSERT_OPS = new ReplaceOptions()
-            .upsert(false);
+    public final static ReplaceOptions R_NOT_UPSERT_OPS = new ReplaceOptions().upsert(false);
 
     /**
      *
      */
-    public final static BulkWriteOptions BWO_NOT_ORDERED = new BulkWriteOptions()
-            .ordered(false);
+    public final static BulkWriteOptions BWO_NOT_ORDERED = new BulkWriteOptions().ordered(false);
 
     private static final Bson IMPOSSIBLE_CONDITION = eq("_etag", new ObjectId());
 
@@ -242,8 +231,7 @@ public class DAOUtils {
 
         boolean idPresent = true;
 
-        if (documentId instanceof Optional
-                && !((Optional) documentId).isPresent()) {
+        if (documentId instanceof Optional && !((Optional) documentId).isPresent()) {
             query = IMPOSSIBLE_CONDITION;
             idPresent = false;
         } else {
@@ -280,8 +268,15 @@ public class DAOUtils {
         }
 
         if (writeMode == WRITE_MODE.INSERT) {
+            // don't allow $ prefixed operators as key values
+            if (BsonUtils.containsUpdateOperators(data, true)) {
+                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
+            }
+
             BsonDocument newDocument;
             try {
+                resolveCurrentDateOperator(data);
+
                 var insertedId = cs == null
                     ? coll.insertOne(data).getInsertedId()
                     : coll.insertOne(cs, data).getInsertedId();
@@ -330,14 +325,10 @@ public class DAOUtils {
                 newDocument = cs == null
                         ? coll.findOneAndUpdate(query,
                                 getUpdateDocument(data, deepPatching),
-                                writeMode == WRITE_MODE.UPSERT
-                                    ? FAU_UPSERT_OPS
-                                    : FAU_NOT_UPSERT_OPS)
+                                writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS)
                         : coll.findOneAndUpdate(cs, query,
                                 getUpdateDocument(data, deepPatching),
-                                writeMode == WRITE_MODE.UPSERT
-                                    ? FAU_UPSERT_OPS
-                                    : FAU_NOT_UPSERT_OPS);
+                                writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
             } catch (IllegalArgumentException iae) {
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
             }
@@ -374,9 +365,7 @@ public class DAOUtils {
         if (etag == null) {
             query = eq("_id", documentId);
         } else {
-            query = and(eq("_id", documentId), eq(
-                    etagLocation != null && !etagLocation.isEmpty()
-                    ? etagLocation : "_etag", etag));
+            query = and(eq("_id", documentId), eq(etagLocation != null && !etagLocation.isEmpty() ? etagLocation : "_etag", etag));
         }
 
         if (shardKeys != null) {
@@ -457,20 +446,18 @@ public class DAOUtils {
 
         List<WriteModel<BsonDocument>> updates = new ArrayList<>();
 
-        documents.stream().filter(_document -> _document.isDocument())
-                .forEach((BsonValue _document) -> {
-                    BsonDocument document = _document.asDocument();
-
+        documents.stream().filter(d -> d.isDocument())
+                .map(d -> d.asDocument())
+                .forEach(document -> {
                     // generate new id if missing, will be an insert
                     if (!document.containsKey("_id")) {
-                        document
-                                .put("_id", new BsonObjectId(new ObjectId()));
+                        document.put("_id", new BsonObjectId(new ObjectId()));
                     }
 
                     // add the _etag
                     document.put("_etag", new BsonObjectId(etag));
 
-                    Bson _filter = eq("_id", document.get("_id"));
+                    var _filter = eq("_id", document.get("_id"));
 
                     if (shardKeys != null) {
                         _filter = and(_filter, shardKeys);
@@ -518,49 +505,51 @@ public class DAOUtils {
      */
     static BsonDocument getReplaceDocument(final BsonDocument doc) {
         if (BsonUtils.containsUpdateOperators(doc, false)) {
-            BsonDocument ret = new BsonDocument();
+            var ret = new BsonDocument();
             ret.putAll(doc);
 
-            BsonValue cd = ret.remove("$currentDate");
-
-            if (cd != null) {
-                long currentTimeMillis = System.currentTimeMillis();
-
-                if (cd.isDocument()) {
-                    cd.asDocument()
-                            .entrySet()
-                            .stream()
-                            .forEach(entry -> {
-                                if (BsonBoolean.TRUE.equals(entry.getValue())) {
-                                    ret.put(entry.getKey(),
-                                            new BsonDateTime(currentTimeMillis));
-                                } else if (entry.getValue().isDocument()
-                                        && entry.getValue().asDocument().
-                                                containsKey("$type")) {
-                                    if (new BsonString("date").equals(
-                                            entry.getValue().asDocument().get("$type"))) {
-                                        ret.put(entry.getKey(),
-                                                new BsonDateTime(currentTimeMillis));
-
-                                    } else if (new BsonString("timestamp").equals(
-                                            entry.getValue().asDocument().get("$type"))) {
-                                        ret.put(entry.getKey(),
-                                                new BsonTimestamp(currentTimeMillis));
-                                    } else {
-                                        throw new IllegalArgumentException("wrong $currentDate operator");
-                                    }
-
-                                } else {
-                                    throw new IllegalArgumentException("wrong $currentDate operator");
-                                }
-                            });
-                }
-            }
+            resolveCurrentDateOperator(ret);
 
             return BsonUtils.unflatten(ret).asDocument();
         } else {
             return doc;
         }
+    }
+
+    /**
+     * Replace { "$currentDate": {"key": true}} with { "key": { "$date": 12345... }}
+     *
+     * @param doc
+     * @throws IllegalArgumentException
+     */
+    static void resolveCurrentDateOperator(BsonDocument doc) throws IllegalArgumentException {
+        var cd = doc.remove("$currentDate");
+
+        if (cd == null || !cd.isDocument()) {
+            return;
+        }
+
+        long currentTimeMillis = System.currentTimeMillis();
+
+        cd.asDocument()
+                .entrySet()
+                .stream()
+                .forEach(entry -> {
+                    if (BsonBoolean.TRUE.equals(entry.getValue())) {
+                        doc.put(entry.getKey(), new BsonDateTime(currentTimeMillis));
+                    } else if (entry.getValue().isDocument()
+                            && entry.getValue().asDocument().containsKey("$type")) {
+                        if (new BsonString("date").equals(entry.getValue().asDocument().get("$type"))) {
+                            doc.put(entry.getKey(), new BsonDateTime(currentTimeMillis));
+                        } else if (new BsonString("timestamp").equals(entry.getValue().asDocument().get("$type"))) {
+                            doc.put(entry.getKey(), new BsonTimestamp(currentTimeMillis));
+                        } else {
+                            throw new IllegalArgumentException("wrong $currentDate operator");
+                        }
+                    } else {
+                        throw new IllegalArgumentException("wrong $currentDate operator");
+                    }
+                });
     }
 
     /**
@@ -612,8 +601,5 @@ public class DAOUtils {
         }
 
         return ret;
-    }
-
-    private DAOUtils() {
     }
 }
