@@ -20,13 +20,17 @@
  */
 package org.restheart.graphql;
 
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInvalidOperationException;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.graphql.models.*;
 import org.restheart.utils.BsonUtils;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Predicate;
+
 
 public class GraphQLAppDeserializer {
 
@@ -74,7 +78,7 @@ public class GraphQLAppDeserializer {
                     .appDescriptor(descriptor)
                     .schema(schema)
                     .mappings(mappingsMap)
-                    .build();
+                    .build(); // build generates executable schema
         } catch (IllegalStateException | IllegalArgumentException e){
             throw new GraphQLIllegalAppDefinitionException(e.getMessage(), e);
         }
@@ -124,6 +128,7 @@ public class GraphQLAppDeserializer {
         Map<String, TypeMapping> mappingMap = new HashMap<>();
 
         for (String type: doc.keySet()){
+
             if(doc.get(type).isDocument()){
                 Map<String, FieldMapping> typeMappings = new HashMap<>();
 
@@ -139,109 +144,128 @@ public class GraphQLAppDeserializer {
                             break;
                         case DOCUMENT:{
                             BsonDocument fieldMappingDoc = fieldMapping.asDocument();
-                            QueryMapping.Builder queryMappingBuilder = QueryMapping.newBuilder();
 
-                            queryMappingBuilder.fieldName(field);
+                            boolean isAggr = fieldMappingDoc.containsKey("stages");
 
-                            if (fieldMappingDoc.containsKey("db")){
-                                if(fieldMappingDoc.get("db").isString()){
-                                    queryMappingBuilder.db(fieldMappingDoc.getString("db").getValue());
+                            // check if it's QueryMapping or AggrregationMapping
+                            if(isAggregationMapping(fieldMappingDoc)) {
+
+                                typeMappings.put(field, new AggregationMapping(
+                                    field, 
+                                    fieldMappingDoc.get("db").asString(),
+                                    fieldMappingDoc.get("collection").asString(),
+                                    fieldMappingDoc.get("stages").asArray(),
+                                    hasKeyOfType(fieldMappingDoc, "allowDiskUse", t -> t.isBoolean()) 
+                                        ? fieldMappingDoc.get("allowDiskUse").asBoolean()
+                                        : new BsonBoolean(false)
+                                ));
+                            } else {
+
+                                QueryMapping.Builder queryMappingBuilder = QueryMapping.newBuilder();
+
+                                queryMappingBuilder.fieldName(field);
+
+                                if (fieldMappingDoc.containsKey("db")){
+                                    if(fieldMappingDoc.get("db").isString()){
+                                        queryMappingBuilder.db(fieldMappingDoc.getString("db").getValue());
+                                    }
+                                    else {
+                                        throwIllegalDefinitionException(field, type, "db", "'STRING'", fieldMappingDoc.get("db"));
+
+                                    }
                                 }
                                 else {
-                                    throwIllegalDefinitionException(field, type, "db", "'STRING'", fieldMappingDoc.get("db"));
+                                    throw new NullPointerException(
+                                            "Error with field '" + field + "' of type '" + type + "'. 'db' could not be null."
+                                    );
+                                }
 
+                                if(fieldMappingDoc.containsKey("collection")){
+                                    if(fieldMappingDoc.get("collection").isString()){
+                                        queryMappingBuilder.collection(fieldMappingDoc.getString("collection").getValue());
+                                    }
+                                    else {
+                                        throwIllegalDefinitionException(field, type, "collection", "'STRING'", fieldMappingDoc.get("collection"));
+                                    }
                                 }
-                            }
-                            else {
-                                throw new NullPointerException(
-                                        "Error with field '" + field + "' of type '" + type + "'. 'db' could not be null."
-                                );
-                            }
+                                else{
+                                    throw new NullPointerException(
+                                            "Error with field '" + field +"' of type '"+ type + "'. 'collection' could not be null."
+                                    );
+                                }
 
-                            if(fieldMappingDoc.containsKey("collection")){
-                                if(fieldMappingDoc.get("collection").isString()){
-                                    queryMappingBuilder.collection(fieldMappingDoc.getString("collection").getValue());
+                                if(fieldMappingDoc.containsKey("find")){
+                                    if(fieldMappingDoc.get("find").isDocument()){
+                                        queryMappingBuilder.find(fieldMappingDoc.getDocument("find"));
+                                    }
+                                    else {
+                                        throwIllegalDefinitionException(field, type, "find", "DOCUMENT", fieldMappingDoc.get("find"));
+                                    }
                                 }
-                                else {
-                                    throwIllegalDefinitionException(field, type, "collection", "'STRING'", fieldMappingDoc.get("collection"));
-                                }
-                            }
-                            else{
-                                throw new NullPointerException(
-                                        "Error with field '" + field +"' of type '"+ type + "'. 'collection' could not be null."
-                                );
-                            }
 
-                            if(fieldMappingDoc.containsKey("find")){
-                                if(fieldMappingDoc.get("find").isDocument()){
-                                    queryMappingBuilder.find(fieldMappingDoc.getDocument("find"));
-                                }
-                                else {
-                                    throwIllegalDefinitionException(field, type, "find", "DOCUMENT", fieldMappingDoc.get("find"));
-                                }
-                            }
+                                if(fieldMappingDoc.containsKey("sort")){
+                                    if(fieldMappingDoc.get("sort").isDocument()){
+                                        queryMappingBuilder.sort(fieldMappingDoc.getDocument("sort"));
 
-                            if(fieldMappingDoc.containsKey("sort")){
-                                if(fieldMappingDoc.get("sort").isDocument()){
-                                    queryMappingBuilder.sort(fieldMappingDoc.getDocument("sort"));
+                                    }
+                                    else {
+                                        throwIllegalDefinitionException(field, type, "sort", "DOCUMENT", fieldMappingDoc.get("sort"));
+                                    }
+                                }
 
+                                if(fieldMappingDoc.containsKey("limit")){
+                                    if(fieldMappingDoc.get("limit").isDocument()){
+                                        queryMappingBuilder.limit(fieldMappingDoc.getDocument("limit"));
+                                    }
+                                    else if(fieldMappingDoc.get("limit").isNumber()){
+                                        queryMappingBuilder.limit(fieldMappingDoc.getNumber("limit"));
+                                    }
+                                    else {
+                                        throwIllegalDefinitionException(field, type, "limit", "DOCUMENT", fieldMappingDoc.get("limit"));
+                                    }
                                 }
-                                else {
-                                    throwIllegalDefinitionException(field, type, "sort", "DOCUMENT", fieldMappingDoc.get("sort"));
-                                }
-                            }
 
-                            if(fieldMappingDoc.containsKey("limit")){
-                                if(fieldMappingDoc.get("limit").isDocument()){
-                                    queryMappingBuilder.limit(fieldMappingDoc.getDocument("limit"));
+                                if (fieldMappingDoc.containsKey("skip")){
+                                    if (fieldMappingDoc.get("skip").isDocument()){
+                                        queryMappingBuilder.skip(fieldMappingDoc.getDocument("skip"));
+                                    }
+                                    else if(fieldMappingDoc.get("skip").isNumber()){
+                                        queryMappingBuilder.limit(fieldMappingDoc.getNumber("skip"));
+                                    }
+                                    else {
+                                        throwIllegalDefinitionException(field, type, "skip", "DOCUMENT", fieldMappingDoc.get("skip"));
+                                    }
                                 }
-                                else if(fieldMappingDoc.get("limit").isNumber()){
-                                    queryMappingBuilder.limit(fieldMappingDoc.getNumber("limit"));
-                                }
-                                else {
-                                    throwIllegalDefinitionException(field, type, "limit", "DOCUMENT", fieldMappingDoc.get("limit"));
-                                }
-                            }
 
-                            if (fieldMappingDoc.containsKey("skip")){
-                                if (fieldMappingDoc.get("skip").isDocument()){
-                                    queryMappingBuilder.skip(fieldMappingDoc.getDocument("skip"));
-                                }
-                                else if(fieldMappingDoc.get("skip").isNumber()){
-                                    queryMappingBuilder.limit(fieldMappingDoc.getNumber("skip"));
-                                }
-                                else {
-                                    throwIllegalDefinitionException(field, type, "skip", "DOCUMENT", fieldMappingDoc.get("skip"));
-                                }
-                            }
+                                if (fieldMappingDoc.containsKey("dataLoader")){
+                                    if (fieldMappingDoc.get("dataLoader").isDocument()){
+                                        BsonDocument settings = fieldMappingDoc.getDocument("dataLoader");
+                                        DataLoaderSettings.Builder dataLoaderBuilder = DataLoaderSettings.newBuilder();
 
-                            if (fieldMappingDoc.containsKey("dataLoader")){
-                                if (fieldMappingDoc.get("dataLoader").isDocument()){
-                                    BsonDocument settings = fieldMappingDoc.getDocument("dataLoader");
-                                    DataLoaderSettings.Builder dataLoaderBuilder = DataLoaderSettings.newBuilder();
-
-                                    if (settings.containsKey("batching") && settings.get("batching").isBoolean()){
-                                        dataLoaderBuilder.batching(settings.getBoolean("batching").getValue());
-                                        if (settings.containsKey("maxBatchSize") && settings.get("maxBatchSize").isNumber()){
-                                            dataLoaderBuilder.max_batch_size(settings.getNumber("maxBatchSize").intValue());
+                                        if (settings.containsKey("batching") && settings.get("batching").isBoolean()){
+                                            dataLoaderBuilder.batching(settings.getBoolean("batching").getValue());
+                                            if (settings.containsKey("maxBatchSize") && settings.get("maxBatchSize").isNumber()){
+                                                dataLoaderBuilder.max_batch_size(settings.getNumber("maxBatchSize").intValue());
+                                            }
                                         }
+
+                                        if (settings.containsKey("caching") && settings.get("caching").isBoolean()){
+                                            dataLoaderBuilder.caching(settings.getBoolean("caching").getValue());
+                                        }
+
+                                        queryMappingBuilder.DataLoaderSettings(dataLoaderBuilder.build());
+                                    }
+                                    else {
+                                        throwIllegalDefinitionException(field, type, "dataLoader", "DOCUMENT", fieldMappingDoc.get("dataLoader"));
                                     }
 
-                                    if (settings.containsKey("caching") && settings.get("caching").isBoolean()){
-                                        dataLoaderBuilder.caching(settings.getBoolean("caching").getValue());
-                                    }
+                                }
 
-                                    queryMappingBuilder.DataLoaderSettings(dataLoaderBuilder.build());
-                                }
-                                else {
-                                    throwIllegalDefinitionException(field, type, "dataLoader", "DOCUMENT", fieldMappingDoc.get("dataLoader"));
-                                }
+                                typeMappings.put(field, queryMappingBuilder.build());
+                                break;
 
                             }
 
-
-
-                            typeMappings.put(field, queryMappingBuilder.build());
                             break;
                         }
                         default:
@@ -249,9 +273,10 @@ public class GraphQLAppDeserializer {
                                     "Error with mappings of type: '" + type
                                             + "'. A field mapping must be of type 'STRING' but was "
                                             + fieldMapping.getBsonType());
-                    }
+                    } // end switch
 
-                }
+                } //end for
+
                 TypeMapping typeMapping = new ObjectMapping(type, typeMappings);
                 mappingMap.put(type, typeMapping);
             }
@@ -277,5 +302,21 @@ public class GraphQLAppDeserializer {
 
     }
 
+
+
+    private static boolean isAggregationMapping(BsonDocument field) {        
+        return hasKeyOfType(field, "db", f -> f.isString())
+                && hasKeyOfType(field, "collection", f -> f.isString())
+                && hasKeyOfType(field, "stages", f -> f.isArray());
+    }
+
+    // BsonValue is the base class for any Bson type
+    // f(key, type) => key.is(type)
+    private static boolean hasKeyOfType(BsonDocument source, String key, Predicate<BsonValue> isOfType) {
+        Predicate<BsonDocument> containsKey = t -> t.containsKey(key);
+        
+        return containsKey.test(source) && isOfType.test(source.get(key));
+        // return containsKey.and(isOfType).test(source);
+    }
 }
 
