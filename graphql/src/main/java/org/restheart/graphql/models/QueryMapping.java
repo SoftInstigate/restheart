@@ -136,16 +136,19 @@ public class QueryMapping extends FieldMapping implements Batchable{
             if(field.getType() == BsonValue.class || field.getType() == BsonDocument.class){
                 BsonValue bsonValue = (BsonValue) field.get(this);
                 if (bsonValue != null && bsonValue.isDocument()){
-                    result.put(field.getName(), searchOperators((BsonDocument) bsonValue, env));
+                    result.put(field.getName(), QueryMapping.searchOperators((BsonDocument) bsonValue, env));
                 }
             }
         }
         return result;
     }
 
-    private BsonValue searchOperators(BsonDocument docToAnalyze, DataFetchingEnvironment env) throws QueryVariableNotBoundException {
+    public static BsonValue searchOperators(BsonDocument docToAnalyze, DataFetchingEnvironment env) throws QueryVariableNotBoundException {
 
-        for (String operator: OPERATORS){
+        // operatos: "$arg", "$fk"
+        String[] operators = {"$arg", "$fk"};
+
+        for (String operator: operators){
             if (docToAnalyze.containsKey(operator)){
                 String valueToInterpolate = docToAnalyze.getString(operator).getValue();
 
@@ -159,7 +162,7 @@ public class QueryMapping extends FieldMapping implements Batchable{
                     }
                     case "$fk":{
                         BsonDocument parentDocument = env.getSource();
-                        return getForeignValue(parentDocument, valueToInterpolate);
+                        return QueryMapping.getForeignValue(parentDocument, valueToInterpolate);
                     }
                     default:
                         return Assert.assertShouldNeverHappen();
@@ -171,14 +174,14 @@ public class QueryMapping extends FieldMapping implements Batchable{
 
         for (String key: docToAnalyze.keySet()){
             if (docToAnalyze.get(key).isDocument()){
-                BsonValue value = searchOperators(docToAnalyze.get(key).asDocument(), env);
+                BsonValue value = QueryMapping.searchOperators(docToAnalyze.get(key).asDocument(), env);
                 result.put(key, value);
             }
             else if (docToAnalyze.get(key).isArray()){
                 BsonArray array = new BsonArray();
                 for (BsonValue bsonValue: docToAnalyze.get(key).asArray()){
                     if(bsonValue.isDocument()){
-                        BsonValue value = searchOperators(bsonValue.asDocument(), env);
+                        BsonValue value = QueryMapping.searchOperators(bsonValue.asDocument(), env);
                         array.add(value);
                     }
                     else array.add(bsonValue);
@@ -192,7 +195,7 @@ public class QueryMapping extends FieldMapping implements Batchable{
     }
 
 
-    private BsonValue getForeignValue(BsonValue bsonValue, String path) throws QueryVariableNotBoundException {
+    public static BsonValue getForeignValue(BsonValue bsonValue, String path) throws QueryVariableNotBoundException {
 
         String[] splitPath = path.split(Pattern.quote("."));
         BsonValue current = bsonValue;
