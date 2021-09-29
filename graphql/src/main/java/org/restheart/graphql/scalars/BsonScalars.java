@@ -43,6 +43,9 @@ public class BsonScalars {
     public static final GraphQLScalarType GraphQLBsonDocument = GraphQLScalarType.newScalar()
             .name("BsonDocument").description("BSON Document scalar").coercing(new GraphQLBsonDocumentCoercing()).build();
 
+    public static final GraphQLScalarType GraphQLBsonArray = GraphQLScalarType.newScalar()
+            .name("BsonArray").description("BSON Array scalar").coercing(new GraphQLBsonArrayCoercing()).build();
+
     public static final GraphQLScalarType GraphQLBsonDate = GraphQLScalarType.newScalar()
             .name("DateTime").description("BSON DateTime scalar").coercing(new GraphQLBsonDateCoercing()).build();
 
@@ -55,6 +58,7 @@ public class BsonScalars {
         GraphQLBsonTimestamp,
         GraphQLBsonDocument,
         GraphQLBsonDate,
+        GraphQLBsonArray,
         GraphQLBsonRegularExpression
     );
 
