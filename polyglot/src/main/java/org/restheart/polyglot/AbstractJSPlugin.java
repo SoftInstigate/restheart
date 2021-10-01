@@ -60,7 +60,6 @@ public abstract class AbstractJSPlugin {
     protected MongoClient mclient;
     protected Map<String, Object> pluginArgs;
 
-    // TODO remove this and make fields final
     protected AbstractJSPlugin() {
         this.name = null;
         this.pluginClass = null;
