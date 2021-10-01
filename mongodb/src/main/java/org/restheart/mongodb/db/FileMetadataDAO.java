@@ -99,26 +99,25 @@ public class FileMetadataDAO implements FileMetadataRepository {
 
         if (patching) {
             if (oldDocument == null) { // Attempted an insert of a new doc.
-                return new OperationResult(
-                        updateResult.getHttpCode() > 0
-                        ? updateResult.getHttpCode()
-                        : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
+                return new OperationResult(updateResult.getHttpCode() > 0
+                    ? updateResult.getHttpCode()
+                    : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
             } else if (checkEtag) {
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(
-                        cs,
-                        mcoll,
-                        shardKeys,
-                        oldDocument,
-                        newEtag,
-                        requestEtag,
-                        HttpStatus.SC_OK);
+                    cs,
+                    mcoll,
+                    shardKeys,
+                    oldDocument,
+                    newEtag,
+                    requestEtag,
+                    HttpStatus.SC_OK);
             } else {
                 var query = eq("_id", documentId);
 
-                BsonDocument newDocument = cs == null
-                        ? mcoll.find(query).first()
-                        : mcoll.find(cs, query).first();
+                var newDocument = cs == null
+                    ? mcoll.find(query).first()
+                    : mcoll.find(cs, query).first();
 
                 return new OperationResult(updateResult.getHttpCode() > 0
                         ? updateResult.getHttpCode()
@@ -127,28 +126,24 @@ public class FileMetadataDAO implements FileMetadataRepository {
         } else if (oldDocument != null && checkEtag) { // update
             // check the old etag (in case restore the old document)
             return optimisticCheckEtag(
-                    cs,
-                    mcoll,
-                    shardKeys,
-                    oldDocument,
-                    newEtag,
-                    requestEtag,
-                    HttpStatus.SC_OK);
+                cs,
+                mcoll,
+                shardKeys,
+                oldDocument,
+                newEtag,
+                requestEtag,
+                HttpStatus.SC_OK);
         } else if (oldDocument != null) {  // update
             var query = eq("_id", documentId);
-            BsonDocument newDocument = cs == null
-                    ? mcoll.find(query).first()
-                    : mcoll.find(cs, query).first();
+            var newDocument = cs == null ? mcoll.find(query).first() : mcoll.find(cs, query).first();
 
-            return new OperationResult(
-                    updateResult.getHttpCode() > 0
-                    ? updateResult.getHttpCode()
-                    : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+            return new OperationResult(updateResult.getHttpCode() > 0
+                ? updateResult.getHttpCode()
+                : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
         } else { // Attempted an insert of a new doc.
-            return new OperationResult(
-                    updateResult.getHttpCode() > 0
-                    ? updateResult.getHttpCode()
-                    : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
+            return new OperationResult(updateResult.getHttpCode() > 0
+                ? updateResult.getHttpCode()
+                : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
         }
     }
 
@@ -160,9 +155,7 @@ public class FileMetadataDAO implements FileMetadataRepository {
             final Object newEtag,
             final String requestEtag,
             final int httpStatusIfOk) {
-
-        BsonValue oldEtag = oldDocument.get("metadata", new BsonDocument())
-                .asDocument().get("_etag");
+        var oldEtag = oldDocument.get("metadata", new BsonDocument()).asDocument().get("_etag");
 
         if (oldEtag != null && requestEtag == null) {
             // oops, we need to restore old document
@@ -175,8 +168,7 @@ public class FileMetadataDAO implements FileMetadataRepository {
                     newEtag,
                     "metadata._etag");
 
-            return new OperationResult(
-                    HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
+            return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
         }
 
         BsonValue _requestEtag;
@@ -191,28 +183,23 @@ public class FileMetadataDAO implements FileMetadataRepository {
 
         if (Objects.equals(_requestEtag, oldEtag)) {
             var query = eq("_id", oldDocument.get("_id"));
-            BsonDocument newDocument = cs == null
-                    ? coll.find(query).first()
-                    : coll.find(cs, query).first();
+            var newDocument = cs == null
+                ? coll.find(query).first()
+                : coll.find(cs, query).first();
 
-            return new OperationResult(
-                    httpStatusIfOk, newEtag, oldDocument, newDocument);
+            return new OperationResult(httpStatusIfOk, newEtag, oldDocument, newDocument);
         } else {
             // oops, we need to restore old document
             DAOUtils.restoreDocument(
-                    cs,
-                    coll,
-                    oldDocument.get("_id"),
-                    shardKeys,
-                    oldDocument,
-                    newEtag,
-                    "metadata._etag");
+                cs,
+                coll,
+                oldDocument.get("_id"),
+                shardKeys,
+                oldDocument,
+                newEtag,
+                "metadata._etag");
 
-            return new OperationResult(
-                    HttpStatus.SC_PRECONDITION_FAILED,
-                    oldEtag,
-                    oldDocument,
-                    null);
+            return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag, oldDocument, null);
         }
     }
 }

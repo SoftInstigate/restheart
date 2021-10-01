@@ -103,25 +103,17 @@ public class GridFsDAO implements GridFsRepository {
         try (InputStream sourceStream = new FileInputStream(filePath.toFile())) {
 
             if (metadata.get("_id") == null) {
-                GridFSUploadOptions options = new GridFSUploadOptions()
-                        .metadata(Document.parse(metadata.toJson()));
+                var options = new GridFSUploadOptions().metadata(Document.parse(metadata.toJson()));
 
                 ObjectId _id = gridFSBucket.uploadFromStream(filename, sourceStream, options);
 
-                return new OperationResult(SC_CREATED,
-                        new BsonObjectId(etag),
-                        new BsonObjectId(_id));
+                return new OperationResult(SC_CREATED, new BsonObjectId(etag), new BsonObjectId(_id));
             } else {
-                BsonValue _id = metadata.remove("_id");
+                var _id = metadata.remove("_id");
 
-                GridFSUploadOptions options = new GridFSUploadOptions()
-                        .metadata(Document.parse(metadata.toJson()));
+                var options = new GridFSUploadOptions().metadata(Document.parse(metadata.toJson()));
 
-                gridFSBucket.uploadFromStream(
-                        _id,
-                        filename,
-                        sourceStream,
-                        options);
+                gridFSBucket.uploadFromStream(_id, filename, sourceStream, options);
 
                 return new OperationResult(SC_CREATED, new BsonObjectId(etag), _id);
             }
@@ -144,16 +136,16 @@ public class GridFsDAO implements GridFsRepository {
      */
     @Override
     public OperationResult upsertFile(final Database db,
-            final String dbName,
-            final String bucketName,
-            final BsonDocument metadata,
-            final Path filePath,
-            final BsonValue fileId,
-            final BsonDocument filter,
-            final String requestEtag,
-            final boolean checkEtag) throws IOException {
+        final String dbName,
+        final String bucketName,
+        final BsonDocument metadata,
+        final Path filePath,
+        final BsonValue fileId,
+        final BsonDocument filter,
+        final String requestEtag,
+        final boolean checkEtag) throws IOException {
 
-        OperationResult deletionResult = deleteFile(db, dbName, bucketName, fileId, filter, requestEtag, checkEtag);
+        var deletionResult = deleteFile(db, dbName, bucketName, fileId, filter, requestEtag, checkEtag);
 
         //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7
         final boolean deleteOperationWasSuccessful = deletionResult.getHttpCode() == SC_NO_CONTENT || deletionResult.getHttpCode() == SC_OK;
@@ -161,7 +153,7 @@ public class GridFsDAO implements GridFsRepository {
         final boolean fileExisted = !fileDidntExist;
 
         if (deleteOperationWasSuccessful || fileDidntExist) {
-            OperationResult creationResult = createFile(db, dbName, bucketName, metadata, filePath);
+            var creationResult = createFile(db, dbName, bucketName, metadata, filePath);
 
             //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5
             final boolean creationOperationWasSuccessful = SC_CREATED == creationResult.getHttpCode() || SC_OK == creationResult.getHttpCode();
@@ -213,13 +205,13 @@ public class GridFsDAO implements GridFsRepository {
      */
     @Override
     public OperationResult deleteFile(
-            final Database db,
-            final String dbName,
-            final String bucketName,
-            final BsonValue fileId,
-            final BsonDocument filter,
-            final String requestEtag,
-            final boolean checkEtag) {
+        final Database db,
+        final String dbName,
+        final String bucketName,
+        final BsonValue fileId,
+        final BsonDocument filter,
+        final String requestEtag,
+        final boolean checkEtag) {
 
         final var bucket = extractBucketName(bucketName);
 
@@ -276,11 +268,8 @@ public class GridFsDAO implements GridFsRepository {
      * @param bucketName
      */
     @Override
-    public void deleteChunksCollection(final Database db,
-            final String dbName,
-            final String bucketName
-    ) {
-        String chunksCollName = extractBucketName(bucketName).concat(".chunks");
+    public void deleteChunksCollection(final Database db, final String dbName, final String bucketName) {
+        var chunksCollName = extractBucketName(bucketName).concat(".chunks");
         collectionDAO.getCollection(dbName, chunksCollName).drop();
     }
 }

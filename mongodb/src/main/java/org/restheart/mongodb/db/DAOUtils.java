@@ -20,7 +20,6 @@
  */
 package org.restheart.mongodb.db;
 
-import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.BulkWriteOptions;
@@ -34,7 +33,6 @@ import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
-import com.mongodb.client.result.UpdateResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -143,23 +141,23 @@ public class DAOUtils {
      * @return the old document
      */
     public static OperationResult updateMetadata(
-            final ClientSession cs,
-            final MongoCollection<BsonDocument> coll,
-            final Object documentId,
-            final BsonDocument filter,
-            final BsonDocument shardKeys,
-            final BsonDocument data,
-            final boolean patching) {
+        final ClientSession cs,
+        final MongoCollection<BsonDocument> coll,
+        final Object documentId,
+        final BsonDocument filter,
+        final BsonDocument shardKeys,
+        final BsonDocument data,
+        final boolean patching) {
         return writeDocument(
-                cs,
-                coll,
-                documentId,
-                filter,
-                shardKeys,
-                data,
-                false,
-                patching,
-                WRITE_MODE.UPSERT);
+            cs,
+            coll,
+            documentId,
+            filter,
+            shardKeys,
+            data,
+            false,
+            patching,
+            WRITE_MODE.UPSERT);
     }
 
     /**
@@ -176,24 +174,24 @@ public class DAOUtils {
      * @return the old document
      */
     public static OperationResult writeDocument(
-            final ClientSession cs,
-            final MongoCollection<BsonDocument> coll,
-            final Object documentId,
-            final BsonDocument filter,
-            final BsonDocument shardKeys,
-            final BsonDocument data,
-            final boolean replace,
-            final WRITE_MODE writeMode) {
+        final ClientSession cs,
+        final MongoCollection<BsonDocument> coll,
+        final Object documentId,
+        final BsonDocument filter,
+        final BsonDocument shardKeys,
+        final BsonDocument data,
+        final boolean replace,
+        final WRITE_MODE writeMode) {
         return writeDocument(
-                cs,
-                coll,
-                documentId,
-                filter,
-                shardKeys,
-                data,
-                replace,
-                false,
-                writeMode);
+            cs,
+            coll,
+            documentId,
+            filter,
+            shardKeys,
+            data,
+            replace,
+            false,
+            writeMode);
     }
 
     /**
@@ -214,22 +212,22 @@ public class DAOUtils {
      */
     @SuppressWarnings("rawtypes")
     public static OperationResult writeDocument(
-            final ClientSession cs,
-            final MongoCollection<BsonDocument> coll,
-            final Object documentId,
-            final BsonDocument filter,
-            final BsonDocument shardKeys,
-            final BsonDocument data,
-            final boolean replace,
-            final boolean deepPatching,
-            final WRITE_MODE writeMode) {
+        final ClientSession cs,
+        final MongoCollection<BsonDocument> coll,
+        final Object documentId,
+        final BsonDocument filter,
+        final BsonDocument shardKeys,
+        final BsonDocument data,
+        final boolean replace,
+        final boolean deepPatching,
+        final WRITE_MODE writeMode) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
         Objects.requireNonNull(writeMode);
 
         Bson query;
 
-        boolean idPresent = true;
+        var idPresent = true;
 
         if (documentId instanceof Optional && !((Optional) documentId).isPresent()) {
             query = IMPOSSIBLE_CONDITION;
@@ -249,9 +247,7 @@ public class DAOUtils {
         BsonDocument oldDocument;
 
         if (idPresent) {
-            oldDocument = cs == null
-                    ? coll.find(query).first()
-                    : coll.find(cs, query).first();
+            oldDocument = cs == null ? coll.find(query).first() : coll.find(cs, query).first();
 
             // if document not exits and not-update request => fail request with 404
             if (writeMode == WRITE_MODE.UPDATE && oldDocument == null) {
@@ -270,10 +266,11 @@ public class DAOUtils {
         if (writeMode == WRITE_MODE.INSERT) {
             // don't allow $ prefixed operators as key values
             if (BsonUtils.containsUpdateOperators(data, true)) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
+                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument);
             }
 
             BsonDocument newDocument;
+
             try {
                 resolveCurrentDateOperator(data);
 
@@ -287,11 +284,9 @@ public class DAOUtils {
                     insertedQuery = and(insertedQuery, shardKeys);
                 }
 
-                newDocument = cs == null
-                    ? coll.find(insertedQuery).first()
-                    : coll.find(cs, insertedQuery).first();
+                newDocument = cs == null ? coll.find(insertedQuery).first() : coll.find(cs, insertedQuery).first();
             } catch (IllegalArgumentException iae) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
+                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
             }
 
             return new OperationResult(-1, oldDocument, newDocument);
@@ -303,18 +298,12 @@ public class DAOUtils {
                 }
 
                 newDocument = cs == null
-                        ? coll.findOneAndReplace(query,
-                                getReplaceDocument(data),
-                                writeMode == WRITE_MODE.UPSERT
-                                    ? FOR_AFTER_UPSERT_OPS
-                                    : FOR_AFTER_NOT_UPSERT_OPS)
-                        : coll.findOneAndReplace(cs, query,
-                                getReplaceDocument(data),
-                                writeMode == WRITE_MODE.UPSERT
-                                    ? FOR_AFTER_UPSERT_OPS
-                                    : FOR_AFTER_NOT_UPSERT_OPS);
+                    ? coll.findOneAndReplace(query, getReplaceDocument(data),
+                        writeMode == WRITE_MODE.UPSERT ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS)
+                    : coll.findOneAndReplace(cs, query, getReplaceDocument(data),
+                        writeMode == WRITE_MODE.UPSERT ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS);
             } catch (IllegalArgumentException iae) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
+                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
             }
 
             return new OperationResult(-1, oldDocument, newDocument);
@@ -323,14 +312,12 @@ public class DAOUtils {
 
             try {
                 newDocument = cs == null
-                        ? coll.findOneAndUpdate(query,
-                                getUpdateDocument(data, deepPatching),
-                                writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS)
-                        : coll.findOneAndUpdate(cs, query,
-                                getUpdateDocument(data, deepPatching),
-                                writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
+                    ? coll.findOneAndUpdate(query, getUpdateDocument(data, deepPatching),
+                        writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS)
+                    : coll.findOneAndUpdate(cs, query, getUpdateDocument(data, deepPatching),
+                        writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
             } catch (IllegalArgumentException iae) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, null);
+                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
             }
 
             return new OperationResult(-1, oldDocument, newDocument);
@@ -349,13 +336,13 @@ public class DAOUtils {
      * @return
      */
     public static boolean restoreDocument(
-            final ClientSession cs,
-            final MongoCollection<BsonDocument> coll,
-            final Object documentId,
-            final BsonDocument shardKeys,
-            final BsonDocument data,
-            final Object etag,
-            final String etagLocation) {
+        final ClientSession cs,
+        final MongoCollection<BsonDocument> coll,
+        final Object documentId,
+        final BsonDocument shardKeys,
+        final BsonDocument data,
+        final Object etag,
+        final String etagLocation) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documentId);
         Objects.requireNonNull(data);
@@ -372,9 +359,7 @@ public class DAOUtils {
             query = and(query, shardKeys);
         }
 
-        UpdateResult result = cs == null
-                ? coll.replaceOne(query, data, R_NOT_UPSERT_OPS)
-                : coll.replaceOne(cs, query, data, R_NOT_UPSERT_OPS);
+        var result = cs == null ? coll.replaceOne(query, data, R_NOT_UPSERT_OPS) : coll.replaceOne(cs, query, data, R_NOT_UPSERT_OPS);
 
         return result.getModifiedCount() == 1;
     }
@@ -390,28 +375,26 @@ public class DAOUtils {
      * @return
      */
     public static BulkOperationResult bulkWriteDocuments(
-            final ClientSession cs,
-            final MongoCollection<BsonDocument> coll,
-            final BsonArray documents,
-            final BsonDocument filter,
-            final BsonDocument shardKeys,
-            final WRITE_MODE writeMode) {
+        final ClientSession cs,
+        final MongoCollection<BsonDocument> coll,
+        final BsonArray documents,
+        final BsonDocument filter,
+        final BsonDocument shardKeys,
+        final WRITE_MODE writeMode) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documents);
 
-        ObjectId newEtag = new ObjectId();
+        var newEtag = new ObjectId();
 
-        List<WriteModel<BsonDocument>> wm = getBulkWriteModel(
-                coll,
-                documents,
-                filter,
-                shardKeys,
-                newEtag,
-                writeMode);
+        var wm = getBulkWriteModel(
+            coll,
+            documents,
+            filter,
+            shardKeys,
+            newEtag,
+            writeMode);
 
-        BulkWriteResult result = cs == null
-                ? coll.bulkWrite(wm, BWO_NOT_ORDERED)
-                : coll.bulkWrite(cs, wm, BWO_NOT_ORDERED);
+        var result = cs == null ? coll.bulkWrite(wm, BWO_NOT_ORDERED) : coll.bulkWrite(cs, wm, BWO_NOT_ORDERED);
 
         return new BulkOperationResult(HttpStatus.SC_OK, newEtag, result);
     }
@@ -435,55 +418,46 @@ public class DAOUtils {
      * @return
      */
     static List<WriteModel<BsonDocument>> getBulkWriteModel(
-            final MongoCollection<BsonDocument> mcoll,
-            final BsonArray documents,
-            final BsonDocument filter,
-            final BsonDocument shardKeys,
-            final ObjectId etag,
-            final WRITE_MODE writeMode) {
+        final MongoCollection<BsonDocument> mcoll,
+        final BsonArray documents,
+        final BsonDocument filter,
+        final BsonDocument shardKeys,
+        final ObjectId etag,
+        final WRITE_MODE writeMode) {
         Objects.requireNonNull(mcoll);
         Objects.requireNonNull(documents);
 
-        List<WriteModel<BsonDocument>> updates = new ArrayList<>();
+        var updates = new ArrayList<WriteModel<BsonDocument>>();
 
         documents.stream().filter(d -> d.isDocument())
-                .map(d -> d.asDocument())
-                .forEach(document -> {
-                    // generate new id if missing, will be an insert
-                    if (!document.containsKey("_id")) {
-                        document.put("_id", new BsonObjectId(new ObjectId()));
-                    }
+            .map(d -> d.asDocument())
+            .forEach(document -> {
+                // generate new id if missing, will be an insert
+                if (!document.containsKey("_id")) {
+                    document.put("_id", new BsonObjectId(new ObjectId()));
+                }
 
-                    // add the _etag
-                    document.put("_etag", new BsonObjectId(etag));
+                // add the _etag
+                document.put("_etag", new BsonObjectId(etag));
 
-                    var _filter = eq("_id", document.get("_id"));
+                var _filter = eq("_id", document.get("_id"));
 
-                    if (shardKeys != null) {
-                        _filter = and(_filter, shardKeys);
-                    }
+                if (shardKeys != null) {
+                    _filter = and(_filter, shardKeys);
+                }
 
-                    if (filter != null && !filter.isEmpty()) {
-                        _filter = and(_filter, filter);
-                    }
+                if (filter != null && !filter.isEmpty()) {
+                    _filter = and(_filter, filter);
+                }
 
-                    if (writeMode == WRITE_MODE.UPSERT) {
-                        updates.add(new UpdateOneModel<>(
-                                _filter,
-                                getUpdateDocument(document),
-                                new UpdateOptions().upsert(true)
-                        ));
-                    } else if (writeMode == WRITE_MODE.UPDATE) {
-                        updates.add(new UpdateOneModel<>(
-                            _filter,
-                            getUpdateDocument(document),
-                            new UpdateOptions().upsert(false)
-                        ));
-
-                    } else if (writeMode == WRITE_MODE.INSERT) {
-                        updates.add(new InsertOneModel<>(document));
-                    }
-                });
+                if (writeMode == WRITE_MODE.UPSERT) {
+                    updates.add(new UpdateOneModel<>(_filter, getUpdateDocument(document), new UpdateOptions().upsert(true)));
+                } else if (writeMode == WRITE_MODE.UPDATE) {
+                    updates.add(new UpdateOneModel<>(_filter, getUpdateDocument(document), new UpdateOptions().upsert(false)));
+                } else if (writeMode == WRITE_MODE.INSERT) {
+                    updates.add(new InsertOneModel<>(document));
+                }
+            });
 
         return updates;
     }
@@ -525,31 +499,34 @@ public class DAOUtils {
     static void resolveCurrentDateOperator(BsonDocument doc) throws IllegalArgumentException {
         var cd = doc.remove("$currentDate");
 
-        if (cd == null || !cd.isDocument()) {
+        if (cd == null) {
             return;
+        }
+
+        if (!cd.isDocument()) {
+            throw new IllegalArgumentException("wrong $currentDate operator");
         }
 
         long currentTimeMillis = System.currentTimeMillis();
 
         cd.asDocument()
-                .entrySet()
-                .stream()
-                .forEach(entry -> {
-                    if (BsonBoolean.TRUE.equals(entry.getValue())) {
+            .entrySet()
+            .stream()
+            .forEach(entry -> {
+                if (BsonBoolean.TRUE.equals(entry.getValue())) {
+                    doc.put(entry.getKey(), new BsonDateTime(currentTimeMillis));
+                } else if (entry.getValue().isDocument() && entry.getValue().asDocument().containsKey("$type")) {
+                    if (new BsonString("date").equals(entry.getValue().asDocument().get("$type"))) {
                         doc.put(entry.getKey(), new BsonDateTime(currentTimeMillis));
-                    } else if (entry.getValue().isDocument()
-                            && entry.getValue().asDocument().containsKey("$type")) {
-                        if (new BsonString("date").equals(entry.getValue().asDocument().get("$type"))) {
-                            doc.put(entry.getKey(), new BsonDateTime(currentTimeMillis));
-                        } else if (new BsonString("timestamp").equals(entry.getValue().asDocument().get("$type"))) {
-                            doc.put(entry.getKey(), new BsonTimestamp(currentTimeMillis));
-                        } else {
-                            throw new IllegalArgumentException("wrong $currentDate operator");
-                        }
+                    } else if (new BsonString("timestamp").equals(entry.getValue().asDocument().get("$type"))) {
+                        doc.put(entry.getKey(), new BsonTimestamp(currentTimeMillis));
                     } else {
                         throw new IllegalArgumentException("wrong $currentDate operator");
                     }
-                });
+                } else {
+                    throw new IllegalArgumentException("wrong $currentDate operator");
+                }
+            });
     }
 
     /**
@@ -559,24 +536,22 @@ public class DAOUtils {
      * notation
      * @return the document for update operation, with proper update operators
      */
-    static BsonDocument getUpdateDocument(
-            final BsonDocument data,
-            final boolean flatten) {
-        BsonDocument ret = new BsonDocument();
+    static BsonDocument getUpdateDocument(final BsonDocument data, final boolean flatten) {
+        var ret = new BsonDocument();
 
         // add other update operators
         data.keySet()
-                .stream()
-                .filter(key -> BsonUtils.isUpdateOperator(key))
-                .forEach(key -> ret.put(key, data.get(key)));
+            .stream()
+            .filter(key -> BsonUtils.isUpdateOperator(key))
+            .forEach(key -> ret.put(key, data.get(key)));
 
         // add properties to $set update operator
         List<String> keys;
 
         keys = data.keySet()
-                .stream()
-                .filter(key -> !BsonUtils.isUpdateOperator(key))
-                .collect(Collectors.toList());
+            .stream()
+            .filter(key -> !BsonUtils.isUpdateOperator(key))
+            .collect(Collectors.toList());
 
         if (keys != null && !keys.isEmpty()) {
             BsonDocument set;

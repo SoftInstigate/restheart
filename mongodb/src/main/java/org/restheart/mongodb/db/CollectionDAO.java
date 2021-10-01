@@ -374,8 +374,7 @@ class CollectionDAO {
                     dcontent,
                     true,
                     WRITE_MODE.UPSERT);
-            return new OperationResult(
-                    ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK,
+            return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK,
                     newEtag,
                     ret.getOldData(),
                     ret.getNewData());
