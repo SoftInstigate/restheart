@@ -22,6 +22,9 @@ package org.restheart.mongodb.utils;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+
+import com.mongodb.MongoException;
+
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.Document;
@@ -166,9 +169,40 @@ public class ResponseHelper {
             case 13297:
                 // db already exists with different case
                 return HttpStatus.SC_CONFLICT;
+            case 51091:
+                // Query failed with error code 51091 and error message 'Regular expression is invalid: unmatched parentheses'
+                return HttpStatus.SC_BAD_REQUEST;
             default:
                 // Other
                 return HttpStatus.SC_INTERNAL_SERVER_ERROR;
+        }
+    }
+
+    /**
+     *
+     * @param me the MongoException
+     * @return
+     */
+    public static String getMessageFromMongoException(MongoException me) {
+        var code = me.getCode();
+
+        switch(code) {
+            // e.g. Query failed....unknown operator: $or
+            case 2:
+            // Query failed with error code 51091 and error message 'Regular expression is invalid: unmatched parentheses'
+            case 51091:
+                var msg = me.getMessage();
+
+                var b = msg.indexOf("error message '");
+                var e = msg.indexOf("' on server");
+
+                if (b >= 0 && e >= 0) {
+                    return "Invalid filter: " + msg.substring(b+15, e);
+                } else {
+                    return msg;
+                }
+            default:
+             return getMessageFromErrorCode(code);
         }
     }
 

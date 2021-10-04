@@ -92,20 +92,11 @@ public class ErrorHandler implements HttpHandler {
         } catch (MongoException mce) {
             int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
 
-            LOGGER.error("Error handling the request", mce);
-
-            if (httpCode >= 500
-                    && mce.getMessage() != null
-                    && !mce.getMessage().trim().isEmpty()) {
-
-                response.setInError(
-                        httpCode,
-                        mce.getMessage());
-
+            if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().trim().isEmpty()) {
+                LOGGER.error("Error handling the request", mce);
+                response.setInError(httpCode, mce.getMessage());
             } else {
-                response.setInError(
-                        httpCode,
-                        ResponseHelper.getMessageFromErrorCode(mce.getCode()));
+                response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
             }
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
