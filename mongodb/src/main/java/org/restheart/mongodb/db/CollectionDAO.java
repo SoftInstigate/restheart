@@ -99,9 +99,7 @@ class CollectionDAO {
      * account the filters in case)
      */
     public long getCollectionSize(final ClientSession cs, final MongoCollection<BsonDocument> coll, final BsonDocument filters) {
-        return cs == null
-                ? coll.countDocuments(filters)
-                : coll.countDocuments(cs, filters);
+        return cs == null ? coll.countDocuments(filters) : coll.countDocuments(cs, filters);
     }
 
     /**
@@ -168,8 +166,8 @@ class CollectionDAO {
         } else {
             int alreadySkipped;
 
-            cursor = _cursor.getFindIterable();
-            alreadySkipped = _cursor.getAlreadySkipped();
+            cursor = _cursor.findIterable();
+            alreadySkipped = _cursor.alreadySkipped();
 
             long startSkipping = 0;
             int cursorSkips = alreadySkipped;
