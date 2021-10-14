@@ -38,7 +38,7 @@ public class SimpleServerSessionPool extends ServerSessionPool {
      * @param sid
      */
     public SimpleServerSessionPool(Cluster cluster, UUID sid) {
-        super(cluster);
+        super(cluster, null);
         this.sid = sid;
     }
 

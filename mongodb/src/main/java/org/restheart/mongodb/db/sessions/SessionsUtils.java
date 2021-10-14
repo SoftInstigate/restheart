@@ -22,12 +22,10 @@ package org.restheart.mongodb.db.sessions;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
 import com.mongodb.MongoClient;
-import com.mongodb.client.internal.MongoClientDelegate;
+import com.mongodb.client.internal.OperationExecutor;
 import com.mongodb.internal.connection.Cluster;
 import com.mongodb.internal.session.ServerSessionPool;
-
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,12 +38,6 @@ public class SessionsUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(SessionsUtils.class);
 
     private static final MongoClient MCLIENT = MongoClientSingleton.getInstance().getClient();
-
-    private static final MongoClientDelegate DELEGATE;
-
-    static {
-        DELEGATE = new MongoClientDelegate(getCluster(), null, MCLIENT, null);
-    }
 
     /**
      *
@@ -85,11 +77,15 @@ public class SessionsUtils {
         }
     }
 
-    /**
-     *
-     * @return
-     */
-    public static MongoClientDelegate getMongoClientDelegate() {
-        return DELEGATE;
+    public static OperationExecutor getOperationExecutor() {
+        try {
+            var mclient = MongoClientSingleton.getInstance().getClient();
+            var getOperationExecutor = mclient.getClass().getDeclaredMethod("getOperationExecutor");
+
+            getOperationExecutor.setAccessible(true);
+            return (OperationExecutor) getOperationExecutor.invoke(mclient);
+        } catch(Throwable t) {
+            throw new RuntimeException("could not instantiate OperationExecutor", t);
+        }
     }
 }

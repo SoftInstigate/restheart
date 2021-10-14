@@ -57,21 +57,15 @@ public class TxnsActivator implements Initializer {
     private void enableTxns() {
         var dispatcher = RequestDispatcherHandler.getInstance();
 
-        ClientSessionInjector.getInstance()
-                .setClientSessionFactory(TxnClientSessionFactory
-                        .getInstance());
+        ClientSessionInjector.getInstance().setClientSessionFactory(TxnClientSessionFactory.getInstance());
 
         // *** Txns handlers
-        dispatcher.putHandler(TYPE.TRANSACTIONS, METHOD.POST,
-                new PostTxnsHandler());
+        dispatcher.putHandler(TYPE.TRANSACTIONS, METHOD.POST, new PostTxnsHandler());
 
-        dispatcher.putHandler(TYPE.TRANSACTIONS, METHOD.GET,
-                new GetTxnHandler());
+        dispatcher.putHandler(TYPE.TRANSACTIONS, METHOD.GET, new GetTxnHandler());
 
-        dispatcher.putHandler(TYPE.TRANSACTION, METHOD.DELETE,
-                new DeleteTxnHandler());
+        dispatcher.putHandler(TYPE.TRANSACTION, METHOD.DELETE, new DeleteTxnHandler());
 
-        dispatcher.putHandler(TYPE.TRANSACTION, METHOD.PATCH,
-                new PatchTxnHandler());
+        dispatcher.putHandler(TYPE.TRANSACTION, METHOD.PATCH, new PatchTxnHandler());
     }
 }

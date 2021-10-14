@@ -25,7 +25,6 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 import com.mongodb.MongoClient;
 
-import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.restheart.exchange.Request;

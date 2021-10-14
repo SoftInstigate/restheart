@@ -45,8 +45,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ClientSessionFactory {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(ClientSessionFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientSessionFactory.class);
 
     /**
      *
@@ -57,8 +56,7 @@ public class ClientSessionFactory {
     }
 
     private static class ClientSessionFactoryHolder {
-        private static final ClientSessionFactory INSTANCE
-                = new ClientSessionFactory();
+        private static final ClientSessionFactory INSTANCE = new ClientSessionFactory();
     }
 
     /**
@@ -67,12 +65,7 @@ public class ClientSessionFactory {
     protected ClientSessionFactory() {
     }
 
-    /**
-     *
-     */
-    protected MongoClient mClient = MongoClientSingleton
-            .getInstance()
-            .getClient();
+    protected MongoClient mClient = MongoClientSingleton.getInstance().getClient();
 
     /**
      *
@@ -84,14 +77,12 @@ public class ClientSessionFactory {
     }
 
     private BsonBinary createServerSessionIdentifier(UUID sid) {
-        UuidCodec uuidCodec = new UuidCodec(UuidRepresentation.STANDARD);
-        BsonDocument holder = new BsonDocument();
-        BsonDocumentWriter bsonDocumentWriter = new BsonDocumentWriter(holder);
+        var uuidCodec = new UuidCodec(UuidRepresentation.STANDARD);
+        var holder = new BsonDocument();
+        var bsonDocumentWriter = new BsonDocumentWriter(holder);
         bsonDocumentWriter.writeStartDocument();
         bsonDocumentWriter.writeName("id");
-        uuidCodec.encode(bsonDocumentWriter,
-                sid,
-                EncoderContext.builder().build());
+        uuidCodec.encode(bsonDocumentWriter, sid, EncoderContext.builder().build());
         bsonDocumentWriter.writeEndDocument();
         return holder.getBinary("id");
     }
@@ -102,10 +93,8 @@ public class ClientSessionFactory {
      * @return
      * @throws IllegalArgumentException
      */
-    public ClientSessionImpl getClientSession(HttpServerExchange exchange)
-            throws IllegalArgumentException {
-        String _sid = exchange.getQueryParameters()
-                .get(CLIENT_SESSION_KEY).getFirst();
+    public ClientSessionImpl getClientSession(HttpServerExchange exchange) throws IllegalArgumentException {
+        var _sid = exchange.getQueryParameters().get(CLIENT_SESSION_KEY).getFirst();
 
         UUID sid;
 
@@ -130,7 +119,7 @@ public class ClientSessionFactory {
     public ClientSessionImpl getClientSession(UUID sid) {
         var options = Sid.getSessionOptions(sid);
 
-        ClientSessionOptions cso = ClientSessionOptions
+        var cso = ClientSessionOptions
                 .builder()
                 .causallyConsistent(options.isCausallyConsistent())
                 .build();
@@ -152,17 +141,11 @@ public class ClientSessionFactory {
         notNull("writeConcern", writeConcern);
         notNull("readPreference", readPreference);
 
-        ClientSessionOptions mergedOptions = ClientSessionOptions
+        var mergedOptions = ClientSessionOptions
                 .builder(options)
                 .causallyConsistent(true)
                 .build();
 
-        ClientSessionImpl cs = new ClientSessionImpl(
-                new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
-                mClient,
-                mergedOptions,
-                SessionsUtils.getMongoClientDelegate());
-
-        return cs;
+        return new ClientSessionImpl(new SimpleServerSessionPool(SessionsUtils.getCluster(), sid), mClient, mergedOptions);
     }
 }

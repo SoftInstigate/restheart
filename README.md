@@ -10,7 +10,7 @@
 
 RESTHeart is an open-source __runtime__ and a low-code __SDK for Microservices__ with declarative security and instant Data APIs on __MongoDB__ or any compatible database (e.g. Percona Server for MongoDB, AWS DocumentDB and Azure Cosmos DB). It immediately exposes all of MongoDB’s capabilities through a comprehensive set of __REST__, __GraphQL__ and __WebSocket__ APIs.
 
-RESTHeart embeds [Undertow](https://undertow.io), a flexible performant web server written in Java, providing both blocking and non-blocking API’s based on NIO. 
+RESTHeart embeds [Undertow](https://undertow.io), a flexible performant web server written in Java, providing both blocking and non-blocking API’s based on NIO.
 
 Developers can save at least 80% of backend code to manage security and serve content to Mobile Apps and Angular, React, Vue or other SPA frameworks.
 
@@ -30,11 +30,11 @@ To extend the default behavior you can implement the following interfaces:
 - __Interceptor__ - to snoop and modify requests and responses "on the fly", at different stages of the HTTP lifecycle.
 - __Initializer__ - to execute any kind of initialization logic at system startup time.
 
-The [GraphQL](https://restheart.org/docs/graphql/) default plugin works side by side with the already existing REST endpoints to get a managed, unified GraphQL API for modern applications. 
+The [GraphQL](https://restheart.org/docs/graphql/) default plugin works side by side with the already existing REST endpoints to get a managed, unified GraphQL API for modern applications.
 
 The embedded WebSocket server can expose MongoDB's [Change Streams](https://docs.mongodb.com/manual/changeStreams/), which allow applications to access real-time data changes.
 
-For all these reasons, __RESTHeart is the perfect "low code", self-contanined backend for modern Web and Mobile apps__, designed to radically simplify development and deployment.
+For all these reasons, __RESTHeart is the perfect "low code", self-contained backend for modern Web and Mobile apps__, designed to radically simplify development and deployment.
 
 In summary, RESTHeart provides:
 
@@ -52,7 +52,7 @@ Find setup instructions at [Setup](https://restheart.org/docs/setup/) documentat
 
 ## Build from source
 
-__NOTE__: Building RESTHeart 6+ requires JDK 16!
+__NOTE__: Building RESTHeart 6+ requires at least JDK 16! Suggested is JDK 17 LTS
 
 ```bash
 $ mvn clean package

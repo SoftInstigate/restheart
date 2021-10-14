@@ -704,7 +704,6 @@
 },
 {
   "name":"java.lang.reflect.AccessibleObject",
-  "fields":[{"name":"override"}],
   "methods":[{"name":"trySetAccessible","parameterTypes":[] }]
 },
 {

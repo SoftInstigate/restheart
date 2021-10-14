@@ -22,7 +22,6 @@ package org.restheart.mongodb.db;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.ListIndexesIterable;
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.IndexOptions;
 import java.util.ArrayList;
@@ -30,8 +29,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.bson.BsonValue;
-import org.bson.Document;
 import org.bson.conversions.Bson;
 import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import org.restheart.utils.HttpStatus;
@@ -70,21 +67,17 @@ class IndexDAO {
             final ClientSession cs,
             final String dbName,
             final String collName) {
-        List<BsonDocument> ret = new ArrayList<>();
+        var ret = new ArrayList<BsonDocument>();
 
-        ListIndexesIterable<Document> indexes = cs == null
-                ? collectionDAO.getCollection(dbName, collName)
-                        .listIndexes()
-                : collectionDAO.getCollection(dbName, collName)
-                        .listIndexes(cs);
+        var indexes = cs == null
+                ? collectionDAO.getCollection(dbName, collName).listIndexes()
+                : collectionDAO.getCollection(dbName, collName).listIndexes(cs);
 
         indexes.iterator().forEachRemaining(
                 i -> {
-                    BsonDocument bi = BsonDocument.parse(i.toJson());
-
-                    BsonValue name = bi.remove("name");
+                    var bi = BsonDocument.parse(i.toJson());
+                    var name = bi.remove("name");
                     bi.put("_id", name);
-
                     ret.add(bi);
                 });
 
@@ -107,19 +100,15 @@ class IndexDAO {
             final BsonDocument options) {
         if (options == null) {
             if (cs == null) {
-                collectionDAO.getCollection(dbName, collection)
-                        .createIndex(keys);
+                collectionDAO.getCollection(dbName, collection).createIndex(keys);
             } else {
-                collectionDAO.getCollection(dbName, collection)
-                        .createIndex(cs, keys);
+                collectionDAO.getCollection(dbName, collection).createIndex(cs, keys);
             }
         } else {
             if (cs == null) {
-                collectionDAO.getCollection(dbName, collection)
-                        .createIndex(keys, getIndexOptions(options));
+                collectionDAO.getCollection(dbName, collection).createIndex(keys, getIndexOptions(options));
             } else {
-                collectionDAO.getCollection(dbName, collection)
-                        .createIndex(cs, keys, getIndexOptions(options));
+                collectionDAO.getCollection(dbName, collection).createIndex(cs, keys, getIndexOptions(options));
             }
         }
     }
@@ -138,133 +127,100 @@ class IndexDAO {
             final String collection,
             final String indexId) {
         if (cs == null) {
-            collectionDAO.getCollection(dbName, collection)
-                    .dropIndex(indexId);
+            collectionDAO.getCollection(dbName, collection).dropIndex(indexId);
         } else {
-            collectionDAO.getCollection(dbName, collection)
-                    .dropIndex(cs, indexId);
+            collectionDAO.getCollection(dbName, collection).dropIndex(cs, indexId);
         }
 
         return HttpStatus.SC_NO_CONTENT;
     }
 
+    @SuppressWarnings("deprecation")
     IndexOptions getIndexOptions(final BsonDocument options) {
-        IndexOptions ret = new IndexOptions();
+        var ret = new IndexOptions();
 
         //***Options for All Index Types
         //name  string
-        if (options.containsKey("name")
-                && options.get("name").isString()) {
+        if (options.containsKey("name") && options.get("name").isString()) {
             ret.name(options.get("name").asString().getValue());
         }
 
         //background    boolean
-        if (options.containsKey("background")
-                && options.get("background").isBoolean()) {
+        if (options.containsKey("background") && options.get("background").isBoolean()) {
             ret.background(options.get("background").asBoolean().getValue());
         }
 
         //expireAfterSeconds    integer
-        if (options.containsKey("expireAfterSeconds")
-                && options.get("expireAfterSeconds").isInt32()) {
-            ret.expireAfter(0l + options.get("expireAfterSeconds")
-                    .asInt32().getValue(),
-                    TimeUnit.SECONDS
-            );
+        if (options.containsKey("expireAfterSeconds") && options.get("expireAfterSeconds").isInt32()) {
+            ret.expireAfter(0l + options.get("expireAfterSeconds").asInt32().getValue(), TimeUnit.SECONDS);
         }
 
         //partialFilterExpression   document
-        if (options.containsKey("partialFilterExpression")
-                && options.get("partialFilterExpression").isDocument()) {
-            ret.partialFilterExpression(options.get("partialFilterExpression")
-                    .asDocument());
+        if (options.containsKey("partialFilterExpression") && options.get("partialFilterExpression").isDocument()) {
+            ret.partialFilterExpression(options.get("partialFilterExpression").asDocument());
         }
 
         //storageEngine document
-        if (options.containsKey("storageEngine")
-                && options.get("storageEngine").isDocument()) {
-            ret.storageEngine(options.get("storageEngine")
-                    .asDocument());
+        if (options.containsKey("storageEngine") && options.get("storageEngine").isDocument()) {
+            ret.storageEngine(options.get("storageEngine").asDocument());
         }
 
         //unique   boolean
-        if (options.containsKey("unique")
-                && options.get("unique").isBoolean()) {
-            ret.unique(options.get("unique")
-                    .asBoolean().getValue());
+        if (options.containsKey("unique") && options.get("unique").isBoolean()) {
+            ret.unique(options.get("unique").asBoolean().getValue());
         }
 
         //sparse    boolean
-        if (options.containsKey("sparse")
-                && options.get("sparse").isBoolean()) {
-            ret.sparse(options.get("sparse")
-                    .asBoolean().getValue());
+        if (options.containsKey("sparse") && options.get("sparse").isBoolean()) {
+            ret.sparse(options.get("sparse").asBoolean().getValue());
         }
 
         //***Options for text Indexes
         //weights	document
-        if (options.containsKey("weights")
-                && options.get("weights").isDocument()) {
-            ret.weights(options.get("weights")
-                    .asDocument());
+        if (options.containsKey("weights") && options.get("weights").isDocument()) {
+            ret.weights(options.get("weights").asDocument());
         }
         //default_language	string
-        if (options.containsKey("default_language")
-                && options.get("default_language").isString()) {
-            ret.defaultLanguage(options.get("default_language")
-                    .asString().getValue());
+        if (options.containsKey("default_language") && options.get("default_language").isString()) {
+            ret.defaultLanguage(options.get("default_language").asString().getValue());
         }
 
         //language_override	string
-        if (options.containsKey("language_override")
-                && options.get("language_override").isString()) {
-            ret.languageOverride(options.get("language_override")
-                    .asString().getValue());
+        if (options.containsKey("language_override")&& options.get("language_override").isString()) {
+            ret.languageOverride(options.get("language_override").asString().getValue());
         }
 
         //textIndexVersion	integer
-        if (options.containsKey("textIndexVersion")
-                && options.get("textIndexVersion").isInt32()) {
-            ret.textVersion(options.get("textIndexVersion")
-                    .asInt32().getValue());
+        if (options.containsKey("textIndexVersion")&& options.get("textIndexVersion").isInt32()) {
+            ret.textVersion(options.get("textIndexVersion").asInt32().getValue());
         }
 
         //***Options for 2dsphere Indexes
         //2dsphereIndexVersion	integer
-        if (options.containsKey("2dsphereIndexVersion")
-                && options.get("2dsphereIndexVersion").isInt32()) {
-            ret.sphereVersion(options.get("2dsphereIndexVersion")
-                    .asInt32().getValue());
+        if (options.containsKey("2dsphereIndexVersion") && options.get("2dsphereIndexVersion").isInt32()) {
+            ret.sphereVersion(options.get("2dsphereIndexVersion").asInt32().getValue());
         }
 
         //***Options for 2d Indexes
         //bits	integer
-        if (options.containsKey("bits")
-                && options.get("bits").isInt32()) {
-            ret.bits(options.get("bits")
-                    .asInt32().getValue());
+        if (options.containsKey("bits")&& options.get("bits").isInt32()) {
+            ret.bits(options.get("bits").asInt32().getValue());
         }
 
         //min	number
-        if (options.containsKey("min")
-                && options.get("min").isDouble()) {
-            ret.min(options.get("min")
-                    .asDouble().getValue());
+        if (options.containsKey("min") && options.get("min").isDouble()) {
+            ret.min(options.get("min").asDouble().getValue());
         }
 
         //max	number
-        if (options.containsKey("max")
-                && options.get("max").isDouble()) {
-            ret.max(options.get("max")
-                    .asDouble().getValue());
+        if (options.containsKey("max") && options.get("max").isDouble()) {
+            ret.max(options.get("max").asDouble().getValue());
         }
 
         //***Options for geoHaystack Indexes
         //bucketSize	number
-        if (options.containsKey("bucketSize")
-                && options.get("bucketSize").isDouble()) {
-            ret.bucketSize(options.get("bucketSize")
-                    .asDouble().getValue());
+        if (options.containsKey("bucketSize")&& options.get("bucketSize").isDouble()) {
+            ret.bucketSize(options.get("bucketSize").asDouble().getValue());
         }
 
         return ret;

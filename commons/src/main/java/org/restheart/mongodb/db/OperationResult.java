@@ -32,6 +32,7 @@ public class OperationResult {
     private final BsonDocument newData;
     private final BsonDocument oldData;
     private final BsonValue newId;
+    private final Throwable cause;
 
     /**
      *
@@ -43,6 +44,7 @@ public class OperationResult {
         this.newData = null;
         this.oldData = null;
         this.newId = null;
+        this.cause = null;
     }
 
     /**
@@ -57,6 +59,7 @@ public class OperationResult {
         this.newData = newData;
         this.oldData = oldData;
         this.newId = newData == null ? null : newData.get("_id");
+        this.cause = null;
     }
 
     /**
@@ -70,6 +73,7 @@ public class OperationResult {
         this.newData = null;
         this.oldData = null;
         this.newId = null;
+        this.cause = null;
     }
 
     /**
@@ -84,6 +88,7 @@ public class OperationResult {
         this.newId = newId;
         this.newData = null;
         this.oldData = null;
+        this.cause = null;
     }
 
     /**
@@ -93,13 +98,45 @@ public class OperationResult {
      * @param oldData
      * @param newData
      */
-    public OperationResult(int httpCode, Object etag,
-            BsonDocument oldData, BsonDocument newData) {
+    public OperationResult(int httpCode, Object etag, BsonDocument oldData, BsonDocument newData) {
         this.httpCode = httpCode;
         this.etag = etag;
         this.newData = newData;
         this.oldData = oldData;
         this.newId = newData == null ? null : newData.get("_id");
+        this.cause = null;
+    }
+
+    /**
+     *
+     * @param httpCode
+     * @param etag
+     * @param oldData
+     * @param newData
+     */
+    public OperationResult(int httpCode, Object etag, BsonDocument oldData, BsonDocument newData, Throwable cause) {
+        this.httpCode = httpCode;
+        this.etag = etag;
+        this.newData = newData;
+        this.oldData = oldData;
+        this.newId = newData == null ? null : newData.get("_id");
+        this.cause = cause;
+    }
+
+    /**
+     *
+     * @param httpCode
+     * @param etag
+     * @param oldData
+     * @param newData
+     */
+    public OperationResult(int httpCode, BsonDocument oldData, Throwable cause) {
+        this.httpCode = httpCode;
+        this.etag = null;
+        this.newData = null;
+        this.oldData = oldData;
+        this.newId = null;
+        this.cause = cause;
     }
 
     /**
@@ -135,5 +172,12 @@ public class OperationResult {
      */
     public BsonValue getNewId() {
         return newId;
+    }
+
+    /**
+     * @return the cause
+     */
+    public Throwable getCause() {
+        return cause;
     }
 }

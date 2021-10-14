@@ -61,14 +61,12 @@ public class ClientSessionInjector extends PipelinedHandler {
             throw new IllegalStateException("Singleton already initialized");
         }
 
-        ClientSessionInjectorHandlerHolder.INSTANCE
-                = new ClientSessionInjector();
+        ClientSessionInjectorHandlerHolder.INSTANCE = new ClientSessionInjector();
 
         return ClientSessionInjectorHandlerHolder.INSTANCE;
     }
 
-    private ClientSessionFactory clientSessionFactory
-            = ClientSessionFactory.getInstance();
+    private ClientSessionFactory clientSessionFactory = ClientSessionFactory.getInstance();
 
     /**
      * Creates a new instance of DbPropsInjectorHandler
@@ -97,20 +95,15 @@ public class ClientSessionInjector extends PipelinedHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
 
-        if (request.isInError()
-                || !exchange.getQueryParameters()
-                        .containsKey(CLIENT_SESSION_KEY)) {
+        if (request.isInError() || !exchange.getQueryParameters().containsKey(CLIENT_SESSION_KEY)) {
             next(exchange);
             return;
         }
 
         try {
-            request.setClientSession(getClientSessionFactory()
-                    .getClientSession(exchange));
+            request.setClientSession(getClientSessionFactory().getClientSession(exchange));
         } catch (IllegalArgumentException ex) {
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    ex.getMessage());
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, ex.getMessage());
             next(exchange);
             return;
         }
