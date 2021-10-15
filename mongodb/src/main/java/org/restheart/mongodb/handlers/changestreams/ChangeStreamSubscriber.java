@@ -20,7 +20,13 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
+import com.mongodb.client.model.changestream.FullDocument;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonNull;
@@ -32,6 +38,7 @@ import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.restheart.mongodb.db.MongoReactiveClientSingleton;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,12 +52,31 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
     private static final Logger LOGGER
             = LoggerFactory.getLogger(ChangeStreamSubscriber.class);
 
+
     private final SessionKey sessionKey;
+    private List<BsonDocument> resolvedStages;
+    private String dbName;
+    private String collName;
+
+    // Can be a configuration.
+    private boolean retry;
     private Subscription sub;
 
-    public ChangeStreamSubscriber(SessionKey sessionKey) {
+    public ChangeStreamSubscriber(SessionKey sessionKey, List<BsonDocument> resolvedStages, String dbName, String collName) {
         super();
         this.sessionKey = sessionKey;
+        this.resolvedStages = resolvedStages;
+        this.dbName = dbName;
+        this.collName = collName;
+    }
+
+    public ChangeStreamSubscriber(SessionKey sessionKey, List<BsonDocument> resolvedStages, String dbName, String collName, boolean retry) {
+        super();
+        this.sessionKey = sessionKey;
+        this.resolvedStages = resolvedStages;
+        this.dbName = dbName;
+        this.collName = collName;
+        this.retry = retry;
     }
 
     @Override
@@ -61,6 +87,11 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
 
     @Override
     public void onNext(ChangeStreamDocument<?> notification) {
+        
+        if (retry) {
+            setRetry(false);
+        }
+
         if (!WebSocketSessionsRegistry.getInstance().get(sessionKey).isEmpty()) {
             LOGGER.trace("[clients watching]: "
                     + WebSocketSessionsRegistry.getInstance().get(sessionKey).size());
@@ -84,8 +115,65 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
     @Override
     public void onError(final Throwable t) {
         LOGGER.warn("Error from stream: " + t.getMessage());
+        
+        if (!retry) {
+            LOGGER.warn("Restarting stream: {}/{}", dbName, collName);
+            restartStream();
+        } else {
+            LOGGER.warn("Closing all connected ws clients: {}/{}", dbName, collName);
+            closeAllOnError(dbName, collName);
+        }
     }
 
+    private void closeAllOnError(String db, String collection) {
+        var webSocketSessions = WebSocketSessionsRegistry.getInstance();
+        var changeStreams = ChangeStreamsRegistry.getInstance();
+
+        var sessionKeys = changeStreams.getSessionKeysOnCollection(db, collection);
+
+        sessionKeys.stream()
+            .collect(Collectors.toSet())
+            .forEach(sk -> {
+            var _webSocketSession = webSocketSessions.get(sk);
+            _webSocketSession.stream()
+                .collect(Collectors.toSet())
+                .forEach(wss -> {
+                    try {
+                        wss.close();
+                        webSocketSessions.remove(sk, wss);
+                    } catch(IOException ioe) {
+                        // LOGGER
+                    }
+            });
+
+            changeStreams.remove(sk);
+        });
+    }
+
+    private void setRetry(boolean retry) {
+        this.retry = retry;
+    }
+
+    private void restartStream() {
+        try {
+            MongoReactiveClientSingleton
+                .getInstance()
+                .getClient()
+                .getDatabase(dbName)
+                .getCollection(collName)
+                .watch(resolvedStages)
+                .fullDocument(FullDocument.UPDATE_LOOKUP)
+                .subscribe(new ChangeStreamSubscriber(sessionKey, 
+                        resolvedStages, 
+                        dbName, 
+                        collName,
+                        true));
+
+        }  catch(Throwable e) {
+            LOGGER.warn("Error trying to restart the stream: " + e.getMessage());
+        }
+    }
+    
     @Override
     public void onComplete() {
         LOGGER.debug("Stream completed, sessionKey=" + sessionKey);
