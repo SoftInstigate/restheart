@@ -21,12 +21,14 @@ function(seconds){
 }
 """
 
+
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: Performing a simple GET request on a Change Stream resource (Expected 400 Bad Request)
     * header Authorization = authHeader
     Given path coll + '/_streams/changeStream'
     When method get
     Then status 400
+
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test insert (POST) new document (without avars)
@@ -51,7 +53,8 @@ Scenario: test insert (POST) new document (without avars)
     And match parsedMsg.fullDocument.a == 1
     And match parsedMsg.fullDocument.b == 2
     And match parsedMsg.fullDocument.c == 'test'
-    
+
+
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test insert (POST) new document (with avars)
 
@@ -91,8 +94,8 @@ Scenario: test PATCH on inserted document (without avars)
     Given path coll
     And request {"a":1, "b":2, "c":"test"}
     When method POST
-    Then def location = responseHeaders['Location'][0]
-    
+    Then def postLocation = responseHeaders['Location'][0]
+
     # Establish WebSocket connection to get notified.
     * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStream'
@@ -103,7 +106,7 @@ Scenario: test PATCH on inserted document (without avars)
 
     * callonce sleep 3
     * header Authorization = authHeader
-    Given url location
+    Given url postLocation
     And request {"moreProp": "test", "anotherProp": 1, "$unset": {"b":1}}
     When method PATCH
     And def result = karate.listen(5000)
@@ -114,6 +117,7 @@ Scenario: test PATCH on inserted document (without avars)
     And match parsedMsg.updateDescription.updatedFields.anotherProp == 1
     And match parsedMsg.updateDescription.removedFields contains "b"
 
+
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PATCH on inserted document (with avars)
     
@@ -122,7 +126,9 @@ Scenario: test PATCH on inserted document (with avars)
     And request {"targettedProperty": "test", "toBeRemoved": null}
     When method POST
     Then def location = responseHeaders['Location'][0]
-    
+    * print location
+
+    * call sleep 3
     # Establish WebSocket connection to get notified.
     * header Authorization = authHeader
     Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
@@ -143,6 +149,7 @@ Scenario: test PATCH on inserted document (with avars)
     And match parsedMsg.updateDescription.updatedFields.moreProp == 'test'
     And match parsedMsg.updateDescription.updatedFields.anotherProp == 1
     And match parsedMsg.updateDescription.removedFields contains "toBeRemoved"
+
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test PUT upserting notifications (without avars)
@@ -227,6 +234,7 @@ Scenario: test PUT upserting notifications (with avars)
     And print parsedEditMsg
     And match parsedEditMsg.operationType == 'replace'
 
+
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: https://github.com/SoftInstigate/restheart/issues/373
 
@@ -299,3 +307,46 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     And print parsedInsertedPropertyMsg
     And match secondPatchResult == '#notnull'
 
+
+@requires-mongodb-4 @requires-replica-set
+Scenario: https://github.com/SoftInstigate/restheart/issues/415
+
+    # Establish WebSocket connection to get notified.
+    Given def streamPath = '/_streams/testResume'
+    And def baseUrl = 'http://localhost:8080'
+
+    And def host = baseUrl + encodeURI(coll + streamPath)
+    Then def socket = karate.webSocket(host, handler)
+
+    * call sleep 1
+    * header Authorization = authHeader
+    Given path coll
+    And request { "n": 1 }
+    When method POST
+    And def firstResult = socket.listen(2000)
+    * print firstResult
+    Then def firstParsedMsg = parseResponse(firstResult)
+    * print firstParsedMsg
+    And match firstParsedMsg.operationType == 'insert'
+    And match firstParsedMsg.fullDocument.n == 1
+    
+    * call sleep 1
+    * header Authorization = authHeader
+    Given path coll
+    And request { "n": "string" }
+    When method POST
+    And def secondResult = socket.listen(2000)
+    Then status 201
+    And match secondResult == '#null'
+
+    * call sleep 3
+    * header Authorization = authHeader
+    Given path coll
+    And request { "n": 1 }
+    When method POST
+    And def thirdResult = socket.listen(2000)
+    * print thirdResult
+    Then def thirdParsedMsg = parseResponse(thirdResult)
+    * print thirdParsedMsg
+    And match thirdParsedMsg.operationType == 'insert'
+    And match thirdParsedMsg.fullDocument.n == 1

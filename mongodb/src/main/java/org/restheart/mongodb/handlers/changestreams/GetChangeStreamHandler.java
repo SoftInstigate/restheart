@@ -180,7 +180,10 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                     .getCollection(request.getCollectionName())
                     .watch(resolvedStages)
                     .fullDocument(FullDocument.UPDATE_LOOKUP)
-                    .subscribe(new ChangeStreamSubscriber(streamKey));
+                    .subscribe(new ChangeStreamSubscriber(streamKey, 
+                            resolvedStages, 
+                            request.getDBName(), 
+                            request.getCollectionName()));
 
             return true;
         } else {
