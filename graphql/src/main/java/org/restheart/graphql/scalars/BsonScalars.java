@@ -19,6 +19,7 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.graphql.scalars;
+import graphql.schema.Coercing;
 import graphql.schema.GraphQLScalarType;
 import org.restheart.graphql.scalars.bsonCoercing.*;
 
@@ -51,6 +52,7 @@ public class BsonScalars {
 
     public static final GraphQLScalarType GraphQLBsonRegularExpression = GraphQLScalarType.newScalar()
             .name("Regex").description("Bson regular expression scalar").coercing(new GraphQLBsonRegexCoercing()).build();
+
 
     public static final Set<GraphQLScalarType> BSON_SCALARS = Sets.newHashSet(
         GraphQLBsonObjectId,

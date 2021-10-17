@@ -12,21 +12,19 @@ import org.bson.conversions.Bson;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.datafetchers.GQLAggregationDataFetcher;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import graphql.schema.DataFetchingEnvironment;
 
 public class AggregationMapping extends FieldMapping {
-    private final Logger log = LoggerFactory.getLogger(AggregationMapping.class);
-
+    
     private BsonArray stages;
     private BsonString db;
     private BsonString collection;
     private BsonBoolean allowDiskUse = new BsonBoolean(false);
-    // getResolvedStagesAsList method
+    
 
-    public AggregationMapping(String fieldName, BsonString db, BsonString collection, BsonArray stages, BsonBoolean allowDiskUse) {
+    public AggregationMapping(String fieldName, BsonString db, BsonString collection, BsonArray stages,
+            BsonBoolean allowDiskUse) {
 
         super(fieldName);
         this.stages = stages;
@@ -49,38 +47,21 @@ public class AggregationMapping extends FieldMapping {
         return new GQLAggregationDataFetcher(this);
     }
 
-    // in each stage object I could have different params
-    /*
-        {
-            "$match": {
-                "name" : {"$arg" : "movieTitle"}
-            }
-        }
-        getMovieByTitle(movieTitle: 'Titanic')
+    public List<? extends Bson> getResolvedStagesAsList(DataFetchingEnvironment env)
+            throws QueryVariableNotBoundException {
 
-        I should get from environment the movieTitle, if present,
-        and replace {"$arg": "movieTitle"} with movieTitle value passed to the query
-        EX:
-        {
-            "$match": {
-                "name" : "Titanic"
-            }
-        }
-    */
-    public List<? extends Bson> getResolvedStagesAsList(DataFetchingEnvironment env) throws QueryVariableNotBoundException {
-        // Ho un array di stage, per ognuno devo interpolare i dati e aggiungerlo nuovamente nell'array da restituire
-        List<BsonDocument> ret = new ArrayList<>();
-       
-        for(BsonValue stage: this.stages) {
-            if(stage.isDocument()) {
+        List<BsonDocument> resultList = new ArrayList<>();
 
-                ret.add(QueryMapping.searchOperators(stage.asDocument(), env).asDocument());
+        for (BsonValue stage : this.stages) {
+
+            if (stage.isDocument()) {
+
+                resultList.add(searchOperators(stage.asDocument(), env).asDocument());
             }
         }
 
-        return ret;
+        return resultList;
     }
-
 
     public BsonArray getStages() {
         return this.stages;
@@ -114,6 +95,4 @@ public class AggregationMapping extends FieldMapping {
         this.allowDiskUse = allowDiskUse;
     }
 
-
-    
 }

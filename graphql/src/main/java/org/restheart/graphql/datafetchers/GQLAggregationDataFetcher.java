@@ -24,13 +24,12 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
     private long aggregationTimeLimit;
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
-    public void initConfig(Map<String, Object> args) {
+    public void initConfig(Map<String, Object> config) {
 
-        if(args.containsKey(AGGREGATION_TIME_LIMIT_KEY)) {
-            Object limit = args.get(AGGREGATION_TIME_LIMIT_KEY);
+        if(config.containsKey(AGGREGATION_TIME_LIMIT_KEY)) {
+            Object limit = config.get(AGGREGATION_TIME_LIMIT_KEY);
             if(limit instanceof Number) {
-
-                this.aggregationTimeLimit = Long.parseLong(args.get(AGGREGATION_TIME_LIMIT_KEY).toString());  
+                this.aggregationTimeLimit = Long.parseLong(config.get(AGGREGATION_TIME_LIMIT_KEY).toString());  
             } else {
                 this.aggregationTimeLimit = 0;
             }

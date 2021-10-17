@@ -23,19 +23,15 @@ package org.restheart.graphql;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonInvalidOperationException;
-import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.restheart.graphql.models.*;
 import org.restheart.utils.BsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
 public class GraphQLAppDeserializer {
-    private static Logger logger = LoggerFactory.getLogger(GraphQLAppDeserializer.class);
 
     public static final GraphQLApp fromBsonDocument(BsonDocument appDef) throws GraphQLIllegalAppDefinitionException {
 
@@ -71,10 +67,9 @@ public class GraphQLAppDeserializer {
         }
 
         try {
-            return GraphQLApp.newBuilder().appDescriptor(descriptor).schema(schema).mappings(mappingsMap).build(); // build
-                                                                                                                   // generates
-                                                                                                                   // executable
-                                                                                                                   // schema
+            
+            return GraphQLApp.newBuilder().appDescriptor(descriptor).schema(schema).mappings(mappingsMap).build();
+
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new GraphQLIllegalAppDefinitionException(e.getMessage(), e);
         }
@@ -167,7 +162,6 @@ public class GraphQLAppDeserializer {
                             if (fieldMappingDoc.containsKey("stages")) {
                                 if (fieldMappingDoc.get("stages").isArray()) {
 
-                                    // is aggregation mapping
                                     typeMappings.put(field,
                                             new AggregationMapping(field, fieldMappingDoc.get("db").asString(),
                                                     fieldMappingDoc.get("collection").asString(),
@@ -297,13 +291,6 @@ public class GraphQLAppDeserializer {
 
     }
 
-    private static boolean isAggregationMapping(BsonDocument field) {
-        return hasKeyOfType(field, "db", f -> f.isString()) && hasKeyOfType(field, "collection", f -> f.isString())
-                && hasKeyOfType(field, "stages", f -> f.isArray());
-    }
-
-    // BsonValue is the base class for any Bson type
-    // f(key, type) => key.is(type)
     private static boolean hasKeyOfType(BsonDocument source, String key, Predicate<BsonValue> isOfType) {
         Predicate<BsonDocument> containsKey = t -> t.containsKey(key);
 

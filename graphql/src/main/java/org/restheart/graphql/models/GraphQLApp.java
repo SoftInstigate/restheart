@@ -20,18 +20,30 @@
  */
 package org.restheart.graphql.models;
 
-import graphql.schema.GraphQLScalarType;
-import graphql.schema.GraphQLSchema;
+import graphql.schema.*;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.errors.SchemaProblem;
+import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.restheart.graphql.scalars.BsonScalars;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class GraphQLApp {
+
+    private final static Logger logger = LoggerFactory.getLogger(GraphQLApp.class);
 
     private AppDescriptor descriptor;
     private String schema;
@@ -131,6 +143,7 @@ public class GraphQLApp {
 
                 RuntimeWiring.Builder RWBuilder = RuntimeWiring.newRuntimeWiring();
                 Map<String, GraphQLScalarType> bsonScalars = BsonScalars.getBsonScalars();
+                
 
                 bsonScalars.forEach(((s, graphQLScalarType) -> {
                     RWBuilder.scalar(graphQLScalarType);
@@ -140,10 +153,42 @@ public class GraphQLApp {
                         RWBuilder.type(typeMapping.getTypeWiring(typeRegistry))
                 ));
 
+
+
+                RWBuilder.type(
+                    newTypeWiring("Prova")
+                    .typeResolver(env -> {
+                        var type = "Movie";
+                        var source = env.getObject(); // Fetched object from mongodb. size = 21
+                        BsonDocument doc;
+                        if(source instanceof BsonDocument) {
+                            doc = (BsonDocument)source;
+
+                        }
+
+                        var typesWithFields = env.getSchema().getTypeMap().values()
+                                .stream()
+                                .filter(entry -> entry instanceof GraphQLObjectType)
+                                .filter(obj -> !obj.getName().startsWith("__") || !obj.getName().equals("Query"))
+                                .collect(Collectors.toUnmodifiableMap(
+                                        GraphQLNamedSchemaElement::getName,
+                                        val -> ((GraphQLObjectType)val).getFieldDefinitions()
+                                                .stream()
+                                                .map(GraphQLFieldDefinition::getName)
+                                                .collect(Collectors.toSet())
+                                ));
+
+
+                        return env.getSchema().getObjectType(type);
+                    })
+                    .build()
+                );
+
                 RuntimeWiring runtimeWiring = RWBuilder.build();
 
                 SchemaGenerator schemaGenerator = new SchemaGenerator();
 
+                // FIX: fail to create executable schema when adding an interface!
                 GraphQLSchema execSchema =  schemaGenerator.makeExecutableSchema(typeRegistry, runtimeWiring);
 
                 return new GraphQLApp(this.descriptor, this.schema, this.mappings, execSchema);
@@ -156,5 +201,9 @@ public class GraphQLApp {
                 throw new IllegalArgumentException(errorMSg, schemaProblem);
             }
         }
+
+
     }
+
+
 }
