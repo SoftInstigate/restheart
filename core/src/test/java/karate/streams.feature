@@ -7,6 +7,7 @@ Background:
 * url 'http://localhost:8080'
 * def db = '/test-change-streams'
 * def coll = db + '/coll'
+* def anotherColl = db + '/anotherColl'
 * callonce read('./streams-setup.feature')
 * def parseResponse =
 """
@@ -245,68 +246,21 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     And def handler = function(notification) { karate.signal(notification) }
     And def host = baseUrl + encodeURI(coll + streamPath)
     Then def socket = karate.webSocket(host, handler)
-    
-    * callonce sleep 3
-    * header Authorization = authHeader
-    Given path coll
-    When request {"name": "testname"}
-    And method POST
-    And def result = karate.listen(5000)
-    Then match result == '#notnull'
 
-    # Connect to "ud" stream.
-    * header Authorization = authHeader
-    Given def streamPath = '/_streams/ud'
+
+@requires-mongodb-4 @requires-replica-set
+Scenario: https://github.com/SoftInstigate/restheart/issues/414
+
+    # Establish WebSocket connection to get notified.
+    Given def streamPath = '/_streams/testWrongStreamDefinition'
     And def baseUrl = 'http://localhost:8080'
-    And def handler = function(notification) { karate.signal(notification) }
-    And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
-
-    * callonce sleep 3
-    * header Authorization = authHeader
-    Given path coll
-    When request {"name": "testname"}
-    And method POST
-    And def result = karate.listen(5000)
-    Then match result == '#null'
-    And def location = responseHeaders['Location'][0]
 
     * header Authorization = authHeader
-    Given url location
-    And request {"a": "inserted"}
-    When method PATCH
-    And def firstPatchResult = karate.listen(5000)
-    Then def parsedInsertedTargettedPropertyMsg = parseResponse(firstPatchResult)
-    And print parsedInsertedTargettedPropertyMsg  
-    And match parsedInsertedTargettedPropertyMsg.operationType == 'update'
-    And match parsedInsertedTargettedPropertyMsg.updateDescription.updatedFields.a == 'inserted'
-
-    * header Authorization = authHeader
-    Given url location
-    And request {"b": "inserted"}
-    When method PATCH
-    And def firstPatchResult = karate.listen(5000)
-    Then def parsedInsertedPropertyMsg = parseResponse(firstPatchResult)
-    Then match firstPatchResult == '#null'
-
-    # Connect to "cs" stream.
-    * header Authorization = authHeader
-    Given def streamPath = '/_streams/cs'
-    And def baseUrl = 'http://localhost:8080'
-    And def handler = function(notification) { karate.signal(notification) }
-    And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
-
-    * callonce sleep 3
-    * header Authorization = authHeader
-    Given url location
-    And request {"b": "inserted"}
-    When method PATCH
-    And def secondPatchResult = karate.listen(5000)
-    Then def parsedInsertedPropertyMsg = parseResponse(firstPatchResult)
-    And print parsedInsertedPropertyMsg
-    And match secondPatchResult == '#notnull'
-
+    * header Connection = 'Upgrade'
+    * header Upgrade = 'websocket'
+    Given path anotherColl + streamPath
+    When method GET
+    Then status 500    
 
 @requires-mongodb-4 @requires-replica-set
 Scenario: https://github.com/SoftInstigate/restheart/issues/415

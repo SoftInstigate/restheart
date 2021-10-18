@@ -46,16 +46,14 @@ public class ChangeStreamOperation {
      * @return
      * @throws InvalidMetadataException
      */
-    public static List<ChangeStreamOperation>
-            getFromJson(BsonDocument collProps)
-            throws InvalidMetadataException {
+    public static List<ChangeStreamOperation> getFromJson(BsonDocument collProps) throws InvalidMetadataException {
         if (collProps == null) {
             return null;
         }
 
         ArrayList<ChangeStreamOperation> ret = new ArrayList<>();
 
-        BsonValue _streams = collProps.get(STREAM_ELEMENT_NAME);
+        var _streams = collProps.get(STREAM_ELEMENT_NAME);
 
         if (_streams == null) {
             return ret;
@@ -67,9 +65,9 @@ public class ChangeStreamOperation {
                     + "' is not an array list." + _streams);
         }
 
-        BsonArray streams = _streams.asArray();
+        var streams = _streams.asArray();
 
-        for (BsonValue _query : streams.getValues()) {
+        for (var _query : streams.getValues()) {
             if (!_query.isDocument()) {
                 throw new InvalidMetadataException("element '"
                         + STREAM_ELEMENT_NAME
@@ -93,7 +91,7 @@ public class ChangeStreamOperation {
             return;
         }
         if (aVars.isDocument()) {
-            BsonDocument _obj = aVars.asDocument();
+            var _obj = aVars.asDocument();
 
             _obj.forEach((key, value) -> {
                 if (key.startsWith("$")) {
@@ -121,9 +119,8 @@ public class ChangeStreamOperation {
      * @param properties
      * @throws org.restheart.exchange.InvalidMetadataException
      */
-    public ChangeStreamOperation(BsonDocument properties)
-            throws InvalidMetadataException {
-        BsonValue _uri = properties.get(URI_ELEMENT_NAME);
+    public ChangeStreamOperation(BsonDocument properties) throws InvalidMetadataException {
+        var _uri = properties.get(URI_ELEMENT_NAME);
 
         if (!properties.containsKey(URI_ELEMENT_NAME)) {
             throw new InvalidMetadataException("query does not have '"
@@ -132,7 +129,7 @@ public class ChangeStreamOperation {
 
         this.uri = _uri.asString().getValue();
 
-        BsonValue _stages = properties.get(STAGES_ELEMENT_NAME);
+        var _stages = properties.get(STAGES_ELEMENT_NAME);
 
         if (_stages == null || !_stages.isArray()) {
             throw new InvalidMetadataException("query /" + this.uri
@@ -148,6 +145,11 @@ public class ChangeStreamOperation {
                     + "has invalid '" + STAGES_ELEMENT_NAME
                     + "': " + _stages
                     + "; must be an array of stage objects");
+        }
+
+        if (!properties.containsKey(URI_ELEMENT_NAME)) {
+            throw new InvalidMetadataException("query does not have '"
+                    + URI_ELEMENT_NAME + "' property");
         }
 
         this.stages = _stages.asArray();
@@ -208,10 +210,10 @@ public class ChangeStreamOperation {
         }
 
         if (obj.isDocument()) {
-            BsonDocument _obj = obj.asDocument();
+            var _obj = obj.asDocument();
 
             if (_obj.size() == 1 && _obj.get("$var") != null) {
-                BsonValue varName = _obj.get("$var");
+                var varName = _obj.get("$var");
 
                 if (!(varName.isString())) {
                     throw new InvalidMetadataException("wrong variable name "
@@ -226,7 +228,7 @@ public class ChangeStreamOperation {
 
                 return aVars.get(varName.asString().getValue());
             } else {
-                BsonDocument ret = new BsonDocument();
+                var ret = new BsonDocument();
 
                 for (String key : _obj.keySet()) {
                     ret.put(key,
@@ -237,9 +239,9 @@ public class ChangeStreamOperation {
                 return ret;
             }
         } else if (obj.isArray()) {
-            BsonArray ret = new BsonArray();
+            var ret = new BsonArray();
 
-            for (BsonValue el : obj.asArray().getValues()) {
+            for (var el : obj.asArray().getValues()) {
                 if (el.isDocument()) {
                     ret.add(bindAggregationVariables(el, aVars));
                 } else if (el.isArray()) {

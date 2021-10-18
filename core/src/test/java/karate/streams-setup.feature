@@ -26,3 +26,10 @@ Scenario: Setup test environment
     And request {"streams": [{"stages": [], "uri": "changeStream" }, {"stages": [{"_$match": {"fullDocument.targettedProperty": {"_$var": "param"}}}], "uri": "changeStreamWithStageParam" }, {"stages":[{"_$match":{"fullDocument::name":"testname"}},{"_$match":{"_$or":[{"operationType":"insert"},{"operationType":"update"}]}}],"uri":"cs"},{"stages":[{"_$match":{"updateDescription::updatedFields::a":{"_$exists":true}}}],"uri":"ud"},{"stages":[{"_$match":{"operationType":"insert"}},{"_$addFields":{"fullDocument.div":{"_$divide":[1,"$fullDocument.n"]}}}],"uri":"testResume"}]}
     When method PUT
     Then status 201
+
+# Step 3: Create a secondary test collection
+    * header Authorization = authHeader
+    Given path anotherColl
+    And request {"streams": [{"stages": [], "missingUri": "missing" }]}
+    When method PUT
+    Then status 201
