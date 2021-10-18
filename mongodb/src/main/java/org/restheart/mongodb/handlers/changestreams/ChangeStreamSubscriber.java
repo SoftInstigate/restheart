@@ -59,7 +59,7 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
     private String collName;
 
     // Can be a configuration.
-    private boolean retry;
+    private boolean init;
     private Subscription sub;
 
     public ChangeStreamSubscriber(SessionKey sessionKey, List<BsonDocument> resolvedStages, String dbName, String collName) {
@@ -68,15 +68,16 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
         this.resolvedStages = resolvedStages;
         this.dbName = dbName;
         this.collName = collName;
+        this.init = false;
     }
 
-    public ChangeStreamSubscriber(SessionKey sessionKey, List<BsonDocument> resolvedStages, String dbName, String collName, boolean retry) {
+    public ChangeStreamSubscriber(SessionKey sessionKey, List<BsonDocument> resolvedStages, String dbName, String collName, boolean init) {
         super();
         this.sessionKey = sessionKey;
         this.resolvedStages = resolvedStages;
         this.dbName = dbName;
         this.collName = collName;
-        this.retry = retry;
+        this.init = init;
     }
 
     @Override
@@ -88,8 +89,8 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
     @Override
     public void onNext(ChangeStreamDocument<?> notification) {
         
-        if (retry) {
-            setRetry(false);
+        if (!init) {
+            setInit(true);
         }
 
         if (!WebSocketSessionsRegistry.getInstance().get(sessionKey).isEmpty()) {
@@ -116,7 +117,7 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
     public void onError(final Throwable t) {
         LOGGER.warn("Error from stream: " + t.getMessage());
         
-        if (!retry) {
+        if (init) {
             LOGGER.warn("Restarting stream: {}/{}", dbName, collName);
             restartStream();
         } else {
@@ -150,8 +151,8 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
         });
     }
 
-    private void setRetry(boolean retry) {
-        this.retry = retry;
+    private void setInit(boolean init) {
+        this.init = init;
     }
 
     private void restartStream() {
