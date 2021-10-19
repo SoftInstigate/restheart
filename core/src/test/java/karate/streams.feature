@@ -265,6 +265,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/414
 @requires-mongodb-4 @requires-replica-set
 Scenario: https://github.com/SoftInstigate/restheart/issues/415
 
+    * def handler = function(notification) { karate.signal(notification) }
     # Establish WebSocket connection to get notified.
     Given def streamPath = '/_streams/testResume'
     And def baseUrl = 'http://localhost:8080'
