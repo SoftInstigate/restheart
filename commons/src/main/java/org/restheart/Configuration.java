@@ -31,12 +31,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import static org.restheart.ConfigurationKeys.AJP_HOST_KEY;
 import static org.restheart.ConfigurationKeys.AJP_LISTENER_KEY;
 import static org.restheart.ConfigurationKeys.AJP_PORT_KEY;
@@ -195,27 +196,6 @@ public class Configuration {
 
     /**
      *
-     * @param integers
-     * @return
-     */
-    public static int[] convertListToIntArray(List<Object> integers) {
-        int[] ret = new int[integers.size()];
-        Iterator<Object> iterator = integers.iterator();
-        for (int i = 0; i < ret.length; i++) {
-            Object o = iterator.next();
-
-            if (o instanceof Integer) {
-                ret[i] = (Integer) o;
-            } else {
-                return new int[0];
-            }
-        }
-
-        return ret;
-    }
-
-    /**
-     *
      * @param <V> return value
      * @param conf
      * @param key
@@ -224,15 +204,11 @@ public class Configuration {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key,
-            final V defaultValue, boolean silent) {
-
+    public static <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key, final V defaultValue, boolean silent) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.warn(
-                        "Parameter \"{}\" not specified in the configuration file. " + "using its default value \"{}\"",
-                        key, defaultValue);
+                LOGGER.warn("Parameter \"{}\" not specified in the configuration file, using its default value \"{}\"", key, defaultValue);
             }
             return defaultValue;
         }
@@ -244,8 +220,7 @@ public class Configuration {
             return (V) conf.get(key);
         } catch (Throwable t) {
             if (!silent) {
-                LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\". using its default value \"{}\"", key,
-                        conf.get(key), defaultValue);
+                LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\", using its default value \"{}\"", key, conf.get(key), defaultValue);
             }
             return defaultValue;
         }
@@ -256,28 +231,28 @@ public class Configuration {
      * @param key
      * @return the environment or java property variable, if found
      */
-    private static String overriddenValueFromEnv(final String confParameter) {
-        var value = _overriddenValueFromEnv("RH", confParameter);
+    private static String overrideValueFromEnv(final String confParameter) {
+        var value = _overrideValueFromEnv("RH", confParameter);
 
         if (value != null) {
             return value;
         }
 
-        value = _overriddenValueFromEnv("RESTHEART", confParameter);
+        value = _overrideValueFromEnv("RESTHEART", confParameter);
 
         if (value != null) {
             return value;
         }
 
         // legacy variable pattern
-        value = _overriddenValueFromEnv("RESTHEART_SECURITY", confParameter);
+        value = _overrideValueFromEnv("RESTHEART_SECURITY", confParameter);
 
         if (value != null) {
             return value;
         }
 
         // no prefix
-        value = _overriddenValueFromEnv(null, confParameter);
+        value = _overrideValueFromEnv(null, confParameter);
 
         if (value != null) {
             return value;
@@ -286,25 +261,23 @@ public class Configuration {
         return null;
     }
 
-    private static String _overriddenValueFromEnv(final String prefix, final String confParameter) {
-        var key = prefix != null ? prefix + "_" + confParameter.toUpperCase().replaceAll("-", "_")
+    private static String _overrideValueFromEnv(final String prefix, final String confParameter) {
+        var key = prefix != null
+                ? prefix + "_" + confParameter.toUpperCase().replaceAll("-", "_")
                 : confParameter.toUpperCase().replaceAll("-", "_");
 
-        return __overriddenValueFromEnv(confParameter, key);
+        return __overrideValueFromEnv(confParameter, key);
     }
 
-    private static String __overriddenValueFromEnv(final String confParameter, final String key) {
-
-        String envValue = System.getProperty(key);
+    private static String __overrideValueFromEnv(final String confParameter, final String key) {
+        var envValue = System.getProperty(key);
 
         if (envValue == null) {
             envValue = System.getenv(key);
+        } else {
+            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'", key, confParameter, envValue);
         }
 
-        if (null != envValue) {
-            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'", key,
-                    confParameter, envValue);
-        }
         return envValue;
     }
 
@@ -335,8 +308,7 @@ public class Configuration {
      * @return true if an old (< 2.0) configuration is found
      */
     private static boolean checkPre20Confs(List<Map<String, Object>> conf) {
-        return conf != null && conf.stream()
-                .anyMatch(e -> e.containsKey("name") || e.containsKey("class") || e.containsKey("args"));
+        return conf != null && conf.stream().anyMatch(e -> e.containsKey("name") || e.containsKey("class") || e.containsKey("args"));
     }
 
     private static boolean checkPre20Confs(Map<String, Map<String, Object>> conf) {
@@ -435,34 +407,34 @@ public class Configuration {
             throw new ConfigurationException("Wrong Services configuration");
         }
 
-        ansiConsole = getAsBoolean(conf, ANSI_CONSOLE_KEY, true);
+        ansiConsole = asBoolean(conf, ANSI_CONSOLE_KEY, true);
 
-        httpsListener = getAsBoolean(conf, HTTPS_LISTENER_KEY, true);
-        httpsPort = getAsInteger(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
-        httpsHost = getAsString(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
+        httpsListener = asBoolean(conf, HTTPS_LISTENER_KEY, true);
+        httpsPort = asInteger(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
+        httpsHost = asString(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
 
-        httpListener = getAsBoolean(conf, HTTP_LISTENER_KEY, false);
-        httpPort = getAsInteger(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
-        httpHost = getAsString(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
+        httpListener = asBoolean(conf, HTTP_LISTENER_KEY, false);
+        httpPort = asInteger(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
+        httpHost = asString(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
 
-        ajpListener = getAsBoolean(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
-        ajpPort = getAsInteger(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
-        ajpHost = getAsString(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
+        ajpListener = asBoolean(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
+        ajpPort = asInteger(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
+        ajpHost = asString(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
 
-        instanceName = getAsString(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-        keystoreFile = getAsString(conf, KEYSTORE_FILE_KEY, null);
-        keystorePassword = getAsString(conf, KEYSTORE_PASSWORD_KEY, null);
-        certPassword = getAsString(conf, CERT_PASSWORD_KEY, null);
+        instanceName = asString(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
+        keystoreFile = asString(conf, KEYSTORE_FILE_KEY, null);
+        keystorePassword = asString(conf, KEYSTORE_PASSWORD_KEY, null);
+        certPassword = asString(conf, CERT_PASSWORD_KEY, null);
 
-        proxies = getAsListOfMaps(conf, PROXY_KEY, new ArrayList<>());
+        proxies = asListOfMaps(conf, PROXY_KEY, new ArrayList<>());
 
-        staticResourcesMounts = getAsListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, new ArrayList<>());
+        staticResourcesMounts = asListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, new ArrayList<>());
 
-        pluginsDirectory = getAsString(conf, PLUGINS_DIRECTORY_PATH_KEY, null);
+        pluginsDirectory = asString(conf, PLUGINS_DIRECTORY_PATH_KEY, null);
 
-        pluginsArgs = getAsMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
+        pluginsArgs = asMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
 
-        authMechanisms = getAsMapOfMaps(conf, AUTH_MECHANISMS_KEY, new LinkedHashMap<>());
+        authMechanisms = asMapOfMaps(conf, AUTH_MECHANISMS_KEY, new LinkedHashMap<>());
 
         // check if configuration follows old (<2.0)format
         if (authMechanisms.isEmpty()) {
@@ -475,7 +447,7 @@ public class Configuration {
             }
         }
 
-        authenticators = getAsMapOfMaps(conf, AUTHENTICATORS_KEY, new LinkedHashMap<>());
+        authenticators = asMapOfMaps(conf, AUTHENTICATORS_KEY, new LinkedHashMap<>());
 
         // check if configuration follows old (<2.0)format
         if (authenticators.isEmpty()) {
@@ -489,7 +461,7 @@ public class Configuration {
             }
         }
 
-        authorizers = getAsMapOfMaps(conf, AUTHORIZERS_KEY, new LinkedHashMap<>());
+        authorizers = asMapOfMaps(conf, AUTHORIZERS_KEY, new LinkedHashMap<>());
 
         // check if configuration follows old (<2.0)format
         if (authorizers.isEmpty()) {
@@ -503,7 +475,7 @@ public class Configuration {
             }
         }
 
-        tokenManagers = getAsMapOfMaps(conf, TOKEN_MANAGER_KEY, new LinkedHashMap<>());
+        tokenManagers = asMapOfMaps(conf, TOKEN_MANAGER_KEY, new LinkedHashMap<>());
 
         // check if configuration follows old (<2.0)format
         if (checkPre20Confs(tokenManagers)) {
@@ -513,37 +485,36 @@ public class Configuration {
             throw new ConfigurationException("Wrong Token Manager configuration");
         }
 
-        logFilePath = getAsString(conf, LOG_FILE_PATH_KEY,
+        logFilePath = asString(conf, LOG_FILE_PATH_KEY,
                 URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
                         .concat(File.separator + "restheart-security.log"));
-        String _logLevel = getAsString(conf, LOG_LEVEL_KEY, "INFO");
-        logToConsole = getAsBoolean(conf, ENABLE_LOG_CONSOLE_KEY, true);
-        logToFile = getAsBoolean(conf, ENABLE_LOG_FILE_KEY, true);
+        String _logLevel = asString(conf, LOG_LEVEL_KEY, "INFO");
+        logToConsole = asBoolean(conf, ENABLE_LOG_CONSOLE_KEY, true);
+        logToFile = asBoolean(conf, ENABLE_LOG_FILE_KEY, true);
 
         Level level;
         try {
             level = Level.valueOf(_logLevel);
         } catch (Exception e) {
             if (!silent) {
-                LOGGER.info("wrong value for parameter {}: {}. using its default value {}", "log-level", _logLevel,
-                        "INFO");
+                LOGGER.info("wrong value for parameter {}: {}, using its default value {}", "log-level", _logLevel, "INFO");
             }
             level = Level.INFO;
         }
 
         logLevel = level;
 
-        traceHeaders = getAsListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
+        traceHeaders = asListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
 
-        requestsLimit = getAsInteger(conf, REQUESTS_LIMIT_KEY, 100);
-        ioThreads = getAsInteger(conf, IO_THREADS_KEY, 2);
-        workerThreads = getAsInteger(conf, WORKER_THREADS_KEY, 32);
-        bufferSize = getAsInteger(conf, BUFFER_SIZE_KEY, 16384);
-        directBuffers = getAsBoolean(conf, DIRECT_BUFFERS_KEY, true);
-        forceGzipEncoding = getAsBoolean(conf, FORCE_GZIP_ENCODING_KEY, false);
-        logExchangeDump = getAsInteger(conf, LOG_REQUESTS_LEVEL_KEY, 0);
-        connectionOptions = getAsMap(conf, CONNECTION_OPTIONS_KEY);
-        allowUnescapedCharactersInUrl = getAsBoolean(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
+        requestsLimit = asInteger(conf, REQUESTS_LIMIT_KEY, 100);
+        ioThreads = asInteger(conf, IO_THREADS_KEY, 2);
+        workerThreads = asInteger(conf, WORKER_THREADS_KEY, 32);
+        bufferSize = asInteger(conf, BUFFER_SIZE_KEY, 16384);
+        directBuffers = asBoolean(conf, DIRECT_BUFFERS_KEY, true);
+        forceGzipEncoding = asBoolean(conf, FORCE_GZIP_ENCODING_KEY, false);
+        logExchangeDump = asInteger(conf, LOG_REQUESTS_LEVEL_KEY, 0);
+        connectionOptions = asMap(conf, CONNECTION_OPTIONS_KEY);
+        allowUnescapedCharactersInUrl = asBoolean(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
     }
 
     @Override
@@ -703,11 +674,10 @@ public class Configuration {
      * @return the logLevel
      */
     public Level getLogLevel() {
-
-        String logbackConfigurationFile = System.getProperty("logback.configurationFile");
+        var logbackConfigurationFile = System.getProperty("logback.configurationFile");
         if (logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty()) {
-            LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-            ch.qos.logback.classic.Logger logger = loggerContext.getLogger("org.restheart.security");
+            var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+            var logger = loggerContext.getLogger("org.restheart.security");
             return logger.getLevel();
         }
 
@@ -924,23 +894,21 @@ public class Configuration {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> getAsListOfMaps(final Map<String, Object> conf, final String key,
+    private List<Map<String, Object>> asListOfMaps(final Map<String, Object> conf, final String key,
             final List<Map<String, Object>> defaultValue) {
         if (conf == null) {
             if (!silent) {
-                LOGGER.trace("parameter {} not specified in the " + "configuration file. using its default value {}",
-                        key, defaultValue);
+                LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
             }
 
             return defaultValue;
         }
 
-        Object o = conf.get(key);
+        var o = conf.get(key);
 
         if (o == null) {
             if (!silent) {
-                LOGGER.trace("configuration parameter {} not specified in the "
-                        + "configuration file, using its default value {}", key, defaultValue);
+                LOGGER.trace("configuration parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (o instanceof List) {
@@ -965,12 +933,10 @@ public class Configuration {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private Map<String, Map<String, Object>> getAsMapOfMaps(final Map<String, Object> conf, final String key,
-            final Map<String, Map<String, Object>> defaultValue) {
+    private Map<String, Map<String, Object>> asMapOfMaps(final Map<String, Object> conf, final String key, final Map<String, Map<String, Object>> defaultValue) {
         if (conf == null) {
             if (!silent) {
-                LOGGER.trace("parameter {} not specified in the " + "configuration file. using its default value {}",
-                        key, defaultValue);
+                LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
             }
 
             return defaultValue;
@@ -980,15 +946,16 @@ public class Configuration {
 
         if (o == null) {
             if (!silent) {
-                LOGGER.trace("configuration parameter {} not specified in the "
-                        + "configuration file, using its default value {}", key, defaultValue);
+                LOGGER.trace("configuration parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (o instanceof Map) {
             try {
                 return (Map<String, Map<String, Object>>) o;
             } catch (Throwable t) {
-                LOGGER.warn("wrong configuration parameter {}", key);
+                if (!silent) {
+                    LOGGER.warn("wrong configuration parameter {}, expecting a map of maps", key, defaultValue);
+                }
                 return defaultValue;
             }
         } else {
@@ -1006,23 +973,25 @@ public class Configuration {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private Map<String, Object> getAsMap(final Map<String, Object> conf, final String key) {
+    private Map<String, Object> asMap(final Map<String, Object> conf, final String key) {
         if (conf == null) {
             if (!silent) {
-                LOGGER.trace("parameter {} not specified in the " + "configuration file. using its default value {}",
-                        key, null);
+                LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, null);
             }
 
             return null;
         }
 
-        Object o = conf.get(key);
+        var o = conf.get(key);
 
-        if (o instanceof Map) {
+        if (o instanceof Map<?,?> m) {
             try {
                 return (Map<String, Object>) o;
             } catch (Throwable t) {
-                LOGGER.warn("wrong configuration parameter {}", key);
+                if (!silent) {
+                    LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, null);
+                }
+
                 return null;
             }
         } else {
@@ -1034,13 +1003,11 @@ public class Configuration {
     }
 
     @SuppressWarnings("unchecked")
-    private List<String> getAsListOfStrings(final Map<String, Object> conf, final String key,
-            final List<String> defaultValue) {
+    private List<String> asListOfStrings(final Map<String, Object> conf, final String key, final List<String> defaultValue) {
         if (conf == null || conf.get(key) == null) {
             // if default value is null there is no default value actually
             if (defaultValue != null && !silent) {
-                LOGGER.trace("parameter {} not specified in the configuration file." + " Using its default value {}",
-                        key, defaultValue);
+                LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
             }
             return defaultValue;
         } else if (conf.get(key) instanceof List) {
@@ -1048,55 +1015,52 @@ public class Configuration {
                 LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
             }
 
-            List<String> ret = ((List<String>) conf.get(key));
+            try  {
+                var ret = ((List<String>) conf.get(key));
 
-            if (ret.isEmpty()) {
+                if (ret.isEmpty()) {
+                    if (!silent) {
+                        LOGGER.warn("wrong value for parameter {}: {}, using its default value {}", key, conf.get(key), defaultValue);
+                    }
+                    return defaultValue;
+                } else {
+                    return ret;
+                }
+            } catch(Throwable t) {
                 if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
-                            defaultValue);
+                    LOGGER.warn("wrong value for parameter {}: {}, using its default value {}", key, conf.get(key), defaultValue);
                 }
                 return defaultValue;
-            } else {
-                return ret;
             }
         } else {
             if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}." + " Using its default value {}", key, conf.get(key),
-                        defaultValue);
+                LOGGER.warn("wrong value for parameter {}: {}, using its default value {}", key, conf.get(key), defaultValue);
             }
             return defaultValue;
         }
     }
 
-    private Boolean getAsBoolean(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
+    private Boolean asBoolean(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
+        var envValue = overrideValueFromEnv(key);
         if (envValue != null) {
             return Boolean.valueOf(envValue);
         }
         return getOrDefault(conf, key, defaultValue);
     }
 
-    private String getAsString(final Map<String, Object> conf, final String key, final String defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
+    private String asString(final Map<String, Object> conf, final String key, final String defaultValue) {
+        var envValue = overrideValueFromEnv(key);
         if (envValue != null) {
             return envValue;
         }
         return getOrDefault(conf, key, defaultValue);
     }
 
-    private Integer getAsInteger(final Map<String, Object> conf, final String key, final Integer defaultValue) {
-        String envValue = overriddenValueFromEnv(key);
+    private Integer asInteger(final Map<String, Object> conf, final String key, final Integer defaultValue) {
+        var envValue = overrideValueFromEnv(key);
         if (envValue != null) {
             return Integer.valueOf(envValue);
         }
         return getOrDefault(conf, key, defaultValue);
     }
-
-    // private Long getAsLong(final Map<String, Object> conf, final String key, final Long defaultValue) {
-    //     String envValue = overriddenValueFromEnv(key);
-    //     if (envValue != null) {
-    //         return Long.valueOf(envValue);
-    //     }
-    //     return getOrDefault(conf, key, defaultValue);
-    // }
 }
