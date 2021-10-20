@@ -25,7 +25,6 @@ import com.mongodb.client.FindIterable;
 import static java.lang.Thread.MIN_PRIORITY;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
@@ -53,8 +52,7 @@ import org.slf4j.LoggerFactory;
  */
 public class CursorPool {
 
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(CursorPool.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CursorPool.class);
 
     /**
      * Cursor in the pool won't be used if<br>REQUESTED_SKIPS - POOL_SKIPS &gt;
@@ -68,19 +66,18 @@ public class CursorPool {
     public static final double MIN_SKIP_DISTANCE_PERCENTAGE = 10 / 100f; // 10%
     // MUST BE < 10 since this 10 the TTL of the default cursor in mongodb
     private static final long TTL = 8 * 60 * 1000;
-    private static final long POOL_SIZE
-            = MongoServiceConfiguration.get().getEagerPoolSize();
-    private static final ThreadPoolExecutor POOL_POPULATOR
-            = new ThreadPoolExecutor(
-                    1, 2,
-                    1, TimeUnit.MINUTES,
-                    new ArrayBlockingQueue<>(1),
-                    new ThreadFactoryBuilder()
-                            .setDaemon(true)
-                            .setNameFormat("cursor-pool-populator-%d")
-                            .setPriority(MIN_PRIORITY)
-                            .build()
-            );
+    private static final long POOL_SIZE = MongoServiceConfiguration.get().getEagerPoolSize();
+
+    private static final ThreadPoolExecutor POOL_POPULATOR = new ThreadPoolExecutor(
+            1, 2,
+            1, TimeUnit.MINUTES,
+            new ArrayBlockingQueue<>(1),
+            new ThreadFactoryBuilder()
+                    .setDaemon(true)
+                    .setNameFormat("cursor-pool-populator-%d")
+                    .setPriority(MIN_PRIORITY)
+                    .build()
+        );
 
     /**
      *
@@ -92,20 +89,15 @@ public class CursorPool {
 
     private final DatabaseImpl dbsDAO;
 
-    private final int SKIP_SLICE_LINEAR_DELTA
-            = MongoServiceConfiguration.get().getEagerLinearSliceDelta();
+    private final int SKIP_SLICE_LINEAR_DELTA = MongoServiceConfiguration.get().getEagerLinearSliceDelta();
 
-    private final int SKIP_SLICE_LINEAR_WIDTH
-            = MongoServiceConfiguration.get().getEagerLinearSliceWidht();
+    private final int SKIP_SLICE_LINEAR_WIDTH = MongoServiceConfiguration.get().getEagerLinearSliceWidht();
 
-    private final int[] SKIP_SLICES_HEIGHTS
-            = MongoServiceConfiguration.get().getEagerLinearSliceHeights();
+    private final int[] SKIP_SLICES_HEIGHTS = MongoServiceConfiguration.get().getEagerLinearSliceHeights();
 
-    private final int SKIP_SLICE_RND_MIN_WIDTH
-            = MongoServiceConfiguration.get().getEagerRndSliceMinWidht();
+    private final int SKIP_SLICE_RND_MIN_WIDTH = MongoServiceConfiguration.get().getEagerRndSliceMinWidht();
 
-    private final int SKIP_SLICE_RND_MAX_CURSORS
-            = MongoServiceConfiguration.get().getEagerRndMaxCursors();
+    private final int SKIP_SLICE_RND_MAX_CURSORS = MongoServiceConfiguration.get().getEagerRndMaxCursors();
 
     private final Cache<CursorPoolEntryKey, FindIterable<BsonDocument>> cache;
     private final LoadingCache<CursorPoolEntryKey, Long> collSizes;
@@ -114,32 +106,30 @@ public class CursorPool {
         this.dbsDAO = dbsDAO;
 
         cache = CacheFactory.createLocalCache(
-                POOL_SIZE,
-                Cache.EXPIRE_POLICY.AFTER_READ,
-                TTL);
+            POOL_SIZE,
+            Cache.EXPIRE_POLICY.AFTER_READ,
+            TTL);
 
         collSizes = CacheFactory.createLocalLoadingCache(100,
-                org.restheart.cache.Cache.EXPIRE_POLICY.AFTER_WRITE,
-                60 * 1000,
-                (CursorPoolEntryKey key) -> {
-                    return dbsDAO.getCollectionSize(
-                            key.getSession(),
-                            key.getCollection(),
-                            key.getFilter());
-                }
+            org.restheart.cache.Cache.EXPIRE_POLICY.AFTER_WRITE,
+            60 * 1000,
+            (CursorPoolEntryKey key) -> {
+                return dbsDAO.getCollectionSize(
+                        key.session(),
+                        key.collection(),
+                        key.filter());
+            }
         );
 
         if (LOGGER.isTraceEnabled()) {
             // print stats every 1 minute
-            Executors.newSingleThreadScheduledExecutor()
-                    .scheduleAtFixedRate(() -> {
-                        getCacheSizes().forEach((s, c) -> {
-                            LOGGER.debug("db cursor pool size: {}\t{}", s, c);
-                        });
+            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+                getCacheSizes().forEach((s, c) -> {
+                    LOGGER.debug("db cursor pool size: {}\t{}", s, c);
+                });
 
-                        LOGGER.trace("db cursor pool entries: {}",
-                                cache.asMap().keySet());
-                    }, 1, 1, TimeUnit.MINUTES);
+                LOGGER.trace("db cursor pool entries: {}", cache.asMap().keySet());
+            }, 1, 1, TimeUnit.MINUTES);
         }
     }
 
@@ -149,59 +139,43 @@ public class CursorPool {
      * @param allocationPolicy
      * @return
      */
-    public synchronized SkippedFindIterable get(
-            CursorPoolEntryKey key,
-            EAGER_CURSOR_ALLOCATION_POLICY allocationPolicy) {
-        if (key.getSkipped() < SKIP_SLICE_LINEAR_WIDTH) {
-            LOGGER.trace("{} cursor to reuse found with less skips "
-                    + "than SKIP_SLICE_LINEAR_WIDTH {}",
-                    ansi().fg(GREEN).bold().a("no").reset().toString(),
-                    SKIP_SLICE_LINEAR_WIDTH);
+    public synchronized SkippedFindIterable get(CursorPoolEntryKey key, EAGER_CURSOR_ALLOCATION_POLICY allocationPolicy) {
+        if (key.skipped() < SKIP_SLICE_LINEAR_WIDTH) {
+            LOGGER.trace("{} cursor to reuse found with less skips than SKIP_SLICE_LINEAR_WIDTH {}", ansi().fg(GREEN).bold().a("no").reset().toString(), SKIP_SLICE_LINEAR_WIDTH);
             return null;
         }
 
         // return the dbcursor with the closest skips to the request
-        Optional<CursorPoolEntryKey> _bestKey = cache.asMap().keySet().stream()
+        var _bestKey = cache.asMap().keySet().stream()
                 .filter(cursorsPoolFilterGte(key))
-                .sorted(Comparator.comparingInt(CursorPoolEntryKey::getSkipped).reversed())
+                .sorted(Comparator.comparingInt(CursorPoolEntryKey::skipped).reversed())
                 .findFirst();
 
         SkippedFindIterable ret;
 
         if (_bestKey.isPresent()) {
-            Optional<FindIterable<BsonDocument>> _dbcur
-                    = cache.get(_bestKey.get());
+            var _dbcur = cache.get(_bestKey.get());
 
             if (_dbcur != null && _dbcur.isPresent()) {
-                ret = new SkippedFindIterable(
-                        _dbcur.get(),
-                        _bestKey.get().getSkipped());
+                ret = new SkippedFindIterable(_dbcur.get(), _bestKey.get().skipped());
                 cache.invalidate(_bestKey.get());
 
-                LOGGER.debug("{} cursor in pool. id {}, saving {} skips",
-                        ansi().fg(GREEN).bold().a("found").reset().toString(),
-                        _bestKey.get().getCursorId(),
-                        key.getSkipped(),
-                        _bestKey.get().getSkipped());
+                LOGGER.debug("{} cursor in pool. id {}, saving {} skips", ansi().fg(GREEN).bold().a("found").reset().toString(), _bestKey.get().cursorId(), key.skipped(), _bestKey.get().skipped());
             } else {
                 ret = null;
 
-                LOGGER.debug("{} cursor in pool.",
-                        ansi().fg(RED).bold().a("no").reset().toString());
+                LOGGER.debug("{} cursor in pool.", ansi().fg(RED).bold().a("no").reset().toString());
             }
         } else {
             ret = null;
 
-            LOGGER.debug(ansi().fg(RED).bold().a("no").reset().toString()
-                    + " cursor in pool.");
+            LOGGER.debug(ansi().fg(RED).bold().a("no").reset().toString() + " cursor in pool.");
         }
 
         return ret;
     }
 
-    void populateCache(
-            CursorPoolEntryKey key,
-            EAGER_CURSOR_ALLOCATION_POLICY allocationPolicy) {
+    void populateCache(CursorPoolEntryKey key, EAGER_CURSOR_ALLOCATION_POLICY allocationPolicy) {
         if (allocationPolicy == EAGER_CURSOR_ALLOCATION_POLICY.LINEAR) {
             populateCacheLinear(key);
         } else if (allocationPolicy == EAGER_CURSOR_ALLOCATION_POLICY.RANDOM) {
@@ -210,31 +184,28 @@ public class CursorPool {
     }
 
     private void populateCacheLinear(CursorPoolEntryKey key) {
-        if (key.getSkipped() < SKIP_SLICE_LINEAR_WIDTH) {
+        if (key.skipped() < SKIP_SLICE_LINEAR_WIDTH) {
             return;
         }
 
-        int firstSlice = key.getSkipped() / SKIP_SLICE_LINEAR_WIDTH;
+        int firstSlice = key.skipped() / SKIP_SLICE_LINEAR_WIDTH;
 
         try {
             POOL_POPULATOR.submit(() -> {
                 int slice = firstSlice;
 
                 for (int tohave : SKIP_SLICES_HEIGHTS) {
-                    int sliceSkips
-                            = slice * SKIP_SLICE_LINEAR_WIDTH
-                            - SKIP_SLICE_LINEAR_DELTA;
+                    int sliceSkips = slice * SKIP_SLICE_LINEAR_WIDTH - SKIP_SLICE_LINEAR_DELTA;
 
-                    CursorPoolEntryKey sliceKey
-                            = new CursorPoolEntryKey(
-                                    key.getSession(),
-                                    key.getCollection(),
-                                    key.getSort(),
-                                    key.getFilter(),
-                                    key.getKeys(),
-                                    key.getHint(),
-                                    sliceSkips,
-                                    -1);
+                    var sliceKey = new CursorPoolEntryKey(
+                        key.session(),
+                        key.collection(),
+                        key.sort(),
+                        key.filter(),
+                        key.keys(),
+                        key.hint(),
+                        sliceSkips,
+                        -1);
 
                     long existing = getSliceHeight(sliceKey);
 
@@ -242,36 +213,31 @@ public class CursorPool {
 
                     for (long cont = tocreate; cont > 0; cont--) {
                         // create the first cursor
-                        FindIterable<BsonDocument> cursor = dbsDAO
-                                .getFindIterable(
-                                        key.getSession(),
-                                        key.getCollection(),
-                                        key.getSort(),
-                                        key.getFilter(),
-                                        key.getHint(),
-                                        key.getKeys());
+                        var cursor = dbsDAO.getFindIterable(
+                            key.session(),
+                            key.collection(),
+                            key.sort(),
+                            key.filter(),
+                            key.hint(),
+                            key.keys());
 
-                        cursor
-                                .skip(sliceSkips);
+                        cursor.skip(sliceSkips);
 
                         cursor.iterator(); // this forces the actual skipping
 
-                        CursorPoolEntryKey newkey = new CursorPoolEntryKey(
-                                key.getSession(),
-                                key.getCollection(),
-                                key.getSort(),
-                                key.getFilter(),
-                                key.getHint(),
-                                key.getKeys(),
-                                sliceSkips,
-                                System.nanoTime());
+                        var newkey = new CursorPoolEntryKey(
+                            key.session(),
+                            key.collection(),
+                            key.sort(),
+                            key.filter(),
+                            key.hint(),
+                            key.keys(),
+                            sliceSkips,
+                            System.nanoTime());
 
                         cache.put(newkey, cursor);
 
-                        LOGGER.debug("{} cursor in pool: {}",
-                                ansi().fg(YELLOW).bold().a("new").reset()
-                                        .toString(),
-                                newkey);
+                        LOGGER.debug("{} cursor in pool: {}", ansi().fg(YELLOW).bold().a("new").reset().toString(), newkey);
                     }
 
                     slice++;
@@ -280,20 +246,18 @@ public class CursorPool {
         } catch (RejectedExecutionException rej) {
             // this happens if the thread executor (whose pool size is 1)
             // is already creating a cursor
-            LOGGER.trace("creation of new cursor pool {}",
-                    ansi().fg(RED).bold().a("rejected").reset().toString());
+            LOGGER.trace("creation of new cursor pool {}", ansi().fg(RED).bold().a("rejected").reset().toString());
         }
     }
 
     private void populateCacheRandom(CursorPoolEntryKey key) {
         try {
             POOL_POPULATOR.submit(() -> {
-                Long size = collSizes.getLoading(key).get();
+                var size = collSizes.getLoading(key).get();
 
                 int sliceWidht;
                 int slices;
-                int totalSlices = size.intValue() / SKIP_SLICE_RND_MIN_WIDTH
-                        + 1;
+                int totalSlices = size.intValue() / SKIP_SLICE_RND_MIN_WIDTH + 1;
 
                 if (totalSlices <= SKIP_SLICE_RND_MAX_CURSORS) {
                     slices = totalSlices;
@@ -306,111 +270,83 @@ public class CursorPool {
                 for (int slice = 1; slice < slices; slice++) {
                     int sliceSkips = slice * sliceWidht;
 
-                    CursorPoolEntryKey sliceKey = new CursorPoolEntryKey(key);
+                    var sliceKey = CursorPoolEntryKey.clone(key);
 
-                    LOGGER.debug("{} cursor in pool: {}",
-                            ansi().fg(YELLOW).bold().a("new").reset()
-                                    .toString(),
-                            sliceKey);
+                    LOGGER.debug("{} cursor in pool: {}", ansi().fg(YELLOW).bold().a("new").reset() .toString(), sliceKey);
 
                     long existing = getSliceHeight(sliceKey);
 
                     if (existing == 0) {
-                        FindIterable<BsonDocument> cursor = dbsDAO
-                                .getFindIterable(
-                                        key.getSession(),
-                                        key.getCollection(),
-                                        key.getSort(),
-                                        key.getFilter(),
-                                        key.getHint(),
-                                        key.getKeys())
+                        var cursor = dbsDAO.getFindIterable(
+                                key.session(),
+                                key.collection(),
+                                key.sort(),
+                                key.filter(),
+                                key.hint(),
+                                key.keys())
                                 .skip(sliceSkips);
 
                         cursor.iterator(); // this forces the actual skipping
 
-                        CursorPoolEntryKey newkey = new CursorPoolEntryKey(
-                                key.getSession(),
-                                key.getCollection(),
-                                key.getSort(),
-                                key.getFilter(),
-                                key.getHint(),
-                                key.getKeys(),
+                        var newkey = new CursorPoolEntryKey(
+                                key.session(),
+                                key.collection(),
+                                key.sort(),
+                                key.filter(),
+                                key.hint(),
+                                key.keys(),
                                 sliceSkips,
                                 System.nanoTime());
                         cache.put(newkey, cursor);
 
-                        LOGGER.debug("{} cursor in pool (copied): {}",
-                                ansi().fg(YELLOW).bold().a("new").reset()
-                                        .toString(),
-                                sliceKey);
+                        LOGGER.debug("{} cursor in pool (copied): {}", ansi().fg(YELLOW).bold().a("new").reset().toString(), sliceKey);
                     }
                 }
             });
         } catch (RejectedExecutionException rej) {
-            LOGGER.debug("populate cursor pool {}",
-                    ansi().fg(RED).bold().a("rejected").reset().toString());
+            LOGGER.debug("populate cursor pool {}", ansi().fg(RED).bold().a("rejected").reset().toString());
         }
 
     }
 
     private long getSliceHeight(CursorPoolEntryKey key) {
-        long ret = cache.asMap().keySet().stream()
-                .filter(cursorsPoolFilterEq(key))
-                .count();
+        long ret = cache.asMap().keySet().stream().filter(cursorsPoolFilterEq(key)).count();
 
-        LOGGER.trace(
-                "cursor in pool with skips {} are {}",
-                key.getSkipped(),
-                ret);
+        LOGGER.trace("cursor in pool with skips {} are {}", key.skipped(), ret);
 
         return ret;
     }
 
-    private Predicate<? super CursorPoolEntryKey> cursorsPoolFilterEq(
-            CursorPoolEntryKey requestCursor) {
+    private Predicate<? super CursorPoolEntryKey> cursorsPoolFilterEq( CursorPoolEntryKey requestCursor) {
         return poolCursor
-                -> Objects.equals(poolCursor.getCollection()
-                        .getNamespace(),
-                        requestCursor.getCollection().getNamespace())
-                && Objects.equals(poolCursor.getFilter(),
-                        requestCursor.getFilter())
-                && Objects.equals(poolCursor.getSort(),
-                        requestCursor.getSort())
-                && Objects.equals(poolCursor.getKeys(),
-                        requestCursor.getKeys())
-                && poolCursor.getSkipped() == requestCursor.getSkipped();
+                -> Objects.equals(poolCursor.collection().getNamespace(), requestCursor.collection().getNamespace())
+                && Objects.equals(poolCursor.filter(), requestCursor.filter())
+                && Objects.equals(poolCursor.sort(), requestCursor.sort())
+                && Objects.equals(poolCursor.keys(), requestCursor.keys())
+                && poolCursor.skipped() == requestCursor.skipped();
     }
 
     private Predicate<? super CursorPoolEntryKey> cursorsPoolFilterGte(
             CursorPoolEntryKey requestCursor) {
         return poolCursor
-                -> Objects.equals(poolCursor.getCollection().getNamespace(),
-                        requestCursor.getCollection().getNamespace())
-                && Objects.equals(poolCursor.getFilter(),
-                        requestCursor.getFilter())
-                && Objects.equals(poolCursor.getSort(),
-                        requestCursor.getSort())
-                && Objects.equals(poolCursor.getKeys(),
-                        requestCursor.getKeys())
-                && poolCursor.getSkipped() <= requestCursor.getSkipped()
-                && requestCursor.getSkipped() - poolCursor.getSkipped()
-                <= MIN_SKIP_DISTANCE_PERCENTAGE
-                * requestCursor.getSkipped();
+                -> Objects.equals(poolCursor.collection().getNamespace(), requestCursor.collection().getNamespace())
+                && Objects.equals(poolCursor.filter(), requestCursor.filter())
+                && Objects.equals(poolCursor.sort(), requestCursor.sort())
+                && Objects.equals(poolCursor.keys(), requestCursor.keys())
+                && poolCursor.skipped() <= requestCursor.skipped()
+                && requestCursor.skipped() - poolCursor.skipped() <= MIN_SKIP_DISTANCE_PERCENTAGE * requestCursor.skipped();
     }
 
     private TreeMap<String, Long> getCacheSizes() {
         return new TreeMap<>(cache.asMap()
                 .keySet()
                 .stream()
-                .collect(Collectors.groupingBy(
-                        CursorPoolEntryKey::getCacheStatsGroup,
-                        Collectors.counting())));
+                .collect(Collectors.groupingBy(CursorPoolEntryKey::getCacheStatsGroup, Collectors.counting())));
     }
 
     private static class DBCursorPoolSingletonHolder {
 
-        private static final CursorPool INSTANCE
-                = new CursorPool(new DatabaseImpl());
+        private static final CursorPool INSTANCE = new CursorPool(new DatabaseImpl());
 
         private DBCursorPoolSingletonHolder() {
         }

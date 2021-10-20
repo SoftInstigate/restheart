@@ -20,6 +20,15 @@ permissions:
         allowWriteMode: true          # default false
 
   - role: $unauthenticated
+    predicate: path-prefix[path="/test-change-streams/anotherColl/_streams"]
+    priority: 0
+    mongo:
+        allowManagementRequests: true # default false
+        allowBulkPatch: true          # default false
+        allowBulkDelete: true         # default false
+        allowWriteMode: true          # default false
+
+  - role: $unauthenticated
     predicate: path-prefix[path="/test-change-streams/coll/_streams"]
     priority: 0
     mongo:
