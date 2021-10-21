@@ -68,12 +68,14 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -148,6 +150,10 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
+
+import static org.restheart.ConfigurationUtils.getOrDefault;
+import static org.restheart.ConfigurationUtils.valueFromEnv;
+
 
 /**
  *
@@ -235,7 +241,7 @@ public class Bootstrapper {
     public static void main(final String[] args) throws ConfigurationException, IOException {
         parseCommandLineParameters(args);
         setJsonpathDefaults();
-        configuration = loadConfiguration();
+        configuration = loadConfiguration(true);
         run();
     }
 
@@ -283,20 +289,15 @@ public class Bootstrapper {
         } else {
             if (OSChecker.isWindows()) {
                 LOGGER.error("Fork is not supported on Windows");
-                LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped")
-                        .reset().toString());
+                LOGGER.info(ansi().fg(GREEN).bold().a("RESTHeart stopped").reset().toString());
                 System.exit(-1);
             }
 
             // RHSecDaemon only works on POSIX OSes
-            final boolean isPosix = FileSystems.getDefault()
-                    .supportedFileAttributeViews()
-                    .contains("posix");
+            final boolean isPosix = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
 
             if (!isPosix) {
-                logErrorAndExit("Unable to fork process, "
-                        + "this is only supported on POSIX compliant OSes",
-                        null, false, -1);
+                logErrorAndExit("Unable to fork process, this is only supported on POSIX compliant OSes", null, false, -1);
             }
 
             var d = new RESTHeartDaemon();
@@ -363,7 +364,7 @@ public class Bootstrapper {
 
     private static void logManifestInfo() {
         if (LOGGER.isDebugEnabled()) {
-            final Set<Map.Entry<Object, Object>> MANIFEST_ENTRIES = FileUtils.findManifestInfo();
+            final var MANIFEST_ENTRIES = FileUtils.findManifestInfo();
 
             if (MANIFEST_ENTRIES != null) {
                 LOGGER.debug("Build Information: {}", MANIFEST_ENTRIES.toString());
@@ -373,50 +374,90 @@ public class Bootstrapper {
         }
     }
 
-    private static Configuration loadConfiguration() throws ConfigurationException, UnsupportedEncodingException {
+    private static Configuration loadConfiguration(boolean silent) throws ConfigurationException, UnsupportedEncodingException {
         if (CONFIGURATION_FILE == null) {
-            LOGGER.warn("No configuration file provided, starting with default values!");
+            LOGGER.info("No configuration file provided, starting with default values!");
             return new Configuration();
-        } else if (PROPERTIES_FILE == null) {
-            try {
-                if (Configuration.isParametric(CONFIGURATION_FILE)) {
-                    logErrorAndExit("Configuration is parametric but no properties file has been specified."
-                            + " You can use -e option to specify the properties file. "
-                            + "For more information check https://restheart.org/docs/setup/#configuration-files",
-                            null, false, -1);
-                }
-            } catch (IOException ioe) {
-                logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
-            }
-
-            return new Configuration(CONFIGURATION_FILE, false);
-        } else {
-            final Properties p = new Properties();
-            try (InputStreamReader reader = new InputStreamReader(
-                    new FileInputStream(PROPERTIES_FILE.toFile()), "UTF-8")) {
-                p.load(reader);
-            } catch (FileNotFoundException fnfe) {
-                logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
-            } catch (IOException ieo) {
-                logErrorAndExit("Error reading properties file " + PROPERTIES_FILE, null, false, -1);
-            }
-
-            final StringWriter writer = new StringWriter();
-            try (BufferedReader reader = new BufferedReader(new FileReader(CONFIGURATION_FILE.toFile()))) {
-                Mustache m = new DefaultMustacheFactory().compile(reader, "configuration-file");
-                m.execute(writer, p);
-                writer.flush();
-            } catch (MustacheNotFoundException ex) {
-                logErrorAndExit("Configuration file not found: " + CONFIGURATION_FILE, ex, false, -1);
-            } catch (FileNotFoundException fnfe) {
-                logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
-            } catch (IOException ieo) {
-                logErrorAndExit("Error reading configuration file " + CONFIGURATION_FILE, null, false, -1);
-            }
-
-            Map<String, Object> obj = new Yaml(new SafeConstructor()).load(writer.toString());
-            return new Configuration(CONFIGURATION_FILE, obj, false);
         }
+
+        try (var confReader = new BufferedReader(new FileReader(CONFIGURATION_FILE.toFile()))) {
+            var m = new DefaultMustacheFactory().compile(confReader, "configuration-file");
+
+            var parameters = Arrays.asList(m.getCodes());
+
+            if (parameters.isEmpty()) {
+                // configuration file is not parametric
+                // Map<String, Object> conf = new Yaml(new SafeConstructor()).load(writer.toString());
+                return new Configuration(CONFIGURATION_FILE, silent);
+            } else {
+                // configuration is parametric
+                if (PROPERTIES_FILE == null) {
+                    var allResolved = parameters.stream().filter(c -> c != null && c.getName() != null).map(c -> c.getName()).allMatch(n -> valueFromEnv(n, true) != null);
+
+                    if (allResolved) {
+                        final var p = new Properties();
+                        parameters.stream()
+                            .filter(c -> c != null && c.getName() != null)
+                            .map(c -> c.getName())
+                            .forEach(n -> p.put(n, valueFromEnv(n, silent)));
+
+                        final var writer = new StringWriter();
+                        m.execute(writer, p);
+
+                        Map<String, Object> obj = new Yaml(new SafeConstructor()).load(writer.toString());
+                        return new Configuration(CONFIGURATION_FILE, obj, silent);
+                    } else {
+                        var unbound = parameters.stream()
+                            .filter(c -> c != null && c.getName() != null)
+                            .map(c -> c.getName())
+                            .filter(n -> valueFromEnv(n, true) == null)
+                            .collect(Collectors.toList());
+
+                        logErrorAndExit("Configuration is parametric but no properties file or environment variables have been specified."
+                                + " Unbound parameters: " + unbound.toString()
+                                + ". You can use -e option to specify the properties file or set them via environment variables"
+                                + " For more information check https://restheart.org/docs/setup/#configuration-files",
+                                null, false, -1);
+                    }
+                } else {
+                    try (var propsReader = new InputStreamReader(new FileInputStream(PROPERTIES_FILE.toFile()), "UTF-8")) {
+                        final var p = new Properties();
+                        p.load(propsReader);
+
+                        //  overwrite properties from env vars
+                        //  if Properties has a property called 'foo-bar'
+                        //  and the environment variable RH_FOO_BAR is defined
+                        //  the value of the latter is used
+                        p.replaceAll((k,v) -> {
+                            if (k instanceof String sk) {
+                                var vfe = valueFromEnv(sk, silent);
+                                return vfe != null ? vfe : v;
+                            } else {
+                                return v;
+                            }
+                        });
+
+                        final var writer = new StringWriter();
+                        m.execute(writer, p);
+
+                        Map<String, Object> obj = new Yaml(new SafeConstructor()).load(writer.toString());
+                        return new Configuration(CONFIGURATION_FILE, obj, silent);
+                    } catch (FileNotFoundException fnfe) {
+                        logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
+                    } catch (IOException ieo) {
+                        logErrorAndExit("Error reading properties file " + PROPERTIES_FILE, null, false, -1);
+                    }
+                }
+            }
+        } catch (MustacheNotFoundException ex) {
+            logErrorAndExit("Configuration file not found: " + CONFIGURATION_FILE, ex, false, -1);
+        } catch (FileNotFoundException fnfe) {
+            logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
+        } catch (IOException ieo) {
+            logErrorAndExit("Error reading configuration file " + CONFIGURATION_FILE, null, false, -1);
+        }
+
+        return null;
     }
 
     private static void logStartMessages() {
@@ -490,7 +531,7 @@ public class Bootstrapper {
     private static void logLoggingConfiguration(boolean fork) {
         var logbackConfigurationFile = System.getProperty("logback.configurationFile");
 
-        boolean usesLogback = logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty();
+        var usesLogback = logbackConfigurationFile != null && !logbackConfigurationFile.isEmpty();
 
         if (usesLogback) {
             return;
@@ -530,8 +571,7 @@ public class Bootstrapper {
     private static void startServer(boolean fork) {
         logStartMessages();
 
-        var pidFilePath = FileUtils.getPidFilePath(
-                FileUtils.getFileAbsolutePathHash(CONFIGURATION_FILE, PROPERTIES_FILE));
+        var pidFilePath = FileUtils.getPidFilePath(FileUtils.getFileAbsolutePathHash(CONFIGURATION_FILE, PROPERTIES_FILE));
         var pidFileAlreadyExists = false;
 
         if (!OSChecker.isWindows() && pidFilePath != null) {
@@ -541,9 +581,9 @@ public class Bootstrapper {
         logLoggingConfiguration(fork);
         logManifestInfo();
 
-        // re-read configuration file, to log errors new that logger is initialized
+        // re-read configuration file, to log errors now that logger is initialized
         try {
-            loadConfiguration();
+            loadConfiguration(false);
         } catch (ConfigurationException | IOException ex) {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
@@ -554,10 +594,7 @@ public class Bootstrapper {
         } catch (IllegalArgumentException iae) {
             // this occurs instatiating plugin missing external dependencies
             // unfortunatly Classgraph wraps it to IllegalArgumentException
-
-            if (iae.getMessage() != null
-                    && iae.getMessage().contains("NoClassDefFoundError")) {
-
+            if (iae.getMessage() != null && iae.getMessage().contains("NoClassDefFoundError")) {
                 logErrorAndExit("Error instantiating plugins: "
                         + "an external dependency is missing. "
                         + "Copy the missing dependency jar to the plugins directory to add it to the classpath",
@@ -598,22 +635,20 @@ public class Bootstrapper {
                         i.getInstance().init();
                     } catch (NoClassDefFoundError iae) {
                         // this occurs executing interceptors missing external dependencies
-
                         LOGGER.error("Error executing initializer {} "
                                 + "An external dependency is missing. "
                                 + "Copy the missing dependency jar to the plugins directory to add it to the classpath",
                                 i.getName(), iae);
                     } catch (LinkageError le) {
-                        // this occurs executing plugin code compiled
+                        // this might occur executing plugin code compiled
                         // with wrong version of restheart-commons
-
-                        String version = Version.getInstance().getVersion() == null
-                                ? "of correct version"
-                                : "v" + Version.getInstance().getVersion();
+                        var version = Version.getInstance().getVersion() == null
+                            ? "of correct version"
+                            : "v" + Version.getInstance().getVersion();
 
                         LOGGER.error("Linkage error executing initializer {} "
-                                + "Check that it was compiled against restheart-commons {}",
-                                i.getName(), version, le);
+                            + "Check that it was compiled against restheart-commons {}",
+                            i.getName(), version, le);
                     } catch (Throwable t) {
                         LOGGER.error("Error executing initializer {}", i.getName());
                     }
@@ -657,7 +692,7 @@ public class Bootstrapper {
                                 + "Copy the missing dependency jar to the plugins directory to add it to the classpath",
                                 i.getName(), iae);
                     } catch (LinkageError le) {
-                        // this occurs executing plugin code compiled
+                        // this might occur executing plugin code compiled
                         // with wrong version of restheart-commons
 
                         var version = Version.getInstance().getVersion() == null
@@ -712,8 +747,7 @@ public class Bootstrapper {
                 HANDLERS.shutdown();
                 HANDLERS.awaitShutdown(60 * 1000); // up to 1 minute
             } catch (InterruptedException ie) {
-                LOGGER.error("Error while waiting for pending request "
-                        + "to complete", ie);
+                LOGGER.error("Error while waiting for pending request to complete", ie);
                 Thread.currentThread().interrupt();
             }
         }
@@ -780,25 +814,18 @@ public class Bootstrapper {
         final var authorizers = PluginsRegistryImpl.getInstance().getAuthorizers();
 
         if (authorizers == null || authorizers.isEmpty()) {
-            LOGGER.warn(ansi().fg(RED).bold()
-                    .a("No Authorizers defined")
-                    .reset().toString());
+            LOGGER.warn(ansi().fg(RED).bold().a("No Authorizers defined").reset().toString());
         }
 
         var builder = Undertow.builder();
 
         if (configuration.isHttpsListener()) {
-            builder.addHttpsListener(configuration.getHttpsPort(),
-                    configuration.getHttpsHost(),
-                    initSSLContext());
+            builder.addHttpsListener(configuration.getHttpsPort(), configuration.getHttpsHost(), initSSLContext());
             if (configuration.getHttpsHost().equals("127.0.0.1")
                     || configuration.getHttpsHost().equalsIgnoreCase("localhost")) {
-                LOGGER.warn("HTTPS listener bound to localhost:{}. "
-                        + "Remote systems will be unable to connect to this server.",
-                        configuration.getHttpsPort());
+                LOGGER.warn("HTTPS listener bound to localhost:{}. Remote systems will be unable to connect to this server.", configuration.getHttpsPort());
             } else {
-                LOGGER.info("HTTPS listener bound at {}:{}",
-                        configuration.getHttpsHost(), configuration.getHttpsPort());
+                LOGGER.info("HTTPS listener bound at {}:{}", configuration.getHttpsHost(), configuration.getHttpsPort());
             }
         }
 
@@ -1074,9 +1101,9 @@ public class Bootstrapper {
         }
 
         conf.getProxies().stream().forEachOrdered((Map<String, Object> proxies) -> {
-            String location = Configuration.getOrDefault(proxies, ConfigurationKeys.PROXY_LOCATION_KEY, null, true);
+            String location = getOrDefault(proxies, ConfigurationKeys.PROXY_LOCATION_KEY, null, true);
 
-            Object _proxyPass = Configuration.getOrDefault(proxies, ConfigurationKeys.PROXY_PASS_KEY, null, true);
+            var _proxyPass = getOrDefault(proxies, ConfigurationKeys.PROXY_PASS_KEY, null, true);
 
             if (location == null && _proxyPass != null) {
                 LOGGER.warn("Location URI not specified for resource {} ", _proxyPass);
@@ -1089,20 +1116,20 @@ public class Bootstrapper {
             }
 
             // The number of connections to create per thread
-            Integer connectionsPerThread = Configuration.getOrDefault(proxies, ConfigurationKeys.PROXY_CONNECTIONS_PER_THREAD, 10, true);
+            Integer connectionsPerThread = getOrDefault(proxies, ConfigurationKeys.PROXY_CONNECTIONS_PER_THREAD, 10, true);
 
-            Integer maxQueueSize = Configuration.getOrDefault(proxies, ConfigurationKeys.PROXY_MAX_QUEUE_SIZE, 0, true);
+            Integer maxQueueSize = getOrDefault(proxies, ConfigurationKeys.PROXY_MAX_QUEUE_SIZE, 0, true);
 
-            Integer softMaxConnectionsPerThread = Configuration.getOrDefault(proxies, ConfigurationKeys.PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true);
+            Integer softMaxConnectionsPerThread = getOrDefault(proxies, ConfigurationKeys.PROXY_SOFT_MAX_CONNECTIONS_PER_THREAD, 5, true);
 
-            Integer ttl = Configuration.getOrDefault(proxies, ConfigurationKeys.PROXY_TTL, -1, true);
+            Integer ttl = getOrDefault(proxies, ConfigurationKeys.PROXY_TTL, -1, true);
 
-            boolean rewriteHostHeader = Configuration.getOrDefault(proxies, ConfigurationKeys.PROXY_REWRITE_HOST_HEADER, true, true);
+            boolean rewriteHostHeader = getOrDefault(proxies, ConfigurationKeys.PROXY_REWRITE_HOST_HEADER, true, true);
 
             // Time in seconds between retries for problem server
-            Integer problemServerRetry = Configuration.getOrDefault(proxies, ConfigurationKeys.PROXY_PROBLEM_SERVER_RETRY, 10, true);
+            Integer problemServerRetry = getOrDefault(proxies, ConfigurationKeys.PROXY_PROBLEM_SERVER_RETRY, 10, true);
 
-            String name = Configuration.getOrDefault(proxies, ConfigurationKeys.PROXY_NAME, null, true);
+            String name = getOrDefault(proxies, ConfigurationKeys.PROXY_NAME, null, true);
 
             final var xnio = Xnio.getInstance();
 

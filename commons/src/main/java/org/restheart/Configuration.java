@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,60 +35,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-import static org.restheart.ConfigurationKeys.AJP_HOST_KEY;
-import static org.restheart.ConfigurationKeys.AJP_LISTENER_KEY;
-import static org.restheart.ConfigurationKeys.AJP_PORT_KEY;
-import static org.restheart.ConfigurationKeys.ALLOW_UNESCAPED_CHARACTERS_IN_URL;
-import static org.restheart.ConfigurationKeys.ANSI_CONSOLE_KEY;
-import static org.restheart.ConfigurationKeys.AUTHENTICATORS_KEY;
-import static org.restheart.ConfigurationKeys.AUTHORIZERS_KEY;
-import static org.restheart.ConfigurationKeys.AUTH_MECHANISMS_KEY;
-import static org.restheart.ConfigurationKeys.BUFFER_SIZE_KEY;
-import static org.restheart.ConfigurationKeys.CERT_PASSWORD_KEY;
-import static org.restheart.ConfigurationKeys.CONNECTION_OPTIONS_KEY;
-import static org.restheart.ConfigurationKeys.DEFAULT_AJP_HOST;
-import static org.restheart.ConfigurationKeys.DEFAULT_AJP_LISTENER;
-import static org.restheart.ConfigurationKeys.DEFAULT_AJP_PORT;
-import static org.restheart.ConfigurationKeys.DEFAULT_HTTPS_HOST;
-import static org.restheart.ConfigurationKeys.DEFAULT_HTTPS_LISTENER;
-import static org.restheart.ConfigurationKeys.DEFAULT_HTTPS_PORT;
-import static org.restheart.ConfigurationKeys.DEFAULT_HTTP_HOST;
-import static org.restheart.ConfigurationKeys.DEFAULT_HTTP_LISTENER;
-import static org.restheart.ConfigurationKeys.DEFAULT_HTTP_PORT;
-import static org.restheart.ConfigurationKeys.DEFAULT_INSTANCE_NAME;
-import static org.restheart.ConfigurationKeys.DIRECT_BUFFERS_KEY;
-import static org.restheart.ConfigurationKeys.ENABLE_LOG_CONSOLE_KEY;
-import static org.restheart.ConfigurationKeys.ENABLE_LOG_FILE_KEY;
-import static org.restheart.ConfigurationKeys.FORCE_GZIP_ENCODING_KEY;
-import static org.restheart.ConfigurationKeys.HTTPS_HOST_KEY;
-import static org.restheart.ConfigurationKeys.HTTPS_LISTENER_KEY;
-import static org.restheart.ConfigurationKeys.HTTPS_PORT_KEY;
-import static org.restheart.ConfigurationKeys.HTTP_HOST_KEY;
-import static org.restheart.ConfigurationKeys.HTTP_LISTENER_KEY;
-import static org.restheart.ConfigurationKeys.HTTP_PORT_KEY;
-import static org.restheart.ConfigurationKeys.INSTANCE_NAME_KEY;
-import static org.restheart.ConfigurationKeys.IO_THREADS_KEY;
-import static org.restheart.ConfigurationKeys.KEYSTORE_FILE_KEY;
-import static org.restheart.ConfigurationKeys.KEYSTORE_PASSWORD_KEY;
-import static org.restheart.ConfigurationKeys.LOG_FILE_PATH_KEY;
-import static org.restheart.ConfigurationKeys.LOG_LEVEL_KEY;
-import static org.restheart.ConfigurationKeys.LOG_REQUESTS_LEVEL_KEY;
-import static org.restheart.ConfigurationKeys.PLUGINS_ARGS_KEY;
-import static org.restheart.ConfigurationKeys.PLUGINS_DIRECTORY_PATH_KEY;
-import static org.restheart.ConfigurationKeys.PROXY_KEY;
-import static org.restheart.ConfigurationKeys.REQUESTS_LIMIT_KEY;
-import static org.restheart.ConfigurationKeys.REQUESTS_LOG_TRACE_HEADERS_KEY;
-import static org.restheart.ConfigurationKeys.SERVICES_KEY;
-import static org.restheart.ConfigurationKeys.STATIC_RESOURCES_MOUNTS_KEY;
-import static org.restheart.ConfigurationKeys.TOKEN_MANAGER_KEY;
-import static org.restheart.ConfigurationKeys.WORKER_THREADS_KEY;
+
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+
+import static org.restheart.ConfigurationKeys.*;
+import static org.restheart.ConfigurationUtils.*;
 
 /**
  * Class that holds the configuration.
@@ -115,207 +70,6 @@ public class Configuration {
      */
     private static Path PATH = null;
 
-    private static Map<String, Object> getDefaultConf() {
-        var defaultConf = new HashMap<String, Object>();
-
-        defaultConf.put(ANSI_CONSOLE_KEY, true);
-
-        defaultConf.put(HTTPS_LISTENER_KEY, DEFAULT_HTTPS_LISTENER);
-        defaultConf.put(HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
-        defaultConf.put(HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
-
-        defaultConf.put(HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER);
-        defaultConf.put(HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
-        defaultConf.put(HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
-
-        defaultConf.put(AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
-        defaultConf.put(AJP_PORT_KEY, DEFAULT_AJP_PORT);
-        defaultConf.put(AJP_HOST_KEY, DEFAULT_AJP_HOST);
-
-        defaultConf.put(INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-
-        defaultConf.put(KEYSTORE_FILE_KEY, null);
-        defaultConf.put(KEYSTORE_PASSWORD_KEY, null);
-        defaultConf.put(CERT_PASSWORD_KEY, null);
-
-        defaultConf.put(ANSI_CONSOLE_KEY, new ArrayList<>());
-
-        defaultConf.put(PROXY_KEY, new LinkedHashMap<>());
-
-        defaultConf.put(PLUGINS_DIRECTORY_PATH_KEY, "plugins");
-
-        defaultConf.put(PLUGINS_ARGS_KEY, new LinkedHashMap<>());
-
-        defaultConf.put(AUTH_MECHANISMS_KEY, new LinkedHashMap<>());
-        defaultConf.put(AUTHENTICATORS_KEY, new LinkedHashMap<>());
-        defaultConf.put(AUTHORIZERS_KEY, null);
-        defaultConf.put(TOKEN_MANAGER_KEY, URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
-                .concat(File.separator + "restheart-security.log"));
-
-        defaultConf.put(LOG_FILE_PATH_KEY, new LinkedHashMap<>());
-        defaultConf.put(ENABLE_LOG_CONSOLE_KEY, true);
-        defaultConf.put(ENABLE_LOG_FILE_KEY, true);
-        defaultConf.put(LOG_LEVEL_KEY, Level.INFO);
-        defaultConf.put(ConfigurationKeys.REQUESTS_LOG_LEVEL_KEY, 0);
-
-        defaultConf.put(REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
-
-        defaultConf.put(REQUESTS_LIMIT_KEY, 100);
-        defaultConf.put(IO_THREADS_KEY, 2);
-        defaultConf.put(WORKER_THREADS_KEY, 32);
-        defaultConf.put(BUFFER_SIZE_KEY, 16384);
-        defaultConf.put(DIRECT_BUFFERS_KEY, true);
-        defaultConf.put(FORCE_GZIP_ENCODING_KEY, false);
-        defaultConf.put(CONNECTION_OPTIONS_KEY, Maps.newHashMap());
-        defaultConf.put(ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
-
-        return defaultConf;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> getConfigurationFromFile(final Path confFilePath) throws ConfigurationException {
-        var yaml = new Yaml(new SafeConstructor());
-        Map<String, Object> conf = null;
-
-        try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
-            conf = (Map<String, Object>) yaml.load(fis);
-        } catch (FileNotFoundException fne) {
-            throw new ConfigurationException("Configuration file not found", fne);
-        } catch (Throwable t) {
-            throw new ConfigurationException("Error parsing the configuration file", t);
-        }
-
-        return conf;
-    }
-
-    static boolean isParametric(final Path confFilePath) throws IOException {
-        try (var sc = new Scanner(confFilePath, "UTF-8")) {
-            return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}")).limit(1).count() > 0;
-        }
-    }
-
-    /**
-     *
-     * @param <V> return value
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @param silent
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    public static <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key, final V defaultValue, boolean silent) {
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.warn("Parameter \"{}\" not specified in the configuration file, using its default value \"{}\"", key, defaultValue);
-            }
-            return defaultValue;
-        }
-
-        try {
-            if (!silent) {
-                LOGGER.trace("configuration paramenter \"{}\" set to \"{}\"", key, conf.get(key));
-            }
-            return (V) conf.get(key);
-        } catch (Throwable t) {
-            if (!silent) {
-                LOGGER.warn("Wrong configuration parameter \"{}\": \"{}\", using its default value \"{}\"", key, conf.get(key), defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    /**
-     *
-     * @param key
-     * @return the environment or java property variable, if found
-     */
-    private static String overrideValueFromEnv(final String confParameter) {
-        var value = _overrideValueFromEnv("RH", confParameter);
-
-        if (value != null) {
-            return value;
-        }
-
-        value = _overrideValueFromEnv("RESTHEART", confParameter);
-
-        if (value != null) {
-            return value;
-        }
-
-        // legacy variable pattern
-        value = _overrideValueFromEnv("RESTHEART_SECURITY", confParameter);
-
-        if (value != null) {
-            return value;
-        }
-
-        // no prefix
-        value = _overrideValueFromEnv(null, confParameter);
-
-        if (value != null) {
-            return value;
-        }
-
-        return null;
-    }
-
-    private static String _overrideValueFromEnv(final String prefix, final String confParameter) {
-        var key = prefix != null
-                ? prefix + "_" + confParameter.toUpperCase().replaceAll("-", "_")
-                : confParameter.toUpperCase().replaceAll("-", "_");
-
-        return __overrideValueFromEnv(confParameter, key);
-    }
-
-    private static String __overrideValueFromEnv(final String confParameter, final String key) {
-        var envValue = System.getProperty(key);
-
-        if (envValue == null) {
-            envValue = System.getenv(key);
-        } else {
-            LOGGER.warn(">>> Found environment variable '{}': overriding parameter '{}' with value '{}'", key, confParameter, envValue);
-        }
-
-        return envValue;
-    }
-
-    /**
-     * this checks if an old (< 2.0) configuration is found
-     *
-     * old format:
-     *
-     * <pre>
-     * auth-mechanisms:
-     *  - name: basicAuthMechanism
-     *    class: org.restheart.security.mechanisms.BasicAuthMechanism
-     *    args:
-     *      argParam1: value
-     *      argParam2: value
-     * </pre>
-     *
-     * new format
-     *
-     * <pre>
-     * auth-mechanisms:
-     *  - basicAuthMechanism:
-     *      argParam1: value
-     *      argParam2: value
-     * </pre>
-     *
-     * @param conf
-     * @return true if an old (< 2.0) configuration is found
-     */
-    private static boolean checkPre20Confs(List<Map<String, Object>> conf) {
-        return conf != null && conf.stream().anyMatch(e -> e.containsKey("name") || e.containsKey("class") || e.containsKey("args"));
-    }
-
-    private static boolean checkPre20Confs(Map<String, Map<String, Object>> conf) {
-        return conf != null && (conf.containsKey("name") || conf.containsKey("class") || conf.containsKey("args"));
-    }
-
-    private boolean silent = false;
     private final boolean httpsListener;
     private final int httpsPort;
     private final String httpsHost;
@@ -359,8 +113,7 @@ public class Configuration {
      * Creates a new instance of Configuration with defaults values.
      */
     public Configuration() {
-        this(null, getDefaultConf(), true);
-        this.conf = getDefaultConf();
+        this(null, DefaultConfiguration.get(), true);
     }
 
     /**
@@ -383,7 +136,7 @@ public class Configuration {
      * @throws org.restheart.ConfigurationException
      */
     public Configuration(final Path confFilePath, boolean silent) throws ConfigurationException {
-        this(confFilePath, getConfigurationFromFile(confFilePath), silent);
+        this(confFilePath, fromFile(confFilePath), silent);
     }
 
     /**
@@ -394,12 +147,11 @@ public class Configuration {
      * @param silent
      * @throws org.restheart.ConfigurationException
      */
-    @SuppressWarnings({ "deprecation", "unchecked", "rawtypes" })
+    @SuppressWarnings({ "deprecation" })
     public Configuration(final Path confFilePath, Map<String, Object> conf, boolean silent) throws ConfigurationException {
         PATH = confFilePath;
 
         this.conf = conf;
-        this.silent = silent;
 
         // check if service configuration follows old (<2.0)format
         if (conf.get(SERVICES_KEY) != null) {
@@ -407,127 +159,83 @@ public class Configuration {
             throw new ConfigurationException("Wrong Services configuration");
         }
 
-        ansiConsole = asBoolean(conf, ANSI_CONSOLE_KEY, true);
+        ansiConsole = asBoolean(conf, ANSI_CONSOLE_KEY, true, silent);
 
-        httpsListener = asBoolean(conf, HTTPS_LISTENER_KEY, true);
-        httpsPort = asInteger(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
-        httpsHost = asString(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
+        httpsListener = asBoolean(conf, HTTPS_LISTENER_KEY, true, silent);
+        httpsPort = asInteger(conf, HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT, silent);
+        httpsHost = asString(conf, HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST, silent);
 
-        httpListener = asBoolean(conf, HTTP_LISTENER_KEY, false);
-        httpPort = asInteger(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
-        httpHost = asString(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
+        httpListener = asBoolean(conf, HTTP_LISTENER_KEY, false, silent);
+        httpPort = asInteger(conf, HTTP_PORT_KEY, DEFAULT_HTTP_PORT, silent);
+        httpHost = asString(conf, HTTP_HOST_KEY, DEFAULT_HTTP_HOST, silent);
 
-        ajpListener = asBoolean(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
-        ajpPort = asInteger(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT);
-        ajpHost = asString(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST);
+        ajpListener = asBoolean(conf, AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER, silent);
+        ajpPort = asInteger(conf, AJP_PORT_KEY, DEFAULT_AJP_PORT, silent);
+        ajpHost = asString(conf, AJP_HOST_KEY, DEFAULT_AJP_HOST, silent);
 
-        instanceName = asString(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
-        keystoreFile = asString(conf, KEYSTORE_FILE_KEY, null);
-        keystorePassword = asString(conf, KEYSTORE_PASSWORD_KEY, null);
-        certPassword = asString(conf, CERT_PASSWORD_KEY, null);
+        instanceName = asString(conf, INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME, silent);
+        keystoreFile = asString(conf, KEYSTORE_FILE_KEY, null, silent);
+        keystorePassword = asString(conf, KEYSTORE_PASSWORD_KEY, null, silent);
+        certPassword = asString(conf, CERT_PASSWORD_KEY, null, silent);
 
-        proxies = asListOfMaps(conf, PROXY_KEY, new ArrayList<>());
+        proxies = asListOfMaps(conf, PROXY_KEY, new ArrayList<>(), silent);
 
-        staticResourcesMounts = asListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, new ArrayList<>());
+        staticResourcesMounts = asListOfMaps(conf, STATIC_RESOURCES_MOUNTS_KEY, new ArrayList<>(), silent);
 
-        pluginsDirectory = asString(conf, PLUGINS_DIRECTORY_PATH_KEY, null);
+        pluginsDirectory = asString(conf, PLUGINS_DIRECTORY_PATH_KEY, null, silent);
 
-        pluginsArgs = asMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>());
+        pluginsArgs = asMapOfMaps(conf, PLUGINS_ARGS_KEY, new LinkedHashMap<>(), silent);
 
-        authMechanisms = asMapOfMaps(conf, AUTH_MECHANISMS_KEY, new LinkedHashMap<>());
+        authMechanisms = asMapOfMaps(conf, AUTH_MECHANISMS_KEY, new LinkedHashMap<>(), silent);
 
-        // check if configuration follows old (<2.0)format
-        if (authMechanisms.isEmpty()) {
-            // check if exception is due to old configuration format
-            var old = conf.get(AUTH_MECHANISMS_KEY);
+        authenticators = asMapOfMaps(conf, AUTHENTICATORS_KEY, new LinkedHashMap<>(), silent);
 
-            if (old != null && old instanceof List && checkPre20Confs((List) old)) {
-                LOGGER.error("The auth-mechanisms configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
-                throw new ConfigurationException("Wrong Authentication Mechanisms configuration");
-            }
-        }
+        authorizers = asMapOfMaps(conf, AUTHORIZERS_KEY, new LinkedHashMap<>(), silent);
 
-        authenticators = asMapOfMaps(conf, AUTHENTICATORS_KEY, new LinkedHashMap<>());
+        tokenManagers = asMapOfMaps(conf, TOKEN_MANAGER_KEY, new LinkedHashMap<>(), silent);
 
-        // check if configuration follows old (<2.0)format
-        if (authenticators.isEmpty()) {
-            // check if exception is due to old configuration format
-            var old = conf.get(AUTHENTICATORS_KEY);
-
-            if (old != null && old instanceof List && checkPre20Confs((List) old)) {
-                LOGGER.error(
-                        "The authenticator configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
-                throw new ConfigurationException("Wrong Authenticators configuration");
-            }
-        }
-
-        authorizers = asMapOfMaps(conf, AUTHORIZERS_KEY, new LinkedHashMap<>());
-
-        // check if configuration follows old (<2.0)format
-        if (authorizers.isEmpty()) {
-            // check if exception is due to old configuration format
-            var old = conf.get(AUTHORIZERS_KEY);
-
-            if (old != null && old instanceof List && checkPre20Confs((List<Map<String, Object>>) old)) {
-                LOGGER.error(
-                        "The authorizers configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
-                throw new ConfigurationException("Wrong Authorizers configuration");
-            }
-        }
-
-        tokenManagers = asMapOfMaps(conf, TOKEN_MANAGER_KEY, new LinkedHashMap<>());
-
-        // check if configuration follows old (<2.0)format
-        if (checkPre20Confs(tokenManagers)) {
-            // check if exception is due to old configuration format
-            LOGGER.error(
-                    "The token-manager configuration section follows old format. Refer to https://restheart.org/docs/upgrade-to-v4.2 and upgrade it.");
-            throw new ConfigurationException("Wrong Token Manager configuration");
-        }
-
-        logFilePath = asString(conf, LOG_FILE_PATH_KEY,
-                URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir"))
-                        .concat(File.separator + "restheart-security.log"));
-        String _logLevel = asString(conf, LOG_LEVEL_KEY, "INFO");
-        logToConsole = asBoolean(conf, ENABLE_LOG_CONSOLE_KEY, true);
-        logToFile = asBoolean(conf, ENABLE_LOG_FILE_KEY, true);
+        logFilePath = asString(conf, LOG_FILE_PATH_KEY, URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir")).concat(File.separator + "restheart.log"), silent);
+        String _logLevel = asString(conf, LOG_LEVEL_KEY, "INFO", silent);
+        logToConsole = asBoolean(conf, ENABLE_LOG_CONSOLE_KEY, true, silent);
+        logToFile = asBoolean(conf, ENABLE_LOG_FILE_KEY, true, silent);
 
         Level level;
         try {
             level = Level.valueOf(_logLevel);
         } catch (Exception e) {
             if (!silent) {
-                LOGGER.info("wrong value for parameter {}: {}, using its default value {}", "log-level", _logLevel, "INFO");
+                LOGGER.info("wrong value for parameter {}: {}, using its default value {}", "log-level", _logLevel,
+                        "INFO");
             }
             level = Level.INFO;
         }
 
         logLevel = level;
 
-        traceHeaders = asListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
+        traceHeaders = asListOfStrings(conf, REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList(), silent);
 
-        requestsLimit = asInteger(conf, REQUESTS_LIMIT_KEY, 100);
-        ioThreads = asInteger(conf, IO_THREADS_KEY, 2);
-        workerThreads = asInteger(conf, WORKER_THREADS_KEY, 32);
-        bufferSize = asInteger(conf, BUFFER_SIZE_KEY, 16384);
-        directBuffers = asBoolean(conf, DIRECT_BUFFERS_KEY, true);
-        forceGzipEncoding = asBoolean(conf, FORCE_GZIP_ENCODING_KEY, false);
-        logExchangeDump = asInteger(conf, LOG_REQUESTS_LEVEL_KEY, 0);
-        connectionOptions = asMap(conf, CONNECTION_OPTIONS_KEY);
-        allowUnescapedCharactersInUrl = asBoolean(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
+        requestsLimit = asInteger(conf, REQUESTS_LIMIT_KEY, 100, silent);
+        ioThreads = asInteger(conf, IO_THREADS_KEY, 2, silent);
+        workerThreads = asInteger(conf, WORKER_THREADS_KEY, 32, silent);
+        bufferSize = asInteger(conf, BUFFER_SIZE_KEY, 16384, silent);
+        directBuffers = asBoolean(conf, DIRECT_BUFFERS_KEY, true, silent);
+        forceGzipEncoding = asBoolean(conf, FORCE_GZIP_ENCODING_KEY, false, silent);
+        logExchangeDump = asInteger(conf, LOG_REQUESTS_LEVEL_KEY, 0, silent);
+        connectionOptions = asMap(conf, CONNECTION_OPTIONS_KEY, silent);
+        allowUnescapedCharactersInUrl = asBoolean(conf, ALLOW_UNESCAPED_CHARACTERS_IN_URL, true, silent);
     }
 
     @Override
     public String toString() {
-        return "Configuration{" + "instanceName=" + instanceName + ", silent=" + silent + ", configurationFilePath=" + PATH
-                + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost + ", httpListener="
-                + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost + ", ajpListener=" + ajpListener
-                + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost + ", pluginsDirectory=" + pluginsDirectory
-                + ", keystoreFile=" + keystoreFile
-                + ", keystorePassword=" + keystorePassword + ", certPassword=" + certPassword + ", proxies=" + proxies
-                + ", pluginsArgs=" + pluginsArgs + ", authMechanisms=" + authMechanisms + ", authenticators="
-                + authenticators + ", authorizers=" + authorizers + ", tokenManager=" + tokenManagers + ", logFilePath="
-                + logFilePath + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile
+        return "Configuration{" + "instanceName=" + instanceName + ", configurationFilePath="
+                + PATH + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost
+                + ", httpListener=" + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost
+                + ", ajpListener=" + ajpListener + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost
+                + ", pluginsDirectory=" + pluginsDirectory + ", keystoreFile=" + keystoreFile + ", keystorePassword="
+                + keystorePassword + ", certPassword=" + certPassword + ", proxies=" + proxies + ", pluginsArgs="
+                + pluginsArgs + ", authMechanisms=" + authMechanisms + ", authenticators=" + authenticators
+                + ", authorizers=" + authorizers + ", tokenManager=" + tokenManagers + ", logFilePath=" + logFilePath
+                + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile
                 + ", traceHeaders=" + traceHeaders + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads
                 + ", workerThreads=" + workerThreads + ", bufferSize=" + bufferSize + ", directBuffers=" + directBuffers
                 + ", forceGzipEncoding=" + forceGzipEncoding + ", connectionOptions=" + connectionOptions
@@ -559,17 +267,6 @@ public class Configuration {
      */
     public boolean isAnsiConsole() {
         return ansiConsole;
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
-    private <V extends Object> V getOrDefault(final Map<String, Object> conf, final String key, final V defaultValue) {
-        return getOrDefault(conf, key, defaultValue, this.silent);
     }
 
     /**
@@ -813,254 +510,85 @@ public class Configuration {
         return PATH;
     }
 
-    /**
-     *
-     * @return the base URL of restheart proxy identified by proxy configuration
-     *         property name="restheart"
-     * @throws ConfigurationException
-     */
-    @SuppressWarnings("rawtypes")
-    public URI getRestheartBaseUrl() throws ConfigurationException {
-        var __proxyPass = getProxies().stream().filter(e -> e.containsKey(ConfigurationKeys.PROXY_NAME))
-                .filter(e -> "restheart".equals(e.get(ConfigurationKeys.PROXY_NAME)))
-                .map(e -> e.get(ConfigurationKeys.PROXY_PASS_KEY)).findFirst();
-
-        if (__proxyPass.isEmpty()) {
-            throw new ConfigurationException("No proxy pass defined " + "for proxy 'restheart'");
-        }
-
-        var _proxyPass = __proxyPass.get();
-
-        String proxyPass;
-
-        if (_proxyPass instanceof String) {
-            proxyPass = (String) _proxyPass;
-        } else if (_proxyPass instanceof List) {
-            var listOfProxyPass = (List) _proxyPass;
-
-            if (listOfProxyPass.isEmpty() || !(listOfProxyPass.get(0) instanceof String)) {
-                throw new ConfigurationException("Wrong proxy pass for proxy 'restheart' " + _proxyPass);
-            } else {
-                proxyPass = (String) listOfProxyPass.get(0);
-            }
-        } else {
-            throw new ConfigurationException("Wrong proxy pass for proxy 'restheart' " + _proxyPass);
-        }
-
-        try {
-            return URI.create(proxyPass);
-        } catch (IllegalArgumentException ex) {
-            throw new ConfigurationException("Wrong proxy pass ULR " + proxyPass, ex);
-        }
-    }
-
-    /**
-     *
-     * @return the location of restheart proxy identified by proxy configuration
-     *         property name="restheart"
-     * @throws ConfigurationException
-     */
-    public URI getRestheartLocation() throws ConfigurationException {
-        var __proxyLocation = getProxies().stream().filter(e -> e.containsKey(ConfigurationKeys.PROXY_NAME))
-                .filter(e -> "restheart".equals(e.get(ConfigurationKeys.PROXY_NAME)))
-                .map(e -> e.get(ConfigurationKeys.PROXY_LOCATION_KEY)).findFirst();
-
-        if (__proxyLocation.isEmpty()) {
-            throw new ConfigurationException("No proxy pass defined " + "for proxy 'restheart'");
-        }
-
-        var _proxyLocation = __proxyLocation.get();
-
-        String proxyLocation;
-
-        if (_proxyLocation instanceof String) {
-            proxyLocation = (String) _proxyLocation;
-        } else {
-            throw new ConfigurationException("Wrong proxy location for proxy 'restheart' " + _proxyLocation);
-        }
-
-        try {
-            return URI.create(proxyLocation);
-        } catch (IllegalArgumentException ex) {
-            throw new ConfigurationException("Wrong proxy location URI " + proxyLocation, ex);
-        }
-    }
-
-    /**
-     *
-     * @param conf
-     * @param key
-     * @param defaultValue
-     * @return
-     */
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> asListOfMaps(final Map<String, Object> conf, final String key,
-            final List<Map<String, Object>> defaultValue) {
-        if (conf == null) {
-            if (!silent) {
-                LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
-            }
+    private static Map<String, Object> fromFile(final Path confFilePath) throws ConfigurationException {
+        var yaml = new Yaml(new SafeConstructor());
+        Map<String, Object> conf = null;
 
-            return defaultValue;
+        try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
+            conf = (Map<String, Object>) yaml.load(fis);
+        } catch (FileNotFoundException fne) {
+            throw new ConfigurationException("Configuration file not found", fne);
+        } catch (Throwable t) {
+            throw new ConfigurationException("Error parsing the configuration file", t);
         }
 
-        var o = conf.get(key);
-
-        if (o == null) {
-            if (!silent) {
-                LOGGER.trace("configuration parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        } else if (o instanceof List) {
-            try {
-                return (List<Map<String, Object>>) o;
-            } catch (Throwable t) {
-                LOGGER.warn("wrong configuration parameter {}", key);
-                return defaultValue;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong configuration parameter {}, expecting an array of objects", key, defaultValue);
-            }
-            return defaultValue;
-        }
+        return conf;
     }
 
-    /**
-     *
-     * @param conf
-     * @param key
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Map<String, Object>> asMapOfMaps(final Map<String, Object> conf, final String key, final Map<String, Map<String, Object>> defaultValue) {
-        if (conf == null) {
-            if (!silent) {
-                LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
-            }
-
-            return defaultValue;
-        }
-
-        Object o = conf.get(key);
-
-        if (o == null) {
-            if (!silent) {
-                LOGGER.trace("configuration parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        } else if (o instanceof Map) {
-            try {
-                return (Map<String, Map<String, Object>>) o;
-            } catch (Throwable t) {
-                if (!silent) {
-                    LOGGER.warn("wrong configuration parameter {}, expecting a map of maps", key, defaultValue);
-                }
-                return defaultValue;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong configuration parameter {}, expecting a map of maps", key, defaultValue);
-            }
-            return defaultValue;
+    static boolean isParametric(final Path confFilePath) throws IOException {
+        try (var sc = new Scanner(confFilePath, "UTF-8")) {
+            return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}")).limit(1).count() > 0;
         }
     }
+}
 
-    /**
-     *
-     * @param conf
-     * @param key
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> asMap(final Map<String, Object> conf, final String key) {
-        if (conf == null) {
-            if (!silent) {
-                LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, null);
-            }
+class DefaultConfiguration {
+    private static Map<String, Object> DEFAULT_CONFIGURATION = new HashMap<>();
 
-            return null;
-        }
+    static {
+        DEFAULT_CONFIGURATION.put(ANSI_CONSOLE_KEY, true);
 
-        var o = conf.get(key);
+        DEFAULT_CONFIGURATION.put(HTTPS_LISTENER_KEY, DEFAULT_HTTPS_LISTENER);
+        DEFAULT_CONFIGURATION.put(HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
+        DEFAULT_CONFIGURATION.put(HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
 
-        if (o instanceof Map<?,?> m) {
-            try {
-                return (Map<String, Object>) o;
-            } catch (Throwable t) {
-                if (!silent) {
-                    LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, null);
-                }
+        DEFAULT_CONFIGURATION.put(HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER);
+        DEFAULT_CONFIGURATION.put(HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
+        DEFAULT_CONFIGURATION.put(HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
 
-                return null;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.trace("configuration parameter {} not specified in the configuration file.", key);
-            }
-            return null;
-        }
+        DEFAULT_CONFIGURATION.put(AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
+        DEFAULT_CONFIGURATION.put(AJP_PORT_KEY, DEFAULT_AJP_PORT);
+        DEFAULT_CONFIGURATION.put(AJP_HOST_KEY, DEFAULT_AJP_HOST);
+
+        DEFAULT_CONFIGURATION.put(INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
+
+        DEFAULT_CONFIGURATION.put(KEYSTORE_FILE_KEY, null);
+        DEFAULT_CONFIGURATION.put(KEYSTORE_PASSWORD_KEY, null);
+        DEFAULT_CONFIGURATION.put(CERT_PASSWORD_KEY, null);
+
+        DEFAULT_CONFIGURATION.put(ANSI_CONSOLE_KEY, new ArrayList<>());
+
+        DEFAULT_CONFIGURATION.put(PROXY_KEY, new LinkedHashMap<>());
+
+        DEFAULT_CONFIGURATION.put(PLUGINS_DIRECTORY_PATH_KEY, "plugins");
+
+        DEFAULT_CONFIGURATION.put(PLUGINS_ARGS_KEY, new LinkedHashMap<>());
+
+        DEFAULT_CONFIGURATION.put(AUTH_MECHANISMS_KEY, new LinkedHashMap<>());
+        DEFAULT_CONFIGURATION.put(AUTHENTICATORS_KEY, new LinkedHashMap<>());
+        DEFAULT_CONFIGURATION.put(AUTHORIZERS_KEY, null);
+        DEFAULT_CONFIGURATION.put(TOKEN_MANAGER_KEY, URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir")).concat(File.separator + "restheart.log"));
+
+        DEFAULT_CONFIGURATION.put(LOG_FILE_PATH_KEY, new LinkedHashMap<>());
+        DEFAULT_CONFIGURATION.put(ENABLE_LOG_CONSOLE_KEY, true);
+        DEFAULT_CONFIGURATION.put(ENABLE_LOG_FILE_KEY, true);
+        DEFAULT_CONFIGURATION.put(LOG_LEVEL_KEY, Level.INFO);
+        DEFAULT_CONFIGURATION.put(ConfigurationKeys.REQUESTS_LOG_LEVEL_KEY, 0);
+
+        DEFAULT_CONFIGURATION.put(REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
+
+        DEFAULT_CONFIGURATION.put(REQUESTS_LIMIT_KEY, 100);
+        DEFAULT_CONFIGURATION.put(IO_THREADS_KEY, 2);
+        DEFAULT_CONFIGURATION.put(WORKER_THREADS_KEY, 32);
+        DEFAULT_CONFIGURATION.put(BUFFER_SIZE_KEY, 16384);
+        DEFAULT_CONFIGURATION.put(DIRECT_BUFFERS_KEY, true);
+        DEFAULT_CONFIGURATION.put(FORCE_GZIP_ENCODING_KEY, false);
+        DEFAULT_CONFIGURATION.put(CONNECTION_OPTIONS_KEY, Maps.newHashMap());
+        DEFAULT_CONFIGURATION.put(ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
     }
 
-    @SuppressWarnings("unchecked")
-    private List<String> asListOfStrings(final Map<String, Object> conf, final String key, final List<String> defaultValue) {
-        if (conf == null || conf.get(key) == null) {
-            // if default value is null there is no default value actually
-            if (defaultValue != null && !silent) {
-                LOGGER.trace("parameter {} not specified in the configuration file, using its default value {}", key, defaultValue);
-            }
-            return defaultValue;
-        } else if (conf.get(key) instanceof List) {
-            if (!silent) {
-                LOGGER.debug("paramenter {} set to {}", key, conf.get(key));
-            }
-
-            try  {
-                var ret = ((List<String>) conf.get(key));
-
-                if (ret.isEmpty()) {
-                    if (!silent) {
-                        LOGGER.warn("wrong value for parameter {}: {}, using its default value {}", key, conf.get(key), defaultValue);
-                    }
-                    return defaultValue;
-                } else {
-                    return ret;
-                }
-            } catch(Throwable t) {
-                if (!silent) {
-                    LOGGER.warn("wrong value for parameter {}: {}, using its default value {}", key, conf.get(key), defaultValue);
-                }
-                return defaultValue;
-            }
-        } else {
-            if (!silent) {
-                LOGGER.warn("wrong value for parameter {}: {}, using its default value {}", key, conf.get(key), defaultValue);
-            }
-            return defaultValue;
-        }
-    }
-
-    private Boolean asBoolean(final Map<String, Object> conf, final String key, final Boolean defaultValue) {
-        var envValue = overrideValueFromEnv(key);
-        if (envValue != null) {
-            return Boolean.valueOf(envValue);
-        }
-        return getOrDefault(conf, key, defaultValue);
-    }
-
-    private String asString(final Map<String, Object> conf, final String key, final String defaultValue) {
-        var envValue = overrideValueFromEnv(key);
-        if (envValue != null) {
-            return envValue;
-        }
-        return getOrDefault(conf, key, defaultValue);
-    }
-
-    private Integer asInteger(final Map<String, Object> conf, final String key, final Integer defaultValue) {
-        var envValue = overrideValueFromEnv(key);
-        if (envValue != null) {
-            return Integer.valueOf(envValue);
-        }
-        return getOrDefault(conf, key, defaultValue);
+    static Map<String, Object> get() {
+        return DEFAULT_CONFIGURATION;
     }
 }

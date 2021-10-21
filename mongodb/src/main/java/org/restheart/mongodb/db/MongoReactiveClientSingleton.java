@@ -46,7 +46,8 @@ public class MongoReactiveClientSingleton {
      */
     public static void init(MongoClientURI uri) {
         mongoUri = uri;
-        initialized = true;
+        // in case of error, e.g. invalid mongo uri, it's null
+        initialized = uri != null;
     }
 
     /**

@@ -168,9 +168,9 @@ public class FileUtils {
         }
 
         if (Files.isWritable(DEFAULT_PID_DIR)) {
-            return DEFAULT_PID_DIR.resolve("restheart-security-" + configurationFileHash + ".pid");
+            return DEFAULT_PID_DIR.resolve("restheart-" + configurationFileHash + ".pid");
         } else {
-            return TMP_DIR.resolve("restheart-security-" + configurationFileHash + ".pid");
+            return TMP_DIR.resolve("restheart-" + configurationFileHash + ".pid");
         }
     }
 
