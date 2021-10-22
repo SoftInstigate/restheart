@@ -50,6 +50,36 @@ Download prebuilt packages from [releases](https://github.com/SoftInstigate/rest
 
 Find setup instructions at [Setup](https://restheart.org/docs/setup/) documentation page.
 
+## Snapshot builds
+
+Snapshot builds are available from [sonatype.org](https://oss.sonatype.org/content/repositories/snapshots/org/restheart/restheart/)
+
+Docker images are also available
+
+```bash
+$ docker pull softinstigate/restheart-snapshot:[commit-shot-hash]
+```
+
+For commit short hash you need the first 7 digits of the hash, e.g.
+
+```bash
+$ git log
+
+commit 2108ce033da8a8c0b65afea0b5b478337e44e464 (HEAD -> master, origin/master, origin/HEAD)
+Author: Andrea Di Cesare <andrea@softinstigate.com>
+Date:   Fri Oct 22 12:46:00 2021 +0200
+
+    :bookmark: Bump to version 6.2.0-SNAPSHOT
+
+...
+```
+
+The short hash is `2108ce0` and the docker pull command is therefore
+
+```bash
+$ docker pull softinstigate/restheart-snapshot:2108ce0
+```
+
 ## Build from source
 
 __NOTE__: Building RESTHeart 6+ requires at least JDK 16! Suggested is JDK 17 LTS
