@@ -109,6 +109,13 @@ public class MongoServiceConfiguration {
     private final Map<String, Object> configurationFileMap;
 
     /**
+     * Creates a new instance of Configuration with defaults values.
+     */
+    public MongoServiceConfiguration() {
+        this(new HashMap<>(), false);
+    }
+
+    /**
      * Creates a new instance of Configuration from the configuration file For any
      * missing property the default value is used.
      *
