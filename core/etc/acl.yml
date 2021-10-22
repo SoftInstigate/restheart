@@ -90,3 +90,13 @@ permissions:
           {"author": "@user.userid"}
         writeFilter: >
           {"status": "draft"}
+
+    # testing permssion with jwt auth
+    - roles: [ test-jwt ]
+      predicate: path-prefix('/')
+      priority: 100
+
+      mongo:
+        mergeRequest: >
+          {"id": "@user.sub", "aud": "@user.aud"}
+        allowManagementRequests: true # default false

@@ -58,8 +58,8 @@ public class AclVarsInterpolator {
     /**
      * Interpolate values in doc like '@user', '@user.property', @now
      *
-     * Supports accounts handled by MongoRealAuthenticator and
-     * FileRealmAuthenticator
+     * Supports accounts handled by MongoRealAuthenticator,
+     * FileRealmAuthenticator and JwtAuthenticationMechanism
      *
      * Legacy variable names %USER, %ROLES and %NOW are supported as well
      *
@@ -104,7 +104,7 @@ public class AclVarsInterpolator {
      * returns the interpolated value.
      *
      * For '@user' and '@mongoPermissions' supports accounts handled by
-     * MongoRealAuthenticator and FileRealmAuthenticator
+     * MongoRealAuthenticator, FileRealmAuthenticator and JwtAuthenticationMechanism
      *
      * Legacy variable names %USER, %ROLES and %NOW are supported as well
      *
@@ -119,11 +119,9 @@ public class AclVarsInterpolator {
         } else if ("%USER".equals(value)) {
             return new BsonString(ExchangeAttributes.remoteUser().readAttribute(request.getExchange()));
         } else if ("%ROLES".equals(value)) {
-            if (Objects.nonNull(request.getAuthenticatedAccount())
-                    && Objects.nonNull(request.getAuthenticatedAccount().getRoles())) {
+            if (Objects.nonNull(request.getAuthenticatedAccount()) && Objects.nonNull(request.getAuthenticatedAccount().getRoles())) {
                 var ret = new BsonArray();
-                request.getAuthenticatedAccount().getRoles().stream().map(s -> new BsonString(s))
-                        .forEachOrdered(ret::add);
+                request.getAuthenticatedAccount().getRoles().stream().map(s -> new BsonString(s)).forEachOrdered(ret::add);
                 return ret;
             } else {
                 return new BsonArray();
@@ -131,12 +129,12 @@ public class AclVarsInterpolator {
         } else if ("%NOW".equals(value) || "@now".equals(value)) {
             return new BsonDateTime(Instant.now().getEpochSecond() * 1000);
         } else if (value.equals("@user")) {
-            if (request.getAuthenticatedAccount() instanceof MongoRealmAccount) {
-                var maccount = (MongoRealmAccount) request.getAuthenticatedAccount();
+            if (request.getAuthenticatedAccount() instanceof MongoRealmAccount maccount) {
                 return maccount.getAccountDocument();
-            } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount) {
-                var faccount = (FileRealmAccount) request.getAuthenticatedAccount();
+            } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount faccount) {
                 return toBson(faccount.getAccountProperties());
+            } else if (request.getAuthenticatedAccount() instanceof JwtAccount jwtAccount) {
+                return BsonUtils.parse(jwtAccount.getJwtPayload());
             } else {
                 return BsonNull.VALUE;
             }
@@ -197,8 +195,7 @@ public class AclVarsInterpolator {
                 return BsonNull.VALUE;
             }
         } else if (value.startsWith("@user.") && value.length() > 5) {
-            if (request.getAuthenticatedAccount() instanceof MongoRealmAccount) {
-                var maccount = (MongoRealmAccount) request.getAuthenticatedAccount();
+            if (request.getAuthenticatedAccount() instanceof MongoRealmAccount maccount) {
                 var accountDoc = maccount.getAccountDocument();
                 var prop = value.substring(6);
 
@@ -219,10 +216,35 @@ public class AclVarsInterpolator {
                         return BsonNull.VALUE;
                     }
                 }
-            } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount) {
-                var faccount = (FileRealmAccount) request.getAuthenticatedAccount();
-
+            } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount faccount) {
                 return fromProperties(faccount.getAccountProperties(), value.substring(6));
+            } else if (request.getAuthenticatedAccount() instanceof JwtAccount jwtAccount) {
+                var jwpPayload = BsonUtils.parse(jwtAccount.getJwtPayload());
+
+                if (jwpPayload instanceof BsonDocument bsonPayload) {
+                    var prop = value.substring(6);
+
+                    LOGGER.trace("account doc: {}", bsonPayload.toJson());
+
+                    if (prop.contains(".")) {
+                        try {
+                            JsonElement v = JsonPath.read(bsonPayload.toJson(), "$.".concat(prop));
+
+                            return BsonUtils.parse(v.toString());
+                        } catch (Throwable pnfe) {
+                            return BsonNull.VALUE;
+                        }
+                    } else {
+                        if (bsonPayload.containsKey(prop)) {
+                            return bsonPayload.get(prop);
+                        } else {
+                            return BsonNull.VALUE;
+                        }
+                    }
+                } else {
+                    LOGGER.warn("jwt payload is not a json object, returning null user property {}", value.substring(6));
+                    return BsonNull.VALUE;
+                }
             } else {
                 return BsonNull.VALUE;
             }
@@ -256,11 +278,20 @@ public class AclVarsInterpolator {
     }
 
     private static BsonDocument getAccountDocument(Request<?> request) {
-        if (request.getAuthenticatedAccount() instanceof MongoRealmAccount) {
-            return ((MongoRealmAccount) request.getAuthenticatedAccount()).getAccountDocument();
-        } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount) {
-            return toBson(((FileRealmAccount) request.getAuthenticatedAccount()).getAccountProperties()).asDocument();
-        } else {
+        if (request.getAuthenticatedAccount() instanceof MongoRealmAccount maccount) {
+            return maccount.getAccountDocument();
+        } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount faccount) {
+            return toBson(faccount.getAccountProperties()).asDocument();
+        } else if (request.getAuthenticatedAccount() instanceof JwtAccount jwtAccount) {
+            var payload = BsonUtils.parse(jwtAccount.getJwtPayload());
+
+            if (payload instanceof BsonDocument bsonPayload) {
+                return bsonPayload;
+            } else {
+                LOGGER.warn("jwt payload is not a json object, returning null account document");
+                return null;
+            }
+        }else {
             return null;
         }
     }
