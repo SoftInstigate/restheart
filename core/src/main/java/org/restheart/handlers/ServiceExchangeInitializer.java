@@ -66,7 +66,7 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                 srv.get().getInstance().requestInitializer().accept(exchange);
                 srv.get().getInstance().responseInitializer().accept(exchange);
             } catch (BadRequestException bre) {
-                LOGGER.debug("Error handling the request: " + bre.getMessage(), bre);
+                LOGGER.debug("Error handling the request: {}", bre.getMessage(), bre);
                 exchange.setStatusCode(bre.getStatusCode());
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, Exchange.JSON_MEDIA_TYPE);
                 exchange.getResponseSender().send(BsonUtils.toJson(getErrorDocument(bre.getStatusCode(), bre.getMessage())));

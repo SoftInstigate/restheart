@@ -50,7 +50,6 @@ public class PingService implements ByteArrayService {
 
     /**
      *
-     * @throws Exception
      */
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {

@@ -21,22 +21,38 @@ package org.restheart;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
+
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.MustacheNotFoundException;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-
+import org.apache.commons.jxpath.JXPathContext;
+import org.apache.commons.jxpath.JXPathException;
+import org.apache.commons.jxpath.JXPathInvalidSyntaxException;
+import org.bson.Document;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,36 +126,6 @@ public class Configuration {
     private Map<String, Object> conf;
 
     /**
-     * Creates a new instance of Configuration with defaults values.
-     */
-    public Configuration() {
-        this(null, DefaultConfiguration.get(), true);
-    }
-
-    /**
-     * Creates a new instance of Configuration from the configuration file For any
-     * missing property the default value is used.
-     *
-     * @param confFilePath the path of the configuration file
-     * @throws org.restheart.ConfigurationException
-     */
-    public Configuration(final Path confFilePath) throws ConfigurationException {
-        this(confFilePath, false);
-    }
-
-    /**
-     * Creates a new instance of Configuration from the configuration file For any
-     * missing property the default value is used.
-     *
-     * @param confFilePath the path of the configuration file
-     * @param silent
-     * @throws org.restheart.ConfigurationException
-     */
-    public Configuration(final Path confFilePath, boolean silent) throws ConfigurationException {
-        this(confFilePath, fromFile(confFilePath), silent);
-    }
-
-    /**
      * Creates a new instance of Configuration from the configuration file For any
      * missing property the default value is used.
      *
@@ -147,17 +133,10 @@ public class Configuration {
      * @param silent
      * @throws org.restheart.ConfigurationException
      */
-    @SuppressWarnings({ "deprecation" })
-    public Configuration(final Path confFilePath, Map<String, Object> conf, boolean silent) throws ConfigurationException {
+    private Configuration(Map<String, Object> conf, final Path confFilePath, boolean silent) throws ConfigurationException {
         PATH = confFilePath;
 
         this.conf = conf;
-
-        // check if service configuration follows old (<2.0)format
-        if (conf.get(SERVICES_KEY) != null) {
-            LOGGER.error("The services configuration section is obsolete.");
-            throw new ConfigurationException("Wrong Services configuration");
-        }
 
         ansiConsole = asBoolean(conf, ANSI_CONSOLE_KEY, true, silent);
 
@@ -510,85 +489,180 @@ public class Configuration {
         return PATH;
     }
 
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> fromFile(final Path confFilePath) throws ConfigurationException {
-        var yaml = new Yaml(new SafeConstructor());
-        Map<String, Object> conf = null;
-
-        try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
-            conf = (Map<String, Object>) yaml.load(fis);
-        } catch (FileNotFoundException fne) {
-            throw new ConfigurationException("Configuration file not found", fne);
-        } catch (Throwable t) {
-            throw new ConfigurationException("Error parsing the configuration file", t);
-        }
-
-        return conf;
-    }
-
     static boolean isParametric(final Path confFilePath) throws IOException {
         try (var sc = new Scanner(confFilePath, "UTF-8")) {
             return sc.findAll(Pattern.compile("\\{\\{.*\\}\\}")).limit(1).count() > 0;
         }
     }
-}
 
-class DefaultConfiguration {
-    private static Map<String, Object> DEFAULT_CONFIGURATION = new HashMap<>();
+    public class Builder {
+        /**
+         *
+         * @return the default configuration
+         */
+        public static Configuration build(boolean silent) {
+            return build(null, null, silent);
+        }
 
-    static {
-        DEFAULT_CONFIGURATION.put(ANSI_CONSOLE_KEY, true);
+        /**
+         *
+         * @param confFile
+         * @return return the configuration from confFile and propFile
+         */
+        public static Configuration build(Path confFilePath, Path propFilePath, boolean silent) throws ConfigurationException {
+            if (confFilePath == null) {
+                var stream = Configuration.class.getResourceAsStream("/restheart-default-config.yml");
+                try (var confReader = new InputStreamReader(stream)) {
+                    return build(confReader, null, null, silent);
+                } catch (IOException ieo) {
+                    throw new ConfigurationException("Error reading default configuration file", ieo);
+                }
+            } else {
+                try (var confReader = new BufferedReader(new FileReader(confFilePath.toFile()))) {
+                    return build(confReader, confFilePath, propFilePath, silent);
+                } catch (MustacheNotFoundException | FileNotFoundException ex) {
+                    throw new ConfigurationException("Configuration file not found: " + confFilePath);
+                } catch (IOException ieo) {
+                    throw new ConfigurationException("Error reading configuration file " + confFilePath, ieo);
+                }
+            }
+        }
 
-        DEFAULT_CONFIGURATION.put(HTTPS_LISTENER_KEY, DEFAULT_HTTPS_LISTENER);
-        DEFAULT_CONFIGURATION.put(HTTPS_PORT_KEY, DEFAULT_HTTPS_PORT);
-        DEFAULT_CONFIGURATION.put(HTTPS_HOST_KEY, DEFAULT_HTTPS_HOST);
+        /**
+         *
+         * @param confFile
+         * @return return the configuration from confFile and propFile
+         */
+        private static Configuration build(Reader confReader, Path confFilePath, Path propFilePath, boolean silent) throws ConfigurationException {
+            var m = new DefaultMustacheFactory().compile(confReader, "configuration-file");
 
-        DEFAULT_CONFIGURATION.put(HTTP_LISTENER_KEY, DEFAULT_HTTP_LISTENER);
-        DEFAULT_CONFIGURATION.put(HTTP_PORT_KEY, DEFAULT_HTTP_PORT);
-        DEFAULT_CONFIGURATION.put(HTTP_HOST_KEY, DEFAULT_HTTP_HOST);
+            var confFileParams = Arrays.asList(m.getCodes());
 
-        DEFAULT_CONFIGURATION.put(AJP_LISTENER_KEY, DEFAULT_AJP_LISTENER);
-        DEFAULT_CONFIGURATION.put(AJP_PORT_KEY, DEFAULT_AJP_PORT);
-        DEFAULT_CONFIGURATION.put(AJP_HOST_KEY, DEFAULT_AJP_HOST);
+            if (confFileParams.isEmpty()) {
+                // configuration file is not parametric
+                Map<String, Object> confMap = new Yaml(new SafeConstructor()).load(confReader);
 
-        DEFAULT_CONFIGURATION.put(INSTANCE_NAME_KEY, DEFAULT_INSTANCE_NAME);
+                return new Configuration(overrideConfiguration(confMap, silent), confFilePath, silent);
+            } else {
+                // configuration is parametric
+                if (propFilePath == null) {
+                    // check if parameters are defined via env vars
+                    var allResolved = confFileParams.stream().filter(c -> c != null && c.getName() != null).map(c -> c.getName()).allMatch(n -> valueFromEnv(n, true) != null);
 
-        DEFAULT_CONFIGURATION.put(KEYSTORE_FILE_KEY, null);
-        DEFAULT_CONFIGURATION.put(KEYSTORE_PASSWORD_KEY, null);
-        DEFAULT_CONFIGURATION.put(CERT_PASSWORD_KEY, null);
+                    if (allResolved) {
+                        final var p = new Properties();
+                        confFileParams.stream()
+                            .filter(c -> c != null && c.getName() != null)
+                            .map(c -> c.getName())
+                            .forEach(n -> p.put(n, valueFromEnv(n, silent)));
 
-        DEFAULT_CONFIGURATION.put(ANSI_CONSOLE_KEY, new ArrayList<>());
+                        final var writer = new StringWriter();
+                        m.execute(writer, p);
 
-        DEFAULT_CONFIGURATION.put(PROXY_KEY, new LinkedHashMap<>());
+                        Map<String, Object> confMap = new Yaml(new SafeConstructor()).load(writer.toString());
+                        return new Configuration(overrideConfiguration(confMap, silent), confFilePath, silent);
+                    } else {
+                        var unbound = confFileParams.stream()
+                            .filter(c -> c != null && c.getName() != null)
+                            .map(c -> c.getName())
+                            .filter(n -> valueFromEnv(n, true) == null)
+                            .collect(Collectors.toList());
 
-        DEFAULT_CONFIGURATION.put(PLUGINS_DIRECTORY_PATH_KEY, "plugins");
+                        throw new ConfigurationException("Configuration is parametric but no properties file or environment variables have been specified."
+                                + " Unbound parameters: " + unbound.toString()
+                                + ". You can use -e option to specify the properties file or set them via environment variables"
+                                + ". For more information check https://restheart.org/docs/setup/#configuration-files");
+                    }
+                } else {
+                    try (var propsReader = new InputStreamReader(new FileInputStream(propFilePath.toFile()), "UTF-8")) {
+                        final var p = new Properties();
+                        p.load(propsReader);
 
-        DEFAULT_CONFIGURATION.put(PLUGINS_ARGS_KEY, new LinkedHashMap<>());
+                        //  overwrite properties from env vars
+                        //  if Properties has a property called 'foo-bar'
+                        //  and the environment variable RH_FOO_BAR is defined
+                        //  the value of the latter is used
+                        p.replaceAll((k,v) -> {
+                            if (k instanceof String sk) {
+                                var vfe = valueFromEnv(sk, silent);
+                                return vfe != null ? vfe : v;
+                            } else {
+                                return v;
+                            }
+                        });
 
-        DEFAULT_CONFIGURATION.put(AUTH_MECHANISMS_KEY, new LinkedHashMap<>());
-        DEFAULT_CONFIGURATION.put(AUTHENTICATORS_KEY, new LinkedHashMap<>());
-        DEFAULT_CONFIGURATION.put(AUTHORIZERS_KEY, null);
-        DEFAULT_CONFIGURATION.put(TOKEN_MANAGER_KEY, URLUtils.removeTrailingSlashes(System.getProperty("java.io.tmpdir")).concat(File.separator + "restheart.log"));
+                        final var writer = new StringWriter();
+                        m.execute(writer, p);
 
-        DEFAULT_CONFIGURATION.put(LOG_FILE_PATH_KEY, new LinkedHashMap<>());
-        DEFAULT_CONFIGURATION.put(ENABLE_LOG_CONSOLE_KEY, true);
-        DEFAULT_CONFIGURATION.put(ENABLE_LOG_FILE_KEY, true);
-        DEFAULT_CONFIGURATION.put(LOG_LEVEL_KEY, Level.INFO);
-        DEFAULT_CONFIGURATION.put(ConfigurationKeys.REQUESTS_LOG_LEVEL_KEY, 0);
-
-        DEFAULT_CONFIGURATION.put(REQUESTS_LOG_TRACE_HEADERS_KEY, Collections.emptyList());
-
-        DEFAULT_CONFIGURATION.put(REQUESTS_LIMIT_KEY, 100);
-        DEFAULT_CONFIGURATION.put(IO_THREADS_KEY, 2);
-        DEFAULT_CONFIGURATION.put(WORKER_THREADS_KEY, 32);
-        DEFAULT_CONFIGURATION.put(BUFFER_SIZE_KEY, 16384);
-        DEFAULT_CONFIGURATION.put(DIRECT_BUFFERS_KEY, true);
-        DEFAULT_CONFIGURATION.put(FORCE_GZIP_ENCODING_KEY, false);
-        DEFAULT_CONFIGURATION.put(CONNECTION_OPTIONS_KEY, Maps.newHashMap());
-        DEFAULT_CONFIGURATION.put(ALLOW_UNESCAPED_CHARACTERS_IN_URL, true);
+                        Map<String, Object> confMap = new Yaml(new SafeConstructor()).load(writer.toString());
+                        return new Configuration(overrideConfiguration(confMap, silent), confFilePath, silent);
+                    } catch (FileNotFoundException fnfe) {
+                        throw new ConfigurationException("Properties file not found: " + propFilePath, fnfe);
+                    } catch (IOException ieo) {
+                        throw new ConfigurationException("Error reading configuration file " + propFilePath, ieo);
+                    }
+                }
+            }
+        }
     }
 
-    static Map<String, Object> get() {
-        return DEFAULT_CONFIGURATION;
+    /**
+     *
+     * @param confMap
+     * @return
+     */
+    private static Map<String, Object> overrideConfiguration(Map<String, Object> confMap, final boolean silent) {
+        final var PROP_NAME = "RHO";
+        final var EXPR_SEPARATOR = ";";
+
+        var ctx = JXPathContext.newContext(confMap);
+        ctx.setLenient(true);
+
+        if (System.getenv().containsKey(PROP_NAME)) {
+            var expressions = Arrays.asList(System.getenv().get(PROP_NAME).split(EXPR_SEPARATOR));
+
+            expressions.stream().filter(expr -> expr.contains("->")).forEachOrdered(expr -> {
+                var left = expr.substring(0, expr.indexOf("->")).trim();
+                var right = expr.substring(expr.indexOf("->")+2).trim();
+
+                if (!silent) {
+                    LOGGER.warn(">>> Found ovveride expression {}: overriding parameter '{}' with value '{}'", expr, left, right);
+                }
+
+                try {
+                    createPathAndSetValue(ctx, left, right);
+                } catch(Throwable ise) {
+                    LOGGER.error("Wrong configuration override expression {}", expr, ise);
+                }
+            });
+        } else {
+            return confMap;
+        }
+
+        return confMap;
+    }
+
+    private static void createPathAndSetValue(JXPathContext ctx, String path, String value) {
+        var e = "{\"e\":".concat(value).concat("}");
+        var _value = Document.parse(e).get("e");
+        createParents(ctx, path);
+        ctx.createPathAndSetValue(path, _value);
+    }
+
+    private static void createParents(JXPathContext ctx, String path) {
+        if (path.lastIndexOf("/") < 0) {
+            // root
+            if (ctx.getValue(path) == null) {
+                ctx.createPathAndSetValue(path, Maps.newLinkedHashMap());
+            }
+        } else {
+            var parentPath = path.substring(0, path.lastIndexOf("/"));
+
+            createParents(ctx, parentPath);
+
+            if (ctx.getValue(parentPath) == null) {
+                    ctx.createPathAndSetValue(parentPath, Maps.newLinkedHashMap());
+            }
+        }
     }
 }

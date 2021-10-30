@@ -97,10 +97,6 @@
       <artifactId>metrics-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.github.spullara.mustache.java</groupId>
-      <artifactId>compiler</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
     </dependency>

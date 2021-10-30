@@ -44,15 +44,10 @@ import static org.restheart.utils.PluginUtils.defaultURI;
 import static org.restheart.utils.PluginUtils.initPoint;
 import static org.restheart.utils.PluginUtils.uriMatchPolicy;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
@@ -68,21 +63,16 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.MustacheNotFoundException;
 import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
@@ -129,8 +119,6 @@ import org.xnio.Options;
 import org.xnio.SslClientAuthMode;
 import org.xnio.Xnio;
 import org.xnio.ssl.XnioSsl;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
@@ -151,7 +139,6 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import static org.restheart.ConfigurationUtils.getOrDefault;
-import static org.restheart.ConfigurationUtils.valueFromEnv;
 
 
 /**
@@ -240,7 +227,7 @@ public class Bootstrapper {
     public static void main(final String[] args) throws ConfigurationException, IOException {
         parseCommandLineParameters(args);
         setJsonpathDefaults();
-        configuration = loadConfiguration(true);
+        configuration = Configuration.Builder.build(CONFIGURATION_FILE, PROPERTIES_FILE, true);
         run();
     }
 
@@ -373,92 +360,6 @@ public class Bootstrapper {
         }
     }
 
-    private static Configuration loadConfiguration(boolean silent) throws ConfigurationException, UnsupportedEncodingException {
-        if (CONFIGURATION_FILE == null) {
-            LOGGER.info("No configuration file provided, starting with default values!");
-            return new Configuration();
-        }
-
-        try (var confReader = new BufferedReader(new FileReader(CONFIGURATION_FILE.toFile()))) {
-            var m = new DefaultMustacheFactory().compile(confReader, "configuration-file");
-
-            var parameters = Arrays.asList(m.getCodes());
-
-            if (parameters.isEmpty()) {
-                // configuration file is not parametric
-                // Map<String, Object> conf = new Yaml(new SafeConstructor()).load(writer.toString());
-                return new Configuration(CONFIGURATION_FILE, silent);
-            } else {
-                // configuration is parametric
-                if (PROPERTIES_FILE == null) {
-                    var allResolved = parameters.stream().filter(c -> c != null && c.getName() != null).map(c -> c.getName()).allMatch(n -> valueFromEnv(n, true) != null);
-
-                    if (allResolved) {
-                        final var p = new Properties();
-                        parameters.stream()
-                            .filter(c -> c != null && c.getName() != null)
-                            .map(c -> c.getName())
-                            .forEach(n -> p.put(n, valueFromEnv(n, silent)));
-
-                        final var writer = new StringWriter();
-                        m.execute(writer, p);
-
-                        Map<String, Object> obj = new Yaml(new SafeConstructor()).load(writer.toString());
-                        return new Configuration(CONFIGURATION_FILE, obj, silent);
-                    } else {
-                        var unbound = parameters.stream()
-                            .filter(c -> c != null && c.getName() != null)
-                            .map(c -> c.getName())
-                            .filter(n -> valueFromEnv(n, true) == null)
-                            .collect(Collectors.toList());
-
-                        logErrorAndExit("Configuration is parametric but no properties file or environment variables have been specified."
-                                + " Unbound parameters: " + unbound.toString()
-                                + ". You can use -e option to specify the properties file or set them via environment variables"
-                                + " For more information check https://restheart.org/docs/setup/#configuration-files",
-                                null, false, -1);
-                    }
-                } else {
-                    try (var propsReader = new InputStreamReader(new FileInputStream(PROPERTIES_FILE.toFile()), "UTF-8")) {
-                        final var p = new Properties();
-                        p.load(propsReader);
-
-                        //  overwrite properties from env vars
-                        //  if Properties has a property called 'foo-bar'
-                        //  and the environment variable RH_FOO_BAR is defined
-                        //  the value of the latter is used
-                        p.replaceAll((k,v) -> {
-                            if (k instanceof String sk) {
-                                var vfe = valueFromEnv(sk, silent);
-                                return vfe != null ? vfe : v;
-                            } else {
-                                return v;
-                            }
-                        });
-
-                        final var writer = new StringWriter();
-                        m.execute(writer, p);
-
-                        Map<String, Object> obj = new Yaml(new SafeConstructor()).load(writer.toString());
-                        return new Configuration(CONFIGURATION_FILE, obj, silent);
-                    } catch (FileNotFoundException fnfe) {
-                        logErrorAndExit("Properties file not found " + PROPERTIES_FILE, null, false, -1);
-                    } catch (IOException ieo) {
-                        logErrorAndExit("Error reading properties file " + PROPERTIES_FILE, null, false, -1);
-                    }
-                }
-            }
-        } catch (MustacheNotFoundException ex) {
-            logErrorAndExit("Configuration file not found: " + CONFIGURATION_FILE, ex, false, -1);
-        } catch (FileNotFoundException fnfe) {
-            logErrorAndExit("Configuration file not found " + CONFIGURATION_FILE, null, false, -1);
-        } catch (IOException ieo) {
-            logErrorAndExit("Error reading configuration file " + CONFIGURATION_FILE, null, false, -1);
-        }
-
-        return null;
-    }
-
     private static void logStartMessages() {
         var instanceName = getInstanceName();
         LOGGER.info(STARTING + ansi().fg(RED).bold().a(RESTHEART).reset().toString()
@@ -582,8 +483,8 @@ public class Bootstrapper {
 
         // re-read configuration file, to log errors now that logger is initialized
         try {
-            loadConfiguration(false);
-        } catch (ConfigurationException | IOException ex) {
+            Configuration.Builder.build(CONFIGURATION_FILE, PROPERTIES_FILE, false);
+        } catch (ConfigurationException ex) {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
@@ -877,7 +778,7 @@ public class Bootstrapper {
         LOGGER.debug("Allow unescaped characters in URL: {}",
                 configuration.isAllowUnescapedCharactersInUrl());
 
-        ConfigurationHelper.setConnectionOptions(builder, configuration);
+        ConfigurationUtils.setConnectionOptions(builder, configuration);
 
         undertowServer = builder.build();
         undertowServer.start();
@@ -1301,10 +1202,9 @@ public class Bootstrapper {
     private Bootstrapper() {
     }
 
-    @Command(name="java -Dfile.encoding=UTF-8 -jar -server restheart.jar")
+    @Command(name="java -jar restheart.jar")
     private static class Args {
-
-        @Parameters(index = "0", paramLabel = "FILE", description = "Main configuration file")
+        @Parameters(index = "0", arity = "0..1", paramLabel = "FILE", description = "Main configuration file")
         private String configPath = null;
 
         @Option(names = "--fork", description = "Fork the process in background")

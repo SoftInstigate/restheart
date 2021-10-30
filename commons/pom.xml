@@ -67,6 +67,14 @@
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
     </dependency>
+    <dependency>
+        <groupId>com.github.spullara.mustache.java</groupId>
+        <artifactId>compiler</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>commons-jxpath</groupId>
+        <artifactId>commons-jxpath</artifactId>
+    </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>junit</groupId>
@@ -80,7 +88,6 @@
     </dependency>
     <!-- END Test dependencies -->
   </dependencies>
-
   <build>
     <finalName>${project.artifactId}</finalName>
     <plugins>
