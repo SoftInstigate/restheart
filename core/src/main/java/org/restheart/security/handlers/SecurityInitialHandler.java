@@ -44,8 +44,7 @@ import org.restheart.handlers.PipelinedHandler;
  */
 public class SecurityInitialHandler extends PipelinedHandler {
 
-    static void setSecurityContext(final HttpServerExchange exchange,
-            final SecurityContext securityContext) {
+    static void setSecurityContext(final HttpServerExchange exchange, final SecurityContext securityContext) {
         if (System.getSecurityManager() == null) {
             exchange.setSecurityContext(securityContext);
         } else {
@@ -80,19 +79,13 @@ public class SecurityInitialHandler extends PipelinedHandler {
                 next);
     }
 
-    public SecurityInitialHandler(final AuthenticationMode authenticationMode,
-            final PipelinedHandler next) {
-        this(authenticationMode,
-                null,
-                (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE,
-                next);
+    public SecurityInitialHandler(final AuthenticationMode authenticationMode, final PipelinedHandler next) {
+        this(authenticationMode, null, (SecurityContextFactoryImpl) SecurityContextFactoryImpl.INSTANCE, next);
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        SecurityContext newContext = this.contextFactory
-                .createSecurityContext(exchange, authenticationMode, null,
-                        programaticMechName);
+        var newContext = this.contextFactory.createSecurityContext(exchange, authenticationMode, null, programaticMechName);
 
         setSecurityContext(exchange, newContext);
         next(exchange);

@@ -192,8 +192,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
                         jwtPayload
                 );
 
-                sc.authenticationComplete(account,
-                        "JwtAuthenticationManager", false);
+                sc.authenticationComplete(account, "JwtAuthenticationManager", false);
 
                 Request.of(hse).addXForwardedHeader("Jwt-Payload", jwtPayload);
 
@@ -209,8 +208,7 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
     }
 
     @Override
-    public ChallengeResult sendChallenge(final HttpServerExchange exchange,
-            final SecurityContext securityContext) {
+    public ChallengeResult sendChallenge(final HttpServerExchange exchange, final SecurityContext securityContext) {
         return new AuthenticationMechanism.ChallengeResult(true, 200);
     }
 

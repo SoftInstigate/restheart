@@ -52,9 +52,7 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
         final var sc = exchange.getSecurityContext();
 
         if (sc != null) {
-            authenticatorMechanisms.stream().forEachOrdered((mechanism) -> {
-                sc.addAuthenticationMechanism(new AuthenticatorMechanismWrapper(mechanism.getInstance()));
-            });
+            authenticatorMechanisms.stream().forEachOrdered(mechanism -> sc.addAuthenticationMechanism(new AuthenticatorMechanismWrapper(mechanism.getInstance())));
         }
 
         next(exchange);
