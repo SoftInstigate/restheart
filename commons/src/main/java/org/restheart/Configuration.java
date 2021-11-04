@@ -24,7 +24,6 @@ import ch.qos.logback.classic.LoggerContext;
 
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.MustacheNotFoundException;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import java.io.BufferedReader;
@@ -49,10 +48,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.jxpath.JXPathContext;
-import org.apache.commons.jxpath.JXPathException;
-import org.apache.commons.jxpath.JXPathInvalidSyntaxException;
 import org.bson.Document;
-import org.restheart.utils.BsonUtils;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
