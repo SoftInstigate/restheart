@@ -193,6 +193,7 @@ public abstract class AbstractJSPlugin {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     protected void finalize() throws Throwable {
         if (this.ctxs != null) {
             this.ctxs.entrySet().stream().map(e -> e.getValue())
