@@ -283,6 +283,13 @@ public abstract class Request<T> extends Exchange<T> {
     }
 
     /**
+     * @return true if account is authenticated
+     */
+    public boolean isAuthenticated() {
+        return getAuthenticatedAccount() != null;
+    }
+
+    /**
      * Add the header X-Forwarded-[key] to the proxied request; use it to pass to
      * the backend information otherwise lost proxying the request.
      *
