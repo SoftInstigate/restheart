@@ -42,6 +42,7 @@ import org.restheart.handlers.PipelinedHandler;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@SuppressWarnings("deprecation")
 public class SecurityInitialHandler extends PipelinedHandler {
 
     static void setSecurityContext(final HttpServerExchange exchange, final SecurityContext securityContext) {
