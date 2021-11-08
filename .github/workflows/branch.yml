@@ -35,8 +35,8 @@ jobs:
       - name: Set up JDK 16
         uses: actions/setup-java@v2
         with:
-          distribution: "adopt"
-          java-version: 16
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Set VERSION and SHA
         id: vars
