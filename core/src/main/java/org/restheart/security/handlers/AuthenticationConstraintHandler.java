@@ -26,7 +26,6 @@ import java.util.Set;
 import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
-import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.utils.PluginUtils;
@@ -74,11 +73,5 @@ public class AuthenticationConstraintHandler extends PipelinedHandler {
         }
 
         next(exchange);
-    }
-
-    private boolean isAuthorizationRequired(HttpServerExchange exchange) {
-        var hs = PluginUtils.handlingServicePluginRecord(PluginsRegistryImpl.getInstance(), exchange);
-
-        return hs != null && hs.isSecure();
     }
 }
