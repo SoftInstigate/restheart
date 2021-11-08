@@ -34,7 +34,7 @@
             mvn clean verify -Dmongodb.version="5.0"   : Test with mongo:5.0 container
         -->
         <mongodb.version>5.0</mongodb.version>
-        <graalvm.version>21.3.0</graalvm.version>
+        <graalvm.version>21.2.0</graalvm.version>
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
@@ -335,7 +335,7 @@
             <dependency>
                 <groupId>com.intuit.karate</groupId>
                 <artifactId>karate-junit4</artifactId>
-                <version>1.0.1</version>
+                <version>1.1.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
