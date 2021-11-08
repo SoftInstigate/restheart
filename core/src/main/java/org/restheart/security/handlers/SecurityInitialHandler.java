@@ -25,8 +25,6 @@ import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.SecurityContextFactoryImpl;
 import io.undertow.server.HttpServerExchange;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import org.restheart.handlers.PipelinedHandler;
 
 /**
@@ -42,20 +40,7 @@ import org.restheart.handlers.PipelinedHandler;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@SuppressWarnings("deprecation")
 public class SecurityInitialHandler extends PipelinedHandler {
-
-    static void setSecurityContext(final HttpServerExchange exchange, final SecurityContext securityContext) {
-        if (System.getSecurityManager() == null) {
-            exchange.setSecurityContext(securityContext);
-        } else {
-            AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
-                exchange.setSecurityContext(securityContext);
-                return null;
-            });
-        }
-    }
-
     private final AuthenticationMode authenticationMode;
     private final String programaticMechName;
     private final SecurityContextFactoryImpl contextFactory;
@@ -86,9 +71,7 @@ public class SecurityInitialHandler extends PipelinedHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var newContext = this.contextFactory.createSecurityContext(exchange, authenticationMode, null, programaticMechName);
-
-        setSecurityContext(exchange, newContext);
+        exchange.setSecurityContext(this.contextFactory.createSecurityContext(exchange, authenticationMode, null, programaticMechName));
         next(exchange);
     }
 }
