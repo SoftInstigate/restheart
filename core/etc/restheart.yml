@@ -100,7 +100,7 @@ mongo-uri: {{{mongo-uri}}}
 # The following binds the URI /database to the db 'db'
 # In this case the URI of a document is /database/coll/docid
 #
-#   - what: /db/coll
+#   - what: /db
 #     where: /database
 #
 # The following binds the URI /api to the collection 'db.coll'
