@@ -17,8 +17,8 @@
         <finalName>${project.artifactId}-${project.version}</finalName>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.target>16</maven.compiler.target>
-        <maven.compiler.source>16</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
         <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <!--
