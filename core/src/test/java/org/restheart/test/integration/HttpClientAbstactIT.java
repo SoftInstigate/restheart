@@ -29,7 +29,6 @@ import java.util.Optional;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
-import org.apache.http.StatusLine;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.client.utils.URIBuilder;
