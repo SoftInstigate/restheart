@@ -1,4 +1,4 @@
-FROM adoptopenjdk:16-jre-hotspot
+FROM eclipse-temurin:17.0.1_12-jdk-alpine
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
