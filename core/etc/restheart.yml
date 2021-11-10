@@ -236,10 +236,10 @@ authenticators:
 
 authorizers:
   fileAclAuthorizer:
-    enabled: true
+    enabled: false
     conf-file: {{{acl-conf-file}}}
   mongoAclAuthorizer:
-    enabled: true
+    enabled: false
     acl-db: restheart
     acl-collection: acl
     # clients with root-role can execute any request
@@ -255,7 +255,7 @@ authorizers:
         - https://restheart.org
         - http://localhost
   fullAuthorizer:
-    enabled: false
+    enabled: true
     authentication-required: true
 
 ## Token Manager

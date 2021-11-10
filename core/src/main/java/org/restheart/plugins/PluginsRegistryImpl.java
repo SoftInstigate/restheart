@@ -405,7 +405,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             } else {
                 var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
 
-                PluginRecord<Authorizer> _fauthorizer = new PluginRecord<>(
+                var _fauthorizer = new PluginRecord<Authorizer>(
                         "fullAuthorizer",
                         "authorize any operation to any user",
                         false, // secure, only applies to services
