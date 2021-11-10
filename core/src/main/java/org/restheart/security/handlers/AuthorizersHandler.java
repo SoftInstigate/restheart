@@ -88,12 +88,16 @@ public class AuthorizersHandler extends PipelinedHandler {
                     .filter(a -> a.getInstance() != null)
                     .map(a -> a.getInstance())
                     .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
+                    // filter out authorizers that requires authentication when the request is not authenticated
+                    .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
                     .anyMatch(a -> a.isAllowed(request))
                     // all VETOERs must authorize it
                     && authorizers.stream()
                     .filter(a -> a.isEnabled())
                     .filter(a -> a.getInstance() != null)
                     .map(a -> a.getInstance())
+                    // filter out authorizers that requires authentication when the request is not authenticated
+                    .filter(a -> !a.isAuthenticationRequired(request) || request.isAuthenticated())
                     .filter(a -> PluginUtils.authorizerType(a) == TYPE.VETOER)
                     .allMatch(a -> a.isAllowed(request));
         }

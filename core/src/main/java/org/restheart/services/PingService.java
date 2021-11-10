@@ -34,7 +34,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "ping", 
+@RegisterPlugin(name = "ping",
     description = "simple ping service",
     secure = false,
     enabledByDefault = true,

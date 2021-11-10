@@ -66,7 +66,7 @@ public class FullAuthorizer implements Authorizer {
     @Override
     @SuppressWarnings("rawtypes")
     public boolean isAllowed(final Request request) {
-        return isAuthenticationRequired(request) ? request.isAuthenticated() : true;
+        return true;
     }
 
     @Override
