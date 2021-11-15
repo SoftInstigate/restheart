@@ -61,7 +61,7 @@ public class AuthenticationCallHandler extends PipelinedHandler {
         // 1 authentication is always attempted
         // 2 requests fails if and only if authentication fails
         //   and authentication is required by all enabled authorizers:
-        //   since an auhtorizer that does not require authentication
+        //   since an authorizer that does not require authentication
         //   might authorize the request even if authentication failed
         if (sc.authenticate() && (!sc.isAuthenticationRequired() || sc.isAuthenticated())) {
             if (!exchange.isComplete()) {
