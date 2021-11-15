@@ -68,6 +68,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -106,10 +107,12 @@ import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
+import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.security.handlers.SecurityHandler;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
+import org.restheart.utils.PluginUtils;
 import org.restheart.utils.RESTHeartDaemon;
 import org.restheart.utils.ResourcesExtractor;
 import org.slf4j.Logger;
@@ -713,8 +716,17 @@ public class Bootstrapper {
 
         final var authorizers = PluginsRegistryImpl.getInstance().getAuthorizers();
 
-        if (authorizers == null || authorizers.isEmpty()) {
-            LOGGER.warn(ansi().fg(RED).bold().a("No Authorizers defined").reset().toString());
+        final var allowers = authorizers == null
+            ? null
+            : authorizers.stream()
+                .filter(a -> a.isEnabled())
+                .filter(a -> a.getInstance() != null)
+                .map(a -> a.getInstance())
+                .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
+                .collect(Collectors.toList());
+
+        if (allowers == null || allowers.isEmpty()) {
+            LOGGER.warn(ansi().fg(RED).bold().a("No Authorizer of type ALLOWER defined, all requests to secured services will be forbidden; fullAuthorizer can be enablef to allow any request.").reset().toString());
         }
 
         var builder = Undertow.builder();
