@@ -210,6 +210,9 @@
                 <exclude>META-INF/*.SF</exclude>
                 <exclude>META-INF/*.DSA</exclude>
                 <exclude>META-INF/*.RSA</exclude>
+                <!-- folowing entries remove shade plugin warnings about overlapping module-info classes -->
+                <exclude>META-INF/versions/9/module-info.*</exclude>
+                <exclude>module-info.class</exclude>
               </excludes>
             </filter>
             <filter>
