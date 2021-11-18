@@ -1,1 +1,0 @@
-To get started, <a href="https://www.clahub.com/agreements/SoftInstigate/restheart">sign the Contributor License Agreement</a>.
