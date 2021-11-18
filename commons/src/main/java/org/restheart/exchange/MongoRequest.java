@@ -136,8 +136,7 @@ public class MongoRequest extends BsonRequest {
         this.mappedUri = exchange.getRequestPath();
 
         if (exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY) != null) {
-            this.pathTemplateMatch = exchange
-                    .getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
+            this.pathTemplateMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
         } else {
             this.pathTemplateMatch = null;
         }
