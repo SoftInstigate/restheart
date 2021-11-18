@@ -27,7 +27,6 @@ import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.util.PathMatcher;
 import io.undertow.util.PathTemplateMatch;
 import io.undertow.util.PathTemplateMatcher;
-import io.undertow.util.PathMatcher.PathMatch;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
