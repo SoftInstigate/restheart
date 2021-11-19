@@ -25,6 +25,7 @@ import static io.undertow.Handlers.pathTemplate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.util.PathMatcher;
+import io.undertow.util.PathTemplate;
 import io.undertow.util.PathTemplateMatch;
 import io.undertow.util.PathTemplateMatcher;
 
@@ -135,14 +136,13 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     private PipelinedHandler getBasePipeline() throws ConfigurationException {
         var rootHandler = path();
 
-        var _pipeline = PipelinedWrappingHandler.wrap(
-                new ErrorHandler(
-                        PipelinedHandler.pipe(
-                                new CORSHandler(),
-                                new OptionsHandler(),
-                                ClientSessionInjector.build(),
-                                new ETagPolicyInjector(),
-                                RequestDispatcherHandler.getInstance())));
+        var _pipeline = PipelinedWrappingHandler.wrap(new ErrorHandler(
+            PipelinedHandler.pipe(
+                new CORSHandler(),
+                new OptionsHandler(),
+                ClientSessionInjector.build(),
+                new ETagPolicyInjector(),
+                RequestDispatcherHandler.getInstance())));
 
         // check that all mounts are either all paths or all path templates
         boolean allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
@@ -186,9 +186,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     }
 
     private static boolean isPathTemplate(final String url) {
-        return (url == null)
-                ? false
-                : url.contains("{") && url.contains("}");
+        return !PathTemplate.create(url).getParameterNames().isEmpty();
     }
 
     /**
@@ -218,7 +216,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         if (mongoMounts != null) {
             var mm = mongoMounts.match(path);
             return mm != null ? mm.getValue() : null;
-        } else if (templateMongoMounts != null) {
+        } else  if (templateMongoMounts != null) {
             var tmm = templateMongoMounts.match(path);
             exchange.putAttachment(PathTemplateMatch.ATTACHMENT_KEY, tmm);
             return tmm != null ? tmm.getValue() : null;
@@ -254,11 +252,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
         MongoServiceConfiguration.get().getMongoMounts()
                 .stream()
-                .forEachOrdered(e -> {
-                    ret.add(new MongoMount(
-                            (String) e.get(MONGO_MOUNT_WHAT_KEY),
-                            resolveURI((String) e.get(MONGO_MOUNT_WHERE_KEY))));
-                });
+                .forEachOrdered(e ->ret.add(new MongoMount((String) e.get(MONGO_MOUNT_WHAT_KEY), resolveURI((String) e.get(MONGO_MOUNT_WHERE_KEY)))));
 
         return ret;
     }
@@ -309,10 +303,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     /**
      * helper class to store mongo mounts info
      */
-    private static class MongoMount {
-        public String resource;
-        public String uri;
-
+    private static record MongoMount(String resource, String uri) {
         public MongoMount(String resource, String uri) {
             if (uri == null) {
                 throw new IllegalArgumentException("'where' cannot be null. check your 'mongo-mounts'.");
