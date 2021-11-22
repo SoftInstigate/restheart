@@ -1,0 +1,15 @@
+{
+  "_id": {
+    "$oid": "6037732f5fa7d52581015ed9"
+  },
+  "name": "foo",
+  "email": "foo@example.com",
+  "posts": [
+    {
+      "$oid": "606d963f74744a3fa6f4489a"
+    },
+    {
+      "$oid": "606d963f74744a3fa6f4489e"
+    }
+  ]
+}

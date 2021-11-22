@@ -1,0 +1,45 @@
+{
+  "descriptor": {
+    "description": "Test field-to-aggregation mappings",
+    "uri": "fta",
+    "name": "field-to-aggregation",
+    "enabled": true
+  },
+  "schema": "type User { _id: ObjectId name: String email: String posts: [Post] postsByCategory: BsonArray } type Post { _id: ObjectId title: String body: String created_at: DateTime author: User } type Query { userByEmail(email: String): User }",
+  "mappings": {
+    "User": {
+      "postsByCategory": {
+        "db": "test-graphql",
+        "collection": "posts-fta",
+        "stages": [
+          {
+            "$match": {
+              "author": {
+                "$fk": "_id"
+              }
+            }
+          },
+          {
+            "$group": {
+              "_id": "$category",
+              "posts": {
+                "$push": "$$ROOT"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "Query": {
+      "userByEmail": {
+        "db": "test-graphql",
+        "collection": "users-fta",
+        "find": {
+          "email": {
+            "$arg": "email"
+          }
+        }
+      }
+    }
+  }
+}

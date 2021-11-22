@@ -1,0 +1,35 @@
+[
+  {
+    "_id": {
+      "$oid": "606d963f74744a3fa6f4489a"
+    },
+    "title": "First blog post",
+    "body": "RESTHeart is amazing",
+    "author": {
+      "$oid": "6037732f5fa7d52581015ed9"
+    },
+    "category": "backend"
+  },
+  {
+    "_id": {
+      "$oid": "606d963f74744a3fa6f4489e"
+    },
+    "title": "Second blog post",
+    "body": "GraphQL is even better",
+    "author": {
+      "$oid": "6037732f5fa7d52581015ed9"
+    },
+    "category": "backend"
+  },
+  {
+    "_id": {
+      "$oid": "619a2621f6371015382c0e76"
+    },
+    "title": "Angular is the best SPA framework",
+    "body": "Angular is amazing if your app needs to manage complex forms",
+    "category": "frontend",
+    "author": {
+      "$oid": "6037732f5fa7d52581015ed9"
+    }
+  }
+]
