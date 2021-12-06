@@ -107,7 +107,7 @@ public class LoggingInitializer {
 
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setContext(loggerContext);
-        encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n %throwable{short}");
+        encoder.setPattern("%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n%throwable{short}");
         encoder.start();
 
         rfAppender.setEncoder(encoder);
