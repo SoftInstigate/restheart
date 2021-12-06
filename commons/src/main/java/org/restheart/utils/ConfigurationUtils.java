@@ -18,14 +18,20 @@
  * =========================LICENSE_END==================================
  */
 
-package org.restheart;
+package org.restheart.utils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import org.apache.commons.jxpath.JXPathContext;
+import org.bson.Document;
+import org.restheart.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.Option;
@@ -428,4 +434,111 @@ public class ConfigurationUtils {
             }
         });
     }
+
+    // matches ; in a way that we can ignore whene inside quotes
+    // ispired by https://stackoverflow.com/a/23667311/4481670
+    private static Pattern SPLIT_REGEX = Pattern.compile(
+            "\\\\\"|\"(?:\\\\\"|[^\"])*\"" +
+            //"\\\"[^\\\"]+\"" +
+            "|\\\\'|'(?:\\\\'|[^'])*'" +
+            // "|'[^']+'" +
+            "|(;)");
+
+    private static List<String> splitOverrides(String rho) {
+        var m = SPLIT_REGEX.matcher(rho);
+
+        var regions = new ArrayList<RhOverrideRegion>();
+
+        var lastMatch = 0;
+        while (m.find()) {
+            // we ignore the strings delimited by " whose size is > 2 (at least two " chars)
+            if (m.group().length() == 1) {
+                regions.add(new RhOverrideRegion(lastMatch, m.start()));
+                lastMatch = m.end();
+            }
+        }
+
+        if (lastMatch < rho.length()) {
+            regions.add(new RhOverrideRegion(lastMatch, rho.length()));
+        }
+
+        var assignments = new ArrayList<String>();
+
+        regions.stream().forEach(region -> {
+            var assignment = rho.substring(region.start(), region.end()).strip();
+            if (!assignment.isBlank()) {
+                assignments.add(assignment);
+            }
+        });
+
+        return assignments;
+    }
+
+    public static List<RhOverride> overrides(String rho) {
+        return overrides(rho, false, false);
+    }
+
+    public static List<RhOverride> overrides(String rho, boolean lenient, boolean silent) {
+        var overrides = new ArrayList<RhOverride>();
+        var assignments = splitOverrides(rho);
+
+        assignments.stream().forEach(assignment -> {
+            var operator = assignment.indexOf("->");
+
+            if (operator == -1) {
+                if (!lenient) {
+                    throw new IllegalArgumentException("invalid override: " + assignment);
+                }
+
+                if (!silent) {
+                    LOGGER.warn("invalid override: {}", assignment);
+                }
+            } else {
+                var path = assignment.substring(0, operator).strip();
+
+                if (!path.startsWith("/") && !lenient) {
+                    throw new IllegalArgumentException("invalid override, path must be absolute, i.e. starting with /: " + assignment);
+                }
+
+                var ctx = JXPathContext.newContext(Maps.newHashMap());
+                ctx.setLenient(true);
+
+                try {
+                    ctx.getPointer(path);
+                } catch(Exception e) {
+                    if (!lenient) {
+                        throw new IllegalArgumentException("invalid override, invalid path: " + assignment + ", " + e.getMessage());
+                    }
+
+                    if (!silent) {
+                        LOGGER.warn("invalid override, invalid path: {}, {}", assignment, e.getMessage());
+                    }
+                }
+
+                var _value = assignment.substring(operator+2, assignment.length()).strip();
+                var e = "{\"e\":".concat(_value).concat("}");
+
+                try {
+                    var value = Document.parse(e).get("e");
+                    overrides.add(new RhOverride(path, value, assignment));
+                } catch (Exception ex) {
+                    if (!lenient) {
+                        throw new IllegalArgumentException("invalid override, value is not valid json: " + assignment);
+                    }
+
+                    if (!silent) {
+                        LOGGER.warn("invalid override, value is not valid json: {}", assignment);
+                    }
+                }
+            }
+        });
+
+        return overrides;
+    }
+
+    public static record RhOverride(String path, Object value, String raw) {
+    }
+}
+
+record RhOverrideRegion(int start, int end) {
 }

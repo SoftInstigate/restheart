@@ -38,7 +38,7 @@ import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.restheart.ConfigurationUtils.*;
+import static org.restheart.utils.ConfigurationUtils.*;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.*;
 
 /**

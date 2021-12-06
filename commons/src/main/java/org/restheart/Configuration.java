@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.jxpath.JXPathContext;
-import org.bson.Document;
+import org.restheart.utils.LogUtils;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +56,7 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import static org.restheart.ConfigurationKeys.*;
-import static org.restheart.ConfigurationUtils.*;
+import static org.restheart.utils.ConfigurationUtils.*;
 
 /**
  * Class that holds the configuration.
@@ -609,26 +609,26 @@ public class Configuration {
      */
     private static Map<String, Object> overrideConfiguration(Map<String, Object> confMap, final boolean silent) {
         final var PROP_NAME = "RHO";
-        final var EXPR_SEPARATOR = ";";
 
         var ctx = JXPathContext.newContext(confMap);
         ctx.setLenient(true);
 
         if (System.getenv().containsKey(PROP_NAME)) {
-            var expressions = Arrays.asList(System.getenv().get(PROP_NAME).split(EXPR_SEPARATOR));
+            var overrides = overrides(System.getenv().get(PROP_NAME), silent, silent);
 
-            expressions.stream().filter(expr -> expr.contains("->")).forEachOrdered(expr -> {
-                var left = expr.substring(0, expr.indexOf("->")).trim();
-                var right = expr.substring(expr.indexOf("->")+2).trim();
+            if (!silent) {
+                LOGGER.info("Overriding configuration parameters from RHO environment variable:");
+            }
 
+            overrides.stream().forEachOrdered(o -> {
                 if (!silent) {
-                    LOGGER.warn(">>> Found ovveride expression {}: overriding parameter '{}' with value '{}'", expr, left, right);
+                    LOGGER.info("\t'{}' -> '{}'", o.path(), o.value());
                 }
 
                 try {
-                    createPathAndSetValue(ctx, left, right);
+                    createPathAndSetValue(ctx, o.path(), o.value());
                 } catch(Throwable ise) {
-                    LOGGER.error("Wrong configuration override expression {}", expr, ise);
+                    LOGGER.error("Wrong configuration override {}, {}", o, ise.getMessage());
                 }
             });
         } else {
@@ -638,15 +638,13 @@ public class Configuration {
         return confMap;
     }
 
-    private static void createPathAndSetValue(JXPathContext ctx, String path, String value) {
-        var e = "{\"e\":".concat(value).concat("}");
-        var _value = Document.parse(e).get("e");
+    private static void createPathAndSetValue(JXPathContext ctx, String path, Object value) {
         createParents(ctx, path);
-        ctx.createPathAndSetValue(path, _value);
+        ctx.createPathAndSetValue(path, value);
     }
 
     private static void createParents(JXPathContext ctx, String path) {
-        if (path.lastIndexOf("/") < 0) {
+        if (path.lastIndexOf("/") == 0) {
             // root
             if (ctx.getValue(path) == null) {
                 ctx.createPathAndSetValue(path, Maps.newLinkedHashMap());
@@ -654,10 +652,9 @@ public class Configuration {
         } else {
             var parentPath = path.substring(0, path.lastIndexOf("/"));
 
-            createParents(ctx, parentPath);
-
             if (ctx.getValue(parentPath) == null) {
-                    ctx.createPathAndSetValue(parentPath, Maps.newLinkedHashMap());
+                createParents(ctx, parentPath);
+                ctx.createPathAndSetValue(parentPath, Maps.newLinkedHashMap());
             }
         }
     }

@@ -109,6 +109,7 @@ import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.security.handlers.SecurityHandler;
+import org.restheart.utils.ConfigurationUtils;
 import org.restheart.utils.FileUtils;
 import org.restheart.utils.LoggingInitializer;
 import org.restheart.utils.OSChecker;
@@ -141,7 +142,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import static org.restheart.ConfigurationUtils.getOrDefault;
+import static org.restheart.utils.ConfigurationUtils.getOrDefault;
 
 
 /**
