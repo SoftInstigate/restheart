@@ -21,13 +21,10 @@
 package org.restheart.mongodb.handlers.document;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DocumentDAO;
-import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -76,43 +73,48 @@ public class PatchDocumentHandler extends PipelinedHandler {
             return;
         }
 
-        BsonValue _content = request.getContent();
+        var _content = request.getContent();
 
         if (RequestHelper.isNotAcceptableContent(_content, exchange)) {
             next(exchange);
             return;
         }
 
-        BsonDocument content = _content.asDocument();
+        var content = _content.asDocument();
 
-        BsonValue id = request.getDocumentId();
+        var id = request.getDocumentId();
 
         if (content.get("_id") == null) {
             content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "_id in json data cannot be different than id in URL");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
             next(exchange);
             return;
         }
 
-        OperationResult result = documentDAO.writeDocument(
-                request.getClientSession(),
-                request.getDBName(),
-                request.getCollectionName(),
-                request.getDocumentId(),
-                request.getFiltersDocument(),
-                request.getShardKey(),
-                content,
-                request.getETag(),
-                true,
-                request.getWriteMode(),
-                request.isETagCheckRequired());
+        var result = documentDAO.writeDocument(
+            request.getClientSession(),
+            request.getDBName(),
+            request.getCollectionName(),
+            request.getDocumentId(),
+            request.getFiltersDocument(),
+            request.getShardKey(),
+            content,
+            request.getETag(),
+            true,
+            request.getWriteMode(),
+            request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {
+            next(exchange);
+            return;
+        }
+
+        // handle the case of error result with exception
+        if (result.getCause() != null) {
+            response.setInError(result.getHttpCode(), result.getCause().getMessage());
             next(exchange);
             return;
         }

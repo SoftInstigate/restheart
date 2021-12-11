@@ -28,7 +28,6 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DocumentDAO;
-import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -112,18 +111,18 @@ public class PutDocumentHandler extends PipelinedHandler {
 
         String etag = request.getETag();
 
-        OperationResult result = this.documentDAO.writeDocument(
-                request.getClientSession(),
-                request.getDBName(),
-                request.getCollectionName(),
-                request.getDocumentId(),
-                request.getFiltersDocument(),
-                request.getShardKey(),
-                content,
-                etag,
-                false,
-                request.getWriteMode(),
-                request.isETagCheckRequired());
+        var result = this.documentDAO.writeDocument(
+            request.getClientSession(),
+            request.getDBName(),
+            request.getCollectionName(),
+            request.getDocumentId(),
+            request.getFiltersDocument(),
+            request.getShardKey(),
+            content,
+            etag,
+            false,
+            request.getWriteMode(),
+            request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 
@@ -144,9 +143,14 @@ public class PutDocumentHandler extends PipelinedHandler {
 
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            response.setInError(
-                    HttpStatus.SC_EXPECTATION_FAILED,
-                    ResponseHelper.getMessageFromErrorCode(11000));
+            response.setInError(HttpStatus.SC_EXPECTATION_FAILED, ResponseHelper.getMessageFromErrorCode(11000));
+            next(exchange);
+            return;
+        }
+
+        // handle the case of error result with exception
+        if (result.getCause() != null) {
+            response.setInError(result.getHttpCode(), result.getCause().getMessage());
             next(exchange);
             return;
         }

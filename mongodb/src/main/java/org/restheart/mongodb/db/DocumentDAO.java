@@ -136,9 +136,8 @@ public class DocumentDAO implements DocumentRepository {
 
         if (patching) {
             if (oldDocument == null) {
-                return new OperationResult(updateResult.getHttpCode() > 0 
-                    ? updateResult.getHttpCode()
-                    : HttpStatus.SC_CREATED, newEtag, null, updateResult.getNewData());
+                return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode()  : HttpStatus.SC_CREATED,
+                    newEtag, null, updateResult.getNewData(), updateResult.getCause());
             } else if (checkEtag) {
                 // check the old etag (in case restore the old document version)
                 return optimisticCheckEtag(
@@ -154,9 +153,8 @@ public class DocumentDAO implements DocumentRepository {
                 var query = eq("_id", documentId);
                 var newDocument = cs == null ? mcoll.find(query).first() : mcoll.find(cs, query).first();
 
-                return new OperationResult(updateResult.getHttpCode() > 0
-                        ? updateResult.getHttpCode()
-                        : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+                return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode(): HttpStatus.SC_OK,
+                    newEtag, oldDocument, newDocument, updateResult.getCause());
             }
         } else if (oldDocument != null && checkEtag) { // upsertDocument
             // check the old etag (in case restore the old document)
@@ -172,15 +170,13 @@ public class DocumentDAO implements DocumentRepository {
         } else if (oldDocument != null) {  // insert
             var newDocument = mcoll.find(eq("_id", documentId)).first();
 
-            return new OperationResult(updateResult.getHttpCode() > 0
-                ? updateResult.getHttpCode()
-                : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+            return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_OK,
+                newEtag, oldDocument, newDocument, updateResult.getCause());
         } else {
             var newDocument = mcoll.find(eq("_id", documentId)).first();
 
-            return new OperationResult(updateResult.getHttpCode() > 0
-                ? updateResult.getHttpCode()
-                : HttpStatus.SC_CREATED, newEtag, null, newDocument);
+            return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_CREATED,
+                newEtag, null, newDocument, updateResult.getCause());
         }
     }
 
