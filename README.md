@@ -57,7 +57,7 @@ Snapshot builds are available from [sonatype.org](https://oss.sonatype.org/conte
 Docker images are also available
 
 ```bash
-$ docker pull softinstigate/restheart-snapshot:[commit-shot-hash]
+$ docker pull softinstigate/restheart-snapshot:[commit-short-hash]
 ```
 
 For commit short hash you need the first 7 digits of the hash, e.g.
