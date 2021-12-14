@@ -49,6 +49,8 @@ import static org.restheart.exchange.ExchangeKeys.TRUE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys._ID;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
+import org.restheart.exchange.ExchangeKeys.METHOD;
+import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
@@ -70,13 +72,9 @@ public class BsonRequestContentInjector {
 
     private static final String CONTENT_TYPE = "contentType";
 
-    private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: "
-            + Exchange.JSON_MEDIA_TYPE
-            + " or " + Exchange.HAL_JSON_MEDIA_TYPE;
+    private static final String ERROR_INVALID_CONTENTTYPE = "Content-Type must be either: " + Exchange.JSON_MEDIA_TYPE + " or " + Exchange.HAL_JSON_MEDIA_TYPE;
 
-    private static final String ERROR_INVALID_CONTENTTYPE_FILE = "Content-Type must be either: "
-            + Exchange.APP_FORM_URLENCODED_TYPE
-            + " or " + Exchange.MULTIPART_FORM_DATA_TYPE;
+    private static final String ERROR_INVALID_CONTENTTYPE_FILE = "Content-Type must be either: " + Exchange.APP_FORM_URLENCODED_TYPE + " or " + Exchange.MULTIPART_FORM_DATA_TYPE;
 
     private static boolean isHalOrJson(final HeaderValues contentTypes) {
         return (contentTypes == null
@@ -104,13 +102,13 @@ public class BsonRequestContentInjector {
         if (content == null) {
             return null;
         } else if (content.isDocument()) {
-            BsonValue id = content.asDocument().get("_id");
+            var id = content.asDocument().get("_id");
 
             if (id == null || !id.isString()) {
                 return null;
             }
 
-            String _id = id.asString().getValue();
+            var _id = id.asString().getValue();
 
             if (MAX_KEY_ID.equalsIgnoreCase(_id)
                     || MIN_KEY_ID.equalsIgnoreCase(_id)
@@ -122,14 +120,14 @@ public class BsonRequestContentInjector {
                 return null;
             }
         } else if (content.isArray()) {
-            BsonArray arrayContent = content.asArray();
+            var arrayContent = content.asArray();
 
-            Iterator<BsonValue> objs = arrayContent.getValues().iterator();
+            var objs = arrayContent.getValues().iterator();
 
             String ret = null;
 
             while (objs.hasNext()) {
-                BsonValue obj = objs.next();
+                var obj = objs.next();
 
                 if (obj.isDocument()) {
                     ret = checkReservedId(obj);
@@ -148,15 +146,11 @@ public class BsonRequestContentInjector {
         return null;
     }
 
-    private static void injectContentTypeFromFile(
-            final BsonDocument content,
-            final File file)
-            throws IOException {
+    private static void injectContentTypeFromFile( final BsonDocument content, final File file) throws IOException {
         if (content.get(CONTENT_TYPE) == null && file != null) {
-            final String contentType = detectMediaType(file);
+            final var contentType = detectMediaType(file);
             if (contentType != null) {
-                content.append(CONTENT_TYPE,
-                        new BsonString(contentType));
+                content.append(CONTENT_TYPE, new BsonString(contentType));
             }
         }
     }
@@ -169,10 +163,8 @@ public class BsonRequestContentInjector {
      * @return the parsed BsonDocument from the form data or an empty
      * BsonDocument
      */
-    protected static BsonDocument extractMetadata(
-            final FormData formData)
-            throws JsonParseException {
-        BsonDocument metadata = new BsonDocument();
+    protected static BsonDocument extractMetadata(final FormData formData) throws JsonParseException {
+        var metadata = new BsonDocument();
 
         final String metadataString;
 
@@ -197,7 +189,7 @@ public class BsonRequestContentInjector {
      */
     private static String extractFileField(final FormData formData) {
         String fileField = null;
-        for (String f : formData) {
+        for (var f : formData) {
             if (formData.getFirst(f) != null && formData.getFirst(f).isFileItem()) {
                 fileField = f;
                 break;
@@ -217,8 +209,7 @@ public class BsonRequestContentInjector {
         return new Tika().detect(file);
     }
 
-    private static final FormParserFactory FORM_PARSER
-            = FormParserFactory.builder().build();
+    private static final FormParserFactory FORM_PARSER = FormParserFactory.builder().build();
 
     /**
      * Creates a new instance of BodyInjectorHandler
@@ -239,32 +230,23 @@ public class BsonRequestContentInjector {
             return;
         }
 
-        if (request.isGet()
-                || request.isOptions()
-                || request.isDelete()) {
+        if (request.isGet() || request.isOptions() || request.isDelete()) {
             return;
         }
 
         BsonValue content;
 
-        final HeaderValues contentType = request.getHeaders().get(Headers.CONTENT_TYPE);
+        final var contentType = request.getHeaders().get(Headers.CONTENT_TYPE);
         if (isFormOrMultipart(contentType)) {
-            if (!((request.isPost() && request.isFilesBucket())
-                    || (request.isPut() && request.isFile()))) {
-                response.setInError(
-                        HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
-                        ERROR_INVALID_CONTENTTYPE_FILE);
+            if (!((request.isPost() && request.isFilesBucket()) || (request.isPut() && request.isFile()))) {
+                response.setInError(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
                 return;
             }
-            FormDataParser parser = FORM_PARSER.createParser(exchange);
+
+            var parser = FORM_PARSER.createParser(exchange);
 
             if (parser == null) {
-                String errMsg = "There is no form parser registered "
-                        + "for the request content type";
-
-                response.setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        errMsg);
+                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "There is no form parser registered for the request content type");
                 return;
             }
 
@@ -273,41 +255,25 @@ public class BsonRequestContentInjector {
             try {
                 formData = parser.parseBlocking();
             } catch (IOException ioe) {
-                String errMsg = "Error parsing the multipart form: "
-                        + "data could not be read";
-
-                response.setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        errMsg,
-                        ioe);
+                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Error parsing the multipart form: data could not be read", ioe);
                 return;
             }
 
             try {
                 content = extractMetadata(formData);
             } catch (JsonParseException | IllegalArgumentException ex) {
-                String errMsg = "Invalid data: "
-                        + "'properties' field is not a valid JSON";
-
-                response.setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        errMsg,
-                        ex);
+                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data: 'properties' field is not a valid JSON", ex);
                 return;
             }
 
-            final String fileField = extractFileField(formData);
+            final var fileField = extractFileField(formData);
 
             if (fileField == null) {
-                String errMsg = "This request does not contain any binary file";
-
-                response.setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        errMsg);
+                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "This request does not contain any binary file");
                 return;
             }
 
-            final Path path = formData.getFirst(fileField).getFileItem().getFile();
+            final var path = formData.getFirst(fileField).getFileItem().getFile();
 
             request.setFilePath(path);
 
@@ -315,9 +281,7 @@ public class BsonRequestContentInjector {
                 injectContentTypeFromFile(content.asDocument(), path.toFile());
             } catch (IOException ioe) {
                 response.addWarning("error detecting content type");
-
                 LOGGER.warn("error detecting content type of file", ioe);
-
                 return;
             }
         } else {
@@ -337,36 +301,22 @@ public class BsonRequestContentInjector {
                         contentString = ChannelReader.readString(exchange);
                     }
                 } catch (IOException ieo) {
-                    String errMsg = "Error reading request content";
-
+                    var errMsg = "Error reading request content";
                     LOGGER.error(errMsg, ieo);
-
-                    response.setInError(
-                            HttpStatus.SC_NOT_ACCEPTABLE,
-                            errMsg);
+                    response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
                     return;
                 }
 
                 // parse the json content
-                if (contentString != null
-                        && !contentString.isEmpty()) { // check content type
-
+                if (contentString != null && !contentString.isEmpty()) { // check content type
                     try {
                         content = BsonUtils.parse(contentString);
 
-                        if (content != null
-                                && !content.isDocument()
-                                && !content.isArray()) {
-                            throw new IllegalArgumentException(
-                                    "request data must be either a json object "
-                                    + "or an array"
-                                    + ", got " + content.getBsonType().name());
+                        if (content != null && !content.isDocument() && !content.isArray()) {
+                            throw new IllegalArgumentException("request data must be either a json object or an array, got " + content.getBsonType().name());
                         }
                     } catch (JsonParseException | IllegalArgumentException ex) {
-                        response.setInError(
-                                HttpStatus.SC_NOT_ACCEPTABLE,
-                                "Invalid JSON. " + ex.getMessage(),
-                                ex);
+                        response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON. " + ex.getMessage(), ex);
                         return;
                     }
                 } else {
@@ -375,9 +325,7 @@ public class BsonRequestContentInjector {
             } else if (contentType == null) {
                 content = null;
             } else {
-                response.setInError(
-                        HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE,
-                        ERROR_INVALID_CONTENTTYPE);
+                response.setInError(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
                 return;
             }
         }
@@ -386,40 +334,21 @@ public class BsonRequestContentInjector {
             content = new BsonDocument();
         } else if (content.isArray()) {
             if (!request.isCollection() || !request.isPost()) {
-
-                response.setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "request data can be an array only "
-                        + "for POST to collection resources "
-                        + "(bulk post)");
+                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "request data can be an array only for POST to collection resources (bulk post)");
                 return;
             }
 
             if (!content.asArray().stream().anyMatch(_doc -> {
                 if (_doc.isDocument()) {
-                    BsonValue _id = _doc.asDocument().get(_ID);
+                    var _id = _doc.asDocument().get(_ID);
 
                     if (_id != null && _id.isArray()) {
-                        String errMsg = "the type of _id in request data"
-                                + " is not supported: "
-                                + (_id == null
-                                        ? ""
-                                        : _id.getBsonType().name());
-
-                        response.setInError(
-                                HttpStatus.SC_NOT_ACCEPTABLE,
-                                errMsg);
-
+                        response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "the type of _id in request data is not supported: " + (_id == null ? "" : _id.getBsonType().name()));
                         return false;
                     }
                     return true;
                 } else {
-                    String errMsg = "request data must be either "
-                            + "an json object or an array of objects";
-
-                    response.setInError(
-                            HttpStatus.SC_NOT_ACCEPTABLE,
-                            errMsg);
+                    response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "request data must be either an json object or an array of objects");
                     return false;
                 }
             })) {
@@ -427,34 +356,75 @@ public class BsonRequestContentInjector {
                 return;
             }
         } else if (content.isDocument()) {
-            BsonDocument _content = content.asDocument();
+            var _content = content.asDocument();
 
-            BsonValue _id = _content.get(_ID);
+            var _id = _content.get(_ID);
 
             if (_id != null && _id.isArray()) {
-                String errMsg = "the type of _id in request data "
-                        + "is not supported: "
-                        + _id.getBsonType().name();
-
-                response.setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        errMsg);
+                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "the type of _id in request data is not supported: " + _id.getBsonType().name());
                 return;
             }
         }
 
+        // TODO
+        // **** wm=insert
+        //  POST    --> InsertOneResult insertOne(TDocument document);
+        //  PUT     --> InsertOneResult insertOne(TDocument document);
+        //  PATCH   --> InsertOneResult insertOne(TDocument document);  <== does this make sense?
+        // **** wm=update and wm=upsert
+        //  POST    --> TDocument findOneAndReplace(Bson filter, TDocument replacement, FindOneAndReplaceOptions options);
+        //  PUT     --> TDocument findOneAndReplace(Bson filter, TDocument replacement, FindOneAndReplaceOptions options);
+        //  PATCH   --> TDocument findOneAndUpdate(Bson filter, Bson update, FindOneAndUpdateOptions options);
+
+        // depending on the write method the body:
+        // - must be unflatten (allow dot notation)
+        // - the keys names can be $ prefixed
+        // - can use update operators
+        // - the keys name can be equal to update operators
+
+        var writeMode = request.isWriteDocument() ? request.getWriteMode() : WRITE_MODE.UPSERT;
+        var method = request.getMethod();
+        String mwo;
+        String comment = """
+
+                        - the body to be either a document or an update operator expression. in both case we build an update operator expression
+                        - when the wm=insert we want Conflict if the document already exists
+                        - when the wm=upsert|update we want the document to be:
+                            - replaced if the method is either POST or PUT
+                            - modified if the method is PATCH
+            """;
+
+        if (writeMode == WRITE_MODE.INSERT) {
+            mwo = "insertOne(TDocument document)";
+            comment = comment.concat("\t\t- when wm=insert, on insert we always want the body to be a document. does PATCH and insert make sense?");
+        } else if (method == METHOD.PATCH) {
+            mwo = "findOneAndUpdate(Bson filter, Bson update, FindOneAndUpdateOptions options)";
+            comment = comment.concat("\t\t- when wm=upsert|update, on patch we want the body to be a update operator expression. but what when the upsert result in an insert? This case should require a document!");
+        } else if (method == METHOD.POST | method == METHOD.PUT) {
+            mwo = "findOneAndReplace(Bson filter, TDocument replacement, FindOneAndReplaceOptions options)";
+            comment = comment.concat("\t\t- when wm=upsert|update, on post and put we want the body to be a update operator expression. but what when the upsert result in an insert? This case should require a document!");
+        } else {
+            mwo = "this method is not interested here! ";
+        }
+
+        LOGGER.debug(
+            """
+            the request is:
+            \tmethod: {},
+            \twrite mode: {},
+            \tmongodb write operation: {},
+            \twe want: {}
+            """,
+            method, writeMode, mwo, comment);
+
         if (request.isPost() || request.isPut()) {
             // if (BsonUtils.containsUpdateOperators(content, true)) {
             //     // not acceptable
-            //     String errMsg = "update operators (but $currentDate) cannot be used on POST and PUT requests";
-
-            //     response.setInError(
-            //             HttpStatus.SC_BAD_REQUEST,
-            //             errMsg);
+            //     response.setInError(HttpStatus.SC_BAD_REQUEST, "update operators (but $currentDate) cannot be used on POST and PUT requests");
             //     return;
             // }
 
-            // flatten request content for POST and PUT requests
+            // unflatten request content for POST and PUT requests
             content = BsonUtils.unflatten(content);
         }
 
