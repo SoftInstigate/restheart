@@ -403,7 +403,7 @@ public class MetricsHandler extends PipelinedHandler {
 
             if (body != null) {
                 exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, getOutputContentType());
-                ServiceResponse.of(exchange).setCustomerSender(() -> {
+                ServiceResponse.of(exchange).setCustomSender(() -> {
                     try {
                         exchange.getResponseSender().send(body);
                     } catch(Throwable t) {
