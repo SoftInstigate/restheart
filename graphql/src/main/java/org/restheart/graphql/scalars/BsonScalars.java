@@ -49,13 +49,17 @@ public class BsonScalars {
     public static final GraphQLScalarType GraphQLBsonRegularExpression = GraphQLScalarType.newScalar()
             .name("Regex").description("Bson regular expression scalar").coercing(new GraphQLBsonRegexCoercing()).build();
 
+    public static final GraphQLScalarType GraphQLBsonInt64 = GraphQLScalarType.newScalar()
+            .name("Long").description("BSON Int64 scalar (Long)").coercing(new GraphQLBsonInt64Coercing()).build();
+
     public static final Set<GraphQLScalarType> BSON_SCALARS = Sets.newHashSet(
         GraphQLBsonObjectId,
         GraphQLBsonDecimal128,
         GraphQLBsonTimestamp,
         GraphQLBsonDocument,
         GraphQLBsonDate,
-        GraphQLBsonRegularExpression
+        GraphQLBsonRegularExpression,
+        GraphQLBsonInt64
     );
 
     public static Map<String, GraphQLScalarType> getBsonScalars(){
