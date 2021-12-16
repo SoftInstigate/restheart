@@ -284,9 +284,15 @@ public class AclVarsInterpolator {
 
         String[] ret = { predicate };
 
+        // interpolate primitive values
         flatten.keySet().stream().filter(key -> flatten.get(key) != null)
-                .filter(key -> isJsonPrimitive(flatten.get(key))).forEach(key -> ret[0] = ret[0]
-                        .replaceAll(prefix.concat(key), quote(jsonPrimitiveValue(flatten.get(key)))));
+                .filter(key -> isJsonPrimitive(flatten.get(key)))
+                .forEach(key -> ret[0] = ret[0].replaceAll(prefix.concat(key), quote(jsonPrimitiveValue(flatten.get(key)))));
+
+        // interpolate arrays
+        flatten.keySet().stream().filter(key -> flatten.get(key) != null)
+                .filter(key -> isJsonArray(flatten.get(key)))
+                .forEach(key -> ret[0] = ret[0].replaceAll(prefix.concat(key), jsonArrayValue(flatten.get(key).asArray())));
 
         return ret[0];
     }
@@ -294,6 +300,10 @@ public class AclVarsInterpolator {
     private static boolean isJsonPrimitive(BsonValue value) {
         return value.isNull() || value.isBoolean() || value.isNumber() || value.isString() || value.isObjectId()
                 || value.isTimestamp() || value.isDateTime();
+    }
+
+    private static boolean isJsonArray(BsonValue value) {
+        return value.isArray();
     }
 
     private static String jsonPrimitiveValue(BsonValue value) {
@@ -319,6 +329,20 @@ public class AclVarsInterpolator {
             default:
                 throw new IllegalArgumentException("Cannot use in predicate field of type " + value.getBsonType());
         }
+    }
+
+    private static String jsonArrayValue(BsonArray array) {
+        var sb = new StringBuilder();
+        sb.append("{");
+
+        array.stream().filter(e -> isJsonPrimitive(e)).forEach(e -> sb.append(jsonPrimitiveValue(e)).append(", "));
+
+        // remove last comma
+        sb.delete(sb.length()-2,sb.length());
+
+        sb.append("}");
+
+        return  sb.toString();
     }
 
     private static String quote(String s) {
