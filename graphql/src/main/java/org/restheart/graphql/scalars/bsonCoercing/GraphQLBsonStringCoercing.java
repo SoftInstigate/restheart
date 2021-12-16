@@ -27,13 +27,11 @@ public class GraphQLBsonStringCoercing implements Coercing<BsonString, BsonStrin
 
     @Override
     public BsonString serialize(Object dataFetcherResult) throws CoercingSerializeException {
-
-        if(dataFetcherResult instanceof BsonString) {
-            return (BsonString) dataFetcherResult;
+        if(dataFetcherResult instanceof BsonString bsonString) {
+            return bsonString;
+        } else {
+            throw new CoercingSerializeException("Expected type 'BsonString' but was '" + typeName(dataFetcherResult) +"'.");
         }
-        throw new CoercingSerializeException(
-                "Expected type 'BsonString' but was '" + typeName(dataFetcherResult) +"'."
-        );
     }
 
     @Override

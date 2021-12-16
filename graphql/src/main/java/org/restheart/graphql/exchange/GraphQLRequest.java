@@ -20,11 +20,14 @@
  */
 package org.restheart.graphql.exchange;
 
-
+/**
+ * TODO move this class to restheart-commons
+ */
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.undertow.server.HttpServerExchange;
+
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.utils.ChannelReader;
@@ -51,7 +54,6 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
         var ret = new GraphQLRequest(exchange, appUri, appDefinition);
 
         try {
-
             if (isContentTypeGraphQL(exchange)){
                 ret.injectContentGraphQL();
             } else if (isContentTypeJson(exchange)){
@@ -59,7 +61,6 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
             } else if (!exchange.getRequestMethod().equalToString("OPTIONS")) {
                 ret.setInError(true);
             }
-
         } catch (IOException ioe){
             ret.setInError(true);
         }
@@ -79,34 +80,35 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
     }
 
     public void injectContentGraphQL() throws IOException {
-
         var body = ChannelReader.readString(wrapped);
-        JsonObject jsonObject = new JsonObject();
+        var jsonObject = new JsonObject();
         jsonObject.addProperty(QUERY_FIELD,body);
 
         setContent(jsonObject);
-
     }
 
     public String getQuery(){
-        if (this.getContent().getAsJsonObject().has(QUERY_FIELD)){
+        if (this.getContent().isJsonObject() && this.getContent().getAsJsonObject().has(QUERY_FIELD)){
             return this.getContent().getAsJsonObject().get(QUERY_FIELD).getAsString();
+        } else {
+            return null;
         }
-        else return null;
     }
 
     public String getOperationName(){
-        if (this.getContent().getAsJsonObject().has(OPERATION_NAME_FIELD)) {
+        if (this.getContent().isJsonObject() &&  this.getContent().getAsJsonObject().has(OPERATION_NAME_FIELD)) {
             return this.getContent().getAsJsonObject().get(OPERATION_NAME_FIELD).getAsString();
+        } else {
+            return null;
         }
-        else return null;
     }
 
     public JsonObject getVariables(){
-        if (this.getContent().getAsJsonObject().has(VARIABLES_FIELD)) {
+        if (this.getContent().isJsonObject() && this.getContent().getAsJsonObject().has(VARIABLES_FIELD)) {
             return this.getContent().getAsJsonObject().get(VARIABLES_FIELD).getAsJsonObject();
+        } else {
+            return null;
         }
-        else return null;
     }
 
     public String getGraphQLAppURI(){
@@ -118,16 +120,12 @@ public class GraphQLRequest extends ServiceRequest<JsonElement> {
     }
 
     public boolean hasVariables(){
-        return this.getContent().getAsJsonObject().has(VARIABLES_FIELD);
+        return this.getContent().isJsonObject() && this.getContent().getAsJsonObject().has(VARIABLES_FIELD);
     }
 
     private static boolean isContentTypeGraphQL(HttpServerExchange exchange){
+        var contentType = getContentType(exchange);
 
-        String contentType = getContentType(exchange);
-
-        return GRAPHQL_CONTENT_TYPE.equals(contentType) || (contentType != null
-                && contentType.startsWith(GRAPHQL_CONTENT_TYPE));
-
+        return GRAPHQL_CONTENT_TYPE.equals(contentType) || (contentType != null && contentType.startsWith(GRAPHQL_CONTENT_TYPE));
     }
-
 }

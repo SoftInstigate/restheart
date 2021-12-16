@@ -34,10 +34,9 @@ public class GraphQLBsonInt64Coercing implements Coercing<BsonInt64, BsonInt64> 
     public BsonInt64 serialize(Object dataFetcherResult) throws CoercingSerializeException {
         if (dataFetcherResult instanceof BsonInt64){
             return (BsonInt64) dataFetcherResult;
+        } else {
+            throw new CoercingParseValueException("Expected type 'Long' but was '" + typeName(dataFetcherResult) + ".");
         }
-        throw new CoercingParseValueException(
-                "Expected type 'Long' but was '" + typeName(dataFetcherResult) + "."
-        );
     }
 
     @Override

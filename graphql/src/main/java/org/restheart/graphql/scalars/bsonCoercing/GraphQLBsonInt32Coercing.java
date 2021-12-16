@@ -30,12 +30,11 @@ public class GraphQLBsonInt32Coercing implements Coercing<BsonInt32, BsonInt32> 
 
     @Override
     public BsonInt32 serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult instanceof BsonInt32) {
-            return (BsonInt32) dataFetcherResult;
+        if(dataFetcherResult instanceof BsonInt32 bsonInt32) {
+            return bsonInt32;
+        } else {
+            throw new CoercingSerializeException("Expected type 'BsonInt32' but was '" + typeName(dataFetcherResult) +"'.");
         }
-        throw new CoercingSerializeException(
-                "Expected type 'BsonInt32' but was '" + typeName(dataFetcherResult) +"'."
-        );
     }
 
     @Override
