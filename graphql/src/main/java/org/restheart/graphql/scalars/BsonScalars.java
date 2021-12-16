@@ -52,9 +52,6 @@ public class BsonScalars {
     public static final GraphQLScalarType GraphQLBsonInt64 = GraphQLScalarType.newScalar()
             .name("Long").description("BSON Int64 scalar (Long)").coercing(new GraphQLBsonInt64Coercing()).build();
 
-    public static final GraphQLScalarType GraphQLBsonDouble = GraphQLScalarType.newScalar()
-            .name("Double").description("BSON Double scalar (Double)").coercing(new GraphQLBsonDoubleCoerching()).build();
-
     public static final Set<GraphQLScalarType> BSON_SCALARS = Sets.newHashSet(
         GraphQLBsonDocument,
         GraphQLBsonObjectId,
@@ -62,8 +59,7 @@ public class BsonScalars {
         GraphQLBsonTimestamp,
         GraphQLBsonDate,
         GraphQLBsonRegularExpression,
-        GraphQLBsonInt64,
-        GraphQLBsonDouble
+        GraphQLBsonInt64
     );
 
     public static Map<String, GraphQLScalarType> getBsonScalars(){
