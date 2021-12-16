@@ -32,32 +32,28 @@ import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 public class GraphQLBsonRegexCoercing implements Coercing<BsonRegularExpression, BsonRegularExpression> {
     @Override
     public BsonRegularExpression serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult instanceof BsonRegularExpression){
-            return (BsonRegularExpression) dataFetcherResult;
+        if (dataFetcherResult instanceof BsonRegularExpression bsonRegularExpression){
+            return bsonRegularExpression;
+        } else {
+            throw new CoercingSerializeException("Expected type 'BsonRegularExpression' but was '" + typeName(dataFetcherResult) +"'.");
         }
-        throw new CoercingSerializeException(
-                "Expected type 'BsonRegularExpression' but was '" + typeName(dataFetcherResult) +"'."
-        );
     }
 
     @Override
     public BsonRegularExpression parseValue(Object input) throws CoercingParseValueException {
-
-        if(input instanceof String){
-            return new BsonRegularExpression((String) input);
+        if (input instanceof String string){
+            return new BsonRegularExpression(string);
+        } else {
+            throw new CoercingParseValueException("Expected type 'BsonRegularExpression' but was '" + typeName(input) +"'.");
         }
-        throw new CoercingParseValueException(
-                "Expected type 'BsonRegularExpression' but was '" + typeName(input) +"'."
-        );
     }
 
     @Override
     public BsonRegularExpression parseLiteral(Object AST) throws CoercingParseLiteralException {
-        if(!(AST instanceof StringValue)){
-            throw new CoercingParseLiteralException(
-                    "Expected AST type 'StringValue' but was '" + typeName(AST) + "'."
-            );
+        if (AST instanceof StringValue stringValue){
+            return new BsonRegularExpression(stringValue.getValue());
+        } else {
+            throw new CoercingParseLiteralException("Expected AST type 'StringValue' but was '" + typeName(AST) + "'.");
         }
-        return new BsonRegularExpression(((StringValue) AST).getValue());
     }
 }

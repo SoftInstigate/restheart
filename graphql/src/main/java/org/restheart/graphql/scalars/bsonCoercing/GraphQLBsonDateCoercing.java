@@ -33,71 +33,63 @@ import java.time.format.DateTimeParseException;
 
 import static org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.typeName;
 
-public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateTime> {
-
-
-    private Long convertImpl(Object input){
-        if(input instanceof Long){
-            return (Long) input;
-        }
-        else if(input instanceof String){
-            try {
-                OffsetDateTime ofsDate = OffsetDateTime.parse(input.toString(), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-                return ofsDate.toInstant().toEpochMilli();
-            }catch (DateTimeParseException e1){
-                try{
-                    return Long.parseLong(input.toString());
-                }catch (NumberFormatException e2){
-                    return null;
-                }
-            }
-        }
-        else if (input instanceof OffsetDateTime){
-            return ((OffsetDateTime) input).toInstant().toEpochMilli();
-        }
-        return null;
-    }
-
+public class GraphQLBsonDateCoercing implements Coercing<BsonDateTime, BsonDateTime>  {
     @Override
     public BsonDateTime serialize(Object dataFetcherResult) throws CoercingSerializeException {
-        if(dataFetcherResult instanceof BsonDateTime){
-            return (BsonDateTime) dataFetcherResult;
+        if (dataFetcherResult instanceof BsonDateTime bsonDateTime){
+            return bsonDateTime;
+        } else {
+            throw new CoercingSerializeException("Expected type 'BsonDateTime' but was '" + typeName(dataFetcherResult) +"'.");
         }
-        throw new CoercingSerializeException(
-                "Expected type 'BsonDateTime' but was '" + typeName(dataFetcherResult) +"'."
-        );
     }
 
     @Override
     public BsonDateTime parseValue(Object input) throws CoercingParseValueException {
-        Long possibleDate = convertImpl(input);
+        var possibleDate = convertImpl(input);
         if (possibleDate == null){
-            throw new CoercingParseValueException(
-                    "Expected type 'Long' or 'String' (with a valid OffsetDateTime) but was '" + typeName(input) +"'."
-            );
+            throw new CoercingParseValueException("Expected type 'Long' or 'String' (with a valid OffsetDateTime) but was '" + typeName(input) +"'.");
+        } else {
+            return new BsonDateTime(possibleDate);
         }
-        return new BsonDateTime(possibleDate);
     }
 
     @Override
     public BsonDateTime parseLiteral(Object AST) throws CoercingParseLiteralException {
-        if (!(AST instanceof StringValue)) {
-            throw new CoercingParseLiteralException(
-                    "Expected AST type 'StringValue' but was '" + typeName(AST) + "'."
-            );
-        }
-        String possibleDate = ((StringValue) AST).getValue();
-        try {
-            OffsetDateTime ofsDate = OffsetDateTime.parse(possibleDate, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-            return new BsonDateTime(ofsDate.toInstant().toEpochMilli());
-        } catch (DateTimeParseException e1){
+        if (AST instanceof StringValue stringValue) {
+            var possibleDate = stringValue.getValue();
             try {
-                return new BsonDateTime(Long.parseLong(possibleDate));
-            } catch (NumberFormatException e2){
-                throw new CoercingParseLiteralException(
-                        "Input string is not a valid date."
-                );
+                var ofsDate = OffsetDateTime.parse(possibleDate, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                return new BsonDateTime(ofsDate.toInstant().toEpochMilli());
+            } catch (DateTimeParseException dtpe) {
+                try {
+                    return new BsonDateTime(Long.parseLong(possibleDate));
+                } catch (NumberFormatException e2){
+                    throw new CoercingParseLiteralException("Input string is not a valid date.");
+                }
             }
+        } else {
+            throw new CoercingParseLiteralException("Expected AST type 'StringValue' but was '" + typeName(AST) + "'.");
         }
+    }
+
+    private Long convertImpl(Object input){
+        if (input instanceof Long _long){
+            return _long;
+        } else if (input instanceof String string){
+            try {
+                var ofsDate = OffsetDateTime.parse(string, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                return ofsDate.toInstant().toEpochMilli();
+            } catch (DateTimeParseException dtpe){
+                try{
+                    return Long.parseLong(string);
+                } catch (NumberFormatException nfe) {
+                    return null;
+                }
+            }
+        } else if (input instanceof OffsetDateTime offsetDateTime){
+            return offsetDateTime.toInstant().toEpochMilli();
+        }
+
+        return null;
     }
 }

@@ -22,7 +22,6 @@ package org.restheart.graphql.scalars.bsonCoercing;
 
 import graphql.schema.Coercing;
 import graphql.schema.GraphQLScalarType;
-import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -51,38 +50,27 @@ public class CoercingUtils {
             Map.entry("Long", new GraphQLBsonInt64Coercing())
     );
 
-
     public static final Map<String, Coercing<?,?>> builtInCoercing = new HashMap<>();
 
-
     static String typeName(Object input) {
-        if (input == null) {
-            return "null";
-        }
-        return input.getClass().getSimpleName();
+        return input == null ? "null" : input.getClass().getSimpleName();
     }
 
     static void saveBuiltInCoercing(){
-        builtInScalars.forEach(((s, graphQLScalarType) -> {
-            builtInCoercing.put(s, graphQLScalarType.getCoercing());
-        }));
+        builtInScalars.forEach(((s, graphQLScalarType) -> builtInCoercing.put(s, graphQLScalarType.getCoercing())));
     }
 
     public static void replaceBuiltInCoercing() throws NoSuchFieldException, IllegalAccessException {
-        Field coercingField =  GraphQLScalarType.class.getDeclaredField("coercing");
+        var coercingField =  GraphQLScalarType.class.getDeclaredField("coercing");
         coercingField.setAccessible(true);
         saveBuiltInCoercing();
         replacements.forEach(((s, coercing) -> {
-            try {
-                coercingField.set(builtInScalars.get(s), coercing);
-            } catch (IllegalAccessException e) {
-                LambdaUtils.throwsSneakyException(new RuntimeException("Error replacing built-in scalars", e));
-            }
-        }));
+                try {
+                    coercingField.set(builtInScalars.get(s), coercing);
+                } catch (IllegalAccessException e) {
+                    LambdaUtils.throwsSneakyException(new RuntimeException("Error replacing built-in scalars", e));
+                }
+            }));
         coercingField.setAccessible(false);
-    }
-
-    public static Boolean isANumber(Object input){
-        return input instanceof Number || input instanceof String;
     }
 }
