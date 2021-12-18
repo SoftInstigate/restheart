@@ -22,6 +22,9 @@ package org.restheart.mongodb.handlers.document;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+
+import java.util.Optional;
+
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
@@ -88,38 +91,32 @@ public class PutDocumentHandler extends PipelinedHandler {
 
         // cannot PUT an array
         if (!_content.isDocument()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data must be a josn object");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a josn object");
             next(exchange);
             return;
         }
 
-        BsonDocument content = _content.asDocument();
+        var content = _content.asDocument();
 
-        BsonValue id = request.getDocumentId();
+        var id = request.getDocumentId();
 
         if (content.get("_id") == null) {
             content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "_id in content body is different than id in URL");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
             next(exchange);
             return;
         }
 
-        String etag = request.getETag();
-
         var result = this.documentDAO.writeDocument(
-            request.getClientSession(),
+            Optional.ofNullable(request.getClientSession()),
             request.getDBName(),
             request.getCollectionName(),
-            request.getDocumentId(),
-            request.getFiltersDocument(),
-            request.getShardKey(),
+            Optional.of(request.getDocumentId()),
+            Optional.ofNullable(request.getFiltersDocument()),
+            Optional.ofNullable(request.getShardKey()),
             content,
-            etag,
+            request.getETag(),
             false,
             request.getWriteMode(),
             request.isETagCheckRequired());
@@ -132,11 +129,7 @@ public class PutDocumentHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setInError(
-                    HttpStatus.SC_CONFLICT,
-                    "The document's ETag must be provided using the '"
-                    + Headers.IF_MATCH
-                    + "' header");
+            response.setInError(HttpStatus.SC_CONFLICT, "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             next(exchange);
             return;
         }

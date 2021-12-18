@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Optional;
+
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -38,6 +40,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.bson.BsonDocument;
+import org.bson.BsonObjectId;
+import org.bson.BsonString;
 import org.bson.types.ObjectId;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
@@ -746,31 +750,31 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
      * @throws IOException
      */
     protected HttpResponse check(String message, Response resp, int expectedCode) throws IOException {
-        HttpResponse httpResp = resp.returnResponse();
+        var httpResp = resp.returnResponse();
         assertNotNull(httpResp);
-        StatusLine statusLine = httpResp.getStatusLine();
+        var statusLine = httpResp.getStatusLine();
         assertNotNull(statusLine);
         assertEquals(message, expectedCode, statusLine.getStatusCode());
         return httpResp;
     }
 
     private void createTestData() {
-        dbsDAO.upsertDB(null, dbName, dbProps, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertDB(Optional.empty(), dbName, dbProps, new ObjectId().toString(), false, false, false);
 
-        dbsDAO.upsertCollection(null, dbName, collection1Name, coll1Props, new ObjectId().toString(), false, false, false);
-        dbsDAO.upsertCollection(null, dbName, collection2Name, coll2Props, new ObjectId().toString(), false, false, false);
-        dbsDAO.upsertCollection(null, dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertCollection(Optional.empty(), dbName, collection1Name, coll1Props, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertCollection(Optional.empty(), dbName, collection2Name, coll2Props, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertCollection(Optional.empty(), dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false, false, false);
 
-        for (String index : docsCollectionIndexesStrings) {
-            dbsDAO.createIndex(null, dbName, docsCollectionName, BsonDocument.parse(index), null);
+        for (var index : docsCollectionIndexesStrings) {
+            dbsDAO.createIndex(Optional.empty(), dbName, docsCollectionName, BsonDocument.parse(index), Optional.empty());
         }
 
-        final DocumentDAO documentDAO = new DocumentDAO();
-        documentDAO.writeDocument(null, dbName, collection1Name, document1Id, null, null, document1Props, new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
-        documentDAO.writeDocument(null, dbName, collection2Name, document2Id, null, null, document2Props, new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
+        final var documentDAO = new DocumentDAO();
+        documentDAO.writeDocument(Optional.empty(), dbName, collection1Name, Optional.of(new BsonString(document1Id)), Optional.empty(), Optional.empty(), document1Props, new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
+        documentDAO.writeDocument(Optional.empty(), dbName, collection2Name, Optional.of(new BsonString(document2Id)), Optional.empty(), Optional.empty(), document2Props, new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
 
         for (String doc : docsPropsStrings) {
-            documentDAO.writeDocument(null, dbName, docsCollectionName, new ObjectId().toString(), null, null, BsonDocument.parse(doc), new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
+            documentDAO.writeDocument(Optional.empty(), dbName, docsCollectionName, Optional.of(new BsonObjectId(new ObjectId())), Optional.empty(), Optional.empty(), BsonDocument.parse(doc), new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
         }
         LOG.debug("test data created");
     }

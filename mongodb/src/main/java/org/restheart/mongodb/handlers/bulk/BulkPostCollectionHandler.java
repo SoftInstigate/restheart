@@ -21,13 +21,15 @@
 package org.restheart.mongodb.handlers.bulk;
 
 import io.undertow.server.HttpServerExchange;
+
+import java.util.Optional;
+
 import org.bson.BsonArray;
 import org.bson.BsonValue;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.BulkOperationResult;
 import org.restheart.mongodb.db.DocumentDAO;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -91,29 +93,28 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
             return;
         }
 
-        BsonValue content = request.getContent();
+        var content = request.getContent();
 
         // expects an an array
         if (content == null || !content.isArray()) {
             throw new RuntimeException("error, this handler expects an array of objects");
         }
 
-        BsonArray documents = content.asArray();
+        var documents = content.asArray();
 
         if (!checkIds(exchange, documents)) {
             // if check fails, exchange has been closed
             return;
         }
 
-        BulkOperationResult result = this.documentDAO
-                .bulkPostDocuments(
-                        request.getClientSession(),
-                        request.getDBName(),
-                        request.getCollectionName(),
-                        documents,
-                        request.getFiltersDocument(),
-                        request.getShardKey(),
-                        request.getWriteMode());
+        var result = this.documentDAO.bulkPostDocuments(
+            Optional.ofNullable(request.getClientSession()),
+            request.getDBName(),
+            request.getCollectionName(),
+            documents,
+            Optional.ofNullable(request.getFiltersDocument()),
+            Optional.ofNullable(request.getShardKey()),
+            request.getWriteMode());
 
         response.setDbOperationResult(result);
 
@@ -134,7 +135,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
     private boolean checkIds(HttpServerExchange exchange, BsonArray documents) throws Exception {
         boolean ret = true;
 
-        for (BsonValue document : documents) {
+        for (var document : documents) {
             if (!checkId(exchange, document)) {
                 ret = false;
                 break;
@@ -150,24 +151,15 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
         if (document.isDocument()
                 && document.asDocument().containsKey("_id")
                 && document.asDocument().get("_id").isString()
-                && MongoRequest.isReservedDocumentId(
-                        request.getType(),
-                        document.asDocument().get("_id"))) {
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_FORBIDDEN,
-                    "id is reserved: " + document.asDocument()
-                            .get("_id").asString().getValue());
+                && MongoRequest.isReservedDocumentId(request.getType(), document.asDocument().get("_id"))) {
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_FORBIDDEN, "id is reserved: " + document.asDocument().get("_id").asString().getValue());
             next(exchange);
             return false;
         }
 
-        if (document.isDocument()
-                && document.asDocument().containsKey("_id")) {
-            if (!(request.getDocIdType() == DOC_ID_TYPE.OID
-                    || request.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
-                MongoResponse.of(exchange).setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "_id in content body is mandatory for documents with id type " + request.getDocIdType().name());
+        if (document.isDocument() && document.asDocument().containsKey("_id")) {
+            if (!(request.getDocIdType() == DOC_ID_TYPE.OID || request.getDocIdType() == DOC_ID_TYPE.STRING_OID)) {
+                MongoResponse.of(exchange).setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is mandatory for documents with id type " + request.getDocIdType().name());
                 next(exchange);
                 return false;
             }

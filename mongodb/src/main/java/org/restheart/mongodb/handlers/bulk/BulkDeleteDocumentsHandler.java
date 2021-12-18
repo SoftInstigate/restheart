@@ -21,10 +21,12 @@
 package org.restheart.mongodb.handlers.bulk;
 
 import io.undertow.server.HttpServerExchange;
+
+import java.util.Optional;
+
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.BulkOperationResult;
 import org.restheart.mongodb.db.DocumentDAO;
 
 /**
@@ -78,19 +80,18 @@ public class BulkDeleteDocumentsHandler extends PipelinedHandler {
             return;
         }
 
-        BulkOperationResult result = this.documentDAO
-                .bulkDeleteDocuments(
-                        request.getClientSession(),
-                        request.getDBName(),
-                        request.getCollectionName(),
-                        request.getFiltersDocument(),
-                        request.getShardKey());
+        var result = this.documentDAO.bulkDeleteDocuments(
+            Optional.ofNullable(request.getClientSession()),
+            request.getDBName(),
+            request.getCollectionName(),
+            request.getFiltersDocument(),
+            Optional.ofNullable(request.getShardKey()));
 
         response.setDbOperationResult(result);
 
         response.setStatusCode(result.getHttpCode());
 
-        BulkResultRepresentationFactory bprf = new BulkResultRepresentationFactory();
+        var bprf = new BulkResultRepresentationFactory();
 
         response.setContent(bprf.getRepresentation(request.getPath(), result));
 

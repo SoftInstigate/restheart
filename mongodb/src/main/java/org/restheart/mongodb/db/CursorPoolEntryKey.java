@@ -23,6 +23,8 @@ package org.restheart.mongodb.db;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 import java.util.Formatter;
+import java.util.Optional;
+
 import org.bson.BsonDocument;
 
 /**
@@ -30,7 +32,7 @@ import org.bson.BsonDocument;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public record CursorPoolEntryKey(
-    ClientSession session,
+    Optional<ClientSession> session,
     MongoCollection<BsonDocument> collection,
     BsonDocument sort,
     BsonDocument filter,

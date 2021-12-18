@@ -27,6 +27,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import static com.mongodb.client.model.Filters.eq;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.StreamSupport;
 import org.bson.BsonArray;
@@ -98,8 +99,8 @@ class CollectionDAO {
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
      */
-    public long getCollectionSize(final ClientSession cs, final MongoCollection<BsonDocument> coll, final BsonDocument filters) {
-        return cs == null ? coll.countDocuments(filters) : coll.countDocuments(cs, filters);
+    public long getCollectionSize(final Optional<ClientSession> cs, final MongoCollection<BsonDocument> coll, final BsonDocument filters) {
+        return cs.isPresent() ?  coll.countDocuments(cs.get(), filters) : coll.countDocuments(filters);
     }
 
     /**
@@ -114,36 +115,36 @@ class CollectionDAO {
      * @return
      * @throws JsonParseException
      */
-    FindIterable<BsonDocument> getFindIterable(
-            final ClientSession cs,
-            final MongoCollection<BsonDocument> coll,
-            final BsonDocument sortBy,
-            final BsonDocument filters,
-            final BsonDocument hint,
-            final BsonDocument keys) throws JsonParseException {
+    FindIterable<BsonDocument> findIterable(
+        final Optional<ClientSession> cs,
+        final MongoCollection<BsonDocument> coll,
+        final BsonDocument sortBy,
+        final BsonDocument filters,
+        final BsonDocument hint,
+        final BsonDocument keys) throws JsonParseException {
 
-        var ret = cs == null
-                ? coll.find(filters)
-                : coll.find(cs, filters);
+        var ret = cs.isPresent()
+            ? coll.find(cs.get(), filters)
+            : coll.find(filters);
 
         return ret.projection(keys)
-                .sort(sortBy)
-                .batchSize(BATCH_SIZE)
-                .hint(hint)
-                .maxTime(MongoServiceConfiguration.get().getQueryTimeLimit(), TimeUnit.MILLISECONDS);
+            .sort(sortBy)
+            .batchSize(BATCH_SIZE)
+            .hint(hint)
+            .maxTime(MongoServiceConfiguration.get().getQueryTimeLimit(), TimeUnit.MILLISECONDS);
     }
 
     BsonArray getCollectionData(
-            final ClientSession cs,
-            final MongoCollection<BsonDocument> coll,
-            final int page,
-            final int pagesize,
-            final BsonDocument sortBy,
-            final BsonDocument filters,
-            final BsonDocument hint,
-            final BsonDocument keys,
-            final EAGER_CURSOR_ALLOCATION_POLICY eager)
-            throws JsonParseException {
+        final Optional<ClientSession> cs,
+        final MongoCollection<BsonDocument> coll,
+        final int page,
+        final int pagesize,
+        final BsonDocument sortBy,
+        final BsonDocument filters,
+        final BsonDocument hint,
+        final BsonDocument keys,
+        final EAGER_CURSOR_ALLOCATION_POLICY eager)
+        throws JsonParseException {
 
         var ret = new BsonArray();
 
@@ -159,7 +160,7 @@ class CollectionDAO {
         FindIterable<BsonDocument> cursor;
 
         if (_cursor == null) {
-            cursor = getFindIterable(cs, coll, sortBy, filters, hint, keys);
+            cursor = findIterable(cs, coll, sortBy, filters, hint, keys);
             cursor.skip(toskip).limit(pagesize);
 
             StreamSupport.stream(cursor.spliterator(),false).forEachOrdered(c -> ret.add(c));
@@ -209,14 +210,14 @@ class CollectionDAO {
      * @param collName the collection name
      * @return the collection properties document
      */
-    public BsonDocument getCollectionProps(final ClientSession cs, final String dbName, final String collName) {
+    public BsonDocument getCollectionProps(final Optional<ClientSession> cs, final String dbName, final String collName) {
         var propsColl = getCollection(dbName, META_COLLNAME);
 
         var query = new BsonDocument("_id", new BsonString("_properties.".concat(collName)));
 
-        var props = cs == null
-                ? propsColl.find(query).limit(1).first()
-                : propsColl.find(cs, query).limit(1).first();
+        var props = cs.isPresent()
+                ? propsColl.find(cs.get(), query).limit(1).first()
+                : propsColl.find(query).limit(1).first();
 
         if (props != null) {
             props.append("_id", new BsonString(collName));
@@ -235,13 +236,12 @@ class CollectionDAO {
      * @param collName the collection name
      * @return true if the collection exists
      */
-    public boolean doesCollectionExist(final ClientSession cs, final String dbName, final String collName) {
-        var dbCollections = cs == null
-                ? client.getDatabase(dbName).listCollectionNames()
-                : client.getDatabase(dbName).listCollectionNames(cs);
+    public boolean doesCollectionExist(final Optional<ClientSession> cs, final String dbName, final String collName) {
+        var dbCollections = cs.isPresent()
+            ? client.getDatabase(dbName).listCollectionNames(cs.get())
+            : client.getDatabase(dbName).listCollectionNames();
 
-        return StreamSupport.stream(dbCollections.spliterator(),false)
-            .anyMatch(dbCollection -> collName.equals(dbCollection));
+        return StreamSupport.stream(dbCollections.spliterator(),false).anyMatch(dbCollection -> collName.equals(dbCollection));
     }
 
     /**
@@ -259,14 +259,14 @@ class CollectionDAO {
      * @return the HttpStatus code to set in the http response
      */
     OperationResult upsertCollection(
-            final ClientSession cs,
-            final String dbName,
-            final String collName,
-            final BsonDocument properties,
-            final String requestEtag,
-            boolean updating,
-            final boolean patching,
-            final boolean checkEtag) {
+        final Optional<ClientSession> cs,
+        final String dbName,
+        final String collName,
+        final BsonDocument properties,
+        final String requestEtag,
+        boolean updating,
+        final boolean patching,
+        final boolean checkEtag) {
 
         if (patching && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
@@ -274,10 +274,10 @@ class CollectionDAO {
 
         if (!updating) {
             try {
-                if (cs == null) {
-                    client.getDatabase(dbName).createCollection(collName);
+                if(cs.isPresent()) {
+                    client.getDatabase(dbName).createCollection(cs.get(), collName);
                 } else {
-                    client.getDatabase(dbName).createCollection(cs, collName);
+                    client.getDatabase(dbName).createCollection(collName);
                 }
             } catch (MongoCommandException ex) {
                 // error 48 is NamespaceExists
@@ -294,7 +294,7 @@ class CollectionDAO {
             }
         }
 
-        ObjectId newEtag = new ObjectId();
+        var newEtag = new ObjectId();
 
         final var content = DAOUtils.validContent(properties);
 
@@ -306,9 +306,9 @@ class CollectionDAO {
         if (checkEtag && updating) {
             var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
 
-            var oldProperties = cs == null
-                            ? mcoll.find(query).projection(FIELDS_TO_RETURN).first()
-                            : mcoll.find(cs, query).projection(FIELDS_TO_RETURN).first();
+            var oldProperties = cs.isPresent()
+                ? mcoll.find(cs.get(), query).projection(FIELDS_TO_RETURN).first()
+                : mcoll.find(query).projection(FIELDS_TO_RETURN).first();
 
             if (oldProperties != null) {
                 var oldEtag = oldProperties.get("_etag");
@@ -343,49 +343,49 @@ class CollectionDAO {
     }
 
     private OperationResult doCollPropsUpdate(
-            final ClientSession cs,
-            final String collName,
-            final boolean patching,
-            final boolean updating,
-            final MongoCollection<BsonDocument> mcoll,
-            final BsonDocument dcontent,
-            final ObjectId newEtag) {
+        final Optional<ClientSession> cs,
+        final String collName,
+        final boolean patching,
+        final boolean updating,
+        final MongoCollection<BsonDocument> mcoll,
+        final BsonDocument dcontent,
+        final ObjectId newEtag) {
         if (patching) {
             var ret = DAOUtils.writeDocument(
-                    cs,
-                    mcoll,
-                    "_properties.".concat(collName),
-                    null,
-                    null,
-                    dcontent,
-                    false,
-                    WRITE_MODE.UPSERT);
+                cs,
+                mcoll,
+                Optional.of(new BsonString("_properties.".concat(collName))),
+                Optional.empty(),
+                Optional.empty(),
+                dcontent,
+                false,
+                WRITE_MODE.UPSERT);
 
             return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK, newEtag);
         } else if (updating) {
             var ret = DAOUtils.writeDocument(
-                    cs,
-                    mcoll,
-                    "_properties.".concat(collName),
-                    null,
-                    null,
-                    dcontent,
-                    true,
-                    WRITE_MODE.UPSERT);
+                cs,
+                mcoll,
+                Optional.of(new BsonString("_properties.".concat(collName))),
+                Optional.empty(),
+                Optional.empty(),
+                dcontent,
+                true,
+                WRITE_MODE.UPSERT);
             return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK,
-                    newEtag,
-                    ret.getOldData(),
-                    ret.getNewData());
+                newEtag,
+                ret.getOldData(),
+                ret.getNewData());
         } else {
             var ret = DAOUtils.writeDocument(
-                    cs,
-                    mcoll,
-                    "_properties.".concat(collName),
-                    null,
-                    null,
-                    dcontent,
-                    false,
-                    WRITE_MODE.UPSERT);
+                cs,
+                mcoll,
+                Optional.of(new BsonString("_properties.".concat(collName))),
+                Optional.empty(),
+                Optional.empty(),
+                dcontent,
+                false,
+                WRITE_MODE.UPSERT);
 
             return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_CREATED, newEtag, ret.getOldData(), ret.getNewData());
         }
@@ -402,18 +402,18 @@ class CollectionDAO {
      * @return the HttpStatus code to set in the http response
      */
     OperationResult deleteCollection(
-            final ClientSession cs,
-            final String dbName,
-            final String collName,
-            final BsonObjectId requestEtag,
-            final boolean checkEtag) {
+        final Optional<ClientSession> cs,
+        final String dbName,
+        final String collName,
+        final BsonObjectId requestEtag,
+        final boolean checkEtag) {
         var mcoll = getCollection(dbName, META_COLLNAME);
 
         var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
 
-        var properties = cs == null
-                    ? mcoll.find(query).projection(FIELDS_TO_RETURN).first()
-                    : mcoll.find(cs, query).projection(FIELDS_TO_RETURN).first();
+        var properties = cs.isPresent()
+            ? mcoll.find(cs.get(), query).projection(FIELDS_TO_RETURN).first()
+            : mcoll.find(query).projection(FIELDS_TO_RETURN).first();
 
         if (checkEtag) {
             if (properties != null) {
@@ -431,12 +431,12 @@ class CollectionDAO {
 
         var collToDelete = getCollection(dbName, collName);
 
-        if (cs == null) {
+        if (cs.isPresent()) {
+            collToDelete.drop(cs.get());
+            mcoll.deleteOne(cs.get(), query);
+        } else {
             collToDelete.drop();
             mcoll.deleteOne(query);
-        } else {
-            collToDelete.drop(cs);
-            mcoll.deleteOne(cs, query);
         }
 
         return new OperationResult(HttpStatus.SC_NO_CONTENT, null, properties, null);

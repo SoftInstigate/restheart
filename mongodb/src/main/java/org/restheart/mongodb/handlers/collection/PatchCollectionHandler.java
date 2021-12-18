@@ -21,14 +21,15 @@
 package org.restheart.mongodb.handlers.collection;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
+
+import java.util.Optional;
+
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.HttpStatus;
@@ -72,20 +73,13 @@ public class PatchCollectionHandler extends PipelinedHandler {
         }
 
         if (request.getDBName().isEmpty()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "wrong request, db name cannot be empty");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty");
             next(exchange);
             return;
         }
 
-        if (request.getCollectionName().isEmpty()
-                || (request.getCollectionName().startsWith("_")
-                && !request.getCollectionName().equals(_SCHEMAS))) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "wrong request, collection name cannot be "
-                    + "empty or start with _");
+        if (request.getCollectionName().isEmpty() || (request.getCollectionName().startsWith("_") && !request.getCollectionName().equals(_SCHEMAS))) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, collection name cannot be empty or start with _");
             next(exchange);
             return;
         }
@@ -93,42 +87,35 @@ public class PatchCollectionHandler extends PipelinedHandler {
         BsonValue _content = request.getContent();
 
         if (_content == null) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "no data provided");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
             next(exchange);
             return;
         }
 
         // cannot PATCH with an array
         if (!_content.isDocument()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data must be a json object");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object");
             next(exchange);
             return;
         }
 
         if (_content.asDocument().isEmpty()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "no data provided");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
             next(exchange);
             return;
         }
 
-        final BsonDocument content = _content.asDocument();
+        final var content = _content.asDocument();
 
-        OperationResult result = dbsDAO
-                .upsertCollection(
-                        request.getClientSession(),
-                        request.getDBName(),
-                        request.getCollectionName(),
-                        content,
-                        request.getETag(),
-                        true,
-                        true,
-                        request.isETagCheckRequired());
+        var result = dbsDAO.upsertCollection(
+            Optional.ofNullable(request.getClientSession()),
+            request.getDBName(),
+            request.getCollectionName(),
+            content,
+            request.getETag(),
+            true,
+            true,
+            request.isETagCheckRequired());
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {
             next(exchange);
@@ -137,10 +124,7 @@ public class PatchCollectionHandler extends PipelinedHandler {
 
         response.setStatusCode(result.getHttpCode());
 
-        MetadataCachesSingleton.getInstance()
-                .invalidateCollection(
-                        request.getDBName(),
-                        request.getCollectionName());
+        MetadataCachesSingleton.getInstance().invalidateCollection(request.getDBName(), request.getCollectionName());
 
         next(exchange);
     }

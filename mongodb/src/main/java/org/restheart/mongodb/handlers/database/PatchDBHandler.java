@@ -22,13 +22,13 @@ package org.restheart.mongodb.handlers.database;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
-import org.bson.BsonDocument;
+
+import java.util.Optional;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -63,8 +63,7 @@ public class PatchDBHandler extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 
@@ -74,9 +73,7 @@ public class PatchDBHandler extends PipelinedHandler {
         }
 
         if (request.getDBName().isEmpty()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "wrong request, db name cannot be empty");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, db name cannot be empty");
             next(exchange);
             return;
         }
@@ -84,32 +81,28 @@ public class PatchDBHandler extends PipelinedHandler {
         BsonValue _content = request.getContent();
 
         if (_content == null) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "no data provided");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "no data provided");
             next(exchange);
             return;
         }
 
         // cannot PATCH an array
         if (!_content.isDocument()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data must be a json object");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object");
             next(exchange);
             return;
         }
 
-        BsonDocument content = _content.asDocument();
+        var content = _content.asDocument();
 
-        OperationResult result = dbsDAO.upsertDB(
-                request.getClientSession(),
-                request.getDBName(),
-                content,
-                request.getETag(),
-                true,
-                true,
-                request.isETagCheckRequired());
+        var result = dbsDAO.upsertDB(
+            Optional.ofNullable(request.getClientSession()),
+            request.getDBName(),
+            content,
+            request.getETag(),
+            true,
+            true,
+            request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 
@@ -119,11 +112,7 @@ public class PatchDBHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setInError(
-                    HttpStatus.SC_CONFLICT,
-                    "The database's ETag must be provided using the '"
-                    + Headers.IF_MATCH
-                    + "' header.");
+            response.setInError(HttpStatus.SC_CONFLICT, "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             next(exchange);
             return;
         }

@@ -21,6 +21,9 @@
 package org.restheart.mongodb.handlers.indexes;
 
 import io.undertow.server.HttpServerExchange;
+
+import java.util.Optional;
+
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -65,10 +68,10 @@ public class DeleteIndexHandler extends PipelinedHandler {
             return;
         }
 
-        String dbName = request.getDBName();
-        String collectionName = request.getCollectionName();
+        var dbName = request.getDBName();
+        var collectionName = request.getCollectionName();
 
-        String indexId = request.getIndexId();
+        var indexId = request.getIndexId();
 
         if (indexId.startsWith("_") || indexId.equals("_id_")) {
             response.setInError(
@@ -78,11 +81,11 @@ public class DeleteIndexHandler extends PipelinedHandler {
             return;
         }
 
-        int httpCode = dbsDAO.deleteIndex(
-                request.getClientSession(),
-                dbName,
-                collectionName,
-                indexId);
+        var httpCode = dbsDAO.deleteIndex(
+            Optional.ofNullable(request.getClientSession()),
+            dbName,
+            collectionName,
+            indexId);
 
         response.setStatusCode(httpCode);
 

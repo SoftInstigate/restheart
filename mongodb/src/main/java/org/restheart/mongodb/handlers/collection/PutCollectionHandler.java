@@ -20,17 +20,17 @@
  */
 package org.restheart.mongodb.handlers.collection;
 
+import java.util.Optional;
+
 import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -84,7 +84,7 @@ public class PutCollectionHandler extends PipelinedHandler {
             return;
         }
 
-        BsonValue _content = request.getContent();
+        var _content = request.getContent();
 
         if (_content == null) {
             _content = new BsonDocument();
@@ -92,9 +92,7 @@ public class PutCollectionHandler extends PipelinedHandler {
 
         // cannot PUT an array
         if (!_content.isDocument()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data must be a json object");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a json object");
             next(exchange);
             return;
         }
@@ -103,21 +101,19 @@ public class PutCollectionHandler extends PipelinedHandler {
 
         boolean updating = request.getCollectionProps() != null;
 
-        OperationResult result = dbsDAO.upsertCollection(
-                request.getClientSession(),
-                request.getDBName(),
-                request.getCollectionName(),
-                content,
-                request.getETag(),
-                updating, false,
-                request.isETagCheckRequired());
+        var result = dbsDAO.upsertCollection(
+            Optional.ofNullable(request.getClientSession()),
+            request.getDBName(),
+            request.getCollectionName(),
+            content,
+            request.getETag(),
+            updating, false,
+            request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 
         // invalidate the cache collection item
-        MetadataCachesSingleton.getInstance().invalidateCollection(
-                request.getDBName(),
-                request.getCollectionName());
+        MetadataCachesSingleton.getInstance().invalidateCollection(request.getDBName(), request.getCollectionName());
 
         // inject the etag
         if (result.getEtag() != null) {
@@ -125,11 +121,7 @@ public class PutCollectionHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setInError(
-                    HttpStatus.SC_CONFLICT,
-                    "The collection's ETag must be provided using the '"
-                    + Headers.IF_MATCH
-                    + "' header.");
+            response.setInError(HttpStatus.SC_CONFLICT, "The collection's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             next(exchange);
             return;
         }

@@ -21,9 +21,8 @@
 package org.restheart.mongodb.handlers.indexes;
 
 import io.undertow.server.HttpServerExchange;
-import java.util.List;
+import java.util.Optional;
 import org.bson.BsonArray;
-import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -68,11 +67,10 @@ public class GetIndexesHandler extends PipelinedHandler {
             return;
         }
 
-        List<BsonDocument> _indexes = dbsDAO
-                .getCollectionIndexes(
-                        request.getClientSession(),
-                        request.getDBName(),
-                        request.getCollectionName());
+        var _indexes = dbsDAO.getCollectionIndexes(
+            Optional.ofNullable(request.getClientSession()),
+            request.getDBName(),
+            request.getCollectionName());
 
         final var indexes = new BsonArray();
 

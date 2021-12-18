@@ -21,6 +21,9 @@
 package org.restheart.mongodb.handlers.document;
 
 import io.undertow.server.HttpServerExchange;
+
+import java.util.Optional;
+
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -93,12 +96,12 @@ public class PatchDocumentHandler extends PipelinedHandler {
         }
 
         var result = documentDAO.writeDocument(
-            request.getClientSession(),
+            Optional.ofNullable(request.getClientSession()),
             request.getDBName(),
             request.getCollectionName(),
-            request.getDocumentId(),
-            request.getFiltersDocument(),
-            request.getShardKey(),
+            Optional.of(request.getDocumentId()),
+            Optional.ofNullable(request.getFiltersDocument()),
+            Optional.ofNullable(request.getShardKey()),
             content,
             request.getETag(),
             true,
