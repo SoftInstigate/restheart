@@ -52,7 +52,7 @@ Find setup instructions at [Setup](https://restheart.org/docs/setup/) documentat
 
 ## Snapshot builds
 
-Snapshot builds are available from [sonatype.org](https://oss.sonatype.org/content/repositories/snapshots/org/restheart/restheart/)
+Snapshot builds are available from [sonatype.org](https://s01.oss.sonatype.org/content/repositories/snapshots/org/restheart/restheart/)
 
 Docker images are also available
 
