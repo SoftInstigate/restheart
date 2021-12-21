@@ -102,8 +102,6 @@ permissions:
         allowBulkDelete: true         # default false
         allowWriteMode: true          # default false
 
-
-
   - role: test
     # qparams-whitelist() === qparams-size(0)
     predicate: >
@@ -114,11 +112,9 @@ permissions:
       and path[path="/secho"]
     priority: 0
 
-
-
   - role : test
     predicate: >
-      method(GET) 
+      method(GET)
       and qparams-whitelist(rep)
       and path-prefix[path="/test-predicates/coll"]
     mongo:
@@ -126,16 +122,12 @@ permissions:
         {"log": 0}
     priority: 100
 
-
-
   - role : test
     predicate: >
-      method(GET) 
+      method(GET)
       and qparams-whitelist(rep)
       and path-template(value="/test-predicates/coll/{id}")
     priority: 100
-
-
 
   - role: test
     predicate: >
@@ -148,6 +140,13 @@ permissions:
         {"author": "@user.userid", "status": "draft", "log": "@request"}
     priority: 100
 
+  - role: testWithArray
+    predicate: >
+      (method(PUT) or method(GET)) and path-template(value="/test-predicates/coll/{id}")
+      and in(value=${id}, array=@user.array)
+    priority: 100
+    mongo:
+      allowWriteMode: true
 
   # projectResponse
 

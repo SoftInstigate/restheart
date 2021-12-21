@@ -435,13 +435,11 @@ public class ConfigurationUtils {
         });
     }
 
-    // matches ; in a way that we can ignore whene inside quotes
-    // ispired by https://stackoverflow.com/a/23667311/4481670
+    // matches ; in a way that we can ignore matches that are inside quotes
+    // inspired by https://stackoverflow.com/a/23667311/4481670
     private static Pattern SPLIT_REGEX = Pattern.compile(
             "\\\\\"|\"(?:\\\\\"|[^\"])*\"" +
-            //"\\\"[^\\\"]+\"" +
             "|\\\\'|'(?:\\\\'|[^'])*'" +
-            // "|'[^']+'" +
             "|(;)");
 
     private static List<String> splitOverrides(String rho) {
