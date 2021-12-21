@@ -1,5 +1,5 @@
 Feature: Test predicates in acl
-  
+
 Background:
   * url 'http://localhost:8080'
   * def basic =
@@ -12,18 +12,21 @@ Background:
   }
   """
   * def test = basic({username: 'test', password: 'secret' })
+  * def testWithArray = basic({username: 'testWithArray', password: 'secret'})
+  * def testWithEmptyArray = basic({username: 'testWithEmptyArray', password: 'secret'})
+  * def testWithNotExistingArray = basic({username: 'testWithNotExistingArray', password: 'secret'})
   * def admin = basic({username: 'admin', password: 'secret'})
 
 Scenario: Test qparams-size(2)
 
-  * header Authorization = test 
+  * header Authorization = test
   Given path '/secho'
   * params { filter: "param2", page: 2 }
   When method GET
   Then status 200
 
   # must fail, qparams size != 2
-  * header Authorization = test 
+  * header Authorization = test
   Given path '/secho'
   * params { filter: "param1" }
   When method GET
@@ -150,3 +153,73 @@ Scenario: Test mongodb projectResponse
 
   And call read('predicate-acl-cleanup.feature') { ETag: '#(setupData.ETag)' }
 
+
+Scenario: Test in() predicate
+
+    * def setupData = call read('predicate-acl-setup.feature')
+
+    * header Authorization = testWithArray
+    Given path '/test-predicates/coll/one'
+    And param wm = "upsert"
+    When method PUT
+    Then status 201
+
+    * header Authorization = testWithArray
+    Given path '/test-predicates/coll/two'
+    And param wm = "upsert"
+    When method PUT
+    Then status 201
+
+    * header Authorization = testWithArray
+    Given path '/test-predicates/coll/three'
+    And param wm = "upsert"
+    When method PUT
+    Then status 201
+
+    * header Authorization = testWithArray
+    Given path '/test-predicates/coll/four'
+    And param wm = "upsert"
+    When method PUT
+    Then status 403
+
+    * header Authorization = testWithArray
+    Given path '/test-predicates/coll/one'
+    When method GET
+    Then status 200
+
+    * header Authorization = testWithArray
+    Given path '/test-predicates/coll/two'
+    When method GET
+    Then status 200
+
+    * header Authorization = testWithArray
+    Given path '/test-predicates/coll/three'
+    When method GET
+    Then status 200
+
+    * header Authorization = testWithArray
+    Given path '/test-predicates/coll/four'
+    When method GET
+    Then status 403
+
+    * header Authorization = testWithEmptyArray
+    Given path '/test-predicates/coll/one'
+    When method GET
+    Then status 403
+
+    * header Authorization = testWithNotExistingArray
+    Given path '/test-predicates/coll/one'
+    When method GET
+    Then status 403
+
+    * header Authorization = testWithNotExistingArray
+    Given path '/test-predicates/coll/@user.array'
+    When method GET
+    Then status 403
+
+    * header Authorization = testWithNotExistingArray
+    Given path '/test-predicates/coll/null'
+    When method GET
+    Then status 403
+
+    And call read('predicate-acl-cleanup.feature') { ETag: '#(setupData.ETag)' }

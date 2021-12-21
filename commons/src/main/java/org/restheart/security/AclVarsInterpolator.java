@@ -20,10 +20,14 @@
  */
 package org.restheart.security;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.google.gson.JsonElement;
 import com.jayway.jsonpath.JsonPath;
@@ -294,6 +298,9 @@ public class AclVarsInterpolator {
                 .filter(key -> isJsonArray(flatten.get(key)))
                 .forEach(key -> ret[0] = ret[0].replaceAll(prefix.concat(key), jsonArrayValue(flatten.get(key).asArray())));
 
+        // remove unboud variables
+        flatten.keySet().stream().forEach(key -> ret[0] = removeUnboundVariables(prefix, ret[0]));
+
         return ret[0];
     }
 
@@ -334,19 +341,52 @@ public class AclVarsInterpolator {
     private static String jsonArrayValue(BsonArray array) {
         var sb = new StringBuilder();
         sb.append("{");
-
-        array.stream().filter(e -> isJsonPrimitive(e)).forEach(e -> sb.append(jsonPrimitiveValue(e)).append(", "));
-
-        // remove last comma
-        sb.delete(sb.length()-2,sb.length());
-
+        sb.append(array.stream().filter(e -> isJsonPrimitive(e)).map(e -> quote(jsonPrimitiveValue(e))).collect(Collectors.joining(",")));
         sb.append("}");
 
-        return  sb.toString();
+        return sb.toString();
     }
 
     private static String quote(String s) {
         return "\"".concat(s).concat("\"");
+    }
+
+    private static String RUV_REGEX = "\\\\\"|\"(?:\\\\\"|[^\"])*\"|\\\\'|'(?:\\\\'|[^'])*'|(@placeholder[^)|^,]*)";
+
+    private static final Random RND_GENERATOR = new Random();
+
+    private static String nextToken() {
+        return new BigInteger(256, RND_GENERATOR).toString(Character.MAX_RADIX);
+    }
+
+    /**
+     * remove the unbound variables from the predicate
+     * @param prefix the prefix such as @user, or @now
+     * @param predicate the predicate
+     * @return the predicate without the unbound variables
+     */
+    static String removeUnboundVariables(String prefix, String predicate) {
+        // matches prefix until , or ) in a way that we can ignore matches that are inside quotes
+        // inspired by https://stackoverflow.com/a/23667311/4481670
+        // regex is \\"|"(?:\\"|[^"])*"|\\'|'(?:\\'|[^'])*'|(@user[^)|^,]*)
+        // where @user is the prefix
+
+        var regex = Pattern.compile(RUV_REGEX.replaceAll("@placeholder", prefix));
+
+        var m = regex.matcher(predicate);
+
+        var sb = new StringBuffer();
+
+        while (m.find()) {
+            // we ignore the strings delimited by "
+            if (!m.group().startsWith("\"") && !m.group().startsWith("'")) {
+                m.appendReplacement(sb, nextToken());
+            }
+        }
+
+        m.appendTail(sb);
+
+        return sb.toString();
     }
 
     @SuppressWarnings("unchecked")
