@@ -5,7 +5,7 @@
     "name": "field-to-aggregation",
     "enabled": true
   },
-  "schema": "type User { _id: ObjectId name: String email: String posts: [Post] postsByCategory: BsonArray } type Post { _id: ObjectId title: String body: String created_at: DateTime author: User } type Query { userByEmail(email: String): User }",
+  "schema": "type User { _id: ObjectId name: String email: String posts: [Post] postsByCategory: [BsonDocument] emptyStage: [BsonDocument] malformedStage: [BsonDocument] } type Post { _id: ObjectId title: String body: String created_at: DateTime author: User } type Query { userByEmail(email: String): User }",
   "mappings": {
     "User": {
       "postsByCategory": {
@@ -25,6 +25,22 @@
               "posts": {
                 "$push": "$$ROOT"
               }
+            }
+          }
+        ]
+      },
+      "emptyStage": {
+        "db": "test-graphql",
+        "collection": "posts-fta",
+        "stages": []
+      },
+      "malformedStage": {
+        "db": "test-fta",
+        "collection": "posts",
+        "stages": [
+          {
+            "$match": {
+              "$or": 1
             }
           }
         ]

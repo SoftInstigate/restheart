@@ -16,19 +16,9 @@ Background:
   
     * def admin = basic({username: 'admin', password: 'secret'})
 
-    * def req = 
-    """
-    {
-        "query":"query exampleOperation($email: String!){userByEmail(email: $email){ name email postsByCategory }}",
-        "variables":{
-            "email": "foo@example.com"
-        }
-    }   
-    """
-
     * def setupData = callonce read('field-to-aggregation-setup.feature')
 
-Scenario: Aggregation Pipeline with two stages
+Scenario: Should return an array with two objects
 
 
     * text query =
@@ -47,3 +37,39 @@ Scenario: Aggregation Pipeline with two stages
    And request query
    When method POST
    Then status 200
+   And match $..postsByCategory.length() == 2
+
+  
+Scenario: Should return an empty array for emptyStage field
+    * text query =
+    """
+      {
+        userByEmail(email: "foo@example.com"){
+          emptyStage
+        }
+      }
+    """
+
+    Given header Content-Type = contTypeGraphQL
+    And header Authorization = admin
+    And request query
+    When method POST
+    Then status 200
+    And match $..emptyStage.length() == 0
+
+Scenario: Should contain errors key
+  * text query =
+  """
+    {
+      userByEmail(email: "foo@example.com"){
+        malformedStage
+      }
+    }
+  """
+
+  Given header Content-Type = contTypeGraphQL
+  And header Authorization = admin
+  And request query
+  When method POST
+  Then status 400
+  And match response contains {"errors": "#present"} 
