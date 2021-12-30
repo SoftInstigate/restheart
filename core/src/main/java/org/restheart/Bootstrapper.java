@@ -727,7 +727,7 @@ public class Bootstrapper {
                 .collect(Collectors.toList());
 
         if (allowers == null || allowers.isEmpty()) {
-            LOGGER.warn(ansi().fg(RED).bold().a("No Authorizer of type ALLOWER defined, all requests to secured services will be forbidden; fullAuthorizer can be enablef to allow any request.").reset().toString());
+            LOGGER.warn(ansi().fg(RED).bold().a("No Authorizer of type ALLOWER defined, all requests to secured services will be forbidden; fullAuthorizer can be enabled to allow any request.").reset().toString());
         }
 
         var builder = Undertow.builder();
