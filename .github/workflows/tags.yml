@@ -30,11 +30,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Set up JDK 16
+      - name: Set up JDK 17
         uses: actions/setup-java@v2
         with:
-          distribution: "adopt"
-          java-version: 16
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Set the VERSION
         id: vars
@@ -63,7 +63,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       # - name: Build and Push distroless Docker image
-      #   if: ${{ false }} # temporarily disabled because there's no JDK 16 for distroless images
+      #   if: ${{ false }} # temporarily disabled because there's no JDK 17 for distroless images
       #   run: |
       #     docker build --file ./core/Dockerfile.distroless -t softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless ./core/.
       #     docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless

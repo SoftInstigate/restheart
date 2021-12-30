@@ -9,26 +9,26 @@
  # You can setup a listener per protocol (up to 2).
 
  # To enable HTTPS, configure a certificate. See https://restheart.org/docs/security/tls/
-https-listener: {{{https-listener}}}
-https-host: {{{https-host}}}
-https-port: {{{https-port}}}
+https-listener: false
+https-host: localhost
+https-port: 4443
 
  # WARNING: Using the http listener is not secure. E.g. with basic authentication
  # credentials can be sniffed by a man-in-the-middle attack.
-http-listener: {{{http-listener}}}
-http-host: {{{http-host}}}
-http-port: {{{http-port}}}
+http-listener: true
+http-host: localhost
+http-port: 8080
 
-ajp-listener: {{{ajp-listener}}}
-ajp-host: {{{ajp-host}}}
-ajp-port: {{{ajp-port}}}
+ajp-listener: false
+ajp-host: localhost
+ajp-port: 8009
 
 #### Instance name
 
  # The name of this instance.
  # Displayed in log, also allows to implement instance specific custom code
 
-instance-name: {{{instance-name}}}
+instance-name: default
 
 #### Instance base URL
 
@@ -71,7 +71,7 @@ instance-name: {{{instance-name}}}
 #
 # More information at http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
 
-mongo-uri: {{{mongo-uri}}}
+mongo-uri: mongodb://127.0.0.1
 
 #### MongoDb resources
 
@@ -110,7 +110,7 @@ mongo-uri: {{{mongo-uri}}}
 #     where: /api
 
 mongo-mounts:
-  - what: {{{root-mongo-resource}}}
+  - what: /restheart
     where: /
 
 #### Default representation format https://restheart.org/docs/representation-format/
@@ -174,23 +174,23 @@ auth-mechanisms:
     enabled: true
   basicAuthMechanism:
     enabled: true
-    authenticator: fileRealmAuthenticator
+    authenticator: mongoRealmAuthenticator
   jwtAuthenticationMechanism:
-    enabled: false
+    enabled: true
     algorithm: HS256
     key: secret
     base64Encoded: false
     usernameClaim: sub
-    rolesClaim: roles
+    rolesClaim: null
     fixedRoles:
-#      - admin
+      - test-jwt
     issuer: myIssuer
     audience: myAudience
   digestAuthMechanism:
     enabled: true
     realm: RESTHeart Realm
     domain: localhost
-    authenticator: fileRealmAuthenticator
+    authenticator: mongoRealmAuthenticator
   identityAuthMechanism:
     enabled: false
     username: admin
@@ -205,8 +205,8 @@ auth-mechanisms:
 
 authenticators:
   fileRealmAuthenticator:
-    enabled: true
-    conf-file: {{{users-conf-file}}}
+    enabled: false
+    conf-file: ./users.yml
   mongoRealmAuthenticator:
     enabled: true
     users-db: restheart
@@ -236,8 +236,8 @@ authenticators:
 
 authorizers:
   fileAclAuthorizer:
-    enabled: true
-    conf-file: {{{acl-conf-file}}}
+    enabled: false
+    conf-file: ./acl.yml
   mongoAclAuthorizer:
     enabled: true
     acl-db: restheart
@@ -304,7 +304,7 @@ etag-check-policy:
 # Just add the plugins jar to plugins-directory and they will be automatically
 # added to the classpath and registered.
 
-plugins-directory: {{{plugins-directory}}}
+plugins-directory: plugins
 
 # All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).
@@ -327,7 +327,7 @@ plugins-args:
     uri: /graphql
     db: restheart
     collection: gql-apps
-    verbose: true
+    verbose: false
   # a global blacklist for mongodb operators in filter query parameter
   filterOperatorsBlacklist:
     blacklist: [ "$where" ]
@@ -348,10 +348,10 @@ plugins-args:
 # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
 
-enable-log-file: {{{enable-log-file}}}
-log-file-path: {{{log-file-path}}}
-enable-log-console: {{{enable-log-console}}}
-log-level: {{{log-level}}}
+enable-log-file: false
+log-file-path: restheart.log
+enable-log-console: true
+log-level: INFO
 requests-log-level: 1
 ansi-console: true
 metrics-gathering-level: DATABASE
@@ -410,10 +410,10 @@ schema-cache-ttl: 60000
 requests-limit: 1000
 
 # Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
-query-time-limit: {{{query-time-limit}}}
+query-time-limit: 0
 
 # Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
-aggregation-time-limit: {{{aggregation-time-limit}}}
+aggregation-time-limit: 0
 
 ## Eager DB Cursor Preallocation Policy
 
@@ -433,10 +433,10 @@ eager-cursor-allocation-random-slice-min-width: 1000
 force-gzip-encoding: false
 
  # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
-io-threads: {{{io-threads}}}
+io-threads: 2
 
  # Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
-worker-threads: {{{worker-threads}}}
+worker-threads: 16
 
  # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
 buffer-size: 16384

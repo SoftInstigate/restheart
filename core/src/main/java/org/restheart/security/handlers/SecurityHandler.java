@@ -35,40 +35,6 @@ import org.restheart.plugins.security.TokenManager;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class SecurityHandler extends PipelinedHandler {
-
-    private static PipelinedHandler buildSecurityHandlersChain(
-            PipelinedHandler next,
-            final Set<PluginRecord<AuthMechanism>> mechanisms,
-            final Set<PluginRecord<Authorizer>> authorizers,
-            final PluginRecord<TokenManager> tokenManager) {
-        if (mechanisms != null && mechanisms.size() > 0) {
-            PipelinedHandler handler;
-
-            if (authorizers == null || authorizers.isEmpty()) {
-                throw new IllegalArgumentException("Error, authorizers cannot "
-                        + "be null or empty. "
-                        + "Eventually use FullAuthorizer "
-                        + "that gives full access power");
-            }
-
-            handler = new TokenInjector(
-                    new AuthorizersHandler(authorizers, next),
-                    tokenManager != null
-                            ? tokenManager.getInstance()
-                            : null);
-
-            handler = new SecurityInitialHandler(
-                    AuthenticationMode.PRO_ACTIVE,
-                    new AuthenticatorMechanismsHandler(
-                            new AuthenticationConstraintHandler(new AuthenticationCallHandler(handler), authorizers),
-                            mechanisms));
-
-            return handler;
-        } else {
-            return next;
-        }
-    }
-
     private final Set<PluginRecord<AuthMechanism>> mechanisms;
     private final Set<PluginRecord<Authorizer>> authorizers;
     private final PluginRecord<TokenManager> tokenManager;
@@ -95,5 +61,39 @@ public class SecurityHandler extends PipelinedHandler {
     @Override
     protected void setNext(PipelinedHandler next) {
         super.setNext(buildSecurityHandlersChain(next, mechanisms, authorizers, tokenManager));
+    }
+
+    private static PipelinedHandler buildSecurityHandlersChain(
+            PipelinedHandler next,
+            final Set<PluginRecord<AuthMechanism>> mechanisms,
+            final Set<PluginRecord<Authorizer>> authorizers,
+            final PluginRecord<TokenManager> tokenManager) {
+        if (authorizers == null || authorizers.isEmpty()) {
+            throw new IllegalArgumentException("Error, authorizers cannot "
+                    + "be null or empty. "
+                    + "Eventually use FullAuthorizer "
+                    + "that gives full access power");
+        }
+
+        if (mechanisms != null && mechanisms.size() > 0) {
+            return new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE,
+                new AuthenticatorMechanismsHandler(
+                    new AuthenticationConstraintHandler(
+                        new AuthenticationCallHandler(
+                            new TokenInjector(
+                                new AuthorizersHandler(authorizers, next),
+                            tokenManager != null ? tokenManager.getInstance() : null)),
+                        authorizers),
+                mechanisms));
+
+        } else if (authorizers != null && authorizers.size() > 0) {
+            // if no authentication mechanism is enabled and at least one authorizer is defined
+            // just pipe the autorizers
+            // this will make the request to be authorized without any authentication mechanism
+            // see https://github.com/SoftInstigate/restheart/discussions/417
+            return new SecurityInitialHandler(AuthenticationMode.PRO_ACTIVE, new AuthorizersHandler(authorizers, next));
+        } else {
+            return next;
+        }
     }
 }

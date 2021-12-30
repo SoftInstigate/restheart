@@ -5,3 +5,4 @@ org.restheart.security.predicates.QParamsBlacklistPredicate$Builder
 org.restheart.security.predicates.BsonRequestContainsPredicate$Builder
 org.restheart.security.predicates.BsonRequestWhitelistPredicate$Builder
 org.restheart.security.predicates.BsonRequestBlacklistPredicate$Builder
+org.restheart.security.predicates.InPredicate$Builder

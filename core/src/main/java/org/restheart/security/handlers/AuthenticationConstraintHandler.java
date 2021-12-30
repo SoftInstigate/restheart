@@ -20,9 +20,12 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpServerExchange;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.Sets;
+
 import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
@@ -36,7 +39,7 @@ import org.restheart.utils.PluginUtils;
  */
 public class AuthenticationConstraintHandler extends PipelinedHandler {
 
-    private final Set<PluginRecord<Authorizer>> authorizers;
+    private final Set<Authorizer> allowers;
 
     /**
      *
@@ -45,31 +48,32 @@ public class AuthenticationConstraintHandler extends PipelinedHandler {
      */
     public AuthenticationConstraintHandler(PipelinedHandler next, Set<PluginRecord<Authorizer>> authorizers) {
         super(next);
-        this.authorizers = authorizers;
+        this.allowers = authorizers == null
+            ? Sets.newHashSet()
+            : authorizers.stream()
+                .filter(a -> a.isEnabled())
+                .filter(a -> a.getInstance() != null)
+                .map(a -> a.getInstance())
+                .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
+                .collect(Collectors.toSet());
+        ;
     }
 
     /**
      *
      * @param exchange
-     * @return true if all defined authorizers requires authentication
+     * @return true if all enabled authorizers of type ALLOWER require authentication
      */
     protected boolean isAuthenticationRequired(final HttpServerExchange exchange) {
-        return authorizers == null
+        return this.allowers.isEmpty()
                 ? false
-                : authorizers
-                        .stream()
-                        .filter(a -> a.isEnabled())
-                        .filter(a -> a.getInstance() != null)
-                        .map(a -> a.getInstance())
-                        .filter(a -> PluginUtils.authorizerType(a) == TYPE.ALLOWER)
-                        .allMatch(a -> a.isAuthenticationRequired(Request.of(exchange)));
+                : allowers.stream().allMatch(a -> a.isAuthenticationRequired(Request.of(exchange)));
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         if (isAuthenticationRequired(exchange)) {
-            SecurityContext scontext = exchange.getSecurityContext();
-            scontext.setAuthenticationRequired();
+            exchange.getSecurityContext().setAuthenticationRequired();
         }
 
         next(exchange);

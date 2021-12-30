@@ -31,24 +31,22 @@ public class GraphQLBsonTimestampCoercing implements Coercing<BsonTimestamp, Bso
 
     @Override
     public BsonTimestamp serialize(Object dataFetcherResult) throws CoercingSerializeException {
-
-        if(dataFetcherResult instanceof BsonTimestamp){
-            return (BsonTimestamp) dataFetcherResult;
+        if (dataFetcherResult instanceof BsonTimestamp bsonTimestamp){
+            return bsonTimestamp;
+        } else {
+            throw new CoercingSerializeException("Expected type 'BsonTimestamp' but was '" + typeName(dataFetcherResult) +"'.");
         }
-        throw new CoercingSerializeException(
-                "Expected type 'BsonTimestamp' but was '" + typeName(dataFetcherResult) +"'."
-        );
     }
 
     @Override
     public BsonTimestamp parseValue(Object input) throws CoercingParseValueException {
-        Long timestamp =  (Long) CoercingUtils.builtInCoercing.get("Long").parseValue(input);
+        var timestamp =  (Long) CoercingUtils.builtInCoercing.get("Long").parseValue(input);
         return new BsonTimestamp(timestamp);
     }
 
     @Override
     public BsonTimestamp parseLiteral(Object AST) throws CoercingParseLiteralException {
-        Long timestamp =  (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(AST);
+        var timestamp =  (Long) CoercingUtils.builtInCoercing.get("Long").parseLiteral(AST);
         return new BsonTimestamp(timestamp);
     }
 }

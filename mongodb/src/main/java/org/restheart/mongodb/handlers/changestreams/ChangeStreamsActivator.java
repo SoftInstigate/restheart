@@ -20,18 +20,14 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
-import com.mongodb.MongoClientURI;
-import java.util.Map;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.TYPE;
+import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.db.MongoReactiveClientSingleton;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.utils.LogUtils;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
-import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.Initializer;
-import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,13 +41,6 @@ import org.slf4j.LoggerFactory;
         priority = Integer.MIN_VALUE + 1)
 public class ChangeStreamsActivator implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChangeStreamsActivator.class);
-
-    MongoClientURI mongoURI;
-
-    @InjectConfiguration(scope = ConfigurationScope.ALL)
-    public void setConf(Map<String, Object> args) {
-        this.mongoURI = new MongoClientURI(argValue(args, "mongo-uri"));
-    }
 
     @Override
     public void init() {
@@ -70,16 +59,14 @@ public class ChangeStreamsActivator implements Initializer {
 
         // *** init MongoDBReactiveClient
         try {
-            MongoReactiveClientSingleton.init(this.mongoURI);
+            MongoReactiveClientSingleton.init(MongoServiceConfiguration.get().getMongoUri());
             // force setup
             MongoReactiveClientSingleton.getInstance();
 
             // *** Change Stream handler
-            dispatcher.putHandler(TYPE.CHANGE_STREAM, METHOD.GET,
-                    new GetChangeStreamHandler());
+            dispatcher.putHandler(TYPE.CHANGE_STREAM, METHOD.GET, new GetChangeStreamHandler());
         } catch (Throwable t) {
-            LOGGER.error("Change streams disabled due to error "
-                    + "in MongoDB reactive client : {}", t.getMessage());
+            LOGGER.error("Change streams disabled due to error in MongoDB reactive client: {}", t.getMessage() != null ? t.getMessage() : "not initialized");
         }
     }
 }

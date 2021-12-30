@@ -22,13 +22,15 @@ package org.restheart.mongodb.handlers.document;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+
+import java.util.Optional;
+
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DocumentDAO;
-import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -89,41 +91,35 @@ public class PutDocumentHandler extends PipelinedHandler {
 
         // cannot PUT an array
         if (!_content.isDocument()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data must be a josn object");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data must be a josn object");
             next(exchange);
             return;
         }
 
-        BsonDocument content = _content.asDocument();
+        var content = _content.asDocument();
 
-        BsonValue id = request.getDocumentId();
+        var id = request.getDocumentId();
 
         if (content.get("_id") == null) {
             content.put("_id", id);
         } else if (!content.get("_id").equals(id)) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "_id in content body is different than id in URL");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
             next(exchange);
             return;
         }
 
-        String etag = request.getETag();
-
-        OperationResult result = this.documentDAO.writeDocument(
-                request.getClientSession(),
-                request.getDBName(),
-                request.getCollectionName(),
-                request.getDocumentId(),
-                request.getFiltersDocument(),
-                request.getShardKey(),
-                content,
-                etag,
-                false,
-                request.getWriteMode(),
-                request.isETagCheckRequired());
+        var result = this.documentDAO.writeDocument(
+            Optional.ofNullable(request.getClientSession()),
+            request.getDBName(),
+            request.getCollectionName(),
+            Optional.of(request.getDocumentId()),
+            Optional.ofNullable(request.getFiltersDocument()),
+            Optional.ofNullable(request.getShardKey()),
+            content,
+            request.getETag(),
+            false,
+            request.getWriteMode(),
+            request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 
@@ -133,20 +129,21 @@ public class PutDocumentHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setInError(
-                    HttpStatus.SC_CONFLICT,
-                    "The document's ETag must be provided using the '"
-                    + Headers.IF_MATCH
-                    + "' header");
+            response.setInError(HttpStatus.SC_CONFLICT, "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             next(exchange);
             return;
         }
 
         // handle the case of duplicate key error
         if (result.getHttpCode() == HttpStatus.SC_EXPECTATION_FAILED) {
-            response.setInError(
-                    HttpStatus.SC_EXPECTATION_FAILED,
-                    ResponseHelper.getMessageFromErrorCode(11000));
+            response.setInError(HttpStatus.SC_EXPECTATION_FAILED, ResponseHelper.getMessageFromErrorCode(11000));
+            next(exchange);
+            return;
+        }
+
+        // handle the case of error result with exception
+        if (result.getCause() != null) {
+            response.setInError(result.getHttpCode(), result.getCause().getMessage());
             next(exchange);
             return;
         }

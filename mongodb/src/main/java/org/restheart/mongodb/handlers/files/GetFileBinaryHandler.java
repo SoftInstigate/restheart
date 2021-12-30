@@ -184,7 +184,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
 
         response.setStatusCode(HttpStatus.SC_OK);
 
-        response.setCustomerSender(() -> {
+        response.setCustomSender(() -> {
             if (request.getClientSession() != null) {
                 gridFSBucket.downloadToStream(request.getClientSession(), file.getId(), exchange.getOutputStream());
             } else {

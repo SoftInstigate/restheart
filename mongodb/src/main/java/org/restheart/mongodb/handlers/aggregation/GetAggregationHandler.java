@@ -40,16 +40,22 @@ import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.db.DatabaseImpl;
 import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.FileRealmAccount;
+import org.restheart.security.JwtAccount;
 import org.restheart.security.MongoPermissions;
 import org.restheart.security.MongoRealmAccount;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetAggregationHandler extends PipelinedHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GetAggregationHandler.class);
+
     private final DatabaseImpl dbsDAO = new DatabaseImpl();
 
     /**
@@ -207,6 +213,10 @@ public class GetAggregationHandler extends PipelinedHandler {
 
     /**
      * adds the default variables to the avars document
+     *
+     * Supports accounts handled by MongoRealAuthenticator,
+     * FileRealmAuthenticator and JwtAuthenticationMechanism
+     *
      * @param request
      * @param avars
      */
@@ -249,17 +259,26 @@ public class GetAggregationHandler extends PipelinedHandler {
         // add @user to avars
         var account = request.getAuthenticatedAccount();
 
-        if (account != null && account instanceof MongoRealmAccount) {
-            var ba = ((MongoRealmAccount) account).getAccountDocument();
+        if (account != null && account instanceof MongoRealmAccount maccount) {
+            var ba = maccount.getAccountDocument();
 
             avars.put("@user", ba);
             ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
-        } else if (account != null && account instanceof FileRealmAccount) {
-            var fa = (FileRealmAccount) account;
-            var ba = BsonUtils.toBsonDocument(fa.getAccountProperties());
+        } else if (account != null && account instanceof FileRealmAccount faccount) {
+            var ba = BsonUtils.toBsonDocument(faccount.getAccountProperties());
 
             avars.put("@user", ba);
             ba.keySet().forEach(k -> avars.put("@user.".concat(k), ba.get(k)));
+        } else if (account != null && account instanceof JwtAccount jwtAccount) {
+            var bva = BsonUtils.parse(jwtAccount.getJwtPayload());
+
+            if (bva instanceof BsonDocument bda) {
+                avars.put("@user", bda);
+                bda.keySet().forEach(k -> avars.put("@user.".concat(k), bda.get(k)));
+            } else {
+                LOGGER.warn("jwt payload is not a json object, returning null account document");
+                avars.put("@user", BsonNull.VALUE);
+            }
         } else {
             avars.put("@user", BsonNull.VALUE);
         }

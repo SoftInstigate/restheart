@@ -100,7 +100,7 @@ public class ResourcesExtractor {
 
             try {
                 // used when run as a JAR file
-                Path destinationDir = Files.createTempDirectory("restheart-security-");
+                Path destinationDir = Files.createTempDirectory("restheart-");
 
                 ret = destinationDir.toFile();
 

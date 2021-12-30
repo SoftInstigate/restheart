@@ -104,12 +104,12 @@ public abstract class ServiceResponse<T> extends Response<T> {
      *
      * @param customSender
      */
-    public void setCustomerSender(Runnable customSender) {
+    public void setCustomSender(Runnable customSender) {
         this.customSender = customSender;
     }
 
     /**
-     * SeesetCustomerSender()
+     * See setCustomSender()
      * @return the customSender
      *
      */

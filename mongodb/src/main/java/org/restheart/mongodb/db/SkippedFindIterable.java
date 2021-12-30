@@ -27,33 +27,4 @@ import org.bson.BsonDocument;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class SkippedFindIterable {
-    private final FindIterable<BsonDocument> findIterable;
-    private final int alreadySkipped;
-
-    /**
-     *
-     * @param findIterable
-     * @param alreadySkipped
-     */
-    public SkippedFindIterable(
-            FindIterable<BsonDocument> findIterable,
-            int alreadySkipped) {
-        this.findIterable = findIterable;
-        this.alreadySkipped = alreadySkipped;
-    }
-
-    /**
-     * @return the alreadySkipped
-     */
-    public int getAlreadySkipped() {
-        return alreadySkipped;
-    }
-
-    /**
-     * @return the findIterable
-     */
-    public FindIterable<BsonDocument> getFindIterable() {
-        return findIterable;
-    }
-}
+public record SkippedFindIterable(FindIterable<BsonDocument> findIterable, int alreadySkipped) {}

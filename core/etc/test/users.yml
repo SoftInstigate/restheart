@@ -9,10 +9,23 @@ users:
       password: secret
       roles: [ test ]
 
+    - userid: testWithArray
+      password: secret
+      array: [ one, two, three ]
+      roles: [ testWithArray ]
+
+    - userid: testWithEmptyArray
+      password: secret
+      array: [ ]
+      roles: [ testWithArray ]
+
+    - userid: testWithNotExistingArray
+      password: secret
+      roles: [ testWithArray ]
+
     - userid: mongoPermissions
       password: secret
       roles: [mongoPermissions]
-
 
     - userid: user1
       password: secret

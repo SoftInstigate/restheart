@@ -31,11 +31,14 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Map;
+
+import org.bson.BsonDocument;
 import org.restheart.ConfigurationException;
 import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.exchange.JsonProxyRequest;
 import org.restheart.security.FileRealmAccount;
+import org.restheart.security.JwtAccount;
 import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.PwdCredentialAccount;
 import org.restheart.plugins.ConfigurablePlugin;
@@ -45,6 +48,7 @@ import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.TokenManager;
 import org.restheart.security.interceptors.TokenCORSResponseInterceptor;
+import org.restheart.utils.BsonUtils;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,14 +142,17 @@ public class RndTokenManager implements TokenManager {
     private PwdCredentialAccount cloneWithToken(Account account, char[] token) {
         PwdCredentialAccount ret;
 
-        if (account instanceof MongoRealmAccount) {
-            var _account = (MongoRealmAccount) account;
-
-            ret = new MongoRealmAccount( account.getPrincipal().getName(), token, Sets.newTreeSet(account.getRoles()), _account.getAccountDocument());
-        } else if (account instanceof FileRealmAccount) {
-            var _account = (FileRealmAccount) account;
-
-            ret = new FileRealmAccount(account.getPrincipal().getName(), token, Sets.newTreeSet(account.getRoles()), _account.getAccountProperties());
+        if (account instanceof MongoRealmAccount maccount) {
+            ret = new MongoRealmAccount(maccount.getPrincipal().getName(), token, Sets.newTreeSet(maccount.getRoles()), maccount.getAccountDocument());
+        } else if (account instanceof FileRealmAccount faccount) {
+            ret = new FileRealmAccount(faccount.getPrincipal().getName(), token, Sets.newTreeSet(faccount.getRoles()), faccount.getAccountProperties());
+        } else if (account instanceof JwtAccount jwtAccount) {
+            var accountDocument = BsonUtils.parse(jwtAccount.getJwtPayload());
+            if (accountDocument instanceof BsonDocument bad) {
+                ret = new MongoRealmAccount(jwtAccount.getPrincipal().getName(), token, Sets.newTreeSet(jwtAccount.getRoles()), bad);
+            } else {
+                ret = new PwdCredentialAccount(jwtAccount.getPrincipal().getName(), token, Sets.newTreeSet(jwtAccount.getRoles()));
+            }
         } else {
             ret = new PwdCredentialAccount(account.getPrincipal().getName(), token, Sets.newTreeSet(account.getRoles()));
         }

@@ -20,10 +20,14 @@
  */
 package org.restheart.security;
 
+import java.math.BigInteger;
+import java.util.Random;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.google.gson.JsonElement;
 import com.jayway.jsonpath.JsonPath;
@@ -58,8 +62,8 @@ public class AclVarsInterpolator {
     /**
      * Interpolate values in doc like '@user', '@user.property', @now
      *
-     * Supports accounts handled by MongoRealAuthenticator and
-     * FileRealmAuthenticator
+     * Supports accounts handled by MongoRealAuthenticator,
+     * FileRealmAuthenticator and JwtAuthenticationMechanism
      *
      * Legacy variable names %USER, %ROLES and %NOW are supported as well
      *
@@ -104,7 +108,7 @@ public class AclVarsInterpolator {
      * returns the interpolated value.
      *
      * For '@user' and '@mongoPermissions' supports accounts handled by
-     * MongoRealAuthenticator and FileRealmAuthenticator
+     * MongoRealAuthenticator, FileRealmAuthenticator and JwtAuthenticationMechanism
      *
      * Legacy variable names %USER, %ROLES and %NOW are supported as well
      *
@@ -119,11 +123,9 @@ public class AclVarsInterpolator {
         } else if ("%USER".equals(value)) {
             return new BsonString(ExchangeAttributes.remoteUser().readAttribute(request.getExchange()));
         } else if ("%ROLES".equals(value)) {
-            if (Objects.nonNull(request.getAuthenticatedAccount())
-                    && Objects.nonNull(request.getAuthenticatedAccount().getRoles())) {
+            if (Objects.nonNull(request.getAuthenticatedAccount()) && Objects.nonNull(request.getAuthenticatedAccount().getRoles())) {
                 var ret = new BsonArray();
-                request.getAuthenticatedAccount().getRoles().stream().map(s -> new BsonString(s))
-                        .forEachOrdered(ret::add);
+                request.getAuthenticatedAccount().getRoles().stream().map(s -> new BsonString(s)).forEachOrdered(ret::add);
                 return ret;
             } else {
                 return new BsonArray();
@@ -131,12 +133,12 @@ public class AclVarsInterpolator {
         } else if ("%NOW".equals(value) || "@now".equals(value)) {
             return new BsonDateTime(Instant.now().getEpochSecond() * 1000);
         } else if (value.equals("@user")) {
-            if (request.getAuthenticatedAccount() instanceof MongoRealmAccount) {
-                var maccount = (MongoRealmAccount) request.getAuthenticatedAccount();
+            if (request.getAuthenticatedAccount() instanceof MongoRealmAccount maccount) {
                 return maccount.getAccountDocument();
-            } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount) {
-                var faccount = (FileRealmAccount) request.getAuthenticatedAccount();
+            } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount faccount) {
                 return toBson(faccount.getAccountProperties());
+            } else if (request.getAuthenticatedAccount() instanceof JwtAccount jwtAccount) {
+                return BsonUtils.parse(jwtAccount.getJwtPayload());
             } else {
                 return BsonNull.VALUE;
             }
@@ -197,16 +199,13 @@ public class AclVarsInterpolator {
                 return BsonNull.VALUE;
             }
         } else if (value.startsWith("@user.") && value.length() > 5) {
-            if (request.getAuthenticatedAccount() instanceof MongoRealmAccount) {
-                var maccount = (MongoRealmAccount) request.getAuthenticatedAccount();
+            if (request.getAuthenticatedAccount() instanceof MongoRealmAccount maccount) {
                 var accountDoc = maccount.getAccountDocument();
                 var prop = value.substring(6);
 
-                LOGGER.trace("account doc: {}", accountDoc.toJson());
-
                 if (prop.contains(".")) {
                     try {
-                        JsonElement v = JsonPath.read(accountDoc.toJson(), "$.".concat(prop));
+                        var v = JsonPath.read(accountDoc.toJson(), "$.".concat(prop));
 
                         return BsonUtils.parse(v.toString());
                     } catch (Throwable pnfe) {
@@ -219,10 +218,33 @@ public class AclVarsInterpolator {
                         return BsonNull.VALUE;
                     }
                 }
-            } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount) {
-                var faccount = (FileRealmAccount) request.getAuthenticatedAccount();
-
+            } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount faccount) {
                 return fromProperties(faccount.getAccountProperties(), value.substring(6));
+            } else if (request.getAuthenticatedAccount() instanceof JwtAccount jwtAccount) {
+                var jwpPayload = BsonUtils.parse(jwtAccount.getJwtPayload());
+
+                if (jwpPayload instanceof BsonDocument bsonPayload) {
+                    var prop = value.substring(6);
+
+                    if (prop.contains(".")) {
+                        try {
+                            var v = JsonPath.read(bsonPayload.toJson(), "$.".concat(prop));
+
+                            return BsonUtils.parse(v.toString());
+                        } catch (Throwable pnfe) {
+                            return BsonNull.VALUE;
+                        }
+                    } else {
+                        if (bsonPayload.containsKey(prop)) {
+                            return bsonPayload.get(prop);
+                        } else {
+                            return BsonNull.VALUE;
+                        }
+                    }
+                } else {
+                    LOGGER.warn("jwt payload is not a json object, returning null user property {}", value.substring(6));
+                    return BsonNull.VALUE;
+                }
             } else {
                 return BsonNull.VALUE;
             }
@@ -256,11 +278,20 @@ public class AclVarsInterpolator {
     }
 
     private static BsonDocument getAccountDocument(Request<?> request) {
-        if (request.getAuthenticatedAccount() instanceof MongoRealmAccount) {
-            return ((MongoRealmAccount) request.getAuthenticatedAccount()).getAccountDocument();
-        } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount) {
-            return toBson(((FileRealmAccount) request.getAuthenticatedAccount()).getAccountProperties()).asDocument();
-        } else {
+        if (request.getAuthenticatedAccount() instanceof MongoRealmAccount maccount) {
+            return maccount.getAccountDocument();
+        } else if (request.getAuthenticatedAccount() instanceof FileRealmAccount faccount) {
+            return toBson(faccount.getAccountProperties()).asDocument();
+        } else if (request.getAuthenticatedAccount() instanceof JwtAccount jwtAccount) {
+            var payload = BsonUtils.parse(jwtAccount.getJwtPayload());
+
+            if (payload instanceof BsonDocument bsonPayload) {
+                return bsonPayload;
+            } else {
+                LOGGER.warn("jwt payload is not a json object, returning null account document");
+                return null;
+            }
+        }else {
             return null;
         }
     }
@@ -284,9 +315,18 @@ public class AclVarsInterpolator {
 
         String[] ret = { predicate };
 
+        // interpolate primitive values
         flatten.keySet().stream().filter(key -> flatten.get(key) != null)
-                .filter(key -> isJsonPrimitive(flatten.get(key))).forEach(key -> ret[0] = ret[0]
-                        .replaceAll(prefix.concat(key), quote(jsonPrimitiveValue(flatten.get(key)))));
+                .filter(key -> isJsonPrimitive(flatten.get(key)))
+                .forEach(key -> ret[0] = ret[0].replaceAll(prefix.concat(key), quote(jsonPrimitiveValue(flatten.get(key)))));
+
+        // interpolate arrays
+        flatten.keySet().stream().filter(key -> flatten.get(key) != null)
+                .filter(key -> isJsonArray(flatten.get(key)))
+                .forEach(key -> ret[0] = ret[0].replaceAll(prefix.concat(key), jsonArrayValue(flatten.get(key).asArray())));
+
+        // remove unboud variables
+        flatten.keySet().stream().forEach(key -> ret[0] = removeUnboundVariables(prefix, ret[0]));
 
         return ret[0];
     }
@@ -294,6 +334,10 @@ public class AclVarsInterpolator {
     private static boolean isJsonPrimitive(BsonValue value) {
         return value.isNull() || value.isBoolean() || value.isNumber() || value.isString() || value.isObjectId()
                 || value.isTimestamp() || value.isDateTime();
+    }
+
+    private static boolean isJsonArray(BsonValue value) {
+        return value.isArray();
     }
 
     private static String jsonPrimitiveValue(BsonValue value) {
@@ -321,8 +365,55 @@ public class AclVarsInterpolator {
         }
     }
 
+    private static String jsonArrayValue(BsonArray array) {
+        var sb = new StringBuilder();
+        sb.append("{");
+        sb.append(array.stream().filter(e -> isJsonPrimitive(e)).map(e -> quote(jsonPrimitiveValue(e))).collect(Collectors.joining(",")));
+        sb.append("}");
+
+        return sb.toString();
+    }
+
     private static String quote(String s) {
         return "\"".concat(s).concat("\"");
+    }
+
+    private static String RUV_REGEX = "\\\\\"|\"(?:\\\\\"|[^\"])*\"|\\\\'|'(?:\\\\'|[^'])*'|(@placeholder[^)|^,]*)";
+
+    private static final Random RND_GENERATOR = new Random();
+
+    private static String nextToken() {
+        return new BigInteger(256, RND_GENERATOR).toString(Character.MAX_RADIX);
+    }
+
+    /**
+     * remove the unbound variables from the predicate
+     * @param prefix the prefix such as @user, or @now
+     * @param predicate the predicate
+     * @return the predicate without the unbound variables
+     */
+    static String removeUnboundVariables(String prefix, String predicate) {
+        // matches prefix until , or ) in a way that we can ignore matches that are inside quotes
+        // inspired by https://stackoverflow.com/a/23667311/4481670
+        // regex is \\"|"(?:\\"|[^"])*"|\\'|'(?:\\'|[^'])*'|(@user[^)|^,]*)
+        // where @user is the prefix
+
+        var regex = Pattern.compile(RUV_REGEX.replaceAll("@placeholder", prefix));
+
+        var m = regex.matcher(predicate);
+
+        var sb = new StringBuffer();
+
+        while (m.find()) {
+            // we ignore the strings delimited by "
+            if (!m.group().startsWith("\"") && !m.group().startsWith("'")) {
+                m.appendReplacement(sb, nextToken());
+            }
+        }
+
+        m.appendTail(sb);
+
+        return sb.toString();
     }
 
     @SuppressWarnings("unchecked")

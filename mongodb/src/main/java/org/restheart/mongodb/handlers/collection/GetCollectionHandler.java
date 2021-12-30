@@ -20,6 +20,8 @@
  */
 package org.restheart.mongodb.handlers.collection;
 
+import java.util.Optional;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.MongoException;
 import io.undertow.server.HttpServerExchange;
@@ -43,8 +45,7 @@ import org.slf4j.LoggerFactory;
 public class GetCollectionHandler extends PipelinedHandler {
     private Database dbsDAO = new DatabaseImpl();
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(GetCollectionHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionHandler.class);
 
     /**
      *
@@ -87,25 +88,21 @@ public class GetCollectionHandler extends PipelinedHandler {
             return;
         }
 
-        var coll = dbsDAO.getCollection(request.getDBName(),
-                request.getCollectionName());
+        var coll = dbsDAO.getCollection(request.getDBName(), request.getCollectionName());
 
         long size = -1;
 
         if (request.isCount()) {
-            size = dbsDAO
-                    .getCollectionSize(request.getClientSession(),
-                            coll, request.getFiltersDocument());
+            size = dbsDAO.getCollectionSize(Optional.ofNullable(request.getClientSession()), coll, request.getFiltersDocument());
         }
 
         // ***** get data
         BsonArray data = null;
 
         if (request.getPagesize() > 0) {
-
             try {
                 data = dbsDAO.getCollectionData(
-                        request.getClientSession(),
+                        Optional.ofNullable(request.getClientSession()),
                         coll,
                         request.getPage(),
                         request.getPagesize(),
@@ -116,26 +113,15 @@ public class GetCollectionHandler extends PipelinedHandler {
                         request.getCursorAllocationPolicy());
             } catch (JsonParseException jpe) {
                 // the filter expression is not a valid json string
-                LOGGER.debug("invalid filter expression {}",
-                        request.getFilter(), jpe);
-                MongoResponse.of(exchange).setInError(
-                        HttpStatus.SC_BAD_REQUEST,
-                        "wrong request, filter expression is invalid",
-                        jpe);
+                LOGGER.debug("invalid filter expression {}", request.getFilter(), jpe);
+                MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
                 next(exchange);
                 return;
             } catch (MongoException me) {
                 if (me.getMessage().matches(".*Can't canonicalize query.*")) {
                     // error with the filter expression during query execution
-                    LOGGER.debug(
-                            "invalid filter expression {}",
-                            request.getFilter(),
-                            me);
-
-                    MongoResponse.of(exchange).setInError(
-                            HttpStatus.SC_BAD_REQUEST,
-                            "wrong request, filter expression is invalid",
-                            me);
+                    LOGGER.debug("invalid filter expression {}", request.getFilter(), me);
+                    MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", me);
                     next(exchange);
                     return;
                 } else {
@@ -156,16 +142,12 @@ public class GetCollectionHandler extends PipelinedHandler {
             response.setContentTypeAsJson();
             response.setStatusCode(HttpStatus.SC_OK);
 
-            ResponseHelper
-                    .injectEtagHeader(exchange, request.getCollectionProps());
+            ResponseHelper.injectEtagHeader(exchange, request.getCollectionProps());
 
             // call the ResponseTransformerMetadataHandler if piped in
             next(exchange);
         } catch (IllegalQueryParamenterException ex) {
-            MongoResponse.of(exchange).setInError(
-                    HttpStatus.SC_BAD_REQUEST,
-                    ex.getMessage(),
-                    ex);
+            MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, ex.getMessage(), ex);
             next(exchange);
         }
     }

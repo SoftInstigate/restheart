@@ -21,7 +21,6 @@
 
 package org.restheart.test.plugins.interceptors;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import java.nio.charset.Charset;
 import java.util.LinkedList;

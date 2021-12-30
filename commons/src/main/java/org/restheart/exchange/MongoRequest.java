@@ -21,7 +21,6 @@ package org.restheart.exchange;
 
 import com.google.common.reflect.TypeToken;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
 import java.lang.reflect.Type;
@@ -117,9 +116,7 @@ public class MongoRequest extends BsonRequest {
 
     final boolean noCache;
 
-    protected MongoRequest(HttpServerExchange exchange,
-            String requestUri,
-            String resourceUri) {
+    protected MongoRequest(HttpServerExchange exchange, String requestUri, String resourceUri) {
         super(exchange);
 
         this.whereUri = URLUtils.removeTrailingSlashes(requestUri == null
@@ -136,8 +133,7 @@ public class MongoRequest extends BsonRequest {
         this.mappedUri = exchange.getRequestPath();
 
         if (exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY) != null) {
-            this.pathTemplateMatch = exchange
-                    .getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
+            this.pathTemplateMatch = exchange.getAttachment(PathTemplateMatch.ATTACHMENT_KEY);
         } else {
             this.pathTemplateMatch = null;
         }
@@ -150,16 +146,11 @@ public class MongoRequest extends BsonRequest {
         this.type = selectRequestType(pathTokens);
 
         // etag
-        HeaderValues etagHvs = getHeaders() == null
-                ? null : getHeaders().get(Headers.IF_MATCH);
+        var etagHvs = getHeaders() == null ? null : getHeaders().get(Headers.IF_MATCH);
 
-        this.etag = etagHvs == null || etagHvs.getFirst() == null
-                ? null
-                : etagHvs.getFirst();
+        this.etag = etagHvs == null || etagHvs.getFirst() == null ? null : etagHvs.getFirst();
 
-        this.forceEtagCheck = exchange
-                .getQueryParameters()
-                .get(ETAG_CHECK_QPARAM_KEY) != null;
+        this.forceEtagCheck = exchange.getQueryParameters().get(ETAG_CHECK_QPARAM_KEY) != null;
 
         this.noProps = exchange.getQueryParameters().get(NO_PROPS_KEY) != null;
 
@@ -238,12 +229,8 @@ public class MongoRequest extends BsonRequest {
      * @param resourceUri the resource URI identifying a resource in the DB
      * @return the MongoRequest
      */
-    public static MongoRequest init(HttpServerExchange exchange,
-            String requestUri,
-            String resourceUri) {
-        var request = new MongoRequest(exchange, requestUri, resourceUri);
-
-        return request;
+    public static MongoRequest init(HttpServerExchange exchange, String requestUri, String resourceUri) {
+        return new MongoRequest(exchange, requestUri, resourceUri);
     }
 
     public static MongoRequest of(HttpServerExchange exchange) {
@@ -355,58 +342,36 @@ public class MongoRequest extends BsonRequest {
             }
         } else if (pathTokens.length < 2) {
             type = TYPE.ROOT;
-        } else if (pathTokens.length == 2
-                && pathTokens[pathTokens.length - 1]
-                        .equalsIgnoreCase(_SESSIONS)) {
+        } else if (pathTokens.length == 2 && pathTokens[pathTokens.length - 1].equalsIgnoreCase(_SESSIONS)) {
             type = TYPE.SESSIONS;
-        } else if (pathTokens.length == 3
-                && pathTokens[pathTokens.length - 2]
-                        .equalsIgnoreCase(_SESSIONS)) {
+        } else if (pathTokens.length == 3 && pathTokens[pathTokens.length - 2].equalsIgnoreCase(_SESSIONS)) {
             type = TYPE.SESSION;
-        } else if (pathTokens.length == 4
-                && pathTokens[pathTokens.length - 3]
-                        .equalsIgnoreCase(_SESSIONS)
-                && pathTokens[pathTokens.length - 1]
-                        .equalsIgnoreCase(_TRANSACTIONS)) {
+        } else if (pathTokens.length == 4 && pathTokens[pathTokens.length - 3].equalsIgnoreCase(_SESSIONS) && pathTokens[pathTokens.length - 1].equalsIgnoreCase(_TRANSACTIONS)) {
             type = TYPE.TRANSACTIONS;
-        } else if (pathTokens.length == 5
-                && pathTokens[pathTokens.length - 4]
-                        .equalsIgnoreCase(_SESSIONS)
-                && pathTokens[pathTokens.length - 2]
-                        .equalsIgnoreCase(_TRANSACTIONS)) {
+        } else if (pathTokens.length == 5 && pathTokens[pathTokens.length - 4].equalsIgnoreCase(_SESSIONS) && pathTokens[pathTokens.length - 2].equalsIgnoreCase(_TRANSACTIONS)) {
             type = TYPE.TRANSACTION;
-        } else if (pathTokens.length < 3
-                && pathTokens[1].equalsIgnoreCase(_METRICS)) {
+        } else if (pathTokens.length < 3 && pathTokens[1].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
         } else if (pathTokens.length < 3) {
             type = TYPE.DB;
-        } else if (pathTokens.length >= 3
-                && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
+        } else if (pathTokens.length >= 3 && pathTokens[2].endsWith(FS_FILES_SUFFIX)) {
             if (pathTokens.length == 3) {
                 type = TYPE.FILES_BUCKET;
-            } else if (pathTokens.length == 4
-                    && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+            } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.COLLECTION_INDEXES;
-            } else if (pathTokens.length == 4
-                    && !pathTokens[3].equalsIgnoreCase(_INDEXES)
-                    && !pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
+            } else if (pathTokens.length == 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES) && !pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
                 type = TYPE.FILE;
-            } else if (pathTokens.length > 4
-                    && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+            } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
                 type = TYPE.INDEX;
-            } else if (pathTokens.length > 4
-                    && !pathTokens[3].equalsIgnoreCase(_INDEXES)
-                    && !pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
+            } else if (pathTokens.length > 4 && !pathTokens[3].equalsIgnoreCase(_INDEXES) && !pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
                 type = TYPE.FILE;
-            } else if (pathTokens.length == 5
-                    && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
+            } else if (pathTokens.length == 5 && pathTokens[4].equalsIgnoreCase(BINARY_CONTENT)) {
                 // URL: <host>/db/bucket.filePath/xxx/binary
                 type = TYPE.FILE_BINARY;
             } else {
                 type = TYPE.DOCUMENT;
             }
-        } else if (pathTokens.length >= 3
-                && pathTokens[2].equalsIgnoreCase(_SCHEMAS)) {
+        } else if (pathTokens.length >= 3 && pathTokens[2].equalsIgnoreCase(_SCHEMAS)) {
             if (pathTokens.length == 3) {
                 type = TYPE.SCHEMA_STORE;
             } else if (pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
@@ -414,34 +379,25 @@ public class MongoRequest extends BsonRequest {
             } else {
                 type = TYPE.SCHEMA;
             }
-        } else if (pathTokens.length >= 3
-                && pathTokens[2].equalsIgnoreCase(_METRICS)) {
+        } else if (pathTokens.length >= 3 && pathTokens[2].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
         } else if (pathTokens.length < 4) {
             type = TYPE.COLLECTION;
-        } else if (pathTokens.length == 4
-                && pathTokens[3].equalsIgnoreCase(_METRICS)) {
+        } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_METRICS)) {
             type = TYPE.METRICS;
-        } else if (pathTokens.length == 4
-                && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+        } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.COLLECTION_INDEXES;
-        } else if (pathTokens.length == 4
-                && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
+        } else if (pathTokens.length == 4 && pathTokens[3].equals(RESOURCES_WILDCARD_KEY)) {
             type = TYPE.BULK_DOCUMENTS;
-        } else if (pathTokens.length > 4
-                && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
+        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_INDEXES)) {
             type = TYPE.INDEX;
-        } else if (pathTokens.length == 4
-                && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+        } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
             type = TYPE.INVALID;
-        } else if (pathTokens.length > 4
-                && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
+        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_AGGREGATIONS)) {
             type = TYPE.AGGREGATION;
-        } else if (pathTokens.length == 4
-                && pathTokens[3].equalsIgnoreCase(_STREAMS)) {
+        } else if (pathTokens.length == 4 && pathTokens[3].equalsIgnoreCase(_STREAMS)) {
             type = TYPE.INVALID;
-        } else if (pathTokens.length > 4
-                && pathTokens[3].equalsIgnoreCase(_STREAMS)) {
+        } else if (pathTokens.length > 4 && pathTokens[3].equalsIgnoreCase(_STREAMS)) {
             type = TYPE.CHANGE_STREAM;
         } else {
             type = TYPE.DOCUMENT;
@@ -460,7 +416,7 @@ public class MongoRequest extends BsonRequest {
      * @return
      */
     private String unmapUri(String mappedUri) {
-        // don't unmpa URIs statring with /_sessions
+        // don't unmap URIs statring with /_sessions
         if (mappedUri.startsWith("/".concat(_SESSIONS))) {
             return mappedUri;
         }
@@ -487,11 +443,7 @@ public class MongoRequest extends BsonRequest {
                     URLUtils.removeTrailingSlashes(this.whatUri) + ret);
         }
 
-        if (ret.isEmpty()) {
-            ret = SLASH;
-        }
-
-        return ret;
+        return ret.isEmpty() ? SLASH : ret;
     }
 
     private String unmapPathTemplateUri(String mappedUri) {
@@ -500,7 +452,7 @@ public class MongoRequest extends BsonRequest {
 
         String replacedWhatUri = replaceParamsWithinWhatUri();
         // replace params with in whatUri
-        // eg what: /{account}, where: /{account/*
+        // eg what: /{account}, where: /{account}/*
 
         // now replace mappedUri with resolved path template
         if (replacedWhatUri.equals("*")) {
@@ -508,18 +460,12 @@ public class MongoRequest extends BsonRequest {
                 ret = ret.replaceFirst("^" + rewriteUri, "");
             }
         } else if (!this.whereUri.equals(SLASH)) {
-            ret = URLUtils.removeTrailingSlashes(
-                    ret.replaceFirst("^" + rewriteUri, replacedWhatUri));
+            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + rewriteUri, replacedWhatUri));
         } else {
-            ret = URLUtils.removeTrailingSlashes(
-                    URLUtils.removeTrailingSlashes(replacedWhatUri) + ret);
+            ret = URLUtils.removeTrailingSlashes(URLUtils.removeTrailingSlashes(replacedWhatUri) + ret);
         }
 
-        if (ret.isEmpty()) {
-            ret = SLASH;
-        }
-
-        return ret;
+        return ret.isEmpty() ? SLASH : ret;
     }
 
     /**
@@ -539,15 +485,14 @@ public class MongoRequest extends BsonRequest {
     }
 
     private String mapPathUri(String unmappedUri) {
-        String ret = URLUtils.removeTrailingSlashes(unmappedUri);
+        var ret = URLUtils.removeTrailingSlashes(unmappedUri);
 
         if (whatUri.equals("*")) {
             if (!this.whereUri.equals(SLASH)) {
                 return this.whereUri + unmappedUri;
             }
         } else {
-            ret = URLUtils.removeTrailingSlashes(
-                    ret.replaceFirst("^" + this.whatUri, this.whereUri));
+            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + this.whatUri, this.whereUri));
         }
 
         if (ret.isEmpty()) {
@@ -560,9 +505,9 @@ public class MongoRequest extends BsonRequest {
     }
 
     private String mapPathTemplateUri(String unmappedUri) {
-        String ret = URLUtils.removeTrailingSlashes(unmappedUri);
-        String rewriteUri = replaceParamsWithActualValues();
-        String replacedWhatUri = replaceParamsWithinWhatUri();
+        var ret = URLUtils.removeTrailingSlashes(unmappedUri);
+        var rewriteUri = replaceParamsWithActualValues();
+        var replacedWhatUri = replaceParamsWithinWhatUri();
 
         // now replace mappedUri with resolved path template
         if (replacedWhatUri.equals("*")) {
@@ -570,35 +515,25 @@ public class MongoRequest extends BsonRequest {
                 return rewriteUri + unmappedUri;
             }
         } else {
-            ret = URLUtils.removeTrailingSlashes(
-                    ret.replaceFirst("^" + replacedWhatUri, rewriteUri));
+            ret = URLUtils.removeTrailingSlashes(ret.replaceFirst("^" + replacedWhatUri, rewriteUri));
         }
 
-        if (ret.isEmpty()) {
-            ret = SLASH;
-        }
-
-        return ret;
+        return ret.isEmpty() ? SLASH : ret;
     }
 
     private String replaceParamsWithinWhatUri() {
         String uri = this.whatUri;
         // replace params within whatUri
         // eg what: /{prefix}_db, where: /{prefix}/*
-        for (String key : this.pathTemplateMatch
-                .getParameters().keySet()) {
-            uri = uri.replace(
-                    "{".concat(key).concat("}"),
-                    this.pathTemplateMatch
-                            .getParameters().get(key));
+        for (var key : this.pathTemplateMatch.getParameters().keySet()) {
+            uri = uri.replace("{".concat(key).concat("}"), this.pathTemplateMatch.getParameters().get(key));
         }
         return uri;
     }
 
     private String replaceParamsWithActualValues() {
-        String rewriteUri;
         // path template with variables resolved to actual values
-        rewriteUri = this.pathTemplateMatch.getMatchedTemplate();
+        var rewriteUri = this.pathTemplateMatch.getMatchedTemplate();
         // remove trailing wildcard from template
         if (rewriteUri.endsWith("/*")) {
             rewriteUri = rewriteUri.substring(0, rewriteUri.length() - 2);
@@ -611,15 +546,10 @@ public class MongoRequest extends BsonRequest {
                 .filter(key -> !key.equals("*"))
                 .collect(Collectors.toMap(
                         key -> key,
-                        key -> this.pathTemplateMatch
-                                .getParameters().get(key)));
+                        key -> this.pathTemplateMatch.getParameters().get(key)));
         // replace params with actual values
-        for (String key : this.pathTemplateMatch
-                .getParameters().keySet()) {
-            rewriteUri = rewriteUri.replace(
-                    "{".concat(key).concat("}"),
-                    this.pathTemplateMatch
-                            .getParameters().get(key));
+        for (var key : this.pathTemplateMatch.getParameters().keySet()) {
+            rewriteUri = rewriteUri.replace("{".concat(key).concat("}"), this.pathTemplateMatch.getParameters().get(key));
         }
         return rewriteUri;
     }
@@ -725,9 +655,7 @@ public class MongoRequest extends BsonRequest {
             return false;
         }
 
-        return isReservedDbName(getDBName())
-                || isReservedCollectionName(getCollectionName())
-                || isReservedDocumentId(getType(), getDocumentId());
+        return isReservedDbName(getDBName()) || isReservedCollectionName(getCollectionName()) || isReservedDocumentId(getType(), getDocumentId());
     }
 
     /**
@@ -784,8 +712,7 @@ public class MongoRequest extends BsonRequest {
      *
      * @param representationFormat
      */
-    public void setRepresentationFormat(
-            REPRESENTATION_FORMAT representationFormat) {
+    public void setRepresentationFormat(REPRESENTATION_FORMAT representationFormat) {
         this.representationFormat = representationFormat;
     }
 
@@ -840,15 +767,13 @@ public class MongoRequest extends BsonRequest {
      * @return the $and composed filter qparam values
      */
     public BsonDocument getFiltersDocument() throws JsonParseException {
-        final BsonDocument filterQuery = new BsonDocument();
+        final var filterQuery = new BsonDocument();
 
         if (filter != null) {
             if (filter.size() > 1) {
-                BsonArray _filters = new BsonArray();
+                var _filters = new BsonArray();
 
-                filter.stream().forEach((String f) -> {
-                    _filters.add(BsonDocument.parse(f));
-                });
+                filter.stream().forEach(f -> _filters.add(BsonDocument.parse(f)));
 
                 filterQuery.put("$and", _filters);
             } else if (filter.size() == 1) {
@@ -866,18 +791,18 @@ public class MongoRequest extends BsonRequest {
      * @return @throws JsonParseException
      */
     public BsonDocument getSortByDocument() throws JsonParseException {
-        BsonDocument sort = new BsonDocument();
+        var sort = new BsonDocument();
 
         if (sortBy == null) {
             sort.put("_id", new BsonInt32(-1));
         } else {
             sortBy.stream().forEach((s) -> {
 
-                String _s = s.trim(); // the + sign is decoded into a space, in case remove it
+                var _s = s.trim(); // the + sign is decoded into a space, in case remove it
 
                 // manage the case where sort_by is a json object
                 try {
-                    BsonDocument _sort = BsonDocument.parse(_s);
+                    var _sort = BsonDocument.parse(_s);
 
                     sort.putAll(_sort);
                 } catch (JsonParseException e) {
@@ -901,18 +826,16 @@ public class MongoRequest extends BsonRequest {
      * @return @throws JsonParseException
      */
     public BsonDocument getHintDocument() throws JsonParseException {
-        BsonDocument ret = new BsonDocument();
-
         if (hint == null || hint.isEmpty()) {
             return null;
         } else {
-            hint.stream().forEach((s) -> {
-
-                String _s = s.trim(); // the + sign is decoded into a space, in case remove it
+            var ret = new BsonDocument();
+            hint.stream().forEach(s -> {
+                var _s = s.trim(); // the + sign is decoded into a space, in case remove it
 
                 // manage the case where hint is a json object
                 try {
-                    BsonDocument _hint = BsonDocument.parse(_s);
+                    var _hint = BsonDocument.parse(_s);
 
                     ret.putAll(_hint);
                 } catch (JsonParseException e) {
@@ -926,9 +849,9 @@ public class MongoRequest extends BsonRequest {
                     }
                 }
             });
-        }
 
-        return ret;
+            return ret;
+        }
     }
 
     /**
@@ -936,17 +859,14 @@ public class MongoRequest extends BsonRequest {
      * @return @throws JsonParseException
      */
     public BsonDocument getProjectionDocument() throws JsonParseException {
-        final BsonDocument projection = new BsonDocument();
-
         if (keys == null || keys.isEmpty()) {
             return null;
         } else {
-            keys.stream().forEach((String f) -> {
-                projection.putAll(BsonDocument.parse(f));  // this can throw JsonParseException for invalid keys parameters
-            });
+            final var projection = new BsonDocument();
+            // this can throw JsonParseException for invalid keys parameters
+            keys.stream().forEach(f -> projection.putAll(BsonDocument.parse(f)));
+            return projection;
         }
-
-        return projection;
     }
 
     /**
@@ -1060,8 +980,7 @@ public class MongoRequest extends BsonRequest {
     /**
      * @param cursorAllocationPolicy the cursorAllocationPolicy to set
      */
-    public void setCursorAllocationPolicy(
-            EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
+    public void setCursorAllocationPolicy(EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
         this.cursorAllocationPolicy = cursorAllocationPolicy;
     }
 

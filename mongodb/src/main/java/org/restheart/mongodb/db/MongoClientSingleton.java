@@ -30,7 +30,6 @@ import com.mongodb.MongoCommandException;
 
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.bson.Document;
 import org.restheart.plugins.PluginsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

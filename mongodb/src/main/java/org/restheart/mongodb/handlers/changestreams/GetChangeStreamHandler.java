@@ -60,8 +60,8 @@ public class GetChangeStreamHandler extends PipelinedHandler {
     public static final AttachmentKey<JsonMode> JSON_MODE_ATTACHMENT_KEY = AttachmentKey.create(JsonMode.class);
 
     @Override
-    public void handleRequest(HttpServerExchange exchange)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
+        
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 
@@ -135,10 +135,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                     .anyMatch(val -> val.toLowerCase().contains(UPGRADE_HEADER_VALUE));
     }
 
-    private List<BsonDocument> getResolvedStagesAsList(MongoRequest request)
-            throws InvalidMetadataException,
-            QueryVariableNotBoundException,
-            QueryNotFoundException {
+    private List<BsonDocument> getResolvedStagesAsList(MongoRequest request) throws InvalidMetadataException, QueryVariableNotBoundException, QueryNotFoundException {
         String changesStreamOperation = request.getChangeStreamOperation();
 
         List<ChangeStreamOperation> streams = ChangeStreamOperation
@@ -162,10 +159,8 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         return resolvedStages;
     }
 
-    private boolean startStream(HttpServerExchange exchange)
-            throws QueryVariableNotBoundException,
-            QueryNotFoundException,
-            InvalidMetadataException {
+    private boolean startStream(HttpServerExchange exchange) throws QueryVariableNotBoundException, QueryNotFoundException, InvalidMetadataException {
+        
         SessionKey streamKey = new SessionKey(exchange);
         var request = MongoRequest.of(exchange);
 
@@ -181,7 +176,10 @@ public class GetChangeStreamHandler extends PipelinedHandler {
                     .getCollection(request.getCollectionName())
                     .watch(resolvedStages)
                     .fullDocument(FullDocument.UPDATE_LOOKUP)
-                    .subscribe(new ChangeStreamSubscriber(streamKey));
+                    .subscribe(new ChangeStreamSubscriber(streamKey, 
+                            resolvedStages, 
+                            request.getDBName(), 
+                            request.getCollectionName()));
 
             return true;
         } else {

@@ -23,7 +23,6 @@ package org.restheart.security.mechanisms;
 import com.google.common.collect.Sets;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.SecurityContext;
-import io.undertow.security.idm.Account;
 import io.undertow.server.HttpServerExchange;
 import java.util.List;
 import java.util.Map;
@@ -54,24 +53,21 @@ public class IdentityAuthMechanism implements AuthMechanism {
     private List<String> roles;
 
     @InjectConfiguration
-    public void init(Map<String, Object> confArgs)
-            throws ConfigurationException {
+    public void init(Map<String, Object> confArgs) throws ConfigurationException {
         this.username = argValue(confArgs, "username");
         this.roles = argValue(confArgs, "roles");
     }
 
     @Override
-    public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange,
-            SecurityContext securityContext) {
-        Account sa = new BaseAccount(username, Sets.newTreeSet(roles));
+    public AuthenticationMechanism.AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
+        var sa = new BaseAccount(username, Sets.newTreeSet(roles));
 
         securityContext.authenticationComplete(sa, "IdentityAuthenticationManager", true);
         return AuthenticationMechanism.AuthenticationMechanismOutcome.AUTHENTICATED;
     }
 
     @Override
-    public AuthenticationMechanism.ChallengeResult sendChallenge(HttpServerExchange exchange,
-            SecurityContext securityContext) {
+    public AuthenticationMechanism.ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
         return new AuthenticationMechanism.ChallengeResult(true, 200);
     }
 }

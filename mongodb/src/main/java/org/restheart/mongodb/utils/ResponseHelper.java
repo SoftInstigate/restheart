@@ -22,6 +22,9 @@ package org.restheart.mongodb.utils;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+
+import com.mongodb.MongoException;
+
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.bson.Document;
@@ -166,6 +169,9 @@ public class ResponseHelper {
             case 13297:
                 // db already exists with different case
                 return HttpStatus.SC_CONFLICT;
+            case 51091:
+                //
+                return HttpStatus.SC_BAD_REQUEST;
             default:
                 // Other
                 return HttpStatus.SC_INTERNAL_SERVER_ERROR;
@@ -174,52 +180,63 @@ public class ResponseHelper {
 
     /**
      *
+     * @param me the MongoException
+     * @return
+     */
+    public static String getMessageFromMongoException(MongoException me) {
+        var code = me.getCode();
+
+        return switch(code) {
+            // Query failed with error code 51091 and error message 'Regular expression is invalid: unmatched parentheses'
+            case 2, 51091-> {
+                var msg = me.getMessage();
+
+                var b = msg.indexOf("error message '");
+                var e = msg.indexOf("' on server");
+
+                if (b >= 0 && e >= 0) {
+                    yield "Invalid filter: " + msg.substring(b+15, e);
+                } else {
+                    yield msg;
+                }
+            }
+            default -> getMessageFromErrorCode(code);
+        };
+    }
+
+    /**
+     *
      * @param code mongodb error code from MongoException.getCode()
      * @return
      */
     public static String getMessageFromErrorCode(int code) {
-        switch (code) {
-            case 2:
-                return "Bad value";
-            case 13:
-                return "The MongoDB user does not have enough permissions to execute this operation";
-            case 18:
-                return "Wrong MongoDB user credentials "
+        return switch(code) {
+            case 13 -> "The MongoDB user does not have enough permissions to execute this operation";
+            case 18 -> "Wrong MongoDB user credentials "
                         + "(wrong password or need to specify the "
                         + "authentication dababase "
                         + "with 'authSource=<db>' option in mongo-uri)";
-            case 61:
-                return "Write request for sharded "
+            case 61 -> "Write request for sharded "
                         + "collection must specify the shardkey. "
                         + "Use the 'shardkey' query parameter";
-            case 66:
-                return "Update tried to change the immutable shardkey";
-            case 121:
-                //Document failed validation
-                return "Document failed validation";
-            case 112:
-                //WriteConflict
-                return "Write conflict inside transaction";
-            case 225:
+            case 66 -> "Update tried to change the immutable shardkey";
+            case 121 -> "Document failed validation";
+            case 112 -> "Write conflict inside transaction";
             // Cannot start transaction X on session Y because a newer transaction Z has already started// Cannot start transaction X on session Y because a newer transaction Z has already started
-            case 251:
+            case 225 -> "The given transaction is not in-progress";
             // transaction number X does not match any in-progress transactions
-            case 256:
-                // Transaction X has been committed.
-                return "The given transaction is not in-progress";
-            case 11000:
-                // error 11000 is duplicate key error
-                // can happens for
-                // - insert requests but _id already exists
-                // - for upsert/updates with the _id and a filter, and the update document does not match the filter
-                // - a unique index exists, and the document duplicates an existing key
-                return "Duplicate key error (insert with existing _id, update a document not matching specified filter or unique index violation)";
-                case 13297:
-                // db already exists with different case
-                return "Db already exists with different case";
-            default:
-                return "Error handling the request, see log for more information";
-        }
+            case 251 -> "The given transaction is not in-progress";
+            // Transaction X has been committed.
+            case 256 -> "The given transaction is not in-progress";
+            // error 11000 is duplicate key error
+            // can happens for
+            // - insert requests but _id already exists
+            // - for upsert/updates with the _id and a filter, and the update document does not match the filter
+            // - a unique index exists, and the document duplicates an existing key
+            case 11000 -> "Duplicate key error (insert with existing _id, update a document not matching specified filter or unique index violation)";
+            case 13297 -> "Db already exists with different case";
+            default -> "Error handling the request, see log for more information";
+        };
     }
 
     private ResponseHelper() {

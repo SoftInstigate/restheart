@@ -36,14 +36,14 @@ public interface ConfigurationKeys {
     public static final int DEFAULT_HTTP_PORT = 8080;
 
     /**
-     * default http host 127.0.0.1.
+     * default http host localhost.
      */
-    public static final String DEFAULT_HTTP_HOST = "0.0.0.0";
+    public static final String DEFAULT_HTTP_HOST = "localhost";
 
     /**
      * default https listener.
      */
-    public static final boolean DEFAULT_HTTPS_LISTENER = true;
+    public static final boolean DEFAULT_HTTPS_LISTENER = false;
 
     /**
      * default https port 4443.
@@ -51,19 +51,19 @@ public interface ConfigurationKeys {
     public static final int DEFAULT_HTTPS_PORT = 4443;
 
     /**
-     * default https host 0.0.0.0.
+     * default https host localhost.
      */
-    public static final String DEFAULT_HTTPS_HOST = "0.0.0.0";
+    public static final String DEFAULT_HTTPS_HOST = "localhost";
 
     /**
      * default http listener.
      */
-    public static final boolean DEFAULT_AJP_LISTENER = true;
+    public static final boolean DEFAULT_AJP_LISTENER = false;
 
     /**
-     * default ajp host 0.0.0.0.
+     * default ajp host localhost.
      */
-    public static final String DEFAULT_AJP_HOST = "0.0.0.0";
+    public static final String DEFAULT_AJP_HOST = "localhost";
 
     /**
      * default ajp port 8009.

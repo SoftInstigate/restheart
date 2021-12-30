@@ -22,17 +22,19 @@ package org.restheart.mongodb.handlers.files;
 
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
+
 import static org.restheart.exchange.ExchangeKeys.FILENAME;
 import static org.restheart.exchange.ExchangeKeys.FILE_METADATA;
 import static org.restheart.exchange.ExchangeKeys.PROPERTIES;
 import static org.restheart.exchange.ExchangeKeys._ID;
+
+import java.util.Optional;
+
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.FileMetadataDAO;
 import org.restheart.mongodb.db.FileMetadataRepository;
-import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -99,7 +101,7 @@ public class FileMetadataHandler extends PipelinedHandler {
             return;
         }
 
-        BsonValue _content = request.getContent();
+        var _content = request.getContent();
 
         if (RequestHelper.isNotAcceptableContent(_content, exchange)) {
             next(exchange);
@@ -109,9 +111,7 @@ public class FileMetadataHandler extends PipelinedHandler {
         if (request.getFilePath() != null) {
             // PUT request with non null data will be dealt with by previous handler (PutFileHandler)
             if (request.isPatch()) {
-                response.setInError(
-                        HttpStatus.SC_NOT_ACCEPTABLE,
-                        "only metadata is allowed, not binary data");
+                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "only metadata is allowed, not binary data");
             }
             next(exchange);
             return;
@@ -119,7 +119,7 @@ public class FileMetadataHandler extends PipelinedHandler {
 
         // Ensure the passed content whether already within a metadata/properties document or just plain
         // is wrapped in a metadata document.
-        BsonDocument content = _content.asDocument();
+        var content = _content.asDocument();
         if (content.containsKey(PROPERTIES)) {
             content = new BsonDocument(FILE_METADATA, content.get(PROPERTIES));
         } else if (!content.containsKey(FILE_METADATA)) {
@@ -127,38 +127,36 @@ public class FileMetadataHandler extends PipelinedHandler {
         }
 
         // Remove any _id field from the metadata.
-        final BsonDocument _metadata = content.get(FILE_METADATA).asDocument();
+        final var _metadata = content.get(FILE_METADATA).asDocument();
         _metadata.remove(_ID);
 
         // Update main document filename to match metadata
-        final BsonValue filename = _metadata.get(FILENAME);
+        final var filename = _metadata.get(FILENAME);
         if (filename != null && filename.isString()) {
             content.put(FILENAME, filename);
         }
 
-        BsonValue id = request.getDocumentId();
+        var id = request.getDocumentId();
 
         if (content.get(_ID) == null) {
             content.put(_ID, id);
         } else if (!content.get(_ID).equals(id)) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "_id in json data cannot be different than id in URL");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in json data cannot be different than id in URL");
             next(exchange);
             return;
         }
 
-        OperationResult result = fileMetadataDAO.updateMetadata(
-                request.getClientSession(),
-                request.getDBName(),
-                request.getCollectionName(),
-                request.getDocumentId(),
-                request.getFiltersDocument(),
-                request.getShardKey(),
-                content,
-                request.getETag(),
-                request.isPatch(),
-                request.isETagCheckRequired());
+        var result = fileMetadataDAO.updateMetadata(
+            Optional.ofNullable(request.getClientSession()),
+            request.getDBName(),
+            request.getCollectionName(),
+            Optional.of(request.getDocumentId()),
+            Optional.ofNullable(request.getFiltersDocument()),
+            Optional.ofNullable(request.getShardKey()),
+            content,
+            request.getETag(),
+            request.isPatch(),
+            request.isETagCheckRequired());
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {
             next(exchange);

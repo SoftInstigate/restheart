@@ -34,7 +34,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "ping", 
+@RegisterPlugin(name = "ping",
     description = "simple ping service",
     secure = false,
     enabledByDefault = true,
@@ -50,7 +50,6 @@ public class PingService implements ByteArrayService {
 
     /**
      *
-     * @throws Exception
      */
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {

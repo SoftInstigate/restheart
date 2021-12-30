@@ -20,8 +20,11 @@
  */
 package org.restheart.mongodb.db;
 
+import java.util.Optional;
+
 import com.mongodb.client.ClientSession;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 public interface FileMetadataRepository {
 
     /**
@@ -39,12 +42,12 @@ public interface FileMetadataRepository {
      * @return
      */
     public abstract OperationResult updateMetadata(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collName,
-            final Object documentId,
-            final BsonDocument filter,
-            final BsonDocument shardKeys,
+            final Optional<BsonValue> documentId,
+            final Optional<BsonDocument> filter,
+            final Optional<BsonDocument> shardKeys,
             final BsonDocument newContent,
             final String requestEtag,
             final boolean patching,

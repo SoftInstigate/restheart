@@ -20,30 +20,21 @@
  */
 package org.restheart.utils;
 
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheNotFoundException;
 import static com.sun.akuma.CLibrary.LIBC;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -51,8 +42,6 @@ import org.restheart.Configuration;
 import org.restheart.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  *
@@ -82,57 +71,16 @@ public class FileUtils {
     }
 
     public static Configuration getConfiguration(String[] args) throws ConfigurationException {
-        return getConfiguration(getConfigurationFilePath(args),
-                getPropertiesFilePath(args),
-                false);
+        return getConfiguration(args, false);
     }
 
     public static Configuration getConfiguration(String[] args, boolean silent) throws ConfigurationException {
-        return getConfiguration(
-                getConfigurationFilePath(args),
-                getPropertiesFilePath(args),
-                silent);
-    }
-
-    public static Configuration getConfiguration(Path configurationFilePath, Path propsFilePath, boolean silent) throws ConfigurationException {
-        if (configurationFilePath != null) {
-            if (propsFilePath != null) {
-                final Properties p = new Properties();
-                try (InputStreamReader reader = new InputStreamReader(
-                        new FileInputStream(propsFilePath.toFile()), "UTF-8")) {
-                    p.load(reader);
-                } catch (FileNotFoundException fnfe) {
-                    throw new ConfigurationException("Properties file not found: " + propsFilePath);
-                } catch (UnsupportedEncodingException uec) {
-                    throw new ConfigurationException("Unsupported encoding", uec);
-                } catch (IOException iex) {
-                    throw new ConfigurationException("Error reading properties file: " + propsFilePath, iex);
-                }
-
-                final StringWriter writer = new StringWriter();
-                try (BufferedReader reader = new BufferedReader(new FileReader(configurationFilePath.toFile()))) {
-                    Mustache m = new DefaultMustacheFactory().compile(reader, "configuration-file");
-                    m.execute(writer, p);
-                    writer.flush();
-                } catch (MustacheNotFoundException ex) {
-                    throw new ConfigurationException("Configuration file not found: " + configurationFilePath);
-                } catch (IOException iex) {
-                    throw new ConfigurationException("Error reading configuration file: " + configurationFilePath, iex);
-                }
-
-                Map<String, Object> obj = new Yaml(new SafeConstructor()).load(writer.toString());
-                return new Configuration(configurationFilePath, obj, silent);
-            } else {
-                return new Configuration(configurationFilePath, silent);
-            }
-        } else {
-            return new Configuration();
-        }
+        return Configuration.Builder.build(getConfigurationFilePath(args), getPropertiesFilePath(args), silent);
     }
 
     public static Path getConfigurationFilePath(String[] args) {
         if (args != null) {
-            for (String arg : args) {
+            for (var arg : args) {
                 if (!arg.startsWith("-")) {
                     return getFileAbsolutePath(arg);
                 }
@@ -168,9 +116,9 @@ public class FileUtils {
         }
 
         if (Files.isWritable(DEFAULT_PID_DIR)) {
-            return DEFAULT_PID_DIR.resolve("restheart-security-" + configurationFileHash + ".pid");
+            return DEFAULT_PID_DIR.resolve("restheart-" + configurationFileHash + ".pid");
         } else {
-            return TMP_DIR.resolve("restheart-security-" + configurationFileHash + ".pid");
+            return TMP_DIR.resolve("restheart-" + configurationFileHash + ".pid");
         }
     }
 

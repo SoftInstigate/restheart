@@ -5,6 +5,7 @@ Background:
 * url common.baseUrl
 * def txn = call read('common-start-txn.feature') { baseUrl: '#(common.baseUrl)' }
 * def authHeader = 'Basic YWRtaW46c2VjcmV0'
+* def docid = function(url) { return url.substring(url.length-24); }
 
 @requires-mongodb-4 @requires-replica-set
 Scenario: create a txn, document and commit
@@ -26,7 +27,7 @@ Scenario: create a txn, document and commit
     When method POST
     Then status 201
     And match header Location contains common.db
-    * def docid = common.docid(responseHeaders['Location'][0])
+    * def docid = docid(responseHeaders['Location'][0])
 
     * header Authorization = authHeader
     Given path common.db + common.coll + '/' + docid
@@ -61,7 +62,7 @@ Scenario: create a txn, a document, check isolation and abort txn
     When method POST
     Then status 201
     And match header Location contains common.db
-    * def docid = common.docid(responseHeaders['Location'][0])
+    * def docid = docid(responseHeaders['Location'][0])
 
     * header Authorization = authHeader
     Given path common.db + common.coll + '/' + docid

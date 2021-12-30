@@ -20,7 +20,6 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.security.api.SecurityContext;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.handlers.CORSHandler;
@@ -56,11 +55,15 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             exchange.dispatch(this);
             return;
         }
-        SecurityContext rcontext = exchange.getSecurityContext();
 
-        // 1 call authenticate that performs authentication on the request.
-        // 2 make sure that, only if authentication is required, than the request is authenticated
-        if (rcontext.authenticate() && (!rcontext.isAuthenticationRequired() || rcontext.isAuthenticated())) {
+        var sc = exchange.getSecurityContext();
+
+        // 1 authentication is always attempted
+        // 2 requests fails if and only if authentication fails
+        //   and authentication is required by all enabled authorizers:
+        //   since an authorizer that does not require authentication
+        //   might authorize the request even if authentication failed
+        if (sc.authenticate() && (!sc.isAuthenticationRequired() || sc.isAuthenticated())) {
             if (!exchange.isComplete()) {
                 next(exchange);
             }

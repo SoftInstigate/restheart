@@ -60,7 +60,6 @@ public abstract class AbstractJSPlugin {
     protected MongoClient mclient;
     protected Map<String, Object> pluginArgs;
 
-    // TODO remove this and make fields final
     protected AbstractJSPlugin() {
         this.name = null;
         this.pluginClass = null;
@@ -194,6 +193,7 @@ public abstract class AbstractJSPlugin {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     protected void finalize() throws Throwable {
         if (this.ctxs != null) {
             this.ctxs.entrySet().stream().map(e -> e.getValue())

@@ -20,9 +20,12 @@
  */
 package org.restheart.mongodb.db;
 
+import java.util.Optional;
+
 import com.mongodb.client.ClientSession;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 
 /**
@@ -46,12 +49,12 @@ public interface DocumentRepository {
      * @return the OperationResult
      */
     OperationResult writeDocument(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collName,
-            final Object documentId,
-            final BsonDocument filter,
-            final BsonDocument shardedKeys,
+            final Optional<BsonValue> documentId,
+            final Optional<BsonDocument> filter,
+            final Optional<BsonDocument> shardedKeys,
             final BsonDocument content,
             final String requestEtag,
             final boolean patching,
@@ -72,11 +75,11 @@ public interface DocumentRepository {
      * @return the OperationResult
      */
     OperationResult writeDocumentPost(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collName,
-            final BsonDocument filter,
-            final BsonDocument shardedKeys,
+            final Optional<BsonDocument> filter,
+            final Optional<BsonDocument> shardedKeys,
             final BsonDocument content,
             final WRITE_MODE writeMode,
             final String requestEtag,
@@ -95,12 +98,12 @@ public interface DocumentRepository {
      * @return the OperationResult
      */
     OperationResult deleteDocument(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collName,
-            final Object documentId,
-            final BsonDocument filter,
-            final BsonDocument shardedKeys,
+            final Optional<BsonValue> documentId,
+            final Optional<BsonDocument> filter,
+            final Optional<BsonDocument> shardedKeys,
             final String requestEtag,
             final boolean checkEtag);
     /**
@@ -115,12 +118,12 @@ public interface DocumentRepository {
      * @return the BulkOperationResult
      */
     BulkOperationResult bulkPostDocuments(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collName,
             final BsonArray documents,
-            final BsonDocument filter,
-            final BsonDocument shardKeys,
+            final Optional<BsonDocument> filter,
+            final Optional<BsonDocument> shardKeys,
             final WRITE_MODE writeMode);
 
     /**
@@ -134,11 +137,11 @@ public interface DocumentRepository {
      * @return the BulkOperationResult
      */
     BulkOperationResult bulkPatchDocuments(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collName,
             final BsonDocument filter,
-            final BsonDocument shardKeys,
+            final Optional<BsonDocument> shardKeys,
             final BsonDocument data);
 
     /**
@@ -151,11 +154,11 @@ public interface DocumentRepository {
      * @return the BulkOperationResult
      */
     BulkOperationResult bulkDeleteDocuments(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collName,
             final BsonDocument filter,
-            final BsonDocument shardKeys);
+            final Optional<BsonDocument> shardKeys);
 
     /**
      * returns the ETag of the document
@@ -167,7 +170,7 @@ public interface DocumentRepository {
      * @return Document containing _etag property
      */
     BsonDocument getDocumentEtag(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collName,
             final Object documentId);

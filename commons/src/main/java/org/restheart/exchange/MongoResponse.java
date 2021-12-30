@@ -23,9 +23,7 @@ import com.google.common.reflect.TypeToken;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.ReplaceOptions;
-import com.mongodb.client.result.UpdateResult;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.conversions.Bson;
@@ -304,58 +302,53 @@ public class MongoResponse extends BsonResponse {
      * @param mclient the MongoClient instance
      * @throws Exception in case of any error
      */
-    public void rollback(MongoClient mclient)
-            throws Exception {
+    public void rollback(MongoClient mclient) throws Exception {
         var request = MongoRequest.of(getExchange());
         var response = MongoResponse.of(getExchange());
 
-        if (request.isBulkDocuments()
-                || (request.isPost() && request.getContent() != null
-                && request.getContent().isArray())) {
+        if (request.isBulkDocuments() || (request.isPost() && request.getContent() != null && request.getContent().isArray())) {
             throw new UnsupportedOperationException("rollback() does not support bulk updates");
         }
 
-        MongoDatabase mdb = mclient.getDatabase(request.getDBName());
+        var mdb = mclient.getDatabase(request.getDBName());
 
-        MongoCollection<BsonDocument> coll = mdb.getCollection(
-                request.getCollectionName(),
-                BsonDocument.class);
+        var coll = mdb.getCollection(request.getCollectionName(), BsonDocument.class);
 
-        BsonDocument oldData = getDbOperationResult().getOldData();
+        var oldData = getDbOperationResult().getOldData();
 
-        Object newEtag = getDbOperationResult().getEtag();
+        var newEtag = getDbOperationResult().getEtag();
 
         if (oldData != null) {
             // document was updated, restore old one
             restoreDocument(
-                    request.getClientSession(),
-                    coll,
-                    oldData.get("_id"),
-                    request.getShardKey(),
-                    oldData,
-                    newEtag,
-                    "_etag");
+                request.getClientSession(),
+                coll,
+                oldData.get("_id"),
+                request.getShardKey(),
+                oldData,
+                newEtag,
+                "_etag");
 
             // add to response old etag
             if (oldData.get("$set") != null
-                    && oldData.get("$set").isDocument()
-                    && oldData.get("$set")
+                && oldData.get("$set").isDocument()
+                && oldData.get("$set")
+                        .asDocument()
+                        .get("_etag") != null) {
+                response.getHeaders().put(Headers.ETAG,
+                    oldData.get("$set")
                             .asDocument()
-                            .get("_etag") != null) {
-                    response.getHeaders().put(Headers.ETAG,
-                        oldData.get("$set")
-                                .asDocument()
-                                .get("_etag")
-                                .asObjectId()
-                                .getValue()
-                                .toString());
+                            .get("_etag")
+                            .asObjectId()
+                            .getValue()
+                            .toString());
             } else {
                 response.getHeaders().remove(Headers.ETAG);
             }
 
         } else {
             // document was created, delete it
-            Object newId = getDbOperationResult().getNewData().get("_id");
+            var newId = getDbOperationResult().getNewData().get("_id");
 
             coll.deleteOne(and(eq("_id", newId), eq("_etag", newEtag)));
 
@@ -365,13 +358,13 @@ public class MongoResponse extends BsonResponse {
     }
 
     private static boolean restoreDocument(
-            final ClientSession cs,
-            final MongoCollection<BsonDocument> coll,
-            final Object documentId,
-            final BsonDocument shardKeys,
-            final BsonDocument data,
-            final Object etag,
-            final String etagLocation) {
+        final ClientSession cs,
+        final MongoCollection<BsonDocument> coll,
+        final Object documentId,
+        final BsonDocument shardKeys,
+        final BsonDocument data,
+        final Object etag,
+        final String etagLocation) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documentId);
         Objects.requireNonNull(data);
@@ -381,19 +374,16 @@ public class MongoResponse extends BsonResponse {
         if (etag == null) {
             query = eq("_id", documentId);
         } else {
-            query = and(eq("_id", documentId), eq(
-                    etagLocation != null && !etagLocation.isEmpty()
-                    ? etagLocation
-                    : "_etag", etag));
+            query = and(eq("_id", documentId), eq(etagLocation != null && !etagLocation.isEmpty() ? etagLocation : "_etag", etag));
         }
 
         if (shardKeys != null) {
             query = and(query, shardKeys);
         }
 
-        UpdateResult result = cs == null
-                ? coll.replaceOne(query, data, R_NOT_UPSERT_OPS)
-                : coll.replaceOne(cs, query, data, R_NOT_UPSERT_OPS);
+        var result = cs == null
+            ? coll.replaceOne(query, data, R_NOT_UPSERT_OPS)
+            : coll.replaceOne(cs, query, data, R_NOT_UPSERT_OPS);
 
         return result.getModifiedCount() == 1;
     }

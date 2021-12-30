@@ -29,13 +29,11 @@ public class GraphQLBsonBooleanCoercing implements Coercing<BsonBoolean, BsonBoo
 
     @Override
     public BsonBoolean serialize(Object dataFetcherResult) throws CoercingSerializeException {
-
-        if(dataFetcherResult instanceof BsonBoolean){
-            return (BsonBoolean) dataFetcherResult;
+        if (dataFetcherResult instanceof BsonBoolean bsonBoolean) {
+            return bsonBoolean;
+        } else {
+            throw new CoercingSerializeException("Expected type 'BsonBoolean' but was '" + typeName(dataFetcherResult) + "'.");
         }
-        throw new CoercingSerializeException(
-                "Expected type 'BsonBoolean' but was '" + typeName(dataFetcherResult) + "'."
-        );
     }
 
     @Override
@@ -46,6 +44,5 @@ public class GraphQLBsonBooleanCoercing implements Coercing<BsonBoolean, BsonBoo
     @Override
     public BsonBoolean parseLiteral(Object AST) {
         return new BsonBoolean((Boolean) CoercingUtils.builtInCoercing.get("Boolean").parseLiteral(AST));
-
     }
 }

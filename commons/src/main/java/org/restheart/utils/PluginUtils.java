@@ -34,6 +34,7 @@ import org.restheart.plugins.Initializer;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.Interceptor;
 import org.restheart.plugins.Plugin;
+import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
@@ -261,14 +262,27 @@ public class PluginUtils {
      */
     @SuppressWarnings("rawtypes")
     public static Service handlingService(PluginsRegistry registry, HttpServerExchange exchange) {
+        var pr = handlingServicePluginRecord(registry, exchange);
+
+        return pr == null ? null : pr.getInstance();
+    }
+
+    /**
+     *
+     * @param registry
+     * @param exchange
+     * @return the plugin record of the service handling the exchange or null if the request is not
+     *         handled by a service
+     */
+    @SuppressWarnings("rawtypes")
+    public static PluginRecord<Service> handlingServicePluginRecord(PluginsRegistry registry, HttpServerExchange exchange) {
         var pi = Request.of(exchange).getPipelineInfo();
 
         if (pi != null && pi.getType() == SERVICE) {
             var srvName = pi.getName();
 
             if (srvName != null) {
-                var _s = registry.getServices().stream().filter(s -> srvName.equals(s.getName()))
-                        .map(s -> s.getInstance()).findAny();
+                var _s = registry.getServices().stream().filter(s -> srvName.equals(s.getName())).findAny();
 
                 if (_s.isPresent()) {
                     return _s.get();

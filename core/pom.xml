@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.restheart</groupId>
     <artifactId>restheart-parent</artifactId>
-    <version>6.1.0-SNAPSHOT</version>
+    <version>7.0.0-SNAPSHOT</version>
   </parent>
 
   <groupId>org.restheart</groupId>
@@ -95,10 +95,6 @@
     <dependency>
       <groupId>io.dropwizard.metrics</groupId>
       <artifactId>metrics-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.github.spullara.mustache.java</groupId>
-      <artifactId>compiler</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.tika</groupId>
@@ -214,14 +210,9 @@
                 <exclude>META-INF/*.SF</exclude>
                 <exclude>META-INF/*.DSA</exclude>
                 <exclude>META-INF/*.RSA</exclude>
-              </excludes>
-            </filter>
-            <filter>
-              <!-- removing overlapping classes, defined also in guava -->
-              <artifact>com.google.guava:failureaccess</artifact>
-              <excludes>
-                <exclude>com/google/common/util/concurrent/internal/InternalFutureFailureAccess.class</exclude>
-                <exclude>com/google/common/util/concurrent/internal/InternalFutures.class</exclude>
+                <!-- folowing entries remove shade plugin warnings about overlapping module-info classes -->
+                <exclude>META-INF/versions/9/module-info.*</exclude>
+                <exclude>module-info.class</exclude>
               </excludes>
             </filter>
           </filters>

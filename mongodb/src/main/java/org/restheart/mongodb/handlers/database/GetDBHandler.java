@@ -22,7 +22,8 @@ package org.restheart.mongodb.handlers.database;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
-import java.util.List;
+import java.util.Optional;
+
 import org.bson.BsonArray;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -80,18 +81,16 @@ public class GetDBHandler extends PipelinedHandler {
             return;
         }
 
-        List<String> colls = dbsDAO.getCollectionNames(
-                request.getClientSession(),
-                request.getDBName());
+        var colls = dbsDAO.getCollectionNames(Optional.ofNullable(request.getClientSession()), request.getDBName());
 
         if (request.getPagesize() > 0) {
             var data = dbsDAO.getDatabaseData(
-                    request.getClientSession(),
-                    request.getDBName(),
-                    colls,
-                    request.getPage(),
-                    request.getPagesize(),
-                    request.isNoCache());
+                Optional.ofNullable(request.getClientSession()),
+                request.getDBName(),
+                colls,
+                request.getPage(),
+                request.getPagesize(),
+                request.isNoCache());
             response.setContent(data);
         } else {
             response.setContent(new BsonArray());

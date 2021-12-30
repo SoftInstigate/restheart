@@ -44,6 +44,10 @@ public class MetadataCachesSingleton {
     private static boolean enabled = false;
     private static final long MAX_CACHE_SIZE = 1_000;
 
+    private final Database dbsDAO;
+    private LoadingCache<String, BsonDocument> dbPropsCache = null;
+    private LoadingCache<String, BsonDocument> collectionPropsCache = null;
+
     /**
      *
      * @param conf
@@ -68,9 +72,6 @@ public class MetadataCachesSingleton {
     public static boolean isEnabled() {
         return enabled;
     }
-    private final Database dbsDAO;
-    private LoadingCache<String, BsonDocument> dbPropsCache = null;
-    private LoadingCache<String, BsonDocument> collectionPropsCache = null;
 
     /**
      * Default ctor
@@ -86,22 +87,17 @@ public class MetadataCachesSingleton {
         }
 
         if (enabled) {
-            this.dbPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
-                    (String key) -> {
-                        return this.dbsDAO.getDatabaseProperties(
-                                null, // no client session
-                                key);
-                    });
+            // no client session
+            this.dbPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, (String key) ->  this.dbsDAO.getDatabaseProperties(Optional.empty(),  key));
 
             this.collectionPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
-                    key -> {
-                        var dbNameAndCollectionName = key.split(SEPARATOR);
-                        return this.dbsDAO
-                                .getCollectionProperties(
-                                        null, // no client session
-                                        dbNameAndCollectionName[0],
-                                        dbNameAndCollectionName[1]);
-                    });
+                key -> {
+                    var dbNameAndCollectionName = key.split(SEPARATOR);
+                    return this.dbsDAO.getCollectionProperties(
+                        Optional.empty(), // no client session
+                        dbNameAndCollectionName[0],
+                        dbNameAndCollectionName[1]);
+                });
         }
     }
 
@@ -115,7 +111,7 @@ public class MetadataCachesSingleton {
             throw new IllegalStateException("tried to use disabled cache");
         }
 
-        Optional<BsonDocument> _dbProps = dbPropsCache.get(dbName);
+        var _dbProps = dbPropsCache.get(dbName);
 
         if (_dbProps != null) {
             if (_dbProps.isPresent()) {
@@ -153,7 +149,7 @@ public class MetadataCachesSingleton {
             throw new IllegalStateException("tried to use disabled cache");
         }
 
-        Optional<BsonDocument> _collProps = collectionPropsCache.get(dbName + SEPARATOR + collName);
+        var _collProps = collectionPropsCache.get(dbName + SEPARATOR + collName);
 
         if (_collProps != null) {
             if (_collProps.isPresent()) {
@@ -203,7 +199,6 @@ public class MetadataCachesSingleton {
     }
 
     private static class LocalCachesSingletonHolder {
-
         private static final MetadataCachesSingleton INSTANCE = new MetadataCachesSingleton(new DatabaseImpl());
 
         private LocalCachesSingletonHolder() {

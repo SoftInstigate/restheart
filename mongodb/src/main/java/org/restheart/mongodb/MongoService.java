@@ -25,6 +25,10 @@ import static io.undertow.Handlers.pathTemplate;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.util.PathMatcher;
+import io.undertow.util.PathTemplate;
+import io.undertow.util.PathTemplateMatch;
+import io.undertow.util.PathTemplateMatcher;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -82,15 +86,29 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
      * use the same logic to identify the correct MongoMount in order to
      * correctly init the BsonRequest
      */
-    private final PathMatcher<MongoMount> mongoMounts = new PathMatcher<>();
+    private PathMatcher<MongoMount> mongoMounts = null;
+    private PathTemplateMatcher<MongoMount> templateMongoMounts = null;
 
     @InjectPluginsRegistry
     public void init(PluginsRegistry registry) {
         this.myURI = myURI();
         this.pipeline = getBasePipeline();
 
-        // init mongoMounts
-        getMongoMounts().stream().forEachOrdered(mm -> mongoMounts.addPrefixPath(mm.uri, mm));
+        // check that all mounts are either all paths or all path templates
+        boolean allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
+                .stream()
+                .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
+                .allMatch(url -> isPathTemplate(url));
+
+        if (!allPathTemplates) {
+            // init mongoMounts
+            this.mongoMounts = new PathMatcher<>();
+            getMongoMounts().stream().forEachOrdered(mm -> mongoMounts.addPrefixPath(mm.uri, mm));
+        } else {
+            // init templateMongoMounts
+            this.templateMongoMounts = new PathTemplateMatcher<>();
+            getMongoMounts().stream().forEachOrdered(mm -> templateMongoMounts.add(mm.uri, mm));
+        }
     }
 
     @Override
@@ -118,14 +136,13 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     private PipelinedHandler getBasePipeline() throws ConfigurationException {
         var rootHandler = path();
 
-        var _pipeline = PipelinedWrappingHandler.wrap(
-                new ErrorHandler(
-                        PipelinedHandler.pipe(
-                                new CORSHandler(),
-                                new OptionsHandler(),
-                                ClientSessionInjector.build(),
-                                new ETagPolicyInjector(),
-                                RequestDispatcherHandler.getInstance())));
+        var _pipeline = PipelinedWrappingHandler.wrap(new ErrorHandler(
+            PipelinedHandler.pipe(
+                new CORSHandler(),
+                new OptionsHandler(),
+                ClientSessionInjector.build(),
+                new ETagPolicyInjector(),
+                RequestDispatcherHandler.getInstance())));
 
         // check that all mounts are either all paths or all path templates
         boolean allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
@@ -169,9 +186,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     }
 
     private static boolean isPathTemplate(final String url) {
-        return (url == null)
-                ? false
-                : url.contains("{") && url.contains("}");
+        return !PathTemplate.create(url).getParameterNames().isEmpty();
     }
 
     /**
@@ -184,11 +199,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         return e -> {
             var path = e.getRequestPath();
 
-            var mmm = mongoMounts.match(path);
+            var mm = mongoMountsMatch(e, path);
 
-            if (mmm != null && mmm.getValue() != null) {
-                var mm = mmm.getValue();
-
+            if (mm != null) {
                 MongoRequest.init(e, mm.uri, mm.resource);
             } else {
                 LOGGER.warn("No MongoDb resource bound for {}. "
@@ -197,6 +210,19 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
                 throw new BadRequestException(HttpStatus.SC_BAD_GATEWAY);
             }
         };
+    }
+
+    private MongoMount mongoMountsMatch(HttpServerExchange exchange, String path) {
+        if (mongoMounts != null) {
+            var mm = mongoMounts.match(path);
+            return mm != null ? mm.getValue() : null;
+        } else  if (templateMongoMounts != null) {
+            var tmm = templateMongoMounts.match(path);
+            exchange.putAttachment(PathTemplateMatch.ATTACHMENT_KEY, tmm);
+            return tmm != null ? tmm.getValue() : null;
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -226,11 +252,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
         MongoServiceConfiguration.get().getMongoMounts()
                 .stream()
-                .forEachOrdered(e -> {
-                    ret.add(new MongoMount(
-                            (String) e.get(MONGO_MOUNT_WHAT_KEY),
-                            resolveURI((String) e.get(MONGO_MOUNT_WHERE_KEY))));
-                });
+                .forEachOrdered(e ->ret.add(new MongoMount((String) e.get(MONGO_MOUNT_WHAT_KEY), resolveURI((String) e.get(MONGO_MOUNT_WHERE_KEY)))));
 
         return ret;
     }
@@ -281,10 +303,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     /**
      * helper class to store mongo mounts info
      */
-    private static class MongoMount {
-        public String resource;
-        public String uri;
-
+    private static record MongoMount(String resource, String uri) {
         public MongoMount(String resource, String uri) {
             if (uri == null) {
                 throw new IllegalArgumentException("'where' cannot be null. check your 'mongo-mounts'.");
