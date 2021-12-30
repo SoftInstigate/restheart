@@ -57,7 +57,13 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
 
             AggregateIterable<BsonDocument> res = null;
             try {
-                var aggregationList =  aggregation.getResolvedStagesAsList(environment);
+                var aggregationList = aggregation.getResolvedStagesAsList(environment);
+                
+                // If user does not pass any stage return an empty array
+                if(aggregationList.size() == 0 ) {
+                    return new BsonArray();
+                }
+                
                 res = mongoClient
                         .getDatabase(aggregation.getDb().getValue())
                         .getCollection(aggregation.getCollection().getValue())
