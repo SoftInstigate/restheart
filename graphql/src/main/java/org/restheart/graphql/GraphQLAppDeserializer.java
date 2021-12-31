@@ -67,7 +67,7 @@ public class GraphQLAppDeserializer {
         }
 
         try {
-            
+
             return GraphQLApp.newBuilder().appDescriptor(descriptor).schema(schema).mappings(mappingsMap).build();
 
         } catch (IllegalStateException | IllegalArgumentException e) {
@@ -182,7 +182,6 @@ public class GraphQLAppDeserializer {
 
                                 queryMappingBuilder.fieldName(field);
 
-                                // Check at the beginning that 'db' and 'collection' key exists and are strings.
                                 queryMappingBuilder.db(fieldMappingDoc.getString("db").getValue());
                                 queryMappingBuilder.collection(fieldMappingDoc.getString("collection").getValue());
 
@@ -266,9 +265,9 @@ public class GraphQLAppDeserializer {
                             throw new GraphQLIllegalAppDefinitionException("Error with mappings of type: '" + type
                                     + "'. A field mapping must be of type 'STRING' but was "
                                     + fieldMapping.getBsonType());
-                    } // end switch
+                    }
 
-                } // end for
+                }
 
                 TypeMapping typeMapping = new ObjectMapping(type, typeMappings);
                 mappingMap.put(type, typeMapping);

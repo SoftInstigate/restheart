@@ -35,7 +35,7 @@ import graphql.schema.DataFetchingEnvironment;
 
 public abstract class FieldMapping {
 
-    private final String OPERATORS[] = {"$arg", "$fk"};
+    private final String OPERATORS[] = { "$arg", "$fk" };
 
     protected final String fieldName;
 
@@ -48,26 +48,12 @@ public abstract class FieldMapping {
     }
 
     public abstract GraphQLDataFetcher getDataFetcher();
-    
 
     public BsonValue searchOperators(BsonDocument source, DataFetchingEnvironment env)
             throws QueryVariableNotBoundException {
 
-
-        // {
-        //     "$match": {
-        //         "movie_id": {
-        //             "$fk": "_id"
-        //         }
-        //     }
-        // }
-
-        // Check if source document contains any operator
-        // If it does, interpolate
-        // Else iterate on sub-document and check if any contains an operator
-
         for (String operator : this.OPERATORS) {
-            
+
             if (source.containsKey(operator)) {
 
                 String valueToInterpolate = source.getString(operator).getValue();
@@ -122,14 +108,13 @@ public abstract class FieldMapping {
 
                 result.put(key, array);
 
-            } else 
+            } else
                 result.put(key, source.get(key));
-            
+
         }
 
         return result;
     }
-
 
     public BsonValue getForeignValue(BsonValue sourceDocument, String path) throws QueryVariableNotBoundException {
 
