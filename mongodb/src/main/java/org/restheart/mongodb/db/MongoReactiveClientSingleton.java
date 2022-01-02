@@ -54,6 +54,14 @@ public class MongoReactiveClientSingleton {
     }
 
     /**
+     * alias for getInstance()
+     * @return the MongoReactiveClientSingleton
+     */
+    public static MongoReactiveClientSingleton get() {
+        return getInstance();
+    }
+
+    /**
      *
      * @return
      */
@@ -102,6 +110,14 @@ public class MongoReactiveClientSingleton {
     }
 
     /**
+     * alias for getClient()
+     * @return the MongoClient
+     */
+    public MongoClient client() {
+        return getClient();
+    }
+
+    /**
      *
      * @return
      */
@@ -115,9 +131,29 @@ public class MongoReactiveClientSingleton {
 
     private static class MongoDBClientSingletonHolder {
 
-        private static final MongoReactiveClientSingleton INSTANCE = new MongoReactiveClientSingleton();
+        private static final MongoReactiveClientSingleton INSTANCE;
 
-        private MongoDBClientSingletonHolder() {
+        // make sure the Singleton is a Singleton even in a multi-classloader environment
+        // credits to https://stackoverflow.com/users/145989/ondra-Žižka
+        // https://stackoverflow.com/a/47445573/4481670
+        static {
+            // There should be just one system class loader object in the whole JVM.
+            synchronized(ClassLoader.getSystemClassLoader()) {
+                var sysProps = System.getProperties();
+                // The key is a String, because the .class object would be different across classloaders.
+                var singleton = (MongoReactiveClientSingleton) sysProps.get(MongoReactiveClientSingleton.class.getName());
+
+                // Some other class loader loaded MongoClientSingleton earlier.
+                if (singleton != null) {
+                    INSTANCE = singleton;
+                }
+                else {
+                    // Otherwise this classloader is the first one, let's create a singleton.
+                    // Make sure not to do any locking within this.
+                    INSTANCE = new MongoReactiveClientSingleton();
+                    System.getProperties().put(MongoClientSingleton.class.getName(), INSTANCE);
+                }
+            }
         }
     }
 }
