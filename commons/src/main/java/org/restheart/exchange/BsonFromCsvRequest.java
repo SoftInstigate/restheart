@@ -35,7 +35,7 @@ import org.restheart.utils.ChannelReader;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
-import static org.restheart.utils.BsonUtils.documentBuilder;
+import static org.restheart.utils.BsonUtils.document;
 
 /**
  * ServiceRequest implementation backed by BsonValue and initialized from csv
@@ -111,8 +111,7 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
                 if (isHeader) {
                     cols = vals;
                 } else {
-                    var doc = documentBuilder().put("_etag", new ObjectId()).build();
-                    // var doc = new BsonDocument("_etag", new BsonObjectId());
+                    var doc = document().put("_etag", new ObjectId()).get();
 
                     int unnamedProps = 0;
 

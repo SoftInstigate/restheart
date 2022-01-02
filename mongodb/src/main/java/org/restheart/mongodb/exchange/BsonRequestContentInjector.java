@@ -391,7 +391,7 @@ public class BsonRequestContentInjector {
                         --------------------------------------------------------------------------------------------
                         | insert | POST   | /coll       | insertOne                       | document               |
                         | insert | PUT    | /coll/docid | insertOne                       | document               |
-                        | insert | PATCH  | /coll/docid | insertOne                       | document               | <= this is redundant
+                        | insert | PATCH  | /coll/docid | findOneAndUpdate(upsert:true)*  | update operator expr   |
                         --------------------------------------------------------------------------------------------
                         | update | POST   | /coll       | findOneAndReplace(upsert:false) | document               |
                         | update | PUT    | /coll/docid | findOneAndReplace(upsert:false) | document               |
@@ -401,6 +401,7 @@ public class BsonRequestContentInjector {
                         | upsert | PUT    | /coll/docid | findOneAndReplace(upsert:true)  | document               |
                         | upsert | PATCH  | /coll/docid | findOneAndUpdate(upsert:true)   | update operator expr   |
                         --------------------------------------------------------------------------------------------
+                        *) uses a find condition that won't match any existing document, making sure the operation is an insert
             """;
 
         LOGGER.trace(

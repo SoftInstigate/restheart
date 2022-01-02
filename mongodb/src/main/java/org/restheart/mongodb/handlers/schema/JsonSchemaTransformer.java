@@ -179,10 +179,10 @@ public class JsonSchemaTransformer extends PipelinedHandler {
      * @param schema
      */
     static void unescapeSchema(BsonDocument schema) {
-        BsonValue unescaped = BsonUtils.unescapeKeys(schema);
+        var unescaped = BsonUtils.unescapeKeys(schema);
 
         if (unescaped != null && unescaped.isDocument()) {
-            List<String> keys = Lists.newArrayList(schema.keySet().iterator());
+            var keys = Lists.newArrayList(schema.keySet().iterator());
 
             keys.stream().forEach(f -> schema.remove(f));
 

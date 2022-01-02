@@ -178,8 +178,7 @@ public class Configuration {
             level = Level.valueOf(_logLevel);
         } catch (Exception e) {
             if (!silent) {
-                LOGGER.info("wrong value for parameter {}: {}, using its default value {}", "log-level", _logLevel,
-                        "INFO");
+                LOGGER.info("wrong value for parameter {}: {}, using its default value {}", "log-level", _logLevel, "INFO");
             }
             level = Level.INFO;
         }

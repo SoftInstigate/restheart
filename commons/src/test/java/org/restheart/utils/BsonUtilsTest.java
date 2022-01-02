@@ -24,6 +24,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
+import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.BsonNull;
@@ -42,6 +45,8 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static org.restheart.utils.BsonUtils.array;
+import static org.restheart.utils.BsonUtils.document;
 
 /**
  *
@@ -850,10 +855,8 @@ public class BsonUtilsTest {
 
         Assert.assertTrue(unflatten.asDocument().get("child1").isDocument());
         Assert.assertTrue(unflatten.asDocument().get("child2").isDocument());
-        Assert.assertTrue(unflatten.asDocument().get("child1")
-                .asDocument().containsKey("grandchild1"));
-        Assert.assertTrue(unflatten.asDocument().get("child2")
-                .asDocument().containsKey("grandchild2"));
+        Assert.assertTrue(unflatten.asDocument().get("child1").asDocument().containsKey("grandchild1"));
+        Assert.assertTrue(unflatten.asDocument().get("child2").asDocument().containsKey("grandchild2"));
     }
 
     /**
@@ -889,18 +892,13 @@ public class BsonUtilsTest {
      */
     @Test
     public void testParseLong2() {
-        System.out.println(BsonUtils.toJson(
-                BsonUtils.parse(
-                        "{'n':"+4294967296l+"}")));
+        System.out.println(BsonUtils.toJson(BsonUtils.parse("{'n':"+4294967296l+"}")));
 
-        var ls = BsonUtils.toJson(
-                BsonUtils.parse(
-                        "{'n':"+(5999999999l)+"}"));
+        var ls = BsonUtils.toJson(BsonUtils.parse("{'n':"+(5999999999l)+"}"));
 
         System.out.println(ls);
 
-        System.out.println(BsonUtils.toJson(
-                BsonUtils.parse(ls)));
+        System.out.println(BsonUtils.toJson(BsonUtils.parse(ls)));
     }
 
     /**
@@ -908,9 +906,7 @@ public class BsonUtilsTest {
      */
     @Test
     public void testParseInt() {
-        System.out.println(BsonUtils.toJson(
-                BsonUtils.parse(
-                        "{'n':"+10+"}")));
+        System.out.println(BsonUtils.toJson(BsonUtils.parse("{'n':"+10+"}")));
     }
 
     /**
@@ -918,8 +914,29 @@ public class BsonUtilsTest {
      */
     @Test
     public void testParseDouble() {
-        System.out.println(BsonUtils.toJson(
-                BsonUtils.parse(
-                        "{'n':{'$numberDouble':'11111111158873916063432424232349289023842309842039587209357329578573489573958734985753498573495743957349839'}}")));
+        System.out.println(BsonUtils.toJson(BsonUtils.parse("{'n':{'$numberDouble':'11111111158873916063432424232349289023842309842039587209357329578573489573958734985753498573495743957349839'}}")));
+    }
+
+    @Test
+    public void testDocumentArrayBuilder() {
+        var uriOrNameCondBuilder = array()
+            .add(document().put("APP_URI_FIELD", "appURI"))
+            .add(document().put("APP_NAME_FIELD", "appURI"));
+
+        var conditionsBuilder = array()
+            .add(document().put("$or", uriOrNameCondBuilder))
+            .add(document().put("APP_ENABLED_FIELD", true));
+
+        var findArgBuilder = document().put("$and", conditionsBuilder);
+
+        var conditions = new BsonArray();
+        var uriOrNameCond = new BsonArray();
+        uriOrNameCond.add(new BsonDocument("APP_URI_FIELD", new BsonString("appURI")));
+        uriOrNameCond.add(new BsonDocument("APP_NAME_FIELD", new BsonString("appURI")));
+        conditions.add(new BsonDocument("$or", uriOrNameCond));
+        conditions.add(new BsonDocument("APP_ENABLED_FIELD", new BsonBoolean(true)));
+        var findArg = new BsonDocument("$and",conditions);
+
+        Assert.assertTrue("checking array with docs created with builder equal to what created with constructors", findArgBuilder.get().toJson().equals(findArg.toJson()));
     }
 }

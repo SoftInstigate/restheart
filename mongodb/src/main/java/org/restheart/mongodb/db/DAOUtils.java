@@ -25,6 +25,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.BulkWriteOptions;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.exists;
 import com.mongodb.client.model.FindOneAndReplaceOptions;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.InsertOneModel;
@@ -126,7 +127,7 @@ public class DAOUtils {
      */
     public final static BulkWriteOptions BWO_NOT_ORDERED = new BulkWriteOptions().ordered(false);
 
-    private static final Bson IMPOSSIBLE_CONDITION = eq("_etag", new ObjectId());
+    private static final Bson IMPOSSIBLE_CONDITION = exists("_id", false);
 
     /**
      *
@@ -202,10 +203,9 @@ public class DAOUtils {
      * @param filter
      * @param shardKeys
      * @param data
-     * @param replace
-     * @param upsert if true then we will flatten any nested BsonDocuments
-     * into dot notation to ensure only the requested fields are updated.
-     * @param allowUpsert whether or not to allow upsert mode
+     * @param replace true to relate the document with findOneAndReplate, false to update with findOneAndUpdate
+     * @param deepPatching
+     * @param writeMode
      * @return the new or old document depending on returnNew
      */
     public static OperationResult writeDocument(
@@ -261,6 +261,14 @@ public class DAOUtils {
             }
 
             BsonDocument newDocument;
+
+            if (replace) {
+                // this is a PUT or POST
+                LOGGER.debug("******************* PUT or POST");
+            } else {
+                // this is a patch
+                LOGGER.debug("******************* PATCH");
+            }
 
             try {
                 resolveCurrentDateOperator(data);
