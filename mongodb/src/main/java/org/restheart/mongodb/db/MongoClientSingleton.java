@@ -70,6 +70,15 @@ public class MongoClientSingleton {
         return initialized;
     }
 
+
+    /**
+     * alias for getInstance()
+     * @return the MongoClientSingleton
+     */
+    public static MongoClientSingleton get() {
+        return getInstance();
+    }
+
     /**
      *
      * @return
@@ -182,6 +191,14 @@ public class MongoClientSingleton {
     }
 
     /**
+     * alias for getClient()
+     * @return the MongoClient
+     */
+    public MongoClient client() {
+        return getClient();
+    }
+
+    /**
      *
      * @return
      */
@@ -197,11 +214,43 @@ public class MongoClientSingleton {
         return this.mongoClient;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        // it is a singleton!
+        return true;
+    }
+
     private static class MongoClientSingletonHolder {
+        private static final MongoClientSingleton INSTANCE;
 
-        private static final MongoClientSingleton INSTANCE = new MongoClientSingleton();
+        // make sure the Singleton is a Singleton even in a multi-classloader environment
+        // credits to https://stackoverflow.com/users/145989/ondra-Žižka
+        // https://stackoverflow.com/a/47445573/4481670
+        static {
+            // There should be just one system class loader object in the whole JVM.
+            synchronized(ClassLoader.getSystemClassLoader()) {
+                var sysProps = System.getProperties();
+                // The key is a String, because the .class object would be different across classloaders.
+                var singleton = (MongoClientSingleton) sysProps.get(MongoClientSingleton.class.getName());
 
-        private MongoClientSingletonHolder() {
+                // Some other class loader loaded MongoClientSingleton earlier.
+                if (singleton != null) {
+                    INSTANCE = singleton;
+                }
+                else {
+                    // Otherwise this classloader is the first one, let's create a singleton.
+                    // Make sure not to do any locking within this.
+                    INSTANCE = new MongoClientSingleton();
+                    System.getProperties().put(MongoClientSingleton.class.getName(), INSTANCE);
+                }
+            }
         }
     }
 }
