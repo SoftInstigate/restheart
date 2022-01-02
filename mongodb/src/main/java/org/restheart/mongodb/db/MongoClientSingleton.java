@@ -114,7 +114,7 @@ public class MongoClientSingleton {
                 public void apply(final ConnectionPoolSettings.Builder builder) {
                     builder.minSize(64).maxSize(512);
                 }})
-            .applicationName("restheart")
+            .applicationName("restheart (sync)")
             .applyConnectionString(mongoUri)
             .build();
 
