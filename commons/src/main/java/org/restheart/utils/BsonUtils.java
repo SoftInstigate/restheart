@@ -945,7 +945,24 @@ public class BsonUtils {
     }
 
     /**
-     * helper method to build a BsonDocument with a DocumentBuilder
+     * get a DocumentBuilder that helps building BsonDocument
+     * @return the DocumentBuilder
+     */
+    public static DocumentBuilder documentBuilder() {
+        return DocumentBuilder.builder();
+    }
+
+    /**
+     * get a ArrayBuilder that helps building BsonArray
+     * @return the ArrayBuilder
+     */
+    public static ArrayBuilder arrayBuilder() {
+        return ArrayBuilder.builder();
+    }
+
+    /**
+     * alias for documentBuilder()
+     *
      * @return the DocumentBuilder
      */
     public static DocumentBuilder document() {
@@ -953,7 +970,8 @@ public class BsonUtils {
     }
 
     /**
-     * helper method to build a BsonArray with an ArrayBuilder
+     * alias for arrayBuilder()
+     *
      * @return the ArrayBuilder
      */
     public static ArrayBuilder array() {
