@@ -111,8 +111,7 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
                 if (isHeader) {
                     cols = vals;
                 } else {
-                    var doc = documentBuilder().put("_etag", new ObjectId()).build();
-                    // var doc = new BsonDocument("_etag", new BsonObjectId());
+                    var doc = documentBuilder().put("_etag", new ObjectId()).get();
 
                     int unnamedProps = 0;
 

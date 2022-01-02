@@ -124,7 +124,6 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
      * @return
      */
     public TxnClientSessionImpl getTxnClientSession(UUID sid, Txn txnServerStatus) {
-        var mClient = MongoClientSingleton.getInstance().getClient();
         var options = Sid.getSessionOptions(sid);
 
         var cso = ClientSessionOptions
@@ -135,9 +134,10 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
         var cs = createClientSession(
                 sid,
                 cso,
-                mClient.getReadConcern(),
-                mClient.getWriteConcern(),
-                mClient.getReadPreference(),
+                // mClient.getReadConcern(),
+                // mClient.getWriteConcern(),
+                // mClient.getReadPreference(),
+                null,null,null,
                 null);
 
         if (txnServerStatus != null) {

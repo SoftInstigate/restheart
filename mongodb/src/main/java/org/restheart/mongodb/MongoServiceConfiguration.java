@@ -21,7 +21,8 @@
 package org.restheart.mongodb;
 
 import com.google.common.collect.Maps;
-import com.mongodb.MongoClientURI;
+import com.mongodb.ConnectionString;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -69,7 +70,7 @@ public class MongoServiceConfiguration {
     private boolean silent = false;
     private final String instanceBaseURL;
     private final REPRESENTATION_FORMAT defaultRepresentationFormat;
-    private final MongoClientURI mongoUri;
+    private final ConnectionString mongoUri;
     private final List<Map<String, Object>> mongoMounts;
     private final Map<String, Map<String, Object>> pluginsArgs;
     private final boolean localCacheEnabled;
@@ -121,7 +122,7 @@ public class MongoServiceConfiguration {
 
         Map<String, Object> conf = null;
 
-        try (FileInputStream fis = new FileInputStream(confFilePath.toFile())) {
+        try (var fis = new FileInputStream(confFilePath.toFile())) {
             conf = (Map<String, Object>) yaml.load(fis);
         } catch (FileNotFoundException fne) {
             throw new ConfigurationException("Configuration file not found", fne);
@@ -211,11 +212,18 @@ public class MongoServiceConfiguration {
             defaultRepresentationFormat = rf;
         }
 
+        ConnectionString _mongoUri;
+
         try {
-            mongoUri = new MongoClientURI(getAsStringOrDefault(conf, MONGO_URI_KEY, DEFAULT_MONGO_URI));
+            // check the mongo uri
+            _mongoUri = new ConnectionString(getAsStringOrDefault(conf, MONGO_URI_KEY, DEFAULT_MONGO_URI));
         } catch (IllegalArgumentException iae) {
-            throw new ConfigurationException("wrong parameter " + MONGO_URI_KEY, iae);
+            LOGGER.error("Wrong parameter {} in the configuration file: {}, using its default value {}", MONGO_URI_KEY, iae.getMessage(), DEFAULT_MONGO_URI);
+            //throw new ConfigurationException("Wrong  group {} not specified in the configuration file, using its default value {}" + MONGO_URI_KEY, iae);
+            _mongoUri = new ConnectionString(DEFAULT_MONGO_URI);
         }
+
+        this.mongoUri = _mongoUri;
 
         List<Map<String, Object>> mongoMountsDefault = new ArrayList<>();
         Map<String, Object> defaultMongoMounts = new HashMap<>();
@@ -814,7 +822,7 @@ public class MongoServiceConfiguration {
     /**
      * @return the mongoUri
      */
-    public MongoClientURI getMongoUri() {
+    public ConnectionString getMongoUri() {
         return mongoUri;
     }
 

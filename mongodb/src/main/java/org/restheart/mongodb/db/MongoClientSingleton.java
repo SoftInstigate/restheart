@@ -24,8 +24,12 @@ import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.MAGENTA;
 import static org.fusesource.jansi.Ansi.Color.RED;
 
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.connection.ConnectionPoolSettings;
+import com.mongodb.Block;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoCommandException;
 
 import org.bson.BsonDocument;
@@ -41,7 +45,7 @@ import org.slf4j.LoggerFactory;
 public class MongoClientSingleton {
 
     private static boolean initialized = false;
-    private static MongoClientURI mongoUri;
+    private static ConnectionString mongoUri;
     private static PluginsRegistry pluginsRegistry;
     private String serverVersion = null;
     private boolean replicaSet = false;
@@ -53,7 +57,7 @@ public class MongoClientSingleton {
      * @param uri
      * @param pr
      */
-    public static void init(MongoClientURI uri, PluginsRegistry pr) {
+    public static void init(ConnectionString uri, PluginsRegistry pr) {
         mongoUri = uri;
         pluginsRegistry = pr;
         initialized = true;
@@ -103,7 +107,18 @@ public class MongoClientSingleton {
 
         LOGGER.info("Connecting to MongoDB...");
 
-        mongoClient = new MongoClient(mongoUri);
+        // TODO add minSize and maxSize to configuration
+        var settings = MongoClientSettings.builder()
+            .applyToConnectionPoolSettings(new Block<ConnectionPoolSettings.Builder>() {
+                @Override
+                public void apply(final ConnectionPoolSettings.Builder builder) {
+                    builder.minSize(64).maxSize(512);
+                }})
+            .applicationName("restheart")
+            .applyConnectionString(mongoUri)
+            .build();
+
+        mongoClient = MongoClients.create(settings);
 
         // invoke Plugins methods annotated with @InjectMongoClient
         // passing them the MongoClient

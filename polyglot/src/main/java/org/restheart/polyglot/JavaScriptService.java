@@ -25,7 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;

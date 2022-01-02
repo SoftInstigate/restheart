@@ -1,6 +1,6 @@
 package org.restheart.graphql.dataloaders;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Facet;
 import org.bson.BsonArray;

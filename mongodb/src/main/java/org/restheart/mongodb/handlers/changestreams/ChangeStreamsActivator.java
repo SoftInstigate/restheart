@@ -20,8 +20,10 @@
  */
 package org.restheart.mongodb.handlers.changestreams;
 
-import com.mongodb.MongoClientURI;
 import java.util.Map;
+
+import com.mongodb.ConnectionString;
+
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.db.MongoClientSingleton;
@@ -46,11 +48,11 @@ import org.slf4j.LoggerFactory;
 public class ChangeStreamsActivator implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChangeStreamsActivator.class);
 
-    MongoClientURI mongoURI;
+    ConnectionString mongoURI;
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void setConf(Map<String, Object> args) {
-        this.mongoURI = new MongoClientURI(argValue(args, "mongo-uri"));
+        this.mongoURI = new ConnectionString(argValue(args, "mongo-uri"));
     }
 
     @Override

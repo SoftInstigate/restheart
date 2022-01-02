@@ -20,7 +20,7 @@
  */
 package org.restheart.mongodb.interceptors;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;

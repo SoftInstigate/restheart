@@ -21,7 +21,7 @@
 package org.restheart.graphql;
 
 import com.google.gson.Gson;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;

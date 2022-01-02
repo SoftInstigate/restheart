@@ -25,7 +25,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import static com.mongodb.client.model.Filters.eq;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;

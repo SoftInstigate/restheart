@@ -20,7 +20,7 @@
  */
 package org.restheart.security.utils;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCursor;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
@@ -65,7 +65,7 @@ public class MongoUtils {
         pc.insertOne(documentBuilder()
             .put("_id", new BsonString("_properties"))
             .put("_etag", new BsonObjectId())
-            .build());
+            .get());
     }
 
     public void createCollection(final String dbName, final String collName) {
@@ -74,7 +74,7 @@ public class MongoUtils {
         pc.insertOne(documentBuilder()
             .put("_id", new BsonString("_properties.".concat(collName)))
             .put("_etag", new BsonObjectId())
-            .build());
+            .get());
 
         client.getDatabase(dbName).createCollection(collName);
     }

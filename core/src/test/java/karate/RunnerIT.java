@@ -23,6 +23,7 @@ package karate;
 import static org.junit.Assert.assertEquals;
 import com.intuit.karate.Runner;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.restheart.test.integration.AbstactIT;
 
@@ -31,7 +32,8 @@ import org.restheart.test.integration.AbstactIT;
  * to enable them, remove 'ignore' tag from streams.feature
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-
+// TODO: remove ignore tag
+ @Ignore
 public class RunnerIT extends AbstactIT {
     @Test
     public void run() {

@@ -37,7 +37,7 @@
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver-legacy</artifactId>
+      <artifactId>mongodb-driver-sync</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

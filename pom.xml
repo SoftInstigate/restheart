@@ -186,7 +186,7 @@
                  this is needed to for native-image build to work -->
             <dependency>
                 <groupId>org.mongodb</groupId>
-                <artifactId>mongodb-driver-legacy</artifactId>
+                <artifactId>mongodb-driver-sync</artifactId>
                 <version>4.3.2</version>
             </dependency>
             <dependency>

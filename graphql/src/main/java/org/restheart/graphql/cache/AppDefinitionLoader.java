@@ -20,7 +20,8 @@
  */
 package org.restheart.graphql.cache;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
+
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -52,10 +53,10 @@ public class AppDefinitionLoader {
             .add(new BsonDocument(APP_NAME_FIELD, new BsonString(appURI)));
 
         var conditions = arrayBuilder()
-            .add(new BsonDocument("$or", uriOrNameCond.build()))
+            .add(new BsonDocument("$or", uriOrNameCond.get()))
             .add(new BsonDocument(APP_ENABLED_FIELD, new BsonBoolean(true)));
 
-        var findArg = new BsonDocument("$and", conditions.build());
+        var findArg = new BsonDocument("$and", conditions.get());
 
         var appDefinition = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class).find(findArg).first();
 

@@ -68,6 +68,6 @@ public class BsonResponse extends ServiceResponse<BsonValue> {
             db.put("exception", new BsonString(t.getMessage()));
         }
 
-        setContent(db.build());
+        setContent(db.get());
     }
 }
