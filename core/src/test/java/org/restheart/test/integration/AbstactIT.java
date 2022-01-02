@@ -22,7 +22,8 @@ package org.restheart.test.integration;
 
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import com.mongodb.MongoClientURI;
+import com.mongodb.ConnectionString;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -80,7 +81,7 @@ public abstract class AbstactIT {
     /**
      *
      */
-    public static final MongoClientURI MONGO_URI = new MongoClientURI("mongodb://127.0.0.1");
+    public static final ConnectionString MONGO_URI = new ConnectionString("mongodb://127.0.0.1");
 
     static {
         LOG.info("BASE_URL={}", HTTP_HOST.toURI());
@@ -198,7 +199,7 @@ public abstract class AbstactIT {
                 .stream()
                 .filter(db -> db.startsWith(TEST_DB_PREFIX))
                 .forEach(dbToDelete -> {
-                    MongoClientSingleton.getInstance().getClient().dropDatabase(dbToDelete);
+                    MongoClientSingleton.getInstance().getClient().getDatabase(dbToDelete).drop();
                     deleted.add(dbToDelete);
                 });
 

@@ -135,9 +135,10 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
         var cs = createClientSession(
                 sid,
                 cso,
-                mClient.getReadConcern(),
-                mClient.getWriteConcern(),
-                mClient.getReadPreference(),
+                // mClient.getReadConcern(),
+                // mClient.getWriteConcern(),
+                // mClient.getReadPreference(),
+                null,null,null,
                 null);
 
         if (txnServerStatus != null) {

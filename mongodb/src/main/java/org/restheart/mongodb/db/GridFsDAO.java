@@ -20,7 +20,7 @@
  */
 package org.restheart.mongodb.db;
 import com.mongodb.DuplicateKeyException;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.MongoGridFSException;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;

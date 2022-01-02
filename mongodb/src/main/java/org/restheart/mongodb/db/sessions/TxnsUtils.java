@@ -21,8 +21,12 @@
 package org.restheart.mongodb.db.sessions;
 
 import com.mongodb.ClientSessionOptions;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.MongoQueryException;
+import com.mongodb.ReadConcern;
+import com.mongodb.ReadPreference;
+import com.mongodb.WriteConcern;
+
 import static com.mongodb.client.model.Filters.eq;
 import java.util.UUID;
 import org.restheart.mongodb.db.MongoClientSingleton;
@@ -55,9 +59,13 @@ public class TxnsUtils {
         var cs = TxnClientSessionFactory.getInstance().createClientSession(
                 sid,
                 cso,
-                MCLIENT.getReadConcern(),
-                MCLIENT.getWriteConcern(),
-                MCLIENT.getReadPreference(),
+                ReadConcern.DEFAULT,
+                WriteConcern.MAJORITY,
+                ReadPreference.primary(),
+                // TODO!
+                // MCLIENT.getReadConcern(),
+                // MCLIENT.getWriteConcern(),
+                // MCLIENT.getReadPreference(),
                 null);
 
         // set txnId on ServerSession

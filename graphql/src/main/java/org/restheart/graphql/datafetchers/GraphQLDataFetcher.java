@@ -1,6 +1,6 @@
 package org.restheart.graphql.datafetchers;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import graphql.schema.DataFetcher;
 import org.restheart.graphql.models.FieldMapping;
 

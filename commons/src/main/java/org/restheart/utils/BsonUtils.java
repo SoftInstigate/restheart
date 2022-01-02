@@ -21,7 +21,8 @@
 package org.restheart.utils;
 
 import com.google.common.collect.Sets;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
+import com.mongodb.MongoClientSettings;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -58,6 +59,7 @@ import org.bson.codecs.BsonValueCodecProvider;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.json.Converter;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
@@ -711,6 +713,8 @@ public class BsonUtils {
         }
     }
 
+    public static final CodecRegistry DEFAULT_CODEC_REGISTRY = MongoClientSettings.getDefaultCodecRegistry();
+
     /**
      *
      * @param map
@@ -723,7 +727,7 @@ public class BsonUtils {
 
         var d = new Document(map);
 
-        return d.toBsonDocument(BsonDocument.class, MongoClient.getDefaultCodecRegistry());
+        return d.toBsonDocument(BsonDocument.class, DEFAULT_CODEC_REGISTRY);
     }
 
     private static final String _UPDATE_OPERATORS[] = {

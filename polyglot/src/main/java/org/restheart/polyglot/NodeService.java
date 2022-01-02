@@ -30,7 +30,7 @@ import java.util.concurrent.Future;
 
 import com.google.common.collect.Maps;
 import com.google.gson.JsonParser;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.StringService;

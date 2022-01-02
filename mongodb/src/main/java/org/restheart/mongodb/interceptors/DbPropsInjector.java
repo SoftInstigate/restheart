@@ -22,7 +22,7 @@ package org.restheart.mongodb.interceptors;
 
 import java.util.Optional;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.exchange.MongoRequest;

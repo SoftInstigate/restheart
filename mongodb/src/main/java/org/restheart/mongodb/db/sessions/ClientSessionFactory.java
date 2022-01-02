@@ -21,7 +21,7 @@
 package org.restheart.mongodb.db.sessions;
 
 import com.mongodb.ClientSessionOptions;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
@@ -126,9 +126,14 @@ public class ClientSessionFactory {
 
         return createClientSession(sid,
                 cso,
-                mClient.getReadConcern(),
-                mClient.getWriteConcern(),
-                mClient.getReadPreference());
+                ReadConcern.DEFAULT,
+                WriteConcern.MAJORITY,
+                ReadPreference.primary()
+                // TODO!
+                // mClient.getReadConcern(),
+                // mClient.getWriteConcern(),
+                // mClient.getReadPreference())
+            );
     }
 
     ClientSessionImpl createClientSession(

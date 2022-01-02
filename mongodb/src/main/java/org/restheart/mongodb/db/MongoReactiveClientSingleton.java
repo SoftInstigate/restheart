@@ -20,7 +20,7 @@
  */
 package org.restheart.mongodb.db;
 
-import com.mongodb.MongoClientURI;
+import com.mongodb.ConnectionString;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import java.net.UnknownHostException;
@@ -36,7 +36,7 @@ public class MongoReactiveClientSingleton {
 
     private static boolean initialized = false;
 
-    private static MongoClientURI mongoUri;
+    private static ConnectionString mongoUri;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoReactiveClientSingleton.class);
 
@@ -44,7 +44,7 @@ public class MongoReactiveClientSingleton {
      *
      * @param uri
      */
-    public static void init(MongoClientURI uri) {
+    public static void init(ConnectionString uri) {
         mongoUri = uri;
         // in case of error, e.g. invalid mongo uri, it's null
         initialized = uri != null;
