@@ -30,19 +30,25 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
+import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
+import org.bson.BsonDecimal128;
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentReader;
+import org.bson.BsonDouble;
 import org.bson.BsonInt32;
+import org.bson.BsonInt64;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonJavaScript;
 import org.bson.BsonMaxKey;
 import org.bson.BsonMinKey;
+import org.bson.BsonNull;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -58,6 +64,7 @@ import org.bson.json.JsonParseException;
 import org.bson.json.JsonReader;
 import org.bson.json.JsonWriterSettings;
 import org.bson.json.StrictJsonWriter;
+import org.bson.types.Decimal128;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,9 +77,7 @@ public class BsonUtils {
 
     static final Logger LOGGER = LoggerFactory.getLogger(BsonUtils.class);
 
-    private static final BsonArrayCodec BSON_ARRAY_CODEC = new BsonArrayCodec(
-            CodecRegistries.fromProviders(
-                    new BsonValueCodecProvider()));
+    private static final BsonArrayCodec BSON_ARRAY_CODEC = new BsonArrayCodec(CodecRegistries.fromProviders(new BsonValueCodecProvider()));
 
     private static final String ESCAPED_DOLLAR = "_$";
     private static final String ESCAPED_DOT = "::";
@@ -97,24 +102,20 @@ public class BsonUtils {
         }
 
         if (json.isDocument()) {
-            BsonDocument ret = new BsonDocument();
+            var ret = new BsonDocument();
 
             json.asDocument().keySet().stream().forEach(k -> {
-                String newKey = k.startsWith(ESCAPED_DOLLAR)
-                        ? k.substring(1)
-                        : k;
+                var newKey = k.startsWith(ESCAPED_DOLLAR) ? k.substring(1) : k;
                 newKey = newKey.replaceAll(ESCAPED_DOT, ".");
 
-                BsonValue value = json.asDocument().get(k);
+                var value = json.asDocument().get(k);
 
                 if (value.isDocument()) {
                     ret.put(newKey, unescapeKeys(value));
                 } else if (value.isArray()) {
-                    BsonArray newList = new BsonArray();
+                    var newList = new BsonArray();
 
-                    value.asArray().stream().forEach(v -> {
-                        newList.add(unescapeKeys(v));
-                    });
+                    value.asArray().stream().forEach(v -> newList.add(unescapeKeys(v)));
 
                     ret.put(newKey, newList);
                 } else {
@@ -131,12 +132,8 @@ public class BsonUtils {
                 if (value.isDocument()) {
                     ret.add(unescapeKeys(value));
                 } else if (value.isArray()) {
-                    BsonArray newList = new BsonArray();
-
-                    value.asArray().stream().forEach(v -> {
-                        newList.add(unescapeKeys(v));
-                    });
-
+                    var newList = new BsonArray();
+                    value.asArray().stream().forEach(v -> newList.add(unescapeKeys(v)));
                     ret.add(newList);
                 } else {
                     ret.add(unescapeKeys(value));
@@ -146,9 +143,7 @@ public class BsonUtils {
 
             return ret;
         } else if (json.isString()) {
-            return json.asString().getValue().startsWith(ESCAPED_DOLLAR)
-                    ? new BsonString(json.asString().getValue().substring(1))
-                    : json;
+            return json.asString().getValue().startsWith(ESCAPED_DOLLAR) ? new BsonString(json.asString().getValue().substring(1)) : json;
         } else {
             return json;
         }
@@ -191,12 +186,12 @@ public class BsonUtils {
         }
 
         if (json.isDocument()) {
-            BsonDocument ret = new BsonDocument();
+            var ret = new BsonDocument();
 
             boolean root[] = { true };
 
             json.asDocument().keySet().stream().forEach(k -> {
-                String newKey = k.startsWith(DOLLAR) ? "_" + k : k;
+                var newKey = k.startsWith(DOLLAR) ? "_" + k : k;
 
                 if (escapeDots && !(dontEscapeDotsInRootKeys && root[0])) {
                     newKey = newKey.replaceAll("\\.", ESCAPED_DOT);
@@ -204,17 +199,13 @@ public class BsonUtils {
 
                 root[0] = false;
 
-                BsonValue value = json.asDocument().get(k);
+                var value = json.asDocument().get(k);
 
                 if (value.isDocument()) {
                     ret.put(newKey, escapeKeys(value, escapeDots, false));
                 } else if (value.isArray()) {
-                    BsonArray newList = new BsonArray();
-
-                    value.asArray().stream().forEach(v -> {
-                        newList.add(escapeKeys(v, escapeDots, false));
-                    });
-
+                    var newList = new BsonArray();
+                    value.asArray().stream().forEach(v -> newList.add(escapeKeys(v, escapeDots, false)));
                     ret.put(newKey, newList);
                 } else {
                     ret.put(newKey, value);
@@ -224,30 +215,23 @@ public class BsonUtils {
 
             return ret;
         } else if (json.isArray()) {
-            BsonArray ret = new BsonArray();
+            var ret = array();
 
             json.asArray().stream().forEach(value -> {
                 if (value.isDocument()) {
                     ret.add(escapeKeys(value, escapeDots, dontEscapeDotsInRootKeys));
                 } else if (value.isArray()) {
-                    BsonArray newList = new BsonArray();
-
-                    value.asArray().stream().forEach(v -> {
-                        newList.add(escapeKeys(v, escapeDots, false));
-                    });
-
+                    var newList = new BsonArray();
+                    value.asArray().stream().forEach(v -> newList.add(escapeKeys(v, escapeDots, false)));
                     ret.add(newList);
                 } else {
                     ret.add(value);
                 }
-
             });
 
-            return ret;
+            return ret.get();
         } else if (json.isString()) {
-            return json.asString().getValue().startsWith(DOLLAR)
-                    ? new BsonString("_" + json.asString().getValue())
-                    : json;
+            return json.asString().getValue().startsWith(DOLLAR) ? new BsonString("_" + json.asString().getValue()) : json;
         } else {
             return json;
         }
@@ -262,30 +246,19 @@ public class BsonUtils {
      *
      *
      */
-    public static List<Optional<BsonValue>> getPropsFromPath(
-            BsonValue root,
-            String path)
-            throws IllegalArgumentException {
+    public static List<Optional<BsonValue>> getPropsFromPath(BsonValue root, String path) throws IllegalArgumentException {
         String pathTokens[] = path.split(Pattern.quote("."));
 
-        if (pathTokens == null
-                || pathTokens.length == 0
-                || !pathTokens[0].equals(DOLLAR)) {
-            throw new IllegalArgumentException(
-                    "wrong path. it must use the . notation and start with $");
+        if (pathTokens == null || pathTokens.length == 0 || !pathTokens[0].equals(DOLLAR)) {
+            throw new IllegalArgumentException("wrong path. it must use the . notation and start with $");
         } else if (!(root instanceof BsonDocument)) {
-            throw new IllegalArgumentException(
-                    "wrong json. it must be an object");
+            throw new IllegalArgumentException("wrong json. it must be an object");
         } else {
             return _getPropsFromPath(root, pathTokens, pathTokens.length);
         }
     }
 
-    private static List<Optional<BsonValue>> _getPropsFromPath(
-            BsonValue json,
-            String[] pathTokens,
-            int totalTokensLength)
-            throws IllegalArgumentException {
+    private static List<Optional<BsonValue>> _getPropsFromPath(BsonValue json, String[] pathTokens, int totalTokensLength) throws IllegalArgumentException {
         if (pathTokens == null) {
             throw new IllegalArgumentException("pathTokens argument cannot be null");
         }
@@ -971,11 +944,19 @@ public class BsonUtils {
         return codec.decode(new BsonDocumentReader(bsonDocument), decoderContext);
     }
 
-    public static DocumentBuilder documentBuilder() {
+    /**
+     * helper method to build a BsonDocument with a DocumentBuilder
+     * @return the DocumentBuilder
+     */
+    public static DocumentBuilder document() {
         return DocumentBuilder.builder();
     }
 
-    public static ArrayBuilder arrayBuilder() {
+    /**
+     * helper method to build a BsonArray with an ArrayBuilder
+     * @return the ArrayBuilder
+     */
+    public static ArrayBuilder array() {
         return ArrayBuilder.builder();
     }
 
@@ -994,36 +975,101 @@ public class BsonUtils {
         }
 
         public DocumentBuilder put(String key, BsonValue value) {
+            Objects.nonNull(key);
+            Objects.nonNull(value);
             doc.put(key, value);
             return this;
         }
 
         public DocumentBuilder putAll(BsonDocument other) {
+            Objects.nonNull(other);
             doc.putAll(other);
             return this;
         }
 
         public DocumentBuilder put(String key, Integer value) {
+            Objects.nonNull(key);
+            Objects.nonNull(value);
             doc.put(key, new BsonInt32(value));
             return this;
         }
 
+        public DocumentBuilder put(String key, Long value) {
+            Objects.nonNull(key);
+            Objects.nonNull(value);
+            doc.put(key, new BsonInt64(value));
+            return this;
+        }
+
+        public DocumentBuilder put(String key, Float value) {
+            Objects.nonNull(key);
+            Objects.nonNull(value);
+            doc.put(key, new BsonDouble(value));
+            return this;
+        }
+
+        public DocumentBuilder put(String key, Decimal128 value) {
+            Objects.nonNull(key);
+            Objects.nonNull(value);
+            doc.put(key, new BsonDecimal128(value));
+            return this;
+        }
+
+        public DocumentBuilder put(String key, boolean value) {
+            Objects.nonNull(key);
+            Objects.nonNull(value);
+            doc.put(key, new BsonBoolean(value));
+            return this;
+        }
+
         public DocumentBuilder put(String key, String value) {
+            Objects.nonNull(key);
+            Objects.nonNull(value);
             doc.put(key, new BsonString(value));
             return this;
         }
 
         public DocumentBuilder put(String key, Instant value) {
+            Objects.nonNull(key);
+            Objects.nonNull(value);
             doc.put(key, new BsonDateTime(value.getEpochSecond()));
             return this;
         }
 
+        public DocumentBuilder put(String key, Date value) {
+            Objects.nonNull(key);
+            Objects.nonNull(value);
+            doc.put(key, new BsonDateTime(value.getTime()));
+            return this;
+        }
+
         public DocumentBuilder put(String key, ObjectId value) {
+            Objects.nonNull(key);
+            Objects.nonNull(value);
             doc.put(key, new BsonObjectId(value));
             return this;
         }
 
-        public BsonDocument build() {
+        public DocumentBuilder putNull(String key) {
+            doc.put(key, BsonNull.VALUE);
+            return this;
+        }
+
+        public DocumentBuilder put(String key, DocumentBuilder builder) {
+            Objects.nonNull(key);
+            Objects.nonNull(builder);
+            doc.put(key, builder.get());
+            return this;
+        }
+
+        public DocumentBuilder put(String key, ArrayBuilder builder) {
+            Objects.nonNull(key);
+            Objects.nonNull(builder);
+            doc.put(key, builder.get());
+            return this;
+        }
+
+        public BsonDocument get() {
             return doc;
         }
     }
@@ -1043,18 +1089,30 @@ public class BsonUtils {
         }
 
         public ArrayBuilder add(BsonValue value) {
+            Objects.nonNull(value);
             array.add(value);
             return this;
         }
 
         public ArrayBuilder add(BsonValue... values) {
-            if (values != null) {
-                Arrays.stream(values).forEach(array::add);
-            }
+            Objects.nonNull(values);
+            Arrays.stream(values).forEach(array::add);
             return this;
         }
 
-        public BsonArray build() {
+        public ArrayBuilder add(DocumentBuilder builder) {
+            Objects.nonNull(builder);
+            array.add(builder.get());
+            return this;
+        }
+
+        public ArrayBuilder add(ArrayBuilder builder) {
+            Objects.nonNull(builder);
+            array.add(builder.get());
+            return this;
+        }
+
+        public BsonArray get() {
             return array;
         }
     }

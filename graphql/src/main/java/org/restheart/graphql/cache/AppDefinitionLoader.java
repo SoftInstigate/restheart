@@ -21,13 +21,13 @@
 package org.restheart.graphql.cache;
 
 import com.mongodb.MongoClient;
-import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.graphql.GraphQLAppDeserializer;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.models.*;
+import static org.restheart.utils.BsonUtils.arrayBuilder;;
 
 
 public class AppDefinitionLoader {
@@ -47,18 +47,17 @@ public class AppDefinitionLoader {
     }
 
     public static GraphQLApp loadAppDefinition(String appURI) throws GraphQLIllegalAppDefinitionException {
+        var uriOrNameCond = arrayBuilder()
+            .add(new BsonDocument(APP_URI_FIELD, new BsonString(appURI)))
+            .add(new BsonDocument(APP_NAME_FIELD, new BsonString(appURI)));
 
+        var conditions = arrayBuilder()
+            .add(new BsonDocument("$or", uriOrNameCond.build()))
+            .add(new BsonDocument(APP_ENABLED_FIELD, new BsonBoolean(true)));
 
-        BsonArray conditions = new BsonArray();
-        BsonArray uriOrNameCond = new BsonArray();
-        uriOrNameCond.add(new BsonDocument(APP_URI_FIELD, new BsonString(appURI)));
-        uriOrNameCond.add(new BsonDocument(APP_NAME_FIELD, new BsonString(appURI)));
-        conditions.add(new BsonDocument("$or", uriOrNameCond));
-        conditions.add(new BsonDocument(APP_ENABLED_FIELD, new BsonBoolean(true)));
-        BsonDocument findArg = new BsonDocument("$and",conditions);
+        var findArg = new BsonDocument("$and", conditions.build());
 
-        BsonDocument appDefinition = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class)
-                .find(findArg).first();
+        var appDefinition = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class).find(findArg).first();
 
         if (appDefinition != null) {
             return GraphQLAppDeserializer.fromBsonDocument(appDefinition);
@@ -66,6 +65,4 @@ public class AppDefinitionLoader {
             return null;
         }
     }
-
-
 }

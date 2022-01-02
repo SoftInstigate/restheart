@@ -60,8 +60,7 @@ public class SizeRequestTransformer extends PipelinedHandler {
 
             // for response phase
             if (response.getCount() >= 0) {
-                response.setContent(new BsonDocument("_size",
-                        new BsonInt64(response.getCount())));
+                response.setContent(new BsonDocument("_size", new BsonInt64(response.getCount())));
             }
         }
 

@@ -113,16 +113,12 @@ public class MongoResponse extends BsonResponse {
 
     private BsonDocument addWarnings(BsonDocument content) {
         if (content != null) {
-            if (warnings != null
-                    && !warnings.isEmpty()
-                    && content.isDocument()) {
+            if (warnings != null && !warnings.isEmpty() && content.isDocument()) {
                 var contentWithWarnings = new BsonDocument();
 
                 var ws = new BsonArray();
 
-                warnings.stream()
-                        .map(w -> new BsonString(w))
-                        .forEachOrdered(ws::add);
+                warnings.stream().map(w -> new BsonString(w)).forEachOrdered(ws::add);
 
                 contentWithWarnings.put("_warnings", ws);
 
@@ -132,15 +128,12 @@ public class MongoResponse extends BsonResponse {
             } else {
                 return content;
             }
-        } else if (warnings != null
-                && !warnings.isEmpty()) {
+        } else if (warnings != null && !warnings.isEmpty()) {
             var contentWithWarnings = new BsonDocument();
 
             var ws = new BsonArray();
 
-            warnings.stream()
-                    .map(w -> new BsonString(w))
-                    .forEachOrdered(ws::add);
+            warnings.stream().map(w -> new BsonString(w)).forEachOrdered(ws::add);
 
             contentWithWarnings.put("_warnings", ws);
 
