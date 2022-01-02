@@ -22,9 +22,12 @@ package org.restheart.utils;
 
 import com.google.common.collect.Sets;
 import com.mongodb.MongoClient;
+
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,12 +35,15 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
+import org.bson.BsonDateTime;
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentReader;
+import org.bson.BsonInt32;
 import org.bson.BsonInvalidOperationException;
 import org.bson.BsonJavaScript;
 import org.bson.BsonMaxKey;
 import org.bson.BsonMinKey;
+import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.Document;
@@ -963,5 +969,93 @@ public class BsonUtils {
     public static Document bsonToDocument(BsonDocument bsonDocument) {
         DecoderContext decoderContext = DecoderContext.builder().build();
         return codec.decode(new BsonDocumentReader(bsonDocument), decoderContext);
+    }
+
+    public static DocumentBuilder documentBuilder() {
+        return DocumentBuilder.builder();
+    }
+
+    public static ArrayBuilder arrayBuilder() {
+        return ArrayBuilder.builder();
+    }
+
+    /**
+     * Builder to help creating BsonDocument
+     */
+    public static  class DocumentBuilder {
+        private BsonDocument doc;
+
+        public static DocumentBuilder builder() {
+            return new DocumentBuilder();
+        }
+
+        private DocumentBuilder() {
+            this.doc = new BsonDocument();
+        }
+
+        public DocumentBuilder put(String key, BsonValue value) {
+            doc.put(key, value);
+            return this;
+        }
+
+        public DocumentBuilder putAll(BsonDocument other) {
+            doc.putAll(other);
+            return this;
+        }
+
+        public DocumentBuilder put(String key, Integer value) {
+            doc.put(key, new BsonInt32(value));
+            return this;
+        }
+
+        public DocumentBuilder put(String key, String value) {
+            doc.put(key, new BsonString(value));
+            return this;
+        }
+
+        public DocumentBuilder put(String key, Instant value) {
+            doc.put(key, new BsonDateTime(value.getEpochSecond()));
+            return this;
+        }
+
+        public DocumentBuilder put(String key, ObjectId value) {
+            doc.put(key, new BsonObjectId(value));
+            return this;
+        }
+
+        public BsonDocument build() {
+            return doc;
+        }
+    }
+
+    /**
+     * Builder to help creating BsonArray
+     */
+    public static class ArrayBuilder {
+        private BsonArray array;
+
+        public static ArrayBuilder builder() {
+            return new ArrayBuilder();
+        }
+
+        private ArrayBuilder() {
+            this.array = new BsonArray();
+        }
+
+        public ArrayBuilder add(BsonValue value) {
+            array.add(value);
+            return this;
+        }
+
+        public ArrayBuilder add(BsonValue... values) {
+            if (values != null) {
+                Arrays.stream(values).forEach(array::add);
+            }
+            return this;
+        }
+
+        public BsonArray build() {
+            return array;
+        }
     }
 }
