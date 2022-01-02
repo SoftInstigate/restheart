@@ -138,7 +138,10 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
                 // mClient.getReadConcern(),
                 // mClient.getWriteConcern(),
                 // mClient.getReadPreference(),
-                null,null,null,
+                // TODO
+                ReadConcern.MAJORITY,
+                WriteConcern.MAJORITY,
+                ReadPreference.primary(),
                 null);
 
         if (txnServerStatus != null) {

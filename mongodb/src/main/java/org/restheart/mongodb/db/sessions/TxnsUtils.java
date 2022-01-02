@@ -59,7 +59,7 @@ public class TxnsUtils {
         var cs = TxnClientSessionFactory.getInstance().createClientSession(
                 sid,
                 cso,
-                ReadConcern.DEFAULT,
+                ReadConcern.MAJORITY,
                 WriteConcern.MAJORITY,
                 ReadPreference.primary(),
                 // TODO!
@@ -69,10 +69,8 @@ public class TxnsUtils {
                 null);
 
         // set txnId on ServerSession
-        if (cs.getServerSession().getTransactionNumber()
-                < 1) {
-            ((ServerSessionImpl) cs.getServerSession())
-                    .setTransactionNumber(1);
+        if (cs.getServerSession().getTransactionNumber() < 1) {
+            ((ServerSessionImpl) cs.getServerSession()).setTransactionNumber(1);
         }
 
         try {

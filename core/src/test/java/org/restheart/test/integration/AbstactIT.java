@@ -41,6 +41,7 @@ import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.restheart.Bootstrapper;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
 import org.slf4j.Logger;
@@ -116,7 +117,7 @@ public abstract class AbstactIT {
         StringBuilder result = new StringBuilder();
 
         //Get file from resources folder
-        ClassLoader classLoader = JsonSchemaCheckerIT.class.getClassLoader();
+        ClassLoader classLoader = Bootstrapper.class.getClassLoader();
 
         URI uri = classLoader.getResource(resourcePath).toURI();
 

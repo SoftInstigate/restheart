@@ -47,7 +47,7 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
      * @param options
      */
     public ClientSessionImpl(final ServerSessionPool serverSessionPool, final Object originator, final ClientSessionOptions options) {
-        super(serverSessionPool, delegate(originator), options);
+        super(serverSessionPool, originator, options);
     }
 
     /**
@@ -217,13 +217,16 @@ public class ClientSessionImpl extends BaseClientSessionImpl implements ClientSe
     }
 
     /**
-     * MongoDelegate checks the operation to be executed by the same MongoClient that created the session
-     * comparing originator to the value of MongoClient.delegate
+     * In mongo-java-legacy driver v4.3.2
+     * MongoDelegate checks the operation to be executed by the same MongoClient
+     * that created the session comparing originator to the value of
+     * MongoClient.delegate
      * this utility method returns MongoClient.delegate to be used as originator
      *
      * @param o
      * @return the value of field delegate of o or o if not exists
      */
+    @SuppressWarnings("unused")
     private static Object delegate(Object o) {
         try {
             var delegateF = o.getClass().getDeclaredField("delegate");
