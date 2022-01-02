@@ -20,7 +20,10 @@
  */
 package org.restheart.mongodb.db;
 
+import com.mongodb.Block;
 import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.connection.ConnectionPoolSettings;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import java.net.UnknownHostException;
@@ -83,7 +86,18 @@ public class MongoReactiveClientSingleton {
 
     private void setup() throws UnknownHostException {
         if (isInitialized()) {
-            mongoClient = MongoClients.create(mongoUri.toString());
+            // TODO add minSize and maxSize to configuration
+            var settings = MongoClientSettings.builder()
+                .applyToConnectionPoolSettings(new Block<ConnectionPoolSettings.Builder>() {
+                    @Override
+                    public void apply(final ConnectionPoolSettings.Builder builder) {
+                        builder.minSize(64).maxSize(512);
+                    }})
+                .applicationName("restheart (reactivestreams)")
+                .applyConnectionString(mongoUri)
+                .build();
+
+            mongoClient = MongoClients.create(settings);
         }
     }
 
