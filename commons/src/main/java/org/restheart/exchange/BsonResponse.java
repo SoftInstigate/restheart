@@ -20,10 +20,10 @@
 package org.restheart.exchange;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.utils.BsonUtils;
+import static org.restheart.utils.BsonUtils.documentBuilder;
+import static org.restheart.utils.BsonUtils.toJson;
 
 /**
  * ServiceResponse implementation backed by BsonValue
@@ -47,7 +47,7 @@ public class BsonResponse extends ServiceResponse<BsonValue> {
     @Override
     public String readContent() {
         if (content != null) {
-            return BsonUtils.toJson(content);
+            return toJson(content);
         } else {
             return null;
         }
@@ -58,16 +58,16 @@ public class BsonResponse extends ServiceResponse<BsonValue> {
         setInError(true);
         setStatusCode(code);
 
-        var resp = new BsonDocument();
+        var db = documentBuilder();
 
         if (message != null) {
-            resp.put("msg", new BsonString(message));
+            db.put("msg", new BsonString(message));
         }
 
         if (t != null) {
-            resp.put("exception", new BsonString(t.getMessage()));
+            db.put("exception", new BsonString(t.getMessage()));
         }
 
-        setContent(resp);
+        setContent(db.build());
     }
 }

@@ -56,10 +56,7 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
 
             FindIterable<BsonValue> query = mongoClient.getDatabase(queryMapping.getDb())
                     .getCollection(queryMapping.getCollection(), BsonValue.class)
-                    .find(
-                            int_args.containsKey(FIND_FIELD) ?
-                                    int_args.get(FIND_FIELD).asDocument(): new BsonDocument()
-                    );
+                    .find(int_args.containsKey(FIND_FIELD) ? int_args.get(FIND_FIELD).asDocument(): new BsonDocument());
 
             if (int_args.containsKey(SORT_FIELD) && int_args.get(SORT_FIELD) != null){
                 query = query.sort(int_args.get(SORT_FIELD).asDocument());
@@ -80,8 +77,9 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
                 BsonArray results = new BsonArray();
                 query.into(results);
                 queryResult = results;
+            } else {
+                queryResult = query.first();
             }
-            else queryResult = query.first();
 
             return queryResult;
 

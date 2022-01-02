@@ -26,17 +26,16 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.bson.BsonArray;
-import org.bson.BsonDocument;
-import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
+import org.bson.types.ObjectId;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.ChannelReader;
-
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import static org.restheart.utils.BsonUtils.documentBuilder;
 
 /**
  * ServiceRequest implementation backed by BsonValue and initialized from csv
@@ -112,7 +111,8 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
                 if (isHeader) {
                     cols = vals;
                 } else {
-                    var doc = new BsonDocument("_etag", new BsonObjectId());
+                    var doc = documentBuilder().put("_etag", new ObjectId()).build();
+                    // var doc = new BsonDocument("_etag", new BsonObjectId());
 
                     int unnamedProps = 0;
 
