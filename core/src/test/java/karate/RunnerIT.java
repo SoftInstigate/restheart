@@ -32,8 +32,6 @@ import org.restheart.test.integration.AbstactIT;
  * to enable them, remove 'ignore' tag from streams.feature
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-// TODO: remove ignore tag
- @Ignore
 public class RunnerIT extends AbstactIT {
     @Test
     public void run() {
