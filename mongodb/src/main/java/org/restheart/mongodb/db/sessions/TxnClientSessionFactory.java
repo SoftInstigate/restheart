@@ -152,13 +152,9 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
         var cs = createClientSession(
                 sid,
                 cso,
-                // mClient.getReadConcern(),
-                // mClient.getWriteConcern(),
-                // mClient.getReadPreference(),
-                // TODO
-                ReadConcern.MAJORITY,
-                WriteConcern.MAJORITY,
-                ReadPreference.primary(),
+                mongoUri.getReadConcern() == null ? ReadConcern.DEFAULT : mongoUri.getReadConcern(),
+                mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
+                mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference(),
                 null);
 
         if (txnServerStatus != null) {
