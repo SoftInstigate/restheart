@@ -215,7 +215,7 @@
   "allPublicConstructors":true}
 ,
 {
-  "name":"com.mongodb.MongoClient",
+  "name":"com.mongodb.client.MongoClient",
   "methods":[{"name":"getCluster","parameterTypes":[] }]}
 ,
 {
@@ -1283,7 +1283,7 @@
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"initConf","parameterTypes":["java.util.Map"] }, 
-    {"name":"initMongoClient","parameterTypes":["com.mongodb.MongoClient"] }
+    {"name":"initMongoClient","parameterTypes":["com.mongodb.client.MongoClient"] }
   ]}
 ,
 {
@@ -1298,7 +1298,7 @@
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"conf","parameterTypes":["java.util.Map"] }, 
-    {"name":"mc","parameterTypes":["com.mongodb.MongoClient"] }
+    {"name":"mc","parameterTypes":["com.mongodb.client.MongoClient"] }
   ]}
 ,
 {
@@ -1358,7 +1358,7 @@
   "name":"org.restheart.mongodb.interceptors.CollectionPropsInjector",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
-    {"name":"init","parameterTypes":["com.mongodb.MongoClient"] }
+    {"name":"init","parameterTypes":["com.mongodb.client.MongoClient"] }
   ]}
 ,
 {
@@ -1369,7 +1369,7 @@
   "name":"org.restheart.mongodb.interceptors.DbPropsInjector",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
-    {"name":"init","parameterTypes":["com.mongodb.MongoClient"] }
+    {"name":"init","parameterTypes":["com.mongodb.client.MongoClient"] }
   ]}
 ,
 {
@@ -1384,6 +1384,13 @@
   "name":"org.restheart.mongodb.interceptors.NamespacesResponseFlattener",
   "methods":[{"name":"<init>","parameterTypes":[] }]}
 ,
+{
+    "name":"org.restheart.mongodb.security.FullAuhorizer",
+    "methods":[
+      {"name":"<init>","parameterTypes":[] }, 
+      {"name":"<init>","parameterTypes":["java.lang.Boolean"] },
+      {"name":"init","parameterTypes":["java.util.Map"] }
+    ]},
 {
   "name":"org.restheart.mongodb.security.AllowBulkRequests",
   "methods":[
@@ -1436,7 +1443,7 @@
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map"] }, 
-    {"name":"mc","parameterTypes":["com.mongodb.MongoClient"] }, 
+    {"name":"mc","parameterTypes":["com.mongodb.client.MongoClient"] }, 
     {"name":"reg","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]}
 ,
@@ -1455,7 +1462,7 @@
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"setConf","parameterTypes":["java.util.Map"] }, 
-    {"name":"setMongoClient","parameterTypes":["com.mongodb.MongoClient"] }, 
+    {"name":"setMongoClient","parameterTypes":["com.mongodb.client.MongoClient"] }, 
     {"name":"setRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]}
 ,
@@ -1477,7 +1484,12 @@
   "name":"org.restheart.security.authorizers.FileAclAuthorizer"}
 ,
 {
-  "name":"org.restheart.security.authorizers.FullAuthorizer"}
+  "name":"org.restheart.security.authorizers.FullAuthorizer",
+  "methods":[
+    {"name":"<init>","parameterTypes":[] },
+    {"name":"<init>","parameterTypes":["java.lang.Boolean"] },
+    {"name":"initConf","parameterTypes":["java.util.Map"] }
+  ]}
 ,
 {
   "name":"org.restheart.security.authorizers.GlobalPredicatesVetoer",
@@ -1491,7 +1503,7 @@
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"initConfiguration","parameterTypes":["java.util.Map"] }, 
-    {"name":"initMongoClient","parameterTypes":["com.mongodb.MongoClient"] }, 
+    {"name":"initMongoClient","parameterTypes":["com.mongodb.client.MongoClient"] }, 
     {"name":"initRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]}
 ,

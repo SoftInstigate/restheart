@@ -50,7 +50,7 @@
     "name": "org.restheart.mongodb.interceptors.CollectionPropsInjector",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
-      { "name": "init", "parameterTypes": ["com.mongodb.MongoClient"] }
+      { "name": "init", "parameterTypes": ["com.mongodb.client.MongoClient"] }
     ]
   },
   {
@@ -61,7 +61,7 @@
     "name": "org.restheart.mongodb.interceptors.DbPropsInjector",
     "methods": [
       { "name": "<init>", "parameterTypes": [] },
-      { "name": "init", "parameterTypes": ["com.mongodb.MongoClient"] }
+      { "name": "init", "parameterTypes": ["com.mongodb.client.MongoClient"] }
     ]
   },
   {

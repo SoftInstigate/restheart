@@ -71,6 +71,8 @@ public class GenerateGraalvmReflectConfig {
                             "org.restheart.security.PwdCredentialAccount")
             // BsonUtils
             .acceptClasses("org.restheart.utils.BsonUtils")
+            .acceptClasses("org.restheart.utils.BsonUtils$ArrayBuilder")
+            .acceptClasses("org.restheart.utils.BsonUtils$DocumentBuilder")
             // Bson classes, such as BsonDocument
             .acceptPackages("org.bson")
             .rejectPackages("org.bson.codecs", "org.bson.json", "org.bson.io", "org.bson.assertions", "org.bson.conversions", "org.bson.diagnostics", "org.bson.internal", "org.bson.types", "org.bson.util")

@@ -1460,7 +1460,7 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.MongoClient",
+  { "name": "com.mongodb.client.MongoClient",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
@@ -4855,6 +4855,26 @@
   },
   {
     "name": "org.restheart.utils.BsonUtils",
+    "allPublicFields": true,
+    "allPublicConstructors": true,
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true,
+    "allPublicClasses": true,
+    "allDeclaredClasses": true
+  },
+  {
+    "name": "org.restheart.utils.BsonUtils$DocumentBuilder",
+    "allPublicFields": true,
+    "allPublicConstructors": true,
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true,
+    "allPublicClasses": true,
+    "allDeclaredClasses": true
+  },
+  {
+    "name": "org.restheart.utils.BsonUtils$ArrayBuilder",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,
