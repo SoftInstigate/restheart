@@ -47,8 +47,6 @@ import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.xml.namespace.QName;
-
 import org.apache.commons.jxpath.JXPathContext;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;

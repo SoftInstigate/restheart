@@ -44,12 +44,16 @@ import static org.restheart.utils.PluginUtils.defaultURI;
 import static org.restheart.utils.PluginUtils.initPoint;
 import static org.restheart.utils.PluginUtils.uriMatchPolicy;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -160,6 +164,7 @@ public class Bootstrapper {
     private static Path CONFIGURATION_FILE;
     private static Path PROPERTIES_FILE;
     private static boolean printConfiguration = false;
+    private static boolean printConfigurationTemplate = false;
 
     private static GracefulShutdownHandler HANDLERS = null;
     private static Configuration configuration;
@@ -209,7 +214,9 @@ public class Bootstrapper {
                 System.exit(0);
             }
 
+            // print configuration options
             printConfiguration = parameters.printConfiguration;
+            printConfigurationTemplate = parameters.printConfigurationTemplate;
 
             var confFilePath = (parameters.configPath == null)
                     ? System.getenv("RESTHEART__CONFFILE")
@@ -495,11 +502,24 @@ public class Bootstrapper {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
         }
 
-        // if -p, just print the configuration to sterr and exit
+        // if -c, just print the effective configuration to sterr and exit
         if (printConfiguration) {
             LOGGER.info("Printing configuration and exiting");
             System.err.println(configuration.toString());
             System.exit(0);
+        }
+
+        // if -t, just print the configuration to sterr and exit
+        if (printConfigurationTemplate) {
+            try (var confFileStream = Configuration.class.getResourceAsStream("/restheart-default-config.yml")) {
+                var content = new BufferedReader(new InputStreamReader(confFileStream, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+                LOGGER.info("Printing configuration template and exiting");
+
+                System.err.println(content);
+                System.exit(0);
+            } catch(IOException ioe) {
+                logErrorAndExit(ioe.getMessage() + EXITING, ioe, false, -1);
+            }
         }
 
         // force instantiation of all plugins singletons
@@ -1239,8 +1259,11 @@ public class Bootstrapper {
         @Option(names = {"-h", "--help"}, usageHelp = true, description = "This help message")
         private boolean help = false;
 
-        @Option(names = {"-p", "--printConfiguration"}, description = "Print the configuration to the standard error and exit")
+        @Option(names = {"-c", "--printConfiguration"}, description = "Print the effective configuration to the standard error and exit")
         private boolean printConfiguration = false;
+
+        @Option(names = {"-t", "--printConfigurationTemplate"}, description = "Print the configuration template to the standard error and exit")
+        private boolean printConfigurationTemplate = false;
 
         @Option(names = { "-v", "--version" }, versionHelp = true, description = "Print product version to the output stream and exit")
         boolean versionRequested;
