@@ -620,7 +620,7 @@ public class Configuration {
 
             overrides.stream().forEachOrdered(o -> {
                 if (!silent) {
-                    LOGGER.info("\t'{}' -> '{}'", o.path(), o.value());
+                    LOGGER.info("\t{} -> {}", o.path(), o.value());
                 }
 
                 try {
