@@ -121,6 +121,7 @@ public class MongoClientSingleton {
             .applyToConnectionPoolSettings(new Block<ConnectionPoolSettings.Builder>() {
                 @Override
                 public void apply(final ConnectionPoolSettings.Builder builder) {
+                    // default values: min=0 and max=100
                     builder.minSize(64).maxSize(512);
                 }})
             .applicationName("restheart (sync)")

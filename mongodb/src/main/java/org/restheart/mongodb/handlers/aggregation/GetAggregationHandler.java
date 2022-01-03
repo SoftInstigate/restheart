@@ -49,6 +49,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@SuppressWarnings("deprecation")
 public class GetAggregationHandler extends PipelinedHandler {
     private final Databases dbs = Databases.get();
 
