@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonParser;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;

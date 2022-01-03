@@ -21,7 +21,8 @@
 package org.restheart.mongodb.db.sessions;
 
 import com.mongodb.ClientSessionOptions;
-import com.mongodb.MongoClient;
+import com.mongodb.ConnectionString;
+import com.mongodb.client.MongoClient;
 import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.WriteConcern;
@@ -47,6 +48,19 @@ import org.slf4j.LoggerFactory;
 public class ClientSessionFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientSessionFactory.class);
 
+    private static ConnectionString mongoUri = null;
+    private static boolean initialized = false;
+
+    /**
+     *
+     * @param uri
+     * @param pr
+     */
+    public static void init(ConnectionString uri) {
+        mongoUri = uri;
+        initialized = true;
+    }
+
     /**
      *
      * @return
@@ -63,6 +77,9 @@ public class ClientSessionFactory {
      *
      */
     protected ClientSessionFactory() {
+        if (!initialized) {
+            throw new IllegalStateException("not initialized");
+        }
     }
 
     protected MongoClient mClient = MongoClientSingleton.getInstance().getClient();
@@ -126,9 +143,9 @@ public class ClientSessionFactory {
 
         return createClientSession(sid,
                 cso,
-                mClient.getReadConcern(),
-                mClient.getWriteConcern(),
-                mClient.getReadPreference());
+                mongoUri.getReadConcern() == null ? ReadConcern.DEFAULT : mongoUri.getReadConcern(),
+                mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
+                mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference());
     }
 
     ClientSessionImpl createClientSession(

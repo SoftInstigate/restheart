@@ -24,8 +24,12 @@ import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.MAGENTA;
 import static org.fusesource.jansi.Ansi.Color.RED;
 
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.connection.ConnectionPoolSettings;
+import com.mongodb.Block;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoCommandException;
 
 import org.bson.BsonDocument;
@@ -41,7 +45,7 @@ import org.slf4j.LoggerFactory;
 public class MongoClientSingleton {
 
     private static boolean initialized = false;
-    private static MongoClientURI mongoUri;
+    private static ConnectionString mongoUri;
     private static PluginsRegistry pluginsRegistry;
     private String serverVersion = null;
     private boolean replicaSet = false;
@@ -53,7 +57,7 @@ public class MongoClientSingleton {
      * @param uri
      * @param pr
      */
-    public static void init(MongoClientURI uri, PluginsRegistry pr) {
+    public static void init(ConnectionString uri, PluginsRegistry pr) {
         mongoUri = uri;
         pluginsRegistry = pr;
         initialized = true;
@@ -64,6 +68,15 @@ public class MongoClientSingleton {
      */
     public static boolean isInitialized() {
         return initialized;
+    }
+
+
+    /**
+     * alias for getInstance()
+     * @return the MongoClientSingleton
+     */
+    public static MongoClientSingleton get() {
+        return getInstance();
     }
 
     /**
@@ -103,7 +116,19 @@ public class MongoClientSingleton {
 
         LOGGER.info("Connecting to MongoDB...");
 
-        mongoClient = new MongoClient(mongoUri);
+        // TODO add minSize and maxSize to configuration
+        var settings = MongoClientSettings.builder()
+            .applyToConnectionPoolSettings(new Block<ConnectionPoolSettings.Builder>() {
+                @Override
+                public void apply(final ConnectionPoolSettings.Builder builder) {
+                    // default values: min=0 and max=100
+                    builder.minSize(64).maxSize(512);
+                }})
+            .applicationName("restheart (sync)")
+            .applyConnectionString(mongoUri)
+            .build();
+
+        mongoClient = MongoClients.create(settings);
 
         // invoke Plugins methods annotated with @InjectMongoClient
         // passing them the MongoClient
@@ -167,6 +192,14 @@ public class MongoClientSingleton {
     }
 
     /**
+     * alias for getClient()
+     * @return the MongoClient
+     */
+    public MongoClient client() {
+        return getClient();
+    }
+
+    /**
      *
      * @return
      */
@@ -182,11 +215,43 @@ public class MongoClientSingleton {
         return this.mongoClient;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        // it is a singleton!
+        return true;
+    }
+
     private static class MongoClientSingletonHolder {
+        private static final MongoClientSingleton INSTANCE;
 
-        private static final MongoClientSingleton INSTANCE = new MongoClientSingleton();
+        // make sure the Singleton is a Singleton even in a multi-classloader environment
+        // credits to https://stackoverflow.com/users/145989/ondra-Žižka
+        // https://stackoverflow.com/a/47445573/4481670
+        static {
+            // There should be just one system class loader object in the whole JVM.
+            synchronized(ClassLoader.getSystemClassLoader()) {
+                var sysProps = System.getProperties();
+                // The key is a String, because the .class object would be different across classloaders.
+                var singleton = (MongoClientSingleton) sysProps.get(MongoClientSingleton.class.getName());
 
-        private MongoClientSingletonHolder() {
+                // Some other class loader loaded MongoClientSingleton earlier.
+                if (singleton != null) {
+                    INSTANCE = singleton;
+                }
+                else {
+                    // Otherwise this classloader is the first one, let's create a singleton.
+                    // Make sure not to do any locking within this.
+                    INSTANCE = new MongoClientSingleton();
+                    System.getProperties().put(MongoClientSingleton.class.getName(), INSTANCE);
+                }
+            }
         }
     }
 }

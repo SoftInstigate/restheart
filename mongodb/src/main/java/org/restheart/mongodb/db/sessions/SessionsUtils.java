@@ -22,7 +22,7 @@ package org.restheart.mongodb.db.sessions;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.internal.OperationExecutor;
 import com.mongodb.internal.connection.Cluster;
 import com.mongodb.internal.session.ServerSessionPool;

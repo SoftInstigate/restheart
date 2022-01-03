@@ -22,7 +22,7 @@ package org.restheart.polyglot.interceptors;
 
 import java.util.Map;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 
 import org.graalvm.polyglot.Source;
 import org.restheart.exchange.StringRequest;

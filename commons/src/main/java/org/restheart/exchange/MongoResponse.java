@@ -20,7 +20,7 @@
 package org.restheart.exchange;
 
 import com.google.common.reflect.TypeToken;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.ReplaceOptions;

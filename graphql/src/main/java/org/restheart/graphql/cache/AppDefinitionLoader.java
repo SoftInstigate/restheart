@@ -20,7 +20,7 @@
  */
 package org.restheart.graphql.cache;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import org.bson.BsonDocument;
 import org.restheart.graphql.GraphQLAppDeserializer;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;

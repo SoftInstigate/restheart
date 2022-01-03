@@ -20,7 +20,7 @@
  */
 package org.restheart.security.utils;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCursor;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;

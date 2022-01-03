@@ -55,8 +55,7 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
         this.txnServerStatus = txnServerStatus;
     }
 
-    public void setMessageSentInCurrentTransaction(
-            boolean messageSentInCurrentTransaction) {
+    public void setMessageSentInCurrentTransaction(boolean messageSentInCurrentTransaction) {
         this.messageSentInCurrentTransaction = messageSentInCurrentTransaction;
     }
 
