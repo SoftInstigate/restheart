@@ -23,9 +23,6 @@ package org.restheart.mongodb.db.sessions;
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.client.MongoClient;
 import com.mongodb.MongoQueryException;
-import com.mongodb.ReadConcern;
-import com.mongodb.ReadPreference;
-import com.mongodb.WriteConcern;
 
 import static com.mongodb.client.model.Filters.eq;
 import java.util.UUID;
@@ -56,17 +53,7 @@ public class TxnsUtils {
                 .causallyConsistent(options.isCausallyConsistent())
                 .build();
 
-        var cs = TxnClientSessionFactory.getInstance().createClientSession(
-                sid,
-                cso,
-                ReadConcern.MAJORITY,
-                WriteConcern.MAJORITY,
-                ReadPreference.primary(),
-                // TODO!
-                // MCLIENT.getReadConcern(),
-                // MCLIENT.getWriteConcern(),
-                // MCLIENT.getReadPreference(),
-                null);
+        var cs = TxnClientSessionFactory.getInstance().createClientSession(sid, cso);
 
         // set txnId on ServerSession
         if (cs.getServerSession().getTransactionNumber() < 1) {

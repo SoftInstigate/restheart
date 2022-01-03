@@ -21,7 +21,6 @@
 package org.restheart.utils;
 
 import com.google.common.collect.Sets;
-import com.mongodb.client.MongoClient;
 import com.mongodb.MongoClientSettings;
 
 import java.time.Instant;

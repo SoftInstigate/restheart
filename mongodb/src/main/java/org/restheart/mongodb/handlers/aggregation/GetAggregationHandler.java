@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
+@SuppressWarnings("deprecation")
 public class GetAggregationHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(GetAggregationHandler.class);
 

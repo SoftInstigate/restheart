@@ -22,7 +22,6 @@ package org.restheart.mongodb.db;
 
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.assertions.Assertions;
-import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.DeleteManyModel;

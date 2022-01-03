@@ -21,6 +21,7 @@
 package org.restheart.mongodb.db.sessions;
 
 import com.mongodb.ClientSessionOptions;
+import com.mongodb.ConnectionString;
 import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
@@ -43,6 +44,20 @@ import org.slf4j.LoggerFactory;
 public class TxnClientSessionFactory extends ClientSessionFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(TxnClientSessionFactory.class);
 
+    private static ConnectionString mongoUri = null;
+    private static boolean initialized = false;
+
+    /**
+     *
+     * @param uri
+     * @param pr
+     */
+    public static void init(ConnectionString uri) {
+        mongoUri = uri;
+        initialized = true;
+    }
+
+
     public static TxnClientSessionFactory getInstance() {
         return TxnClientSessionFactoryHolder.INSTANCE;
     }
@@ -52,6 +67,9 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
     }
 
     private TxnClientSessionFactory() {
+        if (!initialized) {
+            throw new IllegalStateException("not initialized");
+        }
     }
 
     /**
@@ -124,7 +142,6 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
      * @return
      */
     public TxnClientSessionImpl getTxnClientSession(UUID sid, Txn txnServerStatus) {
-        var mClient = MongoClientSingleton.getInstance().getClient();
         var options = Sid.getSessionOptions(sid);
 
         var cso = ClientSessionOptions
@@ -135,13 +152,9 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
         var cs = createClientSession(
                 sid,
                 cso,
-                // mClient.getReadConcern(),
-                // mClient.getWriteConcern(),
-                // mClient.getReadPreference(),
-                // TODO
-                ReadConcern.MAJORITY,
-                WriteConcern.MAJORITY,
-                ReadPreference.primary(),
+                mongoUri.getReadConcern() == null ? ReadConcern.DEFAULT : mongoUri.getReadConcern(),
+                mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
+                mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference(),
                 null);
 
         if (txnServerStatus != null) {
@@ -153,6 +166,16 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
         }
 
         return cs;
+    }
+
+    TxnClientSessionImpl createClientSession(UUID sid, final ClientSessionOptions options) {
+        return createClientSession(
+            sid,
+            options,
+            mongoUri.getReadConcern() == null ? ReadConcern.DEFAULT : mongoUri.getReadConcern(),
+                mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
+                mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference(),
+            null);
     }
 
     TxnClientSessionImpl createClientSession(
