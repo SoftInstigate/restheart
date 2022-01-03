@@ -38,7 +38,7 @@ export function handle(request, response) {
         return;
     }
 
-    const db = mclient.getDatabase("test-db");
+    const db = mclient.getDatabase("restheart");
     LOGGER.debug("db {}", db);
     const coll = db.getCollection("coll", BsonDocument.class);
     LOGGER.debug("coll {}", coll);
