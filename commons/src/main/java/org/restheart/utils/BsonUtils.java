@@ -984,8 +984,25 @@ public class BsonUtils {
     /**
      * Builder to help creating BsonDocument
      */
-    public static  class DocumentBuilder {
+    public static class DocumentBuilder {
         private BsonDocument doc;
+
+        @Override
+        public String toString() {
+            return toJson();
+        }
+
+        public String toJson() {
+            return BsonUtils.toJson(this.get());
+        }
+
+        public String toJson(JsonMode jsonMode) {
+            return BsonUtils.toJson(this.get(), jsonMode);
+        }
+
+        public String toJson(String jsonMode) {
+            return BsonUtils.toJson(this.get(), JsonMode.valueOf(jsonMode));
+        }
 
         public static DocumentBuilder builder() {
             return new DocumentBuilder();
@@ -1109,10 +1126,21 @@ public class BsonUtils {
             this.array = new BsonArray();
         }
 
-        public ArrayBuilder add(BsonValue value) {
-            Objects.nonNull(value);
-            array.add(value);
-            return this;
+        @Override
+        public String toString() {
+            return toJson();
+        }
+
+        public String toJson() {
+            return BsonUtils.toJson(this.get());
+        }
+
+        public String toJson(JsonMode jsonMode) {
+            return BsonUtils.toJson(this.get(), jsonMode);
+        }
+
+        public String toJson(String jsonMode) {
+            return BsonUtils.toJson(this.get(), JsonMode.valueOf(jsonMode));
         }
 
         public ArrayBuilder add(BsonValue... values) {
@@ -1121,15 +1149,74 @@ public class BsonUtils {
             return this;
         }
 
-        public ArrayBuilder add(DocumentBuilder builder) {
-            Objects.nonNull(builder);
-            array.add(builder.get());
+        public ArrayBuilder add(String... values) {
+            Objects.nonNull(values);
+            Arrays.stream(values).map(v -> new BsonString(v)).forEach(array::add);
             return this;
         }
 
-        public ArrayBuilder add(ArrayBuilder builder) {
-            Objects.nonNull(builder);
-            array.add(builder.get());
+        public ArrayBuilder add(Integer... values) {
+            Objects.nonNull(values);
+            Arrays.stream(values).map(v -> new BsonInt32(v)).forEach(array::add);
+            return this;
+        }
+
+        public ArrayBuilder add(Long... values) {
+            Objects.nonNull(values);
+            Arrays.stream(values).map(v -> new BsonInt64(v)).forEach(array::add);
+            return this;
+        }
+
+        public ArrayBuilder add(Float... values) {
+            Objects.nonNull(values);
+            Arrays.stream(values).map(v -> new BsonDouble(v)).forEach(array::add);
+            return this;
+        }
+
+        public ArrayBuilder add(Decimal128... values) {
+            Objects.nonNull(values);
+            Arrays.stream(values).map(v -> new BsonDecimal128(v)).forEach(array::add);
+            return this;
+        }
+
+        public ArrayBuilder add(Boolean... values) {
+            Objects.nonNull(values);
+            Arrays.stream(values).map(v -> new BsonBoolean(v)).forEach(array::add);
+            return this;
+        }
+
+        public ArrayBuilder add(Instant... values) {
+            Objects.nonNull(values);
+            Arrays.stream(values).map(v -> new BsonDateTime(v.getEpochSecond())).forEach(array::add);
+            return this;
+        }
+
+        public ArrayBuilder add(Date... values) {
+            Objects.nonNull(values);
+            Arrays.stream(values).map(v -> new BsonDateTime(v.getTime())).forEach(array::add);
+            return this;
+        }
+
+        public ArrayBuilder add(ObjectId... values) {
+            Objects.nonNull(values);
+            Arrays.stream(values).map(v -> new BsonObjectId(v)).forEach(array::add);
+            return this;
+        }
+
+        public ArrayBuilder addNull() {
+            array.add(BsonNull.VALUE);
+            return this;
+        }
+
+        public ArrayBuilder add(DocumentBuilder... builders) {
+            Objects.nonNull(builders);
+            Arrays.stream(builders).map(DocumentBuilder::get).forEach(array::add);
+            return this;
+        }
+
+        public ArrayBuilder add(ArrayBuilder... builders) {
+            Objects.nonNull(builders);
+            Arrays.stream(builders).map(ArrayBuilder::get).forEach(array::add);
             return this;
         }
 
