@@ -59,7 +59,7 @@ public class FullAuthorizer implements Authorizer {
     }
 
     @InjectConfiguration
-    public void init(Map<String, Object> confArgs) {
+    public void initConf(Map<String, Object> confArgs) {
         this.authenticationRequired = argValue(confArgs, "authentication-required");
     }
 
