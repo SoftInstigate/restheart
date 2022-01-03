@@ -47,6 +47,8 @@ import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.xml.namespace.QName;
+
 import org.apache.commons.jxpath.JXPathContext;
 import org.restheart.utils.URLUtils;
 import org.slf4j.Logger;
@@ -200,20 +202,10 @@ public class Configuration {
 
     @Override
     public String toString() {
-        return "Configuration{" + "instanceName=" + instanceName + ", configurationFilePath="
-                + PATH + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost
-                + ", httpListener=" + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost
-                + ", ajpListener=" + ajpListener + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost
-                + ", pluginsDirectory=" + pluginsDirectory + ", keystoreFile=" + keystoreFile + ", keystorePassword="
-                + keystorePassword + ", certPassword=" + certPassword + ", proxies=" + proxies + ", pluginsArgs="
-                + pluginsArgs + ", authMechanisms=" + authMechanisms + ", authenticators=" + authenticators
-                + ", authorizers=" + authorizers + ", tokenManager=" + tokenManagers + ", logFilePath=" + logFilePath
-                + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile
-                + ", traceHeaders=" + traceHeaders + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads
-                + ", workerThreads=" + workerThreads + ", bufferSize=" + bufferSize + ", directBuffers=" + directBuffers
-                + ", forceGzipEncoding=" + forceGzipEncoding + ", connectionOptions=" + connectionOptions
-                + ", logExchangeDump=" + logExchangeDump + ", ansiConsole=" + ansiConsole
-                + ", allowUnescapedCharactersInUrl=" + allowUnescapedCharactersInUrl + '}';
+        var sw = new StringWriter();
+        new Yaml().dump(conf, sw);
+
+        return sw.toString();
     }
 
     public Map<String, Object> toMap() {

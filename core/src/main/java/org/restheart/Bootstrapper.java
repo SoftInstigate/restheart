@@ -159,6 +159,7 @@ public class Bootstrapper {
 
     private static Path CONFIGURATION_FILE;
     private static Path PROPERTIES_FILE;
+    private static boolean printConfiguration = false;
 
     private static GracefulShutdownHandler HANDLERS = null;
     private static Configuration configuration;
@@ -207,6 +208,8 @@ public class Bootstrapper {
                     .format(Version.getInstance().getBuildTime())));
                 System.exit(0);
             }
+
+            printConfiguration = parameters.printConfiguration;
 
             var confFilePath = (parameters.configPath == null)
                     ? System.getenv("RESTHEART__CONFFILE")
@@ -490,6 +493,13 @@ public class Bootstrapper {
             Configuration.Builder.build(CONFIGURATION_FILE, PROPERTIES_FILE, false);
         } catch (ConfigurationException ex) {
             logErrorAndExit(ex.getMessage() + EXITING, ex, false, -1);
+        }
+
+        // if -p, just print the configuration to sterr and exit
+        if (printConfiguration) {
+            LOGGER.info("Printing configuration and exiting");
+            System.err.println(configuration.toString());
+            System.exit(0);
         }
 
         // force instantiation of all plugins singletons
@@ -1228,6 +1238,9 @@ public class Bootstrapper {
 
         @Option(names = {"-h", "--help"}, usageHelp = true, description = "This help message")
         private boolean help = false;
+
+        @Option(names = {"-p", "--printConfiguration"}, description = "Print the configuration to the standard error and exit")
+        private boolean printConfiguration = false;
 
         @Option(names = { "-v", "--version" }, versionHelp = true, description = "Print product version to the output stream and exit")
         boolean versionRequested;
