@@ -380,7 +380,7 @@ public class Bootstrapper {
                 + INSTANCE
                 + ansi().fg(RED).bold().a(instanceName).reset().toString());
         LOGGER.info(VERSION, Configuration.VERSION);
-        LOGGER.debug("Configuration = " + configuration.toString());
+        LOGGER.debug("Configuration:\n" + configuration.toString());
     }
 
     /**
