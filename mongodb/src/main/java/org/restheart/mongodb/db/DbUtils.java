@@ -58,14 +58,13 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @author Nath Papadacis {@literal <nath@thirststudios.co.uk>}
  */
-public class DAOUtils {
+public class DbUtils {
 
     /**
      *
      */
-    public final static Logger LOGGER = LoggerFactory.getLogger(DAOUtils.class);
+    public final static Logger LOGGER = LoggerFactory.getLogger(DbUtils.class);
 
     /**
      *
@@ -160,41 +159,27 @@ public class DAOUtils {
     }
 
     /**
+     * Writes a mongo document
      *
-     * @param cs the client session
-     * @param coll
-     * @param documentId use Optional.empty() to specify no documentId (null is
-     * _id: null)
-     * @param filter
-     * @param shardKeys
-     * @param data
-     * @param replace
-     * @param upsert whether or not to allow upsert mode
-     * @return the old document
-     */
-    // public static OperationResult writeDocument(
-    //     final Optional<ClientSession> cs,
-    //     final MongoCollection<BsonDocument> coll,
-    //     final Optional<BsonValue> documentId,
-    //     final Optional<BsonDocument> filter,
-    //     final Optional<BsonDocument> shardKeys,
-    //     final BsonDocument data,
-    //     final boolean replace,
-    //     final WRITE_MODE writeMode) {
-    //     return writeDocument(
-    //         cs,
-    //         coll,
-    //         documentId,
-    //         filter,
-    //         shardKeys,
-    //         data,
-    //         replace,
-    //         false,
-    //         writeMode);
-    // }
-
-    /**
-     * Update a mongo document
+     * The MongoDB write operation depends on the request method and on the write mode as follows:
+     * --------------------------------------------------------------------------------------------
+     * | wm     | method | URI         | write operation                 |  wrop argument         |
+     * --------------------------------------------------------------------------------------------
+     * | insert | POST   | /coll       | insertOne                       | document               |
+     * | insert | PUT    | /coll/docid | insertOne                       | document               |
+     * | insert | PATCH  | /coll/docid | findOneAndUpdate(upsert:true)(1)| update operator expr   |
+     * --------------------------------------------------------------------------------------------
+     * | update | POST   | /coll       | findOneAndReplace(upsert:false) | document               |
+     * | update | PUT    | /coll/docid | findOneAndReplace(upsert:false) | document               |
+     * | update | PATCH  | /coll/docid | findOneAndUpdate(upsert:false)  | update operator expr   |
+     * -----------------
+     * ---------------------------------------------------------------------------
+     * | upsert | POST   | /coll       | findOneAndReplace(upsert:true)  | document               |
+     * | upsert | PUT    | /coll/docid | findOneAndReplace(upsert:true)  | document               |
+     * | upsert | PATCH  | /coll/docid | findOneAndUpdate(upsert:true)   | update operator expr   |
+     * --------------------------------------------------------------------------------------------
+     * (1) uses a find condition that won't match any existing document, making sure the operation is an insert
+     *
      *
      * @param cs the client session
      * @param coll
@@ -222,13 +207,6 @@ public class DAOUtils {
         final Optional<BsonDocument> filter,
         final Optional<BsonDocument> shardKeys,
         final BsonDocument data) {
-
-        // final boolean replace was
-        //      PUT -> false
-        //      PATCH -> true
-        //      POST -> false
-        // final boolean deepPatching, true if PATCH
-
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
         Objects.requireNonNull(writeMode);

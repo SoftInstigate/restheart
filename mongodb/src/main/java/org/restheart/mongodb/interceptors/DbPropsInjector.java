@@ -27,7 +27,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
@@ -48,16 +48,16 @@ import org.restheart.utils.HttpStatus;
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         priority = Integer.MIN_VALUE)
 public class DbPropsInjector implements MongoInterceptor {
-    private DatabaseImpl dbsDAO = null;
+    private Databases dbs = null;
 
     /**
-     * Makes sure that dbsDAO is instantiated after MongoClient initialization
+     * Makes sure that dbs is instantiated after MongoClient initialization
      *
      * @param mclient
      */
     @InjectMongoClient
     public void init(MongoClient mclient) {
-        this.dbsDAO = new DatabaseImpl();
+        this.dbs = Databases.get();
     }
 
     /**
@@ -73,7 +73,7 @@ public class DbPropsInjector implements MongoInterceptor {
             BsonDocument dbProps;
 
             if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
-                dbProps = dbsDAO.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), dbName);
+                dbProps = dbs.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), dbName);
             } else {
                 dbProps = MetadataCachesSingleton.getInstance().getDBProperties(dbName);
             }
@@ -97,7 +97,7 @@ public class DbPropsInjector implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return this.dbsDAO != null
+        return this.dbs != null
             && request.isHandledBy("mongo")
             && !(request.isInError()
             || request.isSessions()

@@ -50,7 +50,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.db.Documents;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -167,9 +167,9 @@ public class LoadPutPT extends AbstractPT {
      * @throws IOException
      */
     public void dbdirect() throws IOException {
-        BsonDocument content = new BsonDocument("random",  new BsonDouble(Math.random()));
+        var content = new BsonDocument("random",  new BsonDouble(Math.random()));
 
-        new DocumentDAO().writeDocument(
+        Documents.get().writeDocument(
                 Optional.empty(), // no client session
                 METHOD.POST,
                 WRITE_MODE.UPSERT,

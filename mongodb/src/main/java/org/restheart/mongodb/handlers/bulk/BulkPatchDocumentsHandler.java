@@ -27,7 +27,7 @@ import java.util.Optional;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.db.Documents;
 
 /**
  *
@@ -35,22 +35,13 @@ import org.restheart.mongodb.db.DocumentDAO;
  */
 public class BulkPatchDocumentsHandler extends PipelinedHandler {
 
-    private final DocumentDAO documentDAO;
+    private final Documents documents = Documents.get();;
 
     /**
      * Creates a new instance of PatchDocumentHandler
      */
     public BulkPatchDocumentsHandler() {
-        this(null, new DocumentDAO());
-    }
-
-    /**
-     *
-     * @param documentDAO
-     */
-    public BulkPatchDocumentsHandler(DocumentDAO documentDAO) {
-        super(null);
-        this.documentDAO = documentDAO;
+        this(null);
     }
 
     /**
@@ -59,17 +50,6 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
      */
     public BulkPatchDocumentsHandler(PipelinedHandler next) {
         super(next);
-        this.documentDAO = new DocumentDAO();
-    }
-
-    /**
-     *
-     * @param next
-     * @param documentDAO
-     */
-    public BulkPatchDocumentsHandler(PipelinedHandler next, DocumentDAO documentDAO) {
-        super(next);
-        this.documentDAO = documentDAO;
     }
 
     /**
@@ -87,7 +67,7 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
             return;
         }
 
-        var result = this.documentDAO.bulkPatchDocuments(
+        var result = this.documents.bulkPatchDocuments(
             Optional.ofNullable(request.getClientSession()),
             request.getDBName(),
             request.getCollectionName(),

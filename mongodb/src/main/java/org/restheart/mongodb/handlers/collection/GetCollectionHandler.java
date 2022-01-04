@@ -31,8 +31,7 @@ import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.Database;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -43,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetCollectionHandler extends PipelinedHandler {
-    private Database dbsDAO = new DatabaseImpl();
+    private Databases dbs = Databases.get();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionHandler.class);
 
@@ -68,9 +67,9 @@ public class GetCollectionHandler extends PipelinedHandler {
      * @param dbsDAO
      */
     @VisibleForTesting
-    public GetCollectionHandler(PipelinedHandler next, Database dbsDAO) {
+    public GetCollectionHandler(PipelinedHandler next, Databases dbsDAO) {
         super(next);
-        this.dbsDAO = dbsDAO;
+        this.dbs = dbsDAO;
     }
 
     /**
@@ -88,12 +87,12 @@ public class GetCollectionHandler extends PipelinedHandler {
             return;
         }
 
-        var coll = dbsDAO.getCollection(request.getDBName(), request.getCollectionName());
+        var coll = dbs.getCollection(request.getDBName(), request.getCollectionName());
 
         long size = -1;
 
         if (request.isCount()) {
-            size = dbsDAO.getCollectionSize(Optional.ofNullable(request.getClientSession()), coll, request.getFiltersDocument());
+            size = dbs.getCollectionSize(Optional.ofNullable(request.getClientSession()), coll, request.getFiltersDocument());
         }
 
         // ***** get data
@@ -101,7 +100,7 @@ public class GetCollectionHandler extends PipelinedHandler {
 
         if (request.getPagesize() > 0) {
             try {
-                data = dbsDAO.getCollectionData(
+                data = dbs.getCollectionData(
                         Optional.ofNullable(request.getClientSession()),
                         coll,
                         request.getPage(),

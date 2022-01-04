@@ -51,9 +51,8 @@ import org.junit.BeforeClass;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-import org.restheart.mongodb.db.Database;
-import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.db.Databases;
+import org.restheart.mongodb.db.Documents;
 
 /**
  *
@@ -725,7 +724,7 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
                 .addParameter("hal", "f")
                 .build();
     }
-    private final Database dbsDAO = new DatabaseImpl();
+    private final Databases dbs = Databases.get();
 
     /**
      *
@@ -760,17 +759,17 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     }
 
     private void createTestData() {
-        dbsDAO.upsertDB(Optional.empty(), METHOD.PUT, false, dbName, dbProps, new ObjectId().toString(), false);
+        dbs.upsertDB(Optional.empty(), METHOD.PUT, false, dbName, dbProps, new ObjectId().toString(), false);
 
-        dbsDAO.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, collection1Name, coll1Props, new ObjectId().toString(), false);
-        dbsDAO.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, collection2Name, coll2Props, new ObjectId().toString(), false);
-        dbsDAO.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, collection1Name, coll1Props, new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, collection2Name, coll2Props, new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false);
 
         for (var index : docsCollectionIndexesStrings) {
-            dbsDAO.createIndex(Optional.empty(), dbName, docsCollectionName, BsonDocument.parse(index), Optional.empty());
+            dbs.createIndex(Optional.empty(), dbName, docsCollectionName, BsonDocument.parse(index), Optional.empty());
         }
 
-        final var documentDAO = new DocumentDAO();
+        final var documentDAO = Documents.get();
         documentDAO.writeDocument(Optional.empty(), METHOD.PUT, WRITE_MODE.UPSERT, dbName, collection1Name, Optional.of(new BsonString(document1Id)), Optional.empty(), Optional.empty(), document1Props, new ObjectId().toString(), false);
         documentDAO.writeDocument(Optional.empty(), METHOD.PUT, WRITE_MODE.UPSERT, dbName, collection2Name, Optional.of(new BsonString(document2Id)), Optional.empty(), Optional.empty(), document2Props, new ObjectId().toString(), false);
 

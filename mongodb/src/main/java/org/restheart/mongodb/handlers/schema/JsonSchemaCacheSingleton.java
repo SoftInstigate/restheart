@@ -32,7 +32,7 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,14 +51,12 @@ public class JsonSchemaCacheSingleton {
         return CachesSingletonHolder.INSTANCE;
 
     }
-    private final DatabaseImpl dbsDAO;
+    private final Databases dbs = Databases.get();;
 
     private Cache<String, Schema> schemaCache = null;
     private Cache<String, BsonDocument> rawSchemaCache = null;
 
     JsonSchemaCacheSingleton() {
-        dbsDAO = new DatabaseImpl();
-
         if (MongoServiceConfiguration.get().isSchemaCacheEnabled()) {
             this.schemaCache = CacheFactory.createLocalCache(MAX_CACHE_SIZE,
                     Cache.EXPIRE_POLICY.AFTER_WRITE,
@@ -142,11 +140,8 @@ public class JsonSchemaCacheSingleton {
                 new JSONObject(document.toJson()), new SchemaStoreClient());
     }
 
-    private BsonDocument loadRaw(
-            String schemaStoreDb,
-            BsonValue schemaId)
-            throws JsonSchemaNotFoundException {
-        var document = dbsDAO.getCollection(schemaStoreDb, _SCHEMAS)
+    private BsonDocument loadRaw( String schemaStoreDb, BsonValue schemaId) throws JsonSchemaNotFoundException {
+        var document = dbs.getCollection(schemaStoreDb, _SCHEMAS)
                 .find(eq("_id", schemaId))
                 .first();
 

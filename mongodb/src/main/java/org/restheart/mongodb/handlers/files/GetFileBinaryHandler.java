@@ -34,10 +34,10 @@ import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.mongodb.db.GridFs;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.mongodb.utils.ResponseHelper;
-import static org.restheart.mongodb.db.GridFsDAO.extractBucketName;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +59,8 @@ public class GetFileBinaryHandler extends PipelinedHandler {
     public static final String CONTENT_TRANSFER_ENCODING_BINARY = "binary";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetFileBinaryHandler.class);
+
+    private final GridFs gridFs = GridFs.get();
 
     /**
      * Creates a new instance of GetFileBinaryHandler
@@ -93,7 +95,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         }
 
         LOGGER.trace("GET " + exchange.getRequestURL());
-        final var bucket = extractBucketName(request.getCollectionName());
+        final var bucket = gridFs.extractBucketName(request.getCollectionName());
 
         var gridFSBucket = GridFSBuckets.create(MongoClientSingleton.getInstance().getClient().getDatabase(request.getDBName()), bucket);
 

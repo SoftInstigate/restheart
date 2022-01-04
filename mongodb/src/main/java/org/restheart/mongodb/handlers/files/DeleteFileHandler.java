@@ -25,9 +25,8 @@ import io.undertow.util.Headers;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.GridFsDAO;
-import org.restheart.mongodb.db.GridFsRepository;
+import org.restheart.mongodb.db.Databases;
+import org.restheart.mongodb.db.GridFs;
 import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -38,15 +37,15 @@ import org.restheart.utils.HttpStatus;
  */
 public class DeleteFileHandler extends PipelinedHandler {
 
-    private final GridFsRepository gridFsDAO;
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final GridFs gridFs = GridFs.get();
+    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of DeleteFileHandler
      *
      */
     public DeleteFileHandler() {
-        this(new GridFsDAO());
+        this(null);
     }
 
     /**
@@ -56,17 +55,6 @@ public class DeleteFileHandler extends PipelinedHandler {
      */
     public DeleteFileHandler(PipelinedHandler next) {
         super(next);
-        this.gridFsDAO = new GridFsDAO();
-    }
-
-    /**
-     * Creates a new instance of DeleteFileHandler
-     *
-     * @param gridFsDAO
-     */
-    public DeleteFileHandler(GridFsRepository gridFsDAO) {
-        super(null);
-        this.gridFsDAO = gridFsDAO;
     }
 
     /**
@@ -84,8 +72,8 @@ public class DeleteFileHandler extends PipelinedHandler {
             return;
         }
 
-        OperationResult result = this.gridFsDAO
-                .deleteFile(dbsDAO, request.getDBName(),
+        OperationResult result = this.gridFs
+                .deleteFile(dbs, request.getDBName(),
                         request.getCollectionName(),
                         request.getDocumentId(),
                         request.getFiltersDocument(),

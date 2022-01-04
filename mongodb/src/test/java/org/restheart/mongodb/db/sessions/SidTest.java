@@ -18,12 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.db.sessions;
+package org.restheart.mongodb.db.sessions;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.restheart.mongodb.db.sessions.SessionOptions;
-import org.restheart.mongodb.db.sessions.Sid;
 
 /**
  *

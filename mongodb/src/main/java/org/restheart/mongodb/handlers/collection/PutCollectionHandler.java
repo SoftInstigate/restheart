@@ -29,8 +29,7 @@ import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.Database;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -40,7 +39,7 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PutCollectionHandler extends PipelinedHandler {
-    private Database dbsDAO = new DatabaseImpl();
+    private Databases dbs = Databases.get();
     /**
      * Creates a new instance of PutCollectionHandler
      */
@@ -64,9 +63,9 @@ public class PutCollectionHandler extends PipelinedHandler {
      * @param dbsDAO
      */
     @VisibleForTesting
-    public PutCollectionHandler(PipelinedHandler next, Database dbsDAO) {
+    public PutCollectionHandler(PipelinedHandler next, Databases dbsDAO) {
         super(next);
-        this.dbsDAO = dbsDAO;
+        this.dbs = dbsDAO;
     }
 
     /**
@@ -99,7 +98,7 @@ public class PutCollectionHandler extends PipelinedHandler {
 
         final BsonDocument content = _content.asDocument();
 
-        var result = dbsDAO.upsertCollection(
+        var result = dbs.upsertCollection(
             Optional.ofNullable(request.getClientSession()),
             request.getMethod(),
             request.getCollectionProps() != null, // true if updating

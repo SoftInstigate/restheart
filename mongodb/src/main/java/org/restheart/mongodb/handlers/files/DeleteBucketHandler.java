@@ -24,9 +24,8 @@ import io.undertow.server.HttpServerExchange;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.GridFsDAO;
-import org.restheart.mongodb.db.GridFsRepository;
+import org.restheart.mongodb.db.Databases;
+import org.restheart.mongodb.db.GridFs;
 import org.restheart.mongodb.handlers.collection.DeleteCollectionHandler;
 
 /**
@@ -35,8 +34,8 @@ import org.restheart.mongodb.handlers.collection.DeleteCollectionHandler;
  */
 public class DeleteBucketHandler extends DeleteCollectionHandler {
 
-    private final GridFsRepository gridFsDAO;
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final GridFs gridFs = GridFs.get();
+    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of DeleteBucketHandler
@@ -44,7 +43,6 @@ public class DeleteBucketHandler extends DeleteCollectionHandler {
      */
     public DeleteBucketHandler() {
         super();
-        this.gridFsDAO = new GridFsDAO();
     }
 
     /**
@@ -54,7 +52,6 @@ public class DeleteBucketHandler extends DeleteCollectionHandler {
      */
     public DeleteBucketHandler(PipelinedHandler next) {
         super(next);
-        this.gridFsDAO = new GridFsDAO();
     }
 
     /**
@@ -73,7 +70,7 @@ public class DeleteBucketHandler extends DeleteCollectionHandler {
         }
 
         try {
-            gridFsDAO.deleteChunksCollection(dbsDAO, request.getDBName(), request.getCollectionName());
+            gridFs.deleteChunksCollection(dbs, request.getDBName(), request.getCollectionName());
         } catch (Throwable t) {
             response.addWarning("error removing the bucket file chunks: " + t.getMessage());
         }

@@ -56,13 +56,13 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-class CollectionDAO {
+class Collections {
 
     private static final int BATCH_SIZE = MongoServiceConfiguration.get() != null
                     ? MongoServiceConfiguration.get().getCursorBatchSize()
                     : DEFAULT_CURSOR_BATCH_SIZE;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Collections.class);
     private static final BsonDocument FIELDS_TO_RETURN;
 
     static {
@@ -71,10 +71,17 @@ class CollectionDAO {
         FIELDS_TO_RETURN.put("_etag", new BsonInt32(1));
     }
 
-    private final MongoClient client;
 
-    CollectionDAO(MongoClient client) {
-        this.client = client;
+
+    private final MongoClient client = MongoClientSingleton.getInstance().getClient();
+
+    private Collections() {
+    }
+
+    private static Collections INSTANCE = new Collections();
+
+    public static Collections get() {
+        return INSTANCE;
     }
 
     /**
@@ -299,7 +306,7 @@ class CollectionDAO {
 
         var newEtag = new ObjectId();
 
-        final var content = DAOUtils.validContent(properties);
+        final var content = DbUtils.validContent(properties);
 
         content.put("_etag", new BsonObjectId(newEtag));
         content.remove("_id"); // make sure we don't change this field
@@ -355,7 +362,7 @@ class CollectionDAO {
         final ObjectId newEtag) {
            return switch(method) {
                 case PATCH -> {
-                    var ret = DAOUtils.writeDocument(
+                    var ret = DbUtils.writeDocument(
                         cs,
                         METHOD.PATCH,
                         WRITE_MODE.UPSERT,
@@ -369,7 +376,7 @@ class CollectionDAO {
                 }
 
                 case PUT -> {
-                    var ret = DAOUtils.writeDocument(
+                    var ret = DbUtils.writeDocument(
                         cs,
                         METHOD.PUT,
                         WRITE_MODE.UPSERT,
