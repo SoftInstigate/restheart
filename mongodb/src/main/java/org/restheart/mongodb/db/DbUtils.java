@@ -173,8 +173,7 @@ public class DbUtils {
      * | update | POST   | /coll       | findOneAndReplace(upsert:false) | document               |
      * | update | PUT    | /coll/docid | findOneAndReplace(upsert:false) | document               |
      * | update | PATCH  | /coll/docid | findOneAndUpdate(upsert:false)  | update operator expr   |
-     * -----------------
-     * ---------------------------------------------------------------------------
+     * --------------------------------------------------------------------------------------------
      * | upsert | POST   | /coll       | findOneAndReplace(upsert:true)  | document               |
      * | upsert | PUT    | /coll/docid | findOneAndReplace(upsert:true)  | document               |
      * | upsert | PATCH  | /coll/docid | findOneAndUpdate(upsert:true)   | update operator expr   |
@@ -183,14 +182,14 @@ public class DbUtils {
      *
      *
      * @param cs the client session
-     * @param coll
      * @param method the request method
      * @param writeMode the write mode
+     * @param coll the collection
      * @param documentId use Optional.empty() to specify no documentId
      * @param filter
      * @param shardKeys
      * @param data
-     * @return the new or old document depending on returnNew
+     * @return the OperationResult
      */
     public static OperationResult writeDocument(
         final Optional<ClientSession> cs,
@@ -237,17 +236,18 @@ public class DbUtils {
 
         return switch(writeMode) {
             case INSERT -> switch(method) {
-                case POST, PUT, PATCH -> {
-                    // don't allow $ prefixed operators as key values
-                    // note that from MongoDB 5.0 $ prefixed keys are permitted
-                    // TODO allow it in the future
-                    // TODO move this to BsonRequestContentInjector
-                    if (BsonUtils.containsUpdateOperators(data, true)) {
-                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument);
+                case PATCH -> {
+                    try {
+                        var newDocument = cs.isPresent()
+                            ? coll.findOneAndUpdate(cs.get(), IMPOSSIBLE_CONDITION, getUpdateDocument(data, false), FAU_NOT_UPSERT_OPS)
+                            : coll.findOneAndUpdate(IMPOSSIBLE_CONDITION, getUpdateDocument(data, false), FAU_UPSERT_OPS);
+                        yield new OperationResult(-1, oldDocument, newDocument);
+                    } catch (IllegalArgumentException iae) {
+                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
                     }
+                }
 
-                    BsonDocument newDocument;
-
+                case POST, PUT -> {
                     try {
                         resolveCurrentDateOperator(data);
 
@@ -261,12 +261,11 @@ public class DbUtils {
                             insertedQuery = and(insertedQuery, shardKeys.get());
                         }
 
-                        newDocument = cs.isPresent()? coll.find(cs.get(), insertedQuery).first(): coll.find(insertedQuery).first();
+                        var newDocument = cs.isPresent()? coll.find(cs.get(), insertedQuery).first(): coll.find(insertedQuery).first();
+                        yield new OperationResult(-1, oldDocument, newDocument);
                     } catch (IllegalArgumentException iae) {
                         yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
                     }
-
-                    yield new OperationResult(-1, oldDocument, newDocument);
                 }
 
                 default -> throw new UnsupportedOperationException("unsupported method " + method);
@@ -274,36 +273,31 @@ public class DbUtils {
 
             case UPDATE, UPSERT -> switch(method) {
                 case PATCH -> {
-                    BsonDocument newDocument;
-
                     try {
                         final var ops = writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS;
-                        newDocument = cs.isPresent()
+                        var newDocument = cs.isPresent()
                             ? coll.findOneAndUpdate(cs.get(), query, getUpdateDocument(data, false), ops)
                             : coll.findOneAndUpdate(query, getUpdateDocument(data, false), ops);
+                        yield new OperationResult(-1, oldDocument, newDocument);
                     } catch (IllegalArgumentException iae) {
                         yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
                     }
-
-                    yield new OperationResult(-1, oldDocument, newDocument);
                 }
 
                 case PUT, POST -> {
-                    BsonDocument newDocument;
                     try {
                         if (filter.isPresent() && !filter.get().isEmpty()) {
                             query = and(query, filter.get());
                         }
 
                         final var ops = writeMode == WRITE_MODE.UPSERT ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS;
-                        newDocument = cs.isPresent()
+                        var newDocument = cs.isPresent()
                             ? coll.findOneAndReplace(cs.get(), query, getReplaceDocument(data), ops)
                             : coll.findOneAndReplace(query, getReplaceDocument(data), ops);
+                        yield new OperationResult(-1, oldDocument, newDocument);
                     } catch (IllegalArgumentException iae) {
                         yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
                     }
-
-                    yield new OperationResult(-1, oldDocument, newDocument);
                 }
 
                 default -> throw new UnsupportedOperationException("unsupported method " + method);
