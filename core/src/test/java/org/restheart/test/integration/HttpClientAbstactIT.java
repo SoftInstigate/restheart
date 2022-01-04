@@ -48,6 +48,7 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.restheart.exchange.Exchange;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.mongodb.db.Database;
 import org.restheart.mongodb.db.DatabaseImpl;
@@ -758,22 +759,22 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     }
 
     private void createTestData() {
-        dbsDAO.upsertDB(Optional.empty(), dbName, dbProps, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertDB(Optional.empty(), METHOD.PUT, false, dbName, dbProps, new ObjectId().toString(), false);
 
-        dbsDAO.upsertCollection(Optional.empty(), dbName, collection1Name, coll1Props, new ObjectId().toString(), false, false, false);
-        dbsDAO.upsertCollection(Optional.empty(), dbName, collection2Name, coll2Props, new ObjectId().toString(), false, false, false);
-        dbsDAO.upsertCollection(Optional.empty(), dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false, false, false);
+        dbsDAO.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, collection1Name, coll1Props, new ObjectId().toString(), false);
+        dbsDAO.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, collection2Name, coll2Props, new ObjectId().toString(), false);
+        dbsDAO.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false);
 
         for (var index : docsCollectionIndexesStrings) {
             dbsDAO.createIndex(Optional.empty(), dbName, docsCollectionName, BsonDocument.parse(index), Optional.empty());
         }
 
         final var documentDAO = new DocumentDAO();
-        documentDAO.writeDocument(Optional.empty(), dbName, collection1Name, Optional.of(new BsonString(document1Id)), Optional.empty(), Optional.empty(), document1Props, new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
-        documentDAO.writeDocument(Optional.empty(), dbName, collection2Name, Optional.of(new BsonString(document2Id)), Optional.empty(), Optional.empty(), document2Props, new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
+        documentDAO.writeDocument(Optional.empty(), METHOD.PUT, WRITE_MODE.UPSERT, dbName, collection1Name, Optional.of(new BsonString(document1Id)), Optional.empty(), Optional.empty(), document1Props, new ObjectId().toString(), false);
+        documentDAO.writeDocument(Optional.empty(), METHOD.PUT, WRITE_MODE.UPSERT, dbName, collection2Name, Optional.of(new BsonString(document2Id)), Optional.empty(), Optional.empty(), document2Props, new ObjectId().toString(), false);
 
         for (String doc : docsPropsStrings) {
-            documentDAO.writeDocument(Optional.empty(), dbName, docsCollectionName, Optional.of(new BsonObjectId(new ObjectId())), Optional.empty(), Optional.empty(), BsonDocument.parse(doc), new ObjectId().toString(), false, WRITE_MODE.UPSERT, false);
+            documentDAO.writeDocument(Optional.empty(), METHOD.PUT, WRITE_MODE.UPSERT, dbName, docsCollectionName, Optional.of(new BsonObjectId(new ObjectId())), Optional.empty(), Optional.empty(), BsonDocument.parse(doc), new ObjectId().toString(), false);
         }
         LOG.debug("test data created");
     }

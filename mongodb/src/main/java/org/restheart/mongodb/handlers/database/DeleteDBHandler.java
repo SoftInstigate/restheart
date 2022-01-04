@@ -98,10 +98,6 @@ public class DeleteDBHandler extends PipelinedHandler {
             return;
         }
 
-        if (result.getEtag() != null) {
-            response.getHeaders().put(Headers.ETAG, result.getEtag().toString());
-        }
-
         response.setStatusCode(result.getHttpCode());
 
         MetadataCachesSingleton.getInstance().invalidateDb(request.getDBName());

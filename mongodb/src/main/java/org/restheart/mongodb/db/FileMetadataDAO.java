@@ -32,6 +32,7 @@ import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -56,6 +57,7 @@ public class FileMetadataDAO implements FileMetadataRepository {
     /**
      *
      * @param cs the client session
+     * @param method the request method
      * @param dbName
      * @param collName
      * @param documentId
@@ -63,13 +65,13 @@ public class FileMetadataDAO implements FileMetadataRepository {
      * @param shardKeys
      * @param newContent
      * @param requestEtag
-     * @param patching
      * @param checkEtag
      * @return
      */
     @Override
-    public OperationResult updateMetadata(
+    public OperationResult updateFileMetadata(
             final Optional<ClientSession> cs,
+            final METHOD method,
             final String dbName,
             final String collName,
             final Optional<BsonValue> documentId,
@@ -77,7 +79,6 @@ public class FileMetadataDAO implements FileMetadataRepository {
             final Optional<BsonDocument> shardKeys,
             final BsonDocument newContent,
             final String requestEtag,
-            final boolean patching,
             final boolean checkEtag) {
         var mcoll = collectionDAO.getCollection(dbName, collName);
 
@@ -87,60 +88,67 @@ public class FileMetadataDAO implements FileMetadataRepository {
         final BsonDocument content = DAOUtils.validContent(newContent);
         content.get("metadata", new BsonDocument()).asDocument().put("_etag", newEtag);
 
-        var updateResult = DAOUtils.updateMetadata(
+        var updateResult = DAOUtils.updateFileMetadata(
                 cs,
                 mcoll,
+                method,
                 documentId,
                 filter,
                 shardKeys,
-                content,
-                patching);
+                content);
 
         var oldDocument = updateResult.getOldData();
 
-        if (patching) {
-            if (oldDocument == null) { // Attempted an insert of a new doc.
-                return new OperationResult(updateResult.getHttpCode() > 0
-                    ? updateResult.getHttpCode()
-                    : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
-            } else if (checkEtag) {
-                // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(
-                    cs,
-                    mcoll,
-                    shardKeys,
-                    oldDocument,
-                    newEtag,
-                    requestEtag,
-                    HttpStatus.SC_OK);
-            } else {
-                var query = eq("_id", documentId);
-
-                var newDocument = cs.isPresent()
-                    ? mcoll.find(cs.get(), query).first()
-                    : mcoll.find(query).first();
-
-                return new OperationResult(updateResult.getHttpCode() > 0
-                        ? updateResult.getHttpCode()
-                        : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+        switch(method) {
+            case PUT -> {
+                if (oldDocument != null && checkEtag) { // update
+                    // check the old etag (in case restore the old document)
+                    return optimisticCheckEtag(
+                        cs,
+                        mcoll,
+                        shardKeys,
+                        oldDocument,
+                        newEtag,
+                        requestEtag,
+                        HttpStatus.SC_OK);
+                } else if (oldDocument != null) {  // update
+                    var query = eq("_id", documentId);
+                    var newDocument = cs.isPresent() ? mcoll.find(cs.get(), query).first() : mcoll.find(query).first();
+                    return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+                } else { // Attempted an insert of a new doc.
+                    return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
+                }
             }
-        } else if (oldDocument != null && checkEtag) { // update
-            // check the old etag (in case restore the old document)
-            return optimisticCheckEtag(
-                cs,
-                mcoll,
-                shardKeys,
-                oldDocument,
-                newEtag,
-                requestEtag,
-                HttpStatus.SC_OK);
-        } else if (oldDocument != null) {  // update
-            var query = eq("_id", documentId);
-            var newDocument = cs.isPresent() ? mcoll.find(cs.get(), query).first() : mcoll.find(query).first();
 
-            return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
-        } else { // Attempted an insert of a new doc.
-            return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
+            case PATCH -> {
+                if (oldDocument == null) { // Attempted an insert of a new doc.
+                    return new OperationResult(updateResult.getHttpCode() > 0
+                        ? updateResult.getHttpCode()
+                        : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
+                } else if (checkEtag) {
+                    // check the old etag (in case restore the old document version)
+                    return optimisticCheckEtag(
+                        cs,
+                        mcoll,
+                        shardKeys,
+                        oldDocument,
+                        newEtag,
+                        requestEtag,
+                        HttpStatus.SC_OK);
+                } else {
+                    var query = eq("_id", documentId);
+
+                    var newDocument = cs.isPresent()
+                        ? mcoll.find(cs.get(), query).first()
+                        : mcoll.find(query).first();
+
+                    return new OperationResult(updateResult.getHttpCode() > 0
+                            ? updateResult.getHttpCode()
+                            : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+                }
+            }
+
+            default -> throw new UnsupportedOperationException("method not supported " + method == null ? "null" : method.name());
         }
     }
 

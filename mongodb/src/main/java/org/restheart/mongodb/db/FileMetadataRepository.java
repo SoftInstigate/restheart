@@ -25,11 +25,13 @@ import java.util.Optional;
 import com.mongodb.client.ClientSession;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 public interface FileMetadataRepository {
 
     /**
      *
      * @param cs the client session
+     * @param method the request method
      * @param dbName
      * @param collName
      * @param documentId
@@ -37,12 +39,12 @@ public interface FileMetadataRepository {
      * @param shardKeys
      * @param newContent
      * @param requestEtag
-     * @param patching
      * @param checkEtag
-     * @return
+     * @return the operation result
      */
-    public abstract OperationResult updateMetadata(
+    public abstract OperationResult updateFileMetadata(
             final Optional<ClientSession> cs,
+            final METHOD method,
             final String dbName,
             final String collName,
             final Optional<BsonValue> documentId,
@@ -50,7 +52,5 @@ public interface FileMetadataRepository {
             final Optional<BsonDocument> shardKeys,
             final BsonDocument newContent,
             final String requestEtag,
-            final boolean patching,
             final boolean checkEtag);
-
 }

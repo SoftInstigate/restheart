@@ -97,6 +97,8 @@ public class PatchDocumentHandler extends PipelinedHandler {
 
         var result = documentDAO.writeDocument(
             Optional.ofNullable(request.getClientSession()),
+            request.getMethod(),
+            request.getWriteMode(),
             request.getDBName(),
             request.getCollectionName(),
             Optional.of(request.getDocumentId()),
@@ -104,8 +106,6 @@ public class PatchDocumentHandler extends PipelinedHandler {
             Optional.ofNullable(request.getShardKey()),
             content,
             request.getETag(),
-            true,
-            request.getWriteMode(),
             request.isETagCheckRequired());
 
         response.setDbOperationResult(result);

@@ -32,6 +32,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.json.JsonParseException;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.IllegalQueryParamenterException;
 
 /**
@@ -211,12 +212,12 @@ public interface Database {
      */
     OperationResult upsertCollection(
             final Optional<ClientSession> cs,
+            final METHOD method,
+            final boolean updating,
             final String dbName,
             final String collectionName,
             final BsonDocument content,
             final String requestEtag,
-            boolean updating,
-            final boolean patching,
             final boolean checkEtag);
 
     /**
@@ -232,11 +233,11 @@ public interface Database {
      */
     OperationResult upsertDB(
             final Optional<ClientSession> cs,
+            final METHOD method,
+            final boolean updating,
             final String dbName,
             final BsonDocument content,
             final String requestEtag,
-            final boolean updating,
-            final boolean patching,
             final boolean checkEtag);
 
     /**

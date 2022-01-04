@@ -146,8 +146,9 @@ public class FileMetadataHandler extends PipelinedHandler {
             return;
         }
 
-        var result = fileMetadataDAO.updateMetadata(
+        var result = fileMetadataDAO.updateFileMetadata(
             Optional.ofNullable(request.getClientSession()),
+            request.getMethod(),
             request.getDBName(),
             request.getCollectionName(),
             Optional.of(request.getDocumentId()),
@@ -155,7 +156,6 @@ public class FileMetadataHandler extends PipelinedHandler {
             Optional.ofNullable(request.getShardKey()),
             content,
             request.getETag(),
-            request.isPatch(),
             request.isETagCheckRequired());
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {

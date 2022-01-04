@@ -26,6 +26,7 @@ import com.mongodb.client.ClientSession;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 
 /**
@@ -36,6 +37,8 @@ public interface DocumentRepository {
     /**
      *
      * @param cs the client session
+     * @param method the request method
+     * @param writeMode the write mode
      * @param dbName
      * @param collName
      * @param documentId
@@ -43,45 +46,19 @@ public interface DocumentRepository {
      * @param shardedKeys
      * @param content
      * @param requestEtag
-     * @param patching
-     * @param writeMode
      * @param checkEtag
      * @return the OperationResult
      */
     OperationResult writeDocument(
             final Optional<ClientSession> cs,
+            final METHOD method,
+            final WRITE_MODE writeMode,
             final String dbName,
             final String collName,
             final Optional<BsonValue> documentId,
             final Optional<BsonDocument> filter,
             final Optional<BsonDocument> shardedKeys,
             final BsonDocument content,
-            final String requestEtag,
-            final boolean patching,
-            final WRITE_MODE writeMode,
-            final boolean checkEtag);
-
-    /**
-     *
-     * @param cs the client session
-     * @param dbName
-     * @param collName
-     * @param filter
-     * @param shardedKeys
-     * @param content
-     * @param writeMode
-     * @param requestEtag
-     * @param checkEtag
-     * @return the OperationResult
-     */
-    OperationResult writeDocumentPost(
-            final Optional<ClientSession> cs,
-            final String dbName,
-            final String collName,
-            final Optional<BsonDocument> filter,
-            final Optional<BsonDocument> shardedKeys,
-            final BsonDocument content,
-            final WRITE_MODE writeMode,
             final String requestEtag,
             final boolean checkEtag);
 

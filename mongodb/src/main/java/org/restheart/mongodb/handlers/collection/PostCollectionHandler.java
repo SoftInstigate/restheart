@@ -125,14 +125,16 @@ public class PostCollectionHandler extends PipelinedHandler {
             }
         }
 
-        var result = this.documentDAO.writeDocumentPost(
+        var result = this.documentDAO.writeDocument(
             Optional.ofNullable(request.getClientSession()),
+            request.getMethod(),
+            request.getWriteMode(),
             request.getDBName(),
             request.getCollectionName(),
+            Optional.ofNullable(content.get("_id")),
             Optional.ofNullable(request.getFiltersDocument()),
             Optional.ofNullable(request.getShardKey()),
             content,
-            request.getWriteMode(),
             request.getETag(),
             request.isETagCheckRequired());
 
