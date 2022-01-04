@@ -27,7 +27,7 @@ import java.util.Optional;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -35,7 +35,7 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DeleteIndexHandler extends PipelinedHandler {
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of DeleteIndexHandler
@@ -81,7 +81,7 @@ public class DeleteIndexHandler extends PipelinedHandler {
             return;
         }
 
-        var httpCode = dbsDAO.deleteIndex(
+        var httpCode = dbs.deleteIndex(
             Optional.ofNullable(request.getClientSession()),
             dbName,
             collectionName,

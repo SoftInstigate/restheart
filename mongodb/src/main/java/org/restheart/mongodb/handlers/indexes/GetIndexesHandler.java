@@ -26,7 +26,7 @@ import org.bson.BsonArray;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -34,7 +34,7 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetIndexesHandler extends PipelinedHandler {
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of GetIndexesHandler
@@ -67,7 +67,7 @@ public class GetIndexesHandler extends PipelinedHandler {
             return;
         }
 
-        var _indexes = dbsDAO.getCollectionIndexes(
+        var _indexes = dbs.getCollectionIndexes(
             Optional.ofNullable(request.getClientSession()),
             request.getDBName(),
             request.getCollectionName());

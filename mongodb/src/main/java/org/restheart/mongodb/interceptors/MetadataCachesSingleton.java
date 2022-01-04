@@ -27,8 +27,7 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.db.Database;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 
 /**
  * Caches for db and collection metadata
@@ -44,7 +43,7 @@ public class MetadataCachesSingleton {
     private static boolean enabled = false;
     private static final long MAX_CACHE_SIZE = 1_000;
 
-    private final Database dbsDAO;
+    private final Databases dbsDAO;
     private LoadingCache<String, BsonDocument> dbPropsCache = null;
     private LoadingCache<String, BsonDocument> collectionPropsCache = null;
 
@@ -76,7 +75,7 @@ public class MetadataCachesSingleton {
     /**
      * Default ctor
      */
-    private MetadataCachesSingleton(DatabaseImpl dbsDAO) {
+    private MetadataCachesSingleton(Databases dbsDAO) {
         this.dbsDAO = dbsDAO;
         setup();
     }
@@ -199,7 +198,7 @@ public class MetadataCachesSingleton {
     }
 
     private static class LocalCachesSingletonHolder {
-        private static final MetadataCachesSingleton INSTANCE = new MetadataCachesSingleton(new DatabaseImpl());
+        private static final MetadataCachesSingleton INSTANCE = new MetadataCachesSingleton(Databases.get());
 
         private LocalCachesSingletonHolder() {
         }

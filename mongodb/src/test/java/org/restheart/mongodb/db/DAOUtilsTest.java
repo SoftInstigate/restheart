@@ -61,12 +61,12 @@ public class DAOUtilsTest {
      */
     @Test
     public void testValidContent() {
-        BsonDocument dbo = DAOUtils.validContent(null);
+        BsonDocument dbo = DbUtils.validContent(null);
         assertNotNull(dbo);
         assertTrue(dbo.isDocument());
 
         dbo = new BsonDocument("name", new BsonString("test"));
-        assertEquals(DAOUtils.validContent(dbo), dbo);
+        assertEquals(DbUtils.validContent(dbo), dbo);
     }
 
 }

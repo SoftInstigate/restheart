@@ -37,7 +37,7 @@ import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -48,7 +48,7 @@ import org.restheart.utils.BsonUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetDocumentHandler extends PipelinedHandler {
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final Databases dbs = Databases.get();
 
     /**
      * Default ctor
@@ -133,7 +133,7 @@ public class GetDocumentHandler extends PipelinedHandler {
         }
 
         var cs = request.getClientSession();
-        var coll = dbsDAO.getCollection(request.getDBName(), collName);
+        var coll = dbs.getCollection(request.getDBName(), collName);
 
         var document = cs == null
                 ? coll.find(query).projection(fieldsToReturn).first()

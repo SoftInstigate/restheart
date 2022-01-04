@@ -37,7 +37,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.security.AclVarsInterpolator;
 import org.restheart.security.FileRealmAccount;
 import org.restheart.security.JwtAccount;
@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
 public class GetAggregationHandler extends PipelinedHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(GetAggregationHandler.class);
 
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final Databases dbs = Databases.get();
 
     /**
      * Default ctor
@@ -125,12 +125,12 @@ public class GetAggregationHandler extends PipelinedHandler {
                         var clientSession = request.getClientSession();
 
                         if (clientSession == null) {
-                            mrOutput = dbsDAO.getCollection(request.getDBName(), request.getCollectionName())
+                            mrOutput = dbs.getCollection(request.getDBName(), request.getCollectionName())
                                 .mapReduce(mapReduce.getResolvedMap(avars), mapReduce.getResolvedReduce(avars))
                                 .filter(mapReduce.getResolvedQuery(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
                         } else {
-                            mrOutput = dbsDAO.getCollection(request.getDBName(), request.getCollectionName())
+                            mrOutput = dbs.getCollection(request.getDBName(), request.getCollectionName())
                                 .mapReduce(clientSession, mapReduce.getResolvedMap(avars), mapReduce.getResolvedReduce(avars))
                                 .filter(mapReduce.getResolvedQuery(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
@@ -156,12 +156,12 @@ public class GetAggregationHandler extends PipelinedHandler {
                         var clientSession = request.getClientSession();
 
                         if (clientSession == null) {
-                            agrOutput = dbsDAO.getCollection(request.getDBName(), request.getCollectionName())
+                            agrOutput = dbs.getCollection(request.getDBName(), request.getCollectionName())
                                 .aggregate(pipeline.getResolvedStagesAsList(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
                                 .allowDiskUse(pipeline.getAllowDiskUse().getValue());
                         } else {
-                            agrOutput = dbsDAO.getCollection(request.getDBName(), request.getCollectionName())
+                            agrOutput = dbs.getCollection(request.getDBName(), request.getCollectionName())
                                 .aggregate(clientSession, pipeline.getResolvedStagesAsList(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
                                 .allowDiskUse(pipeline.getAllowDiskUse().getValue());

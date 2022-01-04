@@ -28,8 +28,7 @@ import org.bson.BsonArray;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.Database;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -38,7 +37,7 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetDBHandler extends PipelinedHandler {
-    private Database dbsDAO = new DatabaseImpl();
+    private Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of GetDBHandler
@@ -61,9 +60,9 @@ public class GetDBHandler extends PipelinedHandler {
      * @param dbsDAO
      */
     @VisibleForTesting
-    public GetDBHandler(PipelinedHandler next, Database dbsDAO) {
+    public GetDBHandler(PipelinedHandler next, Databases dbsDAO) {
         super(next);
-        this.dbsDAO = dbsDAO;
+        this.dbs = dbsDAO;
     }
 
     /**
@@ -81,10 +80,10 @@ public class GetDBHandler extends PipelinedHandler {
             return;
         }
 
-        var colls = dbsDAO.getCollectionNames(Optional.ofNullable(request.getClientSession()), request.getDBName());
+        var colls = dbs.getCollectionNames(Optional.ofNullable(request.getClientSession()), request.getDBName());
 
         if (request.getPagesize() > 0) {
-            var data = dbsDAO.getDatabaseData(
+            var data = dbs.getDatabaseData(
                 Optional.ofNullable(request.getClientSession()),
                 request.getDBName(),
                 colls,
@@ -96,7 +95,7 @@ public class GetDBHandler extends PipelinedHandler {
             response.setContent(new BsonArray());
         }
 
-        response.setCount(dbsDAO.getDBSize(colls));
+        response.setCount(dbs.getDBSize(colls));
 
         response.setContentTypeAsJson();
         response.setStatusCode(HttpStatus.SC_OK);

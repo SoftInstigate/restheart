@@ -28,9 +28,8 @@ import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.GridFsDAO;
-import org.restheart.mongodb.db.GridFsRepository;
+import org.restheart.mongodb.db.Databases;
+import org.restheart.mongodb.db.GridFs;
 import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.utils.HttpStatus;
@@ -45,15 +44,14 @@ import org.slf4j.LoggerFactory;
 public class PostBucketHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostBucketHandler.class);
-    private final GridFsRepository gridFsDAO;
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final GridFs gridFs = GridFs.get();;
+    private final Databases dbs = Databases.get();
 
     /**
      *
      */
     public PostBucketHandler() {
-        super();
-        this.gridFsDAO = new GridFsDAO();
+        this(null);
     }
 
     /**
@@ -62,17 +60,6 @@ public class PostBucketHandler extends PipelinedHandler {
      */
     public PostBucketHandler(PipelinedHandler next) {
         super(next);
-        this.gridFsDAO = new GridFsDAO();
-    }
-
-    /**
-     *
-     * @param next
-     * @param gridFsDAO
-     */
-    public PostBucketHandler(PipelinedHandler next, GridFsDAO gridFsDAO) {
-        super(next);
-        this.gridFsDAO = gridFsDAO;
     }
 
     /**
@@ -107,8 +94,8 @@ public class PostBucketHandler extends PipelinedHandler {
 
         try {
             if (request.getFilePath() != null) {
-                result = gridFsDAO
-                        .createFile(dbsDAO,
+                result = gridFs
+                        .createFile(dbs,
                                 request.getDBName(),
                                 request.getCollectionName(),
                                 metadata,

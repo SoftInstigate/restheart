@@ -30,7 +30,7 @@ import java.util.Optional;
 
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
@@ -50,7 +50,7 @@ import org.restheart.utils.HttpStatus;
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         priority = Integer.MIN_VALUE + 1)
 public class CollectionPropsInjector implements MongoInterceptor {
-    private DatabaseImpl dbsDAO = null;
+    private Databases dbs = null;
 
     private static final String RESOURCE_DOES_NOT_EXIST = "Resource does not exist";
     private static final String COLLECTION_DOES_NOT_EXIST = "Collection '%s' does not exist";
@@ -58,13 +58,13 @@ public class CollectionPropsInjector implements MongoInterceptor {
     private static final String SCHEMA_STORE_DOES_NOT_EXIST = "Schema Store does not exist";
 
     /**
-     * Makes sure that dbsDAO is instantiated after MongoClient initialization
+     * Makes sure that dbs is instantiated after MongoClient initialization
      *
      * @param mclient
      */
     @InjectMongoClient
     public void init(MongoClient mclient) {
-        this.dbsDAO = new DatabaseImpl();
+        this.dbs = Databases.get();
     }
 
     /**
@@ -82,7 +82,7 @@ public class CollectionPropsInjector implements MongoInterceptor {
             BsonDocument collProps;
 
             if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
-                collProps = dbsDAO.getCollectionProperties(Optional.ofNullable(request.getClientSession()), dbName, collName);
+                collProps = dbs.getCollectionProperties(Optional.ofNullable(request.getClientSession()), dbName, collName);
             } else {
                 collProps = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
             }
@@ -103,7 +103,7 @@ public class CollectionPropsInjector implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return dbsDAO != null
+        return dbs != null
                 && request.isHandledBy("mongo")
                 && !(request.isInError()
                 || request.isMetrics()

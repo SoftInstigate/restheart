@@ -30,7 +30,7 @@ import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -39,13 +39,13 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PutDocumentHandler extends PipelinedHandler {
-    private final DocumentDAO documentDAO;
+    private final Documents documents = Documents.get();;
 
     /**
      * Default ctor
      */
     public PutDocumentHandler() {
-        this(null, new DocumentDAO());
+        this(null);
     }
 
     /**
@@ -54,18 +54,7 @@ public class PutDocumentHandler extends PipelinedHandler {
      * @param next
      */
     public PutDocumentHandler(PipelinedHandler next) {
-        this(next, new DocumentDAO());
-    }
-
-    /**
-     * Creates a new instance of PutDocumentHandler
-     *
-     * @param next
-     * @param documentDAO
-     */
-    public PutDocumentHandler(PipelinedHandler next, DocumentDAO documentDAO) {
         super(next);
-        this.documentDAO = documentDAO;
     }
 
     /**
@@ -108,7 +97,7 @@ public class PutDocumentHandler extends PipelinedHandler {
             return;
         }
 
-        var result = this.documentDAO.writeDocument(
+        var result = this.documents.writeDocument(
             Optional.ofNullable(request.getClientSession()),
             request.getMethod(),
             request.getWriteMode(),

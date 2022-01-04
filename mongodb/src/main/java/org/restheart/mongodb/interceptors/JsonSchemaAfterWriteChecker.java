@@ -58,7 +58,7 @@ public class JsonSchemaAfterWriteChecker extends JsonSchemaBeforeWriteChecker {
         super.handle(request, response);
 
         if (request.isInError()) {
-            response.rollback(MongoClientSingleton.getInstance().getClient());
+            response.rollback(MongoClientSingleton.get().client());
         }
     }
 

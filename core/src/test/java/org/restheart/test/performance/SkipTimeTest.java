@@ -32,8 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.restheart.mongodb.db.CursorPool.MIN_SKIP_DISTANCE_PERCENTAGE;
-import org.restheart.mongodb.db.Database;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import static org.restheart.test.integration.AbstactIT.MONGO_URI;
 import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
@@ -88,8 +87,8 @@ public class SkipTimeTest {
     public void testSkip() {
 
 
-        final Database dbsDAO = new DatabaseImpl();
-        MongoCollection<BsonDocument> coll = dbsDAO.getCollection(TEST_DB_PREFIX, "huge");
+        final Databases dbs = Databases.get();
+        MongoCollection<BsonDocument> coll = dbs.getCollection(TEST_DB_PREFIX, "huge");
 
         long tot = 0;
 
@@ -115,9 +114,8 @@ public class SkipTimeTest {
      */
     @Test
     public void testTwoSkips() {
-
-        final Database dbsDAO = new DatabaseImpl();
-        MongoCollection<BsonDocument> coll = dbsDAO.getCollection(TEST_DB_PREFIX, "huge");
+        final var dbs = Databases.get();
+        MongoCollection<BsonDocument> coll = dbs.getCollection(TEST_DB_PREFIX, "huge");
 
         long tot = 0;
 

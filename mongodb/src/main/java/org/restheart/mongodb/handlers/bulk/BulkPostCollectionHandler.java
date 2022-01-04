@@ -30,7 +30,7 @@ import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -40,22 +40,13 @@ import org.restheart.utils.HttpStatus;
  */
 public class BulkPostCollectionHandler extends PipelinedHandler {
 
-    private final DocumentDAO documentDAO;
+    private final Documents documents = Documents.get();;
 
     /**
      * Creates a new instance of BulkPostCollectionHandler
      */
     public BulkPostCollectionHandler() {
-        this(null, new DocumentDAO());
-    }
-
-    /**
-     * Creates a new instance of BulkPostCollectionHandler
-     *
-     * @param documentDAO
-     */
-    public BulkPostCollectionHandler(DocumentDAO documentDAO) {
-        this(null, new DocumentDAO());
+        this(null);
     }
 
     /**
@@ -64,18 +55,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
      * @param next
      */
     public BulkPostCollectionHandler(PipelinedHandler next) {
-        this(next, new DocumentDAO());
-    }
-
-    /**
-     * Creates a new instance of BulkPostCollectionHandler
-     *
-     * @param next
-     * @param documentDAO
-     */
-    public BulkPostCollectionHandler(PipelinedHandler next, DocumentDAO documentDAO) {
         super(next);
-        this.documentDAO = documentDAO;
     }
 
     /**
@@ -107,7 +87,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
             return;
         }
 
-        var result = this.documentDAO.bulkPostDocuments(
+        var result = this.documents.bulkPostDocuments(
             Optional.ofNullable(request.getClientSession()),
             request.getDBName(),
             request.getCollectionName(),
