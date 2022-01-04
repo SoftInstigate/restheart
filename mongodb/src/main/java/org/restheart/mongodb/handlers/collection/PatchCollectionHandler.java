@@ -109,12 +109,12 @@ public class PatchCollectionHandler extends PipelinedHandler {
 
         var result = dbsDAO.upsertCollection(
             Optional.ofNullable(request.getClientSession()),
+            request.getMethod(),
+            request.getCollectionProps() != null, // true if updating
             request.getDBName(),
             request.getCollectionName(),
             content,
             request.getETag(),
-            true,
-            true,
             request.isETagCheckRequired());
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {

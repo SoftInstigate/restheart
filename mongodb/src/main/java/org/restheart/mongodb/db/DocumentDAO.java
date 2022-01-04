@@ -22,7 +22,6 @@ package org.restheart.mongodb.db;
 
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.assertions.Assertions;
-import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.DeleteManyModel;
@@ -41,6 +40,7 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 
 import static org.restheart.mongodb.db.DAOUtils.BAD_VALUE_KEY_ERROR;
@@ -88,20 +88,22 @@ public class DocumentDAO implements DocumentRepository {
     /**
      *
      * @param cs the client session
+     * @param method the request method
+     * @param writeMode the write mode
      * @param dbName
      * @param collName
      * @param documentId
      * @param shardKeys
      * @param newContent
      * @param requestEtag
-     * @param patching
-     * @param writeMode
      * @param checkEtag
-     * @return the HttpStatus code
+     * @return the OperationResult
      */
     @Override
     public OperationResult writeDocument(
         final Optional<ClientSession> cs,
+        final METHOD method,
+        final WRITE_MODE writeMode,
         final String dbName,
         final String collName,
         final Optional<BsonValue> documentId,
@@ -109,8 +111,6 @@ public class DocumentDAO implements DocumentRepository {
         final Optional<BsonDocument> shardKeys,
         final BsonDocument newContent,
         final String requestEtag,
-        final boolean patching,
-        final WRITE_MODE writeMode,
         final boolean checkEtag) {
         var mcoll = collectionDAO.getCollection(dbName, collName);
 
@@ -121,60 +121,64 @@ public class DocumentDAO implements DocumentRepository {
 
         content.put("_etag", newEtag);
 
-        var updateResult = DAOUtils.writeDocument(
+        var writeResult = DAOUtils.writeDocument(
             cs,
+            method,
+            writeMode,
             mcoll,
             documentId,
             filter,
             shardKeys,
-            content,
-            !patching,
-            writeMode);
+            content);
 
-        var oldDocument = updateResult.getOldData();
+        var oldDocument = writeResult.getOldData();
 
-        if (patching) {
-            if (oldDocument == null) {
-                return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode()  : HttpStatus.SC_CREATED, newEtag, null, updateResult.getNewData(), updateResult.getCause());
-            } else if (checkEtag) {
-                // check the old etag (in case restore the old document version)
-                return optimisticCheckEtag(
-                    cs,
-                    mcoll,
-                    shardKeys,
-                    oldDocument,
-                    newEtag,
-                    requestEtag,
-                    HttpStatus.SC_OK,
-                    false);
-            } else {
-                var query = eq("_id", documentId.get());
-                var newDocument = cs.isPresent() ? mcoll.find(cs.get(), query).first() : mcoll.find(query).first();
+        return switch(method) {
+            case PATCH -> {
+                if (oldDocument == null) {
+                    yield new OperationResult(writeResult.getHttpCode() > 0 ? writeResult.getHttpCode()  : HttpStatus.SC_CREATED, newEtag, null, writeResult.getNewData(), writeResult.getCause());
+                } else if (checkEtag) {
+                    // check the old etag (in case restore the old document version)
+                    yield optimisticCheckEtag(
+                        cs,
+                        mcoll,
+                        shardKeys,
+                        oldDocument,
+                        newEtag,
+                        requestEtag,
+                        HttpStatus.SC_OK,
+                        false);
+                } else {
+                    var query = eq("_id", documentId.get());
+                    var newDocument = cs.isPresent() ? mcoll.find(cs.get(), query).first() : mcoll.find(query).first();
+                    yield new OperationResult(writeResult.getHttpCode() > 0 ? writeResult.getHttpCode(): HttpStatus.SC_OK, newEtag, oldDocument, newDocument, writeResult.getCause());
+                }
 
-                return new OperationResult(updateResult.getHttpCode() > 0
-                        ? updateResult.getHttpCode()
-                        : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
             }
-        } else if (oldDocument != null && checkEtag) { // upsertDocument
-            // check the old etag (in case restore the old document)
-            return optimisticCheckEtag(
-                cs,
-                mcoll,
-                shardKeys,
-                oldDocument,
-                newEtag,
-                requestEtag,
-                HttpStatus.SC_OK,
-                false);
-        } else if (oldDocument != null) {  // insert
-            var newDocument = mcoll.find(eq("_id", oldDocument.get("_id"))).first();
 
-            return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_OK, newEtag, oldDocument, newDocument, updateResult.getCause());
-        } else {
-            var newDocument = mcoll.find(eq("_id", documentId.get())).first();
+            case PUT, POST -> {
+                if (oldDocument != null && checkEtag) { // upsertDocument
+                    // check the old etag (in case restore the old document)
+                    yield optimisticCheckEtag(
+                        cs,
+                        mcoll,
+                        shardKeys,
+                        oldDocument,
+                        newEtag,
+                        requestEtag,
+                        HttpStatus.SC_OK,
+                        false);
+                } else if (oldDocument != null) {  // insert
+                    var newDocument = cs.isPresent() ? mcoll.find(cs.get(), eq("_id", oldDocument.get("_id"))).first() : mcoll.find(eq("_id", oldDocument.get("_id"))).first();
+                    yield new OperationResult(writeResult.getHttpCode() > 0 ? writeResult.getHttpCode() : HttpStatus.SC_OK, newEtag, oldDocument, newDocument, writeResult.getCause());
+                } else {
+                    var newDocument = cs.isPresent() ? mcoll.find(cs.get(), eq("_id", documentId.isPresent() ? documentId.get() : writeResult.getNewId() )).first() : mcoll.find(eq("_id", documentId.isPresent() ? documentId.get() : writeResult.getNewId() )).first();
+                    yield new OperationResult(writeResult.getHttpCode() > 0 ? writeResult.getHttpCode() : HttpStatus.SC_CREATED, newEtag, null, newDocument, writeResult.getCause());
+                }
+            }
 
-            return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_CREATED, newEtag, null, newDocument, updateResult.getCause());
-        }
+            default -> throw new UnsupportedOperationException("unsupported method: " + method);
+        };
     }
 
     /**
@@ -189,77 +193,76 @@ public class DocumentDAO implements DocumentRepository {
      * @param checkEtag
      * @return the OperationResult
      */
-    @Override
-    public OperationResult writeDocumentPost(
-        final Optional<ClientSession> cs,
-        final String dbName,
-        final String collName,
-        final Optional<BsonDocument> filter,
-        final Optional<BsonDocument> shardKeys,
-        final BsonDocument content,
-        final WRITE_MODE writeMode,
-        final String requestEtag,
-        final boolean checkEtag) {
-        var mcoll = collectionDAO.getCollection(dbName, collName);
+    // public OperationResult writeDocumentPost(
+    //     final Optional<ClientSession> cs,
+    //     final String dbName,
+    //     final String collName,
+    //     final Optional<BsonDocument> filter,
+    //     final Optional<BsonDocument> shardKeys,
+    //     final BsonDocument content,
+    //     final WRITE_MODE writeMode,
+    //     final String requestEtag,
+    //     final boolean checkEtag) {
+    //     var mcoll = collectionDAO.getCollection(dbName, collName);
 
-        var newEtag = new BsonObjectId();
+    //     var newEtag = new BsonObjectId();
 
-        final var _content = DAOUtils.validContent(content);
+    //     final var _content = DAOUtils.validContent(content);
 
-        _content.put("_etag", newEtag);
+    //     _content.put("_etag", newEtag);
 
-        Optional<BsonValue> documentId;
+    //     Optional<BsonValue> documentId;
 
-        if (_content.containsKey("_id")) {
-            documentId = Optional.of(_content.get("_id"));
-        } else {
-            // new document since the id is missing
-            // if update => error
-            // if a filter is specified => ok, the first document matching the filter will be updated
-            if (writeMode == WRITE_MODE.UPDATE && (filter == null || filter.isEmpty())) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, null, null, null);
-            } else {
-                documentId = Optional.empty(); // key _id is not present
-            }
-        }
+    //     if (_content.containsKey("_id")) {
+    //         documentId = Optional.of(_content.get("_id"));
+    //     } else {
+    //         // new document since the id is missing
+    //         // if update => error
+    //         // if a filter is specified => ok, the first document matching the filter will be updated
+    //         if (writeMode == WRITE_MODE.UPDATE && (filter == null || filter.isEmpty())) {
+    //             return new OperationResult(HttpStatus.SC_BAD_REQUEST, null, null, null);
+    //         } else {
+    //             documentId = Optional.empty(); // key _id is not present
+    //         }
+    //     }
 
-        var updateResult = DAOUtils.writeDocument(
-            cs,
-            mcoll,
-            documentId,
-            filter,
-            shardKeys,
-            _content,
-            true,
-            writeMode);
+    //     var updateResult = DAOUtils.writeDocument(
+    //         cs,
+    //         mcoll,
+    //         METHOD.POST,
+    //         writeMode,
+    //         documentId,
+    //         filter,
+    //         shardKeys,
+    //         _content);
 
-        var oldDocument = updateResult.getOldData();
-        var newDocument = updateResult.getNewData();
+    //     var oldDocument = updateResult.getOldData();
+    //     var newDocument = updateResult.getNewData();
 
-        if (oldDocument == null) {
-            return new OperationResult(updateResult.getHttpCode() > 0
-                ? updateResult.getHttpCode()
-                : HttpStatus.SC_CREATED,
-                newEtag,
-                null,
-                newDocument,
-                updateResult.getCause());
-        } else if (checkEtag) {  // upsertDocument
-            // check the old etag (in case restore the old document version)
-            return optimisticCheckEtag(
-                cs,
-                mcoll,
-                shardKeys,
-                oldDocument,
-                newEtag,
-                requestEtag,
-                HttpStatus.SC_OK,
-                false);
-        } else {
-            return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_OK,
-                newEtag, oldDocument, newDocument, updateResult.getCause());
-        }
-    }
+    //     if (oldDocument == null) {
+    //         return new OperationResult(updateResult.getHttpCode() > 0
+    //             ? updateResult.getHttpCode()
+    //             : HttpStatus.SC_CREATED,
+    //             newEtag,
+    //             null,
+    //             newDocument,
+    //             updateResult.getCause());
+    //     } else if (checkEtag) {  // upsertDocument
+    //         // check the old etag (in case restore the old document version)
+    //         return optimisticCheckEtag(
+    //             cs,
+    //             mcoll,
+    //             shardKeys,
+    //             oldDocument,
+    //             newEtag,
+    //             requestEtag,
+    //             HttpStatus.SC_OK,
+    //             false);
+    //     } else {
+    //         return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_OK,
+    //             newEtag, oldDocument, newDocument, updateResult.getCause());
+    //     }
+    // }
 
     /**
      * @param cs the client session
@@ -472,13 +475,13 @@ public class DocumentDAO implements DocumentRepository {
             if (deleting) {
                 DAOUtils.writeDocument(
                     cs,
+                    METHOD.PUT,
+                    WRITE_MODE.UPSERT,
                     coll,
                     Optional.of(oldDocument.get("_id")),
                     Optional.empty(),
                     shardKeys,
-                    oldDocument,
-                    true,
-                    WRITE_MODE.UPSERT);
+                    oldDocument);
             } else {
                 DAOUtils.restoreDocument(
                     cs,
@@ -515,13 +518,13 @@ public class DocumentDAO implements DocumentRepository {
             if (deleting) {
                 DAOUtils.writeDocument(
                     cs,
+                    METHOD.PUT,
+                    WRITE_MODE.UPSERT,
                     coll,
                     Optional.of(oldDocument.get("_id")),
                     shardKeys,
                     Optional.empty(),
-                    oldDocument,
-                    true,
-                    WRITE_MODE.UPSERT);
+                    oldDocument);
             } else {
                 DAOUtils.restoreDocument(
                     cs,

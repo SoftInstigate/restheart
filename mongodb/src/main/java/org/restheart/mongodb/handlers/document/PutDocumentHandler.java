@@ -109,6 +109,8 @@ public class PutDocumentHandler extends PipelinedHandler {
 
         var result = this.documentDAO.writeDocument(
             Optional.ofNullable(request.getClientSession()),
+            request.getMethod(),
+            request.getWriteMode(),
             request.getDBName(),
             request.getCollectionName(),
             Optional.of(request.getDocumentId()),
@@ -116,8 +118,6 @@ public class PutDocumentHandler extends PipelinedHandler {
             Optional.ofNullable(request.getShardKey()),
             content,
             request.getETag(),
-            false,
-            request.getWriteMode(),
             request.isETagCheckRequired());
 
         response.setDbOperationResult(result);

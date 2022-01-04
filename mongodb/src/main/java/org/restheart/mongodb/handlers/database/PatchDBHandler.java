@@ -97,11 +97,11 @@ public class PatchDBHandler extends PipelinedHandler {
 
         var result = dbsDAO.upsertDB(
             Optional.ofNullable(request.getClientSession()),
+            request.getMethod(),
+            request.getDbProps() != null, // true if updating
             request.getDBName(),
             content,
             request.getETag(),
-            true,
-            true,
             request.isETagCheckRequired());
 
         response.setDbOperationResult(result);

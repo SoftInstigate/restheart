@@ -48,6 +48,7 @@ import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
@@ -132,31 +133,30 @@ public class DAOUtils {
      *
      * @param cs the client session
      * @param coll
+     * @param method the request method
      * @param documentId use Optional.empty() to specify no documentId (null is _id: null)
      * @param filter
      * @param shardKeys
      * @param data
-     * @param patching Whether we want to patch the metadata or replace it entirely.
      * @return the old document
      */
-    public static OperationResult updateMetadata(
+    public static OperationResult updateFileMetadata(
         final Optional<ClientSession> cs,
         final MongoCollection<BsonDocument> coll,
+        final METHOD method,
         final Optional<BsonValue> documentId,
         final Optional<BsonDocument> filter,
         final Optional<BsonDocument> shardKeys,
-        final BsonDocument data,
-        final boolean patching) {
+        final BsonDocument data) {
         return writeDocument(
             cs,
+            method,
+            WRITE_MODE.UPSERT,
             coll,
             documentId,
             filter,
             shardKeys,
-            data,
-            false,
-            patching,
-            WRITE_MODE.UPSERT);
+            data);
     }
 
     /**
@@ -172,52 +172,63 @@ public class DAOUtils {
      * @param upsert whether or not to allow upsert mode
      * @return the old document
      */
-    public static OperationResult writeDocument(
-        final Optional<ClientSession> cs,
-        final MongoCollection<BsonDocument> coll,
-        final Optional<BsonValue> documentId,
-        final Optional<BsonDocument> filter,
-        final Optional<BsonDocument> shardKeys,
-        final BsonDocument data,
-        final boolean replace,
-        final WRITE_MODE writeMode) {
-        return writeDocument(
-            cs,
-            coll,
-            documentId,
-            filter,
-            shardKeys,
-            data,
-            replace,
-            false,
-            writeMode);
-    }
+    // public static OperationResult writeDocument(
+    //     final Optional<ClientSession> cs,
+    //     final MongoCollection<BsonDocument> coll,
+    //     final Optional<BsonValue> documentId,
+    //     final Optional<BsonDocument> filter,
+    //     final Optional<BsonDocument> shardKeys,
+    //     final BsonDocument data,
+    //     final boolean replace,
+    //     final WRITE_MODE writeMode) {
+    //     return writeDocument(
+    //         cs,
+    //         coll,
+    //         documentId,
+    //         filter,
+    //         shardKeys,
+    //         data,
+    //         replace,
+    //         false,
+    //         writeMode);
+    // }
 
     /**
      * Update a mongo document
      *
      * @param cs the client session
      * @param coll
+     * @param method the request method
+     * @param writeMode the write mode
      * @param documentId use Optional.empty() to specify no documentId
      * @param filter
      * @param shardKeys
      * @param data
+<<<<<<< HEAD
      * @param replace
      * @param upsert if true then we will flatten any nested BsonDocuments
      * into dot notation to ensure only the requested fields are updated.
      * @param allowUpsert whether or not to allow upsert mode
+=======
+>>>>>>> e0b1d620... :recycle: Refactoring of MongoDB write operation methods
      * @return the new or old document depending on returnNew
      */
     public static OperationResult writeDocument(
         final Optional<ClientSession> cs,
+        final METHOD method,
+        final WRITE_MODE writeMode,
         final MongoCollection<BsonDocument> coll,
         final Optional<BsonValue> documentId,
         final Optional<BsonDocument> filter,
         final Optional<BsonDocument> shardKeys,
-        final BsonDocument data,
-        final boolean replace,
-        final boolean deepPatching,
-        final WRITE_MODE writeMode) {
+        final BsonDocument data) {
+
+        // final boolean replace was
+        //      PUT -> false
+        //      PATCH -> true
+        //      POST -> false
+        // final boolean deepPatching, true if PATCH
+
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
         Objects.requireNonNull(writeMode);
@@ -235,14 +246,15 @@ public class DAOUtils {
         BsonDocument oldDocument;
 
         if (documentId.isPresent()) {
+            // TODO can we remove this?
             oldDocument = cs.isPresent() ? coll.find(cs.get(), query).first() : coll.find(query).first() ;
 
-            // if document not exits and not-update request => fail request with 404
+            // if document not exits and update request => fail request with 404
             if (writeMode == WRITE_MODE.UPDATE && oldDocument == null) {
                 return new OperationResult(HttpStatus.SC_NOT_FOUND);
             }
         } else {
-            // if not-update, docId is mandatory
+            // if update, docId is mandatory
             if (writeMode == WRITE_MODE.UPDATE) {
                 LOGGER.debug("write request with writeMode=update missing document id");
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST);
@@ -251,66 +263,80 @@ public class DAOUtils {
             oldDocument = null;
         }
 
-        if (writeMode == WRITE_MODE.INSERT) {
-            // don't allow $ prefixed operators as key values
-            // note that from MongoDB 5.0 $ prefixed keys are permitted
-            // TODO allow it in the future
-            // TODO move this to BsonRequestContentInjector
-            if (BsonUtils.containsUpdateOperators(data, true)) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument);
-            }
+        return switch(writeMode) {
+            case INSERT -> switch(method) {
+                case POST, PUT, PATCH -> {
+                    // don't allow $ prefixed operators as key values
+                    // note that from MongoDB 5.0 $ prefixed keys are permitted
+                    // TODO allow it in the future
+                    // TODO move this to BsonRequestContentInjector
+                    if (BsonUtils.containsUpdateOperators(data, true)) {
+                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument);
+                    }
 
-            BsonDocument newDocument;
+                    BsonDocument newDocument;
 
-            try {
-                resolveCurrentDateOperator(data);
+                    try {
+                        resolveCurrentDateOperator(data);
 
-                var insertedId = cs.isPresent()
-                    ? coll.insertOne(cs.get(), data).getInsertedId()
-                    : coll.insertOne(data).getInsertedId();
+                        var insertedId = cs.isPresent()
+                            ? coll.insertOne(cs.get(), data).getInsertedId()
+                            : coll.insertOne(data).getInsertedId();
 
-                var insertedQuery = eq("_id", insertedId);
+                        var insertedQuery = eq("_id", insertedId);
 
-                if (shardKeys.isPresent() && !shardKeys.get().isEmpty()) {
-                    insertedQuery = and(insertedQuery, shardKeys.get());
+                        if (shardKeys.isPresent() && !shardKeys.get().isEmpty()) {
+                            insertedQuery = and(insertedQuery, shardKeys.get());
+                        }
+
+                        newDocument = cs.isPresent()? coll.find(cs.get(), insertedQuery).first(): coll.find(insertedQuery).first();
+                    } catch (IllegalArgumentException iae) {
+                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
+                    }
+
+                    yield new OperationResult(-1, oldDocument, newDocument);
                 }
 
-                newDocument = cs.isPresent()? coll.find(cs.get(), insertedQuery).first(): coll.find(insertedQuery).first();
-            } catch (IllegalArgumentException iae) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
-            }
+                default -> throw new UnsupportedOperationException("unsupported method " + method);
+            };
 
-            return new OperationResult(-1, oldDocument, newDocument);
-        } else if (replace) {
-            BsonDocument newDocument;
-            try {
-                if (filter.isPresent() && !filter.get().isEmpty()) {
-                    query = and(query, filter.get());
+            case UPDATE, UPSERT -> switch(method) {
+                case PATCH -> {
+                    BsonDocument newDocument;
+
+                    try {
+                        final var ops = writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS;
+                        newDocument = cs.isPresent()
+                            ? coll.findOneAndUpdate(cs.get(), query, getUpdateDocument(data, false), ops)
+                            : coll.findOneAndUpdate(query, getUpdateDocument(data, false), ops);
+                    } catch (IllegalArgumentException iae) {
+                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
+                    }
+
+                    yield new OperationResult(-1, oldDocument, newDocument);
                 }
 
-                final var ops = writeMode == WRITE_MODE.UPSERT ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS;
-                newDocument = cs.isPresent()
-                    ? coll.findOneAndReplace(cs.get(), query, getReplaceDocument(data), ops)
-                    : coll.findOneAndReplace(query, getReplaceDocument(data), ops);
-            } catch (IllegalArgumentException iae) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
-            }
+                case PUT, POST -> {
+                    BsonDocument newDocument;
+                    try {
+                        if (filter.isPresent() && !filter.get().isEmpty()) {
+                            query = and(query, filter.get());
+                        }
 
-            return new OperationResult(-1, oldDocument, newDocument);
-        } else {
-            BsonDocument newDocument;
+                        final var ops = writeMode == WRITE_MODE.UPSERT ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS;
+                        newDocument = cs.isPresent()
+                            ? coll.findOneAndReplace(cs.get(), query, getReplaceDocument(data), ops)
+                            : coll.findOneAndReplace(query, getReplaceDocument(data), ops);
+                    } catch (IllegalArgumentException iae) {
+                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
+                    }
 
-            try {
-                final var ops = writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS;
-                newDocument = cs.isPresent()
-                    ? coll.findOneAndUpdate(cs.get(), query, getUpdateDocument(data, deepPatching), ops)
-                    : coll.findOneAndUpdate(query, getUpdateDocument(data, deepPatching), ops);
-            } catch (IllegalArgumentException iae) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
-            }
+                    yield new OperationResult(-1, oldDocument, newDocument);
+                }
 
-            return new OperationResult(-1, oldDocument, newDocument);
-        }
+                default -> throw new UnsupportedOperationException("unsupported method " + method);
+            };
+        };
     }
 
     /**
@@ -464,6 +490,55 @@ public class DAOUtils {
 
     /**
      *
+     * @param data
+     * @param flatten if we should flatten nested documents' values using dot
+     * notation
+     * @return the document for update operation, with proper update operators
+     */
+    static BsonDocument getUpdateDocument(final BsonDocument data, final boolean flatten) {
+        var ret = new BsonDocument();
+
+        // add other update operators
+        data.keySet()
+            .stream()
+            .filter(key -> BsonUtils.isUpdateOperator(key))
+            .forEach(key -> ret.put(key, data.get(key)));
+
+        // add properties to $set update operator
+        List<String> keys;
+
+        keys = data.keySet()
+            .stream()
+            .filter(key -> !BsonUtils.isUpdateOperator(key))
+            .collect(Collectors.toList());
+
+        if (keys != null && !keys.isEmpty()) {
+            BsonDocument set;
+
+            if (flatten) {
+                set = BsonUtils.flatten(ret, false);
+            } else {
+                set = new BsonDocument();
+                keys.stream().forEach(key -> set.append(key, data.get(key)));
+            }
+            if (!set.isEmpty()) {
+                if (ret.get("$set") == null) {
+                    ret.put("$set", set);
+                } else if (ret.get("$set").isDocument()) {
+                    ret.get("$set").asDocument().putAll(set);
+                } else {
+                    // update is going to fail on mongodb
+                    // error 9, Modifiers operate on fields but we found a String instead
+                    LOGGER.debug("$set is not an object: {}", ret.get("$set"));
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    /**
+     *
      * @param doc
      * @return the document for replace operation, without dot notation and
      * replacing $currentDate operator
@@ -518,54 +593,5 @@ public class DAOUtils {
                     throw new IllegalArgumentException("wrong $currentDate operator");
                 }
             });
-    }
-
-    /**
-     *
-     * @param data
-     * @param flatten if we should flatten nested documents' values using dot
-     * notation
-     * @return the document for update operation, with proper update operators
-     */
-    static BsonDocument getUpdateDocument(final BsonDocument data, final boolean flatten) {
-        var ret = new BsonDocument();
-
-        // add other update operators
-        data.keySet()
-            .stream()
-            .filter(key -> BsonUtils.isUpdateOperator(key))
-            .forEach(key -> ret.put(key, data.get(key)));
-
-        // add properties to $set update operator
-        List<String> keys;
-
-        keys = data.keySet()
-            .stream()
-            .filter(key -> !BsonUtils.isUpdateOperator(key))
-            .collect(Collectors.toList());
-
-        if (keys != null && !keys.isEmpty()) {
-            BsonDocument set;
-
-            if (flatten) {
-                set = BsonUtils.flatten(ret, false);
-            } else {
-                set = new BsonDocument();
-                keys.stream().forEach(key -> set.append(key, data.get(key)));
-            }
-            if (!set.isEmpty()) {
-                if (ret.get("$set") == null) {
-                    ret.put("$set", set);
-                } else if (ret.get("$set").isDocument()) {
-                    ret.get("$set").asDocument().putAll(set);
-                } else {
-                    // update is going to fail on mongodb
-                    // error 9, Modifiers operate on fields but we found a String instead
-                    LOGGER.debug("$set is not an object: {}", ret.get("$set"));
-                }
-            }
-        }
-
-        return ret;
     }
 }

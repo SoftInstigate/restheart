@@ -120,7 +120,7 @@ class IndexDAO {
      * @param db
      * @param collection
      * @param indexId
-     * @return
+     * @return the HTTP status code
      */
     int deleteIndex(
             final Optional<ClientSession> cs,

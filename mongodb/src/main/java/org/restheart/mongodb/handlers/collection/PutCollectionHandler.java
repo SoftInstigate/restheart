@@ -99,15 +99,14 @@ public class PutCollectionHandler extends PipelinedHandler {
 
         final BsonDocument content = _content.asDocument();
 
-        boolean updating = request.getCollectionProps() != null;
-
         var result = dbsDAO.upsertCollection(
             Optional.ofNullable(request.getClientSession()),
+            request.getMethod(),
+            request.getCollectionProps() != null, // true if updating
             request.getDBName(),
             request.getCollectionName(),
             content,
             request.getETag(),
-            updating, false,
             request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
