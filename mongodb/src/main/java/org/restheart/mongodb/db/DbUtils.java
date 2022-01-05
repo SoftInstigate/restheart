@@ -224,24 +224,23 @@ public class DbUtils {
             query = and(query, filter.get());
         }
 
-        BsonDocument oldDocument;
+        // if update, docId is mandatory
+        if (writeMode == WRITE_MODE.UPDATE && !documentId.isPresent()) {
+            LOGGER.trace("write request with writeMode=update and missing document id");
+            return new OperationResult(HttpStatus.SC_BAD_REQUEST);
+        }
 
-        if (documentId.isPresent()) {
-            // TODO can we remove this?
-            oldDocument = cs.isPresent() ? coll.find(cs.get(), query).first() : coll.find(query).first() ;
+        // get the oldDocument depending on the request method
+        var oldDocument = switch (writeMode) {
+            case INSERT -> null;
+            case UPDATE -> cs.isPresent() ? coll.find(cs.get(), query).first() : coll.find(query).first() ;
+            case UPSERT -> documentId.isPresent()
+                ? cs.isPresent() ? coll.find(cs.get(), query).first() : coll.find(query).first()
+                : null;
+        };
 
-            // if document not exits and update request => fail request with 404
-            if (writeMode == WRITE_MODE.UPDATE && oldDocument == null) {
-                return new OperationResult(HttpStatus.SC_NOT_FOUND);
-            }
-        } else {
-            // if update, docId is mandatory
-            if (writeMode == WRITE_MODE.UPDATE) {
-                LOGGER.debug("write request with writeMode=update missing document id");
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST);
-            }
-
-            oldDocument = null;
+        if (writeMode == WRITE_MODE.UPDATE && oldDocument == null) {
+            return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
 
         return switch(writeMode) {
@@ -251,9 +250,9 @@ public class DbUtils {
                         var newDocument = cs.isPresent()
                             ? coll.findOneAndUpdate(cs.get(), IMPOSSIBLE_CONDITION, getUpdateDocument(data, false), FAU_NOT_UPSERT_OPS)
                             : coll.findOneAndUpdate(IMPOSSIBLE_CONDITION, getUpdateDocument(data, false), FAU_UPSERT_OPS);
-                        yield new OperationResult(-1, oldDocument, newDocument);
+                        yield new OperationResult(-1, null, newDocument);
                     } catch (IllegalArgumentException iae) {
-                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
+                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, null, iae);
                     }
                 }
 
@@ -271,10 +270,12 @@ public class DbUtils {
                             insertedQuery = and(insertedQuery, shardKeys.get());
                         }
 
-                        var newDocument = cs.isPresent()? coll.find(cs.get(), insertedQuery).first(): coll.find(insertedQuery).first();
-                        yield new OperationResult(-1, oldDocument, newDocument);
+                        var newDocument = cs.isPresent()
+                            ? coll.find(cs.get(), insertedQuery).first()
+                            : coll.find(insertedQuery).first();
+                        yield new OperationResult(-1, null, newDocument);
                     } catch (IllegalArgumentException iae) {
-                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
+                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, null, iae);
                     }
                 }
 
@@ -284,7 +285,7 @@ public class DbUtils {
             case UPDATE, UPSERT -> switch(method) {
                 case PATCH -> {
                     try {
-                        final var ops = writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS;
+                        final var ops = writeMode == WRITE_MODE.UPSERT ? FOU_AFTER_UPSERT_OPS : FOU_AFTER_NOT_UPSERT_OPS;
                         var newDocument = cs.isPresent()
                             ? coll.findOneAndUpdate(cs.get(), query, getUpdateDocument(data, false), ops)
                             : coll.findOneAndUpdate(query, getUpdateDocument(data, false), ops);
