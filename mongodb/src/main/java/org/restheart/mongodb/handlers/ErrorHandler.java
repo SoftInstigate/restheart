@@ -89,8 +89,8 @@ public class ErrorHandler implements HttpHandler {
                 LOGGER.error("Error handling the request", mce);
                 response.setInError(httpCode, mce.getMessage());
             } else {
-                response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
                 LOGGER.debug("Error handling the request", mce);
+                response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
             }
         } catch (Exception t) {
             LOGGER.error("Error handling the request", t);
