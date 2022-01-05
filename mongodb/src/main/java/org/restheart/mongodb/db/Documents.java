@@ -132,53 +132,23 @@ public class Documents {
             content);
 
         var oldDocument = writeResult.getOldData();
+        var newDocument = writeResult.getNewData();
 
-        return switch(method) {
-            case PATCH -> {
-                if (oldDocument == null) {
-                    yield new OperationResult(writeResult.getHttpCode() > 0 ? writeResult.getHttpCode()  : HttpStatus.SC_CREATED, newEtag, null, writeResult.getNewData(), writeResult.getCause());
-                } else if (checkEtag) {
-                    // check the old etag (in case restore the old document version)
-                    yield optimisticCheckEtag(
-                        cs,
-                        mcoll,
-                        shardKeys,
-                        oldDocument,
-                        newEtag,
-                        requestEtag,
-                        HttpStatus.SC_OK,
-                        false);
-                } else {
-                    var query = eq("_id", documentId.get());
-                    var newDocument = cs.isPresent() ? mcoll.find(cs.get(), query).first() : mcoll.find(query).first();
-                    yield new OperationResult(writeResult.getHttpCode() > 0 ? writeResult.getHttpCode(): HttpStatus.SC_OK, newEtag, oldDocument, newDocument, writeResult.getCause());
-                }
-
-            }
-
-            case PUT, POST -> {
-                if (oldDocument != null && checkEtag) { // upsertDocument
-                    // check the old etag (in case restore the old document)
-                    yield optimisticCheckEtag(
-                        cs,
-                        mcoll,
-                        shardKeys,
-                        oldDocument,
-                        newEtag,
-                        requestEtag,
-                        HttpStatus.SC_OK,
-                        false);
-                } else if (oldDocument != null) {  // insert
-                    var newDocument = cs.isPresent() ? mcoll.find(cs.get(), eq("_id", oldDocument.get("_id"))).first() : mcoll.find(eq("_id", oldDocument.get("_id"))).first();
-                    yield new OperationResult(writeResult.getHttpCode() > 0 ? writeResult.getHttpCode() : HttpStatus.SC_OK, newEtag, oldDocument, newDocument, writeResult.getCause());
-                } else {
-                    var newDocument = cs.isPresent() ? mcoll.find(cs.get(), eq("_id", documentId.isPresent() ? documentId.get() : writeResult.getNewId() )).first() : mcoll.find(eq("_id", documentId.isPresent() ? documentId.get() : writeResult.getNewId() )).first();
-                    yield new OperationResult(writeResult.getHttpCode() > 0 ? writeResult.getHttpCode() : HttpStatus.SC_CREATED, newEtag, null, newDocument, writeResult.getCause());
-                }
-            }
-
-            default -> throw new UnsupportedOperationException("unsupported method: " + method);
-        };
+        if (oldDocument != null && checkEtag) {
+            // check the old etag (in not match restore the old document version)
+            return optimisticCheckEtag(
+                cs,
+                mcoll,
+                shardKeys,
+                oldDocument,
+                newEtag,
+                requestEtag,
+                HttpStatus.SC_OK,
+                false);
+        } else {
+            var httpCode = writeResult.getHttpCode() > 0 ? writeResult.getHttpCode() : oldDocument == null ? HttpStatus.SC_CREATED : HttpStatus.SC_OK;
+            return new OperationResult(httpCode, newEtag, oldDocument, newDocument, writeResult.getCause());
+        }
     }
 
     /**
@@ -234,7 +204,7 @@ public class Documents {
         final BsonDocument filter,
         final Optional<BsonDocument> shardKeys,
         final BsonDocument data) {
-        Assertions.assertNotNull(filter);
+        Objects.requireNonNull(filter);
         Assertions.assertFalse(filter.isEmpty());
 
         var mcoll = collections.getCollection(dbName, collName);
@@ -287,13 +257,13 @@ public class Documents {
         var mcoll = collections.getCollection(dbName, collName);
 
         var oldDocument = cs.isPresent()
-                ? mcoll.findOneAndDelete(cs.get(), getIdFilter(documentId, filter, shardKeys))
-                : mcoll.findOneAndDelete(getIdFilter(documentId, filter, shardKeys));
+                ? mcoll.findOneAndDelete(cs.get(), idFilter(documentId, filter, shardKeys))
+                : mcoll.findOneAndDelete(idFilter(documentId, filter, shardKeys));
 
         if (oldDocument == null) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         } else if (checkEtag) {
-            // check the old etag (in case restore the old document version)
+            // check the old etag (in not match restore the old document version)
             return optimisticCheckEtag(
                 cs,
                 mcoll,
@@ -307,7 +277,7 @@ public class Documents {
         }
     }
 
-    private Bson getIdFilter(
+    private Bson idFilter(
         final Optional<BsonValue> documentId,
         final Optional<BsonDocument> filter,
         final Optional<BsonDocument> shardedKeys) {
@@ -348,7 +318,7 @@ public class Documents {
         final String collName,
         final BsonDocument filter,
         final Optional<BsonDocument> shardedKeys) {
-        Assertions.assertNotNull(filter);
+        Objects.requireNonNull(filter);
         Assertions.assertFalse(filter.isEmpty());
 
         var mcoll = collections.getCollection(dbName, collName);
