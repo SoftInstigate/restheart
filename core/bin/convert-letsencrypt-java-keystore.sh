@@ -124,14 +124,15 @@ msg "${GREEN}Add the necessary Let's Encrypt intermediate certs.${NOFORMAT}"
 # Add the necessary Let's Encrypt intermediate certs
 # (see https://gist.github.com/richmilne/5a5cb4be0ec8233a6c50ba40229d8278)
 certs=(
-    lets-encrypt-r3-cross-signed
+    lets-encrypt-r3
 )
 
 KEYSTORE="${KEYSTORE}".jks
 for ALIAS in ${!certs[@]}
 do
-    FNAME="${certs[$ALIAS]}".pem.txt
-    curl https://letsencrypt.org/certs/${FNAME} > ${archive}/${FNAME}
+    FNAME="${certs[$ALIAS]}".pem
+    # insecure to support old versions of openssl
+    curl --insecure https://letsencrypt.org/certs/${FNAME} > ${archive}/${FNAME}
     keytool -delete -alias $ALIAS -keystore ${KEYSTORE} -storepass ${password} || true
     keytool -importcert -keystore ${KEYSTORE} -trustcacerts -storepass ${password} -noprompt  -alias $ALIAS -file "${archive}/${FNAME}"
 done
