@@ -45,6 +45,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonTimestamp;
+import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
@@ -131,21 +132,19 @@ public class DAOUtils {
      *
      * @param cs the client session
      * @param coll
-     * @param documentId use Optional.empty() to specify no documentId (null is
-     * _id: null)
+     * @param documentId use Optional.empty() to specify no documentId (null is _id: null)
      * @param filter
      * @param shardKeys
      * @param data
-     * @param patching Whether we want to patch the metadata or replace it
-     * entirely.
+     * @param patching Whether we want to patch the metadata or replace it entirely.
      * @return the old document
      */
     public static OperationResult updateMetadata(
-        final ClientSession cs,
+        final Optional<ClientSession> cs,
         final MongoCollection<BsonDocument> coll,
-        final Object documentId,
-        final BsonDocument filter,
-        final BsonDocument shardKeys,
+        final Optional<BsonValue> documentId,
+        final Optional<BsonDocument> filter,
+        final Optional<BsonDocument> shardKeys,
         final BsonDocument data,
         final boolean patching) {
         return writeDocument(
@@ -174,11 +173,11 @@ public class DAOUtils {
      * @return the old document
      */
     public static OperationResult writeDocument(
-        final ClientSession cs,
+        final Optional<ClientSession> cs,
         final MongoCollection<BsonDocument> coll,
-        final Object documentId,
-        final BsonDocument filter,
-        final BsonDocument shardKeys,
+        final Optional<BsonValue> documentId,
+        final Optional<BsonDocument> filter,
+        final Optional<BsonDocument> shardKeys,
         final BsonDocument data,
         final boolean replace,
         final WRITE_MODE writeMode) {
@@ -199,8 +198,7 @@ public class DAOUtils {
      *
      * @param cs the client session
      * @param coll
-     * @param documentId use Optional.empty() to specify no documentId (null is
-     * _id: null)
+     * @param documentId use Optional.empty() to specify no documentId
      * @param filter
      * @param shardKeys
      * @param data
@@ -210,13 +208,12 @@ public class DAOUtils {
      * @param allowUpsert whether or not to allow upsert mode
      * @return the new or old document depending on returnNew
      */
-    @SuppressWarnings("rawtypes")
     public static OperationResult writeDocument(
-        final ClientSession cs,
+        final Optional<ClientSession> cs,
         final MongoCollection<BsonDocument> coll,
-        final Object documentId,
-        final BsonDocument filter,
-        final BsonDocument shardKeys,
+        final Optional<BsonValue> documentId,
+        final Optional<BsonDocument> filter,
+        final Optional<BsonDocument> shardKeys,
         final BsonDocument data,
         final boolean replace,
         final boolean deepPatching,
@@ -225,29 +222,20 @@ public class DAOUtils {
         Objects.requireNonNull(data);
         Objects.requireNonNull(writeMode);
 
-        Bson query;
+        var query = documentId.isPresent() ? eq("_id", documentId.get()) : IMPOSSIBLE_CONDITION;
 
-        var idPresent = true;
-
-        if (documentId instanceof Optional && !((Optional) documentId).isPresent()) {
-            query = IMPOSSIBLE_CONDITION;
-            idPresent = false;
-        } else {
-            query = eq("_id", documentId);
+        if (shardKeys.isPresent() && !shardKeys.get().isEmpty()) {
+            query = and(query, shardKeys.get());
         }
 
-        if (shardKeys != null) {
-            query = and(query, shardKeys);
-        }
-
-        if (filter != null && !filter.isEmpty()) {
-            query = and(query, filter);
+        if (filter.isPresent() && !filter.get().isEmpty()) {
+            query = and(query, filter.get());
         }
 
         BsonDocument oldDocument;
 
-        if (idPresent) {
-            oldDocument = cs == null ? coll.find(query).first() : coll.find(cs, query).first();
+        if (documentId.isPresent()) {
+            oldDocument = cs.isPresent() ? coll.find(cs.get(), query).first() : coll.find(query).first() ;
 
             // if document not exits and not-update request => fail request with 404
             if (writeMode == WRITE_MODE.UPDATE && oldDocument == null) {
@@ -265,6 +253,9 @@ public class DAOUtils {
 
         if (writeMode == WRITE_MODE.INSERT) {
             // don't allow $ prefixed operators as key values
+            // note that from MongoDB 5.0 $ prefixed keys are permitted
+            // TODO allow it in the future
+            // TODO move this to BsonRequestContentInjector
             if (BsonUtils.containsUpdateOperators(data, true)) {
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument);
             }
@@ -274,17 +265,17 @@ public class DAOUtils {
             try {
                 resolveCurrentDateOperator(data);
 
-                var insertedId = cs == null
-                    ? coll.insertOne(data).getInsertedId()
-                    : coll.insertOne(cs, data).getInsertedId();
+                var insertedId = cs.isPresent()
+                    ? coll.insertOne(cs.get(), data).getInsertedId()
+                    : coll.insertOne(data).getInsertedId();
 
                 var insertedQuery = eq("_id", insertedId);
 
-                if (shardKeys != null) {
-                    insertedQuery = and(insertedQuery, shardKeys);
+                if (shardKeys.isPresent() && !shardKeys.get().isEmpty()) {
+                    insertedQuery = and(insertedQuery, shardKeys.get());
                 }
 
-                newDocument = cs == null ? coll.find(insertedQuery).first() : coll.find(cs, insertedQuery).first();
+                newDocument = cs.isPresent()? coll.find(cs.get(), insertedQuery).first(): coll.find(insertedQuery).first();
             } catch (IllegalArgumentException iae) {
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
             }
@@ -293,15 +284,14 @@ public class DAOUtils {
         } else if (replace) {
             BsonDocument newDocument;
             try {
-                if (filter != null && !filter.isEmpty()) {
-                    query = and(query, filter);
+                if (filter.isPresent() && !filter.get().isEmpty()) {
+                    query = and(query, filter.get());
                 }
 
-                newDocument = cs == null
-                    ? coll.findOneAndReplace(query, getReplaceDocument(data),
-                        writeMode == WRITE_MODE.UPSERT ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS)
-                    : coll.findOneAndReplace(cs, query, getReplaceDocument(data),
-                        writeMode == WRITE_MODE.UPSERT ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS);
+                final var ops = writeMode == WRITE_MODE.UPSERT ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS;
+                newDocument = cs.isPresent()
+                    ? coll.findOneAndReplace(cs.get(), query, getReplaceDocument(data), ops)
+                    : coll.findOneAndReplace(query, getReplaceDocument(data), ops);
             } catch (IllegalArgumentException iae) {
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
             }
@@ -311,11 +301,10 @@ public class DAOUtils {
             BsonDocument newDocument;
 
             try {
-                newDocument = cs == null
-                    ? coll.findOneAndUpdate(query, getUpdateDocument(data, deepPatching),
-                        writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS)
-                    : coll.findOneAndUpdate(cs, query, getUpdateDocument(data, deepPatching),
-                        writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS);
+                final var ops = writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS;
+                newDocument = cs.isPresent()
+                    ? coll.findOneAndUpdate(cs.get(), query, getUpdateDocument(data, deepPatching), ops)
+                    : coll.findOneAndUpdate(query, getUpdateDocument(data, deepPatching), ops);
             } catch (IllegalArgumentException iae) {
                 return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
             }
@@ -336,10 +325,10 @@ public class DAOUtils {
      * @return
      */
     public static boolean restoreDocument(
-        final ClientSession cs,
+        final Optional<ClientSession> cs,
         final MongoCollection<BsonDocument> coll,
-        final Object documentId,
-        final BsonDocument shardKeys,
+        final BsonValue documentId,
+        final Optional<BsonDocument> shardKeys,
         final BsonDocument data,
         final Object etag,
         final String etagLocation) {
@@ -355,11 +344,13 @@ public class DAOUtils {
             query = and(eq("_id", documentId), eq(etagLocation != null && !etagLocation.isEmpty() ? etagLocation : "_etag", etag));
         }
 
-        if (shardKeys != null) {
-            query = and(query, shardKeys);
+        if (shardKeys.isPresent() && !shardKeys.get().isEmpty()) {
+            query = and(query, shardKeys.get());
         }
 
-        var result = cs == null ? coll.replaceOne(query, data, R_NOT_UPSERT_OPS) : coll.replaceOne(cs, query, data, R_NOT_UPSERT_OPS);
+        var result = cs.isPresent()
+            ? coll.replaceOne(cs.get(), query, data, R_NOT_UPSERT_OPS)
+            : coll.replaceOne(query, data, R_NOT_UPSERT_OPS);
 
         return result.getModifiedCount() == 1;
     }
@@ -375,11 +366,11 @@ public class DAOUtils {
      * @return
      */
     public static BulkOperationResult bulkWriteDocuments(
-        final ClientSession cs,
+        final Optional<ClientSession> cs,
         final MongoCollection<BsonDocument> coll,
         final BsonArray documents,
-        final BsonDocument filter,
-        final BsonDocument shardKeys,
+        final Optional<BsonDocument> filter,
+        final Optional<BsonDocument> shardKeys,
         final WRITE_MODE writeMode) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(documents);
@@ -394,7 +385,9 @@ public class DAOUtils {
             newEtag,
             writeMode);
 
-        var result = cs == null ? coll.bulkWrite(wm, BWO_NOT_ORDERED) : coll.bulkWrite(cs, wm, BWO_NOT_ORDERED);
+        var result = cs.isPresent()
+            ? coll.bulkWrite(cs.get(), wm, BWO_NOT_ORDERED)
+            : coll.bulkWrite(wm, BWO_NOT_ORDERED) ;
 
         return new BulkOperationResult(HttpStatus.SC_OK, newEtag, result);
     }
@@ -420,8 +413,8 @@ public class DAOUtils {
     static List<WriteModel<BsonDocument>> getBulkWriteModel(
         final MongoCollection<BsonDocument> mcoll,
         final BsonArray documents,
-        final BsonDocument filter,
-        final BsonDocument shardKeys,
+        final Optional<BsonDocument> filter,
+        final Optional<BsonDocument> shardKeys,
         final ObjectId etag,
         final WRITE_MODE writeMode) {
         Objects.requireNonNull(mcoll);
@@ -442,20 +435,18 @@ public class DAOUtils {
 
                 var _filter = eq("_id", document.get("_id"));
 
-                if (shardKeys != null) {
-                    _filter = and(_filter, shardKeys);
+                if (shardKeys.isPresent() && !shardKeys.get().isEmpty()) {
+                    _filter = and(_filter, shardKeys.get());
                 }
 
-                if (filter != null && !filter.isEmpty()) {
-                    _filter = and(_filter, filter);
+                if (filter.isPresent() && !filter.get().isEmpty()) {
+                    _filter = and(_filter, filter.get());
                 }
 
-                if (writeMode == WRITE_MODE.UPSERT) {
-                    updates.add(new UpdateOneModel<>(_filter, getUpdateDocument(document), new UpdateOptions().upsert(true)));
-                } else if (writeMode == WRITE_MODE.UPDATE) {
-                    updates.add(new UpdateOneModel<>(_filter, getUpdateDocument(document), new UpdateOptions().upsert(false)));
-                } else if (writeMode == WRITE_MODE.INSERT) {
-                    updates.add(new InsertOneModel<>(document));
+                switch(writeMode) {
+                    case UPSERT -> updates.add(new UpdateOneModel<>(_filter, getUpdateDocument(document), new UpdateOptions().upsert(true)));
+                    case UPDATE -> updates.add(new UpdateOneModel<>(_filter, getUpdateDocument(document), new UpdateOptions().upsert(false)));
+                    case INSERT -> updates.add(new InsertOneModel<>(document));
                 }
             });
 

@@ -21,6 +21,9 @@
 package org.restheart.mongodb.handlers.indexes;
 
 import io.undertow.server.HttpServerExchange;
+
+import java.util.Optional;
+
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -58,8 +61,7 @@ public class PutIndexHandler extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 
@@ -73,9 +75,7 @@ public class PutIndexHandler extends PipelinedHandler {
         final String id = request.getIndexId();
 
         if (id.startsWith("_")) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "index name cannot start with _");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "index name cannot start with _");
             next(exchange);
             return;
         }
@@ -84,62 +84,45 @@ public class PutIndexHandler extends PipelinedHandler {
 
         // must be an object
         if (!_content.isDocument()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data cannot be an array");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             next(exchange);
             return;
         }
 
-        BsonDocument content = _content.asDocument();
+        var content = _content.asDocument();
 
-        BsonValue _keys = content.get("keys");
-        BsonValue _ops = content.get("ops");
+        var _keys = content.get("keys");
+        var _ops = content.get("ops");
 
         // must be an object, mandatory
         if (_keys == null || !_keys.isDocument()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "keys must be a json object");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "keys must be a json object");
             next(exchange);
             return;
         }
 
         // must be an object, optional
         if (_ops != null && !_ops.isDocument()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "ops must be a json object");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "ops must be a json object");
             next(exchange);
             return;
         }
 
-        BsonDocument keys = _keys.asDocument();
-        BsonDocument ops = _ops == null ? null : _ops.asDocument();
-
-        if (keys == null) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "wrong request, content must include 'keys' object", null);
-            next(exchange);
-            return;
-        }
-
-        if (ops == null) {
-            ops = new BsonDocument();
-        }
-
+        var ops = _ops == null ? new BsonDocument() : _ops.asDocument();
         ops.put("name", new BsonString(id));
 
+        var keys = _keys.asDocument();
+
+        if (keys == null) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "wrong request, content must include 'keys' object", null);
+            next(exchange);
+            return;
+        }
+
         try {
-            dbsDAO.createIndex(
-                    request.getClientSession(),
-                    db, co, keys, ops);
+            dbsDAO.createIndex(Optional.ofNullable(request.getClientSession()), db, co, keys, Optional.of(ops));
         } catch (Throwable t) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "error creating the index",
-                    t);
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "error creating the index", t);
             next(exchange);
             return;
         }

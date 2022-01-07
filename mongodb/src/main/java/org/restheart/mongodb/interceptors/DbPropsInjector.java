@@ -20,6 +20,8 @@
  */
 package org.restheart.mongodb.interceptors;
 
+import java.util.Optional;
+
 import com.mongodb.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
@@ -65,26 +67,23 @@ public class DbPropsInjector implements MongoInterceptor {
      */
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
-        String dbName = request.getDBName();
+        var dbName = request.getDBName();
 
         if (dbName != null) {
             BsonDocument dbProps;
 
             if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
-                dbProps = dbsDAO.getDatabaseProperties(
-                        request.getClientSession(),
-                        dbName);
+                dbProps = dbsDAO.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), dbName);
             } else {
                 dbProps = MetadataCachesSingleton.getInstance().getDBProperties(dbName);
             }
 
             // if dbProps is null, the db does not exist
             if (dbProps == null
-                    && !(request.isDb()
-                    && request.isPut())
-                    && !request.isRoot()) {
-                response.setInError(HttpStatus.SC_NOT_FOUND,
-                        "Db '" + dbName + "' does not exist");
+                && !(request.isDb()
+                && request.isPut())
+                && !request.isRoot()) {
+                response.setInError(HttpStatus.SC_NOT_FOUND, "Db '" + dbName + "' does not exist");
                 return;
             }
 
@@ -99,13 +98,13 @@ public class DbPropsInjector implements MongoInterceptor {
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
         return this.dbsDAO != null
-                && request.isHandledBy("mongo")
-                && !(request.isInError()
-                || request.isSessions()
-                || request.isTxn()
-                || request.isTxns()
-                || request.isRoot()
-                || request.isRootSize()
-                || request.isMetrics());
+            && request.isHandledBy("mongo")
+            && !(request.isInError()
+            || request.isSessions()
+            || request.isTxn()
+            || request.isTxns()
+            || request.isRoot()
+            || request.isRootSize()
+            || request.isMetrics());
     }
 }

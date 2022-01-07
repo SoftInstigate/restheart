@@ -23,6 +23,9 @@ package org.restheart.mongodb.handlers.collection;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
+
+import java.util.Optional;
+
 import org.bson.BsonDocument;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.MongoRequest;
@@ -123,11 +126,11 @@ public class PostCollectionHandler extends PipelinedHandler {
         }
 
         var result = this.documentDAO.writeDocumentPost(
-            request.getClientSession(),
+            Optional.ofNullable(request.getClientSession()),
             request.getDBName(),
             request.getCollectionName(),
-            request.getFiltersDocument(),
-            request.getShardKey(),
+            Optional.ofNullable(request.getFiltersDocument()),
+            Optional.ofNullable(request.getShardKey()),
             content,
             request.getWriteMode(),
             request.getETag(),

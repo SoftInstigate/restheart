@@ -25,6 +25,8 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import java.util.List;
+import java.util.Optional;
+
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
@@ -48,7 +50,7 @@ public interface Database {
      * @return HTTP status code
      */
     OperationResult deleteCollection(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collectionName,
             final BsonObjectId requestEtag,
@@ -63,7 +65,7 @@ public interface Database {
      * @return HTTP status code
      */
     OperationResult deleteDatabase(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final BsonObjectId requestEtag,
             final boolean checkEtag);
@@ -74,9 +76,7 @@ public interface Database {
      * @return true if DB dbName exists
      *
      */
-    boolean doesDbExist(
-            final ClientSession cs,
-            final String dbName);
+    boolean doesDbExist(final Optional<ClientSession> cs, final String dbName);
 
     /**
      *
@@ -86,10 +86,7 @@ public interface Database {
      * @return true if exists the collection collName exists in DB dbName
      *
      */
-    boolean doesCollectionExist(
-            final ClientSession cs,
-            final String dbName,
-            final String collName);
+    boolean doesCollectionExist(final Optional<ClientSession> cs, final String dbName, final String collName);
 
     /**
      *
@@ -97,9 +94,7 @@ public interface Database {
      * @param collectionName
      * @return A Collection
      */
-    MongoCollection<BsonDocument> getCollection(
-            final String dbName,
-            final String collectionName);
+    MongoCollection<BsonDocument> getCollection(final String dbName, final String collectionName);
 
     /**
      *
@@ -115,7 +110,7 @@ public interface Database {
      * @return Collection Data as ArrayList of BsonDocument
      */
     BsonArray getCollectionData(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final MongoCollection<BsonDocument> collection,
             final int page,
             final int pagesize,
@@ -132,10 +127,7 @@ public interface Database {
      * @param collectionName
      * @return Collection properties
      */
-    BsonDocument getCollectionProperties(
-            final ClientSession cs,
-            final String dbName,
-            final String collectionName);
+    BsonDocument getCollectionProperties(final Optional<ClientSession> cs, final String dbName, final String collectionName);
 
     /**
      *
@@ -145,10 +137,7 @@ public interface Database {
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
      */
-    long getCollectionSize(
-            final ClientSession cs,
-            final MongoCollection<BsonDocument> collection,
-            final BsonDocument filters);
+    long getCollectionSize(final Optional<ClientSession> cs, final MongoCollection<BsonDocument> collection, final BsonDocument filters);
 
     /**
      *
@@ -178,7 +167,7 @@ public interface Database {
      *
      */
     BsonArray getDatabaseData(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName, List<String> collections,
             final int page,
             final int pagesize,
@@ -190,7 +179,7 @@ public interface Database {
      * @param cs the client session
      * @return A List of database names
      */
-    List<String> getDatabaseNames(final ClientSession cs);
+    List<String> getDatabaseNames(final Optional<ClientSession> cs);
 
     /**
      *
@@ -198,9 +187,7 @@ public interface Database {
      * @param dbName
      * @return A List of collection names
      */
-    List<String> getCollectionNames(
-            final ClientSession cs,
-            final String dbName);
+    List<String> getCollectionNames(final Optional<ClientSession> cs, final String dbName);
 
     /**
      * @param cs
@@ -208,9 +195,7 @@ public interface Database {
      * @return the db props
      *
      */
-    BsonDocument getDatabaseProperties(
-            final ClientSession cs,
-            final String dbName);
+    BsonDocument getDatabaseProperties(final Optional<ClientSession> cs, final String dbName);
 
     /**
      *
@@ -225,7 +210,7 @@ public interface Database {
      * @return
      */
     OperationResult upsertCollection(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collectionName,
             final BsonDocument content,
@@ -246,7 +231,7 @@ public interface Database {
      * @return
      */
     OperationResult upsertDB(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final BsonDocument content,
             final String requestEtag,
@@ -263,7 +248,7 @@ public interface Database {
      * @return the operation result
      */
     int deleteIndex(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collection,
             final String indexId);
@@ -275,10 +260,7 @@ public interface Database {
      * @param collectionName
      * @return A List of indexes for collectionName in dbName
      */
-    List<BsonDocument> getCollectionIndexes(
-            final ClientSession cs,
-            final String dbName,
-            final String collectionName);
+    List<BsonDocument> getCollectionIndexes(final Optional<ClientSession> cs, final String dbName, final String collectionName);
 
     /**
      *
@@ -289,11 +271,11 @@ public interface Database {
      * @param options
      */
     void createIndex(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collection,
             final BsonDocument keys,
-            final BsonDocument options);
+            final Optional<BsonDocument> options);
 
     /**
      * Returs the FindIterable of the collection applying sorting, filtering and
@@ -310,8 +292,8 @@ public interface Database {
      * @return
      * @throws JsonParseException
      */
-    FindIterable<BsonDocument> getFindIterable(
-            final ClientSession cs,
+    FindIterable<BsonDocument> findIterable(
+            final Optional<ClientSession> cs,
             final MongoCollection<BsonDocument> collection,
             final BsonDocument sortBy,
             final BsonDocument filters,

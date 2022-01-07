@@ -24,7 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.restheart.exchange.MongoRequest;
@@ -88,13 +88,12 @@ public class GetRootHandler extends PipelinedHandler {
         var data = new BsonArray();
 
         if (request.getPagesize() >= 0) {
-            List<String> _dbs = dbsDAO.getDatabaseNames(
-                    request.getClientSession());
+            var _dbs = dbsDAO.getDatabaseNames(Optional.ofNullable(request.getClientSession()));
 
             // filter out reserved resources
-            List<String> dbs = _dbs.stream()
-                    .filter(db -> !MongoRequest.isReservedDbName(db))
-                    .collect(Collectors.toList());
+            var dbs = _dbs.stream()
+                .filter(db -> !MongoRequest.isReservedDbName(db))
+                .collect(Collectors.toList());
 
             if (dbs == null) {
                 dbs = new ArrayList<>();
@@ -124,14 +123,10 @@ public class GetRootHandler extends PipelinedHandler {
                                 + pagesize);
 
                         dbs.stream().map(db -> {
-                            if (MetadataCachesSingleton.isEnabled()
-                                    && !request.isNoCache()) {
-                                return MetadataCachesSingleton.getInstance()
-                                        .getDBProperties(db);
+                            if (MetadataCachesSingleton.isEnabled() && !request.isNoCache()) {
+                                return MetadataCachesSingleton.getInstance().getDBProperties(db);
                             } else {
-                                return dbsDAO.getDatabaseProperties(
-                                        request.getClientSession(),
-                                        db);
+                                return dbsDAO.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), db);
                             }
                         }).forEachOrdered(db -> data.add(db));
                     }

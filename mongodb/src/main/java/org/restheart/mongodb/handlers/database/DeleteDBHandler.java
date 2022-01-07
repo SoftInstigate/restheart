@@ -22,13 +22,15 @@ package org.restheart.mongodb.handlers.database;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+
+import java.util.Optional;
+
 import org.bson.BsonObjectId;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -72,16 +74,16 @@ public class DeleteDBHandler extends PipelinedHandler {
         }
 
         var etag = request.getETag() == null
-                ? null
-                : ObjectId.isValid(request.getETag())
-                ? new BsonObjectId(new ObjectId(request.getETag()))
-                : new BsonObjectId();
+            ? null
+            : ObjectId.isValid(request.getETag())
+            ? new BsonObjectId(new ObjectId(request.getETag()))
+            : new BsonObjectId();
 
-        OperationResult result = dbsDAO.deleteDatabase(
-                request.getClientSession(),
-                request.getDBName(),
-                etag,
-                request.isETagCheckRequired());
+        var result = dbsDAO.deleteDatabase(
+            Optional.ofNullable(request.getClientSession()),
+            request.getDBName(),
+            etag,
+            request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 
@@ -91,11 +93,7 @@ public class DeleteDBHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setInError(
-                    HttpStatus.SC_CONFLICT,
-                    "The database's ETag must be provided using the '"
-                    + Headers.IF_MATCH
-                    + "' header.");
+            response.setInError(HttpStatus.SC_CONFLICT, "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             next(exchange);
             return;
         }

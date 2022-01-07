@@ -66,26 +66,22 @@ public class MongoServiceInitializer implements Initializer {
             return;
         }
 
-        MongoClientSingleton.init(MongoServiceConfiguration.get().getMongoUri(),
-                pluginsRegistry);
+        MongoClientSingleton.init(MongoServiceConfiguration.get().getMongoUri(), pluginsRegistry);
 
         // force first connection to MongoDb
         MongoClientSingleton.getInstance();
     }
 
     private boolean isMongoEnabled(Map<String, Object> confArgs) {
-        if (confArgs.get(PLUGINS_ARGS_KEY) != null
-                && confArgs.get(PLUGINS_ARGS_KEY) instanceof Map) {
+        if (confArgs.get(PLUGINS_ARGS_KEY) != null && confArgs.get(PLUGINS_ARGS_KEY) instanceof Map) {
             @SuppressWarnings("rawtypes")
             var pa = (Map) confArgs.get(PLUGINS_ARGS_KEY);
 
-            if (pa.get("mongo") != null
-                    && pa.get("mongo") instanceof Map) {
+            if (pa.get("mongo") != null && pa.get("mongo") instanceof Map) {
                 @SuppressWarnings("rawtypes")
                 var mc = (Map) pa.get("mongo");
 
-                if (mc.get("enabled") != null
-                        && mc.get("enabled") instanceof Boolean) {
+                if (mc.get("enabled") != null && mc.get("enabled") instanceof Boolean) {
                     return (Boolean) mc.get("enabled");
                 }
             }

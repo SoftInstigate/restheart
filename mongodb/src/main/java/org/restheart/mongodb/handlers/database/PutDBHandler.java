@@ -22,13 +22,12 @@ package org.restheart.mongodb.handlers.database;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+import java.util.Optional;
 import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -72,14 +71,12 @@ public class PutDBHandler extends PipelinedHandler {
         }
 
         if (request.getDBName().isEmpty()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "db name cannot be empty");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "db name cannot be empty");
             next(exchange);
             return;
         }
 
-        BsonValue _content = request.getContent();
+        var _content = request.getContent();
 
         if (_content == null) {
             _content = new BsonDocument();
@@ -94,18 +91,18 @@ public class PutDBHandler extends PipelinedHandler {
             return;
         }
 
-        BsonDocument content = _content.asDocument();
+        var content = _content.asDocument();
 
         boolean updating = request.getDbProps() != null;
 
-        OperationResult result = dbsDAO.upsertDB(
-                request.getClientSession(),
-                request.getDBName(),
-                content,
-                request.getETag(),
-                updating,
-                false,
-                request.isETagCheckRequired());
+        var result = dbsDAO.upsertDB(
+            Optional.ofNullable(request.getClientSession()),
+            request.getDBName(),
+            content,
+            request.getETag(),
+            updating,
+            false,
+            request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 
@@ -115,11 +112,7 @@ public class PutDBHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setInError(
-                    HttpStatus.SC_CONFLICT,
-                    "The database's ETag must be provided using the '"
-                    + Headers.IF_MATCH
-                    + "' header.");
+            response.setInError(HttpStatus.SC_CONFLICT, "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             next(exchange);
             return;
         }

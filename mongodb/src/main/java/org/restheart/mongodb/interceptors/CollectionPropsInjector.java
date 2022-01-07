@@ -25,6 +25,9 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
+
+import java.util.Optional;
+
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.DatabaseImpl;
@@ -71,20 +74,15 @@ public class CollectionPropsInjector implements MongoInterceptor {
      * @throws Exception
      */
     @Override
-    public void handle(MongoRequest request, MongoResponse response)
-            throws Exception {
-        String dbName = request.getDBName();
-        String collName = request.getCollectionName();
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        var dbName = request.getDBName();
+        var collName = request.getCollectionName();
 
         if (dbName != null && collName != null && !request.isDbMeta()) {
             BsonDocument collProps;
 
             if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
-                collProps = dbsDAO.
-                        getCollectionProperties(
-                                request.getClientSession(),
-                                dbName,
-                                collName);
+                collProps = dbsDAO.getCollectionProperties(Optional.ofNullable(request.getClientSession()), dbName, collName);
             } else {
                 collProps = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
             }
@@ -128,18 +126,14 @@ public class CollectionPropsInjector implements MongoInterceptor {
         if (resourceName == null) {
             errMsg = RESOURCE_DOES_NOT_EXIST;
         } else if (resourceName.endsWith(FS_FILES_SUFFIX)) {
-            errMsg = String.format(FILE_BUCKET_DOES_NOT_EXIST,
-                    request.getCollectionName());
+            errMsg = String.format(FILE_BUCKET_DOES_NOT_EXIST, request.getCollectionName());
         } else if (_SCHEMAS.equals(resourceName)) {
             errMsg = SCHEMA_STORE_DOES_NOT_EXIST;
         } else {
-            errMsg = String.format(COLLECTION_DOES_NOT_EXIST,
-                    request.getCollectionName());
+            errMsg = String.format(COLLECTION_DOES_NOT_EXIST, request.getCollectionName());
         }
 
-        response.setInError(
-                HttpStatus.SC_NOT_FOUND,
-                errMsg);
+        response.setInError(HttpStatus.SC_NOT_FOUND, errMsg);
     }
 
     /**

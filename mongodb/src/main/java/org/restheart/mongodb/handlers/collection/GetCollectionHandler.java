@@ -20,6 +20,8 @@
  */
 package org.restheart.mongodb.handlers.collection;
 
+import java.util.Optional;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.MongoException;
 import io.undertow.server.HttpServerExchange;
@@ -91,7 +93,7 @@ public class GetCollectionHandler extends PipelinedHandler {
         long size = -1;
 
         if (request.isCount()) {
-            size = dbsDAO.getCollectionSize(request.getClientSession(), coll, request.getFiltersDocument());
+            size = dbsDAO.getCollectionSize(Optional.ofNullable(request.getClientSession()), coll, request.getFiltersDocument());
         }
 
         // ***** get data
@@ -100,7 +102,7 @@ public class GetCollectionHandler extends PipelinedHandler {
         if (request.getPagesize() > 0) {
             try {
                 data = dbsDAO.getCollectionData(
-                        request.getClientSession(),
+                        Optional.ofNullable(request.getClientSession()),
                         coll,
                         request.getPage(),
                         request.getPagesize(),

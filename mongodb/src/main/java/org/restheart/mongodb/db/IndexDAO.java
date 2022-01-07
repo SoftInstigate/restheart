@@ -26,6 +26,7 @@ import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.IndexOptions;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
@@ -64,14 +65,14 @@ class IndexDAO {
      * @return
      */
     List<BsonDocument> getCollectionIndexes(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collName) {
         var ret = new ArrayList<BsonDocument>();
 
-        var indexes = cs == null
-                ? collectionDAO.getCollection(dbName, collName).listIndexes()
-                : collectionDAO.getCollection(dbName, collName).listIndexes(cs);
+        var indexes = cs.isPresent()
+                ? collectionDAO.getCollection(dbName, collName).listIndexes(cs.get())
+                : collectionDAO.getCollection(dbName, collName).listIndexes();
 
         indexes.iterator().forEachRemaining(
                 i -> {
@@ -93,22 +94,22 @@ class IndexDAO {
      * @param options
      */
     void createIndex(
-            final ClientSession cs,
-            final String dbName,
-            final String collection,
-            final BsonDocument keys,
-            final BsonDocument options) {
-        if (options == null) {
-            if (cs == null) {
-                collectionDAO.getCollection(dbName, collection).createIndex(keys);
+        final Optional<ClientSession> cs,
+        final String dbName,
+        final String collection,
+        final BsonDocument keys,
+        final Optional<BsonDocument> options) {
+        if (options.isPresent()) {
+            if (cs.isPresent()) {
+                collectionDAO.getCollection(dbName, collection).createIndex(cs.get(), keys, getIndexOptions(options.get()));
             } else {
-                collectionDAO.getCollection(dbName, collection).createIndex(cs, keys);
+                collectionDAO.getCollection(dbName, collection).createIndex(keys, getIndexOptions(options.get()));
             }
         } else {
-            if (cs == null) {
-                collectionDAO.getCollection(dbName, collection).createIndex(keys, getIndexOptions(options));
+            if (cs.isPresent()) {
+                collectionDAO.getCollection(dbName, collection).createIndex(cs.get(), keys);
             } else {
-                collectionDAO.getCollection(dbName, collection).createIndex(cs, keys, getIndexOptions(options));
+                collectionDAO.getCollection(dbName, collection).createIndex(keys);
             }
         }
     }
@@ -122,14 +123,14 @@ class IndexDAO {
      * @return
      */
     int deleteIndex(
-            final ClientSession cs,
+            final Optional<ClientSession> cs,
             final String dbName,
             final String collection,
             final String indexId) {
-        if (cs == null) {
-            collectionDAO.getCollection(dbName, collection).dropIndex(indexId);
+        if (cs.isPresent()) {
+            collectionDAO.getCollection(dbName, collection).dropIndex(cs.get(), indexId);
         } else {
-            collectionDAO.getCollection(dbName, collection).dropIndex(cs, indexId);
+            collectionDAO.getCollection(dbName, collection).dropIndex(indexId);
         }
 
         return HttpStatus.SC_NO_CONTENT;

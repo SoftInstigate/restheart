@@ -22,11 +22,13 @@ package org.restheart.mongodb.handlers.document;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
+
+import java.util.Optional;
+
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DocumentDAO;
-import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -92,16 +94,15 @@ public class DeleteDocumentHandler extends PipelinedHandler {
             return;
         }
 
-        OperationResult result = this.documentDAO
-                .deleteDocument(
-                        request.getClientSession(),
-                        request.getDBName(),
-                        request.getCollectionName(),
-                        request.getDocumentId(),
-                        request.getFiltersDocument(),
-                        request.getShardKey(),
-                        request.getETag(),
-                        request.isETagCheckRequired());
+        var result = this.documentDAO.deleteDocument(
+            Optional.ofNullable(request.getClientSession()),
+            request.getDBName(),
+            request.getCollectionName(),
+            Optional.of(request.getDocumentId()),
+            Optional.ofNullable(request.getFiltersDocument()),
+            Optional.ofNullable(request.getShardKey()),
+            request.getETag(),
+            request.isETagCheckRequired());
 
         response.setDbOperationResult(result);
 
@@ -111,11 +112,7 @@ public class DeleteDocumentHandler extends PipelinedHandler {
         }
 
         if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setInError(
-                    HttpStatus.SC_CONFLICT,
-                    "The document's ETag must be provided using the '"
-                    + Headers.IF_MATCH
-                    + "' header");
+            response.setInError(HttpStatus.SC_CONFLICT, "The document's ETag must be provided using the '" + Headers.IF_MATCH + "' header");
             next(exchange);
             return;
         }

@@ -21,13 +21,15 @@
 package org.restheart.mongodb.handlers.collection;
 
 import io.undertow.server.HttpServerExchange;
+
+import java.util.Optional;
+
 import org.bson.BsonObjectId;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 
@@ -75,8 +77,8 @@ public class DeleteCollectionHandler extends PipelinedHandler {
                 ? new BsonObjectId(new ObjectId(request.getETag()))
                 : new BsonObjectId();
 
-        OperationResult result = dbsDAO.deleteCollection(
-                request.getClientSession(),
+        var result = dbsDAO.deleteCollection(
+                Optional.ofNullable(request.getClientSession()),
                 request.getDBName(),
                 request.getCollectionName(),
                 etag,
@@ -89,8 +91,7 @@ public class DeleteCollectionHandler extends PipelinedHandler {
 
         response.setStatusCode(result.getHttpCode());
 
-        MetadataCachesSingleton.getInstance()
-                .invalidateCollection(request.getDBName(), request.getCollectionName());
+        MetadataCachesSingleton.getInstance().invalidateCollection(request.getDBName(), request.getCollectionName());
 
         next(exchange);
     }
