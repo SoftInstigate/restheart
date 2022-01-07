@@ -20,8 +20,6 @@
  */
 package org.restheart.security.handlers;
 
-import io.undertow.security.api.SecurityContext;
-import io.undertow.server.HttpServerExchange;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,6 +31,8 @@ import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
 import org.restheart.utils.PluginUtils;
+
+import io.undertow.server.HttpServerExchange;
 
 /**
  *

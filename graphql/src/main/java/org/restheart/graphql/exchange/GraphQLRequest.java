@@ -20,9 +20,6 @@
  */
 package org.restheart.graphql.exchange;
 
-/**
- * TODO move this class to restheart-commons
- */
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
