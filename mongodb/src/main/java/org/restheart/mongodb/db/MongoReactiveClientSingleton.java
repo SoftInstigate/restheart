@@ -61,14 +61,6 @@ public class MongoReactiveClientSingleton {
     }
 
     /**
-     * alias for getInstance()
-     * @return the MongoReactiveClientSingleton
-     */
-    public static MongoReactiveClientSingleton get() {
-        return getInstance();
-    }
-
-    /**
      *
      * @return
      */
