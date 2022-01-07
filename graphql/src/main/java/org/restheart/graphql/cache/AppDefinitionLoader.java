@@ -22,13 +22,12 @@ package org.restheart.graphql.cache;
 
 import com.mongodb.client.MongoClient;
 
-import org.bson.BsonBoolean;
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.restheart.graphql.GraphQLAppDeserializer;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.models.*;
-import static org.restheart.utils.BsonUtils.arrayBuilder;;
+import static org.restheart.utils.BsonUtils.array;
+import static org.restheart.utils.BsonUtils.document;
 
 
 public class AppDefinitionLoader {
@@ -48,17 +47,17 @@ public class AppDefinitionLoader {
     }
 
     public static GraphQLApp loadAppDefinition(String appURI) throws GraphQLIllegalAppDefinitionException {
-        var uriOrNameCond = arrayBuilder()
-            .add(new BsonDocument(APP_URI_FIELD, new BsonString(appURI)))
-            .add(new BsonDocument(APP_NAME_FIELD, new BsonString(appURI)));
+        var uriOrNameCond = array()
+            .add(document().put(APP_URI_FIELD, appURI))
+            .add(document().put(APP_NAME_FIELD, appURI));
 
-        var conditions = arrayBuilder()
-            .add(new BsonDocument("$or", uriOrNameCond.get()))
-            .add(new BsonDocument(APP_ENABLED_FIELD, new BsonBoolean(true)));
+        var conditions = array()
+            .add(document().put("$or", uriOrNameCond))
+            .add(document().put(APP_ENABLED_FIELD, true));
 
-        var findArg = new BsonDocument("$and", conditions.get());
+        var findArg = document().put("$and", conditions);
 
-        var appDefinition = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class).find(findArg).first();
+        var appDefinition = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class).find(findArg.get()).first();
 
         if (appDefinition != null) {
             return GraphQLAppDeserializer.fromBsonDocument(appDefinition);
