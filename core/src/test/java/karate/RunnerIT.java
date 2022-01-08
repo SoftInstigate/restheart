@@ -23,7 +23,6 @@ package karate;
 import static org.junit.Assert.assertEquals;
 import com.intuit.karate.Runner;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.restheart.test.integration.AbstactIT;
 

@@ -136,26 +136,26 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         var rootHandler = path();
 
         var _pipeline = PipelinedWrappingHandler.wrap(
-                new ErrorHandler(
-                        PipelinedHandler.pipe(
-                                new CORSHandler(),
-                                new OptionsHandler(),
-                                ClientSessionInjector.build(),
-                                new ETagPolicyInjector(),
-                                RequestDispatcherHandler.getInstance())));
+            new ErrorHandler(
+                    PipelinedHandler.pipe(
+                            new CORSHandler(),
+                            new OptionsHandler(),
+                            ClientSessionInjector.build(),
+                            new ETagPolicyInjector(),
+                            RequestDispatcherHandler.getInstance())));
 
         // check that all mounts are either all paths or all path templates
-        boolean allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
-                .stream()
-                .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
-                .allMatch(url -> isPathTemplate(url));
+        var allPathTemplates = MongoServiceConfiguration.get().getMongoMounts()
+            .stream()
+            .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
+            .allMatch(url -> isPathTemplate(url));
 
-        boolean allPaths = MongoServiceConfiguration.get().getMongoMounts()
-                .stream()
-                .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
-                .allMatch(url -> !isPathTemplate(url));
+        var allPaths = MongoServiceConfiguration.get().getMongoMounts()
+            .stream()
+            .map(m -> (String) m.get(MONGO_MOUNT_WHERE_KEY))
+            .allMatch(url -> !isPathTemplate(url));
 
-        PathTemplateHandler pathsTemplates = pathTemplate(false);
+        var pathsTemplates = pathTemplate(false);
 
         if (!allPathTemplates && !allPaths) {
             LOGGER.error("No mongo resource mounted! Check your mongo-mounts."
@@ -172,9 +172,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
                     rootHandler.addPrefixPath(uri, _pipeline);
                 }
 
-                LOGGER.info(ansi().fg(GREEN)
-                        .a("URI {} bound to MongoDB resource {}")
-                        .reset().toString(), uri, resource);
+                LOGGER.info(ansi().fg(GREEN).a("URI {} bound to MongoDB resource {}").reset().toString(), uri, resource);
             });
 
             if (allPathTemplates) {
@@ -254,11 +252,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
         MongoServiceConfiguration.get().getMongoMounts()
                 .stream()
-                .forEachOrdered(e -> {
-                    ret.add(new MongoMount(
-                            (String) e.get(MONGO_MOUNT_WHAT_KEY),
-                            resolveURI((String) e.get(MONGO_MOUNT_WHERE_KEY))));
-                });
+                .forEachOrdered(e -> ret.add(new MongoMount((String) e.get(MONGO_MOUNT_WHAT_KEY), resolveURI((String) e.get(MONGO_MOUNT_WHERE_KEY)))));
 
         return ret;
     }
