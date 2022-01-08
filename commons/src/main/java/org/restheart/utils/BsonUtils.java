@@ -127,7 +127,7 @@ public class BsonUtils {
 
             return ret;
         } else if (json.isArray()) {
-            BsonArray ret = new BsonArray();
+            var ret = new BsonArray();
 
             json.asArray().stream().forEach(value -> {
                 if (value.isDocument()) {
@@ -273,18 +273,16 @@ public class BsonUtils {
                 pathToken = pathTokens[0];
 
                 if ("".equals(pathToken)) {
-                    throw new IllegalArgumentException("wrong path "
-                            + Arrays.toString(pathTokens)
-                            + " path tokens cannot be empty strings");
+                    throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " path tokens cannot be empty strings");
                 }
             }
         } else if (json.isNull()) {
             // if value is null return an empty optional
-            ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
+            var ret = new ArrayList<Optional<BsonValue>>();
             ret.add(Optional.empty());
             return ret;
         } else {
-            ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
+            var ret = new ArrayList<Optional<BsonValue>>();
             ret.add(Optional.ofNullable(json));
             return ret;
         }
@@ -294,31 +292,19 @@ public class BsonUtils {
         switch (pathToken) {
             case DOLLAR:
                 if (!(json.isDocument())) {
-                    throw new IllegalArgumentException("wrong path "
-                            + Arrays.toString(pathTokens)
-                            + " at token "
-                            + pathToken
-                            + "; it should be an object but found "
-                            + json.toString());
+                    throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; it should be an object but found " + json.toString());
                 }
 
                 if (pathTokens.length != totalTokensLength) {
-                    throw new IllegalArgumentException("wrong path "
-                            + Arrays.toString(pathTokens)
-                            + " at token "
-                            + pathToken
-                            + "; $ can only start the expression");
+                    throw new IllegalArgumentException("wrong path " + Arrays.toString(pathTokens) + " at token " + pathToken + "; $ can only start the expression");
                 }
 
-                return _getPropsFromPath(
-                        json,
-                        subpath(pathTokens),
-                        totalTokensLength);
+                return _getPropsFromPath(json, subpath(pathTokens), totalTokensLength);
             case "*":
                 if (!(json.isDocument())) {
                     return null;
                 } else {
-                    ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
+                    var ret = new ArrayList<Optional<BsonValue>>();
 
                     for (String key : json.asDocument().keySet()) {
                         nested = _getPropsFromPath(json.asDocument().get(key), subpath(pathTokens), totalTokensLength);
@@ -352,13 +338,10 @@ public class BsonUtils {
                                 });
 
                         if (allNumbericKeys) {
-                            ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
+                            var ret = new ArrayList<Optional<BsonValue>>();
 
-                            for (String key : json.asDocument().keySet()) {
-                                nested = _getPropsFromPath(
-                                        json.asDocument().get(key),
-                                        subpath(pathTokens),
-                                        totalTokensLength);
+                            for (var key : json.asDocument().keySet()) {
+                                nested = _getPropsFromPath(json.asDocument().get(key), subpath(pathTokens), totalTokensLength);
 
                                 // only add null if subpath(pathTokens) was the last token
                                 if (nested == null && pathTokens.length == 2) {
@@ -374,14 +357,11 @@ public class BsonUtils {
 
                     return null;
                 } else {
-                    ArrayList<Optional<BsonValue>> ret = new ArrayList<>();
+                    var ret = new ArrayList<Optional<BsonValue>>();
 
                     if (!json.asArray().isEmpty()) {
-                        for (int index = 0; index < json.asArray().size(); index++) {
-                            nested = _getPropsFromPath(
-                                    json.asArray().get(index),
-                                    subpath(pathTokens),
-                                    totalTokensLength);
+                        for (var index = 0; index < json.asArray().size(); index++) {
+                            nested = _getPropsFromPath(json.asArray().get(index), subpath(pathTokens), totalTokensLength);
 
                             // only add null if subpath(pathTokens) was the last token
                             if (nested == null && pathTokens.length == 2) {
@@ -396,17 +376,10 @@ public class BsonUtils {
                 }
             default:
                 if (json.isArray()) {
-                    throw new IllegalArgumentException("wrong path "
-                            + pathFromTokens(pathTokens)
-                            + " at token "
-                            + pathToken
-                            + "; it should be '[*]'");
+                    throw new IllegalArgumentException("wrong path " + pathFromTokens(pathTokens) + " at token " + pathToken + "; it should be '[*]'");
                 } else if (json.isDocument()) {
                     if (json.asDocument().containsKey(pathToken)) {
-                        return _getPropsFromPath(
-                                json.asDocument().get(pathToken),
-                                subpath(pathTokens),
-                                totalTokensLength);
+                        return _getPropsFromPath(json.asDocument().get(pathToken), subpath(pathTokens), totalTokensLength);
                     } else {
                         return null;
                     }
@@ -437,7 +410,7 @@ public class BsonUtils {
             throw new IllegalArgumentException("wrong right path: " + right);
         }
 
-        boolean ret = true;
+        var ret = true;
 
         if (!right.startsWith(left)) {
             String leftPathTokens[] = left.split(Pattern.quote("."));
@@ -448,8 +421,8 @@ public class BsonUtils {
             } else {
                 outerloop:
                 for (int cont = 0; cont < leftPathTokens.length; cont++) {
-                    String lt = leftPathTokens[cont];
-                    String rt = rightPathTokens[cont];
+                    var lt = leftPathTokens[cont];
+                    var rt = rightPathTokens[cont];
 
                     switch (lt) {
                         case "*":
@@ -486,15 +459,14 @@ public class BsonUtils {
      * expression or null if path does not exist
      * @throws IllegalArgumentException
      */
-    public static Integer countPropsFromPath(BsonValue root, String path)
-            throws IllegalArgumentException {
-        List<Optional<BsonValue>> items = getPropsFromPath(root, path);
+    public static Integer countPropsFromPath(BsonValue root, String path) throws IllegalArgumentException {
+        var items = getPropsFromPath(root, path);
 
         if (items == null) {
             return null;
+        } else {
+            return items.size();
         }
-
-        return items.size();
     }
 
     private static String pathFromTokens(String[] pathTokens) {
@@ -502,21 +474,21 @@ public class BsonUtils {
             return null;
         }
 
-        String ret = "";
+        var ret = new StringBuilder();
 
         for (int cont = 1; cont < pathTokens.length; cont++) {
-            ret = ret.concat(pathTokens[cont]);
+            ret = ret.append(pathTokens[cont]);
 
             if (cont < pathTokens.length - 1) {
-                ret = ret.concat(".");
+                ret = ret.append(".");
             }
         }
 
-        return ret;
+        return ret.toString();
     }
 
     private static String[] subpath(String[] pathTokens) {
-        ArrayList<String> subpath = new ArrayList<>();
+        var subpath = new ArrayList<String>();
 
         for (int cont = 1; cont < pathTokens.length; cont++) {
             subpath.add(pathTokens[cont]);
@@ -536,41 +508,24 @@ public class BsonUtils {
             return false;
         }
 
-        switch (type.toLowerCase().trim()) {
-            case "null":
-                return !o.isPresent();
-            case "notnull":
-                return o.isPresent();
-            case "object":
-                return o.get().isDocument();
-            case "array":
-                return o.get().isArray();
-            case "string":
-                return o.get().isString();
-            case "number":
-                return o.get().isNumber();
-            case "boolean":
-                return o.get().isBoolean();
-            case "objectid":
-                return o.get().isObjectId();
-            case "objectidstring":
-                return o.get().isString()
-                        && ObjectId.isValid(o.get().asString().getValue());
-            case "date":
-                return o.get().isDateTime();
-            case "timestamp":
-                return o.get().isTimestamp();
-            case "maxkey":
-                return o.get() instanceof BsonMaxKey;
-            case "minkey":
-                return o.get() instanceof BsonMinKey;
-            case "symbol":
-                return o.get().isSymbol();
-            case "code":
-                return o.get() instanceof BsonJavaScript;
-            default:
-                return false;
-        }
+        return switch (type.toLowerCase().trim()) {
+            case "null" -> !o.isPresent();
+            case "notnull" -> o.isPresent();
+            case "object" -> o.get().isDocument();
+            case "array" -> o.get().isArray();
+            case "string" -> o.get().isString();
+            case "number" -> o.get().isNumber();
+            case "boolean" -> o.get().isBoolean();
+            case "objectid" -> o.get().isObjectId();
+            case "objectidstring" -> o.get().isString() && ObjectId.isValid(o.get().asString().getValue());
+            case "date" -> o.get().isDateTime();
+            case "timestamp" -> o.get().isTimestamp();
+            case "maxkey" -> o.get() instanceof BsonMaxKey;
+            case "minkey" -> o.get() instanceof BsonMinKey;
+            case "symbol" -> o.get().isSymbol();
+            case "code" -> o.get() instanceof BsonJavaScript;
+            default -> false;
+        };
     }
 
     /**
@@ -616,13 +571,7 @@ public class BsonUtils {
     }
 
     private static BsonValue getBsonValue(String json) {
-        String _json = "{'x':"
-                .concat(json)
-                .concat("}");
-
-        return BsonDocument
-                .parse(_json)
-                .get("x");
+        return BsonDocument.parse("{'x':".concat(json).concat("}")).get("x");
     }
 
     /**
@@ -665,11 +614,9 @@ public class BsonUtils {
         if (bson.isDocument()) {
             return minify(bson.asDocument().toJson(settings));
         } else if (bson.isArray()) {
-            BsonArray _array = bson.asArray();
-
-            BsonDocument wrappedArray = new BsonDocument("wrapped", _array);
-
-            String json = wrappedArray.toJson(settings);
+            var _array = bson.asArray();
+            var wrappedArray = new BsonDocument("wrapped", _array);
+            var json = wrappedArray.toJson(settings);
 
             json = json.substring(0, json.length() - 1); // removes closing }
             json = json.replaceFirst("\\{", "");
@@ -678,7 +625,7 @@ public class BsonUtils {
 
             return minify(json);
         } else {
-            BsonDocument doc = new BsonDocument("x", bson);
+            var doc = new BsonDocument("x", bson);
 
             String ret = doc.toJson(settings);
 
@@ -740,8 +687,7 @@ public class BsonUtils {
         "$isolated" // Isolation Update Operator
     };
 
-    private static final List<String> UPDATE_OPERATORS
-            = Collections.unmodifiableList(Arrays.asList(_UPDATE_OPERATORS));
+    private static final List<String> UPDATE_OPERATORS = Collections.unmodifiableList(Arrays.asList(_UPDATE_OPERATORS));
 
     /**
      * Seehttps://docs.mongodb.com/manual/reference/operator/update/
@@ -779,9 +725,7 @@ public class BsonUtils {
             return json.asArray()
                     .stream()
                     .filter(el -> el.isDocument())
-                    .anyMatch(element
-                            -> _containsUpdateOperators(element.asDocument(),
-                            ignoreCurrentDate));
+                    .anyMatch(element -> _containsUpdateOperators(element.asDocument(), ignoreCurrentDate));
         } else {
             return false;
         }
@@ -794,8 +738,7 @@ public class BsonUtils {
         }
 
         return json.asDocument().keySet().stream()
-                .filter(key
-                        -> !ignoreCurrentDate || !key.equals("$currentDate"))
+                .filter(key -> !ignoreCurrentDate || !key.equals("$currentDate"))
                 .anyMatch(key -> isUpdateOperator(key));
     }
 
@@ -804,8 +747,7 @@ public class BsonUtils {
      * @return the unflatten json replacing dot notatation keys with nested
      * objects: from {"a.b":2} to {"a":{"b":2}}
      */
-    public static BsonValue unflatten(BsonValue json)
-            throws IllegalArgumentException {
+    public static BsonValue unflatten(BsonValue json) throws IllegalArgumentException {
         return new JsonUnflattener(json).unflatten();
     }
 
@@ -819,24 +761,20 @@ public class BsonUtils {
      * {"my.field": true}}
      */
     public static BsonDocument flatten(BsonDocument json, boolean ignoreUpdateOperators) {
-        List<String> keys = json.keySet()
-                .stream()
+        var keys = json.keySet().stream()
                 .filter(key -> !ignoreUpdateOperators || !isUpdateOperator(key))
                 .collect(Collectors.toList());
 
         if (keys != null && !keys.isEmpty()) {
-            BsonDocument ret = new BsonDocument();
+            var ret = new BsonDocument();
 
             // add update operators
-            json.keySet()
-                .stream()
+            json.keySet().stream()
                 .filter(key -> BsonUtils.isUpdateOperator(key))
                 .forEach(key -> ret.put(key, json.get(key)));
 
             // add properties to $set update operator
-            keys
-                    .stream()
-                    .forEach(key -> flatten(null, key, json, ret));
+            keys.stream().forEach(key -> flatten(null, key, json, ret));
 
             return ret;
         } else {
