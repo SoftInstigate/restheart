@@ -27,7 +27,8 @@
   {
     "name": "org.restheart.mongodb.handlers.changestreams.ChangeStreamsActivator",
     "methods": [
-      { "name": "<init>", "parameterTypes": [] }
+      { "name": "<init>", "parameterTypes": [] },
+      { "name": "setConf", "parameterTypes": ["java.util.Map"] }
     ]
   },
   {
