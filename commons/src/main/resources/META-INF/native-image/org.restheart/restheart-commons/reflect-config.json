@@ -1829,15 +1829,6 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.client.jndi.MongoClientFactory",
-    "allPublicFields": true,
-    "allPublicConstructors": true,
-    "allDeclaredConstructors": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicClasses": true,
-    "allDeclaredClasses": true
-  },
   { "name": "com.mongodb.client.model.Filters",
     "allPublicFields": true,
     "allPublicConstructors": true,
@@ -2324,15 +2315,6 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-  { "name": "com.mongodb.internal.binding.AsyncSingleConnectionReadBinding",
-    "allPublicFields": true,
-    "allPublicConstructors": true,
-    "allDeclaredConstructors": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicClasses": true,
-    "allDeclaredClasses": true
-  },
   { "name": "com.mongodb.internal.binding.AsyncWriteBinding",
     "allPublicFields": true,
     "allPublicConstructors": true,
@@ -2676,15 +2658,6 @@
     "allDeclaredClasses": true
   },
   { "name": "com.mongodb.internal.connection.ClusterDescriptionHelper$Predicate",
-    "allPublicFields": true,
-    "allPublicConstructors": true,
-    "allDeclaredConstructors": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicClasses": true,
-    "allDeclaredClasses": true
-  },
-  { "name": "com.mongodb.internal.connection.ClusterableServer$ConnectionState",
     "allPublicFields": true,
     "allPublicConstructors": true,
     "allDeclaredConstructors": true,

@@ -19,8 +19,10 @@
  */
 package org.restheart.cache.impl;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -52,6 +54,13 @@ public class CaffeineLoadingCache<K, V> implements org.restheart.cache.LoadingCa
             @Override
             public Optional<V> load(K key) throws Exception {
                 return Optional.ofNullable(loader.apply(key));
+            }
+
+            @Override
+            public Map<? extends K, ? extends Optional<V>> loadAll(Set<? extends K> keys) throws Exception {
+                var ret = new HashMap<K, Optional<V>>();
+                keys.stream().forEachOrdered(key -> ret.put(key, Optional.ofNullable(loader.apply(key))));
+                return ret;
             }
         });
     }

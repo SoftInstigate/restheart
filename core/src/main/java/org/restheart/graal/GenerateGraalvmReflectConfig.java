@@ -23,7 +23,7 @@ package org.restheart.graal;
 import io.github.classgraph.ClassGraph;
 
 /**
- * restheart-native js plugins access java classes via reflection,
+ * restheart js plugins access java classes via reflection,
  * this utility generates the entries to add to
  * commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json
  *
