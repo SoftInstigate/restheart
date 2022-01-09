@@ -2,7 +2,7 @@ version: "3"
 
 services:
   restheart:
-    image: softinstigate/restheart-snapshot:7d769ff
+    image: softinstigate/restheart-snapshot:7268d0a-native
     environment:
       RHO: >
           /mongo-uri->"mongodb://mongodb";
@@ -10,6 +10,9 @@ services:
     depends_on:
       - mongodb
       - mongodb-init
+    volumes:
+      - ./etc:/rh/etc
+      - ./plugins:/rh/plugins
     ports:
       - "8080:8080"
 
