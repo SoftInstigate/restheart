@@ -54,7 +54,7 @@ public class FullAuthorizer implements Authorizer {
      *
      * @throws org.restheart.ConfigurationException
      */
-    public FullAuthorizer() throws ConfigurationException {
+    public FullAuthorizer() {
         this(false);
     }
 

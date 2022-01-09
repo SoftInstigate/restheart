@@ -234,10 +234,6 @@ public final class Bootstrapper {
         // we are at runtime. this is used for building native image
         NativeImageBuildTimeChecker.atRuntime();
 
-        // disable Xnio Executors on native image
-        // due to https://github.com/SoftInstigate/graalvm-undertow-issue
-        disableXnioExecutorsOnNativeImage();
-
         if (!configuration.isAnsiConsole()) {
             AnsiConsole.systemInstall();
         }

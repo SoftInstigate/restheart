@@ -3,8 +3,8 @@ FROM debian:buster-slim
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
 WORKDIR /rh
-COPY target/restheart-native .
+COPY target/restheart .
 RUN mkdir etc plugins
 
-ENTRYPOINT [ "./restheart-native" ]
+ENTRYPOINT [ "./restheart" ]
 EXPOSE 8009 8080 4443

@@ -43,7 +43,7 @@ $ docker push softinstigate/restheart:latest-native
 Start RESTHeart
 
 ```bash
-$ ./core/target/restheart-native core/etc/restheart.yml -e core/etc/uber.properties
+$ ./core/target/restheart
 ```
 
 ## Generate native-image build configuration
@@ -108,9 +108,9 @@ $ java -cp core/target/restheart.jar org.restheart.graal.GenerateGraalvmReflectC
 
 And add output to `commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json`
 
-### allow restheart-native js plugins access java classes via reflection
+### allow restheart js plugins access java classes via reflection
 
-restheart-native js plugins access java classes via reflection, the following utility generates the reflect-config entries to add to the native image's `reflect-config.json`
+restheart js plugins access java classes via reflection, the following utility generates the reflect-config entries to add to the native image's `reflect-config.json`
 
 ```bash
 $ java -cp core/target/restheart.jar org.restheart.utils.GenerateGraalvmReflectConfig

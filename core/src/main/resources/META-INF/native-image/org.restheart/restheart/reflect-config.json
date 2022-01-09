@@ -141,10 +141,6 @@
   "fields":[{"name":"producerIndex"}]}
 ,
 {
-  "name":"com.github.benmanes.caffeine.cache.CacheLoader",
-  "methods":[{"name":"loadAll","parameterTypes":["java.lang.Iterable"] }]}
-,
-{
   "name":"com.github.benmanes.caffeine.cache.PS",
   "fields":[
     {"name":"key"}, 
@@ -213,10 +209,6 @@
   "allPublicFields":true,
   "allPublicMethods":true,
   "allPublicConstructors":true}
-,
-{
-  "name":"com.mongodb.client.MongoClient",
-  "methods":[{"name":"getCluster","parameterTypes":[] }]}
 ,
 {
   "name":"com.mongodb.MongoNamespace",
@@ -1276,7 +1268,10 @@
   "allDeclaredMethods":true}
 ,
 {
-  "name":"org.restheart.cache.impl.CaffeineLoadingCache$1"}
+  "name":"org.restheart.cache.impl.CaffeineLoadingCache$1",
+  "methods":[
+    {"name":"loadAll","parameterTypes":["java.util.Set"] }
+  ]}
 ,
 {
   "name":"org.restheart.graphql.GraphQLService",
@@ -1385,11 +1380,11 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]}
 ,
 {
-    "name":"org.restheart.mongodb.security.FullAuhorizer",
+    "name":"org.restheart.security.authorizers.FullAuthorizer",
     "methods":[
       {"name":"<init>","parameterTypes":[] }, 
-      {"name":"<init>","parameterTypes":["java.lang.Boolean"] },
-      {"name":"init","parameterTypes":["java.util.Map"] }
+      {"name":"<init>","parameterTypes":["boolean"] },
+      {"name":"initConf","parameterTypes":["java.util.Map"] }
     ]},
 {
   "name":"org.restheart.mongodb.security.AllowBulkRequests",
@@ -1482,14 +1477,6 @@
 ,
 {
   "name":"org.restheart.security.authorizers.FileAclAuthorizer"}
-,
-{
-  "name":"org.restheart.security.authorizers.FullAuthorizer",
-  "methods":[
-    {"name":"<init>","parameterTypes":[] },
-    {"name":"<init>","parameterTypes":["java.lang.Boolean"] },
-    {"name":"initConf","parameterTypes":["java.util.Map"] }
-  ]}
 ,
 {
   "name":"org.restheart.security.authorizers.GlobalPredicatesVetoer",
