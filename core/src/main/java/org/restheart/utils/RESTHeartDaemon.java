@@ -61,7 +61,7 @@ public class RESTHeartDaemon extends Daemon {
         try {
             LOGGER.info("Forking...");
 
-            JavaVMArguments args = JavaVMArguments.current();
+            var args = JavaVMArguments.current();
             args.setSystemProperty(RESTHeartDaemon.class.getName(), "daemonized");
 
             String _args[] = args.toArray(new String[args.size()]);
@@ -73,10 +73,9 @@ public class RESTHeartDaemon extends Daemon {
             }
 
             // create child process
-            new ProcessBuilder()
-                    .command(_args)
-                    .start();
+            var p = new ProcessBuilder().command(_args).start();
 
+            LOGGER.info("Forked process: {}", p.pid());
             // parent exists
             System.exit(0);
         } catch (Throwable t) {
