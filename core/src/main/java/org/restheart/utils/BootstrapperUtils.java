@@ -33,8 +33,6 @@ import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.RED;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import org.restheart.Bootstrapper;
 import org.restheart.Configuration;
 import org.slf4j.Logger;

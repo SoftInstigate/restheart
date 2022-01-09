@@ -21,7 +21,6 @@
 package org.restheart.security.authorizers;
 
 import java.util.Map;
-import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
