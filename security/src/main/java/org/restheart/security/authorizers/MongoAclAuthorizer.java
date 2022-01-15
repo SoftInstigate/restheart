@@ -108,18 +108,18 @@ public class MongoAclAuthorizer implements Authorizer {
                                 .valueOf((String) _cacheExpirePolicy);
                     } catch (IllegalArgumentException iae) {
                         throw new ConfigurationException(
-                                "wrong configuration file format. "
-                                + "cache-expire-policy valid values are "
-                                + Arrays.toString(Cache.EXPIRE_POLICY.values()));
+                            "wrong configuration file format. "
+                            + "cache-expire-policy valid values are "
+                            + Arrays.toString(Cache.EXPIRE_POLICY.values()));
                     }
                 }
 
                 this.acl = CacheFactory.createLocalLoadingCache(
-                        this.cacheSize,
-                        this.cacheExpirePolicy,
-                        this.cacheTTL, (String role) -> {
-                            return this.findRolePermissions(role);
-                        });
+                    this.cacheSize,
+                    this.cacheExpirePolicy,
+                    this.cacheTTL, (String role) -> {
+                        return this.findRolePermissions(role);
+                    });
             }
         }
     }
@@ -143,8 +143,7 @@ public class MongoAclAuthorizer implements Authorizer {
      * @return
      */
     @Override
-    @SuppressWarnings("rawtypes")
-    public boolean isAllowed(Request request) {
+    public boolean isAllowed(Request<?> request) {
         // always allow OPTIONS requests
         if (request.isOptions()) {
             return true;
@@ -155,13 +154,13 @@ public class MongoAclAuthorizer implements Authorizer {
         if (this.rootRole != null
                 && exchange.getSecurityContext() != null
                 && exchange.getSecurityContext()
-                        .getAuthenticatedAccount() != null
+                    .getAuthenticatedAccount() != null
                 && exchange.getSecurityContext()
-                        .getAuthenticatedAccount()
-                        .getRoles().contains(this.rootRole)) {
+                    .getAuthenticatedAccount()
+                    .getRoles().contains(this.rootRole)) {
             LOGGER.debug("allow request for root user {}", exchange
-                    .getSecurityContext()
-                    .getAuthenticatedAccount().getPrincipal().getName());
+                .getSecurityContext()
+                .getAuthenticatedAccount().getPrincipal().getName());
 
             // for root role add a mongo permissions that allows everything
             Set<String> roles = Sets.newHashSet();
@@ -190,44 +189,42 @@ public class MongoAclAuthorizer implements Authorizer {
                 ArrayList<MongoAclPermission> matched = Lists.newArrayListWithCapacity(1);
 
                 rolePermissions(role)
-                        .stream().anyMatch(permission -> {
-                            var resolved = permission.allow(request);
+                    .stream().anyMatch(permission -> {
+                        var resolved = permission.allow(request);
 
-                            String marker;
+                        String marker;
 
-                            // to highlight the effective permission
-                            if (resolved && matched.isEmpty()) {
-                                matched.add(permission);
-                                marker = "<--";
-                            } else {
-                                marker = "";
-                            }
+                        // to highlight the effective permission
+                        if (resolved && matched.isEmpty()) {
+                            matched.add(permission);
+                            marker = "<--";
+                        } else {
+                            marker = "";
+                        }
 
-                            LOGGER.debug("role {}, permission id {}, resolve {} {}",
-                                    role,
-                                    permission.getId(),
-                                    resolved,
-                                    marker);
+                        LOGGER.debug("role {}, permission id {}, resolve {} {}",
+                            role,
+                            permission.getId(),
+                            resolved,
+                            marker);
 
-                            return false;
-                        });
+                        return false;
+                    });
             });
         }
 
         // the applicable permission is the ones that
         // resolves the exchange
-        roles(exchange)
-                .forEachOrdered(role
-                        -> rolePermissions(role)
-                        .stream()
-                        .anyMatch(r -> {
-                            if (r.allow(request)) {
-                                permissions.add(r);
-                                return true;
-                            } else {
-                                return false;
-                            }
-                        }));
+        roles(exchange).forEachOrdered(role -> rolePermissions(role)
+            .stream()
+            .anyMatch(r -> {
+                if (r.allow(request)) {
+                    permissions.add(r);
+                    return true;
+                } else {
+                    return false;
+                }
+            }));
 
         if (permissions.isEmpty()) {
             return false;
@@ -325,10 +322,10 @@ public class MongoAclAuthorizer implements Authorizer {
             return null;
         } else {
             var permissions = this.mclient.getDatabase(this.aclDb)
-                    .getCollection(this.aclCollection, BsonDocument.class)
-                    .find(eq("roles", role))
-                    .projection(PROJECTION)
-                    .sort(SORT);
+                .getCollection(this.aclCollection, BsonDocument.class)
+                .find(eq("roles", role))
+                .projection(PROJECTION)
+                .sort(SORT);
 
             if (permissions == null) {
                 return new LinkedHashSet<>();
@@ -336,23 +333,23 @@ public class MongoAclAuthorizer implements Authorizer {
                 LinkedHashSet<MongoAclPermission> ret = Sets.newLinkedHashSet();
 
                 StreamSupport.stream(permissions.spliterator(), true)
-                        .filter(permissionElem -> permissionElem.isDocument())
-                        .map(permissionElem -> permissionElem.asDocument())
-                        .filter(permissionDocument -> {
-                            // filter out illegal permissions
-                            try {
-                                MongoAclPermission.build(permissionDocument);
-                                return true;
-                            } catch (IllegalArgumentException iae) {
-                                LOGGER.warn("invalid permission _id={}: {}", permissionDocument.get("_id"), iae);
-                                return false;
-                            }
-                        })
-                        .map(permissionDocument -> MongoAclPermission.build(permissionDocument))
-                        .forEachOrdered(p->  {
-                            this.registry.getPermissionTransformers().stream().forEach(pt -> pt.transform(p));
-                            ret.add(p);
-                        });
+                    .filter(permissionElem -> permissionElem.isDocument())
+                    .map(permissionElem -> permissionElem.asDocument())
+                    .filter(permissionDocument -> {
+                        // filter out illegal permissions
+                        try {
+                            MongoAclPermission.build(permissionDocument);
+                            return true;
+                        } catch (IllegalArgumentException iae) {
+                            LOGGER.warn("invalid permission _id={}: {}", permissionDocument.get("_id"), iae);
+                            return false;
+                        }
+                    })
+                    .map(permissionDocument -> MongoAclPermission.build(permissionDocument))
+                    .forEachOrdered(p->  {
+                        this.registry.getPermissionTransformers().stream().forEach(pt -> pt.transform(p));
+                        ret.add(p);
+                    });
 
                 // apply the permission transformers
                 ret.forEach(p -> this.registry.getPermissionTransformers().stream().forEach(pt -> pt.transform(p)));

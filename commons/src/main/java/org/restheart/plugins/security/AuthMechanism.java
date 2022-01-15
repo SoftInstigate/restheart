@@ -31,13 +31,10 @@ import org.restheart.utils.PluginUtils;
  */
 public interface AuthMechanism extends AuthenticationMechanism, ConfigurablePlugin {
     @Override
-    public AuthenticationMechanismOutcome authenticate(
-            final HttpServerExchange exchange,
-            final SecurityContext securityContext);
+    public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange, final SecurityContext securityContext);
 
     @Override
-    public ChallengeResult sendChallenge(final HttpServerExchange exchange,
-            final SecurityContext securityContext);
+    public ChallengeResult sendChallenge(final HttpServerExchange exchange, final SecurityContext securityContext);
 
     default String getMechanismName() {
         return PluginUtils.name(this);

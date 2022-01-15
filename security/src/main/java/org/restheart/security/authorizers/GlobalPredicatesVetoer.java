@@ -21,16 +21,14 @@ public class GlobalPredicatesVetoer implements Authorizer {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public boolean isAllowed(Request request) {
-            return registry.getGlobalSecurityPredicates()
-                    .stream()
-                    .allMatch(predicate -> predicate.resolve(request.getExchange()));
+    public boolean isAllowed(Request<?> request) {
+        return registry.getGlobalSecurityPredicates()
+                .stream()
+                .allMatch(predicate -> predicate.resolve(request.getExchange()));
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public boolean isAuthenticationRequired(Request request) {
+    public boolean isAuthenticationRequired(Request<?> request) {
         return false;
     }
 }

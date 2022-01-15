@@ -40,10 +40,7 @@ public interface ConfigurablePlugin extends Plugin {
             final String argKey)
             throws ConfigurationException {
         if (args == null || !args.containsKey(argKey)) {
-            throw new ConfigurationException(
-                    "The plugin" + " requires the argument '"
-                    + argKey
-                    + "'");
+            throw new ConfigurationException("The plugin" + " requires the argument '" + argKey + "'");
         } else {
             return (V) args.get(argKey);
         }
