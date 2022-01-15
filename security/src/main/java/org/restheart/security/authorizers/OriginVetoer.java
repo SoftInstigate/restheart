@@ -16,10 +16,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(
-        name = "originVetoer",
-        description = "protects from CSRF attacks by forbidding requests whose Origin header is not whitelisted",
-        enabledByDefault = false,
-        authorizerType = TYPE.VETOER)
+    name = "originVetoer",
+    description = "protects from CSRF attacks by forbidding requests whose Origin header is not whitelisted",
+    enabledByDefault = false,
+    authorizerType = TYPE.VETOER)
 public class OriginVetoer implements Authorizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(OriginVetoer.class);
 
@@ -45,8 +45,7 @@ public class OriginVetoer implements Authorizer {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public boolean isAllowed(Request request) {
+    public boolean isAllowed(Request<?> request) {
         if (this.whitelist == null || this.whitelist.isEmpty()) {
             return true;
         } else {

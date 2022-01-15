@@ -30,23 +30,19 @@ public interface Authorizer extends ConfigurablePlugin {
     /**
      * A secured request is allowed when no VETOER denies it and at least one ALLOWER allows it
      */
-    public enum TYPE {
-        ALLOWER,
-        VETOER }
+    public enum TYPE { ALLOWER, VETOER }
 
     /**
      *
      * @param request
      * @return true if request is allowed
      */
-    @SuppressWarnings("rawtypes")
-    boolean isAllowed(final Request request);
+    boolean isAllowed(final Request<?> request);
 
     /**
      *
      * @param request
      * @return true if not authenticated user won't be allowed
      */
-    @SuppressWarnings("rawtypes")
-    boolean isAuthenticationRequired(final Request request);
+    boolean isAuthenticationRequired(final Request<?> request);
 }

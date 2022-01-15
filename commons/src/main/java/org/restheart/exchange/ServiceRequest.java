@@ -33,8 +33,7 @@ import io.undertow.util.AttachmentKey;
  * @param <T> generic type
  */
 public abstract class ServiceRequest<T> extends Request<T> {
-    private static final AttachmentKey<ServiceRequest<?>> REQUEST_KEY
-            = AttachmentKey.create(ServiceRequest.class);
+    private static final AttachmentKey<ServiceRequest<?>> REQUEST_KEY = AttachmentKey.create(ServiceRequest.class);
 
     protected T content;
 

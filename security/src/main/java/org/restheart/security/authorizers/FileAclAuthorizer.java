@@ -105,8 +105,7 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
      * @return
      */
     @Override
-    @SuppressWarnings("rawtypes")
-    public boolean isAllowed(Request request) {
+    public boolean isAllowed(Request<?> request) {
         // on first request, apply the permission transformers
         if (!permissionsTransformed) {
             permissionsTransformed = true;
@@ -188,8 +187,7 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public boolean isAuthenticationRequired(Request request) {
+    public boolean isAuthenticationRequired(Request<?> request) {
         // don't require authentication for OPTIONS requests
         if (request.isOptions()) {
             return false;
