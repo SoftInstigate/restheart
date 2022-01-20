@@ -923,7 +923,7 @@ public class BsonUtils {
      * Builder to help creating BsonDocument
      */
     public static class DocumentBuilder {
-        private BsonDocument doc;
+        private final BsonDocument doc;
 
         @Override
         public String toString() {
@@ -1054,7 +1054,7 @@ public class BsonUtils {
      * Builder to help creating BsonArray
      */
     public static class ArrayBuilder {
-        private BsonArray array;
+        private final BsonArray array;
 
         public static ArrayBuilder builder() {
             return new ArrayBuilder();

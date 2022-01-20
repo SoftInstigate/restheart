@@ -22,7 +22,9 @@ package org.restheart.exchange;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import static org.restheart.utils.BsonUtils.documentBuilder;
+import static org.restheart.utils.BsonUtils.ArrayBuilder;
+import static org.restheart.utils.BsonUtils.DocumentBuilder;
+import static org.restheart.utils.BsonUtils.document;
 import static org.restheart.utils.BsonUtils.toJson;
 
 /**
@@ -53,12 +55,20 @@ public class BsonResponse extends ServiceResponse<BsonValue> {
         }
     }
 
+    public void setContent(ArrayBuilder builder) {
+        setContent(builder.get());
+    }
+
+    public void setContent(DocumentBuilder builder) {
+        setContent(builder.get());
+    }
+
     @Override
     public void setInError(int code, String message, Throwable t) {
         setInError(true);
         setStatusCode(code);
 
-        var db = documentBuilder();
+        var db = document();
 
         if (message != null) {
             db.put("msg", new BsonString(message));

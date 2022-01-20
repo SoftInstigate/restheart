@@ -27,7 +27,4 @@ package org.restheart.utils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @Deprecated
-public class JsonUtils extends BsonUtils {
-
-
-}
+public class JsonUtils extends BsonUtils {}
