@@ -19,6 +19,8 @@
  */
 package org.restheart.exchange;
 
+import org.restheart.utils.GsonUtils.ObjectBuilder;
+import org.restheart.utils.GsonUtils.ArrayBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
@@ -48,6 +50,14 @@ public class JsonResponse extends ServiceResponse<JsonElement> {
         } else {
             return null;
         }
+    }
+
+    public void setContent(ObjectBuilder builder) {
+        setContent(builder.get());
+    }
+
+    public void setContent(ArrayBuilder builder) {
+        setContent(builder.get());
     }
 
     @Override
