@@ -20,12 +20,7 @@
  */
 package org.restheart.security.services;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import io.undertow.util.HttpString;
 import java.util.Map;
-import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
@@ -36,6 +31,9 @@ import org.restheart.plugins.RegisterPlugin;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_VALID_HEADER;
+
+import static org.restheart.utils.GsonUtils.object;
+import static org.restheart.utils.GsonUtils.array;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.URLUtils;
 
@@ -50,7 +48,7 @@ import org.restheart.utils.URLUtils;
         enabledByDefault = true,
         defaultURI = "/roles")
 public class GetRoleService implements JsonService {
-    Map<String, Object> confArgs = null;
+    private String myURI = null;
 
     /**
      * init the service
@@ -59,7 +57,15 @@ public class GetRoleService implements JsonService {
      */
     @InjectConfiguration
     public void init(Map<String, Object> confArgs) {
-        this.confArgs = confArgs;
+        if (confArgs == null) {
+            this.myURI = "/roles";
+        }
+
+        try {
+            this.myURI = URLUtils.removeTrailingSlashes(ConfigurablePlugin.argValue(confArgs, "uri"));
+        } catch (ConfigurationException ex) {
+            this.myURI = "/roles";
+        }
     }
 
     /**
@@ -71,22 +77,13 @@ public class GetRoleService implements JsonService {
     public void handle(JsonRequest request, JsonResponse response) throws Exception {
         var exchange = request.getExchange();
 
-        if (request.isOptions()) {
-            response.getHeaders().put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET");
-            response.getHeaders().put(HttpString.tryFromString("Access-Control-Allow-Headers"),
-                    "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, Origin, X-Requested-With, User-Agent, No-Auth-Challenge, "
-                    + AUTH_TOKEN_HEADER
-                    + ", " + AUTH_TOKEN_VALID_HEADER
-                    + ", " + AUTH_TOKEN_LOCATION_HEADER);
-            exchange.setStatusCode(HttpStatus.SC_OK);
-            exchange.endExchange();
-        } else if (request.isGet()) {
-            if ((exchange.getSecurityContext() == null
-                    || exchange.getSecurityContext().getAuthenticatedAccount() == null
-                    || exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal() == null)
-                    || !(exchange.getRequestURI().equals(URLUtils.removeTrailingSlashes(getUri()) + "/"
-                            + exchange.getSecurityContext().getAuthenticatedAccount().getPrincipal().getName()))) {
-                {
+        switch(request.getMethod()){
+            case GET -> {
+                if (checkRequestPath(request)) {
+                    var roles = array();
+                    request.getAuthenticatedAccount().getRoles().forEach(roles::add);
+                    response.setContent(object().put("authenticated", true).put("roles", roles));
+                } else {
                     exchange.setStatusCode(HttpStatus.SC_FORBIDDEN);
 
                     // REMOVE THE AUTH TOKEN HEADERS!!!!!!!!!!!
@@ -97,40 +94,27 @@ public class GetRoleService implements JsonService {
                     exchange.endExchange();
                     return;
                 }
-
-            } else {
-                JsonObject root = new JsonObject();
-
-                Set<String> _roles = exchange.getSecurityContext().getAuthenticatedAccount().getRoles();
-
-                JsonArray roles = new JsonArray();
-
-                _roles.forEach((role) -> {
-                    roles.add(new JsonPrimitive(role));
-                });
-
-                root.add("authenticated", new JsonPrimitive(true));
-                root.add("roles", roles);
-
-                exchange.getResponseSender().send(root.toString());
             }
 
-            exchange.endExchange();
-        } else {
-            exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
-            exchange.endExchange();
+            case OPTIONS -> handleOptions(request);
+
+            default -> {
+                exchange.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
+                exchange.endExchange();
+            }
         }
     }
 
-    private String getUri() {
-        if (confArgs == null) {
-            return "/roles";
-        }
-
-        try {
-            return ConfigurablePlugin.argValue(confArgs, "uri");
-        } catch (ConfigurationException ex) {
-            return "/roles";
-        }
+    /**
+     *
+     * @param request
+     * @return true if the request is authenticated and the request path is /roles/{username}
+     */
+    private boolean checkRequestPath(JsonRequest request){
+        return request.getAuthenticatedAccount() != null
+                && request.getAuthenticatedAccount().getPrincipal() != null
+                && request.getAuthenticatedAccount().getPrincipal().getName() != null
+                && request.getAuthenticatedAccount().getRoles() != null
+                && request.getPath().equals(myURI + "/" + request.getAuthenticatedAccount().getPrincipal().getName());
     }
 }
