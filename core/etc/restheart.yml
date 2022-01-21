@@ -174,7 +174,7 @@ auth-mechanisms:
     enabled: true
   basicAuthMechanism:
     enabled: true
-    authenticator: fileRealmAuthenticator
+    authenticator: mongoRealmAuthenticator
   jwtAuthenticationMechanism:
     enabled: false
     algorithm: HS256
@@ -190,7 +190,7 @@ auth-mechanisms:
     enabled: true
     realm: RESTHeart Realm
     domain: localhost
-    authenticator: fileRealmAuthenticator
+    authenticator: mongoRealmAuthenticator
   identityAuthMechanism:
     enabled: false
     username: admin
@@ -205,7 +205,7 @@ auth-mechanisms:
 
 authenticators:
   fileRealmAuthenticator:
-    enabled: true
+    enabled: false
     conf-file: {{{users-conf-file}}}
   mongoRealmAuthenticator:
     enabled: true

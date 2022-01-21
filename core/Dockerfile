@@ -3,7 +3,7 @@ FROM eclipse-temurin:17.0.1_12-jdk
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
 WORKDIR /opt/restheart
-COPY etc/restheart.yml etc/default.properties etc/acl.yml etc/users.yml etc/
+COPY etc/restheart.yml etc/default.properties etc/
 COPY target/restheart.jar /opt/restheart/
 COPY target/plugins/* /opt/restheart/plugins/
 
