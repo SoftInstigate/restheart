@@ -25,7 +25,7 @@ import com.mongodb.client.MongoCursor;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
-import static org.restheart.utils.BsonUtils.documentBuilder;
+import static org.restheart.utils.BsonUtils.document;
 
 /**
  *
@@ -62,7 +62,7 @@ public class MongoUtils {
 
         var pc = client.getDatabase(dbName).getCollection("_properties", BsonDocument.class);
 
-        pc.insertOne(documentBuilder()
+        pc.insertOne(document()
             .put("_id", new BsonString("_properties"))
             .put("_etag", new BsonObjectId())
             .get());
@@ -71,7 +71,7 @@ public class MongoUtils {
     public void createCollection(final String dbName, final String collName) {
         var pc = client.getDatabase(dbName).getCollection("_properties", BsonDocument.class);
 
-        pc.insertOne(documentBuilder()
+        pc.insertOne(document()
             .put("_id", new BsonString("_properties.".concat(collName)))
             .put("_etag", new BsonObjectId())
             .get());
