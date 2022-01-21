@@ -79,20 +79,20 @@ public interface Service<R extends ServiceRequest<?>, S extends ServiceResponse<
          * @param request
          * @throws Exception
          */
-        default void handleOptions(final R request) throws Exception {
-                var exchange = request.getExchange();
-                var response = Response.of(exchange);
+        default void handleOptions(final R request) {
+            var exchange = request.getExchange();
+            var response = Response.of(exchange);
 
-                response.getHeaders()
-                                .put(HttpString.tryFromString("Access-Control-Allow-Methods"),
-                                                "GET, PUT, POST, PATCH, DELETE, OPTIONS")
-                                .put(HttpString.tryFromString("Access-Control-Allow-Headers"),
-                                                "Accept, Accept-Encoding, Authorization, "
-                                                                + "Content-Length, Content-Type, Host, "
-                                                                + "If-Match, Origin, X-Requested-With, "
-                                                                + "User-Agent, No-Auth-Challenge");
+            response.getHeaders()
+                .put(HttpString.tryFromString("Access-Control-Allow-Methods"),
+                    "GET, PUT, POST, PATCH, DELETE, OPTIONS")
+                .put(HttpString.tryFromString("Access-Control-Allow-Headers"),
+                    "Accept, Accept-Encoding, Authorization, "
+                    + "Content-Length, Content-Type, Host, "
+                    + "If-Match, Origin, X-Requested-With, "
+                    + "User-Agent, No-Auth-Challenge");
 
-                response.setStatusCode(HttpStatus.SC_OK);
-                exchange.endExchange();
+            response.setStatusCode(HttpStatus.SC_OK);
+            exchange.endExchange();
         }
 }
