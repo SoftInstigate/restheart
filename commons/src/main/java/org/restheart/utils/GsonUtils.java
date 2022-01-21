@@ -19,12 +19,30 @@ public class GsonUtils {
     }
 
     /**
+     * alias for ObjectBuilder.builder()
+     *
+     * @return the ObjectBuilder
+     */
+    public static ObjectBuilder object(JsonObject obj) {
+        return ObjectBuilder.builder(obj);
+    }
+
+    /**
      * alias for ArrayBuilder.builder()
      *
      * @return the ArrayBuilder
      */
     public static ArrayBuilder array() {
         return ArrayBuilder.builder();
+    }
+
+    /**
+     * alias for ArrayBuilder.builder()
+     *
+     * @return the ArrayBuilder
+     */
+    public static ArrayBuilder array(JsonArray array) {
+        return ArrayBuilder.builder(array);
     }
 
     /**
@@ -37,8 +55,16 @@ public class GsonUtils {
             return new ObjectBuilder();
         }
 
+        public static ObjectBuilder builder(JsonObject obj) {
+            return new ObjectBuilder(obj);
+        }
+
         private ObjectBuilder() {
             this.obj = new JsonObject();
+        }
+
+        private ObjectBuilder(JsonObject obj) {
+            this.obj = obj;
         }
 
         public ObjectBuilder put(String key, JsonElement value) {
@@ -116,8 +142,16 @@ public class GsonUtils {
             return new ArrayBuilder();
         }
 
+        public static ArrayBuilder builder(JsonArray array) {
+            return new ArrayBuilder(array);
+        }
+
         private ArrayBuilder() {
             this.array = new JsonArray();
+        }
+
+        private ArrayBuilder(JsonArray array) {
+            this.array = array;
         }
 
         public ArrayBuilder add(JsonElement... values) {

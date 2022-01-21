@@ -886,37 +886,37 @@ public class BsonUtils {
     }
 
     /**
-     * get a DocumentBuilder that helps building BsonDocument
-     * @return the DocumentBuilder
-     */
-    public static DocumentBuilder documentBuilder() {
-        return DocumentBuilder.builder();
-    }
-
-    /**
-     * get a ArrayBuilder that helps building BsonArray
-     * @return the ArrayBuilder
-     */
-    public static ArrayBuilder arrayBuilder() {
-        return ArrayBuilder.builder();
-    }
-
-    /**
-     * alias for documentBuilder()
      *
-     * @return the DocumentBuilder
+     * @return a DocumentBuilder to help building BsonDocument
      */
     public static DocumentBuilder document() {
         return DocumentBuilder.builder();
     }
 
     /**
-     * alias for arrayBuilder()
+     * @param doc the BsonDocument to wrap
      *
-     * @return the ArrayBuilder
+     * @return a DocumentBuilder to help building BsonDocument
+     */
+    public static DocumentBuilder document(BsonDocument doc) {
+        return DocumentBuilder.builder(doc);
+    }
+
+    /**
+     *
+     * @return a ArrayBuilder to help building BsonArray
      */
     public static ArrayBuilder array() {
         return ArrayBuilder.builder();
+    }
+
+    /**
+    * @param doc the BsonArray to wrap
+     *
+     * @return a ArrayBuilder to help building BsonArray
+     */
+    public static ArrayBuilder array(BsonArray array) {
+        return ArrayBuilder.builder(array);
     }
 
     /**
@@ -924,6 +924,22 @@ public class BsonUtils {
      */
     public static class DocumentBuilder {
         private final BsonDocument doc;
+
+        public static DocumentBuilder builder() {
+            return new DocumentBuilder();
+        }
+
+        private DocumentBuilder() {
+            this.doc = new BsonDocument();
+        }
+
+        public static DocumentBuilder builder(BsonDocument doc) {
+            return new DocumentBuilder(doc);
+        }
+
+        private DocumentBuilder(BsonDocument doc) {
+            this.doc = doc;
+        }
 
         @Override
         public String toString() {
@@ -940,14 +956,6 @@ public class BsonUtils {
 
         public String toJson(String jsonMode) {
             return BsonUtils.toJson(this.get(), JsonMode.valueOf(jsonMode));
-        }
-
-        public static DocumentBuilder builder() {
-            return new DocumentBuilder();
-        }
-
-        private DocumentBuilder() {
-            this.doc = new BsonDocument();
         }
 
         public DocumentBuilder put(String key, BsonValue value) {
@@ -1060,8 +1068,16 @@ public class BsonUtils {
             return new ArrayBuilder();
         }
 
+        public static ArrayBuilder builder(BsonArray array) {
+            return new ArrayBuilder(array);
+        }
+
         private ArrayBuilder() {
             this.array = new BsonArray();
+        }
+
+        private ArrayBuilder(BsonArray array) {
+            this.array = array;
         }
 
         @Override
