@@ -82,10 +82,10 @@ $ docker pull softinstigate/restheart-snapshot:2108ce0
 
 ## Build from source
 
-__NOTE__: Building RESTHeart 6+ requires at least JDK 16! Suggested is JDK 17 LTS
+__NOTE__: Building RESTHeart requires Java 17.
 
 ```bash
-$ mvn clean package
+$ ./mvnw clean package
 ```
 
 You can then run it with (make sure to have mongod running):

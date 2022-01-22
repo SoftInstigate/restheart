@@ -15,7 +15,7 @@ $ gu install native-image
 Build image for local OS
 
 ```bash
-$ mvn clean package -Pnative
+$ ./mvnw clean package -Pnative
 ```
 
 Build Linux image
@@ -51,7 +51,7 @@ $ ./core/target/restheart
 Start RESTHeart with test configuration and the `native-image-agent`
 
 ```bash
-$ mvn clean package
+$ ./mvnw clean package
 $ cp test-plugins/target/restheart-test-plugins.jar core/target/plugins
 $ java -agentlib:native-image-agent=config-merge-dir=core/src/main/resources/META-INF/native-image/org.restheart/restheart/ -jar core/target/restheart.jar core/etc/test/restheart.yml
 ```
@@ -60,7 +60,7 @@ Execute tests, this makes the `native-image-agent` collecting all needed configu
 
 ```bash
 $ cd core
-$ mvn surefire:test -DskipITs=false -Dtest=\*IT
+$ ./mvnw surefire:test -DskipITs=false -Dtest=\*IT
 ```
 
 Stop restheart. this makes the [Assisted Configuration of Native Image Builds](https://github.com/oracle/graal/blob/master/substratevm/BuildConfiguration.md#assisted-configuration-of-native-image-builds) being updated.
