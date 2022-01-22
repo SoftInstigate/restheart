@@ -5,6 +5,9 @@
 ### hidden dir ###
 hidden
 
+### mvnw ###
+.mvn/
+
 ### Code ###
 # Visual Studio Code - https://code.visualstudio.com/
 .settings/
