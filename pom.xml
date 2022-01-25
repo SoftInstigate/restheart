@@ -335,6 +335,20 @@
                 <version>1.1.0</version>
                 <scope>test</scope>
             </dependency>
+            <!-- upgrade karate dependencies on org.graalvm.js artifacts
+                 to match the used GraalVM version
+                 otherwise the tests execution will hang
+            -->
+            <dependency>
+                <groupId>org.graalvm.js</groupId>
+                <artifactId>js-scriptengine</artifactId>
+                <version>${graalvm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.js</groupId>
+                <artifactId>js</artifactId>
+                <version>${graalvm.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
