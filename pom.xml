@@ -35,6 +35,7 @@
         -->
         <mongodb.version>5.0</mongodb.version>
         <graalvm.version>22.0.0.2</graalvm.version>
+        <native.maven.plugin.version>0.9.9</native.maven.plugin.version>
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
