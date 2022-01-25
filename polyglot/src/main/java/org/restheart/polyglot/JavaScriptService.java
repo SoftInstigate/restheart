@@ -178,7 +178,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
      *
      */
     public void handle(StringRequest request, StringResponse response) {
-        handle().executeVoid(request, response);
+        _handle().executeVoid(request, response);
     }
 
     /**

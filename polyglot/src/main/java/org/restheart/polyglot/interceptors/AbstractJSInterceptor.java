@@ -70,7 +70,7 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
      *
      */
     public void handle(R request, S response) {
-        handle().executeVoid(request, response);
+        _handle().executeVoid(request, response);
     }
 
     @Override

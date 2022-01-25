@@ -44,8 +44,7 @@ public class CacheInvalidator implements ByteArrayService {
      * @throws Exception
      */
     @Override
-    public void handle(ByteArrayRequest request,
-            ByteArrayResponse response) throws Exception {
+    public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
         var exchange = request.getExchange();
 
         if (!MongoServiceConfiguration.get().isLocalCacheEnabled()) {

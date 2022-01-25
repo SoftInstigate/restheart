@@ -180,7 +180,7 @@ public abstract class AbstractJSPlugin {
      *
      * @return the handle Value associated with this thread. If not existing, it instanitates it.
      */
-    protected Value handle() {
+    protected Value _handle() {
         var workingThreadName = Thread.currentThread().getName();
 
         if (this.handles.containsKey(workingThreadName)) {

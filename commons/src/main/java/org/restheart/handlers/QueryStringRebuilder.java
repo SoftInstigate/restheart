@@ -38,8 +38,7 @@ import java.util.TreeMap;
  */
 public class QueryStringRebuilder extends PipelinedHandler {
 
-    static final AttachmentKey<String> ORIGINAL_QUERY_STRING
-            = AttachmentKey.create(String.class);
+    static final AttachmentKey<String> ORIGINAL_QUERY_STRING = AttachmentKey.create(String.class);
 
     /**
      * Creates a new instance of QueryStringRebuiler
