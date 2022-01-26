@@ -5,7 +5,7 @@ Background:
 # note: db starting with 'test-' are automatically deleted after test finishes
 * def db = '/test-sessions'
 * def coll = '/coll'
-* def sid = function(url) { return url.substring(url.length-36); }
+* def sidFromLocation = function(location) { return location.substring(location.length-36); }
 * def authHeader = 'Basic YWRtaW46c2VjcmV0'
 
 @requires-mongodb-3.6
@@ -31,7 +31,7 @@ Scenario: create a session and use it for inserts and queries
     When method POST
     Then status 201
     And match header Location contains '/_sessions/'
-    * def sid = sid(responseHeaders['Location'][0])
+    * def sid = sidFromLocation(responseHeaders['Location'][0])
 
     * header Authorization = authHeader
     Given path '/_sessions/' + sid + '/_txns'

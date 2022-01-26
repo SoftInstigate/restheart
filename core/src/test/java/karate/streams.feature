@@ -21,8 +21,6 @@ function(seconds) {
     java.lang.Thread.sleep(seconds*1000)
 }
 """
-* def handler = function(notification) { return true }
-
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: Performing a simple GET request on a Change Stream resource (Expected 400 Bad Request)
@@ -30,7 +28,6 @@ Scenario: Performing a simple GET request on a Change Stream resource (Expected 
     Given path coll + '/_streams/changeStream'
     When method get
     Then status 400
-
 
 @requires-mongodb-3.6 @requires-replica-set
 Scenario: test insert (POST) new document (without avars)
@@ -40,7 +37,7 @@ Scenario: test insert (POST) new document (without avars)
     Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:8080'
     And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
+    Then def socket = karate.webSocket(host)
 
     * call sleep 3
     * header Authorization = authHeader
@@ -65,7 +62,7 @@ Scenario: test insert (POST) new document (with avars)
     Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
     And def baseUrl = 'http://localhost:8080'
     And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
+    Then def socket = karate.webSocket(host)
 
     # This POST shouldn't be notified
     * call sleep 3
@@ -102,7 +99,7 @@ Scenario: test PATCH on inserted document (without avars)
     Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:8080'
     And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
+    Then def socket = karate.webSocket(host)
 
     * call sleep 3
     * header Authorization = authHeader
@@ -134,7 +131,7 @@ Scenario: test PATCH on inserted document (with avars)
     Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
     And def baseUrl = 'http://localhost:8080'
     And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
+    Then def socket = karate.webSocket(host)
 
     * call sleep 3
     * header Authorization = authHeader
@@ -158,7 +155,7 @@ Scenario: test PUT upserting notifications (without avars)
     Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:8080'
     And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
+    Then def socket = karate.webSocket(host)
 
     * call sleep 3
     * header Authorization = authHeader
@@ -179,7 +176,7 @@ Scenario: test PUT upserting notifications (without avars)
     Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:8080'
     And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
+    Then def socket = karate.webSocket(host)
 
     * call sleep 3
     * header Authorization = authHeader
@@ -201,7 +198,7 @@ Scenario: test PUT upserting notifications (with avars)
     Given def streamPath = '/_streams/changeStreamWithStageParam?avars={\'param\': \'test\'}'
     And def baseUrl = 'http://localhost:8080'
     And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
+    Then def socket = karate.webSocket(host)
 
     * call sleep 3
     * header Authorization = authHeader
@@ -220,7 +217,7 @@ Scenario: test PUT upserting notifications (with avars)
     Given def streamPath = '/_streams/changeStream'
     And def baseUrl = 'http://localhost:8080'
     And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
+    Then def socket = karate.webSocket(host)
 
     * call sleep 3
     * header Authorization = authHeader
@@ -242,7 +239,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/373
     Given def streamPath = '/_streams/cs'
     And def baseUrl = 'http://localhost:8080'
     And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
+    Then def socket = karate.webSocket(host)
 
 
 @requires-mongodb-4 @requires-replica-set
@@ -257,7 +254,7 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/414
     * header Upgrade = 'websocket'
     Given path anotherColl + streamPath
     When method GET
-    Then status 500    
+    Then status 500
 
 @requires-mongodb-4 @requires-replica-set
 Scenario: https://github.com/SoftInstigate/restheart/issues/415
@@ -267,37 +264,43 @@ Scenario: https://github.com/SoftInstigate/restheart/issues/415
     And def baseUrl = 'http://localhost:8080'
 
     And def host = baseUrl + encodeURI(coll + streamPath)
-    Then def socket = karate.webSocket(host, handler)
 
-    * call sleep 1
     * header Authorization = authHeader
     Given path coll
     And request { "n": 1 }
+    And def firstSocket = karate.webSocket(host);
+    * call sleep 2
     When method POST
-    And def firstResult = socket.listen(2000)
+    And def firstResult = firstSocket.listen(5000)
     * print firstResult
     Then def firstParsedMsg = parseResponse(firstResult)
     * print firstParsedMsg
     And match firstParsedMsg.operationType == 'insert'
     And match firstParsedMsg.fullDocument.n == 1
-    
-    * call sleep 1
+    And def firstId = firstParsedMsg.fullDocument._id['$oid']
+
     * header Authorization = authHeader
     Given path coll
+    # this POST will cause an error in the change stream leading to disconnect the socket
     And request { "n": "string" }
+    And def secondSocket = karate.webSocket(host);
+    * call sleep 2
     When method POST
-    And def secondResult = socket.listen(2000)
     Then status 201
+    And def secondResult = secondSocket.listen(5000)
     And match secondResult == '#null'
 
     * call sleep 3
     * header Authorization = authHeader
     Given path coll
-    And request { "n": 1 }
+    And request { "n": 2 }
+    And def thirdSocket = karate.webSocket(host);
+    * call sleep 2
     When method POST
-    And def thirdResult = socket.listen(2000)
+    Then status 201
+    And def thirdResult = thirdSocket.listen(5000)
     * print thirdResult
     Then def thirdParsedMsg = parseResponse(thirdResult)
     * print thirdParsedMsg
     And match thirdParsedMsg.operationType == 'insert'
-    And match thirdParsedMsg.fullDocument.n == 1
+    And match thirdParsedMsg.fullDocument.div == 0.5

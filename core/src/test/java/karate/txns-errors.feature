@@ -5,6 +5,7 @@ Background:
 * url common.baseUrl
 * def txn = call read('common-start-txn.feature') { baseUrl: '#(common.baseUrl)' }
 * def authHeader = 'Basic YWRtaW46c2VjcmV0'
+* def sidFromLocation = function(location) { return location.substring(location.length-36); }
 
 # test requests on txn that are invalid due to current txn status
 
@@ -29,7 +30,7 @@ Scenario: commit txn when txn status=NONE
     When method POST
     Then status 201
     And match header Location contains '/_sessions/'
-    * def sid = common.sid(responseHeaders['Location'][0])
+    * def sid = sidFromLocation(responseHeaders['Location'][0])
 
     * header Authorization = authHeader
     Given path '/_sessions/' + sid + '/_txns/' + 1
@@ -50,7 +51,7 @@ Scenario: abort txn when txn status=NONE
     When method POST
     Then status 201
     And match header Location contains '/_sessions/'
-    * def sid = common.sid(responseHeaders['Location'][0])
+    * def sid = sidFromLocation(responseHeaders['Location'][0])
 
     * header Authorization = authHeader
     Given path '/_sessions/' + sid + '/_txns/' + 1
