@@ -292,17 +292,17 @@
                   <port>27017:27017</port>
                 </ports>
                 <log>
-                    <prefix>mongodb</prefix>
+                    <prefix>[mongodb]</prefix>
                     <enabled>true</enabled>
                     <color>yellow</color>
                 </log>
                 <wait>
                   <http>
-                    <url>http://0.0.0.0:27017</url>
+                    <url>http://localhost:27017</url>
                     <method>GET</method>
                     <status>200</status>
                   </http>
-                  <time>60000</time>
+                  <time>120000</time>
                 </wait>
               </run>
             </image>
