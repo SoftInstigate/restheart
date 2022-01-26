@@ -282,7 +282,7 @@
         <artifactId>docker-maven-plugin</artifactId>
         <configuration>
           <skip>${skipITs}</skip>
-          <showLogs>false</showLogs>
+          <!-- <showLogs>false</showLogs> -->
           <images>
             <image>
               <name>mongo:${mongodb.version}</name>
@@ -291,6 +291,11 @@
                 <ports>
                   <port>27017:27017</port>
                 </ports>
+                <log>
+                    <prefix>mongodb</prefix>
+                    <enabled>true</enabled>
+                    <color>yellow</color>
+                </log>
                 <wait>
                   <http>
                     <url>http://0.0.0.0:27017</url>
