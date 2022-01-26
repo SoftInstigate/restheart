@@ -282,7 +282,7 @@
         <artifactId>docker-maven-plugin</artifactId>
         <configuration>
           <skip>${skipITs}</skip>
-          <!-- <showLogs>false</showLogs> -->
+          <showLogs>false</showLogs>
           <images>
             <image>
               <name>mongo:${mongodb.version}</name>
@@ -291,6 +291,7 @@
                 <ports>
                   <port>27017:27017</port>
                 </ports>
+                <!-- remove showLogs=false above to get logs -->
                 <log>
                     <prefix>[mongodb]</prefix>
                     <enabled>true</enabled>
@@ -302,7 +303,7 @@
                     <method>GET</method>
                     <status>200</status>
                   </http>
-                  <time>120000</time>
+                  <time>60000</time>
                 </wait>
               </run>
             </image>
