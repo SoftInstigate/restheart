@@ -91,10 +91,6 @@
   "methods":[{"name":"setEncoder","parameterTypes":["ch.qos.logback.core.encoder.Encoder"] }]}
 ,
 {
-  "name":"ch.qos.logback.core.encoder.LayoutWrappingEncoder",
-  "methods":[{"name":"setParent","parameterTypes":["ch.qos.logback.core.Appender"] }]}
-,
-{
   "name":"ch.qos.logback.core.pattern.PatternLayoutEncoderBase",
   "methods":[{"name":"setPattern","parameterTypes":["java.lang.String"] }]}
 ,
