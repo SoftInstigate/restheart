@@ -2,6 +2,9 @@
 # Created by https://www.gitignore.io/api/java,code,linux,macos,maven,windows,eclipse,netbeans,intellij+all
 # Edit at https://www.gitignore.io/?templates=java,code,linux,macos,maven,windows,eclipse,netbeans,intellij+all
 
+### mvnw ###
+.mvn/
+
 ### hidden dir ###
 hidden
 
