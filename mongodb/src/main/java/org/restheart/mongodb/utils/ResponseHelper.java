@@ -149,9 +149,10 @@ public class ResponseHelper {
             case 11000 ->HttpStatus.SC_CONFLICT;
             // db already exists with different case
             case 13297 -> HttpStatus.SC_CONFLICT;
-            // FieldPath must not end with a '.'
-            case 56, 40353 -> HttpStatus.SC_BAD_REQUEST;
-            case 51091 -> HttpStatus.SC_BAD_REQUEST;
+            // 56, 40353 FieldPath must not end with a '.'
+            // 40352 FieldPath cannot be constructed with empty string
+            // 51091 Regular expression is invalid: unmatched parentheses
+            case 56, 40353, 40352, 51091  -> HttpStatus.SC_BAD_REQUEST;
             default -> HttpStatus.SC_INTERNAL_SERVER_ERROR;
         };
     }
@@ -209,6 +210,7 @@ public class ResponseHelper {
             case 11000 -> "Duplicate key error (insert with existing _id, update a document not matching specified filter or unique index violation)";
             // FieldPath must not end with a '.'
             case 56, 40353 -> "FieldPath must not end with a '.'";
+            case 40352 -> "FieldPath cannot be constructed with empty string";
             case 13297 -> "Db already exists with different case";
             default -> "Error handling the request, see log for more information";
         };
