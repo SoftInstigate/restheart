@@ -318,7 +318,7 @@
                 </ports>
                 <wait>
                   <http>
-                    <url>http://0.0.0.0:27017</url>
+                    <url>http://localhost:27017</url>
                     <method>GET</method>
                     <status>200</status>
                   </http>
