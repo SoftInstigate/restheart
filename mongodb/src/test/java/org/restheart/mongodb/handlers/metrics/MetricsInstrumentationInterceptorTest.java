@@ -57,7 +57,6 @@ public class MetricsInstrumentationInterceptorTest {
      * @throws Exception
      */
     @Test
-    @SuppressWarnings("deprecation")
     public void testAddMetrics() throws Exception {
         MongoServiceConfiguration config = mock(MongoServiceConfiguration.class);
         when(config.gatheringAboveOrEqualToLevel(MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT)).thenReturn(true);
@@ -95,7 +94,7 @@ public class MetricsInstrumentationInterceptorTest {
 
         var request = MongoRequest.init(httpServerExchange, "foo", "bar");
 
-        when(httpServerExchange.getAttachment(anyObject())).thenReturn(request);
+        when(httpServerExchange.getAttachment(any())).thenReturn(request);
 
         mih.addMetrics(0, httpServerExchange);
 
