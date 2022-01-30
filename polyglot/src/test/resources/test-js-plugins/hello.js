@@ -1,4 +1,5 @@
 const BsonUtils = Java.type("org.restheart.utils.BsonUtils");
+const HttpString = Java.type("io.undertow.util.HttpString");
 
 export const options = {
     name: "helloWorldService",
@@ -8,18 +9,33 @@ export const options = {
     matchPolicy: "EXACT" // optional, default PREFIX
 }
 
-export function handle(request, response) {
+export function handle(req, res) {
+    LOGGER.debug('request content {}', req.getContent());
+    // just an example of how to use BsonUtils
     exampleBsonUtils();
 
-    LOGGER.debug('request {}', request.getContent());
-    const rc = JSON.parse(request.getContent() || '{}');
+    if (req.isGet()) {
+        const rc = JSON.parse(req.getContent() || '{}');
 
-    let body = {
-        msg: `Hello ${rc.name || 'World'}`
+        let body = {
+            msg: `Hello ${rc.name || 'World'}`
+        }
+
+        res.setContent(JSON.stringify(body));
+        res.setContentTypeAsJson();
+
+    } else if (req.isOptions()) {
+        res.getHeaders()
+                .put(HttpString.tryFromString("Access-Control-Allow-Methods"),
+                    "GET, PUT, POST, PATCH, DELETE, OPTIONS")
+                .put(HttpString.tryFromString("Access-Control-Allow-Headers"),
+                    "Accept, Accept-Encoding, Authorization, "
+                    + "Content-Length, Content-Type, Host, "
+                    + "If-Match, Origin, X-Requested-With, "
+                    + "User-Agent, No-Auth-Challenge");
+    } else {
+        res.setStatusCode(405); // method not allowed
     }
-
-    response.setContent(JSON.stringify(body));
-    response.setContentTypeAsJson();
 }
 
 /**
