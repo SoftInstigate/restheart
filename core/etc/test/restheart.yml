@@ -78,6 +78,10 @@ auth-mechanisms:
     enabled: true
     authenticator: fileRealmAuthenticator
   digestAuthMechanism:
+    # digest authentication is disabled by default
+    # because it requires the passwords to be stored in plaintext
+    # and mongoRealmAuthenticator hashes the passwords by default (bcrypt-hashed-password: true)
+    # here it is enabled because fileRealmAuthenticator is used with paintext passwords
     enabled: true
     realm: RESTHeart Realm
     domain: localhost
