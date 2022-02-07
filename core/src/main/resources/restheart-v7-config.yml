@@ -142,7 +142,10 @@ auth-mechanisms:
     issuer: myIssuer
     audience: myAudience
   digestAuthMechanism:
-    enabled: true
+    # digest authentication is disabled by default
+    # because it requires the passwords to be stored in plaintext
+    # and mongoRealmAuthenticator hashes the passwords by default (bcrypt-hashed-password: true)
+    enabled: false
     realm: RESTHeart Realm
     domain: localhost
     authenticator: mongoRealmAuthenticator
