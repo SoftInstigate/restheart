@@ -6,7 +6,7 @@ services:
     environment:
       INSTANCE_NAME: native
       MONGO_URI: mongodb://mongodb
-    command: ["/rh/etc/restheart.yml", "-e", "/rh/etc/default.properties"]
+    command: [ "--envFile", "/opt/restheart/etc/default.properties"]
     depends_on:
       - mongodb
       - mongodb-init

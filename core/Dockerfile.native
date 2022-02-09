@@ -8,5 +8,6 @@ COPY etc/restheart.yml etc/default.properties etc/
 RUN mkdir plugins
 
 ENV MONGO_URI="mongodb://host.docker.internal"
-ENTRYPOINT [ "./restheart", "etc/restheart.yml", "--envFile", "etc/default.properties" ]
+ENTRYPOINT [ "./restheart", "-Dfile.encoding=UTF-8", "etc/restheart.yml" ]
+CMD ["--envFile", "etc/default.properties"]
 EXPOSE 8009 8080 4443
