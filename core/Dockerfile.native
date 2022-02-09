@@ -6,5 +6,6 @@ WORKDIR /rh
 COPY target/restheart .
 RUN mkdir etc plugins
 
+ENV MONGO_URI = "mongodb://host.docker.internal"
 ENTRYPOINT [ "./restheart" ]
 EXPOSE 8009 8080 4443

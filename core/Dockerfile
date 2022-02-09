@@ -7,6 +7,7 @@ COPY etc/restheart.yml etc/default.properties etc/
 COPY target/restheart.jar /opt/restheart/
 COPY target/plugins/* /opt/restheart/plugins/
 
+ENV MONGO_URI="mongodb://host.docker.internal"
 ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart.jar", "etc/restheart.yml"]
 CMD ["--envFile", "etc/default.properties"]
 EXPOSE 8009 8080 4443

@@ -11,6 +11,7 @@ COPY target/plugins/* /opt/restheart/plugins/
 
 SHELL ["/bin/bash", "-i", "-c"]
 
+ENV MONGO_URI="mongodb://host.docker.internal"
 ENTRYPOINT [ "/root/entrypoint.sh" ]
 CMD ["--envFile", "etc/default.properties"]
 EXPOSE 8009 8080 4443
