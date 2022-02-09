@@ -2,7 +2,7 @@ version: "3"
 
 services:
   restheart:
-    image: softinstigate/restheart:latest-native
+    image: softinstigate/restheart:6.2.0-native
     environment:
       INSTANCE_NAME: native
       MONGO_URI: mongodb://mongodb
