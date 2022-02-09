@@ -2,10 +2,11 @@ FROM debian:buster-slim
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
-WORKDIR /rh
+WORKDIR /opt/restheart
 COPY target/restheart .
-RUN mkdir etc plugins
+COPY etc/restheart.yml etc/default.properties etc/
+RUN mkdir plugins
 
-ENV MONGO_URI = "mongodb://host.docker.internal"
-ENTRYPOINT [ "./restheart" ]
+ENV MONGO_URI="mongodb://host.docker.internal"
+ENTRYPOINT [ "./restheart", "etc/restheart.yml", "--envFile", "etc/default.properties" ]
 EXPOSE 8009 8080 4443
