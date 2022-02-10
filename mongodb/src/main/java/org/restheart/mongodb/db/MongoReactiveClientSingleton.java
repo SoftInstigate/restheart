@@ -100,7 +100,7 @@ public class MongoReactiveClientSingleton {
                     @Override
                     public void apply(final ConnectionPoolSettings.Builder builder) {
                         // default values: min=0 and max=100
-                        builder.minSize(64).maxSize(512);
+                        builder.minSize(0).maxSize(128);
                     }})
                 .applicationName("restheart (reactivestreams)")
                 .applyConnectionString(mongoUri)

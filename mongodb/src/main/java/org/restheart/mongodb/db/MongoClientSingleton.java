@@ -122,7 +122,7 @@ public class MongoClientSingleton {
                 @Override
                 public void apply(final ConnectionPoolSettings.Builder builder) {
                     // default mongodb values: min=0 and max=100
-                    builder.minSize(8).maxSize(128);
+                    builder.minSize(0).maxSize(128);
                 }})
             .applicationName("restheart (sync)")
             .applyConnectionString(mongoUri)
