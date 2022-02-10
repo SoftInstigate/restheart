@@ -2,7 +2,7 @@ FROM debian:buster-slim
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
-WORKDIR /rh
+WORKDIR /opt/restheart
 COPY target/restheart .
 RUN mkdir etc plugins
 
