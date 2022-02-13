@@ -57,6 +57,8 @@ import static org.restheart.security.MongoPermissions.ALLOW_ALL_MONGO_PERMISSION
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.restheart.mongodb.ConnectionChecker.connected;
+
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -128,8 +130,12 @@ public class MongoAclAuthorizer implements Authorizer {
     public void initMongoClient(MongoClient mclient) {
         this.mclient = mclient;
 
-        if (!checkAclCollection()) {
-            LOGGER.error("ACL collection does not exist and could not be created");
+        try {
+            if (!checkAclCollection()) {
+                LOGGER.error("ACL collection does not exist and could not be created");
+            }
+        } catch(IllegalStateException ise) {
+            LOGGER.error(ise.getMessage());
         }
     }
 
@@ -359,10 +365,13 @@ public class MongoAclAuthorizer implements Authorizer {
         }
     }
 
-    public boolean checkAclCollection() {
+    public boolean checkAclCollection() throws IllegalStateException {
         if (this.mclient == null) {
-            LOGGER.error("Cannot check acl collection: mongo service is not enabled.");
-            return false;
+            throw new IllegalStateException("Cannot check acl collection: mongo service is not enabled.");
+        }
+
+        if (!connected(this.mclient)) {
+            throw new IllegalStateException("Cannot check acl collection: MongoDB not connected.");
         }
 
         try {

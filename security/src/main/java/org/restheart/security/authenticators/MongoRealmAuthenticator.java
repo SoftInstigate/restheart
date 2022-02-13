@@ -58,6 +58,8 @@ import org.restheart.security.utils.MongoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.restheart.mongodb.ConnectionChecker.connected;
+
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
@@ -148,18 +150,22 @@ public class MongoRealmAuthenticator implements Authenticator {
                     this.cacheTTL, key -> findAccount(accountIdTrasformer(key)));
         }
 
-        if (!checkUserCollection()) {
-            LOGGER.error("Users collection does not exist and could not be created");
-        } else if (this.createUser) {
-            LOGGER.trace("Create user option enabled");
+        try {
+            if (!checkUserCollection()) {
+                LOGGER.error("Users collection does not exist and could not be created");
+            } else if (this.createUser) {
+                LOGGER.trace("Create user option enabled");
 
-            if (countAccounts() < 1) {
-                createDefaultAccount();
-                LOGGER.info("No user found. Created default user with _id {}",
-                        this.createUserDocument.get(this.propId));
-            } else {
-                LOGGER.trace("Not creating default user since users exist");
+                if (countAccounts() < 1) {
+                    createDefaultAccount();
+                    LOGGER.info("No user found. Created default user with _id {}",
+                            this.createUserDocument.get(this.propId));
+                } else {
+                    LOGGER.trace("Not creating default user since users exist");
+                }
             }
+        } catch(IllegalStateException ise) {
+            LOGGER.error(ise.getMessage());
         }
     }
 
@@ -393,10 +399,13 @@ public class MongoRealmAuthenticator implements Authenticator {
         return getXForwardedHeaderName("Account-Roles");
     }
 
-    public boolean checkUserCollection() {
+    public boolean checkUserCollection() throws IllegalStateException {
         if (this.mclient == null) {
-            LOGGER.error("Cannot find account: mongo service is not enabled.");
-            return false;
+            throw new IllegalStateException("Cannot check user collection: mongo service is not enabled.");
+        }
+
+        if (!connected(this.mclient)) {
+            throw new IllegalStateException("Cannot check user collection: MongoDB not connected.");
         }
 
         try {

@@ -30,13 +30,15 @@ import com.mongodb.connection.ConnectionPoolSettings;
 import com.mongodb.Block;
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
-import com.mongodb.MongoCommandException;
 
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.plugins.PluginsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.restheart.mongodb.ConnectionChecker.connected;
+import static org.restheart.mongodb.ConnectionChecker.replicaSet;
 
 /**
  *
@@ -48,7 +50,6 @@ public class MongoClientSingleton {
     private static ConnectionString mongoUri;
     private static PluginsRegistry pluginsRegistry;
     private String serverVersion = null;
-    private boolean replicaSet = false;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoClientSingleton.class);
 
@@ -88,20 +89,13 @@ public class MongoClientSingleton {
     }
 
     /**
-     * @return the initialized
-     */
-    public Boolean isReplicaSet() {
-        return replicaSet;
-    }
-
-    /**
      * @return the serverVersion
      */
     public String getServerVersion() {
         return serverVersion;
     }
 
-    private MongoClient mongoClient;
+    private MongoClient mclient;
 
     private MongoClientSingleton() {
         if (!initialized) {
@@ -128,66 +122,54 @@ public class MongoClientSingleton {
             .applyConnectionString(mongoUri)
             .build();
 
-        mongoClient = MongoClients.create(settings);
+        mclient = MongoClients.create(settings);
+
+        // this is the first time we check the connection
+        if (connected(mclient)) {
+            // get the db version
+            try {
+                var res = mclient.getDatabase("admin").runCommand(new BsonDocument("buildInfo", new BsonInt32(1)));
+
+                var _version = res.get("version");
+
+                if (_version != null && _version instanceof String) {
+                    serverVersion = (String) _version;
+                } else {
+                    LOGGER.warn("Cannot get the MongoDB version.");
+                    serverVersion = "?";
+                }
+
+                LOGGER.info("MongoDB version {}", ansi()
+                    .fg(MAGENTA)
+                    .a(getServerVersion())
+                    .reset()
+                    .toString());
+
+                if (replicaSet(this.mclient)) {
+                    LOGGER.info("MongoDB is a replica set.");
+                } else {
+                    LOGGER.warn("MongoDB is a standalone instance.");
+                }
+
+            } catch (Throwable t) {
+                LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDB. ").reset().toString()
+                    + "Check that MongoDB is running and "
+                    + "the configuration property 'mongo-uri' "
+                    + "is set properly");
+                serverVersion = "?";
+            }
+        } else {
+            LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDB. ").reset().toString()
+                + "Check that MongoDB is running and "
+                + "the configuration property 'mongo-uri' "
+                + "is set properly");
+            serverVersion = "?";
+        }
 
         // invoke Plugins methods annotated with @InjectMongoClient
         // passing them the MongoClient
         if (pluginsRegistry != null) {
-            pluginsRegistry.injectDependency(mongoClient);
-        }
-
-        // get the db version
-        // this also is the first time we check the connection
-        try {
-            var res = mongoClient.getDatabase("admin").runCommand(new BsonDocument("buildInfo", new BsonInt32(1)));
-
-            var _version = res.get("version");
-
-            if (_version != null && _version instanceof String) {
-                serverVersion = (String) _version;
-            } else {
-                LOGGER.warn("Cannot get the MongoDB version.");
-                serverVersion = "?";
-            }
-
-            // check if db is configured as replica set
-            try {
-                // this throws an exception if not running as replica set
-                mongoClient.getDatabase("admin")
-                        .runCommand(new BsonDocument("replSetGetStatus",
-                                new BsonInt32(1)));
-                replicaSet = true;
-            } catch (MongoCommandException mce) {
-                if (mce.getCode() == 13) { // Unauthorized
-                    LOGGER.warn("Unable to check if MongoDB is configured as replica set. "
-                            + "The MongoDB user cannot execute replSetGetStatus() command. "
-                            + "Tip: add to the MongoDB user the built-in role 'clusterMonitor' that provides this action.");
-                }
-
-                replicaSet = false;
-            } catch (Throwable t) {
-                replicaSet = false;
-            }
-
-            LOGGER.info("MongoDB version {}",
-                    ansi()
-                        .fg(MAGENTA)
-                        .a(getServerVersion())
-                        .reset()
-                        .toString());
-
-            if (isReplicaSet()) {
-                LOGGER.info("MongoDB is a replica set.");
-            } else {
-                LOGGER.warn("MongoDB is a standalone instance.");
-            }
-        } catch (Throwable t) {
-            LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDB. ").reset().toString()
-                    + "Check that MongoDB is running and "
-                    + "the configuration property 'mongo-uri' "
-                    + "is set properly");
-            serverVersion = "?";
-            replicaSet = false;
+            pluginsRegistry.injectDependency(mclient);
         }
     }
 
@@ -208,11 +190,11 @@ public class MongoClientSingleton {
             throw new IllegalStateException("MongoClientSingleton is not initialized");
         }
 
-        if (this.mongoClient == null) {
+        if (this.mclient == null) {
             setup();
         }
 
-        return this.mongoClient;
+        return this.mclient;
     }
 
     @Override
