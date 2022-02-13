@@ -49,12 +49,12 @@ public class TxnsActivator implements Initializer {
         var mclient = MongoClientSingleton.get().client();
 
         if (!connected(mclient)) {
-            LOGGER.error("Cannot enable Transactions because MongoDB is not connected");
+            LOGGER.error("Cannot enable Transactions: MongoDB not connected.");
         } else {
             if (replicaSet(mclient)) {
                 enableTxns();
             } else {
-                LOGGER.error("Cannot enable Transactions because MongoDB is a standalone instance and Transactions require a Replica Set.");
+                LOGGER.error("Cannot enable Transactions: MongoDB is a standalone instance and Transactions require a Replica Set.");
             }
         }
     }
