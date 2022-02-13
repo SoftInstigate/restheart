@@ -29,7 +29,6 @@ import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.db.MongoReactiveClientSingleton;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
-import org.restheart.mongodb.utils.LogUtils;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.Initializer;
@@ -37,6 +36,9 @@ import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.restheart.mongodb.ConnectionChecker.replicaSet;
+import static org.restheart.mongodb.ConnectionChecker.connected;
 
 /**
  *
@@ -57,13 +59,16 @@ public class ChangeStreamsActivator implements Initializer {
 
     @Override
     public void init() {
-        if (!MongoClientSingleton.getInstance().isReplicaSet()) {
-            LogUtils.boxedWarn(LOGGER,
-                    "MongoDB is a standalone instance.",
-                    "",
-                    "Change Streams require a Replica Set.");
+        var mclient = MongoClientSingleton.get().client();
+
+        if (!connected(mclient)) {
+            LOGGER.error("Cannot enable Change Streams because MongoDB is not connected");
         } else {
-            enableChangeStreams();
+            if (replicaSet(mclient)) {
+                enableChangeStreams();
+            } else {
+                LOGGER.error("Cannot enable Change Streams because MongoDB is a standalone instance, Change Streams require a Replica Set.");
+            }
         }
     }
 
@@ -80,8 +85,7 @@ public class ChangeStreamsActivator implements Initializer {
             dispatcher.putHandler(TYPE.CHANGE_STREAM, METHOD.GET,
                     new GetChangeStreamHandler());
         } catch (Throwable t) {
-            LOGGER.error("Change streams disabled due to error "
-                    + "in MongoDB reactive client : {}", t.getMessage());
+            LOGGER.error("Change streams disabled due to error in MongoDB reactive client : {}", t.getMessage());
         }
     }
 }
