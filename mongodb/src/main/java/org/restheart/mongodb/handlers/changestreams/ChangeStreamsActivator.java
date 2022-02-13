@@ -62,12 +62,12 @@ public class ChangeStreamsActivator implements Initializer {
         var mclient = MongoClientSingleton.get().client();
 
         if (!connected(mclient)) {
-            LOGGER.error("Cannot enable Change Streams because MongoDB is not connected");
+            LOGGER.error("Cannot enable Change Streams: MongoDB not connected.");
         } else {
             if (replicaSet(mclient)) {
                 enableChangeStreams();
             } else {
-                LOGGER.error("Cannot enable Change Streams because MongoDB is a standalone instance, Change Streams require a Replica Set.");
+                LOGGER.error("Cannot enable Change Streams: MongoDB is a standalone instance and Change Streams require a Replica Set.");
             }
         }
     }
