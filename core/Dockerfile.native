@@ -4,10 +4,10 @@ LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
 WORKDIR /opt/restheart
 COPY target/restheart .
-COPY etc/restheart.yml etc/default.properties etc/
+COPY etc/restheart.yml etc/acl.yml etc/users.yml etc/
+COPY etc/docker.properties etc/default.properties
 RUN mkdir plugins
 
-ENV MONGO_URI="mongodb://host.docker.internal"
 ENTRYPOINT [ "./restheart", "-Dfile.encoding=UTF-8", "etc/restheart.yml" ]
 CMD ["--envFile", "etc/default.properties"]
 EXPOSE 8009 8080 4443

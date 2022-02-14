@@ -3,11 +3,11 @@ FROM eclipse-temurin:17.0.1_12-jdk
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
 WORKDIR /opt/restheart
-COPY etc/restheart.yml etc/default.properties etc/
+COPY etc/restheart.yml etc/acl.yml etc/users.yml etc/
+COPY etc/docker.properties etc/default.properties
 COPY target/restheart.jar /opt/restheart/
 COPY target/plugins/* /opt/restheart/plugins/
 
-ENV MONGO_URI="mongodb://host.docker.internal"
 ENTRYPOINT [ "java", "-Dfile.encoding=UTF-8", "-server", "-jar", "restheart.jar", "etc/restheart.yml"]
 CMD ["--envFile", "etc/default.properties"]
 EXPOSE 8009 8080 4443

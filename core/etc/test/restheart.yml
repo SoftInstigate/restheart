@@ -1,6 +1,6 @@
 # RESTHeart Configuration File for Integration Tests.
 # Used by `mvn clean verify`
-## See https://restheart.org/docs/setup/#configuration-files
+## See https://restheart.org/docs/configuration/
 
 ---
 instance-name: integration-test
