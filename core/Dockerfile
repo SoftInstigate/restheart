@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17.0.1_12-jdk
+FROM eclipse-temurin:17-jre
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
