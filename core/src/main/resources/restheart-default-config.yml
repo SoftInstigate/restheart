@@ -347,7 +347,7 @@ requests-log-trace-headers:
 io-threads: 2
 
  # Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*8
-worker-threads: 16
+worker-threads: 8
 
  # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
  # Setting to 1024 * 16 - 20; the 20 is to allow some space for getProtocol headers, see UNDERTOW-1209
