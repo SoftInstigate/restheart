@@ -18,5 +18,5 @@ export function handle(req, res) {
 }
 
 export function resolve(req) {
-    return req.isHandledBy("helloWorldService") && req.isGet() && req.getContent();
+    return req.isHandledBy("helloWorldService") && req.isGet() && req.getContent() !== null;
 }
