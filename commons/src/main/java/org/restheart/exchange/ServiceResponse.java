@@ -104,12 +104,36 @@ public abstract class ServiceResponse<T> extends Response<T> {
      *
      * @param customSender
      */
-    public void setCustomerSender(Runnable customSender) {
+    public void setCustomSender(Runnable customSender) {
         this.customSender = customSender;
     }
 
     /**
-     * SeesetCustomerSender()
+     * @see setCustomerSender()
+     * @return the customSender
+     *
+     */
+    public Runnable getCustomSender() {
+        return this.customSender;
+    }
+
+    /**
+     * If a customSender is set (not null), the handler ResponseSender will
+     * delegate to customSender.run() the responsability to send the response
+     * content to the client
+     *
+     * @deprecated
+     * @param customSender
+     */
+    public void setCustomerSender(Runnable customSender) {
+        this.customSender = customSender;
+    }
+
+
+
+    /**
+     * @see setCustomSender()
+     * @deprecated
      * @return the customSender
      *
      */

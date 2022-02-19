@@ -74,9 +74,9 @@ public class ResponseSender extends PipelinedHandler {
                 }
 
                 // send the content to the client
-                if (response.getCustomerSender() != null) {
+                if (response.getCustomSender() != null) {
                     // use the custom sender if it has been set
-                    response.getCustomerSender().run();
+                    response.getCustomSender().run();
                 } else {
                     var content = response.readContent();
                     if (content != null) {
