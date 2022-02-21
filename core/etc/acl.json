@@ -1,6 +1,6 @@
 [
   {
-    "_id": "admonCanDoEverything",
+    "_id": "adminCanDoEverything",
     "description": [
         "admin role can do everything",
         "WARNING: mongoAclAuthorizer is enabled by default",
