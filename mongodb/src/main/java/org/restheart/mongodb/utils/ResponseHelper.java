@@ -153,6 +153,8 @@ public class ResponseHelper {
             // 40352 FieldPath cannot be constructed with empty string
             // 51091 Regular expression is invalid: unmatched parentheses
             case 56, 40353, 40352, 51091  -> HttpStatus.SC_BAD_REQUEST;
+            // 31253 Cannot do inclusion on field xxxx in exclusion projection
+            case 31253 -> HttpStatus.SC_BAD_REQUEST;
             default -> HttpStatus.SC_INTERNAL_SERVER_ERROR;
         };
     }
@@ -212,6 +214,8 @@ public class ResponseHelper {
             case 56, 40353 -> "FieldPath must not end with a '.'";
             case 40352 -> "FieldPath cannot be constructed with empty string";
             case 13297 -> "Db already exists with different case";
+            // 31253 Cannot do inclusion on field xxxx in exclusion projection
+            case 31253 -> "Keys projection cannot have a mix of inclusion and exclusion";
             default -> "Error handling the request, see log for more information";
         };
     }
