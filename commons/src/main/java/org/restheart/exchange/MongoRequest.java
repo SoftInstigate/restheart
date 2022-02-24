@@ -47,7 +47,6 @@ import org.restheart.exchange.ExchangeKeys.HAL_MODE;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.db.sessions.ClientSessionImpl;
-import org.restheart.utils.BsonUtils;
 import org.restheart.utils.URLUtils;
 import org.slf4j.LoggerFactory;
 
@@ -822,8 +821,6 @@ public class MongoRequest extends BsonRequest {
                     throw new JsonParseException("Invalid sort parameter", biop);
                 }
             });
-
-            LOGGER.debug("sortBy: {}", ret.get());
 
             return ret.get();
         }
