@@ -155,6 +155,10 @@ public class ResponseHelper {
             case 56, 40353, 40352, 51091  -> HttpStatus.SC_BAD_REQUEST;
             // 31253 Cannot do inclusion on field xxxx in exclusion projection
             case 31253 -> HttpStatus.SC_BAD_REQUEST;
+            // 15974 Illegal key in $sort specification
+            // 17312 $meta is the only expression supported by $sort right now
+            // 31138 Illegal $meta sort
+            case 15974, 17312, 31138 -> HttpStatus.SC_BAD_REQUEST;
             default -> HttpStatus.SC_INTERNAL_SERVER_ERROR;
         };
     }
@@ -216,6 +220,11 @@ public class ResponseHelper {
             case 13297 -> "Db already exists with different case";
             // 31253 Cannot do inclusion on field xxxx in exclusion projection
             case 31253 -> "Keys projection cannot have a mix of inclusion and exclusion";
+            // 15974 Illegal key in $sort specification
+            // 17312 $meta is the only expression supported by $sort right now
+            case 15974, 17312 -> "Invalid sort parameter";
+            // 31138 Illegal $meta sort
+            case 31138 -> "Invalid $meta sort";
             default -> "Error handling the request, see log for more information";
         };
     }

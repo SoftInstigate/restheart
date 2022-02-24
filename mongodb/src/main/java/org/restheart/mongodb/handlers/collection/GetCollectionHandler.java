@@ -26,6 +26,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.MongoException;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
@@ -99,23 +100,39 @@ public class GetCollectionHandler extends PipelinedHandler {
         BsonArray data = null;
 
         if (request.getPagesize() > 0) {
+            BsonDocument filter, sort;
+
+            try {
+                filter = request.getFiltersDocument();
+            } catch (JsonParseException jpe) {
+                // invalid filter parameter
+                LOGGER.debug("invalid filter parameter {}", request.getFilter(), jpe);
+                MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "Invalid filter parameter");
+                next(exchange);
+                return;
+            }
+
+            try {
+                sort = request.getSortByDocument();
+            } catch (JsonParseException jpe) {
+                // invalid sort parameter
+                LOGGER.debug("invalid sort parameter {}", request.getFilter(), jpe);
+                MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "Invalid sort parameter");
+                next(exchange);
+                return;
+            }
+
             try {
                 data = dbs.getCollectionData(
                         Optional.ofNullable(request.getClientSession()),
                         coll,
                         request.getPage(),
                         request.getPagesize(),
-                        request.getSortByDocument(),
-                        request.getFiltersDocument(),
+                        sort,
+                        filter,
                         request.getHintDocument(),
                         request.getProjectionDocument(),
                         request.getCursorAllocationPolicy());
-            } catch (JsonParseException jpe) {
-                // the filter expression is not a valid json string
-                LOGGER.debug("invalid filter expression {}", request.getFilter(), jpe);
-                MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
-                next(exchange);
-                return;
             } catch (MongoException me) {
                 if (me.getMessage().matches(".*Can't canonicalize query.*")) {
                     // error with the filter expression during query execution
