@@ -226,9 +226,7 @@ public class BsonRequestPropsInjector {
 
         if (sort_by != null) {
             if (sort_by.stream().anyMatch(s -> s == null || s.isEmpty())) {
-                response.setInError(
-                        HttpStatus.SC_BAD_REQUEST,
-                        "illegal sort_by paramenter");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "Illegal sort paramenter");
                 return;
             }
 
