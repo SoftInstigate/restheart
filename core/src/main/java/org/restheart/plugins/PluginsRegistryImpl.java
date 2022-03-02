@@ -42,6 +42,8 @@ import org.restheart.cache.LoadingCache;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
+import org.restheart.exchange.WildcardRequest;
+import org.restheart.exchange.WildcardResponse;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.PipelinedHandler;
@@ -286,18 +288,21 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                 .stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
-                // IMPORTANT: An interceptor can intercept
-                // - requests handled by a Service when its request and response
+                // IMPORTANT: An interceptor can intercept:
+                // - service requests handled by a Service when its request and response
                 //   types are equal to the ones declared by the Service
+                // - request handled by a Service when its request and response
+                //   are WildcardRequest and WildcardResponse
                 // - request handled by a Proxy when its request and response
                 //   are ByteArrayProxyRequest and ByteArrayProxyResponse
                 .filter(ri
-                    -> (service == null
-                    && PluginUtils.cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
-                    && PluginUtils.cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
-                    || (service != null
+                    -> (service != null
                     && PluginUtils.cachedRequestType(ri).equals(PluginUtils.cachedRequestType(service))
-                    && PluginUtils.cachedResponseType(ri).equals(PluginUtils.cachedResponseType(service))))
+                    && PluginUtils.cachedResponseType(ri).equals(PluginUtils.cachedResponseType(service)))
+                    || (service != null && ri instanceof WildcardInterceptor)
+                    || (service == null
+                    && PluginUtils.cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
+                    && PluginUtils.cachedResponseType(ri).equals(ByteArrayProxyResponse.type())))
                 .filter(ri -> interceptPoint == PluginUtils.interceptPoint(ri))
                 .collect(Collectors.toList());
     }
