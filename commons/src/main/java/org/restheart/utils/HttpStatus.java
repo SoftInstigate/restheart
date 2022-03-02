@@ -42,7 +42,7 @@ public class HttpStatus {
         new String[3],
         new String[8],
         new String[8],
-        new String[25],
+        new String[30],
         new String[8]
     };
 
@@ -234,6 +234,11 @@ public class HttpStatus {
      * {@literal <tt>}424 Failed Dependency{@literal <tt/>} (WebDAV - RFC 2518)
      */
     public static final int SC_FAILED_DEPENDENCY = 424;
+    /**
+     * {@literal <tt>}429 Too Many Requests{@literal <tt/>} (Additional HTTP Status Codes - RFC 6585)
+     */
+    public static final int SC_TOO_MANY_REQUESTS = 429;
+
 
     // --- 5xx Server Error ---
     /**
@@ -302,38 +307,32 @@ public class HttpStatus {
         addStatusCodeMap(SC_USE_PROXY, "Use Proxy");
         addStatusCodeMap(SC_PAYMENT_REQUIRED, "Payment Required");
         addStatusCodeMap(SC_NOT_ACCEPTABLE, "Not Acceptable");
-        addStatusCodeMap(SC_PROXY_AUTHENTICATION_REQUIRED,
-                "Proxy Authentication Required");
-        addStatusCodeMap(SC_REQUEST_TIMEOUT,
-                "Request Timeout");
+        addStatusCodeMap(SC_PROXY_AUTHENTICATION_REQUIRED, "Proxy Authentication Required");
+        addStatusCodeMap(SC_REQUEST_TIMEOUT, "Request Timeout");
 
         addStatusCodeMap(SC_SWITCHING_PROTOCOLS, "Switching Protocols");
-        addStatusCodeMap(SC_NON_AUTHORITATIVE_INFORMATION,
-                "Non Authoritative Information");
+        addStatusCodeMap(SC_NON_AUTHORITATIVE_INFORMATION, "Non Authoritative Information");
         addStatusCodeMap(SC_RESET_CONTENT, "Reset Content");
         addStatusCodeMap(SC_PARTIAL_CONTENT, "Partial Content");
         addStatusCodeMap(SC_GATEWAY_TIMEOUT, "Gateway Timeout");
-        addStatusCodeMap(SC_HTTP_VERSION_NOT_SUPPORTED,
-                "Http Version Not Supported");
-        addStatusCodeMap(SC_GONE,
-                "Gone");
-        addStatusCodeMap(SC_LENGTH_REQUIRED,
-                "Length Required");
-        addStatusCodeMap(SC_REQUESTED_RANGE_NOT_SATISFIABLE,
-                "Requested Range Not Satisfiable");
-        addStatusCodeMap(SC_EXPECTATION_FAILED,
-                "Expectation Failed");
+        addStatusCodeMap(SC_HTTP_VERSION_NOT_SUPPORTED, "Http Version Not Supported");
+        addStatusCodeMap(SC_GONE, "Gone");
+        addStatusCodeMap(SC_LENGTH_REQUIRED, "Length Required");
+        addStatusCodeMap(SC_REQUESTED_RANGE_NOT_SATISFIABLE, "Requested Range Not Satisfiable");
+        addStatusCodeMap(SC_EXPECTATION_FAILED, "Expectation Failed");
 
         // WebDAV Server-specific status codes
         addStatusCodeMap(SC_PROCESSING, "Processing");
         addStatusCodeMap(SC_MULTI_STATUS, "Multi-Status");
         addStatusCodeMap(SC_UNPROCESSABLE_ENTITY, "Unprocessable Entity");
-        addStatusCodeMap(SC_INSUFFICIENT_SPACE_ON_RESOURCE,
-                "Insufficient Space On Resource");
+        addStatusCodeMap(SC_INSUFFICIENT_SPACE_ON_RESOURCE, "Insufficient Space On Resource");
         addStatusCodeMap(SC_METHOD_FAILURE, "Method Failure");
         addStatusCodeMap(SC_LOCKED, "Locked");
         addStatusCodeMap(SC_INSUFFICIENT_STORAGE, "Insufficient Storage");
         addStatusCodeMap(SC_FAILED_DEPENDENCY, "Failed Dependency");
+
+        // HTTP 1.1 Additional HTTP Status Codes -- see RFC 6585
+        addStatusCodeMap(SC_TOO_MANY_REQUESTS, "Too Many Requests");
     }
 
     // --------------------------------------------------------- Public Methods
