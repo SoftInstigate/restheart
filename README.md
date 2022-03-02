@@ -102,6 +102,12 @@ You can also have a look at our [introductory video](https://youtu.be/9KroH-RvjS
 
 [![Watch the video!](https://img.youtube.com/vi/9KroH-RvjS0/hqdefault.jpg)](https://youtu.be/9KroH-RvjS0)
 
+## Become a Sponsor to RESTHeart
+
+You can support the development of RESTHeart via GitHub Sponsor program and receive public acknowledgment of your help.
+
+[Go and see available sponsor tiers.](https://github.com/sponsors/SoftInstigate)
+
 ## Sponsors
 
 <table>
