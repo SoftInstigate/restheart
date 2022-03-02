@@ -19,11 +19,9 @@
  */
 package org.restheart.exchange;
 
-import com.google.common.reflect.TypeToken;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
-import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -238,14 +236,6 @@ public class MongoRequest extends BsonRequest {
 
     public static MongoRequest of(HttpServerExchange exchange) {
         return of(exchange, MongoRequest.class);
-    }
-
-    private static final Type _TYPE = new TypeToken<MongoRequest>(MongoRequest.class) {
-		private static final long serialVersionUID = 4831691538044162907L;
-    }.getType();
-
-    public static Type type() {
-        return _TYPE;
     }
 
     /**

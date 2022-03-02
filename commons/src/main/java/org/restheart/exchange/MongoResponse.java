@@ -19,7 +19,6 @@
  */
 package org.restheart.exchange;
 
-import com.google.common.reflect.TypeToken;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
@@ -35,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -79,14 +77,6 @@ public class MongoResponse extends BsonResponse {
 
     public static MongoResponse of(HttpServerExchange exchange) {
         return of(exchange, MongoResponse.class);
-    }
-
-    private static final Type _TYPE = new TypeToken<MongoResponse>(MongoResponse.class) {
-		private static final long serialVersionUID = 1407135302812289455L;
-    }.getType();
-
-    public static Type type() {
-        return _TYPE;
     }
 
     @Override

@@ -43,8 +43,7 @@ import org.restheart.exchange.Response;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public interface Interceptor<R extends Request<?>, S extends Response<?>>
-        extends ConfigurablePlugin, ExchangeTypeResolver<R, S> {
+public interface Interceptor<R extends Request<?>, S extends Response<?>> extends ConfigurablePlugin, ExchangeTypeResolver<R, S> {
     /**
      * handle the request
      *
