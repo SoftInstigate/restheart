@@ -42,8 +42,6 @@ import org.restheart.cache.LoadingCache;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
-import org.restheart.exchange.WildcardRequest;
-import org.restheart.exchange.WildcardResponse;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
 import org.restheart.handlers.PipelinedHandler;
