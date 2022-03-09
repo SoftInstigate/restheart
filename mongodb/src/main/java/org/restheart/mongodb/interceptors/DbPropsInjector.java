@@ -67,6 +67,11 @@ public class DbPropsInjector implements MongoInterceptor {
      */
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        // skip if OPTIONS
+        if (request.isOptions()) {
+            return;
+        }
+
         var dbName = request.getDBName();
 
         if (dbName != null) {
