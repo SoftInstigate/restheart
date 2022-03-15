@@ -20,22 +20,24 @@
  */
 package org.restheart.mongodb.interceptors;
 
+import com.mongodb.MongoException;
 import com.mongodb.client.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
-
 import java.util.Optional;
-
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.Databases;
+import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Injects the collection properties into the Request
@@ -50,6 +52,8 @@ import org.restheart.utils.HttpStatus;
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         priority = Integer.MIN_VALUE + 1)
 public class CollectionPropsInjector implements MongoInterceptor {
+    private final Logger LOGGER = LoggerFactory.getLogger(CollectionPropsInjector.class);
+
     private Databases dbs = null;
 
     private static final String RESOURCE_DOES_NOT_EXIST = "Resource does not exist";
@@ -86,10 +90,28 @@ public class CollectionPropsInjector implements MongoInterceptor {
         if (dbName != null && collName != null && !request.isDbMeta()) {
             BsonDocument collProps;
 
-            if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
-                collProps = dbs.getCollectionProperties(Optional.ofNullable(request.getClientSession()), dbName, collName);
-            } else {
-                collProps = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
+            try {
+                if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
+                    collProps = dbs.getCollectionProperties(Optional.ofNullable(request.getClientSession()), dbName, collName);
+                } else {
+                    collProps = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
+                }
+            } catch(MongoException mce) {
+                int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
+
+                if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().isBlank()) {
+                    LOGGER.error("Error handling the request", mce);
+                    response.setInError(httpCode, mce.getMessage());
+                } else {
+                    LOGGER.debug("Error handling the request", mce);
+                    response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
+                }
+
+                return;
+            } catch (Exception e) {
+                LOGGER.error("Error handling the request", e);
+                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error getting properties of collection " + dbName.concat(".").concat(collName), e);
+                return;
             }
 
             // if collProps is null, the collection does not exist
