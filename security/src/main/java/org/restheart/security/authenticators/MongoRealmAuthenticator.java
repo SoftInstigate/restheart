@@ -79,6 +79,10 @@ public class MongoRealmAuthenticator implements Authenticator {
     private String jsonPathRoles = "$.roles";
     private Boolean bcryptHashedPassword = false;
     Integer bcryptComplexity = 12;
+
+    private Boolean enforceMinimumPasswordStrenght = false;
+    private Integer minimumPasswordStrength = 3;
+
     private Boolean createUser = false;
     private BsonDocument createUserDocument = null;
     private Boolean cacheEnabled = false;
@@ -110,8 +114,10 @@ public class MongoRealmAuthenticator implements Authenticator {
             }
         }
 
-        this.bcryptHashedPassword = argValue(args, "bcrypt-hashed-password");
+        this.enforceMinimumPasswordStrenght = argValue(args, "enforce-minimum-password-strenght");
+        this.minimumPasswordStrength = argValue(args, "minimum-password-strength");
 
+        this.bcryptHashedPassword = argValue(args, "bcrypt-hashed-password");
         this.bcryptComplexity = argValue(args, "bcrypt-complexity");
 
         this.createUser = argValue(args, "create-user");
@@ -214,8 +220,32 @@ public class MongoRealmAuthenticator implements Authenticator {
         return bcryptComplexity;
     }
 
+    /**
+     * @return true if the password must be hashed
+     */
     public boolean isBcryptHashedPassword() {
         return bcryptHashedPassword;
+    }
+
+    /**
+     * Integer from 0 to 4
+     * 0 Weak        （guesses < 3^10）
+     * 1 Fair        （guesses < 6^10）
+     * 2 Good        （guesses < 8^10）
+     * 3 Strong      （guesses < 10^10）
+     * 4 Very strong （guesses >= 10^10）
+     *
+     * @return the minimumPasswordStrength
+     */
+    public Integer getMinimumPasswordStrength() {
+        return minimumPasswordStrength;
+    }
+
+    /**
+     * @return true if the password must be hashed
+     */
+    public boolean isEnforceMinimumPasswordStrenght() {
+        return enforceMinimumPasswordStrenght;
     }
 
     /**

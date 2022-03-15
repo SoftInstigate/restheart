@@ -112,6 +112,10 @@
       <groupId>com.graphql-java</groupId>
       <artifactId>graphql-java</artifactId>
     </dependency>
+    <dependency>
+        <groupId>com.nulab-inc</groupId>
+        <artifactId>zxcvbn</artifactId>
+      </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>org.restheart</groupId>
