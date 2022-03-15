@@ -122,6 +122,14 @@ authenticators:
     json-path-roles: $.roles
     bcrypt-hashed-password: true
     bcrypt-complexity: 12
+    enforce-minimum-password-strenght: false
+    # Integer from 0 to 4
+    # 0 Weak        （guesses < 3^10）
+    # 1 Fair        （guesses < 6^10）
+    # 2 Good        （guesses < 8^10）
+    # 3 Strong      （guesses < 10^10）
+    # 4 Very strong （guesses >= 10^10）
+    minimum-password-strength: 3
     create-user: true
     create-user-document: '{"_id": "admin", "password": "secret", "roles": ["admin"]}'
     cache-enabled: false
