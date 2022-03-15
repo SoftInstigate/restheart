@@ -27,7 +27,7 @@ import io.undertow.util.HttpString;
 /**
  * Interface for token managers
  *
- * Seehttps://restheart.org/docs/plugins/security-plugins/#token-managers
+ * See https://restheart.org/docs/plugins/security-plugins/#token-managers
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface TokenManager extends Authenticator {

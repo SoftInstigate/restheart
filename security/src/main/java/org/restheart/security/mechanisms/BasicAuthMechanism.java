@@ -52,7 +52,6 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     @InjectConfiguration
     @InjectPluginsRegistry
     public void init(final Map<String, Object> args, PluginsRegistry pluginsRegistry) throws ConfigurationException {
-
         // the authenticator specified in auth mechanism configuration
         setIdentityManager(pluginsRegistry
                 .getAuthenticator(argValue(args, "authenticator"))
@@ -76,8 +75,7 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
 
     @Override
     public ChallengeResult sendChallenge(final HttpServerExchange exchange, final SecurityContext securityContext) {
-        if (exchange.getRequestHeaders().contains(SILENT_HEADER_KEY)
-                || exchange.getQueryParameters().containsKey(SILENT_QUERY_PARAM_KEY)) {
+        if (exchange.getRequestHeaders().contains(SILENT_HEADER_KEY) || exchange.getQueryParameters().containsKey(SILENT_QUERY_PARAM_KEY)) {
             return new ChallengeResult(true, UNAUTHORIZED);
         } else {
             return super.sendChallenge(exchange, securityContext);

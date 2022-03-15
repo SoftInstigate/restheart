@@ -25,7 +25,7 @@ import io.undertow.security.idm.IdentityManager;
 import org.restheart.plugins.ConfigurablePlugin;
 
 /**
- * Seehttps://restheart.org/docs/plugins/security-plugins/#authenticators
+ * See https://restheart.org/docs/plugins/security-plugins/#authenticators
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface Authenticator extends IdentityManager, ConfigurablePlugin {

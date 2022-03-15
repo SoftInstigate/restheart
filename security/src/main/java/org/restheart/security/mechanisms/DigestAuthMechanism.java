@@ -75,8 +75,7 @@ import org.slf4j.LoggerFactory;
         enabledByDefault = false)
 public class DigestAuthMechanism implements AuthMechanism {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(DigestAuthMechanism.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DigestAuthMechanism.class);
 
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";

@@ -26,7 +26,7 @@ import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.utils.PluginUtils;
 
 /**
- * Seehttps://restheart.org/docs/plugins/security-plugins/#authentication-mechanisms
+ * See https://restheart.org/docs/plugins/security-plugins/#authentication-mechanisms
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface AuthMechanism extends AuthenticationMechanism, ConfigurablePlugin {
