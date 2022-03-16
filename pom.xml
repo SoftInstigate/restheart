@@ -276,7 +276,7 @@
             <dependency>
                 <groupId>io.dropwizard.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
-                <version>4.2.7</version>
+                <version>4.2.9</version>
             </dependency>
             <dependency>
                 <groupId>info.picocli</groupId>
