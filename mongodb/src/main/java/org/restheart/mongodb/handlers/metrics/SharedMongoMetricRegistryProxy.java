@@ -23,20 +23,9 @@ package org.restheart.mongodb.handlers.metrics;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import java.util.stream.Stream;
-public class SharedMetricRegistryProxy {
-
-    private static final String DEFAULT_NAME = "default";
-
-    /**
-     *
-     */
-    public SharedMetricRegistryProxy() {
-
-        // initialize default metrics registry name, if not already set
-        if(SharedMetricRegistries.tryGetDefault() == null) {
-            SharedMetricRegistries.setDefault(DEFAULT_NAME);
-        }
-    }
+public class SharedMongoMetricRegistryProxy {
+    public static final String REGISTRY_PREFIX = "MONGO_METRICS_REGISTRY_";
+    private static final String DEFAULT_NAME = "MONGO_METRICS_REGISTRY_0_DEFAULT";
 
     /**
      *
@@ -52,7 +41,7 @@ public class SharedMetricRegistryProxy {
      * @return
      */
     public MetricRegistry registry() {
-        return SharedMetricRegistries.tryGetDefault();
+        return SharedMetricRegistries.getOrCreate(DEFAULT_NAME);
     }
 
     /**
@@ -61,7 +50,7 @@ public class SharedMetricRegistryProxy {
      * @return
      */
     public MetricRegistry registry(String dbName) {
-        return SharedMetricRegistries.getOrCreate(dbName);
+        return SharedMetricRegistries.getOrCreate(REGISTRY_PREFIX.concat(dbName));
     }
 
     /**
@@ -71,7 +60,7 @@ public class SharedMetricRegistryProxy {
      * @return
      */
     public MetricRegistry registry(String dbName, String collectionName) {
-        return SharedMetricRegistries.getOrCreate(dbName + "/" + collectionName);
+        return SharedMetricRegistries.getOrCreate(REGISTRY_PREFIX.concat(dbName).concat("/").concat(collectionName));
     }
 
     /**
@@ -79,6 +68,6 @@ public class SharedMetricRegistryProxy {
      * @return
      */
     public Stream<String> registries() {
-        return SharedMetricRegistries.names().stream();
+        return SharedMetricRegistries.names().stream().filter(n -> n.startsWith(REGISTRY_PREFIX));
     }
 }

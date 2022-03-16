@@ -50,7 +50,7 @@ public class MetricsHandlerTest {
     @Before
     public void setUp() {
         handler = new MetricsHandler(null);
-        handler.metrics = mock(SharedMetricRegistryProxy.class);
+        handler.metrics = mock(SharedMongoMetricRegistryProxy.class);
     }
 
     /**

@@ -25,7 +25,6 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import java.util.Arrays;
 import java.util.Locale;
@@ -43,31 +42,6 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 
 public class MetricsJsonGenerator {
-
-    private static String singular(TimeUnit timeUnit) {
-        String unitString = timeUnit.name().toLowerCase(Locale.US);
-        return unitString.substring(0, unitString.length() - 1);
-    }
-
-    /**
-     *
-     * @param registry
-     * @param rateUnit
-     * @param durationUnit
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    public static BsonDocument generateMetricsBson(MetricRegistry registry, TimeUnit rateUnit, TimeUnit durationUnit) {
-        MetricsJsonGenerator generator = new MetricsJsonGenerator(rateUnit, durationUnit);
-
-        return new BsonDocument()
-                .append("version", new BsonString("3.0.0"))
-                .append("gauges", generator.toBson(registry.getGauges(), generator::generateGauge))
-                .append("counters", generator.toBson(registry.getCounters(), generator::generateCounter))
-                .append("histograms", generator.toBson(registry.getHistograms(), generator::generateHistogram))
-                .append("meters", generator.toBson(registry.getMeters(), generator::generateMeter))
-                .append("timers", generator.toBson(registry.getTimers(), generator::generateTimer));
-    }
     private final String singularRateUnitString;
     private final double rateFactor;
     private final TimeUnit durationUnit;
@@ -81,9 +55,34 @@ public class MetricsJsonGenerator {
         this.singularRateUnitString = singular(rateUnit);
     }
 
+    private static String singular(TimeUnit timeUnit) {
+        var unitString = timeUnit.name().toLowerCase(Locale.US);
+        return unitString.substring(0, unitString.length() - 1);
+    }
+
+    /**
+     *
+     * @param registry
+     * @param rateUnit
+     * @param durationUnit
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public static BsonDocument generateMetricsBson(MetricRegistry registry, TimeUnit rateUnit, TimeUnit durationUnit) {
+        var generator = new MetricsJsonGenerator(rateUnit, durationUnit);
+
+        return new BsonDocument()
+                .append("version", new BsonString("3.0.0"))
+                .append("gauges", generator.toBson(registry.getGauges(), generator::generateGauge))
+                .append("counters", generator.toBson(registry.getCounters(), generator::generateCounter))
+                .append("histograms", generator.toBson(registry.getHistograms(), generator::generateHistogram))
+                .append("meters", generator.toBson(registry.getMeters(), generator::generateMeter))
+                .append("timers", generator.toBson(registry.getTimers(), generator::generateTimer));
+    }
+
     private BsonDocument generateTimer(Timer timer) {
-        BsonDocument document = new BsonDocument();
-        final Snapshot snapshot = timer.getSnapshot();
+        var document = new BsonDocument();
+        final var snapshot = timer.getSnapshot();
         document.append("count", new BsonInt64(timer.getCount()));
         document.append("max", new BsonDouble(snapshot.getMax() * durationFactor));
         document.append("mean", new BsonDouble(snapshot.getMean() * durationFactor));
@@ -120,7 +119,7 @@ public class MetricsJsonGenerator {
     }
 
     private BsonDocument generateMeter(Meter meter) {
-        BsonDocument document = new BsonDocument();
+        var document = new BsonDocument();
 
         document.append("count", new BsonInt64(meter.getCount()));
         document.append("m15_rate", new BsonDouble(meter.getFifteenMinuteRate() * rateFactor));
@@ -133,8 +132,8 @@ public class MetricsJsonGenerator {
     }
 
     private BsonDocument generateHistogram(Histogram histogram) {
-        BsonDocument document = new BsonDocument();
-        final Snapshot snapshot = histogram.getSnapshot();
+        var document = new BsonDocument();
+        final var snapshot = histogram.getSnapshot();
         document.append("count", new BsonInt64(histogram.getCount()));
         document.append("max", new BsonDouble(snapshot.getMax()));
         document.append("mean", new BsonDouble(snapshot.getMean()));
@@ -180,11 +179,9 @@ public class MetricsJsonGenerator {
     }
 
     private <T> BsonDocument toBson(Map<String, T> map, Function<T, BsonDocument> f) {
-        Map<String, BsonDocument> collect = map.entrySet().stream()
-                .collect(toMap(Map.Entry::getKey, x -> f.apply(x.getValue())));
-        BsonDocument document = new BsonDocument();
+        var collect = map.entrySet().stream().collect(toMap(Map.Entry::getKey, x -> f.apply(x.getValue())));
+        var document = new BsonDocument();
         document.putAll(collect);
         return document;
     }
-
 }
