@@ -57,7 +57,7 @@ public class MetricsInstrumentationInterceptor implements MongoInterceptor {
     MongoServiceConfiguration configuration = null;
 
     @VisibleForTesting
-    SharedMetricRegistryProxy metrics = new SharedMetricRegistryProxy();
+    SharedMongoMetricRegistryProxy metrics = new SharedMongoMetricRegistryProxy();
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
@@ -90,12 +90,9 @@ public class MetricsInstrumentationInterceptor implements MongoInterceptor {
     private void addDefaultMetrics(MetricRegistry registry, long duration, HttpServerExchange exchange) {
         var request = MongoRequest.of(exchange);
 
-        registry.timer(request.getType().toString() + "." + request.getMethod().toString())
-                .update(duration, TimeUnit.MILLISECONDS);
-        registry.timer(request.getType().toString() + "." + request.getMethod().toString() + "." + exchange.getStatusCode())
-                .update(duration, TimeUnit.MILLISECONDS);
-        registry.timer(request.getType().toString() + "." + request.getMethod().toString() + "." + (exchange.getStatusCode() / 100) + "xx")
-                .update(duration, TimeUnit.MILLISECONDS);
+        registry.timer(request.getType().toString() + "." + request.getMethod().toString()).update(duration, TimeUnit.MILLISECONDS);
+        registry.timer(request.getType().toString() + "." + request.getMethod().toString() + "." + exchange.getStatusCode()).update(duration, TimeUnit.MILLISECONDS);
+        registry.timer(request.getType().toString() + "." + request.getMethod().toString() + "." + (exchange.getStatusCode() / 100) + "xx").update(duration, TimeUnit.MILLISECONDS);
     }
 
     @VisibleForTesting

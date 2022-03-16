@@ -66,7 +66,7 @@ public class MetricsInstrumentationInterceptorTest {
         MetricRegistry registry = new MetricRegistry();
         MetricRegistry registryDb = new MetricRegistry();
         MetricRegistry registryColl = new MetricRegistry();
-        SharedMetricRegistryProxy proxy = new SharedMetricRegistryProxy() {
+        SharedMongoMetricRegistryProxy proxy = new SharedMongoMetricRegistryProxy() {
             @Override
             public MetricRegistry registry() {
                 return registry;

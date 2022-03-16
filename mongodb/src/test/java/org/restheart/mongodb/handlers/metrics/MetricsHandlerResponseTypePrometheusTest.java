@@ -84,7 +84,8 @@ public class MetricsHandlerResponseTypePrometheusTest {
      */
     @Test
     public void testMetricsForRoot() throws IOException {
-        String expectedMetrics = "http_response_timers_count{database=\"_all_\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 3 $TIMESTAMP$\n" +
+        String expectedMetrics =
+                "http_response_timers_count{database=\"_all_\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 3 $TIMESTAMP$\n" +
                 "http_response_timers_max{database=\"_all_\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
                 "http_response_timers_mean{database=\"_all_\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 5.666666666666666 $TIMESTAMP$\n" +
                 "http_response_timers_min{database=\"_all_\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 2.0 $TIMESTAMP$\n" +
@@ -100,22 +101,6 @@ public class MetricsHandlerResponseTypePrometheusTest {
                 "http_response_timers_m5_rate{database=\"_all_\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
                 "http_response_timers_mean_rate{database=\"_all_\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} $MEAN_RATE$ $TIMESTAMP$\n" +
                 "\n" +
-                "http_response_timers_count{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 1 $TIMESTAMP$\n" +
-                "http_response_timers_max{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
-                "http_response_timers_mean{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
-                "http_response_timers_min{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
-                "http_response_timers_p50{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
-                "http_response_timers_p75{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
-                "http_response_timers_p95{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
-                "http_response_timers_p98{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
-                "http_response_timers_p99{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
-                "http_response_timers_p999{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
-                "http_response_timers_stddev{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
-                "http_response_timers_m15_rate{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
-                "http_response_timers_m1_rate{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
-                "http_response_timers_m5_rate{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
-                "http_response_timers_mean_rate{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} $MEAN_RATE$ $TIMESTAMP$\n" +
-                "\n" +
                 "http_response_timers_count{database=\"fancy-shop\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 2 $TIMESTAMP$\n" +
                 "http_response_timers_max{database=\"fancy-shop\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
                 "http_response_timers_mean{database=\"fancy-shop\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 7.5 $TIMESTAMP$\n" +
@@ -130,7 +115,23 @@ public class MetricsHandlerResponseTypePrometheusTest {
                 "http_response_timers_m15_rate{database=\"fancy-shop\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
                 "http_response_timers_m1_rate{database=\"fancy-shop\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
                 "http_response_timers_m5_rate{database=\"fancy-shop\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
-                "http_response_timers_mean_rate{database=\"fancy-shop\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} $MEAN_RATE$ $TIMESTAMP$";
+                "http_response_timers_mean_rate{database=\"fancy-shop\",collection=\"_all_\",type=\"requests\",method=\"GET\",code=\"2xx\"} $MEAN_RATE$ $TIMESTAMP$\n" +
+                "\n" +
+                "http_response_timers_count{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 1 $TIMESTAMP$\n" +
+                "http_response_timers_max{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_mean{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_min{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p50{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p75{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p95{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p98{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p99{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_p999{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 10.0 $TIMESTAMP$\n" +
+                "http_response_timers_stddev{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
+                "http_response_timers_m15_rate{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
+                "http_response_timers_m1_rate{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
+                "http_response_timers_m5_rate{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} 0.0 $TIMESTAMP$\n" +
+                "http_response_timers_mean_rate{database=\"fancy-shop\",collection=\"products\",type=\"requests\",method=\"GET\",code=\"2xx\"} $MEAN_RATE$ $TIMESTAMP$";
         assertMetrics(expectedMetrics, MetricsHandler.ResponseType.PROMETHEUS.generateResponse(ROOT, rootRegistry));
     }
 
