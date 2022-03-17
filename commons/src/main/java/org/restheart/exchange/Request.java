@@ -62,6 +62,8 @@ public abstract class Request<T> extends Exchange<T> {
 
     private static final AttachmentKey<Map<String, List<String>>> XFORWARDED_HEADERS = AttachmentKey.create(Map.class);
 
+    private static final AttachmentKey<Boolean> BLOCK_AUTH_FOR_TOO_MANY_REQUESTS = AttachmentKey.create(Boolean.class);
+
     protected Request(HttpServerExchange exchange) {
         super(exchange);
     }
@@ -431,5 +433,22 @@ public abstract class Request<T> extends Exchange<T> {
         } else {
             return METHOD.OTHER;
         }
+    }
+
+    /**
+     * If called BEFORE authentication, the request will be aborted
+     * with a 429 Too Many Requests response.
+     */
+    public void blockForTooManyRequests() {
+        getWrappedExchange().putAttachment(BLOCK_AUTH_FOR_TOO_MANY_REQUESTS, true);
+    }
+
+    /**
+     * @return true if the request is blocked for too many requests
+     */
+    public boolean isBlockForTooManyRequests() {
+        var block = getWrappedExchange().getAttachment(BLOCK_AUTH_FOR_TOO_MANY_REQUESTS);
+
+        return block == null ? false : block;
     }
 }

@@ -253,10 +253,10 @@ authorizers:
     cache-expire-policy: AFTER_WRITE
   # originVetoer protects from CSRF attacks by forbidding requests whose Origin header is not whitelisted
   originVetoer:
-      enabled: false
-      whitelist:
-        - https://restheart.org
-        - http://localhost
+    enabled: false
+    whitelist:
+      - https://restheart.org
+      - http://localhost
   fullAuthorizer:
     enabled: false
     authentication-required: true
@@ -335,6 +335,13 @@ plugins-args:
   filterOperatorsBlacklist:
     blacklist: [ "$where" ]
     enabled: false
+  # defend from brute force attacks by returing 429 Too Many Requests
+  # when failed auth attempts in last 10 seconds from same ip are more than 50%
+  bruteForceAttackGuard:
+    enabled: false
+    # if true, the source ip is obtained from X-Forwarded-For header
+    # this requires that header beeing set by the proxy, dangerous otherwise
+    trust-x-forwarded-for: false
 
 #### Logging
 
