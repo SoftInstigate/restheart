@@ -51,6 +51,10 @@
       <groupId>com.nulab-inc</groupId>
       <artifactId>zxcvbn</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.dropwizard.metrics</groupId>
+      <artifactId>metrics-core</artifactId>
+    </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>com.intuit.karate</groupId>

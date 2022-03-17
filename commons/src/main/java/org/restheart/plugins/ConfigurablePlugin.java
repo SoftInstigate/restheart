@@ -36,9 +36,7 @@ public interface ConfigurablePlugin extends Plugin {
      * @throws ConfigurationException
      */
     @SuppressWarnings("unchecked")
-    public static <V extends Object> V argValue(final Map<String, Object> args,
-            final String argKey)
-            throws ConfigurationException {
+    public static <V extends Object> V argValue(final Map<String, Object> args, final String argKey) throws ConfigurationException {
         if (args == null || !args.containsKey(argKey)) {
             throw new ConfigurationException("The plugin" + " requires the argument '" + argKey + "'");
         } else {
