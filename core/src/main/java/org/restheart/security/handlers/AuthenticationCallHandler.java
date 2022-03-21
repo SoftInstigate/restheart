@@ -124,15 +124,16 @@ public class AuthenticationCallHandler extends PipelinedHandler {
     }
 
     /**
-     * Registers the percentage of failed authentication in dropwizard's
+     * Registers stats of failed authentication in dropwizard's
      * slide time window histograms of 10 seconds.
      *
      * For each request this register one histogram whose name contains the remote ip
      * and one with the value of the header X-Forwarded-For, if present.
      *
      * This method updates the histograms with 0 for each successful authentication
-     * and with abs(mean)+1 for failed ones, so that the mean of each histogram grows
-     * when multiple failed authentications happen the last 10 seconds. 
+     * and with round(mean)+1 for failed ones, so that the mean of each histogram grows
+     * when multiple failed authentications happen the last 10 seconds.
+     *
      * failed attemps | mean   | max
      * ---------------+--------+-----
      * 1              | 1      | 1
