@@ -72,7 +72,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
 
     @Override
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
-        // if more the 50% of attempts in last 10 seconds, deny access anyway
+        // if failed attempts in last 10 seconds >= 6, deny access
         var max = authHisto(request).getSnapshot().getMax();
         if (max > 3) {
             logWarning(request.getExchange(), max);
