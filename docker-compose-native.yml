@@ -10,9 +10,9 @@ services:
     depends_on:
       - mongodb
       - mongodb-init
-    volumes:
-      # - ./etc:/opt/restheart/etc
-      # - ./plugins:/opt/restheart/plugins
+    # volumes:
+    #   - ./etc:/opt/restheart/etc
+    #   - ./plugins:/opt/restheart/plugins
     ports:
       - "8080:8080"
 
