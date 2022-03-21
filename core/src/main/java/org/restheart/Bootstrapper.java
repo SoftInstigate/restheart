@@ -86,7 +86,6 @@ import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
 import org.fusesource.jansi.AnsiConsole;
-import org.graalvm.nativeimage.ImageInfo;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.ExchangeKeys;
 import org.restheart.exchange.PipelineInfo;
