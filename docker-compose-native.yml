@@ -11,8 +11,8 @@ services:
       - mongodb
       - mongodb-init
     volumes:
-      - ./etc:/rh/etc
-      - ./plugins:/rh/plugins
+      # - ./etc:/opt/restheart/etc
+      # - ./plugins:/opt/restheart/plugins
     ports:
       - "8080:8080"
 
