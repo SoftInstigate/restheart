@@ -318,8 +318,9 @@ plugins-args:
   filterOperatorsBlacklist:
     blacklist: [ "$where" ]
     enabled: false
-  # defend from brute force attacks by returing 429 Too Many Requests
-  # when failed auth attempts in last 10 seconds from same ip are more than 50%
+  # defend from brute force password cracking attacks
+  # by returing 429 Too Many Requests when received 6 or
+  # more failed attempts from same ip in last 10 seconds
   bruteForceAttackGuard:
     enabled: false
     # if true, the source ip is obtained from X-Forwarded-For header
