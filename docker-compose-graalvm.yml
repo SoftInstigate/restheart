@@ -2,7 +2,7 @@ version: "3"
 
 services:
   restheart:
-    image: softinstigate/restheart:6.2.0-graalvm
+    image: softinstigate/restheart:6.2.3-graalvm
     environment:
       INSTANCE_NAME: graalvm
       MONGO_URI: mongodb://mongodb
