@@ -23,6 +23,7 @@ package org.restheart.security.handlers;
 import io.undertow.security.api.AuthenticationMechanismContext;
 import io.undertow.server.HttpServerExchange;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.restheart.handlers.PipelinedHandler;
@@ -41,11 +42,11 @@ public class AuthenticatorMechanismsHandler extends PipelinedHandler {
 
     public AuthenticatorMechanismsHandler(final PipelinedHandler next, final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
         super(next);
-        this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream().map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance())).collect(Collectors.toSet());
+        this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream().map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance())).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     public AuthenticatorMechanismsHandler(final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
-        this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream().map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance())).collect(Collectors.toSet());
+        this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream().map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance())).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
 
