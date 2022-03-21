@@ -130,9 +130,21 @@ public class AuthenticationCallHandler extends PipelinedHandler {
      * For each request this register one histogram whose name contains the remote ip
      * and one with the value of the header X-Forwarded-For, if present.
      *
-     * This method updates the histograms with 1 for each failed authentication
-     * and with 0 for successful ones, so that the mean of each histogram is the
-     * percentage of the failed authentications in the last 10 seconds.
+     * This method updates the histograms with 0 for each successful authentication
+     * and with abs(mean)+1 for failed ones, so that the mean of each histogram grows
+     * when multiple failed authentications happen the last 10 seconds. 
+     * failed attemps | mean   | max
+     * ---------------+--------+-----
+     * 1              | 1      | 1
+     * 2              | 1.5    | 2
+     * 3              | 2      | 3
+     * 4              | 2.25   | 3
+     * 5              | 2.4    | 3
+     * 6              | 2.5    | 3
+     * 7              | ~2.71  | 4
+     * 8              | 2.875  | 4
+     * 9              | 3      | 4
+     * 10             | 3.1    | 4
      *
      * @param exchange
      * @param success
@@ -140,25 +152,29 @@ public class AuthenticationCallHandler extends PipelinedHandler {
     private void updateAuthMetrics(HttpServerExchange exchange, boolean success) {
         var histoNameWithXFF = unauthHistogramName(exchange, true);
 
+        // update the histo with X-Forwader-For, if available
         if (histoNameWithXFF != null) {
-            AUTH_METRIC_REGISTRY.histogram(histoNameWithXFF, () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))).update(success ? 0 : 1);
+            _update(AUTH_METRIC_REGISTRY.histogram(histoNameWithXFF, () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))), success);
         }
 
-        AUTH_METRIC_REGISTRY.histogram(unauthHistogramName(exchange, false), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))).update(success ? 0 : 1);
+        // update the histo with remote-ip, always available
+        _update(AUTH_METRIC_REGISTRY.histogram(unauthHistogramName(exchange, false), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))), success);
 
-        var total = AUTH_METRIC_REGISTRY.counter(MetricRegistry.name(Authenticator.class, "_total"));
-        total.inc();
-
-        // every 1000 attemps prune the counters
-        // to avoid memory leacks
-        if (total.getCount() % 1000 == 0) {
-            pruneMetrics();
-            total.dec(total.getCount());
-        }
+        tryPruneMetrics();
     }
 
-    private void pruneMetrics() {
-        LOGGER.trace("pruning auth metrics");
-        AUTH_METRIC_REGISTRY.removeMatching((name, metric) -> name.startsWith(MetricRegistry.name(Authenticator.class, "unauth-")));
+    private void _update(Histogram histo, boolean success) {
+        var mean = histo.getSnapshot().getMean();
+        histo.update(success ? 0 : (int) Math.round(mean) + 1);
+    }
+
+    private void tryPruneMetrics() {
+        var total = AUTH_METRIC_REGISTRY.counter(MetricRegistry.name(Authenticator.class, "_total"));
+        total.inc();
+        if (total.getCount() % 100 == 0) {
+            total.dec(total.getCount());
+            LOGGER.trace("Pruning auth metrics");
+            AUTH_METRIC_REGISTRY.removeMatching((name, metric) -> name.startsWith(MetricRegistry.name(Authenticator.class, "unauth-")));
+        }
     }
 }

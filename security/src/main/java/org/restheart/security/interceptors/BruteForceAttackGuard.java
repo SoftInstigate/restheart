@@ -73,9 +73,9 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
     @Override
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
         // if more the 50% of attempts in last 10 seconds, deny access anyway
-        var mean = authHisto(request).getSnapshot().getMean();
-        if (mean > 0.5d) {
-            logWarning(request.getExchange(), mean);
+        var max = authHisto(request).getSnapshot().getMax();
+        if (max > 3) {
+            logWarning(request.getExchange(), max);
             // this blocks the request authentication
             // with status code 429 TOO_MANY_REQUESTS
             request.blockForTooManyRequests();
@@ -91,7 +91,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
         LogUtils.boxedWarn(LOGGER,
             "A brute force attack might be in progress...",
             "",
-            "Got " + String.format("%.0f%%", (mean*100)) + " of failed auth attempts in last 10 seconds from:",
+            "Got too many of failed auth attempts in last 10 seconds from:",
             "",
             "remote ip: " + ExchangeAttributes.remoteIp().readAttribute(exchange),
             "X-Forwarded-For header: " + ExchangeAttributes.requestHeader(HttpString.tryFromString(HttpHeaders.X_FORWARDED_FOR)).readAttribute(exchange),
