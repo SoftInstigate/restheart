@@ -317,7 +317,7 @@ plugins-args:
   # a global blacklist for mongodb operators in filter query parameter
   filterOperatorsBlacklist:
     blacklist: [ "$where" ]
-    enabled: false
+    enabled: true
   # defend from brute force password cracking attacks
   # by returing 429 Too Many Requests when received 6 or
   # more failed attempts from same ip in last 10 seconds

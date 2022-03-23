@@ -392,7 +392,7 @@ graphql:
 # Service that implementes a blacklist for MongoDB operators in filter query parameter
 filterOperatorsBlacklist:
   blacklist: [ "$where" ]
-  enabled: false
+  enabled: true
 
 # defend from brute force password cracking attacks
 # by returing 429 Too Many Requests when received 6 or
