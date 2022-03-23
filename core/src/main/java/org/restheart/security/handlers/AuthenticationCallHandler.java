@@ -107,16 +107,14 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             //   since an authorizer that does not require authentication
             //   might authorize the request even if authentication failed
 
-            updateAuthMetrics(exchange, true);
-
             if (!exchange.isComplete()) {
                 next(exchange);
             }
         } else {
-            updateAuthMetrics(exchange, false);
-
             // add CORS headers
             CORSHandler.injectAccessControlAllowHeaders(exchange);
+            // update failed auth metrics
+            updateFailedAuthMetrics(exchange);
             // set status code and end exchange
             exchange.setStatusCode(HttpStatus.SC_UNAUTHORIZED);
             exchange.endExchange();
@@ -127,48 +125,40 @@ public class AuthenticationCallHandler extends PipelinedHandler {
      * Registers stats of failed authentication in dropwizard's
      * slide time window histograms of 10 seconds.
      *
-     * For each request this register one histogram whose name contains the remote ip
+     * For each request, register one histogram whose name contains the remote ip
      * and one with the value of the header X-Forwarded-For, if present.
      *
-     * This method updates the histograms with 0 for each successful authentication
-     * and with round(mean)+1 for failed ones, so that the mean of each histogram grows
-     * when multiple failed authentications happen the last 10 seconds.
-     *
-     * failed attemps | mean   | max
-     * ---------------+--------+-----
-     * 1              | 1      | 1
-     * 2              | 1.5    | 2
-     * 3              | 2      | 3
-     * 4              | 2.25   | 3
-     * 5              | 2.4    | 3
-     * 6              | 2.5    | 3
-     * 7              | ~2.71  | 4
-     * 8              | 2.875  | 4
-     * 9              | 3      | 4
-     * 10             | 3.1    | 4
+     * This method updates the histograms with with max+1 for failed ones,
+     * so that the max of each histogram is the number of failed authentications
+     * in the last 10 seconds.
      *
      * @param exchange
      * @param success
      */
-    private void updateAuthMetrics(HttpServerExchange exchange, boolean success) {
+    private void updateFailedAuthMetrics(HttpServerExchange exchange) {
         var histoNameWithXFF = unauthHistogramName(exchange, true);
 
         // update the histo with X-Forwader-For, if available
         if (histoNameWithXFF != null) {
-            _update(AUTH_METRIC_REGISTRY.histogram(histoNameWithXFF, () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))), success);
+            _update(AUTH_METRIC_REGISTRY.histogram(histoNameWithXFF, () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))));
         }
 
         // update the histo with remote-ip, always available
-        _update(AUTH_METRIC_REGISTRY.histogram(unauthHistogramName(exchange, false), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))), success);
+        _update(AUTH_METRIC_REGISTRY.histogram(unauthHistogramName(exchange, false), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))));
 
+        // every 100 failed requests, prune metrics
         tryPruneMetrics();
     }
 
-    private void _update(Histogram histo, boolean success) {
-        var mean = histo.getSnapshot().getMean();
-        histo.update(success ? 0 : (int) Math.round(mean) + 1);
+    private void _update(Histogram histo) {
+        histo.update(histo.getSnapshot().getMax()+1);
     }
 
+    /**
+     * Cleaup metrics to avoid memory leacks when an attacker sends
+     * many requests with rotating ips or X-Forwarded-For headers
+     * generating many dropwizard's meters
+     */
     private void tryPruneMetrics() {
         var total = AUTH_METRIC_REGISTRY.counter(MetricRegistry.name(Authenticator.class, "_total"));
         total.inc();

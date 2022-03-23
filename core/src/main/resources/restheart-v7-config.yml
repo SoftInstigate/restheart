@@ -402,6 +402,9 @@ bruteForceAttackGuard:
   # if true, the source ip is obtained from X-Forwarded-For header
   # this requires that header beeing set by the proxy, dangerous otherwise
   trust-x-forwarded-for: false
+  # max number of failed attempts in 10 seconds sliding window
+  # before returning 429 Too Many Requests
+  max-failed-attempts: 5
 
 #### Connection Options
 connection-options:
