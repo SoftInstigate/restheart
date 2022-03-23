@@ -319,7 +319,7 @@ plugins-args:
     blacklist: [ "$where" ]
     enabled: true
   # defend from brute force password cracking attacks
-  # by returing 429 Too Many Requests when received 6 or
+  # by returning 429 Too Many Requests when received 6 or
   # more failed attempts from same ip in last 10 seconds
   bruteForceAttackGuard:
     enabled: true
