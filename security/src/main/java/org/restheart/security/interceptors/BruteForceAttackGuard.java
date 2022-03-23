@@ -60,6 +60,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
     private static final MetricRegistry AUTH_METRIC_REGISTRY = SharedMetricRegistries.getOrCreate("AUTH");
 
     private boolean trustXForwardedFor = false;
+    private int maxFailedAttempts = 5;
 
     @InjectConfiguration
     public void config(Map<String, Object> args) {
@@ -68,13 +69,19 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
         } catch(ConfigurationException ce) {
             this.trustXForwardedFor = false;
         }
+
+        try {
+            this.maxFailedAttempts = argValue(args, "max-failed-attempts");
+        } catch(ConfigurationException ce) {
+            this.maxFailedAttempts = 5;
+        }
     }
 
     @Override
     public void handle(ServiceRequest<?> request, ServiceResponse<?> response) throws Exception {
-        // if failed attempts in last 10 seconds >= 6, deny access
+        // if failed attempts in last 10 seconds >= maxFailedAttempts, deny access
         var max = authHisto(request).getSnapshot().getMax();
-        if (max > 3) {
+        if (max > this.maxFailedAttempts) {
             logWarning(request.getExchange(), max);
             // this blocks the request authentication
             // with status code 429 TOO_MANY_REQUESTS
