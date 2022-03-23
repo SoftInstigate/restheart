@@ -249,14 +249,15 @@ plugins-args:
       uri: /graphql
       db: test-graphql
       collection: gql-apps
-      verbose: true
+      verbose: false
     # a global blacklist for mongodb operators in filter query parameter
     filterOperatorsBlacklist:
       blacklist: [ "$where" ]
       enabled: true
-    # defend from brute force password cracking attacks
-    # by returning 429 Too Many Requests when received 6 or
-    # more failed attempts from same ip in last 10 seconds
+    # defends from brute force password cracking attacks
+    # by returning `429 Too Many Requests` when more than
+    # `max-failed-attempts` wrong requests
+    # are received in last 10 seconds from the same ip
     bruteForceAttackGuard:
       enabled: false
       # if true, the source ip is obtained from X-Forwarded-For header
