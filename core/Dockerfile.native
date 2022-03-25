@@ -2,9 +2,10 @@ FROM debian:buster-slim
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
-WORKDIR /rh
-COPY target/restheart-native .
+WORKDIR /opt/restheart
+COPY target/restheart .
 RUN mkdir etc plugins
 
-ENTRYPOINT [ "./restheart-native" ]
+ENV RHO='/mongo-uri->"mongodb://host.docker.internal";/http-host->"0.0.0.0"'
+ENTRYPOINT [ "./restheart" ]
 EXPOSE 8009 8080 4443

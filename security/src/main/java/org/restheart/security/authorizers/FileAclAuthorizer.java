@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-security
  * %%
- * Copyright (C) 2018 - 2020 SoftInstigate
+ * Copyright (C) 2018 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -105,8 +105,7 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
      * @return
      */
     @Override
-    @SuppressWarnings("rawtypes")
-    public boolean isAllowed(Request request) {
+    public boolean isAllowed(Request<?> request) {
         // on first request, apply the permission transformers
         if (!permissionsTransformed) {
             permissionsTransformed = true;
@@ -188,8 +187,7 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public boolean isAuthenticationRequired(Request request) {
+    public boolean isAuthenticationRequired(Request<?> request) {
         // don't require authentication for OPTIONS requests
         if (request.isOptions()) {
             return false;

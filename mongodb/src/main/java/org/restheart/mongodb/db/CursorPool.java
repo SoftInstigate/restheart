@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -87,7 +87,7 @@ public class CursorPool {
         return DBCursorPoolSingletonHolder.INSTANCE;
     }
 
-    private final DatabaseImpl dbsDAO;
+    private final Databases dbsDAO;
 
     private final int SKIP_SLICE_LINEAR_DELTA = MongoServiceConfiguration.get().getEagerLinearSliceDelta();
 
@@ -102,7 +102,7 @@ public class CursorPool {
     private final Cache<CursorPoolEntryKey, FindIterable<BsonDocument>> cache;
     private final LoadingCache<CursorPoolEntryKey, Long> collSizes;
 
-    private CursorPool(DatabaseImpl dbsDAO) {
+    private CursorPool(Databases dbsDAO) {
         this.dbsDAO = dbsDAO;
 
         cache = CacheFactory.createLocalCache(POOL_SIZE, Cache.EXPIRE_POLICY.AFTER_READ, TTL);
@@ -338,7 +338,7 @@ public class CursorPool {
 
     private static class DBCursorPoolSingletonHolder {
 
-        private static final CursorPool INSTANCE = new CursorPool(new DatabaseImpl());
+        private static final CursorPool INSTANCE = new CursorPool(Databases.get());
 
         private DBCursorPoolSingletonHolder() {
         }

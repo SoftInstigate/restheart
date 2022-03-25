@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,4 @@ package org.restheart.utils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @Deprecated
-public class JsonUtils extends BsonUtils {
-
-
-}
+public class JsonUtils extends BsonUtils {}

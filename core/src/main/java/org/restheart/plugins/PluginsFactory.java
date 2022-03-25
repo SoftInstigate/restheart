@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,7 +28,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import org.restheart.Bootstrapper;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.security.AuthMechanism;

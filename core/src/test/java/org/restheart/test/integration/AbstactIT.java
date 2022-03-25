@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,7 +22,8 @@ package org.restheart.test.integration;
 
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import com.mongodb.MongoClientURI;
+import com.mongodb.ConnectionString;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -40,6 +41,7 @@ import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.restheart.Bootstrapper;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import static org.restheart.test.integration.HttpClientAbstactIT.HTTP;
 import org.slf4j.Logger;
@@ -80,7 +82,7 @@ public abstract class AbstactIT {
     /**
      *
      */
-    public static final MongoClientURI MONGO_URI = new MongoClientURI("mongodb://127.0.0.1");
+    public static final ConnectionString MONGO_URI = new ConnectionString("mongodb://127.0.0.1");
 
     static {
         LOG.info("BASE_URL={}", HTTP_HOST.toURI());
@@ -115,7 +117,7 @@ public abstract class AbstactIT {
         StringBuilder result = new StringBuilder();
 
         //Get file from resources folder
-        ClassLoader classLoader = JsonSchemaCheckerIT.class.getClassLoader();
+        ClassLoader classLoader = Bootstrapper.class.getClassLoader();
 
         URI uri = classLoader.getResource(resourcePath).toURI();
 
@@ -198,7 +200,7 @@ public abstract class AbstactIT {
                 .stream()
                 .filter(db -> db.startsWith(TEST_DB_PREFIX))
                 .forEach(dbToDelete -> {
-                    MongoClientSingleton.getInstance().getClient().dropDatabase(dbToDelete);
+                    MongoClientSingleton.getInstance().getClient().getDatabase(dbToDelete).drop();
                     deleted.add(dbToDelete);
                 });
 

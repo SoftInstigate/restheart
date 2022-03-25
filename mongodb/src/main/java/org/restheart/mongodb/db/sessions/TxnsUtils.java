@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,8 +21,9 @@
 package org.restheart.mongodb.db.sessions;
 
 import com.mongodb.ClientSessionOptions;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.MongoQueryException;
+
 import static com.mongodb.client.model.Filters.eq;
 import java.util.UUID;
 import org.restheart.mongodb.db.MongoClientSingleton;
@@ -52,19 +53,11 @@ public class TxnsUtils {
                 .causallyConsistent(options.isCausallyConsistent())
                 .build();
 
-        var cs = TxnClientSessionFactory.getInstance().createClientSession(
-                sid,
-                cso,
-                MCLIENT.getReadConcern(),
-                MCLIENT.getWriteConcern(),
-                MCLIENT.getReadPreference(),
-                null);
+        var cs = TxnClientSessionFactory.getInstance().createClientSession(sid, cso);
 
         // set txnId on ServerSession
-        if (cs.getServerSession().getTransactionNumber()
-                < 1) {
-            ((ServerSessionImpl) cs.getServerSession())
-                    .setTransactionNumber(1);
+        if (cs.getServerSession().getTransactionNumber() < 1) {
+            ((ServerSessionImpl) cs.getServerSession()).setTransactionNumber(1);
         }
 
         try {

@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,6 +25,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.BulkWriteOptions;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.exists;
 import com.mongodb.client.model.FindOneAndReplaceOptions;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.InsertOneModel;
@@ -48,6 +49,7 @@ import org.bson.BsonTimestamp;
 import org.bson.BsonValue;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
@@ -57,14 +59,13 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
- * @author Nath Papadacis {@literal <nath@thirststudios.co.uk>}
  */
-public class DAOUtils {
+public class DbUtils {
 
     /**
      *
      */
-    public final static Logger LOGGER = LoggerFactory.getLogger(DAOUtils.class);
+    public final static Logger LOGGER = LoggerFactory.getLogger(DbUtils.class);
 
     /**
      *
@@ -126,98 +127,79 @@ public class DAOUtils {
      */
     public final static BulkWriteOptions BWO_NOT_ORDERED = new BulkWriteOptions().ordered(false);
 
-    private static final Bson IMPOSSIBLE_CONDITION = eq("_etag", new ObjectId());
+    private static final Bson IMPOSSIBLE_CONDITION = exists("_id", false);
 
     /**
      *
      * @param cs the client session
      * @param coll
+     * @param method the request method
      * @param documentId use Optional.empty() to specify no documentId (null is _id: null)
      * @param filter
      * @param shardKeys
      * @param data
-     * @param patching Whether we want to patch the metadata or replace it entirely.
      * @return the old document
      */
-    public static OperationResult updateMetadata(
+    public static OperationResult updateFileMetadata(
         final Optional<ClientSession> cs,
         final MongoCollection<BsonDocument> coll,
+        final METHOD method,
         final Optional<BsonValue> documentId,
         final Optional<BsonDocument> filter,
         final Optional<BsonDocument> shardKeys,
-        final BsonDocument data,
-        final boolean patching) {
+        final BsonDocument data) {
         return writeDocument(
             cs,
+            method,
+            WRITE_MODE.UPSERT,
             coll,
             documentId,
             filter,
             shardKeys,
-            data,
-            false,
-            patching,
-            WRITE_MODE.UPSERT);
+            data);
     }
 
     /**
+     * Writes a mongo document
+     *
+     * The MongoDB write operation depends on the request method and on the write mode as follows:
+     * --------------------------------------------------------------------------------------------
+     * | wm     | method | URI         | write operation                 |  wrop argument         |
+     * --------------------------------------------------------------------------------------------
+     * | insert | POST   | /coll       | insertOne                       | document               |
+     * | insert | PUT    | /coll/docid | insertOne                       | document               |
+     * | insert | PATCH  | /coll/docid | findOneAndUpdate(upsert:true)(1)| update operator expr   |
+     * --------------------------------------------------------------------------------------------
+     * | update | POST   | /coll       | findOneAndReplace(upsert:false) | document               |
+     * | update | PUT    | /coll/docid | findOneAndReplace(upsert:false) | document               |
+     * | update | PATCH  | /coll/docid | findOneAndUpdate(upsert:false)  | update operator expr   |
+     * --------------------------------------------------------------------------------------------
+     * | upsert | POST   | /coll       | findOneAndReplace(upsert:true)  | document               |
+     * | upsert | PUT    | /coll/docid | findOneAndReplace(upsert:true)  | document               |
+     * | upsert | PATCH  | /coll/docid | findOneAndUpdate(upsert:true)   | update operator expr   |
+     * --------------------------------------------------------------------------------------------
+     * (1) uses a find condition that won't match any existing document, making sure the operation is an insert
+     *
      *
      * @param cs the client session
-     * @param coll
-     * @param documentId use Optional.empty() to specify no documentId (null is
-     * _id: null)
-     * @param filter
-     * @param shardKeys
-     * @param data
-     * @param replace
-     * @param upsert whether or not to allow upsert mode
-     * @return the old document
-     */
-    public static OperationResult writeDocument(
-        final Optional<ClientSession> cs,
-        final MongoCollection<BsonDocument> coll,
-        final Optional<BsonValue> documentId,
-        final Optional<BsonDocument> filter,
-        final Optional<BsonDocument> shardKeys,
-        final BsonDocument data,
-        final boolean replace,
-        final WRITE_MODE writeMode) {
-        return writeDocument(
-            cs,
-            coll,
-            documentId,
-            filter,
-            shardKeys,
-            data,
-            replace,
-            false,
-            writeMode);
-    }
-
-    /**
-     * Update a mongo document
-     *
-     * @param cs the client session
-     * @param coll
+     * @param method the request method
+     * @param writeMode the write mode
+     * @param coll the collection
      * @param documentId use Optional.empty() to specify no documentId
      * @param filter
      * @param shardKeys
      * @param data
-     * @param replace
-     * @param upsert if true then we will flatten any nested BsonDocuments
-     * into dot notation to ensure only the requested fields are updated.
-     * @param allowUpsert whether or not to allow upsert mode
-     * @return the new or old document depending on returnNew
+     * @return the OperationResult
      */
     public static OperationResult writeDocument(
         final Optional<ClientSession> cs,
+        final METHOD method,
+        final WRITE_MODE writeMode,
         final MongoCollection<BsonDocument> coll,
         final Optional<BsonValue> documentId,
         final Optional<BsonDocument> filter,
         final Optional<BsonDocument> shardKeys,
-        final BsonDocument data,
-        final boolean replace,
-        final boolean deepPatching,
-        final WRITE_MODE writeMode) {
+        final BsonDocument data) {
         Objects.requireNonNull(coll);
         Objects.requireNonNull(data);
         Objects.requireNonNull(writeMode);
@@ -232,85 +214,96 @@ public class DAOUtils {
             query = and(query, filter.get());
         }
 
-        BsonDocument oldDocument;
-
-        if (documentId.isPresent()) {
-            oldDocument = cs.isPresent() ? coll.find(cs.get(), query).first() : coll.find(query).first() ;
-
-            // if document not exits and not-update request => fail request with 404
-            if (writeMode == WRITE_MODE.UPDATE && oldDocument == null) {
-                return new OperationResult(HttpStatus.SC_NOT_FOUND);
-            }
-        } else {
-            // if not-update, docId is mandatory
-            if (writeMode == WRITE_MODE.UPDATE) {
-                LOGGER.debug("write request with writeMode=update missing document id");
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST);
-            }
-
-            oldDocument = null;
+        // if update, docId is mandatory
+        if (writeMode == WRITE_MODE.UPDATE && !documentId.isPresent()) {
+            LOGGER.trace("write request with writeMode=update and missing document id");
+            return new OperationResult(HttpStatus.SC_BAD_REQUEST);
         }
 
-        if (writeMode == WRITE_MODE.INSERT) {
-            // don't allow $ prefixed operators as key values
-            // note that from MongoDB 5.0 $ prefixed keys are permitted
-            // TODO allow it in the future
-            // TODO move this to BsonRequestContentInjector
-            if (BsonUtils.containsUpdateOperators(data, true)) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument);
-            }
+        // get the oldDocument depending on the request method
+        var oldDocument = switch (writeMode) {
+            case INSERT -> null;
+            case UPDATE -> cs.isPresent() ? coll.find(cs.get(), query).first() : coll.find(query).first() ;
+            case UPSERT -> documentId.isPresent()
+                ? cs.isPresent() ? coll.find(cs.get(), query).first() : coll.find(query).first()
+                : null;
+        };
 
-            BsonDocument newDocument;
-
-            try {
-                resolveCurrentDateOperator(data);
-
-                var insertedId = cs.isPresent()
-                    ? coll.insertOne(cs.get(), data).getInsertedId()
-                    : coll.insertOne(data).getInsertedId();
-
-                var insertedQuery = eq("_id", insertedId);
-
-                if (shardKeys.isPresent() && !shardKeys.get().isEmpty()) {
-                    insertedQuery = and(insertedQuery, shardKeys.get());
-                }
-
-                newDocument = cs.isPresent()? coll.find(cs.get(), insertedQuery).first(): coll.find(insertedQuery).first();
-            } catch (IllegalArgumentException iae) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
-            }
-
-            return new OperationResult(-1, oldDocument, newDocument);
-        } else if (replace) {
-            BsonDocument newDocument;
-            try {
-                if (filter.isPresent() && !filter.get().isEmpty()) {
-                    query = and(query, filter.get());
-                }
-
-                final var ops = writeMode == WRITE_MODE.UPSERT ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS;
-                newDocument = cs.isPresent()
-                    ? coll.findOneAndReplace(cs.get(), query, getReplaceDocument(data), ops)
-                    : coll.findOneAndReplace(query, getReplaceDocument(data), ops);
-            } catch (IllegalArgumentException iae) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
-            }
-
-            return new OperationResult(-1, oldDocument, newDocument);
-        } else {
-            BsonDocument newDocument;
-
-            try {
-                final var ops = writeMode == WRITE_MODE.UPSERT ? FAU_UPSERT_OPS : FAU_NOT_UPSERT_OPS;
-                newDocument = cs.isPresent()
-                    ? coll.findOneAndUpdate(cs.get(), query, getUpdateDocument(data, deepPatching), ops)
-                    : coll.findOneAndUpdate(query, getUpdateDocument(data, deepPatching), ops);
-            } catch (IllegalArgumentException iae) {
-                return new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
-            }
-
-            return new OperationResult(-1, oldDocument, newDocument);
+        if (writeMode == WRITE_MODE.UPDATE && oldDocument == null) {
+            return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
+
+        return switch(writeMode) {
+            case INSERT -> switch(method) {
+                case PATCH -> {
+                    try {
+                        var newDocument = cs.isPresent()
+                            ? coll.findOneAndUpdate(cs.get(), IMPOSSIBLE_CONDITION, getUpdateDocument(data, false), FAU_NOT_UPSERT_OPS)
+                            : coll.findOneAndUpdate(IMPOSSIBLE_CONDITION, getUpdateDocument(data, false), FAU_UPSERT_OPS);
+                        yield new OperationResult(-1, null, newDocument);
+                    } catch (IllegalArgumentException iae) {
+                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, null, iae);
+                    }
+                }
+
+                case POST, PUT -> {
+                    try {
+                        resolveCurrentDateOperator(data);
+
+                        var insertedId = cs.isPresent()
+                            ? coll.insertOne(cs.get(), data).getInsertedId()
+                            : coll.insertOne(data).getInsertedId();
+
+                        var insertedQuery = eq("_id", insertedId);
+
+                        if (shardKeys.isPresent() && !shardKeys.get().isEmpty()) {
+                            insertedQuery = and(insertedQuery, shardKeys.get());
+                        }
+
+                        var newDocument = cs.isPresent()
+                            ? coll.find(cs.get(), insertedQuery).first()
+                            : coll.find(insertedQuery).first();
+                        yield new OperationResult(-1, null, newDocument);
+                    } catch (IllegalArgumentException iae) {
+                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, null, iae);
+                    }
+                }
+
+                default -> throw new UnsupportedOperationException("unsupported method " + method);
+            };
+
+            case UPDATE, UPSERT -> switch(method) {
+                case PATCH -> {
+                    try {
+                        final var ops = writeMode == WRITE_MODE.UPSERT ? FOU_AFTER_UPSERT_OPS : FOU_AFTER_NOT_UPSERT_OPS;
+                        var newDocument = cs.isPresent()
+                            ? coll.findOneAndUpdate(cs.get(), query, getUpdateDocument(data, false), ops)
+                            : coll.findOneAndUpdate(query, getUpdateDocument(data, false), ops);
+                        yield new OperationResult(-1, oldDocument, newDocument);
+                    } catch (IllegalArgumentException iae) {
+                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
+                    }
+                }
+
+                case PUT, POST -> {
+                    try {
+                        if (filter.isPresent() && !filter.get().isEmpty()) {
+                            query = and(query, filter.get());
+                        }
+
+                        final var ops = writeMode == WRITE_MODE.UPSERT ? FOR_AFTER_UPSERT_OPS : FOR_AFTER_NOT_UPSERT_OPS;
+                        var newDocument = cs.isPresent()
+                            ? coll.findOneAndReplace(cs.get(), query, getReplaceDocument(data), ops)
+                            : coll.findOneAndReplace(query, getReplaceDocument(data), ops);
+                        yield new OperationResult(-1, oldDocument, newDocument);
+                    } catch (IllegalArgumentException iae) {
+                        yield new OperationResult(HttpStatus.SC_BAD_REQUEST, oldDocument, iae);
+                    }
+                }
+
+                default -> throw new UnsupportedOperationException("unsupported method " + method);
+            };
+        };
     }
 
     /**
@@ -464,6 +457,55 @@ public class DAOUtils {
 
     /**
      *
+     * @param data
+     * @param flatten if we should flatten nested documents' values using dot
+     * notation
+     * @return the document for update operation, with proper update operators
+     */
+    static BsonDocument getUpdateDocument(final BsonDocument data, final boolean flatten) {
+        var ret = new BsonDocument();
+
+        // add other update operators
+        data.keySet()
+            .stream()
+            .filter(key -> BsonUtils.isUpdateOperator(key))
+            .forEach(key -> ret.put(key, data.get(key)));
+
+        // add properties to $set update operator
+        List<String> keys;
+
+        keys = data.keySet()
+            .stream()
+            .filter(key -> !BsonUtils.isUpdateOperator(key))
+            .collect(Collectors.toList());
+
+        if (keys != null && !keys.isEmpty()) {
+            BsonDocument set;
+
+            if (flatten) {
+                set = BsonUtils.flatten(ret, false);
+            } else {
+                set = new BsonDocument();
+                keys.stream().forEach(key -> set.append(key, data.get(key)));
+            }
+            if (!set.isEmpty()) {
+                if (ret.get("$set") == null) {
+                    ret.put("$set", set);
+                } else if (ret.get("$set").isDocument()) {
+                    ret.get("$set").asDocument().putAll(set);
+                } else {
+                    // update is going to fail on mongodb
+                    // error 9, Modifiers operate on fields but we found a String instead
+                    LOGGER.debug("$set is not an object: {}", ret.get("$set"));
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    /**
+     *
      * @param doc
      * @return the document for replace operation, without dot notation and
      * replacing $currentDate operator
@@ -518,54 +560,5 @@ public class DAOUtils {
                     throw new IllegalArgumentException("wrong $currentDate operator");
                 }
             });
-    }
-
-    /**
-     *
-     * @param data
-     * @param flatten if we should flatten nested documents' values using dot
-     * notation
-     * @return the document for update operation, with proper update operators
-     */
-    static BsonDocument getUpdateDocument(final BsonDocument data, final boolean flatten) {
-        var ret = new BsonDocument();
-
-        // add other update operators
-        data.keySet()
-            .stream()
-            .filter(key -> BsonUtils.isUpdateOperator(key))
-            .forEach(key -> ret.put(key, data.get(key)));
-
-        // add properties to $set update operator
-        List<String> keys;
-
-        keys = data.keySet()
-            .stream()
-            .filter(key -> !BsonUtils.isUpdateOperator(key))
-            .collect(Collectors.toList());
-
-        if (keys != null && !keys.isEmpty()) {
-            BsonDocument set;
-
-            if (flatten) {
-                set = BsonUtils.flatten(ret, false);
-            } else {
-                set = new BsonDocument();
-                keys.stream().forEach(key -> set.append(key, data.get(key)));
-            }
-            if (!set.isEmpty()) {
-                if (ret.get("$set") == null) {
-                    ret.put("$set", set);
-                } else if (ret.get("$set").isDocument()) {
-                    ret.get("$set").asDocument().putAll(set);
-                } else {
-                    // update is going to fail on mongodb
-                    // error 9, Modifiers operate on fields but we found a String instead
-                    LOGGER.debug("$set is not an object: {}", ret.get("$set"));
-                }
-            }
-        }
-
-        return ret;
     }
 }

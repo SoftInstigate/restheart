@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -48,8 +48,7 @@ import org.slf4j.LoggerFactory;
         interceptPoint = InterceptPoint.RESPONSE,
         priority = Integer.MAX_VALUE)
 public class HALRepresentation implements MongoInterceptor {
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(MongoService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoService.class);
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
@@ -57,10 +56,7 @@ public class HALRepresentation implements MongoInterceptor {
 
         BsonDocument hal;
 
-        if (request.isGet() || request.isBulkDocuments()
-                || (request.isCollection()
-                && request.isPost()
-                && request.getContent().isArray())) {
+        if (request.isGet() || request.isBulkDocuments() || (request.isCollection() && request.isPost() && request.getContent().isArray())) {
             try {
                 hal = std2HAL(request, response, content);
             } catch (IllegalSelectorException ise) {
@@ -73,10 +69,7 @@ public class HALRepresentation implements MongoInterceptor {
 
         response.setContentType(Resource.HAL_JSON_MEDIA_TYPE);
 
-        if (Resource.isSHAL(request)
-                && !request.isDocument()
-                && !request.isFile()
-                && !request.isSchema()) {
+        if (Resource.isSHAL(request) && !request.isDocument() && !request.isFile() && !request.isSchema()) {
             response.setContent(hal2SHAL(request, response, hal));
         } else {
             response.setContent(hal);
@@ -110,18 +103,12 @@ public class HALRepresentation implements MongoInterceptor {
      * @return
      */
     private BsonDocument std2HAL(MongoRequest request, MongoResponse response, BsonValue content) {
-        if (request.isGet()
-                && (request.isDocument()
-                || request.isFile()
-                || request.isSchema())) {
+        if (request.isGet() && (request.isDocument() || request.isFile() || request.isSchema())) {
             var factory = new DocumentRepresentationFactory();
 
             try {
                 return factory
-                        .getRepresentation(
-                                URLUtils.removeTrailingSlashes(request.getPath()),
-                                request.getExchange(),
-                                content == null ? null : content.asDocument())
+                        .getRepresentation(URLUtils.removeTrailingSlashes(request.getPath()), request.getExchange(), content == null ? null : content.asDocument())
                         .asBsonDocument();
             } catch (IllegalQueryParamenterException iqpe) {
                 //shoudn't happen
@@ -152,22 +139,17 @@ public class HALRepresentation implements MongoInterceptor {
                 factory = new DBRepresentationFactory();
             } else if (request.isGet() && request.isCollectionIndexes()) {
                 factory = new IndexesRepresentationFactory();
-            } else if (request.isGet() && (request.isCollection()
-                    || request.isFilesBucket()
-                    || request.isSchemaStore())) {
+            } else if (request.isGet() && (request.isCollection() || request.isFilesBucket() || request.isSchemaStore())) {
                 factory = new CollectionRepresentationFactory();
             } else if (request.isGet() && request.isAggregation()) {
                 factory = new AggregationResultRepresentationFactory();
             } else {
-                throw new IllegalStateException("Cannot transform response "
-                        + "to HAL format, not managed request type");
+                throw new IllegalStateException("Cannot transform response to HAL format, not managed request type");
             }
 
             try {
                 return factory
-                        .getRepresentation(request.getExchange(),
-                                content == null ? null : content.asArray(),
-                                response.getCount())
+                        .getRepresentation(request.getExchange(), content == null ? null : content.asArray(), response.getCount())
                         .asBsonDocument();
             } catch (IllegalQueryParamenterException iqpe) {
                 // shoudn't happen
@@ -188,10 +170,7 @@ public class HALRepresentation implements MongoInterceptor {
         if (request.isInError()) {
             var ret = new BsonDocument();
 
-            content.asDocument().keySet().stream()
-                    .filter(key -> !"_embedded".equals(key)
-                    && !"_links".equals(key))
-                    .forEach(key -> ret.append(key, content.asDocument().get(key)));
+            content.asDocument().keySet().stream().filter(key -> !"_embedded".equals(key)&& !"_links".equals(key)).forEach(key -> ret.append(key, content.asDocument().get(key)));
 
             return ret;
         } else if (request.isGet()) {
@@ -202,16 +181,12 @@ public class HALRepresentation implements MongoInterceptor {
             if (!request.isNoProps()) {
                 shal.asDocument().keySet().stream()
                         .filter(key -> !"_embedded".equals(key))
-                        .forEach(key
-                                -> shal
-                                .append(key, shal.get(key)));
+                        .forEach(key -> shal.append(key, shal.get(key)));
 
                 return shal;
             } else {
                 // np specified, just return _embedded
-                if (shal.containsKey("_embedded")
-                        && shal.get("_embedded").isArray()) {
-
+                if (shal.containsKey("_embedded") && shal.get("_embedded").isArray()) {
                     return shal.get("_embedded");
                 } else {
                     return null;
@@ -226,18 +201,15 @@ public class HALRepresentation implements MongoInterceptor {
         var ret = new BsonDocument();
 
         if (content != null && content.isDocument()) {
-            content.asDocument().keySet().stream()
-                    .filter(key -> !"_embedded".equals(key)
-                    && !"_links".equals(key))
-                    .forEach(key -> ret.append(key, content.asDocument().get(key)));
+            content.asDocument().keySet().stream().filter(key -> !"_embedded".equals(key) && !"_links".equals(key)).forEach(key -> ret.append(key, content.asDocument().get(key)));
 
-            BsonValue _embedded = content.asDocument().get("_embedded");
+            var _embedded = content.asDocument().get("_embedded");
 
             if (_embedded != null) {
-                BsonDocument embedded = _embedded.asDocument();
+                var embedded = _embedded.asDocument();
 
                 // add _items data
-                BsonArray __embedded = new BsonArray();
+                var __embedded = new BsonArray();
 
                 addItems(__embedded, embedded, "rh:doc");
                 addItems(__embedded, embedded, "rh:file");
@@ -250,12 +222,10 @@ public class HALRepresentation implements MongoInterceptor {
                 addItems(__embedded, embedded, "rh:schema-store");
 
                 // add _items if not in error
-                if (response.getStatusCode()
-                        == HttpStatus.SC_OK) {
+                if (response.getStatusCode() == HttpStatus.SC_OK) { 
                     ret.append("_embedded", __embedded);
                 }
-            } else if (response.getStatusCode()
-                    == HttpStatus.SC_OK) {
+            } else if (response.getStatusCode() == HttpStatus.SC_OK) {
                 ret.append("_embedded", new BsonArray());
             }
         }
@@ -268,28 +238,19 @@ public class HALRepresentation implements MongoInterceptor {
 
         if (content != null && content.isDocument()) {
             if (content.asDocument().containsKey("_embedded")
-                    && content.asDocument().get("_embedded")
-                            .isDocument()
-                    && content.asDocument().get("_embedded")
-                            .asDocument().containsKey("rh:result")
-                    && content.asDocument().get("_embedded")
-                            .asDocument().get("rh:result").isArray()) {
-                BsonArray bulkResp = content.asDocument()
+                    && content.asDocument().get("_embedded").isDocument()
+                    && content.asDocument().get("_embedded").asDocument().containsKey("rh:result")
+                    && content.asDocument().get("_embedded").asDocument().get("rh:result").isArray()) {
+                var bulkResp = content.asDocument()
                         .get("_embedded").asDocument().get("rh:result")
                         .asArray();
 
                 if (bulkResp.size() > 0) {
-                    BsonValue el = bulkResp.get(0);
+                    var el = bulkResp.get(0);
 
                     if (el.isDocument()) {
-                        BsonDocument doc = el.asDocument();
-
-                        doc
-                                .keySet()
-                                .stream()
-                                .forEach(key
-                                        -> ret
-                                        .append(key, doc.get(key)));
+                        var doc = el.asDocument();
+                        doc.keySet().stream().forEach(key -> ret.append(key, doc.get(key)));
                     }
 
                 }
@@ -301,10 +262,7 @@ public class HALRepresentation implements MongoInterceptor {
 
     private void addItems(BsonArray elements, BsonDocument items, String ns) {
         if (items.containsKey(ns)) {
-            elements.addAll(
-                    items
-                            .get(ns)
-                            .asArray());
+            elements.addAll(items.get(ns).asArray());
         }
     }
 }

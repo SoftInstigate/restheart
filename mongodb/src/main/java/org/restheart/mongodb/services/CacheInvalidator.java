@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -44,8 +44,7 @@ public class CacheInvalidator implements ByteArrayService {
      * @throws Exception
      */
     @Override
-    public void handle(ByteArrayRequest request,
-            ByteArrayResponse response) throws Exception {
+    public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
         var exchange = request.getExchange();
 
         if (!MongoServiceConfiguration.get().isLocalCacheEnabled()) {

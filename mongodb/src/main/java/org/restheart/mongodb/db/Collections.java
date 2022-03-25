@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,7 +20,7 @@
  */
 package org.restheart.mongodb.db;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.MongoCommandException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
@@ -40,6 +40,7 @@ import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.COLL_META_DOCID_PREFIX;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.mongodb.MongoServiceConfiguration;
@@ -55,13 +56,13 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-class CollectionDAO {
+class Collections {
 
     private static final int BATCH_SIZE = MongoServiceConfiguration.get() != null
                     ? MongoServiceConfiguration.get().getCursorBatchSize()
                     : DEFAULT_CURSOR_BATCH_SIZE;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CollectionDAO.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Collections.class);
     private static final BsonDocument FIELDS_TO_RETURN;
 
     static {
@@ -70,10 +71,17 @@ class CollectionDAO {
         FIELDS_TO_RETURN.put("_etag", new BsonInt32(1));
     }
 
-    private final MongoClient client;
 
-    CollectionDAO(MongoClient client) {
-        this.client = client;
+
+    private final MongoClient client = MongoClientSingleton.get().client();
+
+    private Collections() {
+    }
+
+    private static Collections INSTANCE = new Collections();
+
+    public static Collections get() {
+        return INSTANCE;
     }
 
     /**
@@ -249,6 +257,7 @@ class CollectionDAO {
      *
      * @param cs the client session
      * @param dbName the database name of the collection
+     * @param method the request method
      * @param collName the collection name
      * @param properties the new collection properties
      * @param requestEtag the entity tag. must match to allow actual write if
@@ -260,15 +269,16 @@ class CollectionDAO {
      */
     OperationResult upsertCollection(
         final Optional<ClientSession> cs,
+        final METHOD method,
+        final boolean updating,
         final String dbName,
         final String collName,
         final BsonDocument properties,
         final String requestEtag,
-        boolean updating,
-        final boolean patching,
         final boolean checkEtag) {
+        var _updating = updating;
 
-        if (patching && !updating) {
+        if (METHOD.PATCH.equals(method) && !updating) {
             return new OperationResult(HttpStatus.SC_NOT_FOUND);
         }
 
@@ -289,21 +299,21 @@ class CollectionDAO {
                 if (ex.getErrorCode() != 48) {
                     throw ex;
                 } else {
-                    updating = true;
+                    _updating = true;
                 }
             }
         }
 
         var newEtag = new ObjectId();
 
-        final var content = DAOUtils.validContent(properties);
+        final var content = DbUtils.validContent(properties);
 
         content.put("_etag", new BsonObjectId(newEtag));
         content.remove("_id"); // make sure we don't change this field
 
         var mcoll = getCollection(dbName, META_COLLNAME);
 
-        if (checkEtag && updating) {
+        if (checkEtag && _updating) {
             var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
 
             var oldProperties = cs.isPresent()
@@ -328,67 +338,58 @@ class CollectionDAO {
                 }
 
                 if (Objects.equals(_requestEtag, oldEtag)) {
-                    return doCollPropsUpdate(cs, collName, patching, updating, mcoll, content, newEtag);
+                    return doCollPropsUpdate(cs, method, _updating, collName, mcoll, content, newEtag);
                 } else {
                     return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag);
                 }
             } else {
                 // this is the case when the coll does not have properties
                 // e.g. it has not been created by restheart
-                return doCollPropsUpdate(cs, collName, patching, updating, mcoll, content, newEtag);
+                return doCollPropsUpdate(cs, method, _updating, collName, mcoll, content, newEtag);
             }
         } else {
-            return doCollPropsUpdate(cs, collName, patching, updating, mcoll, content, newEtag);
+            return doCollPropsUpdate(cs, method, _updating, collName, mcoll, content, newEtag);
         }
     }
 
     private OperationResult doCollPropsUpdate(
         final Optional<ClientSession> cs,
-        final String collName,
-        final boolean patching,
+        final METHOD method,
         final boolean updating,
+        final String collName,
         final MongoCollection<BsonDocument> mcoll,
         final BsonDocument dcontent,
         final ObjectId newEtag) {
-        if (patching) {
-            var ret = DAOUtils.writeDocument(
-                cs,
-                mcoll,
-                Optional.of(new BsonString("_properties.".concat(collName))),
-                Optional.empty(),
-                Optional.empty(),
-                dcontent,
-                false,
-                WRITE_MODE.UPSERT);
+           return switch(method) {
+                case PATCH -> {
+                    var ret = DbUtils.writeDocument(
+                        cs,
+                        METHOD.PATCH,
+                        WRITE_MODE.UPSERT,
+                        mcoll,
+                        Optional.of(new BsonString("_properties.".concat(collName))),
+                        Optional.empty(),
+                        Optional.empty(),
+                        dcontent);
 
-            return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK, newEtag);
-        } else if (updating) {
-            var ret = DAOUtils.writeDocument(
-                cs,
-                mcoll,
-                Optional.of(new BsonString("_properties.".concat(collName))),
-                Optional.empty(),
-                Optional.empty(),
-                dcontent,
-                true,
-                WRITE_MODE.UPSERT);
-            return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK,
-                newEtag,
-                ret.getOldData(),
-                ret.getNewData());
-        } else {
-            var ret = DAOUtils.writeDocument(
-                cs,
-                mcoll,
-                Optional.of(new BsonString("_properties.".concat(collName))),
-                Optional.empty(),
-                Optional.empty(),
-                dcontent,
-                false,
-                WRITE_MODE.UPSERT);
+                    yield new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK, newEtag);
+                }
 
-            return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_CREATED, newEtag, ret.getOldData(), ret.getNewData());
-        }
+                case PUT -> {
+                    var ret = DbUtils.writeDocument(
+                        cs,
+                        METHOD.PUT,
+                        WRITE_MODE.UPSERT,
+                        mcoll,
+                        Optional.of(new BsonString("_properties.".concat(collName))),
+                        Optional.empty(),
+                        Optional.empty(),
+                        dcontent);
+                    yield new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : updating ? HttpStatus.SC_OK : HttpStatus.SC_CREATED, newEtag, ret.getOldData(), ret.getNewData());
+                }
+
+                default -> throw new UnsupportedOperationException("unsupported method: " + method);
+            };
     }
 
     /**

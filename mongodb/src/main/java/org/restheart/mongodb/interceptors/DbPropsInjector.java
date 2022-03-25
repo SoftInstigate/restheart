@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,17 +22,21 @@ package org.restheart.mongodb.interceptors;
 
 import java.util.Optional;
 
-import com.mongodb.MongoClient;
+import com.mongodb.MongoException;
+import com.mongodb.client.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
+import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -48,16 +52,18 @@ import org.restheart.utils.HttpStatus;
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         priority = Integer.MIN_VALUE)
 public class DbPropsInjector implements MongoInterceptor {
-    private DatabaseImpl dbsDAO = null;
+    private final Logger LOGGER = LoggerFactory.getLogger(DbPropsInjector.class);
+
+    private Databases dbs = null;
 
     /**
-     * Makes sure that dbsDAO is instantiated after MongoClient initialization
+     * Makes sure that dbs is instantiated after MongoClient initialization
      *
      * @param mclient
      */
     @InjectMongoClient
     public void init(MongoClient mclient) {
-        this.dbsDAO = new DatabaseImpl();
+        this.dbs = Databases.get();
     }
 
     /**
@@ -67,15 +73,38 @@ public class DbPropsInjector implements MongoInterceptor {
      */
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        // skip if OPTIONS
+        if (request.isOptions()) {
+            return;
+        }
+
         var dbName = request.getDBName();
 
         if (dbName != null) {
             BsonDocument dbProps;
 
-            if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
-                dbProps = dbsDAO.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), dbName);
-            } else {
-                dbProps = MetadataCachesSingleton.getInstance().getDBProperties(dbName);
+            try {
+                if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
+                    dbProps = dbs.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), dbName);
+                } else {
+                    dbProps = MetadataCachesSingleton.getInstance().getDBProperties(dbName);
+                }
+            } catch(MongoException mce) {
+                int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
+
+                if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().isBlank()) {
+                    LOGGER.error("Error handling the request", mce);
+                    response.setInError(httpCode, mce.getMessage());
+                } else {
+                    LOGGER.debug("Error handling the request", mce);
+                    response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
+                }
+
+                return;
+            } catch (Exception e) {
+                LOGGER.error("Error handling the request", e);
+                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error getting properties of db " + dbName, e);
+                return;
             }
 
             // if dbProps is null, the db does not exist
@@ -97,7 +126,7 @@ public class DbPropsInjector implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return this.dbsDAO != null
+        return this.dbs != null
             && request.isHandledBy("mongo")
             && !(request.isInError()
             || request.isSessions()

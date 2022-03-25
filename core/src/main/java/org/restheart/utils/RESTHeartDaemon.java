@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -61,7 +61,7 @@ public class RESTHeartDaemon extends Daemon {
         try {
             LOGGER.info("Forking...");
 
-            JavaVMArguments args = JavaVMArguments.current();
+            var args = JavaVMArguments.current();
             args.setSystemProperty(RESTHeartDaemon.class.getName(), "daemonized");
 
             String _args[] = args.toArray(new String[args.size()]);
@@ -73,10 +73,9 @@ public class RESTHeartDaemon extends Daemon {
             }
 
             // create child process
-            new ProcessBuilder()
-                    .command(_args)
-                    .start();
+            var p = new ProcessBuilder().command(_args).start();
 
+            LOGGER.info("Forked process: {}", p.pid());
             // parent exists
             System.exit(0);
         } catch (Throwable t) {

@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,7 +28,7 @@ import java.util.Optional;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -38,7 +38,7 @@ import org.restheart.utils.HttpStatus;
  */
 public class DeleteDocumentHandler extends PipelinedHandler {
 
-    private final DocumentDAO documentDAO;
+    private final Documents documents = Documents.get();
 
     /**
      * Creates a new instance of DeleteDocumentHandler
@@ -46,17 +46,6 @@ public class DeleteDocumentHandler extends PipelinedHandler {
      */
     public DeleteDocumentHandler() {
         super(null);
-        this.documentDAO = new DocumentDAO();
-    }
-
-    /**
-     * Creates a new instance of DeleteDocumentHandler
-     *
-     * @param documentDAO
-     */
-    public DeleteDocumentHandler(DocumentDAO documentDAO) {
-        super(null);
-        this.documentDAO = documentDAO;
     }
 
     /**
@@ -64,19 +53,9 @@ public class DeleteDocumentHandler extends PipelinedHandler {
      *
      * @param next
      * @param documentDAO
-     */
-    public DeleteDocumentHandler(PipelinedHandler next, DocumentDAO documentDAO) {
-        super(next);
-        this.documentDAO = documentDAO;
-    }
-
-    /**
-     * Default ctor
-     * @param next
      */
     public DeleteDocumentHandler(PipelinedHandler next) {
         super(next);
-        this.documentDAO = new DocumentDAO();
     }
 
     /**
@@ -94,7 +73,7 @@ public class DeleteDocumentHandler extends PipelinedHandler {
             return;
         }
 
-        var result = this.documentDAO.deleteDocument(
+        var result = this.documents.deleteDocument(
             Optional.ofNullable(request.getClientSession()),
             request.getDBName(),
             request.getCollectionName(),

@@ -6,13 +6,12 @@ services:
     environment:
       INSTANCE_NAME: native
       MONGO_URI: mongodb://mongodb
-    command: ["/rh/etc/restheart.yml", "-e", "/rh/etc/default.properties"]
     depends_on:
       - mongodb
       - mongodb-init
-    volumes:
-      - ./etc:/rh/etc
-      - ./plugins:/rh/plugins
+    # you can add javascript plugins mounting the following directory
+    # volumes:
+    #   - ./plugins:/opt/restheart/plugins
     ports:
       - "8080:8080"
 
@@ -26,5 +25,5 @@ services:
     depends_on:
       - mongodb
     entrypoint: >-
-      bash -c "for i in {1..10}; do mongo --host mongodb --eval 
+      bash -c "for i in {1..10}; do mongo --host mongodb --eval
       'if (!rs.status().ok) rs.initiate();' && break || sleep 3; done"

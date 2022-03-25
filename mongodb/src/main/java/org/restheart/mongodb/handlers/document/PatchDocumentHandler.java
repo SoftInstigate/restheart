@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,7 +27,7 @@ import java.util.Optional;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -37,30 +37,18 @@ import org.restheart.utils.HttpStatus;
  */
 public class PatchDocumentHandler extends PipelinedHandler {
 
-    private final DocumentDAO documentDAO;
+    private final Documents documents = Documents.get();
 
     /**
      * Creates a new instance of PatchDocumentHandler
      */
     public PatchDocumentHandler() {
-        this(null, new DocumentDAO());
-    }
-
-    public PatchDocumentHandler(DocumentDAO documentDAO) {
-        super(null);
-        this.documentDAO = documentDAO;
+        this(null);
     }
 
     public PatchDocumentHandler(PipelinedHandler next) {
         super(next);
-        this.documentDAO = new DocumentDAO();
     }
-
-    public PatchDocumentHandler(PipelinedHandler next, DocumentDAO documentDAO) {
-        super(next);
-        this.documentDAO = documentDAO;
-    }
-
     /**
      *
      * @param exchange
@@ -95,8 +83,10 @@ public class PatchDocumentHandler extends PipelinedHandler {
             return;
         }
 
-        var result = documentDAO.writeDocument(
+        var result = documents.writeDocument(
             Optional.ofNullable(request.getClientSession()),
+            request.getMethod(),
+            request.getWriteMode(),
             request.getDBName(),
             request.getCollectionName(),
             Optional.of(request.getDocumentId()),
@@ -104,8 +94,6 @@ public class PatchDocumentHandler extends PipelinedHandler {
             Optional.ofNullable(request.getShardKey()),
             content,
             request.getETag(),
-            true,
-            request.getWriteMode(),
             request.isETagCheckRequired());
 
         response.setDbOperationResult(result);

@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import java.util.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 
 import org.restheart.ConfigurationException;
 import org.restheart.cache.CacheFactory;
@@ -286,18 +286,21 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                 .stream()
                 .filter(ri -> ri.isEnabled())
                 .map(ri -> ri.getInstance())
-                // IMPORTANT: An interceptor can intercept
-                // - requests handled by a Service when its request and response
+                // IMPORTANT: An interceptor can intercept:
+                // - service requests handled by a Service when its request and response
                 //   types are equal to the ones declared by the Service
+                // - request handled by a Service when its request and response
+                //   are WildcardRequest and WildcardResponse
                 // - request handled by a Proxy when its request and response
                 //   are ByteArrayProxyRequest and ByteArrayProxyResponse
                 .filter(ri
-                    -> (service == null
-                    && PluginUtils.cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
-                    && PluginUtils.cachedResponseType(ri).equals(ByteArrayProxyResponse.type()))
-                    || (service != null
+                    -> (service != null
                     && PluginUtils.cachedRequestType(ri).equals(PluginUtils.cachedRequestType(service))
-                    && PluginUtils.cachedResponseType(ri).equals(PluginUtils.cachedResponseType(service))))
+                    && PluginUtils.cachedResponseType(ri).equals(PluginUtils.cachedResponseType(service)))
+                    || (service != null && ri instanceof WildcardInterceptor)
+                    || (service == null
+                    && PluginUtils.cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
+                    && PluginUtils.cachedResponseType(ri).equals(ByteArrayProxyResponse.type())))
                 .filter(ri -> interceptPoint == PluginUtils.interceptPoint(ri))
                 .collect(Collectors.toList());
     }

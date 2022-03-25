@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -49,9 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?>> {
 
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(ChangeStreamSubscriber.class);
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChangeStreamSubscriber.class);
 
     private final SessionKey sessionKey;
     private List<BsonDocument> resolvedStages;
@@ -88,24 +86,18 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
 
     @Override
     public void onNext(ChangeStreamDocument<?> notification) {
-        
         if (!init) {
             setInit(true);
         }
 
         if (!WebSocketSessionsRegistry.getInstance().get(sessionKey).isEmpty()) {
-            LOGGER.trace("[clients watching]: "
-                    + WebSocketSessionsRegistry.getInstance().get(sessionKey).size());
+            LOGGER.trace("[clients watching]: " + WebSocketSessionsRegistry.getInstance().get(sessionKey).size());
 
-            LOGGER.trace("Change stream notification for sessionKey={}: {}",
-                    sessionKey,
-                    notification);
+            LOGGER.trace("Change stream notification for sessionKey={}: {}", sessionKey, notification);
 
             ChangeStreamWebsocketCallback.NOTIFICATION_PUBLISHER.submit(
-                    new ChangeStreamNotification(sessionKey,
-                        BsonUtils.toJson(
-                                    getDocument(notification),
-                                    sessionKey.getJsonMode())));
+                new ChangeStreamNotification(sessionKey,
+                    BsonUtils.toJson(getDocument(notification), sessionKey.getJsonMode())));
         } else {
             this.stop();
             LOGGER.debug("Closing unwatched stream, sessionKey=" + sessionKey);
@@ -116,7 +108,7 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
     @Override
     public void onError(final Throwable t) {
         LOGGER.warn("Error from stream: " + t.getMessage());
-        
+
         if (init) {
             LOGGER.warn("Restarting stream: {}/{}", dbName, collName);
             restartStream();
@@ -164,9 +156,9 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
                 .getCollection(collName)
                 .watch(resolvedStages)
                 .fullDocument(FullDocument.UPDATE_LOOKUP)
-                .subscribe(new ChangeStreamSubscriber(sessionKey, 
-                        resolvedStages, 
-                        dbName, 
+                .subscribe(new ChangeStreamSubscriber(sessionKey,
+                        resolvedStages,
+                        dbName,
                         collName,
                         true));
 
@@ -174,7 +166,7 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
             LOGGER.warn("Error trying to restart the stream: " + e.getMessage());
         }
     }
-    
+
     @Override
     public void onComplete() {
         LOGGER.debug("Stream completed, sessionKey=" + sessionKey);
@@ -215,15 +207,13 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
                 updateDescription.put("updatedFields", BsonNull.VALUE);
             }
 
-            var removedFields = notification.getUpdateDescription()
-                    .getRemovedFields();
+            var removedFields = notification.getUpdateDescription().getRemovedFields();
 
             if (removedFields == null) {
                 updateDescription.put("updatedFields", new BsonArray());
             } else {
                 var _removedFields = new BsonArray();
-                removedFields.forEach(rf -> _removedFields
-                        .add(new BsonString(rf)));
+                removedFields.forEach(rf -> _removedFields.add(new BsonString(rf)));
 
                 updateDescription.put("removedFields", _removedFields);
             }
@@ -241,8 +231,6 @@ public class ChangeStreamSubscriber implements Subscriber<ChangeStreamDocument<?
     private static final CodecRegistry REGISTRY = CodecRegistries.fromCodecs(new DocumentCodec());
 
     private static BsonValue toBson(Document document) {
-        return document == null
-                ? BsonNull.VALUE
-                : document.toBsonDocument(BsonDocument.class, REGISTRY);
+        return document == null ? BsonNull.VALUE : document.toBsonDocument(BsonDocument.class, REGISTRY);
     }
 }

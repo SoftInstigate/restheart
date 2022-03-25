@@ -82,10 +82,10 @@ $ docker pull softinstigate/restheart-snapshot:2108ce0
 
 ## Build from source
 
-__NOTE__: Building RESTHeart 6+ requires at least JDK 16! Suggested is JDK 17 LTS
+__NOTE__: Building RESTHeart requires Java 17.
 
 ```bash
-$ mvn clean package
+$ ./mvnw clean package
 ```
 
 You can then run it with (make sure to have mongod running):
@@ -101,6 +101,12 @@ The full documentation is available [here](https://restheart.org/docs/).
 You can also have a look at our [introductory video](https://youtu.be/9KroH-RvjS0) on Youtube:
 
 [![Watch the video!](https://img.youtube.com/vi/9KroH-RvjS0/hqdefault.jpg)](https://youtu.be/9KroH-RvjS0)
+
+## Become a Sponsor to RESTHeart
+
+You can support the development of RESTHeart via GitHub Sponsor program and receive public acknowledgment of your help.
+
+[Go and see available sponsor tiers.](https://github.com/sponsors/SoftInstigate)
 
 ## Sponsors
 

@@ -33,7 +33,7 @@
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
-      <artifactId>mongodb-driver-legacy</artifactId>
+      <artifactId>mongodb-driver-sync</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
@@ -75,6 +75,10 @@
         <groupId>commons-jxpath</groupId>
         <artifactId>commons-jxpath</artifactId>
     </dependency>
+    <dependency>
+        <groupId>io.dropwizard.metrics</groupId>
+        <artifactId>metrics-core</artifactId>
+      </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>junit</groupId>

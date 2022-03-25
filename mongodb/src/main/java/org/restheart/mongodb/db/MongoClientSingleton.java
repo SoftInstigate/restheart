@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,15 +24,21 @@ import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.MAGENTA;
 import static org.fusesource.jansi.Ansi.Color.RED;
 
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
-import com.mongodb.MongoCommandException;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.connection.ConnectionPoolSettings;
+import com.mongodb.Block;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.restheart.plugins.PluginsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.restheart.mongodb.ConnectionChecker.connected;
+import static org.restheart.mongodb.ConnectionChecker.replicaSet;
 
 /**
  *
@@ -41,10 +47,9 @@ import org.slf4j.LoggerFactory;
 public class MongoClientSingleton {
 
     private static boolean initialized = false;
-    private static MongoClientURI mongoUri;
+    private static ConnectionString mongoUri;
     private static PluginsRegistry pluginsRegistry;
     private String serverVersion = null;
-    private boolean replicaSet = false;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoClientSingleton.class);
 
@@ -53,7 +58,7 @@ public class MongoClientSingleton {
      * @param uri
      * @param pr
      */
-    public static void init(MongoClientURI uri, PluginsRegistry pr) {
+    public static void init(ConnectionString uri, PluginsRegistry pr) {
         mongoUri = uri;
         pluginsRegistry = pr;
         initialized = true;
@@ -66,6 +71,15 @@ public class MongoClientSingleton {
         return initialized;
     }
 
+
+    /**
+     * alias for getInstance()
+     * @return the MongoClientSingleton
+     */
+    public static MongoClientSingleton get() {
+        return getInstance();
+    }
+
     /**
      *
      * @return
@@ -75,20 +89,13 @@ public class MongoClientSingleton {
     }
 
     /**
-     * @return the initialized
-     */
-    public Boolean isReplicaSet() {
-        return replicaSet;
-    }
-
-    /**
      * @return the serverVersion
      */
     public String getServerVersion() {
         return serverVersion;
     }
 
-    private MongoClient mongoClient;
+    private MongoClient mclient;
 
     private MongoClientSingleton() {
         if (!initialized) {
@@ -103,67 +110,75 @@ public class MongoClientSingleton {
 
         LOGGER.info("Connecting to MongoDB...");
 
-        mongoClient = new MongoClient(mongoUri);
+        // TODO add minSize and maxSize to configuration
+        var settings = MongoClientSettings.builder()
+            .applyToConnectionPoolSettings(new Block<ConnectionPoolSettings.Builder>() {
+                @Override
+                public void apply(final ConnectionPoolSettings.Builder builder) {
+                    // default mongodb values: min=0 and max=100
+                    builder.minSize(0).maxSize(128);
+                }})
+            .applicationName("restheart (sync)")
+            .applyConnectionString(mongoUri)
+            .build();
+
+        mclient = MongoClients.create(settings);
+
+        // this is the first time we check the connection
+        if (connected(mclient)) {
+            // get the db version
+            try {
+                var res = mclient.getDatabase("admin").runCommand(new BsonDocument("buildInfo", new BsonInt32(1)));
+
+                var _version = res.get("version");
+
+                if (_version != null && _version instanceof String) {
+                    serverVersion = (String) _version;
+                } else {
+                    LOGGER.warn("Cannot get the MongoDB version.");
+                    serverVersion = "?";
+                }
+
+                LOGGER.info("MongoDB version {}", ansi()
+                    .fg(MAGENTA)
+                    .a(getServerVersion())
+                    .reset()
+                    .toString());
+
+                if (replicaSet(this.mclient)) {
+                    LOGGER.info("MongoDB is a replica set.");
+                } else {
+                    LOGGER.warn("MongoDB is a standalone instance.");
+                }
+
+            } catch (Throwable t) {
+                LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDB. ").reset().toString()
+                    + "Check that MongoDB is running and "
+                    + "the configuration property 'mongo-uri' "
+                    + "is set properly");
+                serverVersion = "?";
+            }
+        } else {
+            LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDB. ").reset().toString()
+                + "Check that MongoDB is running and "
+                + "the configuration property 'mongo-uri' "
+                + "is set properly");
+            serverVersion = "?";
+        }
 
         // invoke Plugins methods annotated with @InjectMongoClient
         // passing them the MongoClient
         if (pluginsRegistry != null) {
-            pluginsRegistry.injectDependency(mongoClient);
+            pluginsRegistry.injectDependency(mclient);
         }
+    }
 
-        // get the db version
-        // this also is the first time we check the connection
-        try {
-            var res = mongoClient.getDatabase("admin").runCommand(new BsonDocument("buildInfo", new BsonInt32(1)));
-
-            var _version = res.get("version");
-
-            if (_version != null && _version instanceof String) {
-                serverVersion = (String) _version;
-            } else {
-                LOGGER.warn("Cannot get the MongoDB version.");
-                serverVersion = "?";
-            }
-
-            // check if db is configured as replica set
-            try {
-                // this throws an exception if not running as replica set
-                mongoClient.getDatabase("admin")
-                        .runCommand(new BsonDocument("replSetGetStatus",
-                                new BsonInt32(1)));
-                replicaSet = true;
-            } catch (MongoCommandException mce) {
-                if (mce.getCode() == 13) { // Unauthorized
-                    LOGGER.warn("Unable to check if MongoDB is configured as replica set. "
-                            + "The MongoDB user cannot execute replSetGetStatus() command. "
-                            + "Tip: add to the MongoDB user the built-in role 'clusterMonitor' that provides this action.");
-                }
-
-                replicaSet = false;
-            } catch (Throwable t) {
-                replicaSet = false;
-            }
-
-            LOGGER.info("MongoDB version {}",
-                    ansi()
-                        .fg(MAGENTA)
-                        .a(getServerVersion())
-                        .reset()
-                        .toString());
-
-            if (isReplicaSet()) {
-                LOGGER.info("MongoDB is a replica set.");
-            } else {
-                LOGGER.warn("MongoDB is a standalone instance.");
-            }
-        } catch (Throwable t) {
-            LOGGER.error(ansi().fg(RED).bold().a("Cannot connect to MongoDB. ").reset().toString()
-                    + "Check that MongoDB is running and "
-                    + "the configuration property 'mongo-uri' "
-                    + "is set properly");
-            serverVersion = "?";
-            replicaSet = false;
-        }
+    /**
+     * alias for getClient()
+     * @return the MongoClient
+     */
+    public MongoClient client() {
+        return getClient();
     }
 
     /**
@@ -175,18 +190,50 @@ public class MongoClientSingleton {
             throw new IllegalStateException("MongoClientSingleton is not initialized");
         }
 
-        if (this.mongoClient == null) {
+        if (this.mclient == null) {
             setup();
         }
 
-        return this.mongoClient;
+        return this.mclient;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        // it is a singleton!
+        return true;
     }
 
     private static class MongoClientSingletonHolder {
+        private static final MongoClientSingleton INSTANCE;
 
-        private static final MongoClientSingleton INSTANCE = new MongoClientSingleton();
+        // make sure the Singleton is a Singleton even in a multi-classloader environment
+        // credits to https://stackoverflow.com/users/145989/ondra-Žižka
+        // https://stackoverflow.com/a/47445573/4481670
+        static {
+            // There should be just one system class loader object in the whole JVM.
+            synchronized(ClassLoader.getSystemClassLoader()) {
+                var sysProps = System.getProperties();
+                // The key is a String, because the .class object would be different across classloaders.
+                var singleton = (MongoClientSingleton) sysProps.get(MongoClientSingleton.class.getName());
 
-        private MongoClientSingletonHolder() {
+                // Some other class loader loaded MongoClientSingleton earlier.
+                if (singleton != null) {
+                    INSTANCE = singleton;
+                }
+                else {
+                    // Otherwise this classloader is the first one, let's create a singleton.
+                    // Make sure not to do any locking within this.
+                    INSTANCE = new MongoClientSingleton();
+                    System.getProperties().put(MongoClientSingleton.class.getName(), INSTANCE);
+                }
+            }
         }
     }
 }

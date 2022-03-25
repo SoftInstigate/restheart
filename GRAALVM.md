@@ -2,7 +2,7 @@
 
 ## prerequisites
 
-> GraalVM required version: >= 21.2.0 Java 16 based (https://www.graalvm.org/downloads/)
+> GraalVM required version: >= 22.0.0.2 Java 17 based (https://www.graalvm.org/downloads/)
 
 Also install `native-image`
 
@@ -15,7 +15,7 @@ $ gu install native-image
 Build image for local OS
 
 ```bash
-$ mvn clean package -Pnative
+$ ./mvnw clean package -Pnative
 ```
 
 Build Linux image
@@ -43,7 +43,7 @@ $ docker push softinstigate/restheart:latest-native
 Start RESTHeart
 
 ```bash
-$ ./core/target/restheart-native core/etc/restheart.yml -e core/etc/uber.properties
+$ ./core/target/restheart
 ```
 
 ## Generate native-image build configuration
@@ -51,7 +51,7 @@ $ ./core/target/restheart-native core/etc/restheart.yml -e core/etc/uber.propert
 Start RESTHeart with test configuration and the `native-image-agent`
 
 ```bash
-$ mvn clean package
+$ ./mvnw clean package
 $ cp test-plugins/target/restheart-test-plugins.jar core/target/plugins
 $ java -agentlib:native-image-agent=config-merge-dir=core/src/main/resources/META-INF/native-image/org.restheart/restheart/ -jar core/target/restheart.jar core/etc/test/restheart.yml
 ```
@@ -60,7 +60,7 @@ Execute tests, this makes the `native-image-agent` collecting all needed configu
 
 ```bash
 $ cd core
-$ mvn surefire:test -DskipITs=false -Dtest=\*IT
+$ ./mvnw surefire:test -DskipITs=false -Dtest=\*IT
 ```
 
 Stop restheart. this makes the [Assisted Configuration of Native Image Builds](https://github.com/oracle/graal/blob/master/substratevm/BuildConfiguration.md#assisted-configuration-of-native-image-builds) being updated.
@@ -108,9 +108,9 @@ $ java -cp core/target/restheart.jar org.restheart.graal.GenerateGraalvmReflectC
 
 And add output to `commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json`
 
-### allow restheart-native js plugins access java classes via reflection
+### allow restheart js plugins access java classes via reflection
 
-restheart-native js plugins access java classes via reflection, the following utility generates the reflect-config entries to add to the native image's `reflect-config.json`
+restheart js plugins access java classes via reflection, the following utility generates the reflect-config entries to add to the native image's `reflect-config.json`
 
 ```bash
 $ java -cp core/target/restheart.jar org.restheart.utils.GenerateGraalvmReflectConfig
@@ -119,22 +119,6 @@ $ java -cp core/target/restheart.jar org.restheart.utils.GenerateGraalvmReflectC
 it will print out the entries to add to `commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json`
 
 ## issues
-
-### [OPEN] build error upgrading caffeine
-
-upgrading caffeine above 2.8.8 breaks native-image build
-
-### [FIXED] runtime error due to jboss-threads required by xnio
-
-see:
-
-- https://github.com/SoftInstigate/graalvm-undertow-issue
-- https://github.com/oracle/graal/issues/3020
-- https://issues.redhat.com/browse/UNDERTOW-1811
-
-fixed by remove unsafe calls and disable jboss enhanced executor on native build: https://github.com/SoftInstigate/graalvm-undertow-issue/commit/ad36bd2d5b5397800f3494613e7fecc22615beab
-
-> reported "f97bdb5 adds the missing substitutions" https://github.com/oracle/graal/issues/3020#issuecomment-815098289 should be fixed in next (>21.0.0.r11) release
 
 ### [FIXED] build fails due to ClassNotFoundException from mongodb-driver
 

@@ -78,6 +78,10 @@ auth-mechanisms:
     enabled: true
     authenticator: fileRealmAuthenticator
   digestAuthMechanism:
+    # digest authentication is disabled by default
+    # because it requires the passwords to be stored in plaintext
+    # and mongoRealmAuthenticator hashes the passwords by default (bcrypt-hashed-password: true)
+    # here it is enabled because fileRealmAuthenticator is used with paintext passwords
     enabled: true
     realm: RESTHeart Realm
     domain: localhost
@@ -118,6 +122,14 @@ authenticators:
     json-path-roles: $.roles
     bcrypt-hashed-password: true
     bcrypt-complexity: 12
+    enforce-minimum-password-strenght: false
+    # Integer from 0 to 4
+    # 0 Weak        （guesses < 3^10）
+    # 1 Fair        （guesses < 6^10）
+    # 2 Good        （guesses < 8^10）
+    # 3 Strong      （guesses < 10^10）
+    # 4 Very strong （guesses >= 10^10）
+    minimum-password-strength: 3
     create-user: true
     create-user-document: '{"_id": "admin", "password": "secret", "roles": ["admin"]}'
     cache-enabled: false
@@ -237,7 +249,23 @@ plugins-args:
       uri: /graphql
       db: test-graphql
       collection: gql-apps
-      verbose: true
+      verbose: false
+    # a global blacklist for mongodb operators in filter query parameter
+    filterOperatorsBlacklist:
+      blacklist: [ "$where" ]
+      enabled: true
+    # defends from brute force password cracking attacks
+    # by returning `429 Too Many Requests` when more than
+    # `max-failed-attempts` wrong requests
+    # are received in last 10 seconds from the same ip
+    bruteForceAttackGuard:
+      enabled: false
+      # if true, the source ip is obtained from X-Forwarded-For header
+      # this requires that header beeing set by the proxy, dangerous otherwise
+      trust-x-forwarded-for: false
+      # max number of failed attempts in 10 seconds sliding window
+      # before returning 429 Too Many Requests
+      max-failed-attempts: 5
     testInitializer:
         enabled: true
     rndTokenService:
@@ -379,8 +407,8 @@ requests-limit: 1000
 # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
 io-threads: 4
 
-# Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
-worker-threads: 16
+# Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*8
+worker-threads: 8
 
 # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
 buffer-size: 16384

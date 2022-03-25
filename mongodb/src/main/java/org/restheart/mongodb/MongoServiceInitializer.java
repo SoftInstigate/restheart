@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,6 +23,8 @@ package org.restheart.mongodb;
 import java.util.Map;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.PLUGINS_ARGS_KEY;
 import org.restheart.mongodb.db.MongoClientSingleton;
+import org.restheart.mongodb.db.sessions.ClientSessionFactory;
+import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.InitPoint;
@@ -46,6 +48,9 @@ public class MongoServiceInitializer implements Initializer {
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void init(Map<String, Object> confArgs) {
         MongoServiceConfiguration.init(confArgs);
+
+        TxnClientSessionFactory.init(MongoServiceConfiguration.get().getMongoUri());
+        ClientSessionFactory.init(MongoServiceConfiguration.get().getMongoUri());
 
         this.mongoSrvEnabled = isMongoEnabled(confArgs);
     }

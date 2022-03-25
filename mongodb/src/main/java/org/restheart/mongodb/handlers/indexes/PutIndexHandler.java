@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -38,7 +38,7 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PutIndexHandler extends PipelinedHandler {
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of PutIndexHandler
@@ -120,7 +120,7 @@ public class PutIndexHandler extends PipelinedHandler {
         }
 
         try {
-            dbsDAO.createIndex(Optional.ofNullable(request.getClientSession()), db, co, keys, Optional.of(ops));
+            dbs.createIndex(Optional.ofNullable(request.getClientSession()), db, co, keys, Optional.of(ops));
         } catch (Throwable t) {
             response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "error creating the index", t);
             next(exchange);

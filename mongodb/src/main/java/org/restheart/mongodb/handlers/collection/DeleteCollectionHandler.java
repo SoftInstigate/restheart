@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -29,7 +29,7 @@ import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 
@@ -38,7 +38,7 @@ import org.restheart.mongodb.utils.RequestHelper;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DeleteCollectionHandler extends PipelinedHandler {
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of DeleteCollectionHandler
@@ -77,7 +77,7 @@ public class DeleteCollectionHandler extends PipelinedHandler {
                 ? new BsonObjectId(new ObjectId(request.getETag()))
                 : new BsonObjectId();
 
-        var result = dbsDAO.deleteCollection(
+        var result = dbs.deleteCollection(
                 Optional.ofNullable(request.getClientSession()),
                 request.getDBName(),
                 request.getCollectionName(),

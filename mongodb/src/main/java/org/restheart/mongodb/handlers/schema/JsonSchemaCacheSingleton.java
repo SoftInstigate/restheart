@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,7 +32,7 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.mongodb.MongoServiceConfiguration;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +40,7 @@ public class JsonSchemaCacheSingleton {
 
     private static final String SEPARATOR = "_@_@_";
     private static final long MAX_CACHE_SIZE = 1_000;
-    static final Logger LOGGER
-            = LoggerFactory.getLogger(JsonSchemaCacheSingleton.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaCacheSingleton.class);
 
     /**
      *
@@ -51,14 +50,12 @@ public class JsonSchemaCacheSingleton {
         return CachesSingletonHolder.INSTANCE;
 
     }
-    private final DatabaseImpl dbsDAO;
+    private final Databases dbs = Databases.get();;
 
     private Cache<String, Schema> schemaCache = null;
     private Cache<String, BsonDocument> rawSchemaCache = null;
 
     JsonSchemaCacheSingleton() {
-        dbsDAO = new DatabaseImpl();
-
         if (MongoServiceConfiguration.get().isSchemaCacheEnabled()) {
             this.schemaCache = CacheFactory.createLocalCache(MAX_CACHE_SIZE,
                     Cache.EXPIRE_POLICY.AFTER_WRITE,
@@ -77,21 +74,15 @@ public class JsonSchemaCacheSingleton {
      * @return
      * @throws JsonSchemaNotFoundException
      */
-    public Schema get(
-            String schemaStoreDb,
-            BsonValue schemaId)
-            throws JsonSchemaNotFoundException {
+    public Schema get(String schemaStoreDb, BsonValue schemaId) throws JsonSchemaNotFoundException {
         if (MongoServiceConfiguration.get().isSchemaCacheEnabled()) {
-            Optional<Schema> _schema = schemaCache.get(
-                    schemaStoreDb
-                    + SEPARATOR
-                    + schemaId);
+            Optional<Schema> _schema = schemaCache.get(schemaStoreDb + SEPARATOR + schemaId);
 
             if (_schema != null && _schema.isPresent()) {
                 return _schema.get();
             } else {
                 // load it
-                Schema s = load(schemaStoreDb, schemaId);
+                var s = load(schemaStoreDb, schemaId);
 
                 schemaCache.put(schemaStoreDb + SEPARATOR + schemaId, s);
 
@@ -109,10 +100,7 @@ public class JsonSchemaCacheSingleton {
      * @return
      * @throws JsonSchemaNotFoundException
      */
-    public BsonDocument getRaw(
-            String schemaStoreDb,
-            BsonValue schemaId)
-            throws JsonSchemaNotFoundException {
+    public BsonDocument getRaw(String schemaStoreDb, BsonValue schemaId) throws JsonSchemaNotFoundException {
         if (MongoServiceConfiguration.get().isSchemaCacheEnabled()) {
             Optional<BsonDocument> _schema
                     = rawSchemaCache.get(schemaStoreDb + SEPARATOR + schemaId);
@@ -132,31 +120,21 @@ public class JsonSchemaCacheSingleton {
         }
     }
 
-    private Schema load(
-            String schemaStoreDb,
-            BsonValue schemaId)
-            throws JsonSchemaNotFoundException {
-        BsonDocument document = loadRaw(schemaStoreDb, schemaId);
+    private Schema load(String schemaStoreDb, BsonValue schemaId) throws JsonSchemaNotFoundException {
+        var document = loadRaw(schemaStoreDb, schemaId);
 
-        return SchemaLoader.load(
-                new JSONObject(document.toJson()), new SchemaStoreClient());
+        return SchemaLoader.load(new JSONObject(document.toJson()), new SchemaStoreClient());
     }
 
-    private BsonDocument loadRaw(
-            String schemaStoreDb,
-            BsonValue schemaId)
-            throws JsonSchemaNotFoundException {
-        var document = dbsDAO.getCollection(schemaStoreDb, _SCHEMAS)
+    private BsonDocument loadRaw( String schemaStoreDb, BsonValue schemaId) throws JsonSchemaNotFoundException {
+        var document = dbs.getCollection(schemaStoreDb, _SCHEMAS)
                 .find(eq("_id", schemaId))
                 .first();
 
         if (Objects.isNull(document)) {
             var sid = BsonUtils.getIdAsString(schemaId, false);
 
-            throw new JsonSchemaNotFoundException(
-                    "schema not found "
-                    + schemaStoreDb
-                    + "/" + sid);
+            throw new JsonSchemaNotFoundException("schema not found " + schemaStoreDb + "/" + sid);
         }
 
         // schemas are stored with escaped keys, need to unescape them
@@ -166,9 +144,7 @@ public class JsonSchemaCacheSingleton {
     }
 
     private static class CachesSingletonHolder {
-
-        private static final JsonSchemaCacheSingleton INSTANCE
-                = new JsonSchemaCacheSingleton();
+        private static final JsonSchemaCacheSingleton INSTANCE = new JsonSchemaCacheSingleton();
 
         private CachesSingletonHolder() {
         }

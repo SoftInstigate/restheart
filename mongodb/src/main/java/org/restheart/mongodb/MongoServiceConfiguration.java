@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,7 +20,7 @@
  */
 package org.restheart.mongodb;
 
-import com.mongodb.MongoClientURI;
+import com.mongodb.ConnectionString;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,7 +63,7 @@ public class MongoServiceConfiguration {
 
     private final String instanceBaseURL;
     private final REPRESENTATION_FORMAT defaultRepresentationFormat;
-    private final MongoClientURI mongoUri;
+    private final ConnectionString mongoUri;
     private final List<Map<String, Object>> mongoMounts;
     private final Map<String, Map<String, Object>> pluginsArgs;
     private final boolean localCacheEnabled;
@@ -140,15 +140,15 @@ public class MongoServiceConfiguration {
             defaultRepresentationFormat = rf;
         }
 
-        MongoClientURI _mongoUri;
+        ConnectionString _mongoUri;
 
         try {
             // check the mongo uri
-            _mongoUri = new MongoClientURI(asString(conf, MONGO_URI_KEY, DEFAULT_MONGO_URI, silent));
+            _mongoUri = new ConnectionString(asString(conf, MONGO_URI_KEY, DEFAULT_MONGO_URI, silent));
         } catch (IllegalArgumentException iae) {
             LOGGER.error("Wrong parameter {} in the configuration file: {}, using its default value {}", MONGO_URI_KEY, iae.getMessage(), DEFAULT_MONGO_URI);
             //throw new ConfigurationException("Wrong  group {} not specified in the configuration file, using its default value {}" + MONGO_URI_KEY, iae);
-            _mongoUri = new MongoClientURI(DEFAULT_MONGO_URI);
+            _mongoUri = new ConnectionString(DEFAULT_MONGO_URI);
         }
 
         mongoUri = _mongoUri;
@@ -363,7 +363,7 @@ public class MongoServiceConfiguration {
     /**
      * @return the mongoUri
      */
-    public MongoClientURI getMongoUri() {
+    public ConnectionString getMongoUri() {
         return mongoUri;
     }
 

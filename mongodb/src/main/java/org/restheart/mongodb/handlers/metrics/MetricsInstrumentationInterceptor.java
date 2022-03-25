@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -57,7 +57,7 @@ public class MetricsInstrumentationInterceptor implements MongoInterceptor {
     MongoServiceConfiguration configuration = null;
 
     @VisibleForTesting
-    SharedMetricRegistryProxy metrics = new SharedMetricRegistryProxy();
+    SharedMongoMetricRegistryProxy metrics = new SharedMongoMetricRegistryProxy();
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
@@ -90,12 +90,9 @@ public class MetricsInstrumentationInterceptor implements MongoInterceptor {
     private void addDefaultMetrics(MetricRegistry registry, long duration, HttpServerExchange exchange) {
         var request = MongoRequest.of(exchange);
 
-        registry.timer(request.getType().toString() + "." + request.getMethod().toString())
-                .update(duration, TimeUnit.MILLISECONDS);
-        registry.timer(request.getType().toString() + "." + request.getMethod().toString() + "." + exchange.getStatusCode())
-                .update(duration, TimeUnit.MILLISECONDS);
-        registry.timer(request.getType().toString() + "." + request.getMethod().toString() + "." + (exchange.getStatusCode() / 100) + "xx")
-                .update(duration, TimeUnit.MILLISECONDS);
+        registry.timer(request.getType().toString() + "." + request.getMethod().toString()).update(duration, TimeUnit.MILLISECONDS);
+        registry.timer(request.getType().toString() + "." + request.getMethod().toString() + "." + exchange.getStatusCode()).update(duration, TimeUnit.MILLISECONDS);
+        registry.timer(request.getType().toString() + "." + request.getMethod().toString() + "." + (exchange.getStatusCode() / 100) + "xx").update(duration, TimeUnit.MILLISECONDS);
     }
 
     @VisibleForTesting

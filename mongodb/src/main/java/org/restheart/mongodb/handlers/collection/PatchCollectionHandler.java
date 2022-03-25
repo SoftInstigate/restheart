@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -29,7 +29,7 @@ import java.util.Optional;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.HttpStatus;
@@ -39,7 +39,7 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PatchCollectionHandler extends PipelinedHandler {
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of PatchCollectionHandler
@@ -107,14 +107,14 @@ public class PatchCollectionHandler extends PipelinedHandler {
 
         final var content = _content.asDocument();
 
-        var result = dbsDAO.upsertCollection(
+        var result = dbs.upsertCollection(
             Optional.ofNullable(request.getClientSession()),
+            request.getMethod(),
+            request.getCollectionProps() != null, // true if updating
             request.getDBName(),
             request.getCollectionName(),
             content,
             request.getETag(),
-            true,
-            true,
             request.isETagCheckRequired());
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {

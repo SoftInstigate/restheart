@@ -23,5 +23,5 @@ services:
     depends_on:
       - mongodb
     entrypoint: >-
-      bash -c "for i in {1..10}; do mongo --host mongodb --eval 
+      bash -c "for i in {1..10}; do mongo --host mongodb --eval
       'if (!rs.status().ok) rs.initiate();' && break || sleep 3; done"

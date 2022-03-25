@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,18 +26,15 @@ import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.utils.PluginUtils;
 
 /**
- * Seehttps://restheart.org/docs/plugins/security-plugins/#authentication-mechanisms
+ * See https://restheart.org/docs/plugins/security-plugins/#authentication-mechanisms
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface AuthMechanism extends AuthenticationMechanism, ConfigurablePlugin {
     @Override
-    public AuthenticationMechanismOutcome authenticate(
-            final HttpServerExchange exchange,
-            final SecurityContext securityContext);
+    public AuthenticationMechanismOutcome authenticate(final HttpServerExchange exchange, final SecurityContext securityContext);
 
     @Override
-    public ChallengeResult sendChallenge(final HttpServerExchange exchange,
-            final SecurityContext securityContext);
+    public ChallengeResult sendChallenge(final HttpServerExchange exchange, final SecurityContext securityContext);
 
     default String getMechanismName() {
         return PluginUtils.name(this);

@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-security
  * %%
- * Copyright (C) 2018 - 2020 SoftInstigate
+ * Copyright (C) 2018 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -41,7 +41,7 @@ import static org.restheart.plugins.ConfigurablePlugin.argValue;
 
 import java.util.Map;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 
 
 @RegisterPlugin(name="graphAppDefinitionPatchChecker",

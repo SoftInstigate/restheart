@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ import org.bson.types.ObjectId;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -40,7 +40,7 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DeleteDBHandler extends PipelinedHandler {
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of DeleteDBHandler
@@ -79,7 +79,7 @@ public class DeleteDBHandler extends PipelinedHandler {
             ? new BsonObjectId(new ObjectId(request.getETag()))
             : new BsonObjectId();
 
-        var result = dbsDAO.deleteDatabase(
+        var result = dbs.deleteDatabase(
             Optional.ofNullable(request.getClientSession()),
             request.getDBName(),
             etag,
@@ -96,10 +96,6 @@ public class DeleteDBHandler extends PipelinedHandler {
             response.setInError(HttpStatus.SC_CONFLICT, "The database's ETag must be provided using the '" + Headers.IF_MATCH + "' header.");
             next(exchange);
             return;
-        }
-
-        if (result.getEtag() != null) {
-            response.getHeaders().put(Headers.ETAG, result.getEtag().toString());
         }
 
         response.setStatusCode(result.getHttpCode());

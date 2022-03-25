@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -35,9 +35,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Maurizio Turatti {@literal <maurizio@softinstigate.com>}
  */
-public class GridFsDAOTest {
+public class GridFsTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GridFsDAOTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GridFsTest.class);
 
     /**
      *
@@ -58,7 +58,7 @@ public class GridFsDAOTest {
     /**
      *
      */
-    public GridFsDAOTest() {
+    public GridFsTest() {
     }
 
     /**
@@ -67,8 +67,22 @@ public class GridFsDAOTest {
      */
     @Test
     public void testDetectMediatype() throws Exception {
-        InputStream is = GridFsDAOTest.class.getResourceAsStream("/" + FILENAME);
+        InputStream is = GridFsTest.class.getResourceAsStream("/" + FILENAME);
         Tika tika = new Tika();
         assertEquals("application/pdf", tika.detect(is));
+    }
+
+    @Test
+    public void testExtractBucket() {
+        assertEquals("mybucket", new GridFs(null).extractBucketName("mybucket.files"));
+    }
+
+     /**
+     *
+     */
+    @Test
+    public void testExtractBucketWithDots() {
+        assertEquals("mybucket.foo", new GridFs(null).extractBucketName("mybucket.foo.files"));
+        assertEquals("mybucket.foo.bar", new GridFs(null).extractBucketName("mybucket.foo.bar.files"));
     }
 }

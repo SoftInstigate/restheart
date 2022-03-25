@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -45,8 +45,6 @@ import static org.restheart.exchange.ExchangeKeys.TRUE_KEY_ID;
 import static org.restheart.exchange.ExchangeKeys._ID;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.exchange.ExchangeKeys.METHOD;
-import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import org.restheart.utils.ChannelReader;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
@@ -362,63 +360,16 @@ public class BsonRequestContentInjector {
             }
         }
 
-        // **** wm=insert
-        //  POST    --> InsertOneResult insertOne(TDocument document);
-        //  PUT     --> InsertOneResult insertOne(TDocument document);
-        //  PATCH   --> InsertOneResult insertOne(TDocument document);  <== does this make sense?
-        // **** wm=update and wm=upsert
-        //  POST    --> TDocument findOneAndReplace(Bson filter, TDocument replacement, FindOneAndReplaceOptions options);
-        //  PUT     --> TDocument findOneAndReplace(Bson filter, TDocument replacement, FindOneAndReplaceOptions options);
-        //  PATCH   --> TDocument findOneAndUpdate(Bson filter, Bson update, FindOneAndUpdateOptions options);
-
-        // depending on the write method the body:
-        // - must be unflatten (allow dot notation)
-        // - the keys names can be $ prefixed
-        // - can use update operators
-        // - the keys name can be equal to update operators
-
-        var writeMode = request.isWriteDocument() ? request.getWriteMode() : WRITE_MODE.UPSERT;
-        var method = request.getMethod();
-        var comment = """
-
-                        - Conflict on wm=insert and the document already exists
-                        - on wm=upsert|update we want the document to be:
-                            - replaced if the method is either POST or PUT
-                            - modified if the method is PATCH (and allow to use update operators)
-
-                        --------------------------------------------------------------------------------------------
-                        | wm     | method | URI         | write operation                 |  wrop argument         |
-                        --------------------------------------------------------------------------------------------
-                        | insert | POST   | /coll       | insertOne                       | document               |
-                        | insert | PUT    | /coll/docid | insertOne                       | document               |
-                        | insert | PATCH  | /coll/docid | insertOne                       | document               | <= this is redundant
-                        --------------------------------------------------------------------------------------------
-                        | update | POST   | /coll       | findOneAndReplace(upsert:false) | document               |
-                        | update | PUT    | /coll/docid | findOneAndReplace(upsert:false) | document               |
-                        | update | PATCH  | /coll/docid | findOneAndUpdate(upsert:false)  | update operator expr   |
-                        --------------------------------------------------------------------------------------------
-                        | upsert | POST   | /coll       | findOneAndReplace(upsert:true)  | document               |
-                        | upsert | PUT    | /coll/docid | findOneAndReplace(upsert:true)  | document               |
-                        | upsert | PATCH  | /coll/docid | findOneAndUpdate(upsert:true)   | update operator expr   |
-                        --------------------------------------------------------------------------------------------
-            """;
-
-        LOGGER.trace(
-            """
-            the request is:
-            \tmethod: {},
-            \twrite mode: {},
-            \twe want: {}
-            """,
-            method, writeMode, comment);
-
+        // For POST and PUT we use insertOne (wm=insert) or findOneAndReplace (wm=update|upserts)
+        // that require a document (cannot use update operators)
+        // note that from MongoDB 5 a field name can be equal to an update operator
+        // we forbid this to avoid unexpected behavior
         if (request.isPost() || request.isPut()) {
-            // TODO update this check and also move here the check done by DOAUtils:259
-            // if (BsonUtils.containsUpdateOperators(content, true)) {
-            //     // not acceptable
-            //     response.setInError(HttpStatus.SC_BAD_REQUEST, "update operators (but $currentDate) cannot be used on POST and PUT requests");
-            //     return;
-            // }
+            if (BsonUtils.containsUpdateOperators(content, true)) {
+                // not acceptable
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "update operators (but $currentDate) cannot be used on POST and PUT requests");
+                return;
+            }
 
             // unflatten request content for POST and PUT requests
             content = BsonUtils.unflatten(content);

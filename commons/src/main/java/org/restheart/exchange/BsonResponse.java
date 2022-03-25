@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,12 @@
 package org.restheart.exchange;
 
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
-import org.restheart.utils.BsonUtils;
+import static org.restheart.utils.BsonUtils.ArrayBuilder;
+import static org.restheart.utils.BsonUtils.DocumentBuilder;
+import static org.restheart.utils.BsonUtils.document;
+import static org.restheart.utils.BsonUtils.toJson;
 
 /**
  * ServiceResponse implementation backed by BsonValue
@@ -47,10 +49,18 @@ public class BsonResponse extends ServiceResponse<BsonValue> {
     @Override
     public String readContent() {
         if (content != null) {
-            return BsonUtils.toJson(content);
+            return toJson(content);
         } else {
             return null;
         }
+    }
+
+    public void setContent(ArrayBuilder builder) {
+        setContent(builder.get());
+    }
+
+    public void setContent(DocumentBuilder builder) {
+        setContent(builder.get());
     }
 
     @Override
@@ -58,16 +68,16 @@ public class BsonResponse extends ServiceResponse<BsonValue> {
         setInError(true);
         setStatusCode(code);
 
-        var resp = new BsonDocument();
+        var doc = document();
 
         if (message != null) {
-            resp.put("msg", new BsonString(message));
+            doc.put("msg", new BsonString(message));
         }
 
         if (t != null) {
-            resp.put("exception", new BsonString(t.getMessage()));
+            doc.put("exception", new BsonString(t.getMessage()));
         }
 
-        setContent(resp);
+        setContent(doc.get());
     }
 }

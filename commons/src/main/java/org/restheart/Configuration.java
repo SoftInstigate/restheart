@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,8 +178,7 @@ public class Configuration {
             level = Level.valueOf(_logLevel);
         } catch (Exception e) {
             if (!silent) {
-                LOGGER.info("wrong value for parameter {}: {}, using its default value {}", "log-level", _logLevel,
-                        "INFO");
+                LOGGER.info("wrong value for parameter {}: {}, using its default value {}", "log-level", _logLevel, "INFO");
             }
             level = Level.INFO;
         }
@@ -201,20 +200,10 @@ public class Configuration {
 
     @Override
     public String toString() {
-        return "Configuration{" + "instanceName=" + instanceName + ", configurationFilePath="
-                + PATH + ", httpsListener=" + httpsListener + ", httpsPort=" + httpsPort + ", httpsHost=" + httpsHost
-                + ", httpListener=" + httpListener + ", httpPort=" + httpPort + ", httpHost=" + httpHost
-                + ", ajpListener=" + ajpListener + ", ajpPort=" + ajpPort + ", ajpHost=" + ajpHost
-                + ", pluginsDirectory=" + pluginsDirectory + ", keystoreFile=" + keystoreFile + ", keystorePassword="
-                + keystorePassword + ", certPassword=" + certPassword + ", proxies=" + proxies + ", pluginsArgs="
-                + pluginsArgs + ", authMechanisms=" + authMechanisms + ", authenticators=" + authenticators
-                + ", authorizers=" + authorizers + ", tokenManager=" + tokenManagers + ", logFilePath=" + logFilePath
-                + ", logLevel=" + logLevel + ", logToConsole=" + logToConsole + ", logToFile=" + logToFile
-                + ", traceHeaders=" + traceHeaders + ", requestsLimit=" + requestsLimit + ", ioThreads=" + ioThreads
-                + ", workerThreads=" + workerThreads + ", bufferSize=" + bufferSize + ", directBuffers=" + directBuffers
-                + ", forceGzipEncoding=" + forceGzipEncoding + ", connectionOptions=" + connectionOptions
-                + ", logExchangeDump=" + logExchangeDump + ", ansiConsole=" + ansiConsole
-                + ", allowUnescapedCharactersInUrl=" + allowUnescapedCharactersInUrl + '}';
+        var sw = new StringWriter();
+        new Yaml().dump(conf, sw);
+
+        return sw.toString();
     }
 
     public Map<String, Object> toMap() {
@@ -621,7 +610,7 @@ public class Configuration {
 
             overrides.stream().forEachOrdered(o -> {
                 if (!silent) {
-                    LOGGER.info("\t'{}' -> '{}'", o.path(), o.value());
+                    LOGGER.info("\t{} -> {}", o.path(), o.value());
                 }
 
                 try {

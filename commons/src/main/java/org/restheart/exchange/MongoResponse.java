@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@
  */
 package org.restheart.exchange;
 
-import com.google.common.reflect.TypeToken;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.ReplaceOptions;
@@ -35,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -81,14 +79,6 @@ public class MongoResponse extends BsonResponse {
         return of(exchange, MongoResponse.class);
     }
 
-    private static final Type _TYPE = new TypeToken<MongoResponse>(MongoResponse.class) {
-		private static final long serialVersionUID = 1407135302812289455L;
-    }.getType();
-
-    public static Type type() {
-        return _TYPE;
-    }
-
     @Override
     public String readContent() {
         var request = Request.of(wrapped);
@@ -113,16 +103,12 @@ public class MongoResponse extends BsonResponse {
 
     private BsonDocument addWarnings(BsonDocument content) {
         if (content != null) {
-            if (warnings != null
-                    && !warnings.isEmpty()
-                    && content.isDocument()) {
+            if (warnings != null && !warnings.isEmpty() && content.isDocument()) {
                 var contentWithWarnings = new BsonDocument();
 
                 var ws = new BsonArray();
 
-                warnings.stream()
-                        .map(w -> new BsonString(w))
-                        .forEachOrdered(ws::add);
+                warnings.stream().map(w -> new BsonString(w)).forEachOrdered(ws::add);
 
                 contentWithWarnings.put("_warnings", ws);
 
@@ -132,15 +118,12 @@ public class MongoResponse extends BsonResponse {
             } else {
                 return content;
             }
-        } else if (warnings != null
-                && !warnings.isEmpty()) {
+        } else if (warnings != null && !warnings.isEmpty()) {
             var contentWithWarnings = new BsonDocument();
 
             var ws = new BsonArray();
 
-            warnings.stream()
-                    .map(w -> new BsonString(w))
-                    .forEachOrdered(ws::add);
+            warnings.stream().map(w -> new BsonString(w)).forEachOrdered(ws::add);
 
             contentWithWarnings.put("_warnings", ws);
 

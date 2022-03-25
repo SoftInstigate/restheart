@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-security
  * %%
- * Copyright (C) 2018 - 2020 SoftInstigate
+ * Copyright (C) 2018 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,7 +23,7 @@ package org.restheart.polyglot.interceptors;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -70,7 +70,7 @@ public class AbstractJSInterceptor<R extends Request<?>, S extends Response<?>> 
      *
      */
     public void handle(R request, S response) {
-        handle().executeVoid(request, response);
+        _handle().executeVoid(request, response);
     }
 
     @Override

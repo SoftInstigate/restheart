@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,12 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * =========================LICENSE_END==================================
  */
-package org.restheart.db.sessions;
+package org.restheart.mongodb.db.sessions;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.restheart.mongodb.db.sessions.SessionOptions;
-import org.restheart.mongodb.db.sessions.Sid;
 
 /**
  *

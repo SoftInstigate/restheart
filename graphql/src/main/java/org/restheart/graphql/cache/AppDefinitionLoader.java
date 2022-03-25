@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-graphql
  * %%
- * Copyright (C) 2020 - 2021 SoftInstigate
+ * Copyright (C) 2020 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,15 +20,13 @@
  */
 package org.restheart.graphql.cache;
 
-import com.mongodb.MongoClient;
-import org.bson.BsonArray;
-import org.bson.BsonBoolean;
+import com.mongodb.client.MongoClient;
 import org.bson.BsonDocument;
-import org.bson.BsonString;
 import org.restheart.graphql.GraphQLAppDeserializer;
 import org.restheart.graphql.GraphQLIllegalAppDefinitionException;
 import org.restheart.graphql.models.*;
-
+import static org.restheart.utils.BsonUtils.array;
+import static org.restheart.utils.BsonUtils.document;
 
 public class AppDefinitionLoader {
 
@@ -47,18 +45,17 @@ public class AppDefinitionLoader {
     }
 
     public static GraphQLApp loadAppDefinition(String appURI) throws GraphQLIllegalAppDefinitionException {
+        var uriOrNameCond = array()
+            .add(document().put(APP_URI_FIELD, appURI))
+            .add(document().put(APP_NAME_FIELD, appURI));
 
+        var conditions = array()
+            .add(document().put("$or", uriOrNameCond))
+            .add(document().put(APP_ENABLED_FIELD, true));
 
-        BsonArray conditions = new BsonArray();
-        BsonArray uriOrNameCond = new BsonArray();
-        uriOrNameCond.add(new BsonDocument(APP_URI_FIELD, new BsonString(appURI)));
-        uriOrNameCond.add(new BsonDocument(APP_NAME_FIELD, new BsonString(appURI)));
-        conditions.add(new BsonDocument("$or", uriOrNameCond));
-        conditions.add(new BsonDocument(APP_ENABLED_FIELD, new BsonBoolean(true)));
-        BsonDocument findArg = new BsonDocument("$and",conditions);
+        var findArg = document().put("$and", conditions);
 
-        BsonDocument appDefinition = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class)
-                .find(findArg).first();
+        var appDefinition = mongoClient.getDatabase(appDB).getCollection(appCollection, BsonDocument.class).find(findArg.get()).first();
 
         if (appDefinition != null) {
             return GraphQLAppDeserializer.fromBsonDocument(appDefinition);
@@ -66,6 +63,4 @@ public class AppDefinitionLoader {
             return null;
         }
     }
-
-
 }

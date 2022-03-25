@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,7 +20,7 @@
  */
 package org.restheart.mongodb.db;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -41,6 +41,7 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
@@ -53,7 +54,7 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class DatabaseImpl implements Database {
+public class Databases {
 
     /**
      *
@@ -71,18 +72,19 @@ public class DatabaseImpl implements Database {
     /**
      * delegated object for collection operations
      */
-    private final CollectionDAO collectionDAO;
-    private final IndexDAO indexDAO;
+    private final Collections collections = Collections.get();
 
-    private final MongoClient client;
+    private final MongoClient client = MongoClientSingleton.get().client();
 
-    /**
-     *
-     */
-    public DatabaseImpl() {
-        client = MongoClientSingleton.getInstance().getClient();
-        this.collectionDAO = new CollectionDAO(client);
-        this.indexDAO = new IndexDAO(client);
+    private final Indexes indexDAO = Indexes.get();
+
+    private Databases() {
+    }
+
+    private static Databases INSTANCE = new Databases();
+
+    public static Databases get() {
+        return INSTANCE;
     }
 
     /**
@@ -92,7 +94,6 @@ public class DatabaseImpl implements Database {
      * @return
      *
      */
-    @Override
     public boolean doesDbExist(final Optional<ClientSession> cs, final String dbName) {
         // at least one collection exists for an existing db
         return cs.isPresent()
@@ -108,12 +109,11 @@ public class DatabaseImpl implements Database {
      * @param collName the collection name
      * @return true if the collection exists
      */
-    @Override
     public boolean doesCollectionExist(
         final Optional<ClientSession> cs,
         final String dbName,
         final String collName) {
-        return collectionDAO.doesCollectionExist(cs, dbName, collName);
+        return collections.doesCollectionExist(cs, dbName, collName);
     }
 
     /**
@@ -121,7 +121,6 @@ public class DatabaseImpl implements Database {
      * @param dbName
      * @return the MongoDatabase
      */
-    @Override
     public MongoDatabase getDatabase(final String dbName) {
         return client.getDatabase(dbName);
     }
@@ -132,7 +131,6 @@ public class DatabaseImpl implements Database {
      * @param dbName the database name of the collection
      * @return A ordered List of collection names
      */
-    @Override
     public List<String> getCollectionNames(final Optional<ClientSession> cs, final String dbName) {
         var db = getDatabase(dbName);
 
@@ -156,7 +154,6 @@ public class DatabaseImpl implements Database {
      * @return the number of collections in this db
      *
      */
-    @Override
     public long getDBSize(final List<String> colls) {
         // filter out reserved resources
         var _colls = colls.stream()
@@ -174,7 +171,6 @@ public class DatabaseImpl implements Database {
      * @return the db props
      *
      */
-    @Override
     public BsonDocument getDatabaseProperties(final Optional<ClientSession> cs, final String dbName) {
         var propsColl = getCollection(dbName, META_COLLNAME);
 
@@ -198,11 +194,11 @@ public class DatabaseImpl implements Database {
      * @param colls the collections list as got from getCollectionNames()
      * @param page
      * @param pagesize
+     * @param noCache
      * @return the db data
      * @throws org.restheart.exchange.IllegalQueryParamenterException
      *
      */
-    @Override
     public BsonArray getDatabaseData(
             final Optional<ClientSession> cs,
             final String dbName,
@@ -245,7 +241,7 @@ public class DatabaseImpl implements Database {
             if (MetadataCachesSingleton.isEnabled() && !noCache) {
                 collProperties = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
             } else {
-                collProperties = collectionDAO.getCollectionProps(cs, dbName, collName);
+                collProperties = collections.getCollectionProps(cs, dbName, collName);
             }
 
             if (collProperties != null) {
@@ -265,28 +261,24 @@ public class DatabaseImpl implements Database {
      *
      * @param cs the client session
      * @param dbName
+     * @param method
+     * @param updating
      * @param newContent
      * @param requestEtag
-     * @param patching
-     * @return
+     * @return the OperationResult
      */
-    @Override
     public OperationResult upsertDB(
         final Optional<ClientSession> cs,
+        final METHOD method,
+        final boolean updating,
         final String dbName,
         final BsonDocument newContent,
         final String requestEtag,
-        final boolean updating,
-        final boolean patching,
         final boolean checkEtag) {
-
-        if (patching && !updating) {
-            return new OperationResult(HttpStatus.SC_NOT_FOUND);
-        }
 
         var newEtag = new ObjectId();
 
-        final BsonDocument content = DAOUtils.validContent(newContent);
+        final BsonDocument content = DbUtils.validContent(newContent);
 
         content.put("_etag", new BsonObjectId(newEtag));
         content.remove("_id"); // make sure we don't change this field
@@ -318,7 +310,7 @@ public class DatabaseImpl implements Database {
                 if (Objects.equals(_requestEtag, oldEtag)) {
                     return doDbPropsUpdate(
                         cs,
-                        patching,
+                        method,
                         updating,
                         mcoll,
                         content,
@@ -331,7 +323,7 @@ public class DatabaseImpl implements Database {
                 // e.g. it has not been created by restheart
                 return doDbPropsUpdate(
                     cs,
-                    patching,
+                    method,
                     updating,
                     mcoll,
                     content,
@@ -340,7 +332,7 @@ public class DatabaseImpl implements Database {
         } else {
             return doDbPropsUpdate(
                 cs,
-                patching,
+                method,
                 updating,
                 mcoll,
                 content,
@@ -350,45 +342,21 @@ public class DatabaseImpl implements Database {
 
     private OperationResult doDbPropsUpdate(
         final Optional<ClientSession> cs,
-        final boolean patching,
+        final METHOD method,
         final boolean updating,
         final MongoCollection<BsonDocument> mcoll,
         final BsonDocument dcontent,
         final ObjectId newEtag) {
-        if (patching) {
-            var ret = DAOUtils.writeDocument(
-                cs,
-                mcoll,
-                Optional.of(new BsonString(DB_META_DOCID)),
-                Optional.empty(),
-                Optional.empty(),
-                dcontent,
-                false,
-                WRITE_MODE.UPSERT);
-            return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK, newEtag);
-        } else if (updating) {
-            var ret = DAOUtils.writeDocument(
-                cs,
-                mcoll,
-                Optional.of(new BsonString(DB_META_DOCID)),
-                Optional.empty(),
-                Optional.empty(),
-                dcontent,
-                true,
-                WRITE_MODE.UPSERT);
-            return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_OK, newEtag);
-        } else {
-            var ret = DAOUtils.writeDocument(
-                cs,
-                mcoll,
-                Optional.of(new BsonString(DB_META_DOCID)),
-                Optional.empty(),
-                Optional.empty(),
-                dcontent,
-                false,
-                WRITE_MODE.UPSERT);
-            return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : HttpStatus.SC_CREATED, newEtag);
-        }
+        var ret = DbUtils.writeDocument(
+            cs,
+            method,
+            WRITE_MODE.UPSERT,
+            mcoll,
+            Optional.of(new BsonString(DB_META_DOCID)),
+            Optional.empty(),
+            Optional.empty(),
+            dcontent);
+        return new OperationResult(ret.getHttpCode() > 0 ? ret.getHttpCode() : updating ? HttpStatus.SC_OK : HttpStatus.SC_CREATED, newEtag);
     }
 
     /**
@@ -397,9 +365,8 @@ public class DatabaseImpl implements Database {
      * @param dbName
      * @param requestEtag
      * @param checkEtag
-     * @return
+     * @return the OperationResult
      */
-    @Override
     public OperationResult deleteDatabase(
         final Optional<ClientSession> cs,
         final String dbName,
@@ -440,54 +407,51 @@ public class DatabaseImpl implements Database {
      * @param cs the client session
      * @param dbName
      * @param collName
-     * @return
+     * @return the collection properties
      */
-    @Override
     public BsonDocument getCollectionProperties(final Optional<ClientSession> cs, final String dbName, final String collName) {
-        return collectionDAO.getCollectionProps(cs, dbName, collName);
+        return collections.getCollectionProps(cs, dbName, collName);
     }
 
     /**
      *
      * @param dbName
      * @param collName
-     * @return
+     * @return the MongoCollection
      */
-    @Override
     public MongoCollection<BsonDocument> getCollection(final String dbName, final String collName) {
-        return collectionDAO.getCollection(dbName, collName);
+        return collections.getCollection(dbName, collName);
     }
 
     /**
      *
      * @param cs the client session
+     * @param method the request method
+     * @param updating true if updating, false if creating
      * @param dbName
      * @param collName
      * @param content
      * @param requestEtag
-     * @param updating
-     * @param patching
      * @param checkEtag
-     * @return
+     * @return the OperationResult
      */
-    @Override
     public OperationResult upsertCollection(
         final Optional<ClientSession> cs,
+        final METHOD method,
+        final boolean updating,
         final String dbName,
         final String collName,
         final BsonDocument content,
         final String requestEtag,
-        final boolean updating,
-        final boolean patching,
         final boolean checkEtag) {
-        return collectionDAO.upsertCollection(
+        return collections.upsertCollection(
             cs,
+            method,
+            updating,
             dbName,
             collName,
             content,
             requestEtag,
-            updating,
-            patching,
             checkEtag);
     }
 
@@ -498,16 +462,15 @@ public class DatabaseImpl implements Database {
      * @param collectionName
      * @param requestEtag
      * @param checkEtag
-     * @return
+     * @return the OperationResult
      */
-    @Override
     public OperationResult deleteCollection(
         final Optional<ClientSession> cs,
         final String dbName,
         final String collectionName,
         final BsonObjectId requestEtag,
         final boolean checkEtag) {
-        return collectionDAO.deleteCollection(
+        return collections.deleteCollection(
             cs,
             dbName,
             collectionName,
@@ -520,11 +483,10 @@ public class DatabaseImpl implements Database {
      * @param cs the client session
      * @param coll
      * @param filters
-     * @return
+     * @return the cound of the documents in the collection
      */
-    @Override
     public long getCollectionSize(final Optional<ClientSession> cs, final MongoCollection<BsonDocument> coll, final BsonDocument filters) {
-        return collectionDAO.getCollectionSize(cs, coll, filters);
+        return collections.getCollectionSize(cs, coll, filters);
     }
 
     /**
@@ -538,9 +500,8 @@ public class DatabaseImpl implements Database {
      * @param hint
      * @param keys
      * @param cursorAllocationPolicy
-     * @return
+     * @return the documents in the collection as a BsonArray
      */
-    @Override
     public BsonArray getCollectionData(
         final Optional<ClientSession> cs,
         final MongoCollection<BsonDocument> coll,
@@ -551,7 +512,7 @@ public class DatabaseImpl implements Database {
         final BsonDocument hint,
         final BsonDocument keys,
         final EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
-        return collectionDAO.getCollectionData(
+        return collections.getCollectionData(
             cs,
             coll,
             page,
@@ -566,9 +527,8 @@ public class DatabaseImpl implements Database {
     /**
      *
      * @param cs the client session
-     * @return
+     * @return and ordered list of the databases
      */
-    @Override
     public List<String> getDatabaseNames(final Optional<ClientSession> cs) {
         var dbNames = new ArrayList<String>();
 
@@ -587,9 +547,8 @@ public class DatabaseImpl implements Database {
      * @param dbName
      * @param collection
      * @param indexId
-     * @return
+     * @return the HTTP status code
      */
-    @Override
     public int deleteIndex(
         final Optional<ClientSession> cs,
         final String dbName,
@@ -603,9 +562,8 @@ public class DatabaseImpl implements Database {
      * @param cs the client session
      * @param dbName
      * @param collectionName
-     * @return
+     * @return an ordered list of the indexes
      */
-    @Override
     public List<BsonDocument> getCollectionIndexes(
         final Optional<ClientSession> cs,
         final String dbName,
@@ -621,9 +579,8 @@ public class DatabaseImpl implements Database {
      * @param filters
      * @param hint
      * @param keys
-     * @return
+     * @return the FindIterable
      */
-    @Override
     public FindIterable<BsonDocument> findIterable(
         final Optional<ClientSession> cs,
         final MongoCollection<BsonDocument> collection,
@@ -631,7 +588,7 @@ public class DatabaseImpl implements Database {
         final BsonDocument filters,
         final BsonDocument hint,
         final BsonDocument keys) {
-        return collectionDAO.findIterable(
+        return collections.findIterable(
             cs,
             collection,
             sortBy,
@@ -648,7 +605,6 @@ public class DatabaseImpl implements Database {
      * @param keys
      * @param options
      */
-    @Override
     public void createIndex(
         final Optional<ClientSession> cs,
         final String dbName,

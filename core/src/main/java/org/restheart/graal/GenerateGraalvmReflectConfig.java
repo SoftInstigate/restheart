@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,7 +23,7 @@ package org.restheart.graal;
 import io.github.classgraph.ClassGraph;
 
 /**
- * restheart-native js plugins access java classes via reflection,
+ * resthearte js plugins access java classes via reflection,
  * this utility generates the entries to add to
  * commons/src/main/resources/META-INF/native-image/org.restheart/restheart-commons/reflect-config.json
  *
@@ -71,6 +71,8 @@ public class GenerateGraalvmReflectConfig {
                             "org.restheart.security.PwdCredentialAccount")
             // BsonUtils
             .acceptClasses("org.restheart.utils.BsonUtils")
+            .acceptClasses("org.restheart.utils.BsonUtils$ArrayBuilder")
+            .acceptClasses("org.restheart.utils.BsonUtils$DocumentBuilder")
             // Bson classes, such as BsonDocument
             .acceptPackages("org.bson")
             .rejectPackages("org.bson.codecs", "org.bson.json", "org.bson.io", "org.bson.assertions", "org.bson.conversions", "org.bson.diagnostics", "org.bson.internal", "org.bson.types", "org.bson.util")

@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,7 +27,7 @@ import java.util.Optional;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.db.Documents;
 
 /**
  *
@@ -35,24 +35,13 @@ import org.restheart.mongodb.db.DocumentDAO;
  */
 public class BulkDeleteDocumentsHandler extends PipelinedHandler {
 
-    private final DocumentDAO documentDAO;
+    private final Documents documents = Documents.get();
 
     /**
      * Creates a new instance of BulkDeleteDocumentsHandler
      *
      */
     public BulkDeleteDocumentsHandler() {
-        this(new DocumentDAO());
-    }
-
-    /**
-     * Creates a new instance of BulkDeleteDocumentsHandler
-     *
-     * @param documentDAO
-     */
-    public BulkDeleteDocumentsHandler(DocumentDAO documentDAO) {
-        super(null);
-        this.documentDAO = documentDAO;
     }
 
     /**
@@ -62,7 +51,6 @@ public class BulkDeleteDocumentsHandler extends PipelinedHandler {
      */
     public BulkDeleteDocumentsHandler(PipelinedHandler next) {
         super(next);
-        this.documentDAO = new DocumentDAO();
     }
 
     /**
@@ -80,7 +68,7 @@ public class BulkDeleteDocumentsHandler extends PipelinedHandler {
             return;
         }
 
-        var result = this.documentDAO.bulkDeleteDocuments(
+        var result = this.documents.bulkDeleteDocuments(
             Optional.ofNullable(request.getClientSession()),
             request.getDBName(),
             request.getCollectionName(),

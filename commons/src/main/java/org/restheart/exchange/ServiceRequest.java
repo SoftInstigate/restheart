@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,7 @@ import io.undertow.util.AttachmentKey;
  * @param <T> generic type
  */
 public abstract class ServiceRequest<T> extends Request<T> {
-    private static final AttachmentKey<ServiceRequest<?>> REQUEST_KEY
-            = AttachmentKey.create(ServiceRequest.class);
+    private static final AttachmentKey<ServiceRequest<?>> REQUEST_KEY = AttachmentKey.create(ServiceRequest.class);
 
     protected T content;
 

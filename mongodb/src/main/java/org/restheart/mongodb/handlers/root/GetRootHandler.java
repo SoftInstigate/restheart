@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,7 +20,6 @@
  */
 package org.restheart.mongodb.handlers.root;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,8 +29,7 @@ import org.bson.BsonArray;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.Database;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.utils.HttpStatus;
 
@@ -40,7 +38,7 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetRootHandler extends PipelinedHandler {
-    private Database dbsDAO = new DatabaseImpl();
+    private final Databases dbs = Databases.get();
 
     /**
      *
@@ -55,17 +53,6 @@ public class GetRootHandler extends PipelinedHandler {
      */
     public GetRootHandler(PipelinedHandler next) {
         super(next);
-    }
-
-    /**
-     *
-     * @param next
-     * @param dbsDAO
-     */
-    @VisibleForTesting
-    public GetRootHandler(PipelinedHandler next, Database dbsDAO) {
-        super(next);
-        this.dbsDAO = dbsDAO;
     }
 
     /**
@@ -88,18 +75,18 @@ public class GetRootHandler extends PipelinedHandler {
         var data = new BsonArray();
 
         if (request.getPagesize() >= 0) {
-            var _dbs = dbsDAO.getDatabaseNames(Optional.ofNullable(request.getClientSession()));
+            var _dbs = dbs.getDatabaseNames(Optional.ofNullable(request.getClientSession()));
 
             // filter out reserved resources
-            var dbs = _dbs.stream()
+            var __dbs = _dbs.stream()
                 .filter(db -> !MongoRequest.isReservedDbName(db))
                 .collect(Collectors.toList());
 
-            if (dbs == null) {
-                dbs = new ArrayList<>();
+            if (__dbs == null) {
+                __dbs = new ArrayList<>();
             }
 
-            size = dbs.size();
+            size = __dbs.size();
             var page = request.getPage();
             var pagesize = request.getPagesize();
 
@@ -112,23 +99,23 @@ public class GetRootHandler extends PipelinedHandler {
                 if (page <= total_pages) {
 
                     if (pagesize > 0) {
-                        Collections.sort(dbs); // sort by id
+                        Collections.sort(__dbs); // sort by id
 
                         // apply page and pagesize
-                        dbs = dbs.subList((request.getPage() - 1) * pagesize,
+                        __dbs = __dbs.subList((request.getPage() - 1) * pagesize,
                                 (request.getPage() - 1) * pagesize
-                                + pagesize > dbs.size()
-                                ? dbs.size()
+                                + pagesize > __dbs.size()
+                                ? __dbs.size()
                                 : (request.getPage() - 1) * pagesize
                                 + pagesize);
 
-                        dbs.stream().map(db -> {
-                            if (MetadataCachesSingleton.isEnabled() && !request.isNoCache()) {
-                                return MetadataCachesSingleton.getInstance().getDBProperties(db);
-                            } else {
-                                return dbsDAO.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), db);
-                            }
-                        }).forEachOrdered(db -> data.add(db));
+                        __dbs.stream().map(db -> {
+                                if (MetadataCachesSingleton.isEnabled() && !request.isNoCache()) {
+                                    return MetadataCachesSingleton.getInstance().getDBProperties(db);
+                                } else {
+                                    return dbs.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), db);
+                                }})
+                            .forEachOrdered(db -> data.add(db));
                     }
                 }
             }

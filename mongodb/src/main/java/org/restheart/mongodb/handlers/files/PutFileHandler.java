@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,9 +28,8 @@ import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DatabaseImpl;
-import org.restheart.mongodb.db.GridFsDAO;
-import org.restheart.mongodb.db.GridFsRepository;
+import org.restheart.mongodb.db.Databases;
+import org.restheart.mongodb.db.GridFs;
 import org.restheart.mongodb.db.OperationResult;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -39,15 +38,14 @@ public class PutFileHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PutFileHandler.class);
 
-    private final GridFsRepository gridFsDAO;
-    private final DatabaseImpl dbsDAO = new DatabaseImpl();
+    private final GridFs gridFs = GridFs.get();;
+    private final Databases dbs = Databases.get();
 
     /**
      *
      */
     public PutFileHandler() {
-        super();
-        this.gridFsDAO = new GridFsDAO();
+        this(null);
     }
 
     /**
@@ -56,17 +54,6 @@ public class PutFileHandler extends PipelinedHandler {
      */
     public PutFileHandler(PipelinedHandler next) {
         super(next);
-        this.gridFsDAO = new GridFsDAO();
-    }
-
-    /**
-     *
-     * @param next
-     * @param gridFsDAO
-     */
-    public PutFileHandler(PipelinedHandler next, GridFsDAO gridFsDAO) {
-        super(next);
-        this.gridFsDAO = gridFsDAO;
     }
 
     /**
@@ -115,8 +102,8 @@ public class PutFileHandler extends PipelinedHandler {
 
         try {
             if (request.getFilePath() != null) {
-                result = gridFsDAO
-                        .upsertFile(dbsDAO,
+                result = gridFs
+                        .upsertFile(dbs,
                                 request.getDBName(),
                                 request.getCollectionName(),
                                 metadata,

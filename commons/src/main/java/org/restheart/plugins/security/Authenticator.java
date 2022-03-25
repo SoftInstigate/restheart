@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import io.undertow.security.idm.IdentityManager;
 import org.restheart.plugins.ConfigurablePlugin;
 
 /**
- * Seehttps://restheart.org/docs/plugins/security-plugins/#authenticators
+ * See https://restheart.org/docs/plugins/security-plugins/#authenticators
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface Authenticator extends IdentityManager, ConfigurablePlugin {

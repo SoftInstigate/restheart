@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -57,7 +57,6 @@ public class MetricsInstrumentationInterceptorTest {
      * @throws Exception
      */
     @Test
-    @SuppressWarnings("deprecation")
     public void testAddMetrics() throws Exception {
         MongoServiceConfiguration config = mock(MongoServiceConfiguration.class);
         when(config.gatheringAboveOrEqualToLevel(MongoServiceConfiguration.METRICS_GATHERING_LEVEL.ROOT)).thenReturn(true);
@@ -67,7 +66,7 @@ public class MetricsInstrumentationInterceptorTest {
         MetricRegistry registry = new MetricRegistry();
         MetricRegistry registryDb = new MetricRegistry();
         MetricRegistry registryColl = new MetricRegistry();
-        SharedMetricRegistryProxy proxy = new SharedMetricRegistryProxy() {
+        SharedMongoMetricRegistryProxy proxy = new SharedMongoMetricRegistryProxy() {
             @Override
             public MetricRegistry registry() {
                 return registry;
@@ -95,7 +94,7 @@ public class MetricsInstrumentationInterceptorTest {
 
         var request = MongoRequest.init(httpServerExchange, "foo", "bar");
 
-        when(httpServerExchange.getAttachment(anyObject())).thenReturn(request);
+        when(httpServerExchange.getAttachment(any())).thenReturn(request);
 
         mih.addMetrics(0, httpServerExchange);
 

@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,9 @@
  */
 package org.restheart.exchange;
 
-import com.google.common.reflect.TypeToken;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.PathTemplateMatch;
-import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -34,11 +32,13 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
+import org.bson.BsonInvalidOperationException;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonParseException;
 import static org.restheart.exchange.ExchangeKeys.*;
+import static org.restheart.utils.BsonUtils.document;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.ExchangeKeys.HAL_MODE;
@@ -47,6 +47,7 @@ import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.mongodb.db.sessions.ClientSessionImpl;
 import org.restheart.utils.URLUtils;
 import org.slf4j.LoggerFactory;
+
 
 /**
  *
@@ -235,14 +236,6 @@ public class MongoRequest extends BsonRequest {
 
     public static MongoRequest of(HttpServerExchange exchange) {
         return of(exchange, MongoRequest.class);
-    }
-
-    private static final Type _TYPE = new TypeToken<MongoRequest>(MongoRequest.class) {
-		private static final long serialVersionUID = 4831691538044162907L;
-    }.getType();
-
-    public static Type type() {
-        return _TYPE;
     }
 
     /**
@@ -791,34 +784,36 @@ public class MongoRequest extends BsonRequest {
      * @return @throws JsonParseException
      */
     public BsonDocument getSortByDocument() throws JsonParseException {
-        var sort = new BsonDocument();
-
         if (sortBy == null) {
-            sort.put("_id", new BsonInt32(-1));
+            return document().put("_id", -1).get();
         } else {
-            sortBy.stream().forEach((s) -> {
+            var ret = document();
 
-                var _s = s.trim(); // the + sign is decoded into a space, in case remove it
-
+            sortBy.stream().map(String::trim).forEach((s) -> {
                 // manage the case where sort_by is a json object
                 try {
-                    var _sort = BsonDocument.parse(_s);
-
-                    sort.putAll(_sort);
+                    var _s = BsonDocument.parse(s);
+                    ret.putAll(_s.asDocument());
                 } catch (JsonParseException e) {
-                    // sort_by is just a string, i.e. a property name
-                    if (_s.startsWith("-")) {
-                        sort.put(_s.substring(1), new BsonInt32(-1));
-                    } else if (_s.startsWith("+")) {
-                        sort.put(_s.substring(1), new BsonInt32(11));
+                    // if we cannot parse it as a document,
+                    // assume it as a string property name
+                    // unless it starts with {
+                    if (s.startsWith("{")) {
+                        throw new JsonParseException("Invalid sort parameter", e);
+                    } else if (s.startsWith("-")) {
+                        ret.put(s.substring(1), -1);
+                    } else if (s.startsWith("+")) {
+                        ret.put(s.substring(1), 1);
                     } else {
-                        sort.put(_s, new BsonInt32(1));
+                        ret.put(s, 1);
                     }
+                } catch(BsonInvalidOperationException biop) {
+                    throw new JsonParseException("Invalid sort parameter", biop);
                 }
             });
-        }
 
-        return sort;
+            return ret.get();
+        }
     }
 
     /**

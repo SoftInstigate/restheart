@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,13 +26,13 @@ import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.MongoException;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
+import org.bson.BsonDocument;
 import org.bson.json.JsonParseException;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.Database;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class GetCollectionHandler extends PipelinedHandler {
-    private Database dbsDAO = new DatabaseImpl();
+    private Databases dbs = Databases.get();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetCollectionHandler.class);
 
@@ -68,9 +68,9 @@ public class GetCollectionHandler extends PipelinedHandler {
      * @param dbsDAO
      */
     @VisibleForTesting
-    public GetCollectionHandler(PipelinedHandler next, Database dbsDAO) {
+    public GetCollectionHandler(PipelinedHandler next, Databases dbsDAO) {
         super(next);
-        this.dbsDAO = dbsDAO;
+        this.dbs = dbsDAO;
     }
 
     /**
@@ -88,35 +88,51 @@ public class GetCollectionHandler extends PipelinedHandler {
             return;
         }
 
-        var coll = dbsDAO.getCollection(request.getDBName(), request.getCollectionName());
+        var coll = dbs.getCollection(request.getDBName(), request.getCollectionName());
 
         long size = -1;
 
         if (request.isCount()) {
-            size = dbsDAO.getCollectionSize(Optional.ofNullable(request.getClientSession()), coll, request.getFiltersDocument());
+            size = dbs.getCollectionSize(Optional.ofNullable(request.getClientSession()), coll, request.getFiltersDocument());
         }
 
         // ***** get data
         BsonArray data = null;
 
         if (request.getPagesize() > 0) {
+            BsonDocument filter, sort;
+
             try {
-                data = dbsDAO.getCollectionData(
+                filter = request.getFiltersDocument();
+            } catch (JsonParseException jpe) {
+                // invalid filter parameter
+                LOGGER.debug("invalid filter parameter {}", request.getFilter(), jpe);
+                MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "Invalid filter parameter");
+                next(exchange);
+                return;
+            }
+
+            try {
+                sort = request.getSortByDocument();
+            } catch (JsonParseException jpe) {
+                // invalid sort parameter
+                LOGGER.debug("invalid sort parameter {}", request.getFilter(), jpe);
+                MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "Invalid sort parameter");
+                next(exchange);
+                return;
+            }
+
+            try {
+                data = dbs.getCollectionData(
                         Optional.ofNullable(request.getClientSession()),
                         coll,
                         request.getPage(),
                         request.getPagesize(),
-                        request.getSortByDocument(),
-                        request.getFiltersDocument(),
+                        sort,
+                        filter,
                         request.getHintDocument(),
                         request.getProjectionDocument(),
                         request.getCursorAllocationPolicy());
-            } catch (JsonParseException jpe) {
-                // the filter expression is not a valid json string
-                LOGGER.debug("invalid filter expression {}", request.getFilter(), jpe);
-                MongoResponse.of(exchange).setInError(HttpStatus.SC_BAD_REQUEST, "wrong request, filter expression is invalid", jpe);
-                next(exchange);
-                return;
             } catch (MongoException me) {
                 if (me.getMessage().matches(".*Can't canonicalize query.*")) {
                     // error with the filter expression during query execution

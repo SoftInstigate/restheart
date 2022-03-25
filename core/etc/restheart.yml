@@ -4,31 +4,35 @@
 ---
 #### Listeners
 
- # Listeners allow to specify the protocol, ip, port and to use.
- # The supported protocols are: http and https.
- # You can setup a listener per protocol (up to 2).
+ # The supported protocols are: http, https and ajp.
 
  # To enable HTTPS, configure a certificate. See https://restheart.org/docs/security/tls/
-https-listener: {{{https-listener}}}
-https-host: {{{https-host}}}
-https-port: {{{https-port}}}
+https-listener: false
+https-host: localhost
+https-port: 4443
 
- # WARNING: Using the http listener is not secure. E.g. with basic authentication
- # credentials can be sniffed by a man-in-the-middle attack.
-http-listener: {{{http-listener}}}
-http-host: {{{http-host}}}
-http-port: {{{http-port}}}
+ # Import your certificate into the Java keystore to enable the https listener.
+ # See https://restheart.org/docs/security/tls/#configure-the-ssl-certificate
+#keystore-file: /path/to/keystore/file
+#keystore-password: password
+#certpassword: password
 
-ajp-listener: {{{ajp-listener}}}
-ajp-host: {{{ajp-host}}}
-ajp-port: {{{ajp-port}}}
+ # WARNING: Using the http listener is not secure.
+ # It is recommended to use the https listener or to reverse proxy RESTHeart over HTTPS.
+http-listener: true
+http-host: localhost
+http-port: 8080
+
+ajp-listener: false
+ajp-host: localhost
+ajp-port: 8009
 
 #### Instance name
 
  # The name of this instance.
  # Displayed in log, also allows to implement instance specific custom code
 
-instance-name: {{{instance-name}}}
+instance-name: default
 
 #### Instance base URL
 
@@ -61,17 +65,14 @@ instance-name: {{{instance-name}}}
 
 ##  MongoDb Connection
 
-# Set the MongoDb connection using a Mongo Client URI.
-#
-# The format of the URI is:
-#    mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
-#
-# Use The URI query parameter 'authSource' to specify the authetication database:
-# mongodb://user:secret@127.0.0.1/?authSource=authdb
-#
-# More information at http://api.mongodb.org/java/current/com/mongodb/MongoClientURI.html
+ # Set the MongoDb connection using a Mongo Connection String.
+ #
+ # The format of the URI is:
+ #    mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+ #
+ # More information at https://docs.mongodb.com/manual/reference/connection-string/
 
-mongo-uri: {{{mongo-uri}}}
+mongo-uri: mongodb://127.0.0.1
 
 #### MongoDb resources
 
@@ -110,27 +111,19 @@ mongo-uri: {{{mongo-uri}}}
 #     where: /api
 
 mongo-mounts:
-  - what: {{{root-mongo-resource}}}
+  - what: /restheart
     where: /
 
-#### Default representation format https://restheart.org/docs/representation-format/
-
-## STANDARD  root and dbs as an array of children's ids
-##           collection as arrays of document objects and documents as objects
-## HAL       Hypertext Application Language
-## SHAL      Simplified HAL with children as direct elements of _embedded array
-
-## PLAIN_JSON or HAL are aliases for SHAL
-## S is an alias for STANDARD
-
-#default-representation-format: STANDARD
+#### Default representation format https://restheart.org/docs/mongodb-rest/representation-format/
+default-representation-format: STANDARD
 
 #### Static Web Resources
 
 # Static web resources to bind to the URL specified by the 'where' property.
 # The 'what' property is the path of the directory containing the resources.
 # The path is either absolute (starts with /) or relative to the restheart.jar file
-# If embedded is true, the resources are either included in the restheart.jar or
+# If embedded is true, the resources are either included in the restheart.jar
+# or available in the classpath
 
 static-resources-mounts:
 #  - what: /path/to/resources
@@ -139,24 +132,6 @@ static-resources-mounts:
 #    embedded: false
 
 #### Security
-
-## SSL Configuration
-
-# Configure the keystore to enable the https listener.
-
- # To use your own certificate you need to import it (and eventually the CA certificates chain) into a java keystore
- # and specify the keystore-file,keystore-password and certpassword configuration properties.
- # Two scripts are available to generate the keystore:
- ## 1) generate-self-signed-keystore.sh
- ##    Generate a self signed certificate and import it in the java keystore
- ##    https://github.com/SoftInstigate/restheart/blob/master/core/bin/generate-self-signed-keystore.sh
- ## 2) convert-letsencrypt-java-keystore.sh
- ##    Generate the keystore from a https://letsencrypt.org free certificate
- ##    https://github.com/SoftInstigate/restheart/blob/master/core/bin/convert-letsencrypt-java-keystore.sh
-
-#keystore-file: /path/to/keystore/file
-#keystore-password: password
-#certpassword: password
 
  # RESTHeart Security security is pluggable, you can provide you own
  # implementations of Authenticator Mechanisms, Authenticator, Authorizer
@@ -174,23 +149,26 @@ auth-mechanisms:
     enabled: true
   basicAuthMechanism:
     enabled: true
-    authenticator: fileRealmAuthenticator
+    authenticator: mongoRealmAuthenticator
   jwtAuthenticationMechanism:
-    enabled: false
+    enabled: true
     algorithm: HS256
     key: secret
     base64Encoded: false
     usernameClaim: sub
-    rolesClaim: roles
+    rolesClaim: null
     fixedRoles:
-#      - admin
+      - test-jwt
     issuer: myIssuer
     audience: myAudience
   digestAuthMechanism:
-    enabled: true
+    # digest authentication is disabled by default
+    # because it requires the passwords to be stored in plaintext
+    # and mongoRealmAuthenticator hashes the passwords by default (bcrypt-hashed-password: true)
+    enabled: false
     realm: RESTHeart Realm
     domain: localhost
-    authenticator: fileRealmAuthenticator
+    authenticator: mongoRealmAuthenticator
   identityAuthMechanism:
     enabled: false
     username: admin
@@ -205,8 +183,8 @@ auth-mechanisms:
 
 authenticators:
   fileRealmAuthenticator:
-    enabled: true
-    conf-file: {{{users-conf-file}}}
+    enabled: false
+    conf-file: ./users.yml
   mongoRealmAuthenticator:
     enabled: true
     users-db: restheart
@@ -216,6 +194,14 @@ authenticators:
     json-path-roles: $.roles
     bcrypt-hashed-password: true
     bcrypt-complexity: 12
+    enforce-minimum-password-strenght: false
+    # Integer from 0 to 4
+    # 0 Weak        （guesses < 3^10）
+    # 1 Fair        （guesses < 6^10）
+    # 2 Good        （guesses < 8^10）
+    # 3 Strong      （guesses < 10^10）
+    # 4 Very strong （guesses >= 10^10）
+    minimum-password-strength: 3
     create-user: true
     create-user-document: '{"_id": "admin", "password": "$2a$12$lZiMMNJ6pkyg4uq/I1cF5uxzUbU25aXHtg7W7sD2ED7DG1wzUoo6u", "roles": ["admin"]}'
     # create-user-document.password must be hashed when bcrypt-hashed-password=true
@@ -236,8 +222,8 @@ authenticators:
 
 authorizers:
   fileAclAuthorizer:
-    enabled: true
-    conf-file: {{{acl-conf-file}}}
+    enabled: false
+    conf-file: ./acl.yml
   mongoAclAuthorizer:
     enabled: true
     acl-db: restheart
@@ -250,10 +236,10 @@ authorizers:
     cache-expire-policy: AFTER_WRITE
   # originVetoer protects from CSRF attacks by forbidding requests whose Origin header is not whitelisted
   originVetoer:
-      enabled: false
-      whitelist:
-        - https://restheart.org
-        - http://localhost
+    enabled: false
+    whitelist:
+      - https://restheart.org
+      - http://localhost
   fullAuthorizer:
     enabled: false
     authentication-required: true
@@ -304,7 +290,7 @@ etag-check-policy:
 # Just add the plugins jar to plugins-directory and they will be automatically
 # added to the classpath and registered.
 
-plugins-directory: {{{plugins-directory}}}
+plugins-directory: plugins
 
 # All plugins accept the argument 'confArgs'. Set 'confArgs' defining an object
 # with the same name of the plugin (as defined in its @RegisterPlugin annotation).
@@ -327,31 +313,42 @@ plugins-args:
     uri: /graphql
     db: restheart
     collection: gql-apps
-    verbose: true
+    verbose: false
   # a global blacklist for mongodb operators in filter query parameter
   filterOperatorsBlacklist:
     blacklist: [ "$where" ]
-    enabled: false
+    enabled: true
+  # defends from brute force password cracking attacks
+  # by returning `429 Too Many Requests` when more than
+  # `max-failed-attempts` wrong requests
+  # are received in last 10 seconds from the same ip
+  bruteForceAttackGuard:
+    enabled: true
+    # if true, the source ip is obtained from X-Forwarded-For header
+    # this requires that header beeing set by the proxy, dangerous otherwise
+    trust-x-forwarded-for: false
+    # max number of failed attempts in 10 seconds sliding window
+    # before returning 429 Too Many Requests
+    max-failed-attempts: 5
 
 #### Logging
 
-# enable-log-console: true => log messages to the console (default value: true)
-# enable-log-file: true => log messages to a file (default value: true)
-# log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
-# log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
-# ansi-console: use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
-# requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
-# requests-log-trace-headers: add the HTTP headers you want to be put on the MDC for logback. Use with %X{header-name} in logback.xml.
-#                             Useful for tracing support in the logs. Leave empty to deactivate this feature.
-# metrics-gathering-level: metrics gathering for which level? OFF => no gathering, ROOT => gathering at root level,
-#                          DATABASE => at db level, COLLECTION => at collection level
-# WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
+ # enable-log-console: true => log messages to the console (default value: true)
+ # enable-log-file: true => log messages to a file (default value: true)
+ # log-file-path: to specify the log file path (default value: restheart.log in system temporary directory)
+ # log-level: to set the log level. Value can be OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL. (default value is INFO)
+ # ansi-console: use Ansi console for logging. Default to 'true' if parameter missing, for backward compatibility
+ # requests-log-level: log the request-response. 0 => no log, 1 => light log, 2 => detailed dump
+ # requests-log-trace-headers: add the HTTP headers you want to be put on the MDC for logback. Use with %X{header-name} in logback.xml.
+ #                             Useful for tracing support in the logs. Leave empty to deactivate this feature.
+ # metrics-gathering-level: metrics gathering for which level? OFF => no gathering, ROOT => gathering at root level,
+ #                          DATABASE => at db level, COLLECTION => at collection level
+ # WARNING: use requests-log-level level 2 only for development purposes, it logs user credentials (Authorization and Auth-Token headers)
 
-
-enable-log-file: {{{enable-log-file}}}
-log-file-path: {{{log-file-path}}}
-enable-log-console: {{{enable-log-console}}}
-log-level: {{{log-level}}}
+enable-log-file: false
+log-file-path: restheart.log
+enable-log-console: true
+log-level: INFO
 requests-log-level: 1
 ansi-console: true
 metrics-gathering-level: DATABASE
@@ -366,11 +363,23 @@ requests-log-trace-headers:
 
 #### Performance Options
 
+ # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
+io-threads: 2
+
+ # Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*8
+worker-threads: 8
+
+ # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
+ # Setting to 1024 * 16 - 20; the 20 is to allow some space for getProtocol headers, see UNDERTOW-1209
+buffer-size: 16364
+ # Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
+direct-buffers: true
+
 ## Read Performance
 
 # default-pagesize is the number of documents returned when the pagesize query
 # parameter is not specified
-# see https://restheart.org/docs/read-docs#paging
+# see https://restheart.org/docs/mongodb-rest/read-docs#paging
 default-pagesize: 100
 
 # max-pagesize sets the maximum allowed value of the pagesize query parameter
@@ -385,6 +394,9 @@ max-pagesize: 1000
 # a small cursor-batch-size (e.g. 101, the default mongodb batchSize)
 # speeds up requests with small pagesize
 cursor-batch-size: 1000
+
+# In order to save bandwitdth RESTHeart Security can force requests to support the giz encoding (if not, requests will be rejected)
+force-gzip-encoding: false
 
 ## Caches
 
@@ -410,10 +422,10 @@ schema-cache-ttl: 60000
 requests-limit: 1000
 
 # Time limit in milliseconds for processing queries on the server (without network latency). 0 means no time limit
-query-time-limit: {{{query-time-limit}}}
+query-time-limit: 0
 
 # Time limit in milliseconds for processing aggregations on the server (without network latency). 0 means no time limit
-aggregation-time-limit: {{{aggregation-time-limit}}}
+aggregation-time-limit: 0
 
 ## Eager DB Cursor Preallocation Policy
 
@@ -422,26 +434,11 @@ aggregation-time-limit: {{{aggregation-time-limit}}}
 # The eager db cursor preallocation engine boosts up performaces (in some use cases, up to 1000%). the following options control its behavior.
 
 eager-cursor-allocation-pool-size: 100
-
 eager-cursor-allocation-linear-slice-width: 1000
 eager-cursor-allocation-linear-slice-delta: 100
 eager-cursor-allocation-linear-slice-heights: [4, 2, 1]
 eager-cursor-allocation-random-max-cursors: 20
 eager-cursor-allocation-random-slice-min-width: 1000
-
- # In order to save bandwitdth RESTHeart Security can force requests to support the giz encoding (if not, requests will be rejected)
-force-gzip-encoding: false
-
- # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
-io-threads: {{{io-threads}}}
-
- # Number of threads created for blocking tasks (such as ones involving db access). suggested value: core*16
-worker-threads: {{{worker-threads}}}
-
- # Use 16k buffers for best performance - as in linux 16k is generally the default amount of data that can be sent in a single write() call
-buffer-size: 16384
- # Should the buffer pool use direct buffers, this instructs the JVM to use native (if possible) I/O operations on the buffers
-direct-buffers: true
 
 #### Connetction Options
 

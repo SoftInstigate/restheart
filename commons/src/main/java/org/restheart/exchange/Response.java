@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,7 @@
  */
 package org.restheart.exchange;
 
-import java.lang.reflect.Type;
 import java.util.Map;
-
-import com.google.common.reflect.TypeToken;
-
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
@@ -56,15 +52,6 @@ public abstract class Response<T> extends Exchange<T> {
         } else {
             return ByteArrayProxyResponse.of(exchange);
         }
-    }
-
-    @SuppressWarnings("rawtypes")
-    private static final Type _TYPE = new TypeToken<Response>(Response.class) {
-		private static final long serialVersionUID = -9157465373051608201L;
-    }.getType();
-
-    public static Type type() {
-        return _TYPE;
     }
 
     public static String getContentType(HttpServerExchange exchange) {

@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-polyglot
  * %%
- * Copyright (C) 2020 - 2021 SoftInstigate
+ * Copyright (C) 2020 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -180,7 +180,7 @@ public abstract class AbstractJSPlugin {
      *
      * @return the handle Value associated with this thread. If not existing, it instanitates it.
      */
-    protected Value handle() {
+    protected Value _handle() {
         var workingThreadName = Thread.currentThread().getName();
 
         if (this.handles.containsKey(workingThreadName)) {

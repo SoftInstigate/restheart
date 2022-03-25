@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -38,15 +38,19 @@ package org.restheart.test.performance;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.request.HttpRequestWithBody;
+
 import java.io.IOException;
+import java.util.Optional;
+
 import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.types.ObjectId;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
-import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.db.Documents;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -163,20 +167,19 @@ public class LoadPutPT extends AbstractPT {
      * @throws IOException
      */
     public void dbdirect() throws IOException {
-        BsonDocument content = new BsonDocument("random",
-                new BsonDouble(Math.random()));
+        var content = new BsonDocument("random",  new BsonDouble(Math.random()));
 
-        new DocumentDAO().writeDocument(
-                null, // no client session
+        Documents.get().writeDocument(
+                Optional.empty(), // no client session
+                METHOD.POST,
+                WRITE_MODE.UPSERT,
                 db,
                 coll,
-                null,
-                null,
-                null,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
                 content,
                 null,
-                true,
-                WRITE_MODE.UPSERT,
                 false);
     }
 }

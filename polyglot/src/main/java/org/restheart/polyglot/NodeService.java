@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-security
  * %%
- * Copyright (C) 2018 - 2020 SoftInstigate
+ * Copyright (C) 2018 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ import java.util.concurrent.Future;
 
 import com.google.common.collect.Maps;
 import com.google.gson.JsonParser;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import org.restheart.exchange.StringRequest;
 import org.restheart.exchange.StringResponse;
 import org.restheart.plugins.StringService;

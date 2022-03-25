@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,8 +19,10 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.mongodb.db;
+import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.DuplicateKeyException;
-import com.mongodb.MongoClient;
+import com.mongodb.client.ClientSession;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.MongoGridFSException;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
@@ -33,12 +35,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
+
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
+import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
+import org.restheart.exchange.ExchangeKeys.METHOD;
+import org.restheart.utils.HttpStatus;
 
 import static org.restheart.utils.HttpStatus.*;
 import org.slf4j.LoggerFactory;
@@ -47,25 +54,30 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class GridFsDAO implements GridFsRepository {
+public class GridFs {
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(GridFsDAO.class);
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(GridFs.class);
 
     private static final String FILENAME = "filename";
 
-    public static String extractBucketName(final String collectionName) {
-        return collectionName.substring(0, collectionName.lastIndexOf('.'));
+    private final Collections collections;
+
+    private GridFs() {
+        this.collections = Collections.get();
     }
 
-    private final MongoClient client;
-    private final CollectionDAO collectionDAO;
+    @VisibleForTesting
+    GridFs(Collections collections) {
+        this.collections = collections;
+    }
 
-    /**
-     *
-     */
-    public GridFsDAO() {
-        client = MongoClientSingleton.getInstance().getClient();
-        collectionDAO = new CollectionDAO(client);
+    private static GridFs INSTANCE = null;
+
+    public static GridFs get() {
+        if (INSTANCE == null) {
+            INSTANCE = new GridFs();
+        }
+        return INSTANCE;
     }
 
     /**
@@ -79,22 +91,19 @@ public class GridFsDAO implements GridFsRepository {
      * @throws IOException
      * @throws DuplicateKeyException
      */
-    @Override
     public OperationResult createFile(
-            final Database db,
+            final Databases db,
             final String dbName,
             final String bucketName,
             final BsonDocument metadata,
             final Path filePath)
             throws IOException, DuplicateKeyException {
 
-        final String bucket = extractBucketName(bucketName);
+        final var bucket = extractBucketName(bucketName);
 
-        GridFSBucket gridFSBucket = GridFSBuckets.create(
-                db.getDatabase(dbName),
-                bucket);
+        var gridFSBucket = GridFSBuckets.create(db.getDatabase(dbName), bucket);
 
-        String filename = extractFilenameFromProperties(metadata);
+        var filename = extractFilenameFromProperties(metadata);
 
         //add etag to metadata
         ObjectId etag = new ObjectId();
@@ -105,7 +114,7 @@ public class GridFsDAO implements GridFsRepository {
             if (metadata.get("_id") == null) {
                 var options = new GridFSUploadOptions().metadata(Document.parse(metadata.toJson()));
 
-                ObjectId _id = gridFSBucket.uploadFromStream(filename, sourceStream, options);
+                var _id = gridFSBucket.uploadFromStream(filename, sourceStream, options);
 
                 return new OperationResult(SC_CREATED, new BsonObjectId(etag), new BsonObjectId(_id));
             } else {
@@ -134,8 +143,7 @@ public class GridFsDAO implements GridFsRepository {
      * @return
      * @throws IOException
      */
-    @Override
-    public OperationResult upsertFile(final Database db,
+    public OperationResult upsertFile(final Databases db,
         final String dbName,
         final String bucketName,
         final BsonDocument metadata,
@@ -173,8 +181,7 @@ public class GridFsDAO implements GridFsRepository {
         }
     }
 
-    private String extractFilenameFromProperties(
-            final BsonDocument properties) {
+    private String extractFilenameFromProperties(final BsonDocument properties) {
         String filename = null;
 
         if (properties != null && properties.containsKey(FILENAME)) {
@@ -203,9 +210,8 @@ public class GridFsDAO implements GridFsRepository {
      * @param checkEtag
      * @return the OperationResult
      */
-    @Override
     public OperationResult deleteFile(
-        final Database db,
+        final Databases db,
         final String dbName,
         final String bucketName,
         final BsonValue fileId,
@@ -267,9 +273,165 @@ public class GridFsDAO implements GridFsRepository {
      * @param dbName
      * @param bucketName
      */
-    @Override
-    public void deleteChunksCollection(final Database db, final String dbName, final String bucketName) {
+    public void deleteChunksCollection(final Databases db, final String dbName, final String bucketName) {
         var chunksCollName = extractBucketName(bucketName).concat(".chunks");
-        collectionDAO.getCollection(dbName, chunksCollName).drop();
+        collections.getCollection(dbName, chunksCollName).drop();
+    }
+
+    /**
+     *
+     * @param cs the client session
+     * @param method the request method
+     * @param dbName
+     * @param collName
+     * @param documentId
+     * @param filter
+     * @param shardKeys
+     * @param newContent
+     * @param requestEtag
+     * @param checkEtag
+     * @return
+     */
+    public OperationResult updateFileMetadata(
+            final Optional<ClientSession> cs,
+            final METHOD method,
+            final String dbName,
+            final String collName,
+            final Optional<BsonValue> documentId,
+            final Optional<BsonDocument> filter,
+            final Optional<BsonDocument> shardKeys,
+            final BsonDocument newContent,
+            final String requestEtag,
+            final boolean checkEtag) {
+        var mcoll = collections.getCollection(dbName, collName);
+
+        // genereate new etag
+        var newEtag = new BsonObjectId();
+
+        final BsonDocument content = DbUtils.validContent(newContent);
+        content.get("metadata", new BsonDocument()).asDocument().put("_etag", newEtag);
+
+        var updateResult = DbUtils.updateFileMetadata(
+                cs,
+                mcoll,
+                method,
+                documentId,
+                filter,
+                shardKeys,
+                content);
+
+        var oldDocument = updateResult.getOldData();
+
+        switch(method) {
+            case PUT -> {
+                if (oldDocument != null && checkEtag) { // update
+                    // check the old etag (in case restore the old document)
+                    return optimisticCheckEtag(
+                        cs,
+                        mcoll,
+                        shardKeys,
+                        oldDocument,
+                        newEtag,
+                        requestEtag,
+                        HttpStatus.SC_OK);
+                } else if (oldDocument != null) {  // update
+                    var query = eq("_id", documentId);
+                    var newDocument = cs.isPresent() ? mcoll.find(cs.get(), query).first() : mcoll.find(query).first();
+                    return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+                } else { // Attempted an insert of a new doc.
+                    return new OperationResult(updateResult.getHttpCode() > 0 ? updateResult.getHttpCode() : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
+                }
+            }
+
+            case PATCH -> {
+                if (oldDocument == null) { // Attempted an insert of a new doc.
+                    return new OperationResult(updateResult.getHttpCode() > 0
+                        ? updateResult.getHttpCode()
+                        : HttpStatus.SC_CONFLICT, newEtag, null, updateResult.getNewData());
+                } else if (checkEtag) {
+                    // check the old etag (in case restore the old document version)
+                    return optimisticCheckEtag(
+                        cs,
+                        mcoll,
+                        shardKeys,
+                        oldDocument,
+                        newEtag,
+                        requestEtag,
+                        HttpStatus.SC_OK);
+                } else {
+                    var query = eq("_id", documentId);
+
+                    var newDocument = cs.isPresent()
+                        ? mcoll.find(cs.get(), query).first()
+                        : mcoll.find(query).first();
+
+                    return new OperationResult(updateResult.getHttpCode() > 0
+                            ? updateResult.getHttpCode()
+                            : HttpStatus.SC_OK, newEtag, oldDocument, newDocument);
+                }
+            }
+
+            default -> throw new UnsupportedOperationException("method not supported " + method == null ? "null" : method.name());
+        }
+    }
+
+    public String extractBucketName(final String collectionName) {
+        return collectionName.substring(0, collectionName.lastIndexOf('.'));
+    }
+
+    private OperationResult optimisticCheckEtag(
+            final Optional<ClientSession> cs,
+            final MongoCollection<BsonDocument> coll,
+            final Optional<BsonDocument> shardKeys,
+            final BsonDocument oldDocument,
+            final Object newEtag,
+            final String requestEtag,
+            final int httpStatusIfOk) {
+        var oldEtag = oldDocument.get("metadata", new BsonDocument()).asDocument().get("_etag");
+
+        if (oldEtag != null && requestEtag == null) {
+            // oops, we need to restore old document
+            DbUtils.restoreDocument(
+                    cs,
+                    coll,
+                    oldDocument.get("_id"),
+                    shardKeys,
+                    oldDocument,
+                    newEtag,
+                    "metadata._etag");
+
+            return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
+        }
+
+        BsonValue _requestEtag;
+
+        if (ObjectId.isValid(requestEtag)) {
+            _requestEtag = new BsonObjectId(new ObjectId(requestEtag));
+        } else {
+            // restheart generates ObjectId etags, but here we support
+            // strings as well
+            _requestEtag = new BsonString(requestEtag);
+        }
+
+        if (Objects.equals(_requestEtag, oldEtag)) {
+            var query = eq("_id", oldDocument.get("_id"));
+            var newDocument = cs.isPresent()
+                ? coll.find(cs.get(), query).first()
+                : coll.find(query).first();
+
+            return new OperationResult(httpStatusIfOk, newEtag, oldDocument, newDocument);
+        } else {
+            // oops, we need to restore old document
+            DbUtils.restoreDocument(
+                cs,
+                coll,
+                oldDocument.get("_id"),
+                shardKeys,
+                oldDocument,
+                newEtag,
+                "metadata._etag");
+
+            return new OperationResult(HttpStatus.SC_PRECONDITION_FAILED, oldEtag, oldDocument, null);
+        }
     }
 }

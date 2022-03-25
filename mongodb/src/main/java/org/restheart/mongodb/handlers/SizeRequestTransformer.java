@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -60,8 +60,7 @@ public class SizeRequestTransformer extends PipelinedHandler {
 
             // for response phase
             if (response.getCount() >= 0) {
-                response.setContent(new BsonDocument("_size",
-                        new BsonInt64(response.getCount())));
+                response.setContent(new BsonDocument("_size", new BsonInt64(response.getCount())));
             }
         }
 

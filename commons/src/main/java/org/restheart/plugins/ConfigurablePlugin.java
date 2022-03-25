@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,14 +36,9 @@ public interface ConfigurablePlugin extends Plugin {
      * @throws ConfigurationException
      */
     @SuppressWarnings("unchecked")
-    public static <V extends Object> V argValue(final Map<String, Object> args,
-            final String argKey)
-            throws ConfigurationException {
+    public static <V extends Object> V argValue(final Map<String, Object> args, final String argKey) throws ConfigurationException {
         if (args == null || !args.containsKey(argKey)) {
-            throw new ConfigurationException(
-                    "The plugin" + " requires the argument '"
-                    + argKey
-                    + "'");
+            throw new ConfigurationException("The plugin" + " requires the argument '" + argKey + "'");
         } else {
             return (V) args.get(argKey);
         }

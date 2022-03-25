@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-security
  * %%
- * Copyright (C) 2018 - 2020 SoftInstigate
+ * Copyright (C) 2018 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -75,8 +75,7 @@ import org.slf4j.LoggerFactory;
         enabledByDefault = false)
 public class DigestAuthMechanism implements AuthMechanism {
 
-    private static final Logger LOGGER = LoggerFactory
-            .getLogger(DigestAuthMechanism.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DigestAuthMechanism.class);
 
     public static final String SILENT_HEADER_KEY = "No-Auth-Challenge";
     public static final String SILENT_QUERY_PARAM_KEY = "noauthchallenge";

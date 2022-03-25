@@ -18,7 +18,7 @@
         "methods":[
           {"name":"<init>","parameterTypes":[] }, 
           {"name":"setConf","parameterTypes":["java.util.Map"] }, 
-          {"name":"setMongoClient","parameterTypes":["com.mongodb.MongoClient"] }, 
+          {"name":"setMongoClient","parameterTypes":["com.mongodb.client.MongoClient"] }, 
           {"name":"setRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
         ]
       },
@@ -45,9 +45,6 @@
         ]
       },
       {
-        "name":"org.restheart.security.authorizers.FullAuthorizer"
-      },
-      {
         "name":"org.restheart.security.authorizers.GlobalPredicatesVetoer",
         "methods":[
           {"name":"<init>","parameterTypes":[] }, 
@@ -59,7 +56,7 @@
         "methods":[
           {"name":"<init>","parameterTypes":[] }, 
           {"name":"initConfiguration","parameterTypes":["java.util.Map"] }, 
-          {"name":"initMongoClient","parameterTypes":["com.mongodb.MongoClient"] }, 
+          {"name":"initMongoClient","parameterTypes":["com.mongodb.client.MongoClient"] }, 
           {"name":"initRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
         ]
       },

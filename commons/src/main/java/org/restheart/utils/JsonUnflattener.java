@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@
 
 package org.restheart.utils;
 
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -49,9 +48,9 @@ public final class JsonUnflattener {
 
     private final BsonValue root;
 
-    private Character separator = '.';
-    private Character leftBracket = '[';
-    private Character rightBracket = ']';
+    private static final Character separator = '.';
+    private static final Character leftBracket = '[';
+    private static final Character rightBracket = ']';
 
     /**
      * Creates a JSON unflattener.
@@ -62,42 +61,9 @@ public final class JsonUnflattener {
         root = json;
     }
 
-    private String objectComplexKey() {
-        return Pattern.quote(leftBracket.toString()) + "\\s*\".+?\"\\s*"
-                + Pattern.quote(rightBracket.toString());
-    }
+    private static final String objectComplexKey = Pattern.quote(leftBracket.toString()) + "\\s*\".+?\"\\s*" + Pattern.quote(rightBracket.toString());
 
-    private Pattern keyPartPattern() {
-        return Pattern.compile("^$|[^" + Pattern.quote(separator.toString()) + "]+");
-    }
-
-    /**
-     * A fluent setter to setup the separator within a key in the flattened
-     * JSON. The default separator is a dot(.).
-     *
-     * @param separator any character
-     * @return this {@link JsonUnflattener}
-     */
-    public JsonUnflattener withSeparator(char separator) {
-        this.separator = separator;
-        return this;
-    }
-
-    /**
-     * A fluent setter to setup the left and right brackets within a key in the
-     * flattened JSON. The default left and right brackets are left square
-     * bracket([) and right square bracket(]).
-     *
-     * @param leftBracket any character
-     * @param rightBracket any character
-     * @return this {@link JsonUnflattener}
-     */
-    public JsonUnflattener withLeftAndRightBrackets(char leftBracket,
-            char rightBracket) {
-        this.leftBracket = leftBracket;
-        this.rightBracket = rightBracket;
-        return this;
-    }
+    private static final Pattern keyPartPattern = Pattern.compile("^$|[^" + Pattern.quote(separator.toString()) + "]+");
 
     /**
      * Returns a JSON string of nested objects by the given flattened JSON
@@ -114,17 +80,17 @@ public final class JsonUnflattener {
             return root;
         }
 
-        BsonDocument flattened = root.asDocument();
+        var flattened = root.asDocument();
         BsonValue unflattened = flattened.keySet().isEmpty() ? new BsonDocument() : null;
 
-        for (String key : flattened.keySet()) {
-            BsonValue currentVal = unflattened;
+        for (var key : flattened.keySet()) {
+            var currentVal = unflattened;
             String objKey = null;
             Integer aryIdx = null;
 
-            Matcher matcher = keyPartPattern().matcher(key);
+            var matcher = keyPartPattern.matcher(key);
             while (matcher.find()) {
-                String keyPart = matcher.group();
+                var keyPart = matcher.group();
 
                 if (objKey != null ^ aryIdx != null) {
                     if (isJsonArray(keyPart)) {
@@ -167,14 +133,13 @@ public final class JsonUnflattener {
     }
 
     private BsonArray unflattenArray(BsonArray array) {
-        BsonArray unflattenArray = new BsonArray();
+        var unflattenArray = new BsonArray();
 
         array.forEach((value) -> {
             if (value.isArray()) {
                 unflattenArray.add(unflattenArray(value.asArray()));
             } else if (value.isDocument()) {
-                unflattenArray.add(new JsonUnflattener(value.asDocument())
-                        .withSeparator(separator).unflatten());
+                unflattenArray.add(new JsonUnflattener(value.asDocument()).unflatten());
             } else {
                 unflattenArray.add(value);
             }
@@ -184,11 +149,9 @@ public final class JsonUnflattener {
     }
 
     private String extractKey(String keyPart) {
-        if (keyPart.matches(objectComplexKey())) {
-            keyPart = keyPart.replaceAll(
-                    "^" + Pattern.quote(leftBracket.toString()) + "\\s*\"", "");
-            keyPart = keyPart.replaceAll(
-                    "\"\\s*" + Pattern.quote(rightBracket.toString()) + "$", "");
+        if (keyPart.matches(objectComplexKey)) {
+            keyPart = keyPart.replaceAll("^" + Pattern.quote(leftBracket.toString()) + "\\s*\"", "");
+            keyPart = keyPart.replaceAll("\"\\s*" + Pattern.quote(rightBracket.toString()) + "$", "");
         }
         return keyPart;
     }
@@ -202,24 +165,23 @@ public final class JsonUnflattener {
         return keyPart.matches("\\d+");
     }
 
-    private BsonValue findOrCreateJsonArray(BsonValue currentVal, String objKey,
-            Integer aryIdx) {
+    private BsonValue findOrCreateJsonArray(BsonValue currentVal, String objKey, Integer aryIdx) {
         if (objKey != null) {
-            BsonDocument jsonObj = currentVal.asDocument();
+            var jsonObj = currentVal.asDocument();
 
             if (jsonObj.get(objKey) == null) {
-                BsonValue ary = new BsonArray();
+                var ary = new BsonArray();
                 jsonObj.put(objKey, ary);
 
                 return ary;
+            } else {
+                return jsonObj.get(objKey);
             }
-
-            return jsonObj.get(objKey);
         } else { // aryIdx != null
-            BsonArray jsonAry = currentVal.asArray();
+            var jsonAry = currentVal.asArray();
 
             if (jsonAry.size() <= aryIdx || jsonAry.get(aryIdx).equals(BsonNull.VALUE)) {
-                BsonValue ary = new BsonArray();
+                var ary = new BsonArray();
                 assureJsonArraySize(jsonAry, aryIdx);
                 jsonAry.set(aryIdx, ary);
 
@@ -230,13 +192,12 @@ public final class JsonUnflattener {
         }
     }
 
-    private BsonValue findOrCreateJsonObject(BsonValue currentVal, String objKey,
-            Integer aryIdx) {
+    private BsonValue findOrCreateJsonObject(BsonValue currentVal, String objKey, Integer aryIdx) {
         if (objKey != null) {
-            BsonDocument jsonObj = currentVal.asDocument();
+            var jsonObj = currentVal.asDocument();
 
             if (jsonObj.get(objKey) == null) {
-                BsonValue obj = new BsonDocument();
+                var obj = new BsonDocument();
                 jsonObj.put(objKey, obj);
 
                 return obj;
@@ -244,10 +205,10 @@ public final class JsonUnflattener {
 
             return jsonObj.get(objKey);
         } else { // aryIdx != null
-            BsonArray jsonAry = currentVal.asArray();
+            var jsonAry = currentVal.asArray();
 
             if (jsonAry.size() <= aryIdx || jsonAry.get(aryIdx).equals(BsonNull.VALUE)) {
-                BsonValue obj = new BsonDocument();
+                var obj = new BsonDocument();
                 assureJsonArraySize(jsonAry, aryIdx);
                 jsonAry.set(aryIdx, obj);
 
@@ -258,16 +219,12 @@ public final class JsonUnflattener {
         }
     }
 
-    private void setUnflattenedValue(BsonDocument flattened, String key,
-            BsonValue currentVal, String objKey, Integer aryIdx) {
-        BsonValue val = flattened.get(key);
+    private void setUnflattenedValue(BsonDocument flattened, String key, BsonValue currentVal, String objKey, Integer aryIdx) {
+        var val = flattened.get(key);
         if (objKey != null) {
             if (val.isArray()) {
-                BsonValue jsonArray = new BsonArray();
-                val.asArray().forEach((arrayVal) -> {
-                    jsonArray.asArray().add(newJsonUnflattener(
-                            arrayVal).unflatten());
-                });
+                var jsonArray = new BsonArray();
+                val.asArray().forEach((arrayVal) ->  jsonArray.asArray().add(newJsonUnflattener(arrayVal).unflatten()));
                 currentVal.asDocument().put(objKey, jsonArray);
             } else {
                 currentVal.asDocument().put(objKey, val);
@@ -279,14 +236,8 @@ public final class JsonUnflattener {
     }
 
     private JsonUnflattener newJsonUnflattener(BsonValue json) {
-        JsonUnflattener jf = new JsonUnflattener(json);
+        var jf = new JsonUnflattener(json);
 
-        if (leftBracket != null && rightBracket != null) {
-            jf.withLeftAndRightBrackets(leftBracket, rightBracket);
-        }
-        if (separator != null) {
-            jf.withSeparator(separator);
-        }
         return jf;
     }
 

@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,7 +20,10 @@
  */
 package org.restheart.mongodb.db;
 
-import com.mongodb.MongoClientURI;
+import com.mongodb.Block;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.connection.ConnectionPoolSettings;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import java.net.UnknownHostException;
@@ -36,7 +39,7 @@ public class MongoReactiveClientSingleton {
 
     private static boolean initialized = false;
 
-    private static MongoClientURI mongoUri;
+    private static ConnectionString mongoUri;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoReactiveClientSingleton.class);
 
@@ -44,10 +47,18 @@ public class MongoReactiveClientSingleton {
      *
      * @param uri
      */
-    public static void init(MongoClientURI uri) {
+    public static void init(ConnectionString uri) {
         mongoUri = uri;
         // in case of error, e.g. invalid mongo uri, it's null
         initialized = uri != null;
+    }
+
+    /**
+     * alias for getInstance()
+     * @return the MongoReactiveClientSingleton
+     */
+    public static MongoReactiveClientSingleton get() {
+        return getInstance();
     }
 
     /**
@@ -83,8 +94,28 @@ public class MongoReactiveClientSingleton {
 
     private void setup() throws UnknownHostException {
         if (isInitialized()) {
-            mongoClient = MongoClients.create(mongoUri.toString());
+            // TODO add minSize and maxSize to configuration
+            var settings = MongoClientSettings.builder()
+                .applyToConnectionPoolSettings(new Block<ConnectionPoolSettings.Builder>() {
+                    @Override
+                    public void apply(final ConnectionPoolSettings.Builder builder) {
+                        // default values: min=0 and max=100
+                        builder.minSize(0).maxSize(128);
+                    }})
+                .applicationName("restheart (reactivestreams)")
+                .applyConnectionString(mongoUri)
+                .build();
+
+            mongoClient = MongoClients.create(settings);
         }
+    }
+
+    /**
+     * alias for getClient()
+     * @return the MongoClient
+     */
+    public MongoClient client() {
+        return getClient();
     }
 
     /**
@@ -101,9 +132,29 @@ public class MongoReactiveClientSingleton {
 
     private static class MongoDBClientSingletonHolder {
 
-        private static final MongoReactiveClientSingleton INSTANCE = new MongoReactiveClientSingleton();
+        private static final MongoReactiveClientSingleton INSTANCE;
 
-        private MongoDBClientSingletonHolder() {
+        // make sure the Singleton is a Singleton even in a multi-classloader environment
+        // credits to https://stackoverflow.com/users/145989/ondra-Žižka
+        // https://stackoverflow.com/a/47445573/4481670
+        static {
+            // There should be just one system class loader object in the whole JVM.
+            synchronized(ClassLoader.getSystemClassLoader()) {
+                var sysProps = System.getProperties();
+                // The key is a String, because the .class object would be different across classloaders.
+                var singleton = (MongoReactiveClientSingleton) sysProps.get(MongoReactiveClientSingleton.class.getName());
+
+                // Some other class loader loaded MongoClientSingleton earlier.
+                if (singleton != null) {
+                    INSTANCE = singleton;
+                }
+                else {
+                    // Otherwise this classloader is the first one, let's create a singleton.
+                    // Make sure not to do any locking within this.
+                    INSTANCE = new MongoReactiveClientSingleton();
+                    System.getProperties().put(MongoClientSingleton.class.getName(), INSTANCE);
+                }
+            }
         }
     }
 }

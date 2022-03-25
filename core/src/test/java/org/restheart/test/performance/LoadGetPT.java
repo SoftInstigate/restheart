@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -56,8 +56,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
-import org.restheart.mongodb.db.Database;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -103,14 +102,14 @@ public class LoadGetPT extends AbstractPT {
      *
      */
     public void dbdirect() {
-        final Database dbsDAO = new DatabaseImpl();
+        final Databases dbs = Databases.get();
         @SuppressWarnings("rawtypes")
-        MongoCollection dbcoll = dbsDAO.getCollection(db, coll);
+        MongoCollection dbcoll = dbs.getCollection(db, coll);
 
         BsonArray data;
 
         try {
-            data = new DatabaseImpl().getCollectionData(
+            data = dbs.getCollectionData(
                     null, // no session
                     dbcoll,
                     page,
@@ -135,8 +134,8 @@ public class LoadGetPT extends AbstractPT {
      *
      */
     public void dbdirectdoc() {
-        final Database dbDao = new DatabaseImpl();
-        MongoCollection<BsonDocument> dbcoll = dbDao.getCollection(db, coll);
+        final Databases dbs = Databases.get();
+        MongoCollection<BsonDocument> dbcoll = dbs.getCollection(db, coll);
 
         ObjectId oid;
         String sid;

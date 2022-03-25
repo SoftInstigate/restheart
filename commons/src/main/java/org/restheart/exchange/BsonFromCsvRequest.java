@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-security
  * %%
- * Copyright (C) 2018 - 2020 SoftInstigate
+ * Copyright (C) 2018 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,17 +26,16 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.bson.BsonArray;
-import org.bson.BsonDocument;
-import org.bson.BsonObjectId;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.json.JsonParseException;
+import org.bson.types.ObjectId;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.ChannelReader;
-
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderValues;
 import io.undertow.util.Headers;
+import static org.restheart.utils.BsonUtils.document;
 
 /**
  * ServiceRequest implementation backed by BsonValue and initialized from csv
@@ -112,7 +111,7 @@ public class BsonFromCsvRequest extends ServiceRequest<BsonArray> {
                 if (isHeader) {
                     cols = vals;
                 } else {
-                    var doc = new BsonDocument("_etag", new BsonObjectId());
+                    var doc = document().put("_etag", new ObjectId()).get();
 
                     int unnamedProps = 0;
 

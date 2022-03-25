@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -31,7 +31,7 @@ import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.DocumentDAO;
+import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
 import org.restheart.utils.HttpStatus;
@@ -42,21 +42,13 @@ import org.restheart.utils.RepresentationUtils;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PostCollectionHandler extends PipelinedHandler {
-    private final DocumentDAO documentDAO;
+    private final Documents documents = Documents.get();
 
     /**
      * Creates a new instance of PostCollectionHandler
      */
     public PostCollectionHandler() {
-        this(null, new DocumentDAO());
-    }
-
-    /**
-     *
-     * @param documentDAO
-     */
-    public PostCollectionHandler(DocumentDAO documentDAO) {
-        this(null, new DocumentDAO());
+        this(null);
     }
 
     /**
@@ -64,20 +56,9 @@ public class PostCollectionHandler extends PipelinedHandler {
      * @param next
      */
     public PostCollectionHandler(PipelinedHandler next) {
-        this(next, new DocumentDAO());
+        super(next);
     }
 
-    /**
-     *
-     * @param next
-     * @param documentDAO
-     */
-    public PostCollectionHandler(
-            PipelinedHandler next,
-            DocumentDAO documentDAO) {
-        super(next);
-        this.documentDAO = documentDAO;
-    }
 
     /**
      *
@@ -125,14 +106,16 @@ public class PostCollectionHandler extends PipelinedHandler {
             }
         }
 
-        var result = this.documentDAO.writeDocumentPost(
+        var result = this.documents.writeDocument(
             Optional.ofNullable(request.getClientSession()),
+            request.getMethod(),
+            request.getWriteMode(),
             request.getDBName(),
             request.getCollectionName(),
+            Optional.ofNullable(content.get("_id")),
             Optional.ofNullable(request.getFiltersDocument()),
             Optional.ofNullable(request.getShardKey()),
             content,
-            request.getWriteMode(),
             request.getETag(),
             request.isETagCheckRequired());
 

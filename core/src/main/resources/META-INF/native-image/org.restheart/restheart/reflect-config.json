@@ -91,10 +91,6 @@
   "methods":[{"name":"setEncoder","parameterTypes":["ch.qos.logback.core.encoder.Encoder"] }]}
 ,
 {
-  "name":"ch.qos.logback.core.encoder.LayoutWrappingEncoder",
-  "methods":[{"name":"setParent","parameterTypes":["ch.qos.logback.core.Appender"] }]}
-,
-{
   "name":"ch.qos.logback.core.pattern.PatternLayoutEncoderBase",
   "methods":[{"name":"setPattern","parameterTypes":["java.lang.String"] }]}
 ,
@@ -139,10 +135,6 @@
 {
   "name":"com.github.benmanes.caffeine.cache.BaseMpscLinkedArrayQueueProducerFields",
   "fields":[{"name":"producerIndex"}]}
-,
-{
-  "name":"com.github.benmanes.caffeine.cache.CacheLoader",
-  "methods":[{"name":"loadAll","parameterTypes":["java.lang.Iterable"] }]}
 ,
 {
   "name":"com.github.benmanes.caffeine.cache.PS",
@@ -213,10 +205,6 @@
   "allPublicFields":true,
   "allPublicMethods":true,
   "allPublicConstructors":true}
-,
-{
-  "name":"com.mongodb.MongoClient",
-  "methods":[{"name":"getCluster","parameterTypes":[] }]}
 ,
 {
   "name":"com.mongodb.MongoNamespace",
@@ -1276,14 +1264,17 @@
   "allDeclaredMethods":true}
 ,
 {
-  "name":"org.restheart.cache.impl.CaffeineLoadingCache$1"}
+  "name":"org.restheart.cache.impl.CaffeineLoadingCache$1",
+  "methods":[
+    {"name":"loadAll","parameterTypes":["java.util.Set"] }
+  ]}
 ,
 {
   "name":"org.restheart.graphql.GraphQLService",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"initConf","parameterTypes":["java.util.Map"] }, 
-    {"name":"initMongoClient","parameterTypes":["com.mongodb.MongoClient"] }
+    {"name":"initMongoClient","parameterTypes":["com.mongodb.client.MongoClient"] }
   ]}
 ,
 {
@@ -1298,7 +1289,7 @@
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"conf","parameterTypes":["java.util.Map"] }, 
-    {"name":"mc","parameterTypes":["com.mongodb.MongoClient"] }
+    {"name":"mc","parameterTypes":["com.mongodb.client.MongoClient"] }
   ]}
 ,
 {
@@ -1358,7 +1349,7 @@
   "name":"org.restheart.mongodb.interceptors.CollectionPropsInjector",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
-    {"name":"init","parameterTypes":["com.mongodb.MongoClient"] }
+    {"name":"init","parameterTypes":["com.mongodb.client.MongoClient"] }
   ]}
 ,
 {
@@ -1369,7 +1360,7 @@
   "name":"org.restheart.mongodb.interceptors.DbPropsInjector",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
-    {"name":"init","parameterTypes":["com.mongodb.MongoClient"] }
+    {"name":"init","parameterTypes":["com.mongodb.client.MongoClient"] }
   ]}
 ,
 {
@@ -1384,6 +1375,13 @@
   "name":"org.restheart.mongodb.interceptors.NamespacesResponseFlattener",
   "methods":[{"name":"<init>","parameterTypes":[] }]}
 ,
+{
+    "name":"org.restheart.security.authorizers.FullAuthorizer",
+    "methods":[
+      {"name":"<init>","parameterTypes":[] }, 
+      {"name":"<init>","parameterTypes":["boolean"] },
+      {"name":"initConf","parameterTypes":["java.util.Map"] }
+    ]},
 {
   "name":"org.restheart.mongodb.security.AllowBulkRequests",
   "methods":[
@@ -1436,7 +1434,7 @@
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"init","parameterTypes":["java.util.Map"] }, 
-    {"name":"mc","parameterTypes":["com.mongodb.MongoClient"] }, 
+    {"name":"mc","parameterTypes":["com.mongodb.client.MongoClient"] }, 
     {"name":"reg","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]}
 ,
@@ -1455,7 +1453,7 @@
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"setConf","parameterTypes":["java.util.Map"] }, 
-    {"name":"setMongoClient","parameterTypes":["com.mongodb.MongoClient"] }, 
+    {"name":"setMongoClient","parameterTypes":["com.mongodb.client.MongoClient"] }, 
     {"name":"setRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]}
 ,
@@ -1477,9 +1475,6 @@
   "name":"org.restheart.security.authorizers.FileAclAuthorizer"}
 ,
 {
-  "name":"org.restheart.security.authorizers.FullAuthorizer"}
-,
-{
   "name":"org.restheart.security.authorizers.GlobalPredicatesVetoer",
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
@@ -1491,7 +1486,7 @@
   "methods":[
     {"name":"<init>","parameterTypes":[] }, 
     {"name":"initConfiguration","parameterTypes":["java.util.Map"] }, 
-    {"name":"initMongoClient","parameterTypes":["com.mongodb.MongoClient"] }, 
+    {"name":"initMongoClient","parameterTypes":["com.mongodb.client.MongoClient"] }, 
     {"name":"initRegistry","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
   ]}
 ,

@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,23 +30,19 @@ public interface Authorizer extends ConfigurablePlugin {
     /**
      * A secured request is allowed when no VETOER denies it and at least one ALLOWER allows it
      */
-    public enum TYPE {
-        ALLOWER,
-        VETOER }
+    public enum TYPE { ALLOWER, VETOER }
 
     /**
      *
      * @param request
      * @return true if request is allowed
      */
-    @SuppressWarnings("rawtypes")
-    boolean isAllowed(final Request request);
+    boolean isAllowed(final Request<?> request);
 
     /**
      *
      * @param request
      * @return true if not authenticated user won't be allowed
      */
-    @SuppressWarnings("rawtypes")
-    boolean isAuthenticationRequired(final Request request);
+    boolean isAuthenticationRequired(final Request<?> request);
 }

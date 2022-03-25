@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,14 +32,9 @@ import org.restheart.exchange.QueryVariableNotBoundException;
 
 public abstract class AbstractAggregationOperation {
 
-    private static final Set<String> MAP_REDUCE_ALIASES
-            = Sets.newHashSet(new String[]{TYPE.MAP_REDUCE.name(),
-        "map reduce", "mapReduce", "map-reduce", "mr"});
+    private static final Set<String> MAP_REDUCE_ALIASES = Sets.newHashSet(new String[]{TYPE.MAP_REDUCE.name(), "map reduce", "mapReduce", "map-reduce", "mr"});
 
-    private static final Set<String> AGGREGATION_PIPELINE_ALIASES
-            = Sets.newHashSet(new String[]{TYPE.AGGREGATION_PIPELINE.name(),
-        "aggregation pipeline", "aggregationPipeline", "pipeline",
-        "aggregation-pipeline", "aggregation", "aggregate", "ap"});
+    private static final Set<String> AGGREGATION_PIPELINE_ALIASES = Sets.newHashSet(new String[]{TYPE.AGGREGATION_PIPELINE.name(), "aggregation pipeline", "aggregationPipeline", "pipeline", "aggregation-pipeline", "aggregation", "aggregate", "ap"});
 
     /**
      *
@@ -62,34 +57,28 @@ public abstract class AbstractAggregationOperation {
      * @return
      * @throws InvalidMetadataException
      */
-    public static List<AbstractAggregationOperation>
-            getFromJson(BsonDocument collProps)
-            throws InvalidMetadataException {
+    public static List<AbstractAggregationOperation> getFromJson(BsonDocument collProps) throws InvalidMetadataException {
         if (collProps == null) {
             return null;
         }
 
         ArrayList<AbstractAggregationOperation> ret = new ArrayList<>();
 
-        BsonValue _aggregations = collProps.get(AGGREGATIONS_ELEMENT_NAME);
+        var _aggregations = collProps.get(AGGREGATIONS_ELEMENT_NAME);
 
         if (_aggregations == null) {
             return ret;
         }
 
         if (!_aggregations.isArray()) {
-            throw new InvalidMetadataException("element '"
-                    + AGGREGATIONS_ELEMENT_NAME
-                    + "' is not an array list." + _aggregations);
+            throw new InvalidMetadataException("element '" + AGGREGATIONS_ELEMENT_NAME + "' is not an array list." + _aggregations);
         }
 
-        BsonArray aggregations = _aggregations.asArray();
+        var aggregations = _aggregations.asArray();
 
-        for (BsonValue _query : aggregations.getValues()) {
+        for (var _query : aggregations.getValues()) {
             if (!_query.isDocument()) {
-                throw new InvalidMetadataException("element '"
-                        + AGGREGATIONS_ELEMENT_NAME
-                        + "' is not valid." + _query);
+                throw new InvalidMetadataException("element '" + AGGREGATIONS_ELEMENT_NAME + "' is not valid." + _query);
             }
 
             ret.add(getQuery(_query.asDocument()));
@@ -98,35 +87,25 @@ public abstract class AbstractAggregationOperation {
         return ret;
     }
 
-    private static AbstractAggregationOperation getQuery(BsonDocument query)
-            throws InvalidMetadataException {
-
-        BsonValue _type = query.get(TYPE_ELEMENT_NAME);
+    private static AbstractAggregationOperation getQuery(BsonDocument query) throws InvalidMetadataException {
+        var _type = query.get(TYPE_ELEMENT_NAME);
 
         if (!query.containsKey(TYPE_ELEMENT_NAME)) {
-            throw new InvalidMetadataException(
-                    "query does not have '"
-                    + TYPE_ELEMENT_NAME
-                    + "' property");
+            throw new InvalidMetadataException("query does not have '" + TYPE_ELEMENT_NAME + "' property");
         }
 
         if (!_type.isString()) {
-            throw new InvalidMetadataException(
-                    "query property '"
-                    + TYPE_ELEMENT_NAME
-                    + "' must be a String: "
-                    + _type.toString());
+            throw new InvalidMetadataException("query property '" + TYPE_ELEMENT_NAME + "' must be a String: " + _type.toString());
         }
 
-        String type = _type.asString().getValue();
+        var type = _type.asString().getValue();
 
         if (MAP_REDUCE_ALIASES.contains(type)) {
             return new MapReduce(query);
         } else if (AGGREGATION_PIPELINE_ALIASES.contains(type)) {
             return new AggregationPipeline(query);
         } else {
-            throw new InvalidMetadataException("query has invalid '"
-                    + TYPE_ELEMENT_NAME + "': " + type);
+            throw new InvalidMetadataException("query has invalid '" + TYPE_ELEMENT_NAME + "': " + type);
         }
     }
 
@@ -140,17 +119,16 @@ public abstract class AbstractAggregationOperation {
         if (aVars == null) {
             return;
         }
+
         if (aVars.isDocument()) {
-            BsonDocument _obj = aVars.asDocument();
+            var _obj = aVars.asDocument();
 
             _obj.forEach((key, value) -> {
                 if (key.startsWith("$")) {
-                    throw new SecurityException(
-                            "aggregation variables cannot include operators");
+                    throw new SecurityException("aggregation variables cannot include operators");
                 }
 
-                if (value.isDocument()
-                        || value.isArray()) {
+                if (value.isDocument() || value.isArray()) {
                     checkAggregationVariables(value);
                 }
             });
@@ -169,44 +147,31 @@ public abstract class AbstractAggregationOperation {
      * @param properties
      * @throws org.restheart.exchange.InvalidMetadataException
      */
-    public AbstractAggregationOperation(BsonDocument properties)
-            throws InvalidMetadataException {
-        BsonValue _uri = properties.get(URI_ELEMENT_NAME);
+    public AbstractAggregationOperation(BsonDocument properties) throws InvalidMetadataException {
+        var _uri = properties.get(URI_ELEMENT_NAME);
 
         if (!properties.containsKey(TYPE_ELEMENT_NAME)) {
-            throw new InvalidMetadataException(
-                    "query does not have '"
-                    + TYPE_ELEMENT_NAME
-                    + "' property");
+            throw new InvalidMetadataException( "query does not have '" + TYPE_ELEMENT_NAME + "' property");
         }
 
-        BsonValue _type = properties.get(TYPE_ELEMENT_NAME);
+        var _type = properties.get(TYPE_ELEMENT_NAME);
 
         if (!_type.isString()) {
-            throw new InvalidMetadataException(
-                    "query property not have '"
-                    + TYPE_ELEMENT_NAME
-                    + "' is not a String: "
-                    + _type.toString());
+            throw new InvalidMetadataException("query property not have '" + TYPE_ELEMENT_NAME + "' is not a String: " + _type.toString());
         }
 
-        String stype = _type.asString().getValue();
+        var stype = _type.asString().getValue();
 
         if (MAP_REDUCE_ALIASES.contains(stype)) {
             this.type = TYPE.MAP_REDUCE;
         } else if (AGGREGATION_PIPELINE_ALIASES.contains(stype)) {
             this.type = TYPE.AGGREGATION_PIPELINE;
         } else {
-            throw new InvalidMetadataException(
-                    "query has invalid '"
-                    + TYPE_ELEMENT_NAME
-                    + "' property: "
-                    + stype);
+            throw new InvalidMetadataException("query has invalid '" + TYPE_ELEMENT_NAME + "' property: " + stype);
         }
 
         if (!properties.containsKey(URI_ELEMENT_NAME)) {
-            throw new InvalidMetadataException("query does not have '"
-                    + URI_ELEMENT_NAME + "' property");
+            throw new InvalidMetadataException("query does not have '" + URI_ELEMENT_NAME + "' property");
         }
 
         this.uri = _uri.asString().getValue();
@@ -234,29 +199,23 @@ public abstract class AbstractAggregationOperation {
      * @throws org.restheart.exchange.InvalidMetadataException
      * @throws org.restheart.exchange.QueryVariableNotBoundException
      */
-    protected BsonValue bindAggregationVariables(
-            BsonValue obj,
-            BsonDocument aVars)
-            throws InvalidMetadataException, QueryVariableNotBoundException {
+    protected BsonValue bindAggregationVariables( BsonValue obj, BsonDocument aVars) throws InvalidMetadataException, QueryVariableNotBoundException {
         if (obj == null) {
             return null;
         }
 
         if (obj.isDocument()) {
-            BsonDocument _obj = obj.asDocument();
+            var _obj = obj.asDocument();
 
             if (_obj.size() == 1 && _obj.get("$var") != null) {
                 BsonValue varName = _obj.get("$var");
 
                 if (!(varName.isString())) {
-                    throw new InvalidMetadataException("wrong variable name "
-                            + varName.toString());
+                    throw new InvalidMetadataException("wrong variable name " + varName.toString());
                 }
 
-                if (aVars == null
-                        || aVars.get(varName.asString().getValue()) == null) {
-                    throw new QueryVariableNotBoundException("variable "
-                            + varName.asString().getValue() + " not bound");
+                if (aVars == null || aVars.get(varName.asString().getValue()) == null) {
+                    throw new QueryVariableNotBoundException("variable " + varName.asString().getValue() + " not bound");
                 }
 
                 return aVars.get(varName.asString().getValue());
@@ -264,9 +223,7 @@ public abstract class AbstractAggregationOperation {
                 BsonDocument ret = new BsonDocument();
 
                 for (String key : _obj.keySet()) {
-                    ret.put(key,
-                            bindAggregationVariables(
-                                    _obj.get(key), aVars));
+                    ret.put(key, bindAggregationVariables(_obj.get(key), aVars));
                 }
 
                 return ret;

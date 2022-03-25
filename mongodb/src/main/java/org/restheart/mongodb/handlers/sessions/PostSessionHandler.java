@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -38,6 +38,8 @@ import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RepresentationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.restheart.mongodb.ConnectionChecker.replicaSet;
 
 /**
  *
@@ -94,10 +96,8 @@ public class PostSessionHandler extends PipelinedHandler {
                     mce.getMessage());
 
             // check if server supports sessions
-            if (!MongoClientSingleton.getInstance().isReplicaSet()) {
-                response.setInError(
-                        HttpStatus.SC_BAD_GATEWAY,
-                        mce.getMessage());
+            if (!replicaSet(MongoClientSingleton.get().client())) {
+                response.setInError(HttpStatus.SC_BAD_GATEWAY, mce.getMessage());
             } else {
                 throw mce;
             }

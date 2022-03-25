@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-commons
  * %%
- * Copyright (C) 2019 - 2020 SoftInstigate
+ * Copyright (C) 2019 - 2022 SoftInstigate
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@
  */
 package org.restheart.exchange;
 
+import org.restheart.utils.GsonUtils.ObjectBuilder;
+import org.restheart.utils.GsonUtils.ArrayBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.undertow.server.HttpServerExchange;
@@ -48,6 +50,14 @@ public class JsonResponse extends ServiceResponse<JsonElement> {
         } else {
             return null;
         }
+    }
+
+    public void setContent(ObjectBuilder builder) {
+        setContent(builder.get());
+    }
+
+    public void setContent(ArrayBuilder builder) {
+        setContent(builder.get());
     }
 
     @Override

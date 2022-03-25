@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,6 @@
 package org.restheart.security.authorizers;
 
 import java.util.Map;
-import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
 import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
@@ -54,12 +53,12 @@ public class FullAuthorizer implements Authorizer {
      *
      * @throws org.restheart.ConfigurationException
      */
-    public FullAuthorizer() throws ConfigurationException {
+    public FullAuthorizer() {
         this(false);
     }
 
     @InjectConfiguration
-    public void init(Map<String, Object> confArgs) {
+    public void initConf(Map<String, Object> confArgs) {
         this.authenticationRequired = argValue(confArgs, "authentication-required");
     }
 

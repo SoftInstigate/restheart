@@ -1,6 +1,6 @@
 [
   {
-    "_id": "admonCanDoEverything",
+    "_id": "adminCanDoEverything",
     "description": [
         "admin role can do everything",
         "WARNING: mongoAclAuthorizer is enabled by default",
@@ -31,11 +31,11 @@
         "NOTE: the id of the user is @user.userid with fileRealmAuthenticator and @user._id with mongoRealmAuthenticator"
     ],
     "roles": ["user"],
-    "predicate": "method(GET) and path-template('/{userid}') and equals(@user.userid, ${userid}) and qparams-contain(page) and qparams-blacklist(filter, sort)",
+    "predicate": "method(GET) and path-template('/{userid}') and equals(@user._id, ${userid}) and qparams-contain(page) and qparams-blacklist(filter, sort)",
     "priority": 100,
     "mongo": {
       "readFilter": {
-        "_$or": [{ "status": "public" }, { "author": "@user.userid" }]
+        "_$or": [{ "status": "public" }, { "author": "@user._id" }]
       },
       "projectResponse": { "log": 0 }
     }
@@ -54,10 +54,10 @@
     ],
     "roles": ["user"],
     "priority": 100,
-    "predicate": "method(POST) and path-template('/{userid}') and equals(@user.userid, ${userid}) and bson-request-whitelist(title, content) and bson-request-contains(title, content) and qparams-whitelist()",
+    "predicate": "method(POST) and path-template('/{userid}') and equals(@user._id, ${userid}) and bson-request-whitelist(title, content) and bson-request-contains(title, content) and qparams-whitelist()",
     "mongo": {
       "mergeRequest": {
-        "author": "@user.userid",
+        "author": "@user._id",
         "status": "draft",
         "log": "@request"
       }
@@ -77,9 +77,9 @@
     ],
     "roles": ["user"],
     "priority": 100,
-    "predicate": "method(PATCH) and path-template('/{userid}/{docid}') and equals(@user.userid, ${userid}) and bson-request-whitelist(title, content, status) and (bson-request-contains(title, content) or bson-request-contains(status)) and qparams-whitelist()",
+    "predicate": "method(PATCH) and path-template('/{userid}/{docid}') and equals(@user._id, ${userid}) and bson-request-whitelist(title, content, status) and (bson-request-contains(title, content) or bson-request-contains(status)) and qparams-whitelist()",
     "mongo": {
-      "mergeRequest": { "author": "@user.userid" },
+      "mergeRequest": { "author": "@user._id" },
       "writeFilter": { "status": "draft" }
     }
   }

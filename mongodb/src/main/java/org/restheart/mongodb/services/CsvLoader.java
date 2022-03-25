@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,7 +27,6 @@ import java.util.Deque;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
@@ -105,7 +104,7 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
             response.setContentTypeAsJson();
             if (doesApply(request)) {
                 try {
-                    CsvRequestParams params = new CsvRequestParams(exchange);
+                    var params = new CsvRequestParams(exchange);
 
                     if (params.db == null) {
                         response.setInError(HttpStatus.SC_BAD_REQUEST, "db qparam is mandatory");
@@ -120,11 +119,10 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
                     if (params.update && params.idIdx < 0) {
                         response.setInError(HttpStatus.SC_BAD_REQUEST, ERROR_NO_ID);
                     } else {
-                        BsonArray documents = request.getContent();
+                        var documents = request.getContent();
 
                         if (documents != null && documents.size() > 0) {
-                            var mcoll = MongoClientSingleton.getInstance().getClient()
-                                    .getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
+                            var mcoll = MongoClientSingleton.getInstance().getClient().getDatabase(params.db).getCollection(params.coll, BsonDocument.class);
 
                             if (params.update && !params.upsert) {
                                 documents.stream()
@@ -132,22 +130,19 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
                                         // add props specified via keys and values qparams
                                         .map(doc -> addProps(params, doc))
                                         .forEach(doc -> {
-                                            BsonDocument updateQuery = new BsonDocument("_id", doc.remove("_id"));
+                                            var updateQuery = new BsonDocument("_id", doc.remove("_id"));
 
                                             // for upate import, take _filter property into account
                                             // for instance, a filter allows to use $ positional array operator
-                                            BsonValue _filter = doc.remove(FILTER_PROPERTY);
+                                            var _filter = doc.remove(FILTER_PROPERTY);
 
                                             if (_filter != null && _filter.isDocument()) {
                                                 updateQuery.putAll(_filter.asDocument());
                                             }
                                             if (params.upsert) {
-                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc),
-                                                        FAU_WITH_UPSERT_OPS);
+                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_WITH_UPSERT_OPS);
                                             } else {
-
-                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc),
-                                                        FAU_NO_UPSERT_OPS);
+                                                mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_NO_UPSERT_OPS);
                                             }
                                         });
                             } else if (params.update && params.upsert) {
@@ -158,8 +153,7 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
                                         .forEach(doc -> {
                                             var updateQuery = new BsonDocument("_id", doc.remove("_id"));
 
-                                            mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc),
-                                                    FAU_WITH_UPSERT_OPS);
+                                            mcoll.findOneAndUpdate(updateQuery, new BsonDocument("$set", doc), FAU_WITH_UPSERT_OPS);
                                         });
                             } else {
                                 var docList = documents.stream()
@@ -176,12 +170,10 @@ public class CsvLoader implements Service<BsonFromCsvRequest, BsonResponse> {
                         }
                     }
                 } catch (IllegalArgumentException iae) {
-                    response.setInError(HttpStatus.SC_BAD_REQUEST,
-                            ERROR_QPARAM);
+                    response.setInError(HttpStatus.SC_BAD_REQUEST, ERROR_QPARAM);
                 }
             } else {
-                response.setInError(HttpStatus.SC_NOT_IMPLEMENTED,
-                        ERROR_WRONG_METHOD);
+                response.setInError(HttpStatus.SC_NOT_IMPLEMENTED, ERROR_WRONG_METHOD);
             }
         }
     }
@@ -280,9 +272,6 @@ class CsvRequestParams {
 
         update = _update != null && (_update.isEmpty() || "true".equalsIgnoreCase(_update.getFirst()));
 
-        upsert = _upsert == null
-                || _update == null
-                || _update.isEmpty()
-                || "true".equalsIgnoreCase(_upsert.getFirst());
+        upsert = _upsert == null || _update == null || _update.isEmpty() || "true".equalsIgnoreCase(_upsert.getFirst());
     }
 }

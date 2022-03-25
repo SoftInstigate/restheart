@@ -1,0 +1,31 @@
+version: "3"
+
+services:
+  restheart:
+    image: softinstigate/restheart-snapshot:latest-native
+    environment:
+      RHO: >
+          /instance-name->"native";
+          /mongo-uri->"mongodb://mongodb";
+          /http-host->"0.0.0.0";
+    depends_on:
+      - mongodb
+      - mongodb-init
+    # you can add javascript plugins mounting the following directory
+    # volumes:
+    #   - ./plugins:/opt/restheart/plugins
+    ports:
+      - "8080:8080"
+
+  mongodb:
+    image: mongo:5.0
+    command: ["--bind_ip_all", "--replSet", "rs0"]
+
+  ### Initialize MongoDB as a single node Replica Set
+  mongodb-init:
+    image: mongo:5.0
+    depends_on:
+      - mongodb
+    entrypoint: >-
+      bash -c "for i in {1..10}; do mongo --host mongodb --eval
+      'if (!rs.status().ok) rs.initiate();' && break || sleep 3; done"

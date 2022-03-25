@@ -6,8 +6,6 @@ Background:
 # note: db starting with 'test-' are automatically deleted after test finishes
 * def db = '/test-txns'
 * def coll = '/coll'
-* def sid = function(url) { return url.substring(url.length-36); }
-* def docid = function(url) { return url.substring(url.length-24); }
 * def authHeader = 'Basic YWRtaW46c2VjcmV0'
 
 Scenario:

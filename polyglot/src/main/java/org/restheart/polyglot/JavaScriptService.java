@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-security
  * %%
- * Copyright (C) 2018 - 2020 SoftInstigate
+ * Copyright (C) 2018 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,7 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
@@ -178,7 +178,7 @@ public class JavaScriptService extends AbstractJSPlugin implements StringService
      *
      */
     public void handle(StringRequest request, StringResponse response) {
-        handle().executeVoid(request, response);
+        _handle().executeVoid(request, response);
     }
 
     /**

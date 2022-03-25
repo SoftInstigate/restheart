@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -62,12 +62,11 @@ import org.restheart.utils.LambdaUtils;
  * @author Christian Groth {@literal <groth@e-spirit.com>}
  */
 public class MetricsHandler extends PipelinedHandler {
-
     @VisibleForTesting
     MongoServiceConfiguration configuration = MongoServiceConfiguration.get();
 
     @VisibleForTesting
-    SharedMetricRegistryProxy metrics = new SharedMetricRegistryProxy();
+    SharedMongoMetricRegistryProxy metrics = new SharedMongoMetricRegistryProxy();
 
     /**
      *
@@ -162,17 +161,14 @@ public class MetricsHandler extends PipelinedHandler {
             if (request.isGet()) {
                 // detect metrics response type
                 Deque<String> representationFormatParameters
-                        = exchange.getQueryParameters()
-                                .get(REPRESENTATION_FORMAT_KEY);
+                        = exchange.getQueryParameters().get(REPRESENTATION_FORMAT_KEY);
 
                 ResponseType responseType = Optional.ofNullable(
                         ResponseType.forQueryParameter(
                                 representationFormatParameters == null
                                         ? null
                                         : representationFormatParameters.getFirst())
-                ).orElseGet(()
-                        -> ResponseType.forAcceptHeader(request.getHeader(Headers.ACCEPT.toString()))
-                );
+                ).orElseGet(() -> ResponseType.forAcceptHeader(request.getHeader(Headers.ACCEPT.toString())));
 
                 // render metrics or error on unknown response type
                 if (responseType != null) {
@@ -183,18 +179,15 @@ public class MetricsHandler extends PipelinedHandler {
                             .map(ResponseType::getContentType)
                             .map(x -> "'" + x + "'")
                             .collect(Collectors.joining(","));
-                    response.setInError(
-                            HttpStatus.SC_NOT_ACCEPTABLE,
-                            "not acceptable, acceptable content types are: " + acceptableTypes
+
+                    response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "not acceptable, acceptable content types are: " + acceptableTypes
                     );
                 }
             } else {
                 response.setStatusCode(HttpStatus.SC_METHOD_NOT_ALLOWED);
             }
         } else {  //no matching registry found
-            response.setInError(
-                    HttpStatus.SC_NOT_FOUND,
-                    "not found");
+            response.setInError(HttpStatus.SC_NOT_FOUND, "not found");
         }
 
         next(exchange);
@@ -202,7 +195,6 @@ public class MetricsHandler extends PipelinedHandler {
 
     @VisibleForTesting
     enum ResponseType {
-
         /**
          * dropwizard-metrics compatible JSON format, see
          * https://github.com/iZettle/dropwizard-metrics/blob/v3.1.2/metrics-json/src/main/java/com/codahale/metrics/json/MetricsModule.java
@@ -211,8 +203,7 @@ public class MetricsHandler extends PipelinedHandler {
         JSON("application/json") {
             @Override
             public String generateResponse(METRICS_GATHERING_LEVEL metricsLevel, MetricRegistry registry) throws IOException {
-                BsonDocument document = MetricsJsonGenerator
-                        .generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
+                BsonDocument document = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
                 return document.toJson(
                         JsonWriterSettings.builder()
                                 .outputMode(JsonMode.RELAXED)
@@ -242,17 +233,19 @@ public class MetricsHandler extends PipelinedHandler {
 
             @Override
             public String generateResponse(METRICS_GATHERING_LEVEL metricsLevel, MetricRegistry registry) throws IOException {
+                var sb = new StringBuilder();
+                var timestamp = System.currentTimeMillis();
+                var metrics = new SharedMongoMetricRegistryProxy();
 
-                StringBuilder sb = new StringBuilder();
-                long timestamp = System.currentTimeMillis();
                 if (metricsLevel == ROOT) {
-                    metricsProxy.registries().forEach(registryName -> {
+                    metrics.registries().forEach(registryName -> {
 
                         // reconstruct database and collection name
-                        String[] registryNameParts = registryName.split("/");
+                        var registryNameWithoutPrefix = registryName.substring(SharedMongoMetricRegistryProxy.REGISTRY_PREFIX.length());
+                        String[] registryNameParts = registryNameWithoutPrefix.split("/");
                         String databaseName = registryNameParts.length > 0 ? registryNameParts[0] : null;
                         String collectionName = registryNameParts.length > 1 ? registryNameParts[1] : null;
-                        boolean isRootMetricsRegistry = metricsProxy.isDefault(databaseName);
+                        boolean isRootMetricsRegistry = metrics.isDefault(registryName);
 
                         // set values for database and collection labels
                         if (isRootMetricsRegistry) {
@@ -265,7 +258,7 @@ public class MetricsHandler extends PipelinedHandler {
                         }
 
                         // generate metrics
-                        sb.append(generateResponse(metricsProxy.registry(registryName), databaseName, collectionName, timestamp));
+                        sb.append(generateResponse(metrics.registry(registryNameWithoutPrefix), databaseName, collectionName, timestamp));
                     });
                 } else {
 
@@ -278,13 +271,12 @@ public class MetricsHandler extends PipelinedHandler {
             }
 
             public String generateResponse(MetricRegistry registry, String databaseName, String collectionName, long timestamp) {
-
                 // fetch metrics registry and build json data
-                BsonDocument root = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
+                var root = MetricsJsonGenerator.generateMetricsBson(registry, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
                 root.remove("version");
 
                 // convert json data to prometheus format
-                StringBuilder sb = new StringBuilder();
+                var sb = new StringBuilder();
                 root.forEach((groupKey, groupContent)
                         -> groupContent.asDocument().forEach((metricKey, metricContent) -> {
                             final String[] split = metricKey.split("\\.");
@@ -330,7 +322,7 @@ public class MetricsHandler extends PipelinedHandler {
             }
         };
 
-        SharedMetricRegistryProxy metricsProxy = new SharedMetricRegistryProxy();
+        SharedMongoMetricRegistryProxy metricsProxy = new SharedMongoMetricRegistryProxy();
 
         // if we just use null for database and collection labels when data is aggregated this would lead to problems
         // defining filters in grafana correctly, so it's better to use an artificial value for these cases. we use a

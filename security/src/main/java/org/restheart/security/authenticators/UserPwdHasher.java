@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-security
  * %%
- * Copyright (C) 2018 - 2020 SoftInstigate
+ * Copyright (C) 2018 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -110,20 +110,15 @@ public class UserPwdHasher implements MongoInterceptor {
             return;
         } else if (content.isArray() && request.isPost()) {
             // POST collection with array of documents
-            JsonArray passwords = JsonPath.read(BsonUtils.toJson(content),
-                    "$.[*].".concat(this.propNamePassword));
+            JsonArray passwords = JsonPath.read(BsonUtils.toJson(content), "$.[*].".concat(this.propNamePassword));
 
             int[] iarr = {0};
 
             passwords.forEach(plain -> {
-                if (plain != null && plain.isJsonPrimitive()
-                        && plain.getAsJsonPrimitive().isString()) {
-                    var hashed = BCrypt.hashpw(
-                            plain.getAsJsonPrimitive().getAsString(),
-                            BCrypt.gensalt(complexity));
+                if (plain != null && plain.isJsonPrimitive() && plain.getAsJsonPrimitive().isString()) {
+                    var hashed = BCrypt.hashpw(plain.getAsJsonPrimitive().getAsString(), BCrypt.gensalt(complexity));
 
-                    content.asArray().get(iarr[0]).asDocument()
-                            .put(this.propNamePassword, new BsonString(hashed));
+                    content.asArray().get(iarr[0]).asDocument().put(this.propNamePassword, new BsonString(hashed));
                 }
 
                 iarr[0]++;
@@ -132,17 +127,12 @@ public class UserPwdHasher implements MongoInterceptor {
             // PUT/PATCH document or bulk PATCH
             JsonElement plain;
             try {
-                plain = JsonPath.read(BsonUtils.toJson(content),
-                        "$.".concat(this.propNamePassword));
+                plain = JsonPath.read(BsonUtils.toJson(content), "$.".concat(this.propNamePassword));
 
-                if (plain != null && plain.isJsonPrimitive()
-                        && plain.getAsJsonPrimitive().isString()) {
-                    String hashed = BCrypt.hashpw(
-                            plain.getAsJsonPrimitive().getAsString(),
-                            BCrypt.gensalt(complexity));
+                if (plain != null && plain.isJsonPrimitive() && plain.getAsJsonPrimitive().isString()) {
+                    String hashed = BCrypt.hashpw(plain.getAsJsonPrimitive().getAsString(), BCrypt.gensalt(complexity));
 
-                    content.asDocument()
-                            .put(this.propNamePassword, new BsonString(hashed));
+                    content.asDocument().put(this.propNamePassword, new BsonString(hashed));
                 }
             } catch (PathNotFoundException pnfe) {
                 return;

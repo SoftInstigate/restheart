@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-graphql
  * %%
- * Copyright (C) 2020 - 2021 SoftInstigate
+ * Copyright (C) 2020 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,7 @@
 package org.restheart.graphql;
 
 import com.google.gson.Gson;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import graphql.ExecutionInput;
 import graphql.GraphQL;
 import graphql.execution.instrumentation.dataloader.DataLoaderDispatcherInstrumentation;

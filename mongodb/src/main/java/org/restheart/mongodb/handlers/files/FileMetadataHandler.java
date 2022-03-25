@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,8 +33,7 @@ import java.util.Optional;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.FileMetadataDAO;
-import org.restheart.mongodb.db.FileMetadataRepository;
+import org.restheart.mongodb.db.GridFs;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -49,22 +48,13 @@ import org.restheart.utils.HttpStatus;
  */
 public class FileMetadataHandler extends PipelinedHandler {
 
-    private final FileMetadataRepository fileMetadataDAO;
+    private final GridFs gridFs = GridFs.get();;
 
     /**
      * Creates a new instance of PatchFileMetadataHandler
      */
     public FileMetadataHandler() {
-        this(null, new FileMetadataDAO());
-    }
-
-    /**
-     *
-     * @param fileMetadataDAO
-     */
-    public FileMetadataHandler(FileMetadataRepository fileMetadataDAO) {
-        super(null);
-        this.fileMetadataDAO = fileMetadataDAO;
+        this(null);
     }
 
     /**
@@ -73,17 +63,6 @@ public class FileMetadataHandler extends PipelinedHandler {
      */
     public FileMetadataHandler(PipelinedHandler next) {
         super(next);
-        this.fileMetadataDAO = new FileMetadataDAO();
-    }
-
-    /**
-     *
-     * @param next
-     * @param fileMetadataDAO
-     */
-    public FileMetadataHandler(PipelinedHandler next, FileMetadataRepository fileMetadataDAO) {
-        super(next);
-        this.fileMetadataDAO = fileMetadataDAO;
     }
 
     /**
@@ -146,8 +125,9 @@ public class FileMetadataHandler extends PipelinedHandler {
             return;
         }
 
-        var result = fileMetadataDAO.updateMetadata(
+        var result = gridFs.updateFileMetadata(
             Optional.ofNullable(request.getClientSession()),
+            request.getMethod(),
             request.getDBName(),
             request.getCollectionName(),
             Optional.of(request.getDocumentId()),
@@ -155,7 +135,6 @@ public class FileMetadataHandler extends PipelinedHandler {
             Optional.ofNullable(request.getShardKey()),
             content,
             request.getETag(),
-            request.isPatch(),
             request.isETagCheckRequired());
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {

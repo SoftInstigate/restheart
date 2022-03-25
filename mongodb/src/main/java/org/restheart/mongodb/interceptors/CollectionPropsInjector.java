@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-mongodb
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,22 +20,24 @@
  */
 package org.restheart.mongodb.interceptors;
 
-import com.mongodb.MongoClient;
+import com.mongodb.MongoException;
+import com.mongodb.client.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
-
 import java.util.Optional;
-
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.mongodb.db.DatabaseImpl;
+import org.restheart.mongodb.db.Databases;
+import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Injects the collection properties into the Request
@@ -50,7 +52,9 @@ import org.restheart.utils.HttpStatus;
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         priority = Integer.MIN_VALUE + 1)
 public class CollectionPropsInjector implements MongoInterceptor {
-    private DatabaseImpl dbsDAO = null;
+    private final Logger LOGGER = LoggerFactory.getLogger(CollectionPropsInjector.class);
+
+    private Databases dbs = null;
 
     private static final String RESOURCE_DOES_NOT_EXIST = "Resource does not exist";
     private static final String COLLECTION_DOES_NOT_EXIST = "Collection '%s' does not exist";
@@ -58,13 +62,13 @@ public class CollectionPropsInjector implements MongoInterceptor {
     private static final String SCHEMA_STORE_DOES_NOT_EXIST = "Schema Store does not exist";
 
     /**
-     * Makes sure that dbsDAO is instantiated after MongoClient initialization
+     * Makes sure that dbs is instantiated after MongoClient initialization
      *
      * @param mclient
      */
     @InjectMongoClient
     public void init(MongoClient mclient) {
-        this.dbsDAO = new DatabaseImpl();
+        this.dbs = Databases.get();
     }
 
     /**
@@ -75,16 +79,39 @@ public class CollectionPropsInjector implements MongoInterceptor {
      */
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        // skip if OPTIONS
+        if (request.isOptions()) {
+            return;
+        }
+
         var dbName = request.getDBName();
         var collName = request.getCollectionName();
 
         if (dbName != null && collName != null && !request.isDbMeta()) {
             BsonDocument collProps;
 
-            if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
-                collProps = dbsDAO.getCollectionProperties(Optional.ofNullable(request.getClientSession()), dbName, collName);
-            } else {
-                collProps = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
+            try {
+                if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
+                    collProps = dbs.getCollectionProperties(Optional.ofNullable(request.getClientSession()), dbName, collName);
+                } else {
+                    collProps = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
+                }
+            } catch(MongoException mce) {
+                int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
+
+                if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().isBlank()) {
+                    LOGGER.error("Error handling the request", mce);
+                    response.setInError(httpCode, mce.getMessage());
+                } else {
+                    LOGGER.debug("Error handling the request", mce);
+                    response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
+                }
+
+                return;
+            } catch (Exception e) {
+                LOGGER.error("Error handling the request", e);
+                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error getting properties of collection " + dbName.concat(".").concat(collName), e);
+                return;
             }
 
             // if collProps is null, the collection does not exist
@@ -103,7 +130,7 @@ public class CollectionPropsInjector implements MongoInterceptor {
 
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return dbsDAO != null
+        return dbs != null
                 && request.isHandledBy("mongo")
                 && !(request.isInError()
                 || request.isMetrics()

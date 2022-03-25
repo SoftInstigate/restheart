@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-core
  * %%
- * Copyright (C) 2014 - 2020 SoftInstigate
+ * Copyright (C) 2014 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,8 +20,12 @@
  */
 package org.restheart.security.handlers;
 
+import io.undertow.security.api.AuthenticationMechanismContext;
 import io.undertow.server.HttpServerExchange;
+
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.security.AuthMechanism;
@@ -34,27 +38,27 @@ import org.restheart.plugins.security.AuthMechanism;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class AuthenticatorMechanismsHandler extends PipelinedHandler {
-
-    private final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms;
+    private final Set<AuthenticatorMechanismWrapper> wrappedAuthenticatorMechanisms;
 
     public AuthenticatorMechanismsHandler(final PipelinedHandler next, final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
         super(next);
-        this.authenticatorMechanisms = authenticatorMechanisms;
+        this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream().map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance())).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     public AuthenticatorMechanismsHandler(final Set<PluginRecord<AuthMechanism>> authenticatorMechanisms) {
-        this.authenticatorMechanisms = authenticatorMechanisms;
+        this.wrappedAuthenticatorMechanisms = authenticatorMechanisms.stream().map(mechanism -> new AuthenticatorMechanismWrapper(mechanism.getInstance())).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
+
     @Override
-    @SuppressWarnings("deprecation")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         final var sc = exchange.getSecurityContext();
 
-        if (sc != null) {
-            authenticatorMechanisms.stream().forEachOrdered(mechanism -> sc.addAuthenticationMechanism(new AuthenticatorMechanismWrapper(mechanism.getInstance())));
+        if (sc != null && sc instanceof AuthenticationMechanismContext amc) {
+            wrappedAuthenticatorMechanisms.stream().forEachOrdered(wrappedMechanism -> amc.addAuthenticationMechanism(wrappedMechanism));
+            next(exchange);
+        } else {
+            throw new IllegalStateException("The SecurityContext does not support authentication mechanisms!");
         }
-
-        next(exchange);
     }
 }

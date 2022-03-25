@@ -2,7 +2,7 @@
  * ========================LICENSE_START=================================
  * restheart-security
  * %%
- * Copyright (C) 2018 - 2020 SoftInstigate
+ * Copyright (C) 2018 - 2022 SoftInstigate
  * %%
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,11 +20,12 @@
  */
 package org.restheart.security.utils;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCursor;
 import org.bson.BsonDocument;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
+import static org.restheart.utils.BsonUtils.document;
 
 /**
  *
@@ -61,24 +62,19 @@ public class MongoUtils {
 
         var pc = client.getDatabase(dbName).getCollection("_properties", BsonDocument.class);
 
-        var doc = new BsonDocument();
-
-        doc.put("_id", new BsonString("_properties"));
-        doc.put("_etag", new BsonObjectId());
-
-        pc.insertOne(doc);
+        pc.insertOne(document()
+            .put("_id", new BsonString("_properties"))
+            .put("_etag", new BsonObjectId())
+            .get());
     }
 
     public void createCollection(final String dbName, final String collName) {
-
         var pc = client.getDatabase(dbName).getCollection("_properties", BsonDocument.class);
 
-        var doc = new BsonDocument();
-
-        doc.put("_id", new BsonString("_properties.".concat(collName)));
-        doc.put("_etag", new BsonObjectId());
-
-        pc.insertOne(doc);
+        pc.insertOne(document()
+            .put("_id", new BsonString("_properties.".concat(collName)))
+            .put("_etag", new BsonObjectId())
+            .get());
 
         client.getDatabase(dbName).createCollection(collName);
     }
