@@ -246,7 +246,7 @@ plugins-args:
       uri: /graphql
       db: test-graphql
       collection: gql-apps
-      verbose: false
+      verbose: true
     # a global blacklist for mongodb operators in filter query parameter
     filterOperatorsBlacklist:
       blacklist: [ "$where" ]
