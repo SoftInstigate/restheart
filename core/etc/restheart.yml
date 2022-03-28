@@ -133,7 +133,25 @@ static-resources-mounts:
 
 #### Security
 
- # RESTHeart Security security is pluggable, you can provide you own
+## SSL Configuration
+
+# Configure the keystore to enable the https listener.
+
+ # To use your own certificate you need to import it (and eventually the CA certificates chain) into a java keystore
+ # and specify the keystore-file,keystore-password and certpassword configuration properties.
+ # Two scripts are available to generate the keystore:
+ ## 1) generate-self-signed-keystore.sh
+ ##    Generate a self signed certificate and import it in the java keystore
+ ##    https://github.com/SoftInstigate/restheart/blob/master/core/bin/generate-self-signed-keystore.sh
+ ## 2) convert-letsencrypt-java-keystore.sh
+ ##    Generate the keystore from a https://letsencrypt.org free certificate
+ ##    https://github.com/SoftInstigate/restheart/blob/master/core/bin/convert-letsencrypt-java-keystore.sh
+
+#keystore-file: /path/to/keystore/file
+#keystore-password: password
+#certpassword: password
+
+ # RESTHeart security is pluggable, you can provide you own
  # implementations of Authenticator Mechanisms, Authenticator, Authorizer
  # and Token Manager
 
@@ -178,8 +196,7 @@ auth-mechanisms:
 
 ## Authenticators
 
- # An Authenticator verify user credential and are used by one or more
- # AuthMachanisms
+ # Authenticators verify user credentials and are used by one or more AuthMachanisms
 
 authenticators:
   fileRealmAuthenticator:
@@ -214,7 +231,7 @@ authenticators:
 
 ## Authorizers
 
- # Authorizers verify if a request is allowed.
+ # Authorizers verify if a request is allowed eforcing the security policy.
 
  # As an in-bound request is received and authenticated the isAllowed() method is
  # called on each authorizers. A secured request is allowed when no `VETOER` denies
@@ -246,7 +263,7 @@ authorizers:
 
 ## Token Manager
 
- # If a token-manager is configured, RESTHeart Security will use it to generate
+ # If a token-manager is configured, RESTHeart will use it to generate
  # and verify auth tokens.
  # If more than one token-manager are defined, the first one will be used
  # The token is returned to the caller via auth-token header when the user
@@ -395,7 +412,7 @@ max-pagesize: 1000
 # speeds up requests with small pagesize
 cursor-batch-size: 1000
 
-# In order to save bandwitdth RESTHeart Security can force requests to support the giz encoding (if not, requests will be rejected)
+# In order to save bandwitdth RESTHeart can force requests to support the giz encoding (if not, requests will be rejected)
 force-gzip-encoding: false
 
 ## Caches
