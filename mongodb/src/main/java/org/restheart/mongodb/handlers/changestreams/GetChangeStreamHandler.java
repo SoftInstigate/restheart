@@ -73,7 +73,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         try {
             if (isWebSocketHandshakeRequest(exchange)) {
                 exchange.putAttachment(JSON_MODE_ATTACHMENT_KEY, request.getJsonMode());
-                exchange.putAttachment(AVARS_ATTACHMENT_KEY, request.getAggreationVars());
+                exchange.putAttachment(AVARS_ATTACHMENT_KEY, request.getAggregationVars());
 
                 startStream(exchange);
 
@@ -155,7 +155,7 @@ public class GetChangeStreamHandler extends PipelinedHandler {
         ChangeStreamOperation pipeline = _query.get();
 
         List<BsonDocument> resolvedStages = pipeline
-                .getResolvedStagesAsList(request.getAggreationVars());
+                .getResolvedStagesAsList(request.getAggregationVars());
         return resolvedStages;
     }
 

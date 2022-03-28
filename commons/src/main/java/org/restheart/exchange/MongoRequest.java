@@ -956,7 +956,7 @@ public class MongoRequest extends BsonRequest {
     /**
      * @return the aggregationVars
      */
-    public BsonDocument getAggreationVars() {
+    public BsonDocument getAggregationVars() {
         return aggregationVars;
     }
 
