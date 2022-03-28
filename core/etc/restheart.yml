@@ -158,7 +158,7 @@ static-resources-mounts:
 #keystore-password: password
 #certpassword: password
 
- # RESTHeart Security security is pluggable, you can provide you own
+ # RESTHeart security is pluggable, you can provide you own
  # implementations of Authenticator Mechanisms, Authenticator, Authorizer
  # and Token Manager
 
@@ -203,8 +203,7 @@ auth-mechanisms:
 
 ## Authenticators
 
- # An Authenticator verify user credential and are used by one or more
- # AuthMachanisms
+ # Authenticators verify user credentials and are used by one or more AuthMachanisms
 
 authenticators:
   fileRealmAuthenticator:
@@ -239,7 +238,7 @@ authenticators:
 
 ## Authorizers
 
- # Authorizers verify if a request is allowed.
+ # Authorizers verify if a request is allowed eforcing the security policy.
 
  # As an in-bound request is received and authenticated the isAllowed() method is
  # called on each authorizers. A secured request is allowed when no `VETOER` denies
@@ -271,7 +270,7 @@ authorizers:
 
 ## Token Manager
 
- # If a token-manager is configured, RESTHeart Security will use it to generate
+ # If a token-manager is configured, RESTHeart will use it to generate
  # and verify auth tokens.
  # If more than one token-manager are defined, the first one will be used
  # The token is returned to the caller via auth-token header when the user
@@ -452,7 +451,7 @@ eager-cursor-allocation-linear-slice-heights: [4, 2, 1]
 eager-cursor-allocation-random-max-cursors: 20
 eager-cursor-allocation-random-slice-min-width: 1000
 
- # In order to save bandwitdth RESTHeart Security can force requests to support the giz encoding (if not, requests will be rejected)
+ # In order to save bandwitdth RESTHeart can force requests to support the giz encoding (if not, requests will be rejected)
 force-gzip-encoding: false
 
  # Number of I/O threads created for non-blocking tasks. at least 2. suggested value: core*2
