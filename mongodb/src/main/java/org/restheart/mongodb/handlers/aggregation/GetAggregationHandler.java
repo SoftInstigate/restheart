@@ -110,9 +110,9 @@ public class GetAggregationHandler extends PipelinedHandler {
             next(exchange);
             return;
         } else {
-            var avars = request.getAggreationVars() == null
+            var avars = request.getAggregationVars() == null
                 ? new BsonDocument()
-                : request.getAggreationVars();
+                : request.getAggregationVars();
 
             // add the default variables to the avars document
             injectAvars(request, avars);
@@ -167,11 +167,11 @@ public class GetAggregationHandler extends PipelinedHandler {
                                 .allowDiskUse(pipeline.getAllowDiskUse().getValue());
                         }
                     } catch (MongoCommandException | InvalidMetadataException ex) {
-                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggreation pipeline", ex);
+                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggregation pipeline", ex);
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, "error executing aggreation pipeline: " + qvnbe.getMessage());
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "error executing aggregation pipeline: " + qvnbe.getMessage());
                         next(exchange);
                         return;
                     }
