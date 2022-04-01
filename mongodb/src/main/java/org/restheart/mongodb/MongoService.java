@@ -23,7 +23,6 @@ package org.restheart.mongodb;
 import static io.undertow.Handlers.path;
 import static io.undertow.Handlers.pathTemplate;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.PathTemplateHandler;
 import io.undertow.util.PathMatcher;
 import io.undertow.util.PathTemplateMatch;
 import io.undertow.util.PathTemplateMatcher;
