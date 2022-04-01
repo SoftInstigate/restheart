@@ -103,9 +103,7 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
 
             var cs = getTxnClientSession(sid, new Txn(txnId, Txn.TransactionStatus.IN));
 
-            LOGGER.debug("Request is executed in session {} with {}",
-                    _sid,
-                    cs.getTxnServerStatus());
+            LOGGER.debug("Request is executed in session {} with {}", _sid, cs.getTxnServerStatus());
 
             if (cs.getTxnServerStatus().getStatus() == IN) {
                 cs.setMessageSentInCurrentTransaction(true);
@@ -120,7 +118,6 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
             LOGGER.debug("Request is executed in session {}", _sid);
 
             return super.getClientSession(sid);
-
         }
     }
 
@@ -145,17 +142,17 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
         var options = Sid.getSessionOptions(sid);
 
         var cso = ClientSessionOptions
-                .builder()
-                .causallyConsistent(options.isCausallyConsistent())
-                .build();
+            .builder()
+            .causallyConsistent(options.isCausallyConsistent())
+            .build();
 
         var cs = createClientSession(
-                sid,
-                cso,
-                mongoUri.getReadConcern() == null ? ReadConcern.DEFAULT : mongoUri.getReadConcern(),
-                mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
-                mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference(),
-                null);
+            sid,
+            cso,
+            mongoUri.getReadConcern() == null ? ReadConcern.DEFAULT : mongoUri.getReadConcern(),
+            mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
+            mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference(),
+            null);
 
         if (txnServerStatus != null) {
             cs.setTxnServerStatus(txnServerStatus);
@@ -173,40 +170,40 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
             sid,
             options,
             mongoUri.getReadConcern() == null ? ReadConcern.DEFAULT : mongoUri.getReadConcern(),
-                mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
-                mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference(),
+            mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
+            mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference(),
             null);
     }
 
     TxnClientSessionImpl createClientSession(
-            UUID sid,
-            final ClientSessionOptions options,
-            final ReadConcern readConcern,
-            final WriteConcern writeConcern,
-            final ReadPreference readPreference,
-            final Txn txnServerStatus) {
+        UUID sid,
+        final ClientSessionOptions options,
+        final ReadConcern readConcern,
+        final WriteConcern writeConcern,
+        final ReadPreference readPreference,
+        final Txn txnServerStatus) {
         notNull("readConcern", readConcern);
         notNull("writeConcern", writeConcern);
         notNull("readPreference", readPreference);
 
         var mergedOptions = ClientSessionOptions
-                .builder(options)
-                .causallyConsistent(true)
-                .defaultTransactionOptions(
-                        TransactionOptions.merge(
-                                options.getDefaultTransactionOptions(),
-                                TransactionOptions.builder()
-                                        .readConcern(readConcern)
-                                        .writeConcern(writeConcern)
-                                        .readPreference(readPreference)
-                                        .build()))
-                .build();
+            .builder(options)
+            .causallyConsistent(true)
+            .defaultTransactionOptions(
+                TransactionOptions.merge(
+                    options.getDefaultTransactionOptions(),
+                    TransactionOptions.builder()
+                        .readConcern(readConcern)
+                        .writeConcern(writeConcern)
+                        .readPreference(readPreference)
+                        .build()))
+            .build();
 
         return new TxnClientSessionImpl(
-                new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
-                MongoClientSingleton.getInstance().getClient(),
-                mergedOptions,
-                SessionsUtils.getOperationExecutor(),
-                txnServerStatus);
+            new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
+            MongoClientSingleton.getInstance().getClient(),
+            mergedOptions,
+            SessionsUtils.getOperationExecutor(),
+            txnServerStatus);
     }
 }

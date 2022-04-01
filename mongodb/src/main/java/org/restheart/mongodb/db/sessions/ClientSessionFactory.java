@@ -137,23 +137,23 @@ public class ClientSessionFactory {
         var options = Sid.getSessionOptions(sid);
 
         var cso = ClientSessionOptions
-                .builder()
-                .causallyConsistent(options.isCausallyConsistent())
-                .build();
+            .builder()
+            .causallyConsistent(options.isCausallyConsistent())
+            .build();
 
         return createClientSession(sid,
-                cso,
-                mongoUri.getReadConcern() == null ? ReadConcern.DEFAULT : mongoUri.getReadConcern(),
-                mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
-                mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference());
+            cso,
+            mongoUri.getReadConcern() == null ? ReadConcern.DEFAULT : mongoUri.getReadConcern(),
+            mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
+            mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference());
     }
 
     ClientSessionImpl createClientSession(
-            UUID sid,
-            final ClientSessionOptions options,
-            final ReadConcern readConcern,
-            final WriteConcern writeConcern,
-            final ReadPreference readPreference) {
+        UUID sid,
+        final ClientSessionOptions options,
+        final ReadConcern readConcern,
+        final WriteConcern writeConcern,
+        final ReadPreference readPreference) {
         notNull("readConcern", readConcern);
         notNull("writeConcern", writeConcern);
         notNull("readPreference", readPreference);
