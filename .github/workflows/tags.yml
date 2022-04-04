@@ -75,7 +75,7 @@ jobs:
           context: ./core/
           platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
           push: true
-          tags: softinstigate/restheart:latest,softinstigate/restheart:6.1,softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+          tags: softinstigate/restheart:6.1,softinstigate/restheart:${{steps.vars.outputs.VERSION}}
 
       - name: Build and Push GraalVM Docker image
         if: ${{ matrix.deploy }}
@@ -84,7 +84,7 @@ jobs:
           context: ./core/
           file: ./core/Dockerfile.graalvm
           push: true
-          tags: softinstigate/restheart:latest-graalvm,softinstigate/restheart:6.1-graalvm,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
+          tags: softinstigate/restheart:6.1-graalvm,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
 
       - name: Upload GitHub release
         if: ${{ matrix.deploy }}
