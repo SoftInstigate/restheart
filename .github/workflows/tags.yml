@@ -40,6 +40,8 @@ jobs:
         id: vars
         run: |
           echo "::set-output name=VERSION::$(echo ${GITHUB_REF:10})"
+          echo "::set-output name=MAJOR::$(echo ${steps.vars.outputs.VERSION:0:1})"
+          echo "::set-output name=MINOR::$(echo ${steps.vars.outputs.VERSION:0:3})"
           echo "VERSION=${{steps.vars.outputs.VERSION}}"
 
       - name: Build and Test
@@ -75,7 +77,7 @@ jobs:
           context: ./core/
           platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
           push: true
-          tags: softinstigate/restheart:latest,softinstigate/restheart:6,softinstigate/restheart:6.2,softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+          tags: softinstigate/restheart:latest,softinstigate/restheart:${{steps.vars.outputs.MAJOR}},softinstigate/restheart:${{steps.vars.outputs.MINOR}},softinstigate/restheart:${{steps.vars.outputs.VERSION}}
 
       - name: Build and Push GraalVM Docker image
         if: ${{ matrix.deploy }}
@@ -84,7 +86,7 @@ jobs:
           context: ./core/
           file: ./core/Dockerfile.graalvm
           push: true
-          tags: softinstigate/restheart:latest-graalvm,softinstigate/restheart:6-graalvm,softinstigate/restheart:6.2-graalvm,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
+          tags: softinstigate/restheart:latest-graalvm,softinstigate/restheart:${{steps.vars.outputs.MAJOR}}-graalvm,softinstigate/restheart:${{steps.vars.outputs.MINOR}}-graalvm,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
 
       - name: Upload GitHub release
         if: ${{ matrix.deploy }}
