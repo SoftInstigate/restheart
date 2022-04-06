@@ -140,8 +140,9 @@ public class JsonSchemaCacheSingleton {
                 new JSONObject(document.toJson()), new SchemaStoreClient());
     }
 
-    private BsonDocument loadRaw( String schemaStoreDb, BsonValue schemaId) throws JsonSchemaNotFoundException {
-        var document = dbs.getCollection(schemaStoreDb, _SCHEMAS)
+    private BsonDocument loadRaw(String schemaStoreDb, BsonValue schemaId) throws JsonSchemaNotFoundException {
+        var db = dbs.db(Optional.empty(), schemaStoreDb);
+        var document = dbs.getCollection(db, _SCHEMAS)
                 .find(eq("_id", schemaId))
                 .first();
 

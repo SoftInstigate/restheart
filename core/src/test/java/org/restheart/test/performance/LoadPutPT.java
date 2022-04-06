@@ -50,6 +50,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.db.Documents;
 import org.restheart.utils.HttpStatus;
 
@@ -173,7 +174,7 @@ public class LoadPutPT extends AbstractPT {
                 Optional.empty(), // no client session
                 METHOD.POST,
                 WRITE_MODE.UPSERT,
-                db,
+                Databases.get().db(Optional.empty(), db),
                 coll,
                 Optional.empty(),
                 Optional.empty(),

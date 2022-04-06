@@ -21,6 +21,8 @@
 package org.restheart.mongodb.db;
 
 import com.mongodb.client.ClientSession;
+import com.mongodb.client.MongoDatabase;
+
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.IndexOptions;
 import java.util.ArrayList;
@@ -62,19 +64,19 @@ class Indexes {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param db the MongoDatabase
      * @param collName
      * @return
      */
     List<BsonDocument> getCollectionIndexes(
             final Optional<ClientSession> cs,
-            final String dbName,
+            final MongoDatabase db,
             final String collName) {
         var ret = new ArrayList<BsonDocument>();
 
         var indexes = cs.isPresent()
-                ? collections.getCollection(dbName, collName).listIndexes(cs.get())
-                : collections.getCollection(dbName, collName).listIndexes();
+                ? collections.getCollection(db, collName).listIndexes(cs.get())
+                : collections.getCollection(db, collName).listIndexes();
 
         indexes.iterator().forEachRemaining(
                 i -> {
@@ -90,28 +92,28 @@ class Indexes {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param db the MongoDatabase
      * @param collection
      * @param keys
      * @param options
      */
     void createIndex(
         final Optional<ClientSession> cs,
-        final String dbName,
+        final MongoDatabase db,
         final String collection,
         final BsonDocument keys,
         final Optional<BsonDocument> options) {
         if (options.isPresent()) {
             if (cs.isPresent()) {
-                collections.getCollection(dbName, collection).createIndex(cs.get(), keys, getIndexOptions(options.get()));
+                collections.getCollection(db, collection).createIndex(cs.get(), keys, getIndexOptions(options.get()));
             } else {
-                collections.getCollection(dbName, collection).createIndex(keys, getIndexOptions(options.get()));
+                collections.getCollection(db, collection).createIndex(keys, getIndexOptions(options.get()));
             }
         } else {
             if (cs.isPresent()) {
-                collections.getCollection(dbName, collection).createIndex(cs.get(), keys);
+                collections.getCollection(db, collection).createIndex(cs.get(), keys);
             } else {
-                collections.getCollection(dbName, collection).createIndex(keys);
+                collections.getCollection(db, collection).createIndex(keys);
             }
         }
     }
@@ -119,20 +121,20 @@ class Indexes {
     /**
      *
      * @param cs the client session
-     * @param db
+     * @param db the MongoDatabase
      * @param collection
      * @param indexId
      * @return the HTTP status code
      */
     int deleteIndex(
             final Optional<ClientSession> cs,
-            final String dbName,
+            final MongoDatabase db,
             final String collection,
             final String indexId) {
         if (cs.isPresent()) {
-            collections.getCollection(dbName, collection).dropIndex(cs.get(), indexId);
+            collections.getCollection(db, collection).dropIndex(cs.get(), indexId);
         } else {
-            collections.getCollection(dbName, collection).dropIndex(indexId);
+            collections.getCollection(db, collection).dropIndex(indexId);
         }
 
         return HttpStatus.SC_NO_CONTENT;

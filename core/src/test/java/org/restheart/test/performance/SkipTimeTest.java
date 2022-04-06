@@ -37,6 +37,8 @@ import org.restheart.mongodb.db.MongoClientSingleton;
 import static org.restheart.test.integration.AbstactIT.MONGO_URI;
 import static org.restheart.test.integration.AbstactIT.TEST_DB_PREFIX;
 
+import java.util.Optional;
+
 @Ignore
 public class SkipTimeTest {
 
@@ -85,10 +87,8 @@ public class SkipTimeTest {
      */
     @Test
     public void testSkip() {
-
-
         final Databases dbs = Databases.get();
-        MongoCollection<BsonDocument> coll = dbs.getCollection(TEST_DB_PREFIX, "huge");
+        MongoCollection<BsonDocument> coll = dbs.getCollection(Databases.get().db(Optional.empty(), TEST_DB_PREFIX), "huge");
 
         long tot = 0;
 
@@ -115,7 +115,7 @@ public class SkipTimeTest {
     @Test
     public void testTwoSkips() {
         final var dbs = Databases.get();
-        MongoCollection<BsonDocument> coll = dbs.getCollection(TEST_DB_PREFIX, "huge");
+        MongoCollection<BsonDocument> coll = dbs.getCollection(Databases.get().db(Optional.empty(), TEST_DB_PREFIX), "huge");
 
         long tot = 0;
 

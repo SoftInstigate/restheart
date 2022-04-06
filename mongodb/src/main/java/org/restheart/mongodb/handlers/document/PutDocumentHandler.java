@@ -29,6 +29,7 @@ import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -38,7 +39,8 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PutDocumentHandler extends PipelinedHandler {
-    private final Documents documents = Documents.get();;
+    private final Documents documents = Documents.get();
+    private final Databases dbs = Databases.get();
 
     /**
      * Default ctor
@@ -100,7 +102,7 @@ public class PutDocumentHandler extends PipelinedHandler {
             Optional.ofNullable(request.getClientSession()),
             request.getMethod(),
             request.getWriteMode(),
-            request.getDBName(),
+            dbs.db(request.rsOps(), request.getDBName()),
             request.getCollectionName(),
             Optional.of(request.getDocumentId()),
             Optional.ofNullable(request.getFiltersDocument()),

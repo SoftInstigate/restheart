@@ -69,9 +69,7 @@ public class PutIndexHandler extends PipelinedHandler {
             next(exchange);
             return;
         }
-
-        final String db = request.getDBName();
-        final String co = request.getCollectionName();
+;
         final String id = request.getIndexId();
 
         if (id.startsWith("_")) {
@@ -120,7 +118,7 @@ public class PutIndexHandler extends PipelinedHandler {
         }
 
         try {
-            dbs.createIndex(Optional.ofNullable(request.getClientSession()), db, co, keys, Optional.of(ops));
+            dbs.createIndex(Optional.ofNullable(request.getClientSession()), dbs.db(request.rsOps(), request.getDBName()), request.getCollectionName(), keys, Optional.of(ops));
         } catch (Throwable t) {
             response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "error creating the index", t);
             next(exchange);

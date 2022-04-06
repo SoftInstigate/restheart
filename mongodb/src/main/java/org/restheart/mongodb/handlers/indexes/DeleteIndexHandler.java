@@ -68,23 +68,18 @@ public class DeleteIndexHandler extends PipelinedHandler {
             return;
         }
 
-        var dbName = request.getDBName();
-        var collectionName = request.getCollectionName();
-
         var indexId = request.getIndexId();
 
         if (indexId.startsWith("_") || indexId.equals("_id_")) {
-            response.setInError(
-                    HttpStatus.SC_UNAUTHORIZED,
-                    indexId + " is a default index and cannot be deleted");
+            response.setInError(HttpStatus.SC_UNAUTHORIZED, indexId + " is a default index and cannot be deleted");
             next(exchange);
             return;
         }
 
         var httpCode = dbs.deleteIndex(
             Optional.ofNullable(request.getClientSession()),
-            dbName,
-            collectionName,
+            dbs.db(request.rsOps(), request.getDBName()),
+            request.getCollectionName(),
             indexId);
 
         response.setStatusCode(httpCode);

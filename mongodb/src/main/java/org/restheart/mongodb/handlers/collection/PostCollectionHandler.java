@@ -31,6 +31,7 @@ import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.mongodb.utils.URLUtils;
@@ -43,6 +44,7 @@ import org.restheart.utils.RepresentationUtils;
  */
 public class PostCollectionHandler extends PipelinedHandler {
     private final Documents documents = Documents.get();
+    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of PostCollectionHandler
@@ -106,11 +108,11 @@ public class PostCollectionHandler extends PipelinedHandler {
             }
         }
 
-        var result = this.documents.writeDocument(
+        var result = documents.writeDocument(
             Optional.ofNullable(request.getClientSession()),
             request.getMethod(),
             request.getWriteMode(),
-            request.getDBName(),
+            dbs.db(request.rsOps(), request.getDBName()),
             request.getCollectionName(),
             Optional.ofNullable(content.get("_id")),
             Optional.ofNullable(request.getFiltersDocument()),

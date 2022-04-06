@@ -88,12 +88,13 @@ public class GetCollectionHandler extends PipelinedHandler {
             return;
         }
 
-        var coll = dbs.getCollection(request.getDBName(), request.getCollectionName());
+        var db = dbs.db(request.rsOps(), request.getDBName());
+        var coll = dbs.getCollection(db, request.getCollectionName());
 
         long size = -1;
 
         if (request.isCount()) {
-            size = dbs.getCollectionSize(Optional.ofNullable(request.getClientSession()), coll, request.getFiltersDocument());
+            size = dbs.getCollectionSize(Optional.ofNullable(request.getClientSession()), db, request.getCollectionName(), request.getFiltersDocument());
         }
 
         // ***** get data
@@ -124,15 +125,15 @@ public class GetCollectionHandler extends PipelinedHandler {
 
             try {
                 data = dbs.getCollectionData(
-                        Optional.ofNullable(request.getClientSession()),
-                        coll,
-                        request.getPage(),
-                        request.getPagesize(),
-                        sort,
-                        filter,
-                        request.getHintDocument(),
-                        request.getProjectionDocument(),
-                        request.getCursorAllocationPolicy());
+                    Optional.ofNullable(request.getClientSession()),
+                    coll,
+                    request.getPage(),
+                    request.getPagesize(),
+                    sort,
+                    filter,
+                    request.getHintDocument(),
+                    request.getProjectionDocument(),
+                    request.getCursorAllocationPolicy());
             } catch (MongoException me) {
                 if (me.getMessage().matches(".*Can't canonicalize query.*")) {
                     // error with the filter expression during query execution

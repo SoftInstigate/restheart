@@ -27,6 +27,7 @@ import java.util.Optional;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.RequestHelper;
 import org.restheart.utils.HttpStatus;
@@ -38,6 +39,7 @@ import org.restheart.utils.HttpStatus;
 public class PatchDocumentHandler extends PipelinedHandler {
 
     private final Documents documents = Documents.get();
+    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of PatchDocumentHandler
@@ -89,7 +91,7 @@ public class PatchDocumentHandler extends PipelinedHandler {
             Optional.ofNullable(request.getClientSession()),
             request.getMethod(),
             request.getWriteMode(),
-            request.getDBName(),
+            dbs.db(request.rsOps(), request.getDBName()),
             request.getCollectionName(),
             Optional.of(request.getDocumentId()),
             Optional.ofNullable(request.getFiltersDocument()),

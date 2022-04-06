@@ -24,6 +24,7 @@ import com.mongodb.MongoBulkWriteException;
 import com.mongodb.assertions.Assertions;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.DeleteManyModel;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
@@ -66,17 +67,17 @@ public class Documents {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param db the MongoDatabase
      * @param collName
      * @param documentId
      * @return
      */
     public BsonDocument getDocumentEtag(
         final Optional<ClientSession> cs,
-        final String dbName,
+        final MongoDatabase db,
         final String collName,
         final Object documentId) {
-        var mcoll = collections.getCollection(dbName,collName);
+        var mcoll = collections.getCollection(db, collName);
 
         var query = eq("_id", documentId);
         var documents = cs.isPresent()
@@ -91,7 +92,7 @@ public class Documents {
      * @param cs the client session
      * @param method the request method
      * @param writeMode the write mode
-     * @param dbName
+     * @param db the MongoDatabase
      * @param collName
      * @param documentId
      * @param shardKeys
@@ -104,7 +105,7 @@ public class Documents {
         final Optional<ClientSession> cs,
         final METHOD method,
         final WRITE_MODE writeMode,
-        final String dbName,
+        final MongoDatabase db,
         final String collName,
         final Optional<BsonValue> documentId,
         final Optional<BsonDocument> filter,
@@ -112,7 +113,7 @@ public class Documents {
         final BsonDocument newContent,
         final String requestEtag,
         final boolean checkEtag) {
-        var mcoll = collections.getCollection(dbName, collName);
+        var mcoll = collections.getCollection(db, collName);
 
         // genereate new etag
         var newEtag = new BsonObjectId();
@@ -153,7 +154,7 @@ public class Documents {
 
     /**
      * @param cs the client session
-     * @param dbName
+     * @param db the MongoDatabase
      * @param collName
      * @param documents
      * @param shardKeys
@@ -162,7 +163,7 @@ public class Documents {
      */
     public BulkOperationResult bulkPostDocuments(
         final Optional<ClientSession> cs,
-        final String dbName,
+        final MongoDatabase db,
         final String collName,
         final BsonArray documents,
         final Optional<BsonDocument> filter,
@@ -170,7 +171,7 @@ public class Documents {
         final WRITE_MODE writeMode) {
         Objects.requireNonNull(documents);
 
-        var mcoll = collections.getCollection(dbName, collName);
+        var mcoll = collections.getCollection(db, collName);
 
         var newEtag = new BsonObjectId(new ObjectId());
 
@@ -190,7 +191,7 @@ public class Documents {
 
     /**
      * @param cs the client session
-     * @param dbName
+     * @param db the MongoDatabase
      * @param collName
      * @param filter
      * @param shardedKeys
@@ -199,7 +200,7 @@ public class Documents {
      */
     public BulkOperationResult bulkPatchDocuments(
         final Optional<ClientSession> cs,
-        final String dbName,
+        final MongoDatabase db,
         final String collName,
         final BsonDocument filter,
         final Optional<BsonDocument> shardKeys,
@@ -207,7 +208,7 @@ public class Documents {
         Objects.requireNonNull(filter);
         Assertions.assertFalse(filter.isEmpty());
 
-        var mcoll = collections.getCollection(dbName, collName);
+        var mcoll = collections.getCollection(db, collName);
 
         var patches = new ArrayList<WriteModel<BsonDocument>>();
 
@@ -235,7 +236,7 @@ public class Documents {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param db the MongoDatabase
      * @param collName
      * @param documentId
      * @param filter
@@ -246,7 +247,7 @@ public class Documents {
      */
     public OperationResult deleteDocument(
         final Optional<ClientSession> cs,
-        final String dbName,
+        final MongoDatabase db,
         final String collName,
         final Optional<BsonValue> documentId,
         final Optional<BsonDocument> filter,
@@ -254,7 +255,7 @@ public class Documents {
         final String requestEtag,
         final boolean checkEtag
     ) {
-        var mcoll = collections.getCollection(dbName, collName);
+        var mcoll = collections.getCollection(db, collName);
 
         var oldDocument = cs.isPresent()
                 ? mcoll.findOneAndDelete(cs.get(), idFilter(documentId, filter, shardKeys))
@@ -306,7 +307,7 @@ public class Documents {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param db the MongoDatabase
      * @param collName
      * @param filter
      * @param shardedKeys
@@ -314,14 +315,14 @@ public class Documents {
      */
     public BulkOperationResult bulkDeleteDocuments(
         final Optional<ClientSession> cs,
-        final String dbName,
+        final MongoDatabase db,
         final String collName,
         final BsonDocument filter,
         final Optional<BsonDocument> shardedKeys) {
         Objects.requireNonNull(filter);
         Assertions.assertFalse(filter.isEmpty());
 
-        var mcoll = collections.getCollection(dbName, collName);
+        var mcoll = collections.getCollection(db, collName);
 
         var deletes = new ArrayList<WriteModel<BsonDocument>>();
 

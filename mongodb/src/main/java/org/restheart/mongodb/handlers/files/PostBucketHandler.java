@@ -23,8 +23,6 @@ package org.restheart.mongodb.handlers.files;
 import com.mongodb.DuplicateKeyException;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -77,33 +75,26 @@ public class PostBucketHandler extends PipelinedHandler {
             return;
         }
 
-        final BsonValue _metadata = request.getContent();
-
         // must be an object
-        if (!_metadata.isDocument()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data cannot be an array");
+        if (!request.getContent().isDocument()) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             next(exchange);
             return;
         }
 
-        BsonDocument metadata = _metadata.asDocument();
+        var metadata = request.getContent().asDocument();
 
         OperationResult result;
 
         try {
             if (request.getFilePath() != null) {
-                result = gridFs
-                        .createFile(dbs,
-                                request.getDBName(),
-                                request.getCollectionName(),
-                                metadata,
-                                request.getFilePath());
+                result = gridFs.createFile(
+                    dbs.db(request.rsOps(), request.getDBName()),
+                    request.getCollectionName(),
+                    metadata,
+                    request.getFilePath());
             } else {
-                response.setInError(
-                        HttpStatus.SC_BAD_REQUEST,
-                        "POST file request is in a bad format");
+                response.setInError(HttpStatus.SC_BAD_REQUEST, "POST file request is in a bad format");
                 next(exchange);
                 return;
             }
@@ -111,9 +102,7 @@ public class PostBucketHandler extends PipelinedHandler {
             // update not supported
             String errMsg = "file resource update is not yet implemented";
             LOGGER.error(errMsg, t);
-            response.setInError(
-                    HttpStatus.SC_NOT_IMPLEMENTED,
-                    errMsg);
+            response.setInError(HttpStatus.SC_NOT_IMPLEMENTED, errMsg);
             next(exchange);
             return;
         }
@@ -121,11 +110,8 @@ public class PostBucketHandler extends PipelinedHandler {
         response.setDbOperationResult(result);
 
         // insert the Location handler
-        response.getHeaders()
-                .add(HttpString.tryFromString("Location"),
-                        RepresentationUtils.getReferenceLink(
-                                URLUtils.getRemappedRequestURL(exchange),
-                                result.getNewId()));
+        response.getHeaders().add(HttpString.tryFromString("Location"),
+            RepresentationUtils.getReferenceLink(URLUtils.getRemappedRequestURL(exchange), result.getNewId()));
 
         response.setStatusCode(result.getHttpCode());
 

@@ -30,6 +30,7 @@ import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -40,7 +41,8 @@ import org.restheart.utils.HttpStatus;
  */
 public class BulkPostCollectionHandler extends PipelinedHandler {
 
-    private final Documents documents = Documents.get();;
+    private final Documents documents = Documents.get();
+    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of BulkPostCollectionHandler
@@ -89,7 +91,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
 
         var result = this.documents.bulkPostDocuments(
             Optional.ofNullable(request.getClientSession()),
-            request.getDBName(),
+            dbs.db(request.rsOps(), request.getDBName()),
             request.getCollectionName(),
             documents,
             Optional.ofNullable(request.getFiltersDocument()),
