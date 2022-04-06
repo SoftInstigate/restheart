@@ -87,7 +87,7 @@ public class CursorPool {
         return DBCursorPoolSingletonHolder.INSTANCE;
     }
 
-    private final Databases dbsDAO;
+    private final Collections collections = Collections.get();
 
     private final int SKIP_SLICE_LINEAR_DELTA = MongoServiceConfiguration.get().getEagerLinearSliceDelta();
 
@@ -102,15 +102,13 @@ public class CursorPool {
     private final Cache<CursorPoolEntryKey, FindIterable<BsonDocument>> cache;
     private final LoadingCache<CursorPoolEntryKey, Long> collSizes;
 
-    private CursorPool(Databases dbsDAO) {
-        this.dbsDAO = dbsDAO;
-
+    private CursorPool() {
         cache = CacheFactory.createLocalCache(POOL_SIZE, Cache.EXPIRE_POLICY.AFTER_READ, TTL);
 
         collSizes = CacheFactory.createLocalLoadingCache(100,
             org.restheart.cache.Cache.EXPIRE_POLICY.AFTER_WRITE,
             60 * 1000,
-            (CursorPoolEntryKey key) -> dbsDAO.getCollectionSize(key.session(), key.collection(), key.filter())
+            (CursorPoolEntryKey key) -> collections.getCollectionSize(key.session(), key.collection(), key.filter())
         );
 
         if (LOGGER.isTraceEnabled()) {
@@ -205,7 +203,7 @@ public class CursorPool {
 
                     for (long cont = tocreate; cont > 0; cont--) {
                         // create the first cursor
-                        var cursor = dbsDAO.findIterable(
+                        var cursor = collections.findIterable(
                             key.session(),
                             key.collection(),
                             key.sort(),
@@ -269,7 +267,7 @@ public class CursorPool {
                     long existing = getSliceHeight(sliceKey);
 
                     if (existing == 0) {
-                        var cursor = dbsDAO.findIterable(
+                        var cursor = collections.findIterable(
                             key.session(),
                             key.collection(),
                             key.sort(),
@@ -337,8 +335,7 @@ public class CursorPool {
     }
 
     private static class DBCursorPoolSingletonHolder {
-
-        private static final CursorPool INSTANCE = new CursorPool(Databases.get());
+        private static final CursorPool INSTANCE = new CursorPool();
 
         private DBCursorPoolSingletonHolder() {
         }

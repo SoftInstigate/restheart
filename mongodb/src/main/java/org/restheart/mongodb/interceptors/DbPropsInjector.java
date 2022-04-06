@@ -85,7 +85,7 @@ public class DbPropsInjector implements MongoInterceptor {
 
             try {
                 if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
-                    dbProps = dbs.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), dbName);
+                    dbProps = dbs.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), dbs.db(request.rsOps(), dbName));
                 } else {
                     dbProps = MetadataCachesSingleton.getInstance().getDBProperties(dbName);
                 }

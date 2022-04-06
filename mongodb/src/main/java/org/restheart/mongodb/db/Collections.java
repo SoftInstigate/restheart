@@ -20,11 +20,11 @@
  */
 package org.restheart.mongodb.db;
 
-import com.mongodb.client.MongoClient;
 import com.mongodb.MongoCommandException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import static com.mongodb.client.model.Filters.eq;
 import java.util.Objects;
 import java.util.Optional;
@@ -59,8 +59,8 @@ import org.slf4j.LoggerFactory;
 class Collections {
 
     private static final int BATCH_SIZE = MongoServiceConfiguration.get() != null
-                    ? MongoServiceConfiguration.get().getCursorBatchSize()
-                    : DEFAULT_CURSOR_BATCH_SIZE;
+        ? MongoServiceConfiguration.get().getCursorBatchSize()
+        : DEFAULT_CURSOR_BATCH_SIZE;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Collections.class);
     private static final BsonDocument FIELDS_TO_RETURN;
@@ -70,10 +70,6 @@ class Collections {
         FIELDS_TO_RETURN.put("_id", new BsonInt32(1));
         FIELDS_TO_RETURN.put("_etag", new BsonInt32(1));
     }
-
-
-
-    private final MongoClient client = MongoClientSingleton.get().client();
 
     private Collections() {
     }
@@ -87,27 +83,42 @@ class Collections {
     /**
      * Returns the MongoCollection object for the collection in db dbName.
      *
-     * @param dbName the database name of the collection the database name of
-     * the collection
+     * @param db the MongoDatabase of the collection
      * @param collName the collection name
      * @return the mongodb DBCollection object for the collection in db dbName
      */
-    MongoCollection<BsonDocument> getCollection(final String dbName, final String collName) {
-        return client.getDatabase(dbName).getCollection(collName, BsonDocument.class);
+    MongoCollection<BsonDocument> getCollection(final MongoDatabase db, final String collName) {
+        return db.getCollection(collName).withDocumentClass(BsonDocument.class);
     }
 
     /**
      * Returns the number of documents in the given collection (taking into
      * account the filters in case).
      *
-     * @param cs the session id, can be null
-     * @param coll the mongodb DBCollection object.
+     * @param cs the ClientSession
+     * @param db the MongoDatabase
+     * @param collName the collection name
      * @param filters the filters to apply. it is a Deque collection of mongodb
      * query conditions.
      * @return the number of documents in the given collection (taking into
      * account the filters in case)
      */
-    public long getCollectionSize(final Optional<ClientSession> cs, final MongoCollection<BsonDocument> coll, final BsonDocument filters) {
+    public long getCollectionSize(final Optional<ClientSession> cs, final MongoDatabase db, String collName, final BsonDocument filters) {
+        return getCollectionSize(cs, getCollection(db, collName), filters);
+    }
+
+    /**
+     * Returns the number of documents in the given collection (taking into
+     * account the filters in case).
+     *
+     * @param cs the ClientSession
+     * @param coll the MongoCollection
+     * @param filters the filters to apply. it is a Deque collection of mongodb
+     * query conditions.
+     * @return the number of documents in the given collection (taking into
+     * account the filters in case)
+     */
+    long getCollectionSize(final Optional<ClientSession> cs, final MongoCollection<BsonDocument> coll, final BsonDocument filters) {
         return cs.isPresent() ?  coll.countDocuments(cs.get(), filters) : coll.countDocuments(filters);
     }
 
@@ -115,7 +126,8 @@ class Collections {
      * Returs the FindIterable<BsonDocument> of the collection applying sorting,
      * filtering and projection.
      *
-     * @param cs the client session
+     * @param cs the ClientSession
+     * @param coll the MongoCollection
      * @param sortBy the sort expression to use for sorting (prepend field name
      * with - for descending sorting)
      * @param filters the filters to apply.
@@ -130,7 +142,6 @@ class Collections {
         final BsonDocument filters,
         final BsonDocument hint,
         final BsonDocument keys) throws JsonParseException {
-
         var ret = cs.isPresent()
             ? coll.find(cs.get(), filters)
             : coll.find(filters);
@@ -153,7 +164,6 @@ class Collections {
         final BsonDocument keys,
         final EAGER_CURSOR_ALLOCATION_POLICY eager)
         throws JsonParseException {
-
         var ret = new BsonArray();
 
         int toskip = pagesize * (page - 1);
@@ -214,12 +224,12 @@ class Collections {
      * Returns the collection properties document.
      *
      * @param cs the client session
-     * @param dbName the database name of the collection
+     * @param db the MongoDatabase
      * @param collName the collection name
      * @return the collection properties document
      */
-    public BsonDocument getCollectionProps(final Optional<ClientSession> cs, final String dbName, final String collName) {
-        var propsColl = getCollection(dbName, META_COLLNAME);
+    public BsonDocument getCollectionProps(final Optional<ClientSession> cs, final MongoDatabase db, final String collName) {
+        var propsColl = getCollection(db, META_COLLNAME);
 
         var query = new BsonDocument("_id", new BsonString("_properties.".concat(collName)));
 
@@ -229,7 +239,7 @@ class Collections {
 
         if (props != null) {
             props.append("_id", new BsonString(collName));
-        } else if (doesCollectionExist(cs, dbName, collName)) {
+        } else if (doesCollectionExist(cs, db, collName)) {
             return new BsonDocument("_id", new BsonString(collName));
         }
 
@@ -240,14 +250,14 @@ class Collections {
      * Returns true if the collection exists
      *
      * @param cs the client session
-     * @param dbName the database name of the collection
+     * @param db the MongoDatabase
      * @param collName the collection name
      * @return true if the collection exists
      */
-    public boolean doesCollectionExist(final Optional<ClientSession> cs, final String dbName, final String collName) {
+    public boolean doesCollectionExist(final Optional<ClientSession> cs, final MongoDatabase db, final String collName) {
         var dbCollections = cs.isPresent()
-            ? client.getDatabase(dbName).listCollectionNames(cs.get())
-            : client.getDatabase(dbName).listCollectionNames();
+            ? db.listCollectionNames(cs.get())
+            : db.listCollectionNames();
 
         return StreamSupport.stream(dbCollections.spliterator(),false).anyMatch(dbCollection -> collName.equals(dbCollection));
     }
@@ -256,7 +266,7 @@ class Collections {
      * Upsert the collection properties.
      *
      * @param cs the client session
-     * @param dbName the database name of the collection
+     * @param db the MongoDatabase
      * @param method the request method
      * @param collName the collection name
      * @param properties the new collection properties
@@ -269,9 +279,9 @@ class Collections {
      */
     OperationResult upsertCollection(
         final Optional<ClientSession> cs,
+        final MongoDatabase db,
         final METHOD method,
         final boolean updating,
-        final String dbName,
         final String collName,
         final BsonDocument properties,
         final String requestEtag,
@@ -285,9 +295,9 @@ class Collections {
         if (!updating) {
             try {
                 if(cs.isPresent()) {
-                    client.getDatabase(dbName).createCollection(cs.get(), collName);
+                    db.createCollection(cs.get(), collName);
                 } else {
-                    client.getDatabase(dbName).createCollection(collName);
+                    db.createCollection(collName);
                 }
             } catch (MongoCommandException ex) {
                 // error 48 is NamespaceExists
@@ -311,7 +321,7 @@ class Collections {
         content.put("_etag", new BsonObjectId(newEtag));
         content.remove("_id"); // make sure we don't change this field
 
-        var mcoll = getCollection(dbName, META_COLLNAME);
+        var mcoll = getCollection(db, META_COLLNAME);
 
         if (checkEtag && _updating) {
             var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
@@ -396,7 +406,7 @@ class Collections {
      * Deletes a collection.
      *
      * @param cs the client session
-     * @param dbName the database name of the collection
+     * @param db the MongoDatabase
      * @param collName the collection name
      * @param requestEtag the entity tag. must match to allow actual write
      * (otherwise http error code is returned)
@@ -404,11 +414,11 @@ class Collections {
      */
     OperationResult deleteCollection(
         final Optional<ClientSession> cs,
-        final String dbName,
+        final MongoDatabase db,
         final String collName,
         final BsonObjectId requestEtag,
         final boolean checkEtag) {
-        var mcoll = getCollection(dbName, META_COLLNAME);
+        var mcoll = getCollection(db, META_COLLNAME);
 
         var query = eq("_id", COLL_META_DOCID_PREFIX.concat(collName));
 
@@ -430,7 +440,7 @@ class Collections {
             }
         }
 
-        var collToDelete = getCollection(dbName, collName);
+        var collToDelete = getCollection(db, collName);
 
         if (cs.isPresent()) {
             collToDelete.drop(cs.get());

@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.MongoGridFSException;
 import com.mongodb.client.gridfs.GridFSBucket;
 import com.mongodb.client.gridfs.GridFSBuckets;
@@ -82,8 +83,7 @@ public class GridFs {
 
     /**
      *
-     * @param db
-     * @param dbName
+     * @param db the MongoDatabase
      * @param bucketName
      * @param metadata
      * @param filePath
@@ -92,16 +92,15 @@ public class GridFs {
      * @throws DuplicateKeyException
      */
     public OperationResult createFile(
-            final Databases db,
-            final String dbName,
-            final String bucketName,
-            final BsonDocument metadata,
-            final Path filePath)
-            throws IOException, DuplicateKeyException {
+        final MongoDatabase db,
+        final String bucketName,
+        final BsonDocument metadata,
+        final Path filePath)
+        throws IOException, DuplicateKeyException {
 
         final var bucket = extractBucketName(bucketName);
 
-        var gridFSBucket = GridFSBuckets.create(db.getDatabase(dbName), bucket);
+        var gridFSBucket = GridFSBuckets.create(db, bucket);
 
         var filename = extractFilenameFromProperties(metadata);
 
@@ -131,8 +130,7 @@ public class GridFs {
 
     /**
      *
-     * @param db
-     * @param dbName
+     * @param db the MongoDatabase
      * @param bucketName
      * @param metadata
      * @param filePath
@@ -143,8 +141,8 @@ public class GridFs {
      * @return
      * @throws IOException
      */
-    public OperationResult upsertFile(final Databases db,
-        final String dbName,
+    public OperationResult upsertFile(
+        final MongoDatabase db,
         final String bucketName,
         final BsonDocument metadata,
         final Path filePath,
@@ -153,7 +151,7 @@ public class GridFs {
         final String requestEtag,
         final boolean checkEtag) throws IOException {
 
-        var deletionResult = deleteFile(db, dbName, bucketName, fileId, filter, requestEtag, checkEtag);
+        var deletionResult = deleteFile(db, bucketName, fileId, filter, requestEtag, checkEtag);
 
         //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7
         final boolean deleteOperationWasSuccessful = deletionResult.getHttpCode() == SC_NO_CONTENT || deletionResult.getHttpCode() == SC_OK;
@@ -161,7 +159,7 @@ public class GridFs {
         final boolean fileExisted = !fileDidntExist;
 
         if (deleteOperationWasSuccessful || fileDidntExist) {
-            var creationResult = createFile(db, dbName, bucketName, metadata, filePath);
+            var creationResult = createFile(db, bucketName, metadata, filePath);
 
             //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5
             final boolean creationOperationWasSuccessful = SC_CREATED == creationResult.getHttpCode() || SC_OK == creationResult.getHttpCode();
@@ -201,8 +199,7 @@ public class GridFs {
 
     /**
      *
-     * @param db
-     * @param dbName
+     * @param db the MongoDatabase
      * @param bucketName
      * @param fileId
      * @param filter
@@ -211,8 +208,7 @@ public class GridFs {
      * @return the OperationResult
      */
     public OperationResult deleteFile(
-        final Databases db,
-        final String dbName,
+        final MongoDatabase db,
         final String bucketName,
         final BsonValue fileId,
         final BsonDocument filter,
@@ -221,7 +217,7 @@ public class GridFs {
 
         final var bucket = extractBucketName(bucketName);
 
-        var gridFSBucket = GridFSBuckets.create(db.getDatabase(dbName), bucket);
+        var gridFSBucket = GridFSBuckets.create(db, bucket);
 
         var file = getFileForId(gridFSBucket, fileId, filter);
 
@@ -269,20 +265,19 @@ public class GridFs {
 
     /**
      *
-     * @param db
-     * @param dbName
+     * @param db the MongoDatabase
      * @param bucketName
      */
-    public void deleteChunksCollection(final Databases db, final String dbName, final String bucketName) {
+    public void deleteChunksCollection(final MongoDatabase db, final String bucketName) {
         var chunksCollName = extractBucketName(bucketName).concat(".chunks");
-        collections.getCollection(dbName, chunksCollName).drop();
+        collections.getCollection(db, chunksCollName).drop();
     }
 
     /**
      *
      * @param cs the client session
      * @param method the request method
-     * @param dbName
+     * @param db the MongoDatabase
      * @param collName
      * @param documentId
      * @param filter
@@ -295,7 +290,7 @@ public class GridFs {
     public OperationResult updateFileMetadata(
             final Optional<ClientSession> cs,
             final METHOD method,
-            final String dbName,
+            final MongoDatabase db,
             final String collName,
             final Optional<BsonValue> documentId,
             final Optional<BsonDocument> filter,
@@ -303,7 +298,7 @@ public class GridFs {
             final BsonDocument newContent,
             final String requestEtag,
             final boolean checkEtag) {
-        var mcoll = collections.getCollection(dbName, collName);
+        var mcoll = collections.getCollection(db, collName);
 
         // genereate new etag
         var newEtag = new BsonObjectId();

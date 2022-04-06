@@ -81,6 +81,7 @@ public class DeleteDBHandler extends PipelinedHandler {
 
         var result = dbs.deleteDatabase(
             Optional.ofNullable(request.getClientSession()),
+            request.rsOps(),
             request.getDBName(),
             etag,
             request.isETagCheckRequired());

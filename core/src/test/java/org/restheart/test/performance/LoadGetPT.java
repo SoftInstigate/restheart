@@ -41,6 +41,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -104,21 +105,21 @@ public class LoadGetPT extends AbstractPT {
     public void dbdirect() {
         final Databases dbs = Databases.get();
         @SuppressWarnings("rawtypes")
-        MongoCollection dbcoll = dbs.getCollection(db, coll);
+        MongoCollection dbcoll = dbs.getCollection(dbs.db(Optional.empty(), db), coll);
 
         BsonArray data;
 
         try {
             data = dbs.getCollectionData(
-                    null, // no session
-                    dbcoll,
-                    page,
-                    pagesize,
-                    null,
-                    BsonDocument.parse(filter),
-                    null,
-                    null,
-                    EAGER_CURSOR_ALLOCATION_POLICY.NONE);
+                null, // no session
+                dbcoll,
+                page,
+                pagesize,
+                null,
+                BsonDocument.parse(filter),
+                null,
+                null,
+                EAGER_CURSOR_ALLOCATION_POLICY.NONE);
         } catch (Exception e) {
             return;
         }
@@ -135,7 +136,7 @@ public class LoadGetPT extends AbstractPT {
      */
     public void dbdirectdoc() {
         final Databases dbs = Databases.get();
-        MongoCollection<BsonDocument> dbcoll = dbs.getCollection(db, coll);
+        MongoCollection<BsonDocument> dbcoll = dbs.getCollection(dbs.db(Optional.empty(), db), coll);
 
         ObjectId oid;
         String sid;

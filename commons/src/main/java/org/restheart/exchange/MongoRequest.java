@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
@@ -44,6 +45,7 @@ import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.ExchangeKeys.HAL_MODE;
 import org.restheart.exchange.ExchangeKeys.REPRESENTATION_FORMAT;
 import org.restheart.exchange.ExchangeKeys.TYPE;
+import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.db.sessions.ClientSessionImpl;
 import org.restheart.utils.URLUtils;
 import org.slf4j.LoggerFactory;
@@ -110,12 +112,22 @@ public class MongoRequest extends BsonRequest {
 
     private final long requestStartTime = System.currentTimeMillis();
 
-    // path template match
+    /**
+     * path template match
+     */
     private final PathTemplateMatch pathTemplateMatch;
 
+    /**
+     * the json mode
+     */
     private final JsonMode jsonMode;
 
+    /**
+     * noCache switch, e.g.: ?nocache=true
+     */
     final boolean noCache;
+
+    private final Optional<RSOps> rsOps;
 
     protected MongoRequest(HttpServerExchange exchange, String requestUri, String resourceUri) {
         super(exchange);
@@ -176,7 +188,6 @@ public class MongoRequest extends BsonRequest {
         this.noCache = exchange.getQueryParameters().get(NO_CACHE_QPARAM_KEY) != null;
 
         // writeMode
-
         var _writeMode = exchange.getQueryParameters().containsKey(WRITE_MODE_QPARAM_KEY)
                 ? exchange.getQueryParameters().get(WRITE_MODE_QPARAM_KEY).getFirst().toUpperCase()
                 : exchange.getQueryParameters().containsKey(WRITE_MODE_SHORT_QPARAM_KEY)
@@ -192,6 +203,38 @@ public class MongoRequest extends BsonRequest {
         }
 
         this.writeMode = mode;
+
+        var anyRsSet = false;
+        var rsOps = new RSOps();
+
+        // readConcern
+        if (exchange.getQueryParameters().containsKey(READ_CONCERN_QPARAM_KEY)) {
+            try {
+                rsOps = rsOps.withReadConcern(exchange.getQueryParameters().get(READ_CONCERN_QPARAM_KEY).getFirst());
+                anyRsSet = true;
+            } catch (IllegalArgumentException iae) {
+                // nothing to do
+            }
+        }
+
+        // readPreference
+        if (exchange.getQueryParameters().containsKey(READ_PREFERENCE_QPARAM_KEY)) {
+            try {
+                rsOps = rsOps.withReadPreference(exchange.getQueryParameters().get(READ_PREFERENCE_QPARAM_KEY).getFirst());
+                anyRsSet = true;
+            } catch (IllegalArgumentException iae) {
+                // nothing to do
+            }
+        }
+
+        // writeConcern
+        if (exchange.getQueryParameters().containsKey(WRITE_CONCERN_QPARAM_KEY)) {
+            rsOps = rsOps.withWriteConcern(exchange.getQueryParameters().get(WRITE_CONCERN_QPARAM_KEY).getFirst());
+            anyRsSet = true;
+        }
+
+        this.rsOps = anyRsSet ? Optional.of(rsOps) : Optional.empty();
+        LOGGER.debug("ReplicaSet connection options: {}", rsOps);
     }
 
     private String defaultWriteMode() {
@@ -1492,5 +1535,14 @@ public class MongoRequest extends BsonRequest {
      */
     public boolean isNoCache() {
         return noCache;
+    }
+
+    /**
+     * ReplicaSet connection otpions
+     *
+     * @return the rsOps
+     */
+    public Optional<RSOps> rsOps() {
+        return rsOps;
     }
 }

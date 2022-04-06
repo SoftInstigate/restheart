@@ -23,8 +23,6 @@ package org.restheart.mongodb.handlers.files;
 import com.mongodb.MongoException;
 import com.mongodb.MongoWriteException;
 import io.undertow.server.HttpServerExchange;
-import org.bson.BsonDocument;
-import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
@@ -72,26 +70,19 @@ public class PutFileHandler extends PipelinedHandler {
             return;
         }
 
-        final BsonValue _metadata = request.getContent();
-
         // must be an object
-        if (!_metadata.isDocument()) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "data cannot be an array");
+        if (!request.getContent().isDocument()) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "data cannot be an array");
             next(exchange);
             return;
         }
 
-        BsonDocument metadata = _metadata.asDocument();
+        var metadata = request.getContent().asDocument();
 
-        BsonValue id = request.getDocumentId();
+        var id = request.getDocumentId();
 
-        if (metadata.get("_id") != null
-                && metadata.get("_id").equals(id)) {
-            response.setInError(
-                    HttpStatus.SC_NOT_ACCEPTABLE,
-                    "_id in content body is different than id in URL");
+        if (metadata.get("_id") != null && metadata.get("_id").equals(id)) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "_id in content body is different than id in URL");
             next(exchange);
             return;
         }
@@ -102,16 +93,15 @@ public class PutFileHandler extends PipelinedHandler {
 
         try {
             if (request.getFilePath() != null) {
-                result = gridFs
-                        .upsertFile(dbs,
-                                request.getDBName(),
-                                request.getCollectionName(),
-                                metadata,
-                                request.getFilePath(),
-                                id,
-                                request.getFiltersDocument(),
-                                request.getETag(),
-                                request.isETagCheckRequired());
+                result = gridFs.upsertFile(
+                    dbs.db(request.rsOps(), request.getDBName()),
+                    request.getCollectionName(),
+                    metadata,
+                    request.getFilePath(),
+                    id,
+                    request.getFiltersDocument(),
+                    request.getETag(),
+                    request.isETagCheckRequired());
             } else {
                 // throw new RuntimeException("error. file data is null");
                 // try to pass to next handler in order to PUT new metadata on existing file.
@@ -120,13 +110,10 @@ public class PutFileHandler extends PipelinedHandler {
             }
         } catch (MongoWriteException t) {
             if (((MongoException) t).getCode() == 11000) {
-
                 // update not supported
                 String errMsg = "file resource update is not yet implemented";
                 LOGGER.error(errMsg, t);
-                response.setInError(
-                        HttpStatus.SC_NOT_IMPLEMENTED,
-                        errMsg);
+                response.setInError(HttpStatus.SC_NOT_IMPLEMENTED, errMsg);
                 next(exchange);
                 return;
             }

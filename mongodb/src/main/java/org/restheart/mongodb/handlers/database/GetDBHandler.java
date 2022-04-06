@@ -80,11 +80,12 @@ public class GetDBHandler extends PipelinedHandler {
             return;
         }
 
-        var colls = dbs.getCollectionNames(Optional.ofNullable(request.getClientSession()), request.getDBName());
+        var colls = dbs.getCollectionNames(Optional.ofNullable(request.getClientSession()), request.rsOps(), request.getDBName());
 
         if (request.getPagesize() > 0) {
             var data = dbs.getDatabaseData(
                 Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
                 request.getDBName(),
                 colls,
                 request.getPage(),

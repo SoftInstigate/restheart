@@ -136,6 +136,21 @@ public interface ExchangeKeys {
      */
     public static final String WRITE_MODE_SHORT_QPARAM_KEY = "wm";
 
+    /**
+     *
+     */
+    public static final String WRITE_CONCERN_QPARAM_KEY = "writeConcern";
+
+    /**
+     *
+     */
+    public static final String READ_CONCERN_QPARAM_KEY = "readConcern";
+
+    /**
+     *
+     */
+    public static final String READ_PREFERENCE_QPARAM_KEY = "readPreference";
+
     // matadata
 
     /**

@@ -95,6 +95,7 @@ public class PutDBHandler extends PipelinedHandler {
 
         var result = dbs.upsertDB(
             Optional.ofNullable(request.getClientSession()),
+            request.rsOps(),
             request.getMethod(),
             request.getDbProps() != null, // true if updating
             request.getDBName(),
