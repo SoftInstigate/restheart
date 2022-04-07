@@ -30,7 +30,7 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.SlidingTimeWindowArrayReservoir;
 import com.codahale.metrics.Slf4jReporter.LoggingLevel;
-import static org.restheart.utils.MetricsUtils.unauthHistogramName;
+import static org.restheart.utils.MetricsUtils.failedAuthHistogramName;
 
 import org.restheart.exchange.Request;
 import org.restheart.handlers.CORSHandler;
@@ -63,7 +63,7 @@ public class AuthenticationCallHandler extends PipelinedHandler {
             Slf4jReporter
                 .forRegistry(AUTH_METRIC_REGISTRY)
                 .outputTo(LOGGER)
-                .filter((name, metric) -> name.startsWith(MetricRegistry.name(Authenticator.class, "unauth")))
+                .filter((name, metric) -> name.startsWith(MetricRegistry.name(Authenticator.class, "failed-auth")))
                 .withLoggingLevel(LoggingLevel.TRACE)
                 .build()
                 .start(5, TimeUnit.SECONDS);
@@ -136,15 +136,13 @@ public class AuthenticationCallHandler extends PipelinedHandler {
      * @param success
      */
     private void updateFailedAuthMetrics(HttpServerExchange exchange) {
-        var histoNameWithXFF = unauthHistogramName(exchange, true);
+        var histoNameWithXFF = failedAuthHistogramName(exchange, true);
 
-        // update the histo with X-Forwader-For, if available
-        if (histoNameWithXFF != null) {
-            _update(AUTH_METRIC_REGISTRY.histogram(histoNameWithXFF, () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))));
-        }
+        // update the histo with X-Forwader-For
+        _update(AUTH_METRIC_REGISTRY.histogram(histoNameWithXFF, () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))));
 
         // update the histo with remote-ip, always available
-        _update(AUTH_METRIC_REGISTRY.histogram(unauthHistogramName(exchange, false), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))));
+        _update(AUTH_METRIC_REGISTRY.histogram(failedAuthHistogramName(exchange, false), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))));
 
         // every 100 failed requests, prune metrics
         tryPruneMetrics();
@@ -165,7 +163,7 @@ public class AuthenticationCallHandler extends PipelinedHandler {
         if (total.getCount() % 100 == 0) {
             total.dec(total.getCount());
             LOGGER.trace("Pruning auth metrics");
-            AUTH_METRIC_REGISTRY.removeMatching((name, metric) -> name.startsWith(MetricRegistry.name(Authenticator.class, "unauth-")));
+            AUTH_METRIC_REGISTRY.removeMatching((name, metric) -> name.startsWith(MetricRegistry.name(Authenticator.class, "failed-auth-")));
         }
     }
 }

@@ -28,7 +28,7 @@ import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
-import static org.restheart.utils.MetricsUtils.unauthHistogramName;
+import static org.restheart.utils.MetricsUtils.failedAuthHistogramName;
 import org.restheart.utils.LogUtils;
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpServerExchange;
@@ -110,12 +110,12 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
 
     private Histogram authHisto(ServiceRequest<?> request) {
         if (trustXForwardedFor) {
-            var histoNameWithXFF = unauthHistogramName(request.getExchange(), true);
+            var histoNameWithXFF = failedAuthHistogramName(request.getExchange(), true);
             if (histoNameWithXFF != null) {
                 return AUTH_METRIC_REGISTRY.histogram(histoNameWithXFF, () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS)));
             }
         }
 
-        return AUTH_METRIC_REGISTRY.histogram(unauthHistogramName(request.getExchange(), false), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS)));
+        return AUTH_METRIC_REGISTRY.histogram(failedAuthHistogramName(request.getExchange(), false), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS)));
     }
 }
