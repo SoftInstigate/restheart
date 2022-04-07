@@ -36,21 +36,26 @@ import io.undertow.util.HttpString;
 public class MetricsUtils {
     private static final HttpString _X_FORWARDED_FOR = HttpString.tryFromString(HttpHeaders.X_FORWARDED_FOR);
 
+    public enum FAILED_AUTH_KEY { REMOTE_IP, X_FORWARDED_FOR }
+
+    private static FAILED_AUTH_KEY collectFailedAuthBy = FAILED_AUTH_KEY.REMOTE_IP;
+
      /**
      *
      * @param exchange
      * @param useXForwardedFor true to use the X-Forwarded-For header, false to use the remote ip
      * @return the name of the histogram that stores the percentage of failed auth requests in the last 10 seconds
      */
-    public static String failedAuthHistogramName(HttpServerExchange exchange, boolean useXForwardedFor) {
-        if (useXForwardedFor) {
-            var xff = ExchangeAttributes.requestHeader(_X_FORWARDED_FOR).readAttribute(exchange);
-            return xff == null
-                ? MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", "not-set")
-                : MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", last(xff));
-        } else {
-            return MetricRegistry.name(Authenticator.class, "failed-auth-remote-ip", ExchangeAttributes.remoteIp().readAttribute(exchange));
-        }
+    public static String failedAuthHistogramName(HttpServerExchange exchange) {
+        return switch(collectFailedAuthBy) {
+            case REMOTE_IP -> MetricRegistry.name(Authenticator.class, "failed-auth-remote-ip", ExchangeAttributes.remoteIp().readAttribute(exchange));
+            case X_FORWARDED_FOR -> {
+                var xff = ExchangeAttributes.requestHeader(_X_FORWARDED_FOR).readAttribute(exchange);
+                yield xff == null
+                    ? MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", "not-set")
+                    : MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", last(xff));
+            }
+        };
     }
 
     /**
@@ -73,5 +78,14 @@ public class MetricsUtils {
             var elements = xff.split(",");
             return elements[elements.length - 1].trim();
         }
+    }
+
+    /**
+     * Choose the key used to collect failed auth requests, REMOTE_IP (default) or X_FORWARDED_FOR
+     *
+     * @param key the key to use
+     */
+    public static void collectFailedAuthBy(FAILED_AUTH_KEY key) {
+        collectFailedAuthBy = key;
     }
 }
