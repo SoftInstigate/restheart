@@ -57,13 +57,17 @@ public class AuthenticationCallHandler extends PipelinedHandler {
     private static MetricRegistry AUTH_METRIC_REGISTRY = SharedMetricRegistries.getOrCreate("AUTH");
 
     private static final String BLOCK_AUTH_ERR_MSG = "Request authentication was blocked";
+    private static final String FAILED_AUTH_METRIC_PREFIX = "failed-auth-";
 
     static {
         if (LOGGER.isTraceEnabled()) {
             Slf4jReporter
                 .forRegistry(AUTH_METRIC_REGISTRY)
                 .outputTo(LOGGER)
-                .filter((name, metric) -> name.startsWith(MetricRegistry.name(Authenticator.class, "failed-auth")))
+                .filter((name, metric) ->
+                    name.startsWith(MetricRegistry.name(Authenticator.class, FAILED_AUTH_METRIC_PREFIX))
+                    && metric instanceof Histogram hist
+                    && hist.getSnapshot().getMax() > 0)
                 .withLoggingLevel(LoggingLevel.TRACE)
                 .build()
                 .start(5, TimeUnit.SECONDS);
@@ -136,13 +140,8 @@ public class AuthenticationCallHandler extends PipelinedHandler {
      * @param success
      */
     private void updateFailedAuthMetrics(HttpServerExchange exchange) {
-        var histoNameWithXFF = failedAuthHistogramName(exchange, true);
-
-        // update the histo with X-Forwader-For
-        _update(AUTH_METRIC_REGISTRY.histogram(histoNameWithXFF, () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))));
-
-        // update the histo with remote-ip, always available
-        _update(AUTH_METRIC_REGISTRY.histogram(failedAuthHistogramName(exchange, false), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))));
+        // update the histo
+        _update(AUTH_METRIC_REGISTRY.histogram(failedAuthHistogramName(exchange), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS))));
 
         // every 100 failed requests, prune metrics
         tryPruneMetrics();
@@ -163,7 +162,7 @@ public class AuthenticationCallHandler extends PipelinedHandler {
         if (total.getCount() % 100 == 0) {
             total.dec(total.getCount());
             LOGGER.trace("Pruning auth metrics");
-            AUTH_METRIC_REGISTRY.removeMatching((name, metric) -> name.startsWith(MetricRegistry.name(Authenticator.class, "failed-auth-")));
+            AUTH_METRIC_REGISTRY.removeMatching((name, metric) -> name.startsWith(MetricRegistry.name(Authenticator.class, FAILED_AUTH_METRIC_PREFIX)));
         }
     }
 }
