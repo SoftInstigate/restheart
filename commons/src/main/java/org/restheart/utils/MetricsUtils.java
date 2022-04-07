@@ -42,12 +42,36 @@ public class MetricsUtils {
      * @param useXForwardedFor true to use the X-Forwarded-For header, false to use the remote ip
      * @return the name of the histogram that stores the percentage of failed auth requests in the last 10 seconds
      */
-    public static String unauthHistogramName(HttpServerExchange exchange, boolean useXForwardedFor) {
+    public static String failedAuthHistogramName(HttpServerExchange exchange, boolean useXForwardedFor) {
         if (useXForwardedFor) {
             var xff = ExchangeAttributes.requestHeader(_X_FORWARDED_FOR).readAttribute(exchange);
-            return xff == null ? null : MetricRegistry.name(Authenticator.class, "unauth-x-forwarded-for", xff);
+            return xff == null
+                ? MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", "not-set")
+                : MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", last(xff));
         } else {
-            return MetricRegistry.name(Authenticator.class, "unauth-remote-ip", ExchangeAttributes.remoteIp().readAttribute(exchange));
+            return MetricRegistry.name(Authenticator.class, "failed-auth-remote-ip", ExchangeAttributes.remoteIp().readAttribute(exchange));
+        }
+    }
+
+    /**
+     *
+     * handles the case where the X_Forwarded_For header
+     * is set as "<client-suppied-value>, ..., <proxy-supplied-value>"
+     *
+     * we want to take into account only the last value to avoid
+     * metrics to be flooded with values from the client
+     *
+     * NOTE: this is the behavior of AWS ALB
+     *
+     * @param xff
+     * @return the last element of a comma separated list
+     */
+    static String last(String xff) {
+        if (xff == null) {
+            return null;
+        } else {
+            var elements = xff.split(",");
+            return elements[elements.length - 1].trim();
         }
     }
 }
