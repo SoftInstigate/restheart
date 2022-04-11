@@ -220,6 +220,12 @@ authorizers:
       whitelist:
         - https://restheart.org
         - http://localhost
+      # optional list of paths for whose the Origin header
+      # is not checked. values can be absolute paths
+      # or patterns like /{var}/path/to/resource/*
+      # ignore-paths:
+      #   - /{tenant}/bucket.files/{id}/binary
+      #   - /coll/docid
   fullAuthorizer:
     enabled: false
     authentication-required: true
