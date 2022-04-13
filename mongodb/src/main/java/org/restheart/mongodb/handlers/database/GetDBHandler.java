@@ -20,7 +20,6 @@
  */
 package org.restheart.mongodb.handlers.database;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import java.util.Optional;
 
@@ -52,17 +51,6 @@ public class GetDBHandler extends PipelinedHandler {
      */
     public GetDBHandler(PipelinedHandler next) {
         super(next);
-    }
-
-    /**
-     *
-     * @param next
-     * @param dbsDAO
-     */
-    @VisibleForTesting
-    public GetDBHandler(PipelinedHandler next, Databases dbsDAO) {
-        super(next);
-        this.dbs = dbsDAO;
     }
 
     /**

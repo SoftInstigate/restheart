@@ -26,7 +26,6 @@ import io.undertow.util.HttpString;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.db.GridFs;
 import org.restheart.mongodb.db.OperationResult;
 import org.restheart.mongodb.utils.URLUtils;
@@ -42,8 +41,7 @@ import org.slf4j.LoggerFactory;
 public class PostBucketHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostBucketHandler.class);
-    private final GridFs gridFs = GridFs.get();;
-    private final Databases dbs = Databases.get();
+    private final GridFs gridFs = GridFs.get();
 
     /**
      *
@@ -89,7 +87,8 @@ public class PostBucketHandler extends PipelinedHandler {
         try {
             if (request.getFilePath() != null) {
                 result = gridFs.createFile(
-                    dbs.db(request.rsOps(), request.getDBName()),
+                    request.rsOps(),
+                    request.getDBName(),
                     request.getCollectionName(),
                     metadata,
                     request.getFilePath());

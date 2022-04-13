@@ -118,7 +118,13 @@ public class PutIndexHandler extends PipelinedHandler {
         }
 
         try {
-            dbs.createIndex(Optional.ofNullable(request.getClientSession()), dbs.db(request.rsOps(), request.getDBName()), request.getCollectionName(), keys, Optional.of(ops));
+            dbs.createIndex(
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                keys,
+                Optional.of(ops));
         } catch (Throwable t) {
             response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "error creating the index", t);
             next(exchange);

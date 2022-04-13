@@ -25,7 +25,6 @@ import io.undertow.util.Headers;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.db.GridFs;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
@@ -37,7 +36,6 @@ import org.restheart.utils.HttpStatus;
 public class DeleteFileHandler extends PipelinedHandler {
 
     private final GridFs gridFs = GridFs.get();
-    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of DeleteFileHandler
@@ -72,7 +70,8 @@ public class DeleteFileHandler extends PipelinedHandler {
         }
 
         var result = this.gridFs.deleteFile(
-            dbs.db(request.rsOps(), request.getDBName()),
+            request.rsOps(),
+            request.getDBName(),
             request.getCollectionName(),
             request.getDocumentId(),
             request.getFiltersDocument(),

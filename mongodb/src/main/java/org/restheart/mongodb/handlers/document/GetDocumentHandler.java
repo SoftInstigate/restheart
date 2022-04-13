@@ -133,7 +133,7 @@ public class GetDocumentHandler extends PipelinedHandler {
         }
 
         var cs = request.getClientSession();
-        var coll = dbs.getCollection(dbs.db(request.rsOps(), request.getDBName()), collName);
+        var coll = dbs.collection(request.rsOps(), request.getDBName(), collName);
 
         var document = cs == null
                 ? coll.find(query).projection(fieldsToReturn).first()

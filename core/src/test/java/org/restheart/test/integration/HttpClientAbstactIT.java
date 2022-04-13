@@ -757,23 +757,22 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     }
 
     private void createTestData() {
-        var db = dbs.db(Optional.empty(), dbName);
-        dbs.upsertDB(Optional.empty(), Optional.empty(), METHOD.PUT, false, dbName, dbProps, new ObjectId().toString(), false);
+        dbs.upsertDB(Optional.empty(), Optional.empty(), dbName, METHOD.PUT, false, dbProps, new ObjectId().toString(), false);
 
-        dbs.upsertCollection(Optional.empty(), db, METHOD.PUT, false, collection1Name, coll1Props, new ObjectId().toString(), false);
-        dbs.upsertCollection(Optional.empty(), db, METHOD.PUT, false, collection2Name, coll2Props, new ObjectId().toString(), false);
-        dbs.upsertCollection(Optional.empty(), db, METHOD.PUT, false, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, collection1Name, METHOD.PUT, false, coll1Props, new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, collection2Name, METHOD.PUT, false, coll2Props, new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, docsCollectionName, METHOD.PUT, false, docsCollectionProps, new ObjectId().toString(), false);
 
         for (var index : docsCollectionIndexesStrings) {
-            dbs.createIndex(Optional.empty(), db, docsCollectionName, BsonDocument.parse(index), Optional.empty());
+            dbs.createIndex(Optional.empty(), Optional.empty(), dbName, docsCollectionName, BsonDocument.parse(index), Optional.empty());
         }
 
         final var documentDAO = Documents.get();
-        documentDAO.writeDocument(Optional.empty(), METHOD.PUT, WRITE_MODE.UPSERT, db, collection1Name, Optional.of(new BsonString(document1Id)), Optional.empty(), Optional.empty(), document1Props, new ObjectId().toString(), false);
-        documentDAO.writeDocument(Optional.empty(), METHOD.PUT, WRITE_MODE.UPSERT, db, collection2Name, Optional.of(new BsonString(document2Id)), Optional.empty(), Optional.empty(), document2Props, new ObjectId().toString(), false);
+        documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, collection1Name, METHOD.PUT, WRITE_MODE.UPSERT, Optional.of(new BsonString(document1Id)), Optional.empty(), Optional.empty(), document1Props, new ObjectId().toString(), false);
+        documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, collection2Name, METHOD.PUT, WRITE_MODE.UPSERT, Optional.of(new BsonString(document2Id)), Optional.empty(), Optional.empty(), document2Props, new ObjectId().toString(), false);
 
         for (String doc : docsPropsStrings) {
-            documentDAO.writeDocument(Optional.empty(), METHOD.PUT, WRITE_MODE.UPSERT, db, docsCollectionName, Optional.of(new BsonObjectId(new ObjectId())), Optional.empty(), Optional.empty(), BsonDocument.parse(doc), new ObjectId().toString(), false);
+            documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, docsCollectionName, METHOD.PUT, WRITE_MODE.UPSERT, Optional.of(new BsonObjectId(new ObjectId())), Optional.empty(), Optional.empty(), BsonDocument.parse(doc), new ObjectId().toString(), false);
         }
         LOG.debug("test data created");
     }

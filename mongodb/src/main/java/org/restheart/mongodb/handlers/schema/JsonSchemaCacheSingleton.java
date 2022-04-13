@@ -127,10 +127,9 @@ public class JsonSchemaCacheSingleton {
     }
 
     private BsonDocument loadRaw(String schemaStoreDb, BsonValue schemaId) throws JsonSchemaNotFoundException {
-        var db = dbs.db(Optional.empty(), schemaStoreDb);
-        var document = dbs.getCollection(db, _SCHEMAS)
-                .find(eq("_id", schemaId))
-                .first();
+        var document = dbs.collection(Optional.empty(), schemaStoreDb, _SCHEMAS)
+            .find(eq("_id", schemaId))
+            .first();
 
         if (Objects.isNull(document)) {
             var sid = BsonUtils.getIdAsString(schemaId, false);
