@@ -22,17 +22,21 @@ package org.restheart.mongodb.interceptors;
 
 import java.util.Optional;
 
+import com.mongodb.MongoException;
 import com.mongodb.client.MongoClient;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.db.Databases;
+import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -48,6 +52,8 @@ import org.restheart.utils.HttpStatus;
         interceptPoint = InterceptPoint.REQUEST_BEFORE_AUTH,
         priority = Integer.MIN_VALUE)
 public class DbPropsInjector implements MongoInterceptor {
+    private final static Logger LOGGER = LoggerFactory.getLogger(DbPropsInjector.class);
+
     private Databases dbs = null;
 
     /**
@@ -77,10 +83,28 @@ public class DbPropsInjector implements MongoInterceptor {
         if (dbName != null) {
             BsonDocument dbProps;
 
-            if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
-                dbProps = dbs.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), null);
-            } else {
-                dbProps = MetadataCachesSingleton.getInstance().getDBProperties(dbName);
+            try {
+                if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
+                    dbProps = dbs.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), request.rsOps(), dbName);
+                } else {
+                    dbProps = MetadataCachesSingleton.getInstance().getDBProperties(dbName);
+                }
+            } catch(MongoException mce) {
+                int httpCode = ResponseHelper.getHttpStatusFromErrorCode(mce.getCode());
+
+                if (httpCode >= 500 && mce.getMessage() != null && !mce.getMessage().isBlank()) {
+                    LOGGER.error("Error handling the request", mce);
+                    response.setInError(httpCode, mce.getMessage());
+                } else {
+                    LOGGER.debug("Error handling the request", mce);
+                    response.setInError(httpCode, ResponseHelper.getMessageFromMongoException(mce));
+                }
+
+                return;
+            } catch (Exception e) {
+                LOGGER.error("Error handling the request", e);
+                response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "Error getting properties of db " + dbName, e);
+                return;
             }
 
             // if dbProps is null, the db does not exist

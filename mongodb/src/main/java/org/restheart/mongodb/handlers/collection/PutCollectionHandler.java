@@ -21,8 +21,6 @@
 package org.restheart.mongodb.handlers.collection;
 
 import java.util.Optional;
-
-import com.google.common.annotations.VisibleForTesting;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import org.bson.BsonDocument;
@@ -57,18 +55,6 @@ public class PutCollectionHandler extends PipelinedHandler {
     }
 
     /**
-     * Creates a new instance of PutCollectionHandler
-     *
-     * @param next
-     * @param dbsDAO
-     */
-    @VisibleForTesting
-    public PutCollectionHandler(PipelinedHandler next, Databases dbsDAO) {
-        super(next);
-        this.dbs = dbsDAO;
-    }
-
-    /**
      *
      * @param exchange
      * @throws Exception
@@ -100,10 +86,11 @@ public class PutCollectionHandler extends PipelinedHandler {
 
         var result = dbs.upsertCollection(
             Optional.ofNullable(request.getClientSession()),
-            dbs.db(request.rsOps(), request.getDBName()),
+            request.rsOps(), 
+            request.getDBName(),
+            request.getCollectionName(),
             request.getMethod(),
             request.getCollectionProps() != null, // true if updating
-            request.getCollectionName(),
             content,
             request.getETag(),
             request.isETagCheckRequired());

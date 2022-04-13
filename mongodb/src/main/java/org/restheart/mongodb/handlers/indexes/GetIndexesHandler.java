@@ -69,7 +69,8 @@ public class GetIndexesHandler extends PipelinedHandler {
 
         var _indexes = dbs.getCollectionIndexes(
             Optional.ofNullable(request.getClientSession()),
-            dbs.db(request.rsOps(), request.getDBName()),
+            request.rsOps(),
+            request.getDBName(),
             request.getCollectionName());
 
         final var indexes = new BsonArray();

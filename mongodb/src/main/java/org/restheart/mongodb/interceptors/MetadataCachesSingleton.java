@@ -72,11 +72,8 @@ public class MetadataCachesSingleton {
         return enabled;
     }
 
-    /**
-     * Default ctor
-     */
-    private MetadataCachesSingleton(Databases dbsDAO) {
-        this.dbs = dbsDAO;
+    private MetadataCachesSingleton() {
+        this.dbs = Databases.get();
         setup();
     }
 
@@ -87,7 +84,7 @@ public class MetadataCachesSingleton {
 
         if (enabled) {
             // no client session
-            this.dbPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, (String key) ->  dbs.getDatabaseProperties(Optional.empty(), dbs.db(Optional.empty(), key)));
+            this.dbPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, (String key) -> dbs.getDatabaseProperties(Optional.empty(), Optional.empty(), key));
 
             this.collectionPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                 key -> {
@@ -199,7 +196,7 @@ public class MetadataCachesSingleton {
     }
 
     private static class LocalCachesSingletonHolder {
-        private static final MetadataCachesSingleton INSTANCE = new MetadataCachesSingleton(Databases.get());
+        private static final MetadataCachesSingleton INSTANCE = new MetadataCachesSingleton();
 
         private LocalCachesSingletonHolder() {
         }

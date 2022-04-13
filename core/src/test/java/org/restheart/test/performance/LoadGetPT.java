@@ -64,7 +64,6 @@ import org.restheart.utils.HttpStatus;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@SuppressWarnings("unchecked")
 public class LoadGetPT extends AbstractPT {
 
     private boolean printData = false;
@@ -74,8 +73,7 @@ public class LoadGetPT extends AbstractPT {
     private int pagesize = 5;
     private String eager;
 
-    private final ConcurrentHashMap<Long, Integer> threadPages
-            = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Integer> threadPages = new ConcurrentHashMap<>();
 
     /**
      *
@@ -104,15 +102,15 @@ public class LoadGetPT extends AbstractPT {
      */
     public void dbdirect() {
         final Databases dbs = Databases.get();
-        @SuppressWarnings("rawtypes")
-        MongoCollection dbcoll = dbs.getCollection(dbs.db(Optional.empty(), db), coll);
 
         BsonArray data;
 
         try {
             data = dbs.getCollectionData(
-                null, // no session
-                dbcoll,
+                null, // no session,
+                Optional.empty(), // no Replica Set options
+                db,
+                coll,
                 page,
                 pagesize,
                 null,
@@ -136,7 +134,7 @@ public class LoadGetPT extends AbstractPT {
      */
     public void dbdirectdoc() {
         final Databases dbs = Databases.get();
-        MongoCollection<BsonDocument> dbcoll = dbs.getCollection(dbs.db(Optional.empty(), db), coll);
+        MongoCollection<BsonDocument> dbcoll = dbs.collection(Optional.empty(), db, coll);
 
         ObjectId oid;
         String sid;

@@ -78,7 +78,8 @@ public class DeleteIndexHandler extends PipelinedHandler {
 
         var httpCode = dbs.deleteIndex(
             Optional.ofNullable(request.getClientSession()),
-            dbs.db(request.rsOps(), request.getDBName()),
+            request.rsOps(),
+            request.getDBName(),
             request.getCollectionName(),
             indexId);
 

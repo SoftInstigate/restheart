@@ -27,7 +27,6 @@ import java.util.Optional;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
-import org.restheart.mongodb.db.Databases;
 import org.restheart.mongodb.db.Documents;
 
 /**
@@ -37,7 +36,6 @@ import org.restheart.mongodb.db.Documents;
 public class BulkPatchDocumentsHandler extends PipelinedHandler {
 
     private final Documents documents = Documents.get();
-    private final Databases dbs = Databases.get();
 
     /**
      * Creates a new instance of PatchDocumentHandler
@@ -71,7 +69,8 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
 
         var result = this.documents.bulkPatchDocuments(
             Optional.ofNullable(request.getClientSession()),
-            dbs.db(request.rsOps(), request.getDBName()),
+            request.rsOps(), 
+            request.getDBName(),
             request.getCollectionName(),
             request.getFiltersDocument(),
             Optional.ofNullable(request.getShardKey()),

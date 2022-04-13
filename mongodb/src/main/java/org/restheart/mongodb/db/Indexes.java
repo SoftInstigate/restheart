@@ -21,8 +21,6 @@
 package org.restheart.mongodb.db;
 
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoDatabase;
-
 import static com.mongodb.client.model.Filters.eq;
 import com.mongodb.client.model.IndexOptions;
 import java.util.ArrayList;
@@ -33,6 +31,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonInt32;
 import org.bson.conversions.Bson;
 import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
+
+import org.restheart.mongodb.RSOps;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -64,27 +64,28 @@ class Indexes {
     /**
      *
      * @param cs the client session
-     * @param db the MongoDatabase
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param collName
      * @return
      */
     List<BsonDocument> getCollectionIndexes(
-            final Optional<ClientSession> cs,
-            final MongoDatabase db,
-            final String collName) {
+        final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
+        final String dbName,
+        final String collName) {
         var ret = new ArrayList<BsonDocument>();
 
         var indexes = cs.isPresent()
-                ? collections.getCollection(db, collName).listIndexes(cs.get())
-                : collections.getCollection(db, collName).listIndexes();
+                ? collections.collection(rsOps, dbName, collName).listIndexes(cs.get())
+                : collections.collection(rsOps, dbName, collName).listIndexes();
 
-        indexes.iterator().forEachRemaining(
-                i -> {
-                    var bi = BsonDocument.parse(i.toJson());
-                    var name = bi.remove("name");
-                    bi.put("_id", name);
-                    ret.add(bi);
-                });
+        indexes.iterator().forEachRemaining(i -> {
+            var bi = BsonDocument.parse(i.toJson());
+            var name = bi.remove("name");
+            bi.put("_id", name);
+            ret.add(bi);
+        });
 
         return ret;
     }
@@ -92,28 +93,30 @@ class Indexes {
     /**
      *
      * @param cs the client session
-     * @param db the MongoDatabase
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param collection
      * @param keys
      * @param options
      */
     void createIndex(
         final Optional<ClientSession> cs,
-        final MongoDatabase db,
+        final Optional<RSOps> rsOps,
+        final String dbName,
         final String collection,
         final BsonDocument keys,
         final Optional<BsonDocument> options) {
         if (options.isPresent()) {
             if (cs.isPresent()) {
-                collections.getCollection(db, collection).createIndex(cs.get(), keys, getIndexOptions(options.get()));
+                collections.collection(rsOps, dbName, collection).createIndex(cs.get(), keys, getIndexOptions(options.get()));
             } else {
-                collections.getCollection(db, collection).createIndex(keys, getIndexOptions(options.get()));
+                collections.collection(rsOps, dbName, collection).createIndex(keys, getIndexOptions(options.get()));
             }
         } else {
             if (cs.isPresent()) {
-                collections.getCollection(db, collection).createIndex(cs.get(), keys);
+                collections.collection(rsOps, dbName, collection).createIndex(cs.get(), keys);
             } else {
-                collections.getCollection(db, collection).createIndex(keys);
+                collections.collection(rsOps, dbName, collection).createIndex(keys);
             }
         }
     }
@@ -121,20 +124,22 @@ class Indexes {
     /**
      *
      * @param cs the client session
-     * @param db the MongoDatabase
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param collection
      * @param indexId
      * @return the HTTP status code
      */
     int deleteIndex(
-            final Optional<ClientSession> cs,
-            final MongoDatabase db,
-            final String collection,
-            final String indexId) {
+        final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
+        final String dbName,
+        final String collection,
+        final String indexId) {
         if (cs.isPresent()) {
-            collections.getCollection(db, collection).dropIndex(cs.get(), indexId);
+            collections.collection(rsOps, dbName, collection).dropIndex(cs.get(), indexId);
         } else {
-            collections.getCollection(db, collection).dropIndex(indexId);
+            collections.collection(rsOps, dbName, collection).dropIndex(indexId);
         }
 
         return HttpStatus.SC_NO_CONTENT;

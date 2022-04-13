@@ -119,12 +119,12 @@ public class GetAggregationHandler extends PipelinedHandler {
                         var clientSession = request.getClientSession();
 
                         if (clientSession == null) {
-                            mrOutput = dbs.getCollection(dbs.db(request.rsOps(), request.getDBName()), request.getCollectionName())
+                            mrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
                                 .mapReduce(mapReduce.getResolvedMap(avars), mapReduce.getResolvedReduce(avars))
                                 .filter(mapReduce.getResolvedQuery(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
                         } else {
-                            mrOutput = dbs.getCollection(dbs.db(request.rsOps(), request.getDBName()), request.getCollectionName())
+                            mrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
                                 .mapReduce(clientSession, mapReduce.getResolvedMap(avars), mapReduce.getResolvedReduce(avars))
                                 .filter(mapReduce.getResolvedQuery(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
@@ -150,12 +150,12 @@ public class GetAggregationHandler extends PipelinedHandler {
                         var clientSession = request.getClientSession();
 
                         if (clientSession == null) {
-                            agrOutput = dbs.getCollection(dbs.db(request.rsOps(), request.getDBName()), request.getCollectionName())
+                            agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
                                 .aggregate(pipeline.getResolvedStagesAsList(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
                                 .allowDiskUse(pipeline.getAllowDiskUse().getValue());
                         } else {
-                            agrOutput = dbs.getCollection(dbs.db(request.rsOps(), request.getDBName()), request.getCollectionName())
+                            agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
                                 .aggregate(clientSession, pipeline.getResolvedStagesAsList(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
                                 .allowDiskUse(pipeline.getAllowDiskUse().getValue());

@@ -79,7 +79,8 @@ public class DeleteCollectionHandler extends PipelinedHandler {
 
         var result = dbs.deleteCollection(
             Optional.ofNullable(request.getClientSession()),
-            dbs.db(request.rsOps(), request.getDBName()),
+            request.rsOps(),
+            request.getDBName(),
             request.getCollectionName(),
             etag,
             request.isETagCheckRequired());
