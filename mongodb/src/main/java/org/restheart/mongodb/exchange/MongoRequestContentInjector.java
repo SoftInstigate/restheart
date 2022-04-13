@@ -60,9 +60,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class BsonRequestContentInjector {
+public class MongoRequestContentInjector {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(BsonRequestContentInjector.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(MongoRequestContentInjector.class);
 
     private static final String CONTENT_TYPE = "contentType";
 
@@ -209,7 +209,7 @@ public class BsonRequestContentInjector {
      * Creates a new instance of BodyInjectorHandler
      *
      */
-    public BsonRequestContentInjector() {
+    public MongoRequestContentInjector() {
     }
 
     /**

@@ -44,8 +44,8 @@ import org.restheart.handlers.PipelinedWrappingHandler;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHAT_KEY;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.MONGO_MOUNT_WHERE_KEY;
 import org.restheart.mongodb.db.MongoClientSingleton;
-import org.restheart.mongodb.exchange.BsonRequestContentInjector;
-import org.restheart.mongodb.exchange.BsonRequestPropsInjector;
+import org.restheart.mongodb.exchange.MongoRequestContentInjector;
+import org.restheart.mongodb.exchange.MongoRequestPropsInjector;
 import org.restheart.mongodb.handlers.CORSHandler;
 import org.restheart.mongodb.handlers.ErrorHandler;
 import org.restheart.mongodb.handlers.OptionsHandler;
@@ -229,8 +229,8 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
             // BsonRequestPropsInjector and BsonRequestContentInjector requires
             // that both MongoRequest and MongoResponse are initialized
-            BsonRequestPropsInjector.inject(e);
-            BsonRequestContentInjector.inject(e);
+            MongoRequestPropsInjector.inject(e);
+            MongoRequestContentInjector.inject(e);
         };
     }
 

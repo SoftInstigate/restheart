@@ -51,7 +51,7 @@ public class BodyInjectorHandlerTest {
         FormData formData = new FormData(1);
 
         formData.add("properties", jsonString);
-        BsonDocument result = BsonRequestContentInjector.extractMetadata(formData);
+        BsonDocument result = MongoRequestContentInjector.extractMetadata(formData);
         BsonDocument expected = BsonDocument.parse(jsonString);
         assertEquals(expected, result);
     }
