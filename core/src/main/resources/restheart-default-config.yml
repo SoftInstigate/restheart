@@ -448,6 +448,12 @@ eager-cursor-allocation-random-slice-min-width: 1000
 #### Connetction Options
 
 connection-options:
+  # Enable HTTP/2 support
+  # Note: HTTP2 as implemented by major browsers requires the use of TLS
+  # How to enable TLS https://restheart.org/docs/security/tls/
+  # How to check HTTP/2 protocol https://stackoverflow.com/a/54164719/4481670
+  ENABLE_HTTP2: true
+
   # The maximum size of a HTTP header block, in bytes.
   # If a client sends more data that this as part of the request header then the connection will be closed.
   # Defaults to 1Mbyte.
