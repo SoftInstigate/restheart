@@ -567,7 +567,8 @@ public final class Bootstrapper {
             .setWorkerThreads(configuration.getWorkerThreads())
             .setDirectBuffers(configuration.isDirectBuffers())
             .setBufferSize(configuration.getBufferSize())
-            .setHandler(HANDLERS);
+            .setHandler(HANDLERS)
+            .setServerOption(UndertowOptions.ENABLE_HTTP2, true);
 
         // starting from undertow 1.4.23 URL checks become much stricter
         // (undertow commit 09d40a13089dbff37f8c76d20a41bf0d0e600d9d)
