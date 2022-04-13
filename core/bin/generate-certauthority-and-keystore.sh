@@ -23,7 +23,7 @@ Available options:
 -v, --verbose   Print script debug info
 -d, --domain    The domain of the certificate
 -i, --ip        IP address to add to Subject Alternative Name extension (optional)
--a, --archive   The path of the unzipped certificate archive directory containing cert.pem, chain.pem and privkey.pem
+-a, --archive   The path where the generated files will be stored
 -p, --password  The keystore and certificate password (will be equal)
 --no-color      Don't use colors
 EOF
