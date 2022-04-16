@@ -1,5 +1,6 @@
 package org.restheart.mongodb;
 
+import com.mongodb.ConnectionString;
 import com.mongodb.ReadConcern;
 import com.mongodb.ReadConcernLevel;
 import com.mongodb.ReadPreference;
@@ -116,5 +117,9 @@ public record RSOps(
 
     public MongoDatabase applyWriteConcern(MongoDatabase db) {
         return writeConcern == null ? db : db.withWriteConcern(writeConcern);
+    }
+
+    public static RSOps from(ConnectionString mongoUri) {
+        return new RSOps(mongoUri.getReadPreference(), mongoUri.getReadConcern(), mongoUri.getWriteConcern());
     }
 }

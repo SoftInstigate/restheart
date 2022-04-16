@@ -25,7 +25,11 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.MongoQueryException;
 
 import static com.mongodb.client.model.Filters.eq;
+
+import java.util.Optional;
 import java.util.UUID;
+
+import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,15 +49,15 @@ public class TxnsUtils {
      * @param sid
      * @return the txn status from server
      */
-    public static Txn getTxnServerStatus(UUID sid) {
+    public static Txn getTxnServerStatus(UUID sid, Optional<RSOps> rsOps) {
         var options = Sid.getSessionOptions(sid);
 
         var cso = ClientSessionOptions
-                .builder()
-                .causallyConsistent(options.isCausallyConsistent())
-                .build();
+            .builder()
+            .causallyConsistent(options.isCausallyConsistent())
+            .build();
 
-        var cs = TxnClientSessionFactory.getInstance().createClientSession(sid, cso);
+        var cs = TxnClientSessionFactory.getInstance().createClientSession(sid, rsOps, cso);
 
         // set txnId on ServerSession
         if (cs.getServerSession().getTransactionNumber() < 1) {
@@ -72,6 +76,7 @@ public class TxnsUtils {
 
             if (num > 1) {
                 cs.setServerSessionTransactionNumber(num);
+
                 try {
                     propagateSession(cs);
                     return new Txn(num, Txn.TransactionStatus.IN);

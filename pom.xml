@@ -8,10 +8,11 @@
     <version>6.3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>restheart</name>
-    <description>RESTHeart - The REST API microservice for MongoDB.</description>
+    <description>RESTHeart - Low code platform for cloud-native HTTP microservices.</description>
     <url>http://www.restheart.org</url>
     <inceptionYear>2014</inceptionYear>
+
+    <name>restheart-parent</name>
 
     <properties>
         <finalName>${project.artifactId}-${project.version}</finalName>
@@ -383,17 +384,6 @@
 
     <build>
         <finalName>${finalName}</finalName>
-        <testResources>
-            <testResource>
-                <directory>src/test/java</directory>
-                <excludes>
-                    <exclude>**/*.java</exclude>
-                </excludes>
-            </testResource>
-            <testResource>
-                <directory>src/test/resources</directory>
-            </testResource>
-        </testResources>
         <pluginManagement>
             <plugins>
                 <plugin>

@@ -23,7 +23,6 @@ package org.restheart.mongodb;
 import java.util.Map;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.PLUGINS_ARGS_KEY;
 import org.restheart.mongodb.db.MongoClientSingleton;
-import org.restheart.mongodb.db.sessions.ClientSessionFactory;
 import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.plugins.ConfigurationScope;
@@ -50,7 +49,6 @@ public class MongoServiceInitializer implements Initializer {
         MongoServiceConfiguration.init(confArgs);
 
         TxnClientSessionFactory.init(MongoServiceConfiguration.get().getMongoUri());
-        ClientSessionFactory.init(MongoServiceConfiguration.get().getMongoUri());
 
         this.mongoSrvEnabled = isMongoEnabled(confArgs);
     }

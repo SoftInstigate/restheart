@@ -26,13 +26,17 @@ import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
+
 import io.undertow.server.HttpServerExchange;
+
+import java.util.Optional;
 import java.util.UUID;
-import static org.bson.assertions.Assertions.notNull;
 import static org.restheart.exchange.ExchangeKeys.CLIENT_SESSION_KEY;
 import static org.restheart.exchange.ExchangeKeys.TXNID_KEY;
 import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.IN;
 
+import org.restheart.exchange.MongoRequest;
+import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +48,7 @@ import org.slf4j.LoggerFactory;
 public class TxnClientSessionFactory extends ClientSessionFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(TxnClientSessionFactory.class);
 
-    private static ConnectionString mongoUri = null;
+    private static RSOps connectionStringRsOps = null;
     private static boolean initialized = false;
 
     /**
@@ -53,7 +57,7 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
      * @param pr
      */
     public static void init(ConnectionString uri) {
-        mongoUri = uri;
+        connectionStringRsOps = RSOps.from(uri);
         initialized = true;
     }
 
@@ -101,7 +105,7 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
                 throw new IllegalArgumentException("Invalid txn");
             }
 
-            var cs = getTxnClientSession(sid, new Txn(txnId, Txn.TransactionStatus.IN));
+            var cs = getTxnClientSession(sid, MongoRequest.of(exchange).rsOps(), new Txn(txnId, Txn.TransactionStatus.IN));
 
             LOGGER.debug("Request is executed in session {} with {}",
                     _sid,
@@ -131,8 +135,8 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
      * @param sid
      * @return
      */
-    public TxnClientSessionImpl getTxnClientSession(UUID sid) {
-        return getTxnClientSession(sid, TxnsUtils.getTxnServerStatus(sid));
+    public TxnClientSessionImpl getTxnClientSession(UUID sid, Optional<RSOps> rsOps) {
+        return getTxnClientSession(sid, rsOps, TxnsUtils.getTxnServerStatus(sid, rsOps));
     }
 
     /**
@@ -141,7 +145,7 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
      * @param txnServerStatus
      * @return
      */
-    public TxnClientSessionImpl getTxnClientSession(UUID sid, Txn txnServerStatus) {
+    public TxnClientSessionImpl getTxnClientSession(UUID sid, Optional<RSOps> rsOps, Txn txnServerStatus) {
         var options = Sid.getSessionOptions(sid);
 
         var cso = ClientSessionOptions
@@ -150,12 +154,10 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
                 .build();
 
         var cs = createClientSession(
-                sid,
-                cso,
-                mongoUri.getReadConcern() == null ? ReadConcern.DEFAULT : mongoUri.getReadConcern(),
-                mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
-                mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference(),
-                null);
+            sid,
+            cso,
+            rsOps.isPresent() ? rsOps.get() : connectionStringRsOps,
+            null);
 
         if (txnServerStatus != null) {
             cs.setTxnServerStatus(txnServerStatus);
@@ -168,39 +170,30 @@ public class TxnClientSessionFactory extends ClientSessionFactory {
         return cs;
     }
 
-    TxnClientSessionImpl createClientSession(UUID sid, final ClientSessionOptions options) {
+    TxnClientSessionImpl createClientSession(UUID sid, Optional<RSOps> rsOps, final ClientSessionOptions options) {
         return createClientSession(
             sid,
             options,
-            mongoUri.getReadConcern() == null ? ReadConcern.DEFAULT : mongoUri.getReadConcern(),
-                mongoUri.getWriteConcern() == null ? WriteConcern.MAJORITY : mongoUri.getWriteConcern(),
-                mongoUri.getReadPreference() == null ? ReadPreference.primary() : mongoUri.getReadPreference(),
+            rsOps.isPresent() ? rsOps.get() : connectionStringRsOps,
             null);
     }
 
     TxnClientSessionImpl createClientSession(
-            UUID sid,
-            final ClientSessionOptions options,
-            final ReadConcern readConcern,
-            final WriteConcern writeConcern,
-            final ReadPreference readPreference,
-            final Txn txnServerStatus) {
-        notNull("readConcern", readConcern);
-        notNull("writeConcern", writeConcern);
-        notNull("readPreference", readPreference);
-
+        UUID sid,
+        final ClientSessionOptions options,
+        final RSOps rsOps,
+        final Txn txnServerStatus) {
         var mergedOptions = ClientSessionOptions
-                .builder(options)
-                .causallyConsistent(true)
-                .defaultTransactionOptions(
-                        TransactionOptions.merge(
-                                options.getDefaultTransactionOptions(),
-                                TransactionOptions.builder()
-                                        .readConcern(readConcern)
-                                        .writeConcern(writeConcern)
-                                        .readPreference(readPreference)
-                                        .build()))
-                .build();
+            .builder(options)
+            .causallyConsistent(true)
+            .defaultTransactionOptions(TransactionOptions.merge(
+                options.getDefaultTransactionOptions(),
+                TransactionOptions.builder()
+                    .readPreference(rsOps.readPreference() != null ? rsOps.readPreference() : ReadPreference.primary())
+                    .readConcern(rsOps.readConcern() != null ? rsOps.readConcern() : ReadConcern.DEFAULT)
+                    .writeConcern(rsOps.writeConcern() != null ? rsOps.writeConcern() : WriteConcern.MAJORITY)
+                    .build()))
+            .build();
 
         return new TxnClientSessionImpl(
                 new SimpleServerSessionPool(SessionsUtils.getCluster(), sid),
