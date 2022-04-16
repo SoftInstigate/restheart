@@ -61,7 +61,7 @@ public class DeleteTxnHandler extends PipelinedHandler {
             return;
         }
 
-        var cs = TxnClientSessionFactory.getInstance().getTxnClientSession(sid);
+        var cs = TxnClientSessionFactory.getInstance().getTxnClientSession(sid, request.rsOps());
 
         if (cs.getTxnServerStatus().getTxnId() != request.getTxnId() || cs.getTxnServerStatus().getStatus() != Txn.TransactionStatus.IN) {
             response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "The given transaction is not in-progress");

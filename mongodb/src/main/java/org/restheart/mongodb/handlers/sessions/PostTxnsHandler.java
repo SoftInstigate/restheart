@@ -34,7 +34,7 @@ import static org.restheart.mongodb.db.sessions.Txn.TransactionStatus.NONE;
 import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.mongodb.db.sessions.TxnsUtils;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.RepresentationUtils;
+import static org.restheart.utils.RepresentationUtils.getReferenceLink;
 
 /**
  *
@@ -49,8 +49,7 @@ public class PostTxnsHandler extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    public void handleRequest(HttpServerExchange exchange)
-            throws Exception {
+    public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = MongoRequest.of(exchange);
         var response = MongoResponse.of(exchange);
 
@@ -59,30 +58,24 @@ public class PostTxnsHandler extends PipelinedHandler {
             return;
         }
 
-        String _sid = request.getSid();
+        var _sid = request.getSid();
 
         UUID sid;
 
         try {
             sid = UUID.fromString(_sid);
         } catch (IllegalArgumentException iae) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE,
-                    "Invalid session id");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid session id");
             next(exchange);
             return;
         }
 
-        var txn = TxnsUtils.getTxnServerStatus(sid);
+        var txn = TxnsUtils.getTxnServerStatus(sid, request.rsOps());
 
-        if (txn.getStatus() == ABORTED
-                || txn.getStatus() == COMMITTED
-                || txn.getStatus() == NONE) {
-            var nextTxnId = txn.getStatus() == NONE
-                    ? txn.getTxnId()
-                    : txn.getTxnId() + 1;
+        if (txn.getStatus() == ABORTED || txn.getStatus() == COMMITTED || txn.getStatus() == NONE) {
+            var nextTxnId = txn.getStatus() == NONE ? txn.getTxnId() : txn.getTxnId() + 1;
 
-            var cs = TxnClientSessionFactory.getInstance()
-                    .getTxnClientSession(sid, new Txn(nextTxnId, txn.getStatus()));
+            var cs = TxnClientSessionFactory.getInstance().getTxnClientSession(sid, request.rsOps(), new Txn(nextTxnId, txn.getStatus()));
 
             cs.setMessageSentInCurrentTransaction(false);
 
@@ -93,11 +86,7 @@ public class PostTxnsHandler extends PipelinedHandler {
             // propagate the transaction
             TxnsUtils.propagateSession(cs);
 
-            response.getHeaders()
-                    .add(HttpString.tryFromString("Location"),
-                            RepresentationUtils.getReferenceLink(
-                                    request.getMappedRequestUri(), //URLUtils.getRemappedRequestURL(exchange),
-                                    new BsonString("" + nextTxnId)));
+            response.getHeaders().add(HttpString.tryFromString("Location"), getReferenceLink(request.getMappedRequestUri(), new BsonString("" + nextTxnId)));
 
             response.setStatusCode(HttpStatus.SC_CREATED);
         } else {
