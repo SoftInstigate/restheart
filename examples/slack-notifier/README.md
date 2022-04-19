@@ -18,24 +18,10 @@ You need to create a Slack app and generate an OAuth Token:
 - [quick guide to create a Slack app](https://api.slack.com/start/overview#creating)
 - [Setup permission and generate the OAuth Token](https://api.slack.com/messaging/sending#permissions)
 
-## How to build and run
 
-You need **JDK 17++** to build and run this example.
+### Deploy
 
--   Clone this repo `git clone git@github.com:SoftInstigate/restheart-examples.git`
--   `cd` into the `restheart-examples` folder
--   [Download RESTHeart](https://github.com/SoftInstigate/restheart/releases/)
--   uncompress it: `unzip restheart.zip` or `tar -xvf restheart.tar.gz`.
-
-### Run
-
-1. `cd slack-notifier`
-1. Build the plugin with `../mvnw package` (uses the maven-dependency-plugin to copy the jar of the external dependency to /target/lib)
-1. Copy both the service JAR `target/slack-notifier.jar `and `target/lib/*` into `../restheart/plugins/` folder
-1. Start MongoDB in your localhost.
-1. cd into the restheart distribution you have previously downloaded and uncompressed.
-1. add the above configuration snipped to `restheart/etc/restheart.yml` configuration file
-1. Start the process: `java -jar restheart.jar etc/restheart.yml -e etc/default.properties`.
+Copy both the service JAR `target/slack-notifier.jar `and `target/lib/*` into `../restheart/plugins/` folder
 
 ## Test
 

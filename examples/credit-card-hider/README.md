@@ -4,19 +4,19 @@ A JavaScript Interceptor that hides credit card numbers
 
 You need to run RESTHeart with the GraalVM to execute this interceptor.
 
-Check the java version to be **GraalVM CE 21.1.0**
+Check the java version to be **GraalVM CE 22.0.0.2**
 
 ```
 $ java  -version
-openjdk version "16.0.1" 2021-04-20
-OpenJDK Runtime Environment GraalVM CE 21.1.0 (build 16.0.1+9-jvmci-21.1-b05)
-OpenJDK 64-Bit Server VM GraalVM CE 21.1.0 (build 16.0.1+9-jvmci-21.1-b05, mixed mode, sharing)
+openjdk version "17.0.2" 2022-01-18
+OpenJDK Runtime Environment GraalVM CE 22.0.0.2 (build 17.0.2+8-jvmci-22.0-b05)
+OpenJDK 64-Bit Server VM GraalVM CE 22.0.0.2 (build 17.0.2+8-jvmci-22.0-b05, mixed mode, sharing)
 ```
 
 ## Deploy
 
 ```
-$ cp -r credit-card-hider ../restheart/plugins && touch ../restheart/plugins/credit-card-hider
+$ cp -r credit-card-hider <RH_HOME>/plugins && touch <RH_HOME>/plugins/credit-card-hider
 ```
 
 Note that `package.json` defines `cc-hider.js` as an interceptor

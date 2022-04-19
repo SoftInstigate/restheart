@@ -19,34 +19,6 @@ It returns the `serverStatus` JSON document.
 
 See https://docs.mongodb.com/manual/reference/command/serverStatus/
 
-## How to build and run
-
-You need **JDK 17++** to build and run this example.
-
--   Clone this repo `git clone git@github.com:SoftInstigate/restheart-examples.git`
--   `cd` into the `restheart-examples` folder
--   [Download RESTHeart](https://github.com/SoftInstigate/restheart/releases/)
--   uncompress it: `unzip restheart.zip` or `tar -xvf restheart.tar.gz`.
-
-### With Docker
-
-If you have **docker** running, then just executing the `run.sh` shell script will:
-
-1. Build the JAR with Maven
-1. Copy the JAR file into `../restheart/plugins/` folder
-1. Starts a volatile MongoDB docker container
-1. Starts RESTHeart Java process on port 8080
-
-When finished testing, send a `CTRL-C` command to: stop the script, kill RESTHeart and clean-up the MongoDB container.
-
-### Without Docker
-
-1. Build the plugin with `../mvnw package`.
-1. Copy the built JAR into the plugins folder `cp target/mongo-status-service.jar ../restheart/plugins/`.
-1. Start MongoDB in your localhost.
-1. cd into the restheart distribution you have previously downloaded and uncompressed.
-1. Start the process: `java -jar restheart.jar etc/restheart.yml -e etc/default.properties`.
-
 ## Test
 
 We suggest using [httpie](https://httpie.org) for calling the API from command line, or just use your [browser](http://localhost:8080/status).

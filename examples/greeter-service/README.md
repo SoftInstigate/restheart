@@ -31,25 +31,3 @@ Returns
     "message": "Hello World!"
 }
 ```
-
-## How to build and run
-
-build
-
-```
-$ mvn clean package
-```
-
-deploy
-
-```
-$ cp target/greeter-service.jar <restheart-dir>/plugins
-```
-
-then start, or restart RESTHeart!
-
-you'll see the following startup log message, confirming that the plugin has been deployed.
-
-```
- 12:18:08.984 [main] INFO  org.restheart.Bootstrapper - URI /greetings bound to service greetings, secured: false, uri match PREFIX
-```
