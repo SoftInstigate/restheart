@@ -17,7 +17,7 @@ The only required dependency for building Java plugins is `restheart-commons`:
 ## Build the plugins
 
 ```bash
-$ git clone --depth 1 git@github.com:SoftInstigate/restheart.git &&
+$ git clone --depth 1 git@github.com:SoftInstigate/restheart.git
 $ cd restheart/examples
 $ ./mvnw clean package
 ```
