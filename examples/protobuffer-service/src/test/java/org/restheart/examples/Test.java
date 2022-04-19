@@ -7,7 +7,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 
 public class Test {
     public static void main(String[] args) throws Exception  {
-        testRequest(args[0] == null ? "World" : args[0]);
+        testRequest(args.length < 1 ? "World" : args[0]);
     }
 
     public static void testRequest(String name) throws UnirestException, InvalidProtocolBufferException, IOException  {
