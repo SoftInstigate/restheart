@@ -396,54 +396,44 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     public void plugService(PluginRecord<Service> srv, final String uri, MATCH_POLICY mp, boolean secured) {
             SecurityHandler securityHandler;
 
-            final Set<PluginRecord<AuthMechanism>> mechanisms = getAuthMechanisms();
-            final Set<PluginRecord<Authorizer>> authorizers = getAuthorizers();
-            final PluginRecord<TokenManager> tokenManager = getTokenManager();
+            var mechanisms = getAuthMechanisms();
+            var authorizers = getAuthorizers();
+            var tokenManager = getTokenManager();
 
             if (secured) {
-                securityHandler = new SecurityHandler(
-                        mechanisms,
-                        authorizers,
-                        tokenManager);
+                securityHandler = new SecurityHandler(mechanisms, authorizers, tokenManager);
             } else {
                 var _fauthorizers = new LinkedHashSet<PluginRecord<Authorizer>>();
 
                 var _fauthorizer = new PluginRecord<Authorizer>(
-                        "fullAuthorizer",
-                        "authorize any operation to any user",
-                        false, // secure, only applies to services
-                        true,
-                        FullAuthorizer.class
-                                .getName(),
-                        new FullAuthorizer(false),
-                        null
+                    "fullAuthorizer",
+                    "authorize any operation to any user",
+                    false, // secure, only applies to services
+                    true,
+                    FullAuthorizer.class.getName(),
+                    new FullAuthorizer(false),
+                    null
                 );
 
                 _fauthorizers.add(_fauthorizer);
 
-                securityHandler = new SecurityHandler(
-                        mechanisms,
-                        _fauthorizers,
-                        tokenManager);
+                securityHandler = new SecurityHandler(mechanisms, _fauthorizers, tokenManager);
             }
 
             var _srv = pipe(new PipelineInfoInjector(),
-                    new TracingInstrumentationHandler(),
-                    new RequestLogger(),
-                    new ServiceExchangeInitializer(),
-                    new CORSHandler(),
-                    new XPoweredByInjector(),
-                    new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
-                    new QueryStringRebuilder(),
-                    securityHandler,
-                    new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
-                    new QueryStringRebuilder(),
-                    PipelinedWrappingHandler
-                            .wrap(new ConfigurableEncodingHandler(
-                                    PipelinedWrappingHandler.wrap(
-                                        srv.getInstance()))),
-                    new ResponseInterceptorsExecutor(),
-                    new ResponseSender()
+                new TracingInstrumentationHandler(),
+                new RequestLogger(),
+                new ServiceExchangeInitializer(),
+                new CORSHandler(),
+                new XPoweredByInjector(),
+                new RequestInterceptorsExecutor(REQUEST_BEFORE_AUTH),
+                new QueryStringRebuilder(),
+                securityHandler,
+                new RequestInterceptorsExecutor(REQUEST_AFTER_AUTH),
+                new QueryStringRebuilder(),
+                PipelinedWrappingHandler.wrap(new ConfigurableEncodingHandler(PipelinedWrappingHandler.wrap(srv.getInstance()))),
+                new ResponseInterceptorsExecutor(),
+                new ResponseSender()
             );
 
             plugPipeline(uri, _srv, new PipelineInfo(SERVICE, uri, mp, srv.getName()));

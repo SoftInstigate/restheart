@@ -42,10 +42,10 @@ public abstract class ServiceRequest<T> extends Request<T> {
 
         if (exchange.getAttachment(REQUEST_KEY) != null) {
             throw new IllegalStateException("Error instantiating request object "
-                    + getClass().getSimpleName()
-                    + ", "
-                    + exchange.getAttachment(REQUEST_KEY).getClass().getSimpleName()
-                    + " already bound to the exchange");
+                + getClass().getSimpleName()
+                + ", "
+                + exchange.getAttachment(REQUEST_KEY).getClass().getSimpleName()
+                + " already bound to the exchange");
         }
 
         exchange.putAttachment(REQUEST_KEY, this);
@@ -73,9 +73,9 @@ public abstract class ServiceRequest<T> extends Request<T> {
             return (R) ret;
         } else {
             throw new IllegalStateException("Request bound to exchange is not "
-                    + "of the specified type,"
-                    + " expected " + type.getSimpleName()
-                    + " got " + ret.getClass().getSimpleName());
+                + "of the specified type,"
+                + " expected " + type.getSimpleName()
+                + " got " + ret.getClass().getSimpleName());
         }
     }
 

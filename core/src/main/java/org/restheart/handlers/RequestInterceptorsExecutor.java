@@ -101,26 +101,25 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
         }
 
         interceptors.stream().filter(ri -> {
-                    try {
-                        return ri.resolve(request, response);
-                    } catch (Exception e) {
-                        LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, e);
+            try {
+                return ri.resolve(request, response);
+            } catch (Exception e) {
+                LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), interceptPoint, e);
 
-                        return false;
-                    }
-                })
-                .forEachOrdered(ri -> {
-                    try {
-                        LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), interceptPoint);
+                return false;
+            }})
+            .forEachOrdered(ri -> {
+                try {
+                    LOGGER.debug("Executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), interceptPoint);
 
-                        ri.handle(request, response);
-                    } catch (Exception ex) {
-                        LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), interceptPoint, ex);
+                    ri.handle(request, response);
+                } catch (Exception ex) {
+                    LOGGER.error("Error executing interceptor {} for {} on intercept point {}", PluginUtils.name(ri), exchange.getRequestPath(), interceptPoint, ex);
 
-                        Exchange.setInError(exchange);
-                        LambdaUtils.throwsSneakyException(ex);
-                    }
-                });
+                    Exchange.setInError(exchange);
+                    LambdaUtils.throwsSneakyException(ex);
+                }
+            });
 
         // If an interceptor sets the response as errored
         // stop processing the request and send the response
