@@ -104,7 +104,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
 
     @Override
     public boolean resolve(ServiceRequest<?> request, ServiceResponse<?> response) {
-        return true;
+        return !request.isOptions();
     }
 
     private void logWarning(HttpServerExchange exchange, double mean) {
