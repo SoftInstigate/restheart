@@ -2,15 +2,15 @@
 
 > NOTE: this example requires RESTHeart 7.0.0-SNAPSHOT
 
-This example includes two interceptors that allows to use the MongoService
-with Protocol Buffer over HTTP.
+This example includes two interceptors that allow to use the `MongoService`
+with [Protocol Buffer](https://developers.google.com/protocol-buffers) over HTTP.
 
 It shows how to transform the request and response content to and from a different format
-than expected by a service.
+than expected by a Service.
 
-The example allows to create documents in the `/contacts` collection via a command line client that sends the data using Protocol Buffer.
+The example creates documents in the `/contacts` collection via a command line client that sends requests using Protocol Buffer.
 
-The proto file is
+The proto file is:
 
 ```proto
 // The request message
@@ -29,10 +29,14 @@ message ContactPostReply {
 ## Deploy
 
 ```bash
+# copy the jar files to the RESTHeart plugin directory
 $ cp target/protobuffer-contacts.jar target/lib/* <RH_HOME>/plugins
-$ # (re)start RESTHeart in a different terminal
+
+# (re)start RESTHeart in a different terminal
+
 # create the /contacts collection
 $ http -a admin:secret :8080/contacts
+
 # allow unauthenticated client to POST to /proto
 $ echo '{"_id":"openProto","predicate":"path[/proto]","roles":["$unauthenticated"],"priority":1}' | http -a admin:secret POST :8080/acl\?wm=upsert
 ```
@@ -46,7 +50,7 @@ response status: 201
 id of new contact: {"$oid":"62619239935b6e1c117d0a56"}
 ```
 
-Now you can check the create document with:
+Now you can check the created document with:
 
 ```bash
 $ http -ba admin:secret :8080/contacts/62619239935b6e1c117d0a56
@@ -69,13 +73,15 @@ When a request is received, RESTHeart first determines which service should hand
 
 Each Service defines the request (and response) initializer, via the `ServiceRequest.requestInitializer()` method. The request initializer of the `MongoService` expects the request content to be valid JSON.
 
-In order to allow the `MongoService` to be used with the Protocol Buffer format, the request content must be modified before request initialization.
+In order to allow the `MongoService` to be used with the Protocol Buffer format, the request content must be transformed before request initialization.
 
-This can be achieved with an Interceptor with `interceptPoint = REQUEST_BEFORE_EXCHANGE_INIT`. In this case, the Interceptor must also implement the interface `WildcardInterceptor`.
+This can be achieved with a `WildcardInterceptor` with `interceptPoint=REQUEST_BEFORE_EXCHANGE_INIT`.
 
-The `handle(request, response)` method receives a `UninitializedRequest` as request argument, and `null` as response argument. `UninitializedRequest.getRawContent()` and `UninitializedRequest.setRawContent()` allows to get and overwrite the request raw body.
+The `handle(request, response)` method receives an object of class `UninitializedRequest` as request argument, and `null` as response argument. `UninitializedRequest.getRawContent()` and `UninitializedRequest.setRawContent()` allows to get and overwrite the request raw body.
 
-Last, the interceptors sets a custom initializer to remap the request to `/proto` to the collection `restheart.coll` using `MongoRequest.init()` that allows to specify the MongoDB resource to map (`/restheart/contacts`).
+Once that the request raw content is modified from Protocol Buffer to JSON, the request will be correctly handled by the `MongoService` as it was a JSON over HTTP request.
+
+Last, the Interceptor sets a custom initializer to remap the request from the URI `/proto` to the resource `restheart.coll` using `MongoRequest.init()` that allows to specify the URI/MongoDB resource mapping.
 
 ```java
 PluginUtils.attachCustomRequestInitializer(request, e -> {
@@ -88,7 +94,7 @@ PluginUtils.attachCustomRequestInitializer(request, e -> {
 
 ## Response transformation
 
-After the request has been handled by the `MongoService` it can be easily transformed by using an Interceptor with `interceptPoint = RESPONSE`. It can use `ServiceResponse.setCustomSender()` to customize the response format.
+After the request has been handled by the `MongoService` it can be easily transformed by using an `MongoInterceptor` with `interceptPoint=RESPONSE`. It uses `ServiceResponse.setCustomSender()` to customize the response format.
 
 ```java
 public void handle(MongoRequest request, MongoResponse response) throws Exception {
@@ -106,20 +112,3 @@ public void handle(MongoRequest request, MongoResponse response) throws Exceptio
     });
 }
 ```
-
-## The protocol buffer
-
-For example:
-
-```bash
-$ mvn clean package
-$ cp target/protobuffer-service.jar target/lib/* <restheart-dir>/plugins
-$ java -cp target/classes:target/test-classes:target/lib/\*:target/test-lib/\* org.restheart.examples.Test World
-```
-
-Where `<restheart-dir>` is the RESTHeart directory
-
-Returns `Hello World`.
-
-The service uses the following .proto definition
-
