@@ -58,7 +58,7 @@
         <module>instance-name</module>
         <module>slack-notifier</module>
         <module>form-handler</module>
-        <module>protobuffer-service</module>
+        <module>protobuffer-contacts</module>
     </modules>
 
     <build>
