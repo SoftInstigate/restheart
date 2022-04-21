@@ -42,7 +42,7 @@
             <dependency>
                 <groupId>org.restheart</groupId>
                 <artifactId>restheart-commons</artifactId>
-                <version>6.2.4</version>
+                <version>6.3.0</version>
                 <scope>provided</scope>
             </dependency>
         </dependencies>

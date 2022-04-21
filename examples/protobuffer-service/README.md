@@ -1,6 +1,113 @@
-# Protocol Buffer Service example
+# Protocol Buffer Interceptors
 
-A simple Service that uses Protocol Buffer as payloads
+> NOTE: this example requires RESTHeart 7.0.0-SNAPSHOT
+
+This example includes two interceptors that allows to use the MongoService
+with Protocol Buffer over HTTP.
+
+It shows how to transform the request and response content to and from a different format
+than expected by a service.
+
+The example allows to create documents in the `/contacts` collection via a command line client that sends the data using Protocol Buffer.
+
+The proto file is
+
+```proto
+// The request message
+message ContactPostRequest {
+  string name = 1;
+  string email = 2;
+  string phone = 3;
+}
+
+// The response message containing the id of the created document
+message ContactPostReply {
+    string id = 1;
+}
+```
+
+## Deploy
+
+```bash
+$ cp target/protobuffer-contacts.jar target/lib/* <RH_HOME>/plugins
+$ # (re)start RESTHeart in a different terminal
+# create the /contacts collection
+$ http -a admin:secret :8080/contacts
+# allow unauthenticated client to POST to /proto
+$ echo '{"_id":"openProto","predicate":"path[/proto]","roles":["$unauthenticated"],"priority":1}' | http -a admin:secret POST :8080/acl\?wm=upsert
+```
+
+## Run
+
+```bash
+$ java -cp target/classes:target/test-classes:target/lib/\*:target/test-lib/\* org.restheart.examples.CreateContact Uji andrea@softinstigate.com "000 555 911"
+
+response status: 201
+id of new contact: {"$oid":"62619239935b6e1c117d0a56"}
+```
+
+Now you can check the create document with:
+
+```bash
+$ http -ba admin:secret :8080/contacts/62619239935b6e1c117d0a56
+{
+    "_etag": {
+        "$oid": "62619239935b6e1c117d0a55"
+    },
+    "_id": {
+        "$oid": "62619239935b6e1c117d0a56"
+    },
+    "email": "andrea@softinstigate.com",
+    "name": "Uji",
+    "phone": "000 555 911"
+}
+```
+
+## Request transformation
+
+When a request is received, RESTHeart first determines which service should handle it.
+
+Each Service defines the request (and response) initializer, via the `ServiceRequest.requestInitializer()` method. The request initializer of the `MongoService` expects the request content to be valid JSON.
+
+In order to allow the `MongoService` to be used with the Protocol Buffer format, the request content must be modified before request initialization.
+
+This can be achieved with an Interceptor with `interceptPoint = REQUEST_BEFORE_EXCHANGE_INIT`. In this case, the Interceptor must also implement the interface `WildcardInterceptor`.
+
+The `handle(request, response)` method receives a `UninitializedRequest` as request argument, and `null` as response argument. `UninitializedRequest.getRawContent()` and `UninitializedRequest.setRawContent()` allows to get and overwrite the request raw body.
+
+Last, the interceptors sets a custom initializer to remap the request to `/proto` to the collection `restheart.coll` using `MongoRequest.init()` that allows to specify the MongoDB resource to map (`/restheart/contacts`).
+
+```java
+PluginUtils.attachCustomRequestInitializer(request, e -> {
+    LOGGER.debug("******* custom initializer!");
+    // we remap the request to the collection restheart.coll
+    // with a custom request initializer
+    MongoRequest.init(e, "/proto", "/restheart/contacts");
+});
+```
+
+## Response transformation
+
+After the request has been handled by the `MongoService` it can be easily transformed by using an Interceptor with `interceptPoint = RESPONSE`. It can use `ServiceResponse.setCustomSender()` to customize the response format.
+
+```java
+public void handle(MongoRequest request, MongoResponse response) throws Exception {
+    var id = BsonUtils.toJson(response.getDbOperationResult().getNewId(), JsonMode.RELAXED);
+    // transform the json to a protobuf
+    var builder = ContactPostReply.newBuilder().setId(id);
+
+    response.setCustomSender(() -> {
+        try {
+            response.getExchange().getResponseSender()
+                .send(builder.build().toByteString().toStringUtf8());
+        } catch(Throwable t) {
+            LambdaUtils.throwsSneakyException(t);
+        }
+    });
+}
+```
+
+## The protocol buffer
 
 For example:
 
@@ -16,29 +123,3 @@ Returns `Hello World`.
 
 The service uses the following .proto definition
 
-```proto
-syntax = "proto3";
-
-option java_multiple_files = true;
-option java_package = "org.restheart.examples";
-option java_outer_classname = "HelloWorldProto";
-option objc_class_prefix = "HLW";
-
-package helloworld;
-
-// The greeting service definition.
-service Greeter {
-  // Sends a greeting
-  rpc SayHello (HelloRequest) returns (HelloReply) {}
-}
-
-// The request message containing the user's name.
-message HelloRequest {
-  string name = 1;
-}
-
-// The response message containing the greetings
-message HelloReply {
-  string message = 1;
-}
-```
