@@ -1,4 +1,4 @@
-FROM softinstigate/graalvm:latest
+FROM softinstigate/restheart:6.3-graalvm
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
