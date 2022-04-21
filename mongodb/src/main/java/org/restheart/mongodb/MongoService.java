@@ -227,7 +227,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         return e -> {
             MongoResponse.init(e);
 
-            // BsonRequestPropsInjector and BsonRequestContentInjector requires
+            // MongoRequestPropsInjector and MongoRequestContentInjector requires
             // that both MongoRequest and MongoResponse are initialized
             MongoRequestPropsInjector.inject(e);
             MongoRequestContentInjector.inject(e);

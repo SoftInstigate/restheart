@@ -38,17 +38,33 @@ public abstract class ServiceRequest<T> extends Request<T> {
     protected T content;
 
     protected ServiceRequest(HttpServerExchange exchange) {
+        this(exchange, false);
+    }
+
+    /**
+     *
+     * An intialized request is attached to the exchange using the REQUEST_KEY
+     *
+     * With dontAttach=true, instantiates the ServiceRequest without initializing the request
+     *
+     * @param exchange
+     * @param dontAttach true, if the request won't be attached to the exchange
+     *
+     */
+    ServiceRequest(HttpServerExchange exchange, boolean dontAttach) {
         super(exchange);
 
-        if (exchange.getAttachment(REQUEST_KEY) != null) {
-            throw new IllegalStateException("Error instantiating request object "
-                + getClass().getSimpleName()
-                + ", "
-                + exchange.getAttachment(REQUEST_KEY).getClass().getSimpleName()
-                + " already bound to the exchange");
-        }
+        if (!dontAttach) {
+            if (exchange.getAttachment(REQUEST_KEY) != null) {
+                throw new IllegalStateException("Error instantiating request object "
+                    + getClass().getSimpleName()
+                    + ", "
+                    + exchange.getAttachment(REQUEST_KEY).getClass().getSimpleName()
+                    + " already bound to the exchange");
+            }
 
-        exchange.putAttachment(REQUEST_KEY, this);
+            exchange.putAttachment(REQUEST_KEY, this);
+        }
     }
 
     public static ServiceRequest<?> of(HttpServerExchange exchange) {

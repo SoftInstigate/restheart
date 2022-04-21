@@ -231,97 +231,16 @@ public class MongoRequestContentInjector {
         BsonValue content;
 
         final var contentType = request.getHeaders().get(Headers.CONTENT_TYPE);
-        if (isFormOrMultipart(contentType)) {
-            if (!((request.isPost() && request.isFilesBucket()) || (request.isPut() && request.isFile()))) {
-                response.setInError(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
-                return;
-            }
 
-            var parser = FORM_PARSER.createParser(exchange);
-
-            if (parser == null) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "There is no form parser registered for the request content type");
-                return;
-            }
-
-            FormData formData;
-
-            try {
-                formData = parser.parseBlocking();
-            } catch (IOException ioe) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Error parsing the multipart form: data could not be read", ioe);
-                return;
-            }
-
-            try {
-                content = extractMetadata(formData);
-            } catch (JsonParseException | IllegalArgumentException ex) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data: 'properties' field is not a valid JSON", ex);
-                return;
-            }
-
-            final var fileField = extractFileField(formData);
-
-            if (fileField == null) {
-                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "This request does not contain any binary file");
-                return;
-            }
-
-            final var path = formData.getFirst(fileField).getFileItem().getFile();
-
-            request.setFilePath(path);
-
-            try {
-                injectContentTypeFromFile(content.asDocument(), path.toFile());
-            } catch (IOException ioe) {
-                response.addWarning("error detecting content type");
-                LOGGER.warn("error detecting content type of file", ioe);
-                return;
-            }
+        if (contentType == null) {
+            content = null;
+        } else if (isFormOrMultipart(contentType)) {
+            content = injectMultipart(exchange, request, response);
+        } else if (isHalOrJson(contentType)) {
+            content = injectBson(exchange, request, response);
         } else {
-            if (isHalOrJson(contentType)) {
-                final String contentString;
-
-                var bar = ByteArrayProxyRequest.of(exchange);
-
-                try {
-                    if (bar.isContentAvailable()) {
-                        // if content has been already injected by core's
-                        // BsonRequestContentInjector
-                        // get it from MongoRequest.readContent()
-                        contentString = new String(bar.readContent(), StandardCharsets.UTF_8);
-                    } else {
-                        // otherwise use ChannelReader
-                        contentString = ChannelReader.readString(exchange);
-                    }
-                } catch (IOException ieo) {
-                    var errMsg = "Error reading request content";
-                    LOGGER.error(errMsg, ieo);
-                    response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
-                    return;
-                }
-
-                // parse the json content
-                if (contentString != null && !contentString.isEmpty()) { // check content type
-                    try {
-                        content = BsonUtils.parse(contentString);
-
-                        if (content != null && !content.isDocument() && !content.isArray()) {
-                            throw new IllegalArgumentException("request data must be either a json object or an array, got " + content.getBsonType().name());
-                        }
-                    } catch (JsonParseException | IllegalArgumentException ex) {
-                        response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON. " + ex.getMessage(), ex);
-                        return;
-                    }
-                } else {
-                    content = null;
-                }
-            } else if (contentType == null) {
-                content = null;
-            } else {
-                response.setInError(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
-                return;
-            }
+            response.setInError(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE);
+            return;
         }
 
         if (content == null) {
@@ -376,5 +295,99 @@ public class MongoRequestContentInjector {
         }
 
         request.setContent(content);
+    }
+
+    private static BsonValue injectBson(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
+        BsonValue content;
+        final String contentString;
+
+        var bar = ByteArrayProxyRequest.of(exchange);
+
+        try {
+            if (bar.isContentAvailable()) {
+                // if content has been already injected
+                // get it from MongoRequest.readContent()
+                contentString = new String(bar.readContent(), StandardCharsets.UTF_8);
+            } else {
+                // otherwise use ChannelReader
+                contentString = ChannelReader.readString(exchange);
+            }
+        } catch (IOException ieo) {
+            var errMsg = "Error reading request content";
+            LOGGER.error(errMsg, ieo);
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, errMsg);
+            return null;
+        }
+
+        // parse the json content
+        if (contentString != null && !contentString.isEmpty()) { // check content type
+            try {
+                content = BsonUtils.parse(contentString);
+
+                if (content != null && !content.isDocument() && !content.isArray()) {
+                    throw new IllegalArgumentException("request data must be either a json object or an array, got " + content.getBsonType().name());
+                }
+            } catch (JsonParseException | IllegalArgumentException ex) {
+                response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid JSON. " + ex.getMessage(), ex);
+                return null;
+            }
+        } else {
+            content = null;
+        }
+
+        return content;
+    }
+
+    private static BsonValue injectMultipart(HttpServerExchange exchange, MongoRequest request, MongoResponse response) {
+        BsonValue content = null;
+
+        if (!((request.isPost() && request.isFilesBucket()) || (request.isPut() && request.isFile()))) {
+            response.setInError(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE, ERROR_INVALID_CONTENTTYPE_FILE);
+            return null;
+        }
+
+        var parser = FORM_PARSER.createParser(exchange);
+
+        if (parser == null) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "There is no form parser registered for the request content type");
+            return null;
+        }
+
+        FormData formData;
+
+        try {
+            formData = parser.parseBlocking();
+        } catch (IOException ioe) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Error parsing the multipart form: data could not be read", ioe);
+            return null;
+        }
+
+        try {
+            content = extractMetadata(formData);
+        } catch (JsonParseException | IllegalArgumentException ex) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid data: 'properties' field is not a valid JSON", ex);
+            return null;
+        }
+
+        final var fileField = extractFileField(formData);
+
+        if (fileField == null) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "This request does not contain any binary file");
+            return null;
+        }
+
+        final var path = formData.getFirst(fileField).getFileItem().getFile();
+
+        request.setFilePath(path);
+
+        try {
+            injectContentTypeFromFile(content.asDocument(), path.toFile());
+        } catch (IOException ioe) {
+            response.addWarning("error detecting content type");
+            LOGGER.warn("error detecting content type of file", ioe);
+            return null;
+        }
+
+        return content;
     }
 }

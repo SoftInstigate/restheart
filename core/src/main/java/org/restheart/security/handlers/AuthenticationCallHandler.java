@@ -152,7 +152,7 @@ public class AuthenticationCallHandler extends PipelinedHandler {
     }
 
     /**
-     * Cleaup metrics to avoid memory leacks when an attacker sends
+     * Cleaup metrics to avoid memory leaks when an attacker sends
      * many requests with rotating ips or X-Forwarded-For headers
      * generating many dropwizard's meters
      */

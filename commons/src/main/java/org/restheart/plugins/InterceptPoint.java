@@ -26,6 +26,28 @@ package org.restheart.plugins;
  */
 public enum InterceptPoint {
     /**
+     * intercept the request before the exchange is initialized
+     *
+     * The interceptor must implement WildcardInterceptor
+     *
+     * the Interceptor.handle(request, response) receives the request as UninitializedRequest
+     * and a null response.
+     *
+     * the Interceptor at REQUEST_BEFORE_EXCHANGE_INIT can snoop and modify the request
+     * before it is actaully initialized
+     *
+     * It can provide a custom initializer with PluginUtils.attachCustomRequestInitializer()
+     * or can modify the raw request content using Request.setRawContent()
+     *
+     * For intance, a request to the MongoService expects the request body to be a BSON document
+     * an Interceptor at REQUEST_BEFORE_EXCHANGE_INIT can transform a protobuf payload to a BSON document
+     * implementing a custom request initializer that parses protocol buffer and build the MongoRequest object
+     * required by the service
+     *
+     */
+    REQUEST_BEFORE_EXCHANGE_INIT,
+
+    /**
      * intercept the request before authentication occurs
      */
     REQUEST_BEFORE_AUTH,

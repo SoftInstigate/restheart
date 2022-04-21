@@ -44,6 +44,7 @@ import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.handlers.CORSHandler;
 import org.restheart.handlers.ConfigurableEncodingHandler;
+import org.restheart.handlers.BeforeExchangeInitInterceptorsExecutor;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.handlers.PipelinedWrappingHandler;
 import org.restheart.handlers.QueryStringRebuilder;
@@ -423,6 +424,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             var _srv = pipe(new PipelineInfoInjector(),
                 new TracingInstrumentationHandler(),
                 new RequestLogger(),
+                new BeforeExchangeInitInterceptorsExecutor(),
                 new ServiceExchangeInitializer(),
                 new CORSHandler(),
                 new XPoweredByInjector(),

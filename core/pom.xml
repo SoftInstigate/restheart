@@ -111,7 +111,7 @@
     <dependency>
         <groupId>com.nulab-inc</groupId>
         <artifactId>zxcvbn</artifactId>
-      </dependency>
+    </dependency>
     <!-- BEGIN Test dependencies -->
     <dependency>
       <groupId>org.restheart</groupId>

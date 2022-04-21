@@ -37,12 +37,12 @@ public abstract class Exchange<T> {
     protected static Logger LOGGER;
 
     /**
-     * Supported content types
+     * Supported content type HAL
      */
     public static final String HAL_JSON_MEDIA_TYPE = "application/hal+json";
 
     /**
-     *
+     * * Supported content type JSON
      */
     public static final String JSON_MEDIA_TYPE = "application/json";
 
