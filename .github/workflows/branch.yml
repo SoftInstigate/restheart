@@ -90,7 +90,7 @@ jobs:
           context: ./core/
           file: ./core/Dockerfile.graalvm
           push: true
-          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm,softinstigate/restheart-snapshot:latest-graalvm
+          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm,softinstigate/restheart-snapshot:graalvm
 
       - name: Import private gpg key
         if: ${{ matrix.deploy }}
