@@ -81,7 +81,7 @@ jobs:
           context: ./core/
           platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
           push: true
-          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
+          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}},softinstigate/restheart-snapshot:latest
 
       - name: Build and Push GraalVM Docker image
         if: ${{ matrix.deploy }}
@@ -90,7 +90,7 @@ jobs:
           context: ./core/
           file: ./core/Dockerfile.graalvm
           push: true
-          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm
+          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm,softinstigate/restheart-snapshot:latest-graalvm
 
       - name: Import private gpg key
         if: ${{ matrix.deploy }}
