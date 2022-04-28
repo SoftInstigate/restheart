@@ -66,14 +66,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # - name: Build and Push distroless docker image
-      #   if: ${{ false }} # temporarily disabled becuase there's no JDK 16 for distroless images
-      #   run: |
-      #     docker build --file ./core/Dockerfile.distroless -t softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless ./core/.
-      #     docker push softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
-      #     docker tag softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart-snapshot:distroless
-      #     docker push softinstigate/restheart-snapshot:distroless
-
       - name: Build and Push multi-arch Docker images
         if: ${{ matrix.deploy }}
         uses: docker/build-push-action@v2
