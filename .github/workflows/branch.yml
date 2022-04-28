@@ -66,14 +66,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push distroless docker image
-        if: ${{ matrix.deploy }}
-        run: |
-          docker build --file ./core/Dockerfile.distroless -t softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless ./core/.
-          docker push softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
-          docker tag softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless softinstigate/restheart-snapshot:distroless
-          docker push softinstigate/restheart-snapshot:distroless
-
       - name: Build and Push multi-arch Docker images
         if: ${{ matrix.deploy }}
         uses: docker/build-push-action@v2
@@ -81,7 +73,7 @@ jobs:
           context: ./core/
           platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
           push: true
-          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}},softinstigate/restheart-snapshot:latest
+          tags: softinstigate/restheart-snapshot:latest,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}
 
       - name: Build and Push GraalVM Docker image
         if: ${{ matrix.deploy }}
@@ -90,7 +82,7 @@ jobs:
           context: ./core/
           file: ./core/Dockerfile.graalvm
           push: true
-          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm,softinstigate/restheart-snapshot:graalvm
+          tags: softinstigate/restheart-snapshot:graalvm,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm
 
       - name: Build and Push distroless docker image
         if: ${{ matrix.deploy }}
@@ -99,7 +91,7 @@ jobs:
           context: ./core/
           file: ./core/Dockerfile.distroless
           push: true
-          tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless,softinstigate/restheart-snapshot:distroless
+          tags: softinstigate/restheart-snapshot:distroless,softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless
 
       - name: Import private gpg key
         if: ${{ matrix.deploy }}
