@@ -98,7 +98,7 @@ jobs:
         with:
           context: ./core/
           file: ./core/Dockerfile.distroless
-          platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
+          platforms: linux/amd64,linux/arm64,linux/arm
           push: true
           tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless,softinstigate/restheart-snapshot:distroless
 
