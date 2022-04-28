@@ -92,13 +92,12 @@ jobs:
           push: true
           tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-graalvm,softinstigate/restheart-snapshot:graalvm
 
-      - name: Build and Push multi-arch distroless docker image
+      - name: Build and Push distroless docker image
         if: ${{ matrix.deploy }}
         uses: docker/build-push-action@v2
         with:
           context: ./core/
           file: ./core/Dockerfile.distroless
-          platforms: linux/amd64,linux/arm64,linux/arm
           push: true
           tags: softinstigate/restheart-snapshot:${{steps.vars.outputs.SHA}}-distroless,softinstigate/restheart-snapshot:distroless
 
