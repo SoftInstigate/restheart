@@ -33,8 +33,8 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v2
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Set the VERSION
         id: vars
@@ -64,12 +64,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # - name: Build and Push distroless Docker image
-      #   if: ${{ false }} # temporarily disabled because there's no JDK 17 for distroless images
-      #   run: |
-      #     docker build --file ./core/Dockerfile.distroless -t softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless ./core/.
-      #     docker push softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
-
       - name: Build and Push multi-arch Docker images
         if: ${{ matrix.deploy }}
         uses: docker/build-push-action@v2
@@ -86,7 +80,16 @@ jobs:
           context: ./core/
           file: ./core/Dockerfile.graalvm
           push: true
-          tags: softinstigate/restheart:latest-graalvm,softinstigate/restheart:7-graalvm,softinstigate/restheart:7.0-graalvm,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
+          tags: softinstigate/restheart:graalvm,softinstigate/restheart:7-graalvm,softinstigate/restheart:7.0-graalvm,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
+
+      - name: Build and Push distroless docker image
+        if: ${{ matrix.deploy }}
+        uses: docker/build-push-action@v2
+        with:
+          context: ./core/
+          file: ./core/Dockerfile.distroless
+          push: true
+          tags: softinstigate/restheart:distroless,softinstigate/restheart:7-distroless,softinstigate/restheart:7.0-distroless,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
 
       - name: Upload GitHub release
         if: ${{ matrix.deploy }}
