@@ -922,4 +922,25 @@ public class BsonUtilsTest {
                 BsonUtils.parse(
                         "{'n':{'$numberDouble':'11111111158873916063432424232349289023842309842039587209357329578573489573958734985753498573495743957349839'}}")));
     }
+
+    @Test
+    public void testFirstNonWhitespace() {
+        var s1 = "{ 'a': 1, 'b': 2, 'c': 3 }";
+        Assert.assertEquals('{', BsonUtils.firstNonWhitespace(s1));
+
+        var s2 = "      { 'a': 1, 'b': 2, 'c': 3 }";
+        Assert.assertEquals('{', BsonUtils.firstNonWhitespace(s2));
+
+        var s3 = "[ 1,2,3 ]";
+        Assert.assertEquals('[', BsonUtils.firstNonWhitespace(s3));
+
+        var s4 = "      [ 1,2,3 ]";
+        Assert.assertEquals('[', BsonUtils.firstNonWhitespace(s4));
+
+        var empty = "";
+        Assert.assertEquals(Character.MIN_VALUE, BsonUtils.firstNonWhitespace(empty));
+
+        var empty2 = "      ";
+        Assert.assertEquals(Character.MIN_VALUE, BsonUtils.firstNonWhitespace(empty2));
+    }
 }
