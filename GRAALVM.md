@@ -60,7 +60,7 @@ Execute tests, this makes the `native-image-agent` collecting all needed configu
 
 ```bash
 $ cd core
-$ ./mvnw surefire:test -DskipITs=false -Dtest=\*IT
+$ ../mvnw test surefire:test -DskipITs=false -Dtest=\*IT
 ```
 
 Stop restheart. this makes the [Assisted Configuration of Native Image Builds](https://github.com/oracle/graal/blob/master/substratevm/BuildConfiguration.md#assisted-configuration-of-native-image-builds) being updated.
