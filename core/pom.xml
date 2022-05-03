@@ -223,14 +223,6 @@
                 <exclude>module-info.class</exclude>
               </excludes>
             </filter>
-            <filter>
-              <!-- removing overlapping classes, defined also in guava -->
-              <artifact>com.google.guava:failureaccess</artifact>
-              <excludes>
-                <exclude>com/google/common/util/concurrent/internal/InternalFutureFailureAccess.class</exclude>
-                <exclude>com/google/common/util/concurrent/internal/InternalFutures.class</exclude>
-              </excludes>
-            </filter>
           </filters>
         </configuration>
         <executions>
