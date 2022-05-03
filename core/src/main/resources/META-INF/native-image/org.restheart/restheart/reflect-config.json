@@ -1249,7 +1249,10 @@
   "allDeclaredMethods":true}
 ,
 {
-  "name":"org.restheart.cache.impl.CaffeineLoadingCache$1"}
+  "name":"org.restheart.cache.impl.CaffeineLoadingCache$1",
+  "methods":[
+    {"name":"loadAll","parameterTypes":["java.util.Set"] }
+  ]}
 ,
 {
     "name":"org.restheart.security.authorizers.FullAuthorizer",
