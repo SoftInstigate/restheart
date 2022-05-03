@@ -35,7 +35,7 @@
             mvn clean verify -Dmongodb.version="5.0"   : Test with mongo:5.0 container
         -->
         <mongodb.version>5.0</mongodb.version>
-        <graalvm.version>22.0.0.2</graalvm.version>
+        <graalvm.version>22.1.0</graalvm.version>
         <!--
             mvn compile -DskipUpdateLicense=false add missing license headers
             Ref: https://www.mojohaus.org/license-maven-plugin/usage.html
