@@ -14,5 +14,15 @@
         "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
       }
     ]
+  },
+  {
+    "name": "org.restheart.polyglot.JSInterceptorFactory",
+    "allPublicFields": true,
+    "allPublicConstructors": true,
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true,
+    "allPublicClasses": true,
+    "allDeclaredClasses": true
   }
 ]
