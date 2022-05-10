@@ -46,9 +46,9 @@ In the RESTHeart logs you'll see something like:
 We use httpie
 
 ```bash
-$ http -a admin:secret PUT :8080/credicards
-$ http -a admin:secret POST :8080/credicards cc=1234-0000-5555-0001
-$ http -a admin:secret POST :8080/credicards cc=1234-0000-5555-0002
+$ http -a admin:secret PUT :8080/creditcards
+$ http -a admin:secret POST :8080/creditcards cc=1234-0000-5555-0001
+$ http -a admin:secret POST :8080/creditcards cc=1234-0000-5555-0002
 ```
 
 ## See it in action
