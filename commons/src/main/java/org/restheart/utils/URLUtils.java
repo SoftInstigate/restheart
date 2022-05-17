@@ -40,14 +40,20 @@ public class URLUtils {
      * @return the string s without the trailing slashes
      */
     static public String removeTrailingSlashes(String s) {
-        if (s == null || s.length() < 2) {
+        if (s == null) {
+            return null;
+        }
+
+        s = s.trim();
+
+        if (s.length() < 2) {
             return s;
         }
 
-        if (s.trim().charAt(s.length() - 1) == '/') {
+        if (s.charAt(s.length() - 1) == '/') {
             return removeTrailingSlashes(s.substring(0, s.length() - 1));
         } else {
-            return s.trim();
+            return s;
         }
     }
 
