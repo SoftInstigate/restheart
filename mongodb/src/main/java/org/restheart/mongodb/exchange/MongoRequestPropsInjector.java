@@ -106,13 +106,13 @@ public class MongoRequestPropsInjector {
 
         // check database name to be a valid mongodb name
         if (request.getDBName() != null && request.isDbNameInvalid()) {
-            response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal database name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal database name, see https://www.mongodb.com/docs/manual/reference/limits/#naming-restrictions");
             return;
         }
 
         // check collection name to be a valid mongodb name
         if (request.getCollectionName() != null && request.isCollectionNameInvalid()) {
-            response.setInError(HttpStatus.SC_BAD_REQUEST,"illegal collection name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
+            response.setInError(HttpStatus.SC_BAD_REQUEST, "illegal collection name, see https://www.mongodb.com/docs/manual/reference/limits/#naming-restrictions");
             return;
         }
 
