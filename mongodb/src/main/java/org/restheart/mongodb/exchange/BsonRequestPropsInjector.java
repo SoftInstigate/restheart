@@ -123,7 +123,7 @@ public class BsonRequestPropsInjector {
                 && request.isDbNameInvalid()) {
             response.setInError(
                     HttpStatus.SC_BAD_REQUEST,
-                    "illegal database name, see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
+                    "illegal database name, see https://www.mongodb.com/docs/manual/reference/limits/#naming-restrictions");
             return;
         }
 
@@ -133,7 +133,7 @@ public class BsonRequestPropsInjector {
             response.setInError(
                     HttpStatus.SC_BAD_REQUEST,
                     "illegal collection name, "
-                    + "see https://docs.mongodb.org/v3.2/reference/limits/#naming-restrictions");
+                    + "see https://www.mongodb.com/docs/manual/reference/limits/#naming-restrictions");
             return;
         }
 
