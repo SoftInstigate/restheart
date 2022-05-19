@@ -37,8 +37,10 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.graphql.cache.AppDefinitionLoader;
 import org.restheart.graphql.cache.AppDefinitionLoadingCache;
 import org.restheart.graphql.datafetchers.GraphQLDataFetcher;
+import org.restheart.graphql.dataloaders.AggregationBatchLoader;
 import org.restheart.graphql.dataloaders.QueryBatchLoader;
 import org.restheart.graphql.exchange.GraphQLRequest;
+import org.restheart.graphql.models.AggregationMapping;
 import org.restheart.graphql.models.GraphQLApp;
 import org.restheart.graphql.models.QueryMapping;
 import org.restheart.graphql.models.TypeMapping;
@@ -54,19 +56,12 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-
-@RegisterPlugin(name= "graphql",
-                description = "Service that handles GraphQL requests",
-                secure = true,
-                enabledByDefault = true,
-                defaultURI = "/graphql")
+@RegisterPlugin(name = "graphql", description = "Service that handles GraphQL requests", secure = true, enabledByDefault = true, defaultURI = "/graphql")
 
 public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     public static final String DEFAULT_APP_DEF_DB = "restheart";
     public static final String DEFAULT_APP_DEF_COLLECTION = "gqlapps";
     public static final Boolean DEFAULT_VERBOSE = false;
-
-
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLService.class);
 
@@ -77,7 +72,8 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     private Boolean verbose = DEFAULT_VERBOSE;
 
     @InjectConfiguration
-    public void initConf(Map<String, Object> args) throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
+    public void initConf(Map<String, Object> args)
+            throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
         CoercingUtils.replaceBuiltInCoercing();
 
         if (args != null) {
@@ -85,28 +81,28 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
                 this.db = ConfigurablePlugin.argValue(args, "db");
                 this.collection = ConfigurablePlugin.argValue(args, "collection");
                 this.verbose = ConfigurablePlugin.argValue(args, "verbose");
-            } catch(ConfigurationException ex) {
+            } catch (ConfigurationException ex) {
                 // nothing to do, using default values
             }
         }
 
-        if(mongoClient != null){
+        if (mongoClient != null) {
             QueryBatchLoader.setMongoClient(mongoClient);
+            AggregationBatchLoader.setMongoClient(mongoClient);
             GraphQLDataFetcher.setMongoClient(mongoClient);
             AppDefinitionLoader.setup(db, collection, mongoClient);
         }
     }
 
     @InjectMongoClient
-    public void initMongoClient(MongoClient mClient){
+    public void initMongoClient(MongoClient mClient) {
         this.mongoClient = mClient;
-        if (db!= null && collection != null){
+        if (db != null && collection != null) {
             QueryBatchLoader.setMongoClient(mongoClient);
             GraphQLDataFetcher.setMongoClient(mongoClient);
             AppDefinitionLoader.setup(db, collection, mongoClient);
         }
     }
-
 
     @Override
     @SuppressWarnings("unchecked")
@@ -130,37 +126,36 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
                 .dataLoaderRegistry(dataLoaderRegistry);
 
         inputBuilder.operationName(request.getOperationName());
-        if (request.hasVariables()){
+        if (request.hasVariables()) {
             inputBuilder.variables((new Gson()).fromJson(request.getVariables(), Map.class));
         }
 
-        DataLoaderDispatcherInstrumentationOptions dispatcherInstrumentationOptions
-                = DataLoaderDispatcherInstrumentationOptions.newOptions();
+        DataLoaderDispatcherInstrumentationOptions dispatcherInstrumentationOptions = DataLoaderDispatcherInstrumentationOptions
+                .newOptions();
 
-        if(this.verbose){
+        if (this.verbose) {
             dispatcherInstrumentationOptions = dispatcherInstrumentationOptions.includeStatistics(true);
         }
 
-        DataLoaderDispatcherInstrumentation dispatcherInstrumentation
-                = new DataLoaderDispatcherInstrumentation(dispatcherInstrumentationOptions);
+        DataLoaderDispatcherInstrumentation dispatcherInstrumentation = new DataLoaderDispatcherInstrumentation(
+                dispatcherInstrumentationOptions);
 
         this.gql = GraphQL.newGraphQL(graphQLApp.getExecutableSchema())
                 .instrumentation(dispatcherInstrumentation).build();
 
         var result = this.gql.execute(inputBuilder.build());
 
-        if(this.verbose){
+        if (this.verbose) {
             logDataLoadersStatistics(dataLoaderRegistry);
         }
 
-        if (!result.getErrors().isEmpty()){
+        if (!result.getErrors().isEmpty()) {
             response.setInError(400, "Bad Request");
         }
         response.setContent(BsonUtils.toBsonDocument(result.toSpecification()));
     }
 
-
-    private void logDataLoadersStatistics(DataLoaderRegistry dataLoaderRegistry){
+    private void logDataLoadersStatistics(DataLoaderRegistry dataLoaderRegistry) {
         LOGGER.debug("##### DATALOADERS STATISTICS #####");
         dataLoaderRegistry.getKeys().forEach(key -> {
             LOGGER.debug(key.toUpperCase() + ": " + dataLoaderRegistry.getDataLoader(key).getStatistics());
@@ -168,32 +163,38 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
         LOGGER.debug("##################################");
     }
 
-    private DataLoaderRegistry setDataloaderRegistry(Map<String, TypeMapping> mappings){
+    private DataLoaderRegistry setDataloaderRegistry(Map<String, TypeMapping> mappings) {
 
         DataLoaderRegistry dataLoaderRegistry = new DataLoaderRegistry();
 
         mappings.forEach((type, typeMapping) -> {
             typeMapping.getFieldMappingMap().forEach((field, fieldMapping) -> {
-                if (fieldMapping instanceof QueryMapping){
+                if (fieldMapping instanceof QueryMapping) {
                     DataLoader<BsonValue, BsonValue> dataLoader = ((QueryMapping) fieldMapping).getDataloader();
-                    if (dataLoader != null){
+                    if (dataLoader != null) {
                         dataLoaderRegistry.register(type + "_" + field, dataLoader);
                     }
                 }
-            } );
+                // register dataLoaders for Aggregation Mapping
+                if (fieldMapping instanceof AggregationMapping) {
+                    DataLoader<BsonValue, BsonValue> dataLoader = ((AggregationMapping) fieldMapping).getDataloader();
+                    if (dataLoader != null) {
+                        dataLoaderRegistry.register(type + "_" + field, dataLoader);
+                    }
+                }
+            });
         });
 
         return dataLoaderRegistry;
 
     }
 
-
     @Override
     public Consumer<HttpServerExchange> requestInitializer() {
         return e -> {
             try {
                 if (e.getRequestMethod().equalToString(ExchangeKeys.METHOD.POST.name())
-                    || e.getRequestMethod().equalToString(ExchangeKeys.METHOD.OPTIONS.name())){
+                        || e.getRequestMethod().equalToString(ExchangeKeys.METHOD.OPTIONS.name())) {
                     var cache = AppDefinitionLoadingCache.getInstance();
                     String[] splitPath = e.getRequestPath().split("/");
                     var appUri = String.join("/", Arrays.copyOfRange(splitPath, 2, splitPath.length));
@@ -202,10 +203,10 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
                 } else {
                     throw new BadRequestException(HttpStatus.SC_METHOD_NOT_ALLOWED);
                 }
-            } catch (GraphQLAppDefNotFoundException notFoundException){
+            } catch (GraphQLAppDefNotFoundException notFoundException) {
                 LOGGER.error(notFoundException.getMessage());
                 throw new BadRequestException(HttpStatus.SC_NOT_FOUND);
-            } catch (GraphQLIllegalAppDefinitionException illegalException){
+            } catch (GraphQLIllegalAppDefinitionException illegalException) {
                 LOGGER.error(illegalException.getMessage());
                 throw new BadRequestException(illegalException.getMessage(), HttpStatus.SC_BAD_REQUEST);
             }
