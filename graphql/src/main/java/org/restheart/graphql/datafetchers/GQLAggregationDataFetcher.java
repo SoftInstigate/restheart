@@ -1,5 +1,7 @@
 package org.restheart.graphql.datafetchers;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -79,7 +81,7 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
                 e.printStackTrace();
             }
 
-            var stageOutput = new BsonArray();
+            List<BsonDocument> stageOutput = new ArrayList<>();
             
             if(res != null) {
                 res.forEach(doc -> stageOutput.add(doc));
