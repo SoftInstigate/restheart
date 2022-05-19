@@ -74,60 +74,71 @@ public final class JsonUnflattener {
     public BsonValue unflatten() {
         if (root.isArray()) {
             return unflattenArray(root.asArray());
-        }
-
-        if (!root.isDocument()) {
+        } else if (root.isDocument()) {
+            return unflatten(root.asDocument());
+        } else {
             return root;
         }
+    }
 
-        var flattened = root.asDocument();
-        BsonValue unflattened = flattened.keySet().isEmpty() ? new BsonDocument() : null;
-
-        for (var key : flattened.keySet()) {
-            var currentVal = unflattened;
-            String objKey = null;
-            Integer aryIdx = null;
-
-            var matcher = keyPartPattern.matcher(key);
-            while (matcher.find()) {
-                var keyPart = matcher.group();
-
-                if (objKey != null ^ aryIdx != null) {
-                    if (isJsonArray(keyPart)) {
-                        currentVal = findOrCreateJsonArray(currentVal, objKey, aryIdx);
-                        objKey = null;
-                        aryIdx = extractIndex(keyPart);
-                    } else { // JSON object
-                        if (flattened.get(key).isArray()) { // KEEP_ARRAYS mode
-                            flattened.put(key, unflattenArray(flattened.get(key).asArray()));
-                        }
-                        currentVal = findOrCreateJsonObject(currentVal, objKey, aryIdx);
-                        objKey = extractKey(keyPart);
-                        aryIdx = null;
-                    }
-                }
-
-                if (objKey == null && aryIdx == null) {
-                    if (isJsonArray(keyPart)) {
-                        aryIdx = extractIndex(keyPart);
-                        if (currentVal == null) {
-                            currentVal = new BsonArray();
-                        }
-                    } else { // JSON object
-                        objKey = extractKey(keyPart);
-                        if (currentVal == null) {
-                            currentVal = new BsonDocument();
-                        }
-                    }
-                }
-
-                if (unflattened == null) {
-                    unflattened = currentVal;
-                }
-            }
-
-            setUnflattenedValue(flattened, key, currentVal, objKey, aryIdx);
+    private BsonDocument unflatten(BsonDocument flattened) {
+        if (flattened.keySet().isEmpty()) {
+            return new BsonDocument();
         }
+
+        final BsonDocument unflattened = new BsonDocument();
+
+        // add properties not using the dot notation
+        flattened.keySet().stream()
+            .filter(key -> keyPartPattern.matcher(key).matches())
+            .forEach((key) -> unflattened.asDocument().put(key, flattened.get(key)));
+
+        // add properties using the dot notation
+        flattened.keySet().stream()
+            .filter(key -> !keyPartPattern.matcher(key).matches())
+            .forEach(key -> {
+                BsonValue currentVal = unflattened;
+                String objKey = null;
+                Integer aryIdx = null;
+
+                var matcher = keyPartPattern.matcher(key);
+                while (matcher.find()) {
+                    var keyPart = matcher.group();
+
+                    var firstKey = matcher.start() == 0;
+
+                    if (objKey != null ^ aryIdx != null) {
+                        if (isJsonArray(firstKey, keyPart)) {
+                            currentVal = findOrCreateJsonArray(currentVal, objKey, aryIdx);
+                            objKey = null;
+                            aryIdx = extractIndex(keyPart);
+                        } else { // JSON object
+                            if (flattened.get(key).isArray()) { // KEEP_ARRAYS mode
+                                flattened.put(key, unflattenArray(flattened.get(key).asArray()));
+                            }
+                            currentVal = findOrCreateJsonObject(currentVal, objKey, aryIdx);
+                            objKey = extractKey(keyPart);
+                            aryIdx = null;
+                        }
+                    }
+
+                    if (objKey == null && aryIdx == null) {
+                        if (isJsonArray(firstKey, keyPart)) {
+                            aryIdx = extractIndex(keyPart);
+                            if (currentVal == null) {
+                                currentVal = new BsonArray();
+                            }
+                        } else { // JSON object
+                            objKey = extractKey(keyPart);
+                            if (currentVal == null) {
+                                currentVal = new BsonDocument();
+                            }
+                        }
+                    }
+                }
+
+                setUnflattenedValue(flattened, key, currentVal, objKey, aryIdx);
+            });
 
         return unflattened;
     }
@@ -158,24 +169,32 @@ public final class JsonUnflattener {
 
     private Integer extractIndex(String keyPart) {
         return Integer.valueOf(keyPart);
-
     }
 
-    private boolean isJsonArray(String keyPart) {
-        return keyPart.matches("\\d+");
+    private boolean isJsonArray(boolean firstPart, String keyPart) {
+        return // the first part key is always the key of an object (0.a.b -> 0 is an object)
+               !firstPart
+               // if a number key, it must be an array index
+               && keyPart.matches("\\d+");
     }
 
     private BsonValue findOrCreateJsonArray(BsonValue currentVal, String objKey, Integer aryIdx) {
         if (objKey != null) {
-            var jsonObj = currentVal.asDocument();
+            var currentDocumentVal = currentVal.asDocument();
 
-            if (jsonObj.get(objKey) == null) {
+            if (!currentDocumentVal.containsKey(objKey)) {
                 var ary = new BsonArray();
-                jsonObj.put(objKey, ary);
+                currentDocumentVal.put(objKey, ary);
 
                 return ary;
             } else {
-                return jsonObj.get(objKey);
+                var ret = currentDocumentVal.get(objKey);
+
+                if (!ret.isArray()) {
+                    throw new IllegalArgumentException("a field key using the dot notation points to a non-array value");
+                }
+
+                return ret;
             }
         } else { // aryIdx != null
             var jsonAry = currentVal.asArray();
@@ -229,7 +248,7 @@ public final class JsonUnflattener {
             } else {
                 currentVal.asDocument().put(objKey, val);
             }
-        } else { // aryIdx != null
+        } else if (aryIdx != null) { // aryIdx != null
             assureJsonArraySize(currentVal.asArray(), aryIdx);
             currentVal.asArray().set(aryIdx, val);
         }

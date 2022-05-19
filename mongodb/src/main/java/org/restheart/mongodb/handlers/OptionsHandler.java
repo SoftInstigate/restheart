@@ -111,7 +111,7 @@ public class OptionsHandler extends PipelinedHandler {
                             .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET, PUT, POST, PATCH, DELETE, OPTIONS")
                             .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");
                     break;
-                case COLLECTION_SIZE:
+                case COLLECTION_SIZE, FILES_BUCKET_SIZE:
                     response.getHeaders()
                             .put(HttpString.tryFromString("Access-Control-Allow-Methods"), "GET")
                             .put(HttpString.tryFromString("Access-Control-Allow-Headers"), "Accept, Accept-Encoding, Authorization, Content-Length, Content-Type, Host, If-Match, Origin, X-Requested-With, User-Agent, No-Auth-Challenge");

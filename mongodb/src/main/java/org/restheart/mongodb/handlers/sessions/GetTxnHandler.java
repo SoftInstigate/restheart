@@ -64,13 +64,12 @@ public class GetTxnHandler extends PipelinedHandler {
         try {
             sid = UUID.fromString(_sid);
         } catch (IllegalArgumentException iae) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE,
-                    "Invalid session id");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid session id");
             next(exchange);
             return;
         }
 
-        var txn = TxnsUtils.getTxnServerStatus(sid);
+        var txn = TxnsUtils.getTxnServerStatus(sid, request.rsOps());
 
         if (txn.getStatus() == NONE) {
             response.setContent(new BsonDocument("currentTxn", new BsonNull()));

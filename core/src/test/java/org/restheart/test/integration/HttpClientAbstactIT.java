@@ -688,8 +688,8 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
      */
     protected static URI buildURI(String path, NameValuePair[] parameters) throws URISyntaxException {
         return createURIBuilder(path)
-                .addParameters(Arrays.asList(parameters))
-                .build();
+            .addParameters(Arrays.asList(parameters))
+            .build();
     }
 
     /**
@@ -699,16 +699,15 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
      * @throws URISyntaxException
      */
     protected static URI buildURI(String path) throws URISyntaxException {
-        return createURIBuilder(path)
-                .build();
+        return createURIBuilder(path).build();
     }
 
     private static URIBuilder createURIBuilder(String path) {
         return new URIBuilder()
-                .setScheme(HTTP)
-                .setHost(HTTP_HOST.getHostName())
-                .setPort(HTTP_HOST.getPort())
-                .setPath(path);
+            .setScheme(HTTP)
+            .setHost(HTTP_HOST.getHostName())
+            .setPort(HTTP_HOST.getPort())
+            .setPath(path);
     }
 
     /**
@@ -758,22 +757,22 @@ public abstract class HttpClientAbstactIT extends AbstactIT {
     }
 
     private void createTestData() {
-        dbs.upsertDB(Optional.empty(), METHOD.PUT, false, dbName, dbProps, new ObjectId().toString(), false);
+        dbs.upsertDB(Optional.empty(), Optional.empty(), dbName, METHOD.PUT, false, dbProps, new ObjectId().toString(), false);
 
-        dbs.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, collection1Name, coll1Props, new ObjectId().toString(), false);
-        dbs.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, collection2Name, coll2Props, new ObjectId().toString(), false);
-        dbs.upsertCollection(Optional.empty(), METHOD.PUT, false, dbName, docsCollectionName, docsCollectionProps, new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, collection1Name, METHOD.PUT, false, coll1Props, new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, collection2Name, METHOD.PUT, false, coll2Props, new ObjectId().toString(), false);
+        dbs.upsertCollection(Optional.empty(), Optional.empty(), dbName, docsCollectionName, METHOD.PUT, false, docsCollectionProps, new ObjectId().toString(), false);
 
         for (var index : docsCollectionIndexesStrings) {
-            dbs.createIndex(Optional.empty(), dbName, docsCollectionName, BsonDocument.parse(index), Optional.empty());
+            dbs.createIndex(Optional.empty(), Optional.empty(), dbName, docsCollectionName, BsonDocument.parse(index), Optional.empty());
         }
 
         final var documentDAO = Documents.get();
-        documentDAO.writeDocument(Optional.empty(), METHOD.PUT, WRITE_MODE.UPSERT, dbName, collection1Name, Optional.of(new BsonString(document1Id)), Optional.empty(), Optional.empty(), document1Props, new ObjectId().toString(), false);
-        documentDAO.writeDocument(Optional.empty(), METHOD.PUT, WRITE_MODE.UPSERT, dbName, collection2Name, Optional.of(new BsonString(document2Id)), Optional.empty(), Optional.empty(), document2Props, new ObjectId().toString(), false);
+        documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, collection1Name, METHOD.PUT, WRITE_MODE.UPSERT, Optional.of(new BsonString(document1Id)), Optional.empty(), Optional.empty(), document1Props, new ObjectId().toString(), false);
+        documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, collection2Name, METHOD.PUT, WRITE_MODE.UPSERT, Optional.of(new BsonString(document2Id)), Optional.empty(), Optional.empty(), document2Props, new ObjectId().toString(), false);
 
         for (String doc : docsPropsStrings) {
-            documentDAO.writeDocument(Optional.empty(), METHOD.PUT, WRITE_MODE.UPSERT, dbName, docsCollectionName, Optional.of(new BsonObjectId(new ObjectId())), Optional.empty(), Optional.empty(), BsonDocument.parse(doc), new ObjectId().toString(), false);
+            documentDAO.writeDocument(Optional.empty(), Optional.empty(), dbName, docsCollectionName, METHOD.PUT, WRITE_MODE.UPSERT, Optional.of(new BsonObjectId(new ObjectId())), Optional.empty(), Optional.empty(), BsonDocument.parse(doc), new ObjectId().toString(), false);
         }
         LOG.debug("test data created");
     }

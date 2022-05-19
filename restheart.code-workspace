@@ -1,0 +1,47 @@
+{
+	"folders": [
+        {
+            "path": "core"
+        },
+        {
+            "path": "commons"
+        },
+        {
+            "path": "mongodb"
+        },
+        {
+            "path": "graphql"
+        },
+        {
+            "path": "polyglot"
+        },
+        {
+            "path": "test-plugins"
+        },
+        {
+            "path": "security"
+        }
+    ],
+    "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "maven.excludedFolders": [
+            "**/.*",
+            "**/node_modules",
+            "**/target",
+            "**/bin",
+            "**/archetype-resources"
+        ]
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "type": "java",
+                "name": "Attach to Remote Program",
+                "request": "attach",
+                "hostName": "localhost",
+                "port": 4000
+            }
+        ]
+    }
+}

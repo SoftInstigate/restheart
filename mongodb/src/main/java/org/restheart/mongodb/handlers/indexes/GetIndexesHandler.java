@@ -69,6 +69,7 @@ public class GetIndexesHandler extends PipelinedHandler {
 
         var _indexes = dbs.getCollectionIndexes(
             Optional.ofNullable(request.getClientSession()),
+            request.rsOps(),
             request.getDBName(),
             request.getCollectionName());
 

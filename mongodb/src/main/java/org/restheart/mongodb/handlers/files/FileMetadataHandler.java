@@ -48,7 +48,7 @@ import org.restheart.utils.HttpStatus;
  */
 public class FileMetadataHandler extends PipelinedHandler {
 
-    private final GridFs gridFs = GridFs.get();;
+    private final GridFs gridFs = GridFs.get();
 
     /**
      * Creates a new instance of PatchFileMetadataHandler
@@ -127,9 +127,10 @@ public class FileMetadataHandler extends PipelinedHandler {
 
         var result = gridFs.updateFileMetadata(
             Optional.ofNullable(request.getClientSession()),
-            request.getMethod(),
+            request.rsOps(),
             request.getDBName(),
             request.getCollectionName(),
+            request.getMethod(),
             Optional.of(request.getDocumentId()),
             Optional.ofNullable(request.getFiltersDocument()),
             Optional.ofNullable(request.getShardKey()),

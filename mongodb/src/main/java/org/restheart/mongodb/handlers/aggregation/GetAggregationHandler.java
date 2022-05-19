@@ -110,9 +110,9 @@ public class GetAggregationHandler extends PipelinedHandler {
             next(exchange);
             return;
         } else {
-            var avars = request.getAggreationVars() == null
+            var avars = request.getAggregationVars() == null
                 ? new BsonDocument()
-                : request.getAggreationVars();
+                : request.getAggregationVars();
 
             // add the default variables to the avars document
             injectAvars(request, avars);
@@ -125,12 +125,12 @@ public class GetAggregationHandler extends PipelinedHandler {
                         var clientSession = request.getClientSession();
 
                         if (clientSession == null) {
-                            mrOutput = dbs.getCollection(request.getDBName(), request.getCollectionName())
+                            mrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
                                 .mapReduce(mapReduce.getResolvedMap(avars), mapReduce.getResolvedReduce(avars))
                                 .filter(mapReduce.getResolvedQuery(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
                         } else {
-                            mrOutput = dbs.getCollection(request.getDBName(), request.getCollectionName())
+                            mrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
                                 .mapReduce(clientSession, mapReduce.getResolvedMap(avars), mapReduce.getResolvedReduce(avars))
                                 .filter(mapReduce.getResolvedQuery(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS);
@@ -156,22 +156,22 @@ public class GetAggregationHandler extends PipelinedHandler {
                         var clientSession = request.getClientSession();
 
                         if (clientSession == null) {
-                            agrOutput = dbs.getCollection(request.getDBName(), request.getCollectionName())
+                            agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
                                 .aggregate(pipeline.getResolvedStagesAsList(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
                                 .allowDiskUse(pipeline.getAllowDiskUse().getValue());
                         } else {
-                            agrOutput = dbs.getCollection(request.getDBName(), request.getCollectionName())
+                            agrOutput = dbs.collection(request.rsOps(), request.getDBName(), request.getCollectionName())
                                 .aggregate(clientSession, pipeline.getResolvedStagesAsList(avars))
                                 .maxTime(MongoServiceConfiguration.get() .getAggregationTimeLimit(), TimeUnit.MILLISECONDS)
                                 .allowDiskUse(pipeline.getAllowDiskUse().getValue());
                         }
                     } catch (MongoCommandException | InvalidMetadataException ex) {
-                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggreation pipeline", ex);
+                        response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR, "error executing aggregation pipeline", ex);
                         next(exchange);
                         return;
                     } catch (QueryVariableNotBoundException qvnbe) {
-                        response.setInError(HttpStatus.SC_BAD_REQUEST, "error executing aggreation pipeline: " + qvnbe.getMessage());
+                        response.setInError(HttpStatus.SC_BAD_REQUEST, "error executing aggregation pipeline: " + qvnbe.getMessage());
                         next(exchange);
                         return;
                     }

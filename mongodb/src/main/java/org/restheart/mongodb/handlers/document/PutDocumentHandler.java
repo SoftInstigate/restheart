@@ -39,7 +39,7 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class PutDocumentHandler extends PipelinedHandler {
-    private final Documents documents = Documents.get();;
+    private final Documents documents = Documents.get();
 
     /**
      * Default ctor
@@ -99,10 +99,11 @@ public class PutDocumentHandler extends PipelinedHandler {
 
         var result = this.documents.writeDocument(
             Optional.ofNullable(request.getClientSession()),
-            request.getMethod(),
-            request.getWriteMode(),
+            request.rsOps(),
             request.getDBName(),
             request.getCollectionName(),
+            request.getMethod(),
+            request.getWriteMode(),
             Optional.of(request.getDocumentId()),
             Optional.ofNullable(request.getFiltersDocument()),
             Optional.ofNullable(request.getShardKey()),

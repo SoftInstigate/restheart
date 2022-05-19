@@ -37,7 +37,6 @@ import org.restheart.utils.HttpStatus;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class DeleteDocumentHandler extends PipelinedHandler {
-
     private final Documents documents = Documents.get();
 
     /**
@@ -73,8 +72,9 @@ public class DeleteDocumentHandler extends PipelinedHandler {
             return;
         }
 
-        var result = this.documents.deleteDocument(
+        var result = documents.deleteDocument(
             Optional.ofNullable(request.getClientSession()),
+            request.rsOps(),
             request.getDBName(),
             request.getCollectionName(),
             Optional.of(request.getDocumentId()),

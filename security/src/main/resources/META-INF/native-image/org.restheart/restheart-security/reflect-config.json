@@ -123,5 +123,19 @@
           {"name":"<init>","parameterTypes":[] }, 
           {"name":"init","parameterTypes":["java.util.Map","org.restheart.plugins.PluginsRegistry"] }
         ]
+      },
+      {
+        "name":"org.restheart.security.authenticators.UserPwdStrengthEnforcer",
+        "methods":[
+          {"name":"<init>","parameterTypes":[] }, 
+          {"name":"init","parameterTypes":["org.restheart.plugins.PluginsRegistry"] }
+        ]
+      },
+      {
+        "name":"org.restheart.security.interceptors.BruteForceAttackGuard",
+        "methods":[
+          {"name":"<init>","parameterTypes":[] }, 
+          {"name":"config","parameterTypes":["java.util.Map"] }
+        ]
       }
 ]
