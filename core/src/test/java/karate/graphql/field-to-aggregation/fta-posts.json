@@ -31,5 +31,38 @@
     "author": {
       "$oid": "6037732f5fa7d52581015ed9"
     }
+  },
+  {
+    "_id": {
+      "$oid": "62865807316efb852613592f"
+    },
+    "title": "GraphQL, an alternative to REST",
+    "body": "GraphQL is a new way to query data",
+    "category": "backend",
+    "author": {
+      "$oid": "628658105d99f49782e6c0b1"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "62865851370f15372b1d0ec7"
+    },
+    "title": "Java Records",
+    "body": "Records are immutable data classes that require only the type and name of fields",
+    "category": "backend",
+    "author": {
+      "$oid": "628658105d99f49782e6c0b1"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "62865b04c3b32db32dae6c26"
+    },
+    "title": "RxJs hot vs cold observables",
+    "body": "A cold observable creates a data producer for each subscriber, whereas a hot observable creates a data producer first, and each subscriber gets the data from one producer, starting from the moment of subscription",
+    "category": "frontend",
+    "author": {
+      "$oid": "628658105d99f49782e6c0b1"
+    }
   }
 ]
