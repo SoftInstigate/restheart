@@ -162,13 +162,52 @@ public class GraphQLAppDeserializer {
                             if (fieldMappingDoc.containsKey("stages")) {
                                 if (fieldMappingDoc.get("stages").isArray()) {
 
-                                    typeMappings.put(field,
-                                            new AggregationMapping(field, fieldMappingDoc.get("db").asString(),
-                                                    fieldMappingDoc.get("collection").asString(),
-                                                    fieldMappingDoc.get("stages").asArray(),
-                                                    hasKeyOfType(fieldMappingDoc, "allowDiskUse", t -> t.isBoolean())
+                                    var aggregationBuilder = new AggregationMapping.Builder();
+
+                                    aggregationBuilder
+                                    .fieldName(field)
+                                    .db(fieldMappingDoc.get("db").asString())
+                                    .collection(fieldMappingDoc.get("collection").asString())
+                                    .stages(fieldMappingDoc.get("stages").asArray())
+                                    .allowDiskUse(
+                                        hasKeyOfType(fieldMappingDoc, "allowDiskUse", t -> t.isBoolean())
                                                             ? fieldMappingDoc.get("allowDiskUse").asBoolean()
-                                                            : new BsonBoolean(false)));
+                                                            : new BsonBoolean(false)
+                                    );
+
+                                    // Check if dataloader settings are present
+                                    if (fieldMappingDoc.containsKey("dataLoader")) {
+                                        if (fieldMappingDoc.get("dataLoader").isDocument()) {
+                                            BsonDocument settings = fieldMappingDoc.getDocument("dataLoader");
+                                            DataLoaderSettings.Builder dataLoaderBuilder = DataLoaderSettings
+                                                    .newBuilder();
+
+                                            if (settings.containsKey("batching")
+                                                    && settings.get("batching").isBoolean()) {
+                                                dataLoaderBuilder.batching(settings.getBoolean("batching").getValue());
+                                                if (settings.containsKey("maxBatchSize")
+                                                        && settings.get("maxBatchSize").isNumber()) {
+                                                    dataLoaderBuilder
+                                                            .max_batch_size(
+                                                                    settings.getNumber("maxBatchSize").intValue());
+                                                }
+                                            }
+
+                                            if (settings.containsKey("caching")
+                                                    && settings.get("caching").isBoolean()) {
+                                                dataLoaderBuilder.caching(settings.getBoolean("caching").getValue());
+                                            }
+
+                                            aggregationBuilder.dataLoaderSettings(dataLoaderBuilder.build());
+                                            
+                                        } else {
+                                            throwIllegalDefinitionException(field, type, "dataLoader", "DOCUMENT",
+                                                    fieldMappingDoc.get("dataLoader"));
+                                        }
+
+                                    }
+
+                                    typeMappings.put(field, aggregationBuilder.build());
 
                                     break;
 
