@@ -58,7 +58,7 @@ Scenario: Create collection with mock data in gql-apps
 
 
 
-    # insert a user
+    # insert users
     * header Authorization = admin
     Given path '/test-graphql/users-fta'
     And request read('fta-user.json')
@@ -66,7 +66,7 @@ Scenario: Create collection with mock data in gql-apps
 
 
 
-    # insert some posts for that user
+    # insert posts
     * header Authorization = admin
     Given path '/test-graphql/posts-fta'
     And request read('fta-posts.json')

@@ -73,3 +73,38 @@ Scenario: Should contain errors key
   When method POST
   Then status 400
   And match response contains {"errors": "#present"} 
+
+Scenario: When passing dataloader options should return an array of objects
+  * text query =
+  """
+    {
+      userByEmail(email: "bar@example.com"){
+        postsByCategoryWithDataLoader
+      }
+    }
+  """
+
+  Given header Content-Type = contTypeGraphQL
+  And header Authorization = admin
+  And request query
+  When method POST
+  Then status 200
+
+Scenario: Get a list of posts by category and for each one return the author name and postsByCategoryWithDataLoader
+  * text query =
+  """
+    {
+      postsByCategory(category: "backend") {
+        author {
+          name,
+          postsByCategoryWithDataLoader
+        }
+      }
+    }
+  """
+
+  Given header Content-Type = contTypeGraphQL
+  And header Authorization = admin
+  And request query
+  When method POST
+  Then status 200 
