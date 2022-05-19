@@ -43,7 +43,7 @@ public class MetadataCachesSingleton {
     private static boolean enabled = false;
     private static final long MAX_CACHE_SIZE = 1_000;
 
-    private final Databases dbsDAO;
+    private final Databases dbs;
     private LoadingCache<String, BsonDocument> dbPropsCache = null;
     private LoadingCache<String, BsonDocument> collectionPropsCache = null;
 
@@ -72,11 +72,8 @@ public class MetadataCachesSingleton {
         return enabled;
     }
 
-    /**
-     * Default ctor
-     */
-    private MetadataCachesSingleton(Databases dbsDAO) {
-        this.dbsDAO = dbsDAO;
+    private MetadataCachesSingleton() {
+        this.dbs = Databases.get();
         setup();
     }
 
@@ -87,12 +84,13 @@ public class MetadataCachesSingleton {
 
         if (enabled) {
             // no client session
-            this.dbPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, (String key) ->  this.dbsDAO.getDatabaseProperties(Optional.empty(),  key));
+            this.dbPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl, (String key) -> dbs.getDatabaseProperties(Optional.empty(), Optional.empty(), key));
 
             this.collectionPropsCache = CacheFactory.createLocalLoadingCache(MAX_CACHE_SIZE, Cache.EXPIRE_POLICY.AFTER_WRITE, ttl,
                 key -> {
                     var dbNameAndCollectionName = key.split(SEPARATOR);
-                    return this.dbsDAO.getCollectionProperties(
+                    return this.dbs.getCollectionProperties(
+                        Optional.empty(), // no client session
                         Optional.empty(), // no client session
                         dbNameAndCollectionName[0],
                         dbNameAndCollectionName[1]);
@@ -198,7 +196,7 @@ public class MetadataCachesSingleton {
     }
 
     private static class LocalCachesSingletonHolder {
-        private static final MetadataCachesSingleton INSTANCE = new MetadataCachesSingleton(Databases.get());
+        private static final MetadataCachesSingleton INSTANCE = new MetadataCachesSingleton();
 
         private LocalCachesSingletonHolder() {
         }

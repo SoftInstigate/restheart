@@ -1,0 +1,16 @@
+{
+  "name": "restheart-demo-cc-hider",
+  "version": "1.0.0",
+  "description": "demo plugins for RESTHeart",
+  "main": "index.mjs",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "rh:interceptors": [
+    "cc-hider.js"
+  ]
+}

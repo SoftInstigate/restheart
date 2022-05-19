@@ -38,8 +38,10 @@ import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.json.JsonParseException;
 import org.bson.types.ObjectId;
 import static org.restheart.exchange.ExchangeKeys.DB_META_DOCID;
+
 import org.restheart.exchange.ExchangeKeys.EAGER_CURSOR_ALLOCATION_POLICY;
 import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
@@ -47,6 +49,7 @@ import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 import static org.restheart.exchange.ExchangeKeys.META_COLLNAME;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
+import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
 import org.restheart.utils.HttpStatus;
 
@@ -69,16 +72,21 @@ public class Databases {
         FIELDS_TO_RETURN.put("_etag", 1);
     }
 
+    private final MongoClient client = MongoClientSingleton.get().client();
+
     /**
      * delegated object for collection operations
      */
-    private final Collections collections = Collections.get();
+    private final Collections collections;
 
-    private final MongoClient client = MongoClientSingleton.get().client();
-
-    private final Indexes indexDAO = Indexes.get();
+    /**
+     * delegated object for indexes operations
+     */
+    private final Indexes indexes;
 
     private Databases() {
+        this.collections = Collections.get();
+        this.indexes  = Indexes.get();
     }
 
     private static Databases INSTANCE = new Databases();
@@ -89,50 +97,40 @@ public class Databases {
 
     /**
      *
-     * @param cs the client session
-     * @param dbName
-     * @return
-     *
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the name of the db
+     * @return the MongoDatabase
      */
-    public boolean doesDbExist(final Optional<ClientSession> cs, final String dbName) {
-        // at least one collection exists for an existing db
-        return cs.isPresent()
-            ? client.getDatabase(dbName).listCollectionNames(cs.get()).first() != null
-            : client.getDatabase(dbName).listCollectionNames().first() != null;
+    MongoDatabase db(Optional<RSOps> rsOps, String dbName) {
+        return rsOps.isPresent() ? rsOps.get().apply(client.getDatabase(dbName)) : client.getDatabase(dbName);
     }
 
     /**
      * Returns true if the collection exists
      *
      * @param cs the client session
-     * @param dbName the database name of the collection
-     * @param collName the collection name
-     * @return true if the collection exists
-     */
-    public boolean doesCollectionExist(
-        final Optional<ClientSession> cs,
-        final String dbName,
-        final String collName) {
-        return collections.doesCollectionExist(cs, dbName, collName);
-    }
-
-    /**
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the name of the db
      *
-     * @param dbName
-     * @return the MongoDatabase
+     * @return true if the db exists
      */
-    public MongoDatabase getDatabase(final String dbName) {
-        return client.getDatabase(dbName);
+    public boolean doesDbExist(final Optional<ClientSession> cs, Optional<RSOps> rsOps, String dbName) {
+        var db = db(rsOps, dbName);
+        // at least one collection exists for an existing db
+        return cs.isPresent()
+            ? db.listCollectionNames(cs.get()).first() != null
+            : db.listCollectionNames().first() != null;
     }
 
     /**
      *
      * @param cs the client session
-     * @param dbName the database name of the collection
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @return A ordered List of collection names
      */
-    public List<String> getCollectionNames(final Optional<ClientSession> cs, final String dbName) {
-        var db = getDatabase(dbName);
+    public List<String> getCollectionNames(final Optional<ClientSession> cs, Optional<RSOps> rsOps, final String dbName) {
+        var db = db(rsOps, dbName);
 
         var _colls = new ArrayList<String>();
 
@@ -167,12 +165,13 @@ public class Databases {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @return the db props
      *
      */
-    public BsonDocument getDatabaseProperties(final Optional<ClientSession> cs, final String dbName) {
-        var propsColl = getCollection(dbName, META_COLLNAME);
+    public BsonDocument getDatabaseProperties(final Optional<ClientSession> cs, Optional<RSOps> rsOps, final String dbName) {
+        var propsColl = collections.collection(rsOps, dbName, META_COLLNAME);
 
         var props = cs.isPresent()
             ? propsColl.find(cs.get(), PROPS_QUERY).limit(1).first()
@@ -180,7 +179,7 @@ public class Databases {
 
         if (props != null) {
             props.append("_id", new BsonString(dbName));
-        } else if (doesDbExist(cs, dbName)) {
+        } else if (doesDbExist(cs, rsOps, dbName)) {
             return new BsonDocument("_id", new BsonString(dbName));
         }
 
@@ -190,7 +189,8 @@ public class Databases {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param colls the collections list as got from getCollectionNames()
      * @param page
      * @param pagesize
@@ -200,17 +200,17 @@ public class Databases {
      *
      */
     public BsonArray getDatabaseData(
-            final Optional<ClientSession> cs,
-            final String dbName,
-            final List<String> colls,
-            final int page,
-            final int pagesize,
-            boolean noCache)
-            throws IllegalQueryParamenterException {
+        final Optional<ClientSession> cs,
+        Optional<RSOps> rsOps,
+        final String dbName,
+        final List<String> colls,
+        final int page,
+        final int pagesize,
+        boolean noCache) throws IllegalQueryParamenterException {
         // filter out reserved resources
-        List<String> _colls = colls.stream()
-                .filter(coll -> !MongoRequest.isReservedCollectionName(coll))
-                .collect(Collectors.toList());
+        var _colls = colls.stream()
+            .filter(coll -> !MongoRequest.isReservedCollectionName(coll))
+            .collect(Collectors.toList());
 
         int size = _colls.size();
 
@@ -241,7 +241,7 @@ public class Databases {
             if (MetadataCachesSingleton.isEnabled() && !noCache) {
                 collProperties = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
             } else {
-                collProperties = collections.getCollectionProps(cs, dbName, collName);
+                collProperties = collections.getCollectionProps(cs, rsOps, dbName, collName);
             }
 
             if (collProperties != null) {
@@ -260,7 +260,8 @@ public class Databases {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param method
      * @param updating
      * @param newContent
@@ -269,13 +270,13 @@ public class Databases {
      */
     public OperationResult upsertDB(
         final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
+        final String dbName,
         final METHOD method,
         final boolean updating,
-        final String dbName,
         final BsonDocument newContent,
         final String requestEtag,
         final boolean checkEtag) {
-
         var newEtag = new ObjectId();
 
         final BsonDocument content = DbUtils.validContent(newContent);
@@ -283,7 +284,7 @@ public class Databases {
         content.put("_etag", new BsonObjectId(newEtag));
         content.remove("_id"); // make sure we don't change this field
 
-        var mcoll = getCollection(dbName, META_COLLNAME);
+        var mcoll = collections.collection(rsOps, dbName, META_COLLNAME);
 
         if (checkEtag && updating) {
             var oldProperties = cs.isPresent()
@@ -310,6 +311,7 @@ public class Databases {
                 if (Objects.equals(_requestEtag, oldEtag)) {
                     return doDbPropsUpdate(
                         cs,
+                        rsOps,
                         method,
                         updating,
                         mcoll,
@@ -323,6 +325,7 @@ public class Databases {
                 // e.g. it has not been created by restheart
                 return doDbPropsUpdate(
                     cs,
+                    rsOps,
                     method,
                     updating,
                     mcoll,
@@ -332,6 +335,7 @@ public class Databases {
         } else {
             return doDbPropsUpdate(
                 cs,
+                rsOps,
                 method,
                 updating,
                 mcoll,
@@ -342,6 +346,7 @@ public class Databases {
 
     private OperationResult doDbPropsUpdate(
         final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
         final METHOD method,
         final boolean updating,
         final MongoCollection<BsonDocument> mcoll,
@@ -362,17 +367,20 @@ public class Databases {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param requestEtag
      * @param checkEtag
      * @return the OperationResult
      */
     public OperationResult deleteDatabase(
         final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
         final String dbName,
         final BsonObjectId requestEtag,
         final boolean checkEtag) {
-        var mcoll = getCollection(dbName, META_COLLNAME);
+        var db = db(rsOps, dbName);
+        var mcoll = collections.collection(rsOps, dbName, META_COLLNAME);
 
         if (checkEtag) {
             var query = eq("_id", DB_META_DOCID);
@@ -394,134 +402,12 @@ public class Databases {
         }
 
         if (cs.isPresent()) {
-            getDatabase(dbName).drop(cs.get());
+            db.drop(cs.get());
         } else {
-            getDatabase(dbName).drop();
+            db.drop();
         }
 
         return new OperationResult(HttpStatus.SC_NO_CONTENT);
-    }
-
-    /**
-     *
-     * @param cs the client session
-     * @param dbName
-     * @param collName
-     * @return the collection properties
-     */
-    public BsonDocument getCollectionProperties(final Optional<ClientSession> cs, final String dbName, final String collName) {
-        return collections.getCollectionProps(cs, dbName, collName);
-    }
-
-    /**
-     *
-     * @param dbName
-     * @param collName
-     * @return the MongoCollection
-     */
-    public MongoCollection<BsonDocument> getCollection(final String dbName, final String collName) {
-        return collections.getCollection(dbName, collName);
-    }
-
-    /**
-     *
-     * @param cs the client session
-     * @param method the request method
-     * @param updating true if updating, false if creating
-     * @param dbName
-     * @param collName
-     * @param content
-     * @param requestEtag
-     * @param checkEtag
-     * @return the OperationResult
-     */
-    public OperationResult upsertCollection(
-        final Optional<ClientSession> cs,
-        final METHOD method,
-        final boolean updating,
-        final String dbName,
-        final String collName,
-        final BsonDocument content,
-        final String requestEtag,
-        final boolean checkEtag) {
-        return collections.upsertCollection(
-            cs,
-            method,
-            updating,
-            dbName,
-            collName,
-            content,
-            requestEtag,
-            checkEtag);
-    }
-
-    /**
-     *
-     * @param cs the client session
-     * @param dbName
-     * @param collectionName
-     * @param requestEtag
-     * @param checkEtag
-     * @return the OperationResult
-     */
-    public OperationResult deleteCollection(
-        final Optional<ClientSession> cs,
-        final String dbName,
-        final String collectionName,
-        final BsonObjectId requestEtag,
-        final boolean checkEtag) {
-        return collections.deleteCollection(
-            cs,
-            dbName,
-            collectionName,
-            requestEtag,
-            checkEtag);
-    }
-
-    /**
-     *
-     * @param cs the client session
-     * @param coll
-     * @param filters
-     * @return the cound of the documents in the collection
-     */
-    public long getCollectionSize(final Optional<ClientSession> cs, final MongoCollection<BsonDocument> coll, final BsonDocument filters) {
-        return collections.getCollectionSize(cs, coll, filters);
-    }
-
-    /**
-     *
-     * @param cs the client session
-     * @param coll
-     * @param page
-     * @param pagesize
-     * @param sortBy
-     * @param filter
-     * @param hint
-     * @param keys
-     * @param cursorAllocationPolicy
-     * @return the documents in the collection as a BsonArray
-     */
-    public BsonArray getCollectionData(
-        final Optional<ClientSession> cs,
-        final MongoCollection<BsonDocument> coll,
-        final int page,
-        final int pagesize,
-        final BsonDocument sortBy,
-        final BsonDocument filter,
-        final BsonDocument hint,
-        final BsonDocument keys,
-        final EAGER_CURSOR_ALLOCATION_POLICY cursorAllocationPolicy) {
-        return collections.getCollectionData(
-            cs,
-            coll,
-            page,
-            pagesize,
-            sortBy,
-            filter,
-            hint,
-            keys,
-            cursorAllocationPolicy);
     }
 
     /**
@@ -544,37 +430,175 @@ public class Databases {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
+     * @param collName
+     * @return the collection properties
+     */
+    public BsonDocument getCollectionProperties(final Optional<ClientSession> cs, final Optional<RSOps> rsOps, final String dbName, final String collName) {
+        return collections.getCollectionProps(cs, rsOps, dbName, collName);
+    }
+
+    /**
+     *
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
+     * @param collName
+     * @return the MongoCollection<BsonDocument>
+     */
+    public MongoCollection<BsonDocument> collection(Optional<RSOps> rsOps, String dbName, final String collName) {
+        return collections.collection(rsOps, dbName, collName);
+    }
+
+    /**
+     * Returns the number of documents in the given collection (taking into
+     * account the filters in case).
+     *
+     * @param cs the ClientSession
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
+     * @param collName the collection name
+     * @param filters the filters to apply. it is a Deque collection of mongodb
+     * query conditions.
+     * @return the number of documents in the given collection (taking into
+     * account the filters in case)
+     */
+    public long getCollectionSize(final Optional<ClientSession> cs, Optional<RSOps> rsOps, String dbName, final String collName, BsonDocument filter) {
+        return collections.getCollectionSize(cs, rsOps, dbName, collName, filter);
+    }
+
+    /**
+     *
+     * @param cs the client session
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
+     * @param collName the collection name
+     * @param page
+     * @param pagesize
+     * @param sortBy
+     * @param filter
+     * @param hint
+     * @param keys
+     * @param cursorAllocationPolicy
+     * @return the documents in the collection as a BsonArray
+     */
+    public BsonArray getCollectionData(
+        final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
+        final String dbName,
+        final String collName,
+        final int page,
+        final int pagesize,
+        final BsonDocument sortBy,
+        final BsonDocument filters,
+        final BsonDocument hint,
+        final BsonDocument keys,
+        final EAGER_CURSOR_ALLOCATION_POLICY eager)
+        throws JsonParseException {
+        return collections.getCollectionData(cs, rsOps, dbName, collName, page, pagesize, sortBy, filters, hint, keys, eager);
+    }
+
+    /**
+     *
+     * @param cs the client session
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
+     * @param collName the collection name
+     * @param requestEtag
+     * @param checkEtag
+     * @return the OperationResult
+     */
+    public OperationResult deleteCollection(
+        final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
+        final String dbName,
+        final String collName,
+        final BsonObjectId requestEtag,
+        final boolean checkEtag) {
+        return collections.deleteCollection(
+            cs,
+            rsOps,
+            dbName,
+            collName,
+            requestEtag,
+            checkEtag);
+    }
+
+    /**
+     *
+     * @param cs the client session
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
+     * @param method the request method
+     * @param updating true if updating, false if creating
+     * @param collName
+     * @param content
+     * @param requestEtag
+     * @param checkEtag
+     * @return the OperationResult
+     */
+    public OperationResult upsertCollection(
+        final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
+        final String dbName,
+        final String collName,
+        final METHOD method,
+        final boolean updating,
+        final BsonDocument content,
+        final String requestEtag,
+        final boolean checkEtag) {
+        return collections.upsertCollection(
+            cs,
+            rsOps,
+            dbName,
+            collName,
+            method,
+            updating,
+            content,
+            requestEtag,
+            checkEtag);
+    }
+
+    /**
+     *
+     * @param cs the client session
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param collection
      * @param indexId
      * @return the HTTP status code
      */
     public int deleteIndex(
         final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
         final String dbName,
         final String collection,
         final String indexId) {
-        return indexDAO.deleteIndex(cs, dbName, collection, indexId);
+        return indexes.deleteIndex(cs, rsOps, dbName, collection, indexId);
     }
 
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param collectionName
      * @return an ordered list of the indexes
      */
     public List<BsonDocument> getCollectionIndexes(
         final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
         final String dbName,
         final String collectionName) {
-        return indexDAO.getCollectionIndexes(cs, dbName, collectionName);
+        return indexes.getCollectionIndexes(cs, rsOps, dbName, collectionName);
     }
 
     /**
      *
      * @param cs the client session
-     * @param collection
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
+     * @param collName the collection name
      * @param sortBy
      * @param filters
      * @param hint
@@ -583,14 +607,16 @@ public class Databases {
      */
     public FindIterable<BsonDocument> findIterable(
         final Optional<ClientSession> cs,
-        final MongoCollection<BsonDocument> collection,
+        final Optional<RSOps> rsOps,
+        final String dbName,
+        final String collName,
         final BsonDocument sortBy,
         final BsonDocument filters,
         final BsonDocument hint,
         final BsonDocument keys) {
         return collections.findIterable(
             cs,
-            collection,
+            collections.collection(rsOps, dbName, collName),
             sortBy,
             filters,
             hint,
@@ -600,17 +626,19 @@ public class Databases {
     /**
      *
      * @param cs the client session
-     * @param dbName
-     * @param collection
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
+     * @param collName the collection name
      * @param keys
      * @param options
      */
     public void createIndex(
         final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
         final String dbName,
-        final String collection,
+        final String collName,
         final BsonDocument keys,
         final Optional<BsonDocument> options) {
-        indexDAO.createIndex(cs, dbName, collection, keys, options);
+        indexes.createIndex(cs, rsOps, dbName, collName, keys, options);
     }
 }

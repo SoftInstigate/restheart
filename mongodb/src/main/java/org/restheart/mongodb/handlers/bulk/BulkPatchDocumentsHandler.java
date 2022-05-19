@@ -35,7 +35,7 @@ import org.restheart.mongodb.db.Documents;
  */
 public class BulkPatchDocumentsHandler extends PipelinedHandler {
 
-    private final Documents documents = Documents.get();;
+    private final Documents documents = Documents.get();
 
     /**
      * Creates a new instance of PatchDocumentHandler
@@ -69,6 +69,7 @@ public class BulkPatchDocumentsHandler extends PipelinedHandler {
 
         var result = this.documents.bulkPatchDocuments(
             Optional.ofNullable(request.getClientSession()),
+            request.rsOps(), 
             request.getDBName(),
             request.getCollectionName(),
             request.getFiltersDocument(),

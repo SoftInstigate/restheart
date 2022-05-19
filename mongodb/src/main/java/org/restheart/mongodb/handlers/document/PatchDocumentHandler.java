@@ -85,10 +85,11 @@ public class PatchDocumentHandler extends PipelinedHandler {
 
         var result = documents.writeDocument(
             Optional.ofNullable(request.getClientSession()),
-            request.getMethod(),
-            request.getWriteMode(),
+            request.rsOps(),
             request.getDBName(),
             request.getCollectionName(),
+            request.getMethod(),
+            request.getWriteMode(),
             Optional.of(request.getDocumentId()),
             Optional.ofNullable(request.getFiltersDocument()),
             Optional.ofNullable(request.getShardKey()),

@@ -106,12 +106,13 @@ public class PostCollectionHandler extends PipelinedHandler {
             }
         }
 
-        var result = this.documents.writeDocument(
+        var result = documents.writeDocument(
             Optional.ofNullable(request.getClientSession()),
-            request.getMethod(),
-            request.getWriteMode(),
+            request.rsOps(),
             request.getDBName(),
             request.getCollectionName(),
+            request.getMethod(),
+            request.getWriteMode(),
             Optional.ofNullable(content.get("_id")),
             Optional.ofNullable(request.getFiltersDocument()),
             Optional.ofNullable(request.getShardKey()),

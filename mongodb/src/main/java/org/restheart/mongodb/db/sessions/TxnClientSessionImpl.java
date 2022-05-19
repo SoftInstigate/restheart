@@ -46,10 +46,10 @@ public class TxnClientSessionImpl extends ClientSessionImpl {
     private Txn txnServerStatus = null;
 
     public TxnClientSessionImpl(final ServerSessionPool serverSessionPool,
-            final Object originator,
-            final ClientSessionOptions options,
-            final OperationExecutor executor,
-            final Txn txnServerStatus) {
+        final Object originator,
+        final ClientSessionOptions options,
+        final OperationExecutor executor,
+        final Txn txnServerStatus) {
         super(serverSessionPool, originator, options);
         this.executor = executor;
         this.txnServerStatus = txnServerStatus;

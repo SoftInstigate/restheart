@@ -44,6 +44,8 @@ import org.restheart.exchange.ExchangeKeys.METHOD;
 import org.restheart.exchange.ExchangeKeys.WRITE_MODE;
 
 import static org.restheart.mongodb.db.DbUtils.BAD_VALUE_KEY_ERROR;
+
+import org.restheart.mongodb.RSOps;
 import org.restheart.mongodb.utils.ResponseHelper;
 import org.restheart.utils.HttpStatus;
 
@@ -66,17 +68,19 @@ public class Documents {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param collName
      * @param documentId
      * @return
      */
     public BsonDocument getDocumentEtag(
         final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
         final String dbName,
         final String collName,
         final Object documentId) {
-        var mcoll = collections.getCollection(dbName,collName);
+        var mcoll = collections.collection(rsOps, dbName, collName);
 
         var query = eq("_id", documentId);
         var documents = cs.isPresent()
@@ -89,9 +93,10 @@ public class Documents {
     /**
      *
      * @param cs the client session
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param method the request method
      * @param writeMode the write mode
-     * @param dbName
      * @param collName
      * @param documentId
      * @param shardKeys
@@ -102,17 +107,18 @@ public class Documents {
      */
     public OperationResult writeDocument(
         final Optional<ClientSession> cs,
-        final METHOD method,
-        final WRITE_MODE writeMode,
+        final Optional<RSOps> rsOps,
         final String dbName,
         final String collName,
+        final METHOD method,
+        final WRITE_MODE writeMode,
         final Optional<BsonValue> documentId,
         final Optional<BsonDocument> filter,
         final Optional<BsonDocument> shardKeys,
         final BsonDocument newContent,
         final String requestEtag,
         final boolean checkEtag) {
-        var mcoll = collections.getCollection(dbName, collName);
+        var mcoll = collections.collection(rsOps, dbName, collName);
 
         // genereate new etag
         var newEtag = new BsonObjectId();
@@ -153,7 +159,8 @@ public class Documents {
 
     /**
      * @param cs the client session
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param collName
      * @param documents
      * @param shardKeys
@@ -162,6 +169,7 @@ public class Documents {
      */
     public BulkOperationResult bulkPostDocuments(
         final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
         final String dbName,
         final String collName,
         final BsonArray documents,
@@ -170,7 +178,7 @@ public class Documents {
         final WRITE_MODE writeMode) {
         Objects.requireNonNull(documents);
 
-        var mcoll = collections.getCollection(dbName, collName);
+        var mcoll = collections.collection(rsOps, dbName, collName);
 
         var newEtag = new BsonObjectId(new ObjectId());
 
@@ -190,7 +198,8 @@ public class Documents {
 
     /**
      * @param cs the client session
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param collName
      * @param filter
      * @param shardedKeys
@@ -199,6 +208,7 @@ public class Documents {
      */
     public BulkOperationResult bulkPatchDocuments(
         final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
         final String dbName,
         final String collName,
         final BsonDocument filter,
@@ -207,7 +217,7 @@ public class Documents {
         Objects.requireNonNull(filter);
         Assertions.assertFalse(filter.isEmpty());
 
-        var mcoll = collections.getCollection(dbName, collName);
+        var mcoll = collections.collection(rsOps, dbName, collName);
 
         var patches = new ArrayList<WriteModel<BsonDocument>>();
 
@@ -235,7 +245,8 @@ public class Documents {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param collName
      * @param documentId
      * @param filter
@@ -246,15 +257,15 @@ public class Documents {
      */
     public OperationResult deleteDocument(
         final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
         final String dbName,
         final String collName,
         final Optional<BsonValue> documentId,
         final Optional<BsonDocument> filter,
         final Optional<BsonDocument> shardKeys,
         final String requestEtag,
-        final boolean checkEtag
-    ) {
-        var mcoll = collections.getCollection(dbName, collName);
+        final boolean checkEtag) {
+        var mcoll = collections.collection(rsOps, dbName, collName);
 
         var oldDocument = cs.isPresent()
                 ? mcoll.findOneAndDelete(cs.get(), idFilter(documentId, filter, shardKeys))
@@ -306,7 +317,8 @@ public class Documents {
     /**
      *
      * @param cs the client session
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param collName
      * @param filter
      * @param shardedKeys
@@ -314,6 +326,7 @@ public class Documents {
      */
     public BulkOperationResult bulkDeleteDocuments(
         final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
         final String dbName,
         final String collName,
         final BsonDocument filter,
@@ -321,7 +334,7 @@ public class Documents {
         Objects.requireNonNull(filter);
         Assertions.assertFalse(filter.isEmpty());
 
-        var mcoll = collections.getCollection(dbName, collName);
+        var mcoll = collections.collection(rsOps, dbName, collName);
 
         var deletes = new ArrayList<WriteModel<BsonDocument>>();
 

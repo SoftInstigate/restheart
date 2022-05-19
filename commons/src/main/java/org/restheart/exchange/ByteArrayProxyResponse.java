@@ -73,7 +73,7 @@ public class ByteArrayProxyResponse extends ProxyResponse<byte[]> {
      * writes the response content
      *
      * allocates the PooledByteBuffer array so close() must be invoked
-     * to avoid memory leacks
+     * to avoid memory leaks
      */
     @Override
     public void writeContent(byte[] content) throws IOException {

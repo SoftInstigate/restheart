@@ -74,7 +74,7 @@ public class GridFsTest {
 
     @Test
     public void testExtractBucket() {
-        assertEquals("mybucket", new GridFs(null).extractBucketName("mybucket.files"));
+        assertEquals("mybucket", GridFs.extractBucketName("mybucket.files"));
     }
 
      /**
@@ -82,7 +82,7 @@ public class GridFsTest {
      */
     @Test
     public void testExtractBucketWithDots() {
-        assertEquals("mybucket.foo", new GridFs(null).extractBucketName("mybucket.foo.files"));
-        assertEquals("mybucket.foo.bar", new GridFs(null).extractBucketName("mybucket.foo.bar.files"));
+        assertEquals("mybucket.foo", GridFs.extractBucketName("mybucket.foo.files"));
+        assertEquals("mybucket.foo.bar", GridFs.extractBucketName("mybucket.foo.bar.files"));
     }
 }

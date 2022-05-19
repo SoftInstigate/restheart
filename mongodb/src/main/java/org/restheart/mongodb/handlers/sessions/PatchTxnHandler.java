@@ -60,16 +60,14 @@ public class PatchTxnHandler extends PipelinedHandler {
         try {
             sid = UUID.fromString(_sid);
         } catch (IllegalArgumentException iae) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE,
-                    "Invalid session id");
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "Invalid session id");
             next(exchange);
             return;
         }
 
         // assume optimistically txn in progress, we get an error eventually
         var cs = TxnClientSessionFactory.getInstance()
-                .getTxnClientSession(sid, new Txn(txnId,
-                        Txn.TransactionStatus.IN));
+                .getTxnClientSession(sid, request.rsOps(), new Txn(txnId, Txn.TransactionStatus.IN));
 
         cs.setMessageSentInCurrentTransaction(true);
 

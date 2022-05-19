@@ -19,7 +19,6 @@
  * =========================LICENSE_END==================================
  */
 package org.restheart.mongodb.db;
-import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCollection;
@@ -45,6 +44,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.METHOD;
+import org.restheart.mongodb.RSOps;
 import org.restheart.utils.HttpStatus;
 
 import static org.restheart.utils.HttpStatus.*;
@@ -60,15 +60,10 @@ public class GridFs {
 
     private static final String FILENAME = "filename";
 
-    private final Collections collections;
+    private final Collections collections = Collections.get();;
+    private final Databases dbs = Databases.get();
 
     private GridFs() {
-        this.collections = Collections.get();
-    }
-
-    @VisibleForTesting
-    GridFs(Collections collections) {
-        this.collections = collections;
     }
 
     private static GridFs INSTANCE = null;
@@ -82,8 +77,8 @@ public class GridFs {
 
     /**
      *
-     * @param db
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param bucketName
      * @param metadata
      * @param filePath
@@ -92,25 +87,24 @@ public class GridFs {
      * @throws DuplicateKeyException
      */
     public OperationResult createFile(
-            final Databases db,
-            final String dbName,
-            final String bucketName,
-            final BsonDocument metadata,
-            final Path filePath)
-            throws IOException, DuplicateKeyException {
-
+        final Optional<RSOps> rsOps,
+        final String dbName,
+        final String bucketName,
+        final BsonDocument metadata,
+        final Path filePath)
+        throws IOException, DuplicateKeyException {
+        final var db = dbs.db(rsOps, dbName);
         final var bucket = extractBucketName(bucketName);
 
-        var gridFSBucket = GridFSBuckets.create(db.getDatabase(dbName), bucket);
+        var gridFSBucket = GridFSBuckets.create(db, bucket);
 
         var filename = extractFilenameFromProperties(metadata);
 
         //add etag to metadata
-        ObjectId etag = new ObjectId();
+        var etag = new ObjectId();
         metadata.put("_etag", new BsonObjectId(etag));
 
         try (InputStream sourceStream = new FileInputStream(filePath.toFile())) {
-
             if (metadata.get("_id") == null) {
                 var options = new GridFSUploadOptions().metadata(Document.parse(metadata.toJson()));
 
@@ -131,8 +125,8 @@ public class GridFs {
 
     /**
      *
-     * @param db
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param bucketName
      * @param metadata
      * @param filePath
@@ -143,7 +137,8 @@ public class GridFs {
      * @return
      * @throws IOException
      */
-    public OperationResult upsertFile(final Databases db,
+    public OperationResult upsertFile(
+        final Optional<RSOps> rsOps,
         final String dbName,
         final String bucketName,
         final BsonDocument metadata,
@@ -153,7 +148,7 @@ public class GridFs {
         final String requestEtag,
         final boolean checkEtag) throws IOException {
 
-        var deletionResult = deleteFile(db, dbName, bucketName, fileId, filter, requestEtag, checkEtag);
+        var deletionResult = deleteFile(rsOps, dbName, bucketName, fileId, filter, requestEtag, checkEtag);
 
         //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.7
         final boolean deleteOperationWasSuccessful = deletionResult.getHttpCode() == SC_NO_CONTENT || deletionResult.getHttpCode() == SC_OK;
@@ -161,12 +156,11 @@ public class GridFs {
         final boolean fileExisted = !fileDidntExist;
 
         if (deleteOperationWasSuccessful || fileDidntExist) {
-            var creationResult = createFile(db, dbName, bucketName, metadata, filePath);
+            var creationResult = createFile(rsOps, dbName, bucketName, metadata, filePath);
 
             //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.5
             final boolean creationOperationWasSuccessful = SC_CREATED == creationResult.getHttpCode() || SC_OK == creationResult.getHttpCode();
             if (creationOperationWasSuccessful) {
-
                 //https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.6
                 if (fileExisted) {
                     return new OperationResult(SC_OK, creationResult.getEtag(), creationResult.getOldData(), creationResult.getNewData());
@@ -201,8 +195,8 @@ public class GridFs {
 
     /**
      *
-     * @param db
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param bucketName
      * @param fileId
      * @param filter
@@ -211,17 +205,17 @@ public class GridFs {
      * @return the OperationResult
      */
     public OperationResult deleteFile(
-        final Databases db,
+        final Optional<RSOps> rsOps,
         final String dbName,
         final String bucketName,
         final BsonValue fileId,
         final BsonDocument filter,
         final String requestEtag,
         final boolean checkEtag) {
-
+        final var db = dbs.db(rsOps, dbName);
         final var bucket = extractBucketName(bucketName);
 
-        var gridFSBucket = GridFSBuckets.create(db.getDatabase(dbName), bucket);
+        var gridFSBucket = GridFSBuckets.create(db, bucket);
 
         var file = getFileForId(gridFSBucket, fileId, filter);
 
@@ -269,20 +263,21 @@ public class GridFs {
 
     /**
      *
-     * @param db
-     * @param dbName
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param bucketName
      */
-    public void deleteChunksCollection(final Databases db, final String dbName, final String bucketName) {
+    public void deleteChunksCollection(final Optional<RSOps> rsOps, final String dbName, final String bucketName) {
         var chunksCollName = extractBucketName(bucketName).concat(".chunks");
-        collections.getCollection(dbName, chunksCollName).drop();
+        collections.collection(rsOps, dbName, chunksCollName).drop();
     }
 
     /**
      *
      * @param cs the client session
+     * @param rsOps the ReplicaSet connection options
+     * @param dbName the database name
      * @param method the request method
-     * @param dbName
      * @param collName
      * @param documentId
      * @param filter
@@ -293,17 +288,18 @@ public class GridFs {
      * @return
      */
     public OperationResult updateFileMetadata(
-            final Optional<ClientSession> cs,
-            final METHOD method,
-            final String dbName,
-            final String collName,
-            final Optional<BsonValue> documentId,
-            final Optional<BsonDocument> filter,
-            final Optional<BsonDocument> shardKeys,
-            final BsonDocument newContent,
-            final String requestEtag,
-            final boolean checkEtag) {
-        var mcoll = collections.getCollection(dbName, collName);
+        final Optional<ClientSession> cs,
+        final Optional<RSOps> rsOps,
+        final String dbName,
+        final String collName,
+        final METHOD method,
+        final Optional<BsonValue> documentId,
+        final Optional<BsonDocument> filter,
+        final Optional<BsonDocument> shardKeys,
+        final BsonDocument newContent,
+        final String requestEtag,
+        final boolean checkEtag) {
+        var mcoll = collections.collection(rsOps, dbName, collName);
 
         // genereate new etag
         var newEtag = new BsonObjectId();
@@ -312,13 +308,13 @@ public class GridFs {
         content.get("metadata", new BsonDocument()).asDocument().put("_etag", newEtag);
 
         var updateResult = DbUtils.updateFileMetadata(
-                cs,
-                mcoll,
-                method,
-                documentId,
-                filter,
-                shardKeys,
-                content);
+            cs,
+            mcoll,
+            method,
+            documentId,
+            filter,
+            shardKeys,
+            content);
 
         var oldDocument = updateResult.getOldData();
 
@@ -375,30 +371,30 @@ public class GridFs {
         }
     }
 
-    public String extractBucketName(final String collectionName) {
+    public static String extractBucketName(final String collectionName) {
         return collectionName.substring(0, collectionName.lastIndexOf('.'));
     }
 
     private OperationResult optimisticCheckEtag(
-            final Optional<ClientSession> cs,
-            final MongoCollection<BsonDocument> coll,
-            final Optional<BsonDocument> shardKeys,
-            final BsonDocument oldDocument,
-            final Object newEtag,
-            final String requestEtag,
-            final int httpStatusIfOk) {
+        final Optional<ClientSession> cs,
+        final MongoCollection<BsonDocument> coll,
+        final Optional<BsonDocument> shardKeys,
+        final BsonDocument oldDocument,
+        final Object newEtag,
+        final String requestEtag,
+        final int httpStatusIfOk) {
         var oldEtag = oldDocument.get("metadata", new BsonDocument()).asDocument().get("_etag");
 
         if (oldEtag != null && requestEtag == null) {
             // oops, we need to restore old document
             DbUtils.restoreDocument(
-                    cs,
-                    coll,
-                    oldDocument.get("_id"),
-                    shardKeys,
-                    oldDocument,
-                    newEtag,
-                    "metadata._etag");
+                cs,
+                coll,
+                oldDocument.get("_id"),
+                shardKeys,
+                oldDocument,
+                newEtag,
+                "metadata._etag");
 
             return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
         }

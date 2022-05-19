@@ -60,8 +60,6 @@ public class GetFileBinaryHandler extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GetFileBinaryHandler.class);
 
-    private final GridFs gridFs = GridFs.get();
-
     /**
      * Creates a new instance of GetFileBinaryHandler
      *
@@ -95,7 +93,7 @@ public class GetFileBinaryHandler extends PipelinedHandler {
         }
 
         LOGGER.trace("GET " + exchange.getRequestURL());
-        final var bucket = gridFs.extractBucketName(request.getCollectionName());
+        final var bucket = GridFs.extractBucketName(request.getCollectionName());
 
         var gridFSBucket = GridFSBuckets.create(MongoClientSingleton.getInstance().getClient().getDatabase(request.getDBName()), bucket);
 

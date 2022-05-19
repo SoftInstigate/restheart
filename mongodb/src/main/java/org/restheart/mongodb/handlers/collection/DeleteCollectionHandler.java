@@ -78,11 +78,12 @@ public class DeleteCollectionHandler extends PipelinedHandler {
                 : new BsonObjectId();
 
         var result = dbs.deleteCollection(
-                Optional.ofNullable(request.getClientSession()),
-                request.getDBName(),
-                request.getCollectionName(),
-                etag,
-                request.isETagCheckRequired());
+            Optional.ofNullable(request.getClientSession()),
+            request.rsOps(),
+            request.getDBName(),
+            request.getCollectionName(),
+            etag,
+            request.isETagCheckRequired());
 
         if (RequestHelper.isResponseInConflict(result, exchange)) {
             next(exchange);

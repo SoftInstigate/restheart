@@ -113,7 +113,7 @@ public class GetRootHandler extends PipelinedHandler {
                                 if (MetadataCachesSingleton.isEnabled() && !request.isNoCache()) {
                                     return MetadataCachesSingleton.getInstance().getDBProperties(db);
                                 } else {
-                                    return dbs.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), db);
+                                    return dbs.getDatabaseProperties(Optional.ofNullable(request.getClientSession()), request.rsOps(), request.getDBName());
                                 }})
                             .forEachOrdered(db -> data.add(db));
                     }

@@ -2,6 +2,8 @@ FROM eclipse-temurin:17-jre
 
 LABEL maintainer="SoftInstigate <info@softinstigate.com>"
 
+RUN apt-get update && apt-get install && apt-get clean
+
 WORKDIR /opt/restheart
 COPY target/restheart.jar .
 COPY target/plugins/* plugins/

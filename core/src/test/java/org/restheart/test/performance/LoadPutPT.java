@@ -171,10 +171,11 @@ public class LoadPutPT extends AbstractPT {
 
         Documents.get().writeDocument(
                 Optional.empty(), // no client session
-                METHOD.POST,
-                WRITE_MODE.UPSERT,
+                Optional.empty(), // no Replica Set options
                 db,
                 coll,
+                METHOD.POST,
+                WRITE_MODE.UPSERT,
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),

@@ -327,15 +327,15 @@ public class BsonUtils {
                         // if so, the array comes as an BsonDocument with all numberic keys
                         // in any case, it might also be the object { "object": { "array": {"2": xxx }}}
 
-                        boolean allNumbericKeys = json.asDocument().keySet()
-                                .stream().allMatch(k -> {
-                                    try {
-                                        Integer.parseInt(k);
-                                        return true;
-                                    } catch (NumberFormatException nfe) {
-                                        return false;
-                                    }
-                                });
+                        var allNumbericKeys = json.asDocument().keySet()
+                            .stream().allMatch(k -> {
+                                try {
+                                    Integer.parseInt(k);
+                                    return true;
+                                } catch (NumberFormatException nfe) {
+                                    return false;
+                                }
+                            });
 
                         if (allNumbericKeys) {
                             var ret = new ArrayList<Optional<BsonValue>>();
@@ -548,26 +548,44 @@ public class BsonUtils {
             return null;
         }
 
-        String trimmed = json.trim();
+        final var fnws = firstNonWhitespace(json);
 
-        if (trimmed.isEmpty()) {
-            return null;
-        } else if (trimmed.startsWith("{")) {
-            try {
-                return BsonDocument.parse(json);
-            } catch (BsonInvalidOperationException ex) {
-                // this can happen parsing a bson type, e.g.
-                // {"$oid": "xxxxxxxx" }
-                // the string starts with { but is not a document
-                return getBsonValue(json);
+        return switch(fnws) {
+            case Character.MIN_VALUE -> null;
+            case '{' -> {
+                try {
+                    yield BsonDocument.parse(json);
+                } catch (BsonInvalidOperationException ex) {
+                    // this can happen parsing a bson type, e.g.
+                    // {"$oid": "xxxxxxxx" }
+                    // the string starts with { but is not a document
+                    yield getBsonValue(json);
+                }
             }
-        } else if (trimmed.startsWith("[")) {
-            try (var jr = new JsonReader(json)) {
-                return BSON_ARRAY_CODEC.decode(jr, DecoderContext.builder().build());
+            case '[' -> {
+                try (var jr = new JsonReader(json)) {
+                    yield BSON_ARRAY_CODEC.decode(jr, DecoderContext.builder().build());
+                }
             }
-        } else {
-            return getBsonValue(json);
+            default -> getBsonValue(json);
+        };
+    }
+
+    /**
+     * @return the first not whitespace character in the string or Character.MIN_VALUE
+     * if the string is empty or contains only whitespaces
+     */
+    static char firstNonWhitespace(String s){
+        if (s == null || s.isBlank()) {
+            return Character.MIN_VALUE;
         }
+
+        var f = s.chars()
+            .filter(c -> !Character.isWhitespace(c))
+            .mapToObj(c -> (char) c)
+            .findFirst();
+
+        return f.isPresent() ? f.get() : Character.MIN_VALUE;
     }
 
     private static BsonValue getBsonValue(String json) {
@@ -597,19 +615,18 @@ public class BsonUtils {
         }
 
         var settings = mode != null
-                ? JsonWriterSettings.builder()
-                        .outputMode(mode)
-                        .indent(false)
-                        .build()
-                : JsonWriterSettings.builder()
-                        .indent(false)
-                        .dateTimeConverter(new Converter<Long>() {
-                            @Override
-                            public void convert(Long t, StrictJsonWriter writer) {
-                                writer.writeRaw("{\"$date\": " + t + " }");
-                            }
-                        })
-                        .build();
+            ? JsonWriterSettings.builder()
+                .outputMode(mode)
+                .indent(false)
+                .build()
+            : JsonWriterSettings.builder()
+                .indent(false)
+                .dateTimeConverter(new Converter<Long>() {
+                    @Override
+                    public void convert(Long t, StrictJsonWriter writer) {
+                        writer.writeRaw("{\"$date\": " + t + " }");
+                    }
+                }).build();
 
         if (bson.isDocument()) {
             return minify(bson.asDocument().toJson(settings));
@@ -762,8 +779,8 @@ public class BsonUtils {
      */
     public static BsonDocument flatten(BsonDocument json, boolean ignoreUpdateOperators) {
         var keys = json.keySet().stream()
-                .filter(key -> !ignoreUpdateOperators || !isUpdateOperator(key))
-                .collect(Collectors.toList());
+            .filter(key -> !ignoreUpdateOperators || !isUpdateOperator(key))
+            .collect(Collectors.toList());
 
         if (keys != null && !keys.isEmpty()) {
             var ret = new BsonDocument();
@@ -783,16 +800,12 @@ public class BsonUtils {
     }
 
     private static void flatten(String prefix, String key, BsonDocument data, BsonDocument set) {
-        final String newPrefix = prefix == null ? key : prefix + "." + key;
-        final BsonValue value = data.get(key);
+        final var newPrefix = prefix == null ? key : prefix + "." + key;
+        final var value = data.get(key);
 
         if (value.isDocument()) {
-            value.asDocument()
-                    .keySet()
-                    .forEach(childKey -> flatten(newPrefix,
-                    childKey,
-                    value.asDocument(),
-                    set));
+            value.asDocument().keySet()
+                .forEach(childKey -> flatten(newPrefix, childKey, value.asDocument(), set));
         } else {
             set.append(newPrefix, value);
         }

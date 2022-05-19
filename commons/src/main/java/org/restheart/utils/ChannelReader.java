@@ -73,14 +73,4 @@ public class ChannelReader {
             return os.toByteArray();
         }
     }
-
-    /**
-     *
-     * @param stream
-     * @return
-     * @throws IOException
-     */
-    // public static String read(InputStream stream) throws IOException {
-    // return CharStreams.toString(new InputStreamReader(stream, CHARSET));
-    // }
 }

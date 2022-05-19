@@ -64,8 +64,7 @@ public class SessionOptions {
     public SessionOptions(UUID sid) {
         var lsb = longToBytes(sid.getLeastSignificantBits());
 
-        this.causallyConsistent = (lsb[0] & CAUSALLY_CONSISTENT_FLAG)
-                == CAUSALLY_CONSISTENT_FLAG;
+        this.causallyConsistent = (lsb[0] & CAUSALLY_CONSISTENT_FLAG) == CAUSALLY_CONSISTENT_FLAG;
     }
 
     /**
@@ -77,16 +76,11 @@ public class SessionOptions {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null) {
+        if (obj instanceof SessionOptions otherSessionOptions) {
+            return Objects.equal(this.causallyConsistent, otherSessionOptions.causallyConsistent);
+        } else {
             return false;
         }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-
-        var other = (SessionOptions) obj;
-
-        return Objects.equal(this.causallyConsistent, other.causallyConsistent);
     }
 
     @Override
@@ -96,8 +90,6 @@ public class SessionOptions {
 
     @Override
     public String toString() {
-        return "SessionOptions(causallyConsistent= "
-                + this.causallyConsistent
-                + ")";
+        return "SessionOptions(causallyConsistent= " + this.causallyConsistent + ")";
     }
 }

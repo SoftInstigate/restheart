@@ -92,7 +92,7 @@ public class CollectionPropsInjector implements MongoInterceptor {
 
             try {
                 if (!MetadataCachesSingleton.isEnabled() || request.isNoCache()) {
-                    collProps = dbs.getCollectionProperties(Optional.ofNullable(request.getClientSession()), dbName, collName);
+                    collProps = dbs.getCollectionProperties(Optional.ofNullable(request.getClientSession()), request.rsOps(), dbName, collName);
                 } else {
                     collProps = MetadataCachesSingleton.getInstance().getCollectionProperties(dbName, collName);
                 }

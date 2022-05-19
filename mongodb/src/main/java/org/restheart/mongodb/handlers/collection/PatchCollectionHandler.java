@@ -109,10 +109,11 @@ public class PatchCollectionHandler extends PipelinedHandler {
 
         var result = dbs.upsertCollection(
             Optional.ofNullable(request.getClientSession()),
-            request.getMethod(),
-            request.getCollectionProps() != null, // true if updating
+            request.rsOps(),
             request.getDBName(),
             request.getCollectionName(),
+            request.getMethod(),
+            request.getCollectionProps() != null, // true if updating
             content,
             request.getETag(),
             request.isETagCheckRequired());

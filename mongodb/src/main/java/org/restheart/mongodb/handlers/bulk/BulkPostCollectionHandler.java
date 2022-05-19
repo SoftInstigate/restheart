@@ -40,7 +40,7 @@ import org.restheart.utils.HttpStatus;
  */
 public class BulkPostCollectionHandler extends PipelinedHandler {
 
-    private final Documents documents = Documents.get();;
+    private final Documents documents = Documents.get();
 
     /**
      * Creates a new instance of BulkPostCollectionHandler
@@ -89,6 +89,7 @@ public class BulkPostCollectionHandler extends PipelinedHandler {
 
         var result = this.documents.bulkPostDocuments(
             Optional.ofNullable(request.getClientSession()),
+            request.rsOps(),
             request.getDBName(),
             request.getCollectionName(),
             documents,

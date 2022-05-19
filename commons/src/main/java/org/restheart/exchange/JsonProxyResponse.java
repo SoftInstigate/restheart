@@ -79,7 +79,7 @@ public class JsonProxyResponse extends ProxyResponse<JsonElement> {
      * writes the response content
      *
      * allocates the PooledByteBuffer array so close() must be invoked
-     * to avoid memory leacks
+     * to avoid memory leaks
      */
     @Override
     public void writeContent(JsonElement content) throws IOException {

@@ -27,7 +27,6 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.sessions.Txn;
 import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
-import org.restheart.mongodb.db.sessions.TxnClientSessionImpl;
 import org.restheart.utils.HttpStatus;
 
 /**
@@ -62,13 +61,10 @@ public class DeleteTxnHandler extends PipelinedHandler {
             return;
         }
 
-        TxnClientSessionImpl cs = TxnClientSessionFactory.getInstance()
-                .getTxnClientSession(sid);
+        var cs = TxnClientSessionFactory.getInstance().getTxnClientSession(sid, request.rsOps());
 
-        if (cs.getTxnServerStatus().getTxnId() != request.getTxnId()
-                || cs.getTxnServerStatus().getStatus() != Txn.TransactionStatus.IN) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE,
-                    "The given transaction is not in-progress");
+        if (cs.getTxnServerStatus().getTxnId() != request.getTxnId() || cs.getTxnServerStatus().getStatus() != Txn.TransactionStatus.IN) {
+            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, "The given transaction is not in-progress");
         } else {
             cs.setMessageSentInCurrentTransaction(true);
             cs.abortTransaction();

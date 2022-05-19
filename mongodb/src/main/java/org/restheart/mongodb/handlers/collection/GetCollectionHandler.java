@@ -22,7 +22,6 @@ package org.restheart.mongodb.handlers.collection;
 
 import java.util.Optional;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.mongodb.MongoException;
 import io.undertow.server.HttpServerExchange;
 import org.bson.BsonArray;
@@ -62,16 +61,6 @@ public class GetCollectionHandler extends PipelinedHandler {
         super(next);
     }
 
-    /**
-     *
-     * @param next
-     * @param dbsDAO
-     */
-    @VisibleForTesting
-    public GetCollectionHandler(PipelinedHandler next, Databases dbsDAO) {
-        super(next);
-        this.dbs = dbsDAO;
-    }
 
     /**
      *
@@ -88,12 +77,15 @@ public class GetCollectionHandler extends PipelinedHandler {
             return;
         }
 
-        var coll = dbs.getCollection(request.getDBName(), request.getCollectionName());
-
         long size = -1;
 
         if (request.isCount()) {
-            size = dbs.getCollectionSize(Optional.ofNullable(request.getClientSession()), coll, request.getFiltersDocument());
+            size = dbs.getCollectionSize(
+                Optional.ofNullable(request.getClientSession()),
+                request.rsOps(),
+                request.getDBName(),
+                request.getCollectionName(),
+                request.getFiltersDocument());
         }
 
         // ***** get data
@@ -124,15 +116,17 @@ public class GetCollectionHandler extends PipelinedHandler {
 
             try {
                 data = dbs.getCollectionData(
-                        Optional.ofNullable(request.getClientSession()),
-                        coll,
-                        request.getPage(),
-                        request.getPagesize(),
-                        sort,
-                        filter,
-                        request.getHintDocument(),
-                        request.getProjectionDocument(),
-                        request.getCursorAllocationPolicy());
+                    Optional.ofNullable(request.getClientSession()),
+                    request.rsOps(),
+                    request.getDBName(),
+                    request.getCollectionName(),
+                    request.getPage(),
+                    request.getPagesize(),
+                    sort,
+                    filter,
+                    request.getHintDocument(),
+                    request.getProjectionDocument(),
+                    request.getCursorAllocationPolicy());
             } catch (MongoException me) {
                 if (me.getMessage().matches(".*Can't canonicalize query.*")) {
                     // error with the filter expression during query execution

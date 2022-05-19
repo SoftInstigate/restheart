@@ -1309,17 +1309,6 @@
     "allPublicClasses": true,
     "allDeclaredClasses": true
   },
-
-  {
-    "name": "org.restheart.polyglot.JSInterceptorFactory",
-    "allPublicFields": true,
-    "allPublicConstructors": true,
-    "allDeclaredConstructors": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicClasses": true,
-    "allDeclaredClasses": true
-  },
   {
     "name": "java.net.http.HttpClient",
     "allPublicFields": true,

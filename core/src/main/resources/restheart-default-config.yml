@@ -133,7 +133,7 @@ static-resources-mounts:
 
 #### Security
 
- # RESTHeart Security security is pluggable, you can provide you own
+ # RESTHeart security is pluggable, you can provide you own
  # implementations of Authenticator Mechanisms, Authenticator, Authorizer
  # and Token Manager
 
@@ -178,8 +178,7 @@ auth-mechanisms:
 
 ## Authenticators
 
- # An Authenticator verify user credential and are used by one or more
- # AuthMachanisms
+ # Authenticators verify user credentials and are used by one or more AuthMachanisms
 
 authenticators:
   fileRealmAuthenticator:
@@ -214,7 +213,7 @@ authenticators:
 
 ## Authorizers
 
- # Authorizers verify if a request is allowed.
+ # Authorizers verify if a request is allowed eforcing the security policy.
 
  # As an in-bound request is received and authenticated the isAllowed() method is
  # called on each authorizers. A secured request is allowed when no `VETOER` denies
@@ -240,13 +239,19 @@ authorizers:
       whitelist:
         - https://restheart.org
         - http://localhost
+  # optional list of paths for whose the Origin header
+    # is not checked. values can be absolute paths
+    # or patterns like /{var}/path/to/resource/*
+    # ignore-paths:
+    #   - /{tenant}/bucket.files/{id}/binary
+    #   - /coll/docid
   fullAuthorizer:
     enabled: false
     authentication-required: true
 
 ## Token Manager
 
- # If a token-manager is configured, RESTHeart Security will use it to generate
+ # If a token-manager is configured, RESTHeart will use it to generate
  # and verify auth tokens.
  # If more than one token-manager are defined, the first one will be used
  # The token is returned to the caller via auth-token header when the user
@@ -395,7 +400,7 @@ max-pagesize: 1000
 # speeds up requests with small pagesize
 cursor-batch-size: 1000
 
-# In order to save bandwitdth RESTHeart Security can force requests to support the giz encoding (if not, requests will be rejected)
+# In order to save bandwitdth RESTHeart can force requests to support the giz encoding (if not, requests will be rejected)
 force-gzip-encoding: false
 
 ## Caches
@@ -443,6 +448,12 @@ eager-cursor-allocation-random-slice-min-width: 1000
 #### Connetction Options
 
 connection-options:
+  # Enable HTTP/2 support
+  # Note: HTTP2 as implemented by major browsers requires the use of TLS
+  # How to enable TLS https://restheart.org/docs/security/tls/
+  # How to check HTTP/2 protocol https://stackoverflow.com/a/54164719/4481670
+  ENABLE_HTTP2: true
+
   # The maximum size of a HTTP header block, in bytes.
   # If a client sends more data that this as part of the request header then the connection will be closed.
   # Defaults to 1Mbyte.

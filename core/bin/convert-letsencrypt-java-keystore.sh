@@ -95,17 +95,22 @@ parse_params() {
 parse_params "$@"
 setup_colors
 
+# file names in archive.zip package
+CERT_FILE="ECC-cert.pem"
+PRIVATE_KEY_FILE="ECC-privkey.pem"
+CA_FILE="ECC-chain.pem"
+
 # script logic here
 
 KEYSTORE=${archive}/${domain}
 
 msg "${GREEN}Convert Let's Encrypt certificates to PKCS 12 archive${NOFORMAT}"
 openssl pkcs12 -export \
-	-in "${archive}"/cert.pem \
-	-inkey "${archive}"/privkey.pem \
+	-in "${archive}"/${CERT_FILE} \
+	-inkey "${archive}"/${PRIVATE_KEY_FILE} \
 	-out "${KEYSTORE}".p12 \
 	-name "${domain}" \
-	-CAfile "${archive}"/fullchain.pem \
+	-CAfile "${archive}"/${CA_FILE} \
 	-caname "Let's Encrypt Authority X3" \
 	-password pass:"${password}"
 
@@ -133,9 +138,9 @@ do
     FNAME="${certs[$ALIAS]}".pem
     # insecure to support old versions of openssl
     curl --insecure https://letsencrypt.org/certs/${FNAME} > ${archive}/${FNAME}
-    keytool -delete -alias $ALIAS -keystore ${KEYSTORE} -storepass ${password} || true
-    keytool -importcert -keystore ${KEYSTORE} -trustcacerts -storepass ${password} -noprompt  -alias $ALIAS -file "${archive}/${FNAME}"
+    keytool -delete -alias ${certs[$ALIAS]} -keystore ${KEYSTORE} -storepass ${password} > /dev/null || true
+    keytool -importcert -keystore ${KEYSTORE} -trustcacerts -storepass ${password} -noprompt  -alias ${certs[$ALIAS]} -file "${archive}/${FNAME}"
 done
-rm -v "${archive}"/*.pem.txt > /dev/null
+rm -v "${archive}"/*.pem.txt 2> /dev/null
 
 msg "${GREEN}Done: ${KEYSTORE}${NOFORMAT}"

@@ -58,7 +58,7 @@ proxies:
 
 ### Security
 
- # RESTHeart Security security is pluggable, you can provide you own
+ # RESTHeart security is pluggable, you can provide you own
  # implementations of Authenticator Mechanisms, Authenticator, Authorizer
  # and Token Manager
 
@@ -105,10 +105,7 @@ auth-mechanisms:
 
 ## Authenticators
 
- # An Authenticator verify user credential and are used by one or more
- # AuthMachanisms
-
- # See README.md for the list of available Authenticators
+ # Authenticators verify user credentials and are used by one or more AuthMachanisms
 
 authenticators:
   fileRealmAuthenticator:
@@ -139,7 +136,7 @@ authenticators:
 
 ## Authorizers
 
- # Authorizers verify if a request is allowed.
+ # Authorizers verify if a request is allowed eforcing the security policy.
 
  # As an in-bound request is received and authenticated the isAllowed() method is
  # called on each authorizers. A secured request is allowed when no `VETOER` denies
@@ -165,7 +162,7 @@ authorizers:
 
 ## Token Manager
 
- # If a token-manager is configured, RESTHeart Security will use it to generate
+ # If a token-manager is configured, RESTHeart will use it to generate
  # and verify auth tokens.
  # If more than one token-manager are defined, the first one will be used
  # The token is returned to the caller via auth-token header when the user
@@ -249,7 +246,7 @@ plugins-args:
       uri: /graphql
       db: test-graphql
       collection: gql-apps
-      verbose: false
+      verbose: true
     # a global blacklist for mongodb operators in filter query parameter
     filterOperatorsBlacklist:
       blacklist: [ "$where" ]
@@ -398,7 +395,7 @@ schema-cache-enabled: true
 # TTL in milliseconds; specify a value < 0 to never expire cached entries
 schema-cache-ttl: 60000
 
-# In order to save bandwitdth RESTHeart Security can force requests to support the giz encoding (if not, requests will be rejected)
+# In order to save bandwitdth RESTHeart can force requests to support the giz encoding (if not, requests will be rejected)
 force-gzip-encoding: false
 
 # Limit for the maximum number of concurrent requests being served

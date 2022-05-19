@@ -35,6 +35,9 @@ import static org.restheart.utils.URLUtils.removeTrailingSlashes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.undertow.util.PathTemplate;
+import io.undertow.util.PathTemplateMatcher;
+
 @RegisterPlugin(
     name = "originVetoer",
     description = "protects from CSRF attacks by forbidding requests whose Origin header is not whitelisted",
@@ -44,6 +47,7 @@ public class OriginVetoer implements Authorizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(OriginVetoer.class);
 
     private List<String> whitelist = null;
+    private PathTemplateMatcher<Boolean> ignoreLists = new PathTemplateMatcher<>();
 
     @InjectConfiguration
     public void setConfiguration(Map<String, Object> args) {
@@ -62,10 +66,30 @@ public class OriginVetoer implements Authorizer {
             this.whitelist = null;
             LOGGER.info("No whitelist defined for originVetoer, all Origin headers are accepted");
         }
+
+        try {
+            List<String> _ingoreList = ConfigurablePlugin.argValue(args, "ignore-paths");
+            _ingoreList.stream()
+                .filter(item -> item != null)
+                .map(item -> item.trim())
+                .map(item -> item.toLowerCase())
+                .map(item -> PathTemplate.create(item))
+                .forEach(item -> this.ignoreLists.add(item, true));
+
+            LOGGER.info("ignore list defined for originVetoer, requests will be accepted without checking the Origin header for paths in {}", _ingoreList);
+        } catch(ConfigurationException ce) {
+            this.ignoreLists = null;
+            LOGGER.info("No ignoreLists defined for originVetoer, all paths are checked");
+        }
     }
 
     @Override
     public boolean isAllowed(Request<?> request) {
+        if (ignoreLists != null && ignoreLists.match(request.getPath()) != null) {
+            LOGGER.debug("originVetoer: request is accepted since path is in ignore list");
+            return true;
+        }
+
         if (this.whitelist == null || this.whitelist.isEmpty()) {
             return true;
         } else {

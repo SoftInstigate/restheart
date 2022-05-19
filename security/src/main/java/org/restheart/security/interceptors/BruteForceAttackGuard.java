@@ -28,8 +28,11 @@ import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
-import static org.restheart.utils.MetricsUtils.unauthHistogramName;
+import static org.restheart.utils.MetricsUtils.collectFailedAuthBy;
+import static org.restheart.utils.MetricsUtils.failedAuthHistogramName;
 import org.restheart.utils.LogUtils;
+import org.restheart.utils.MetricsUtils.FAILED_AUTH_KEY;
+
 import io.undertow.attribute.ExchangeAttributes;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
@@ -59,15 +62,23 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
 
     private static final MetricRegistry AUTH_METRIC_REGISTRY = SharedMetricRegistries.getOrCreate("AUTH");
 
-    private boolean trustXForwardedFor = false;
     private int maxFailedAttempts = 5;
 
     @InjectConfiguration
     public void config(Map<String, Object> args) {
         try {
-            this.trustXForwardedFor = argValue(args, "trust-x-forwarded-for");
+            boolean trustXForwardedFor = argValue(args, "trust-x-forwarded-for");
+
+            if (trustXForwardedFor) {
+                LOGGER.info("Failed auth requests will be counted based on X-Forwarded-For header");
+                collectFailedAuthBy(FAILED_AUTH_KEY.X_FORWARDED_FOR);
+            } else {
+                LOGGER.info("Failed auth requests will be counted based on remote ip");
+                collectFailedAuthBy(FAILED_AUTH_KEY.REMOTE_IP);
+            }
         } catch(ConfigurationException ce) {
-            this.trustXForwardedFor = false;
+            LOGGER.info("Failed auth requests will be counted based on remote ip");
+            collectFailedAuthBy(FAILED_AUTH_KEY.REMOTE_IP);
         }
 
         try {
@@ -75,6 +86,8 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
         } catch(ConfigurationException ce) {
             this.maxFailedAttempts = 5;
         }
+
+        LOGGER.info("Requests will be blocked when got more than {} failed attempts in last 10 seconds", maxFailedAttempts);
     }
 
     @Override
@@ -91,7 +104,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
 
     @Override
     public boolean resolve(ServiceRequest<?> request, ServiceResponse<?> response) {
-        return true;
+        return !request.isOptions();
     }
 
     private void logWarning(HttpServerExchange exchange, double mean) {
@@ -109,13 +122,6 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
     }
 
     private Histogram authHisto(ServiceRequest<?> request) {
-        if (trustXForwardedFor) {
-            var histoNameWithXFF = unauthHistogramName(request.getExchange(), true);
-            if (histoNameWithXFF != null) {
-                return AUTH_METRIC_REGISTRY.histogram(histoNameWithXFF, () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS)));
-            }
-        }
-
-        return AUTH_METRIC_REGISTRY.histogram(unauthHistogramName(request.getExchange(), false), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS)));
+        return AUTH_METRIC_REGISTRY.histogram(failedAuthHistogramName(request.getExchange()), () -> new Histogram(new SlidingTimeWindowArrayReservoir(10, TimeUnit.SECONDS)));
     }
 }

@@ -77,6 +77,14 @@ public class URLUtilsTest {
     }
 
     @Test
+    public void testRemoveTrailingSlashesEdge() {
+        String s = "/ciao/this/has/trailings/////     ";
+        String expResult = "/ciao/this/has/trailings";
+        String result = URLUtils.removeTrailingSlashes(s);
+        assertEquals(expResult, result);
+    }
+
+    @Test
     public void testDecodeQueryString() {
         String qs = "one%2Btwo";
         String expResult = "one+two";
