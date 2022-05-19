@@ -27,14 +27,10 @@ import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import graphql.schema.idl.errors.SchemaProblem;
 import org.restheart.graphql.scalars.BsonScalars;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 public class GraphQLApp {
-
-    private final static Logger logger = LoggerFactory.getLogger(GraphQLApp.class);
 
     private AppDescriptor descriptor;
     private String schema;
