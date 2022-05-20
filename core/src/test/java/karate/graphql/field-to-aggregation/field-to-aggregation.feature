@@ -107,4 +107,22 @@ Scenario: Get a list of posts by category and for each one return the author nam
   And header Authorization = admin
   And request query
   When method POST
+  Then status 200
+
+
+Scenario: Map query field to aggregation to count the number of posts by category 
+  * text query =
+  """
+    {
+      countPostsByCategory {
+        _id
+        posts
+      }
+    }
+  """
+
+  Given header Content-Type = contTypeGraphQL
+  And header Authorization = admin
+  And request query
+  When method POST
   Then status 200 

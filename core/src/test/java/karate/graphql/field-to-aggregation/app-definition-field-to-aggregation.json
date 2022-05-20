@@ -5,7 +5,7 @@
     "name": "field-to-aggregation",
     "enabled": true
   },
-  "schema": "type User { _id: ObjectId name: String email: String posts: [Post] postsByCategoryWithDataLoader: [BsonDocument] postsByCategory: [BsonDocument] emptyStage: [BsonDocument] malformedStage: [BsonDocument] } type Post { _id: ObjectId title: String body: String category: String created_at: DateTime author: User } type Query { userByEmail(email: String): User postsByCategory(category: String): [Post] }",
+  "schema": "type Stat {_id: String posts: Int} type User { _id: ObjectId name: String email: String posts: [Post] postsByCategoryWithDataLoader: [BsonDocument] postsByCategory: [BsonDocument] emptyStage: [BsonDocument] malformedStage: [BsonDocument] } type Post { _id: ObjectId title: String body: String category: String created_at: DateTime author: User } type Query { userByEmail(email: String): User postsByCategory(category: String): [Post] countPostsByCategory: [Stat] }",
   "mappings": {
     "User": {
       "postsByCategoryWithDataLoader": {
@@ -100,6 +100,20 @@
             "$arg": "category"
           }
         }
+      },
+      "countPostsByCategory": {
+        "db": "test-graphql",
+        "collection": "posts-fta",
+        "stages": [
+          {
+            "$group": {
+              "_id": "$category",
+              "posts": {
+                "$count": {}
+              }
+            }
+          }
+        ]
       }
     }
   }
