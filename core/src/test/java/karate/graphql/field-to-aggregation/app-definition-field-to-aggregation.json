@@ -107,11 +107,11 @@
         "stages": [
           {
             "$group": {
-              "_id": "$category",
-              "posts": {
-                "$count": {}
-              }
+              "_id": "$category"
             }
+          },
+          {
+              "$count": "posts"
           }
         ]
       }
