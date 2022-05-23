@@ -1,0 +1,120 @@
+{
+  "descriptor": {
+    "description": "Test field-to-aggregation mappings",
+    "uri": "fta",
+    "name": "field-to-aggregation",
+    "enabled": true
+  },
+  "schema": "type Stat {_id: String posts: Int} type User { _id: ObjectId name: String email: String posts: [Post] postsByCategoryWithDataLoader: [BsonDocument] postsByCategory: [BsonDocument] emptyStage: [BsonDocument] malformedStage: [BsonDocument] } type Post { _id: ObjectId title: String body: String category: String created_at: DateTime author: User } type Query { userByEmail(email: String): User postsByCategory(category: String): [Post] countPostsByCategory: [Stat] }",
+  "mappings": {
+    "User": {
+      "postsByCategoryWithDataLoader": {
+        "db": "test-graphql",
+        "collection": "posts-fta",
+        "stages": [
+          {
+            "$match": {
+              "author": {
+                "$fk": "_id"
+              }
+            }
+          },
+          {
+            "$group": {
+              "_id": "$category",
+              "posts": {
+                "$push": "$$ROOT"
+              }
+            }
+          }
+        ],
+        "dataLoader": {
+					"batching": true,
+					"caching": true
+				}
+      },
+      "postsByCategory": {
+        "db": "test-graphql",
+        "collection": "posts-fta",
+        "stages": [
+          {
+            "$match": {
+              "author": {
+                "$fk": "_id"
+              }
+            }
+          },
+          {
+            "$group": {
+              "_id": "$category",
+              "posts": {
+                "$push": "$$ROOT"
+              }
+            }
+          }
+        ]
+      },
+      "emptyStage": {
+        "db": "test-graphql",
+        "collection": "posts-fta",
+        "stages": []
+      },
+      "malformedStage": {
+        "db": "test-fta",
+        "collection": "posts",
+        "stages": [
+          {
+            "$match": {
+              "$or": 1
+            }
+          }
+        ]
+      }
+    },
+    "Post": {
+      "author": {
+        "db": "test-graphql",
+        "collection": "users-fta",
+        "find": {
+          "_id": {
+            "$fk": "author"
+          }
+        }
+      }
+    },
+    "Query": {
+      "userByEmail": {
+        "db": "test-graphql",
+        "collection": "users-fta",
+        "find": {
+          "email": {
+            "$arg": "email"
+          }
+        }
+      },
+      "postsByCategory": {
+        "db": "test-graphql",
+        "collection": "posts-fta",
+        "find": {
+          "category": {
+            "$arg": "category"
+          }
+        }
+      },
+      "countPostsByCategory": {
+        "db": "test-graphql",
+        "collection": "posts-fta",
+        "stages": [
+          {
+            "$group": {
+              "_id": "$category",
+              "posts": {
+                "$count": {}
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
