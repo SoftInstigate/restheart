@@ -40,7 +40,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.UnsupportedDocumentIdException;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +104,7 @@ public class URLUtilsTest {
     public void testRemoveTrailingSlashes() {
         String s = "/ciao/this/has/trailings/////";
         String expResult = "/ciao/this/has/trailings";
-        String result = URLUtils.removeTrailingSlashes(s);
+        String result = MongoURLUtils.removeTrailingSlashes(s);
         assertEquals(expResult, result);
     }
 
@@ -115,7 +115,7 @@ public class URLUtilsTest {
     public void testDecodeQueryString() {
         String qs = "one%2Btwo";
         String expResult = "one+two";
-        String result = URLUtils.decodeQueryString(qs);
+        String result = MongoURLUtils.decodeQueryString(qs);
         assertEquals(expResult, result);
     }
 
@@ -126,7 +126,7 @@ public class URLUtilsTest {
     public void testGetParentPath() {
         String path = "/a/b/c/d";
         String expResult = "/a/b/c";
-        String result = URLUtils.getParentPath(path);
+        String result = MongoURLUtils.getParentPath(path);
         assertEquals(expResult, result);
     }
 
@@ -139,7 +139,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName/documentId";
         String result;
         try {
-            result = URLUtils.getUriWithDocId(context, "dbName", "collName", new BsonString("documentId"));
+            result = MongoURLUtils.getUriWithDocId(context, "dbName", "collName", new BsonString("documentId"));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -155,7 +155,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName/54d13711c2e692941728e1d3?id_type=STRING";
         String result;
         try {
-            result = URLUtils.getUriWithDocId(context, "dbName", "collName", new BsonString("54d13711c2e692941728e1d3"));
+            result = MongoURLUtils.getUriWithDocId(context, "dbName", "collName", new BsonString("54d13711c2e692941728e1d3"));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -171,7 +171,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName/123?id_type=NUMBER";
         String result;
         try {
-            result = URLUtils.getUriWithDocId(context, "dbName", "collName", new BsonInt32(123));
+            result = MongoURLUtils.getUriWithDocId(context, "dbName", "collName", new BsonInt32(123));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -192,7 +192,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,\'id\']}}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterMany(context, "dbName", "collName", ids);
+            result = MongoURLUtils.getUriWithFilterMany(context, "dbName", "collName", ids);
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -212,7 +212,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'_id':{'$in':[\'Three Imaginary Boys\','Seventeen Seconds\']}}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterMany(context, "dbName", "collName", ids);
+            result = MongoURLUtils.getUriWithFilterMany(context, "dbName", "collName", ids);
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -233,7 +233,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'_id':{'$in':[1,20.0,'id']}}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterMany(context, "dbName", "collName", ids);
+            result = MongoURLUtils.getUriWithFilterMany(context, "dbName", "collName", ids);
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -249,7 +249,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':'id'}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", new BsonString("id"));
+            result = MongoURLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", new BsonString("id"));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -265,7 +265,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':123}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", new BsonInt32(123));
+            result = MongoURLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", new BsonInt32(123));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -282,7 +282,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':{'$oid':'" + id.getValue().toString() + "'}}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", id);
+            result = MongoURLUtils.getUriWithFilterOne(context, "dbName", "collName", "referenceField", id);
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -298,7 +298,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':'ids'}}}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", new BsonString("ids"));
+            result = MongoURLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", new BsonString("ids"));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -314,7 +314,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':123}}}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", new BsonInt32(123));
+            result = MongoURLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", new BsonInt32(123));
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -331,7 +331,7 @@ public class URLUtilsTest {
         String expResult = "/dbName/collName?filter={'referenceField':{'$elemMatch':{'$eq':{'$oid':'" + id.getValue().toString() + "'}}}}";
         String result;
         try {
-            result = URLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", id);
+            result = MongoURLUtils.getUriWithFilterManyInverse(context, "dbName", "collName", "referenceField", id);
             assertEquals(expResult, result);
         } catch (UnsupportedDocumentIdException ex) {
             fail(ex.getMessage());
@@ -347,7 +347,7 @@ public class URLUtilsTest {
         exchange.setQueryString("a=1&b=2&c=3");
         exchange.addQueryParam("a", "1").addQueryParam("b", "2").addQueryParam("c", "3");
         String expResult = "a=1&c=3";
-        String result = URLUtils.getQueryStringRemovingParams(exchange, "b");
+        String result = MongoURLUtils.getQueryStringRemovingParams(exchange, "b");
         assertEquals(expResult, result);
     }
 

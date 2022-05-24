@@ -29,7 +29,7 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.mongodb.MongoService;
 import org.restheart.mongodb.db.BulkOperationResult;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
@@ -108,7 +108,7 @@ public class HALRepresentation implements MongoInterceptor {
 
             try {
                 return factory
-                        .getRepresentation(URLUtils.removeTrailingSlashes(request.getPath()), request.getExchange(), content == null ? null : content.asDocument())
+                        .getRepresentation(MongoURLUtils.removeTrailingSlashes(request.getPath()), request.getExchange(), content == null ? null : content.asDocument())
                         .asBsonDocument();
             } catch (IllegalQueryParamenterException iqpe) {
                 //shoudn't happen

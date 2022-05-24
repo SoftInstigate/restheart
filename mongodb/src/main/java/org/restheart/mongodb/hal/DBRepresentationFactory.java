@@ -33,7 +33,7 @@ import org.restheart.exchange.ExchangeKeys.TYPE;
 import static org.restheart.exchange.ExchangeKeys._SCHEMAS;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,7 +149,7 @@ class DBRepresentationFactory extends AbstractRepresentationFactory {
             final MongoRequest request,
             final Resource rep,
             final String requestPath) {
-        String parentPath = URLUtils.getParentPath(requestPath);
+        String parentPath = MongoURLUtils.getParentPath(requestPath);
 
         // link templates and curies
         if (request.isParentAccessible()) {
@@ -158,11 +158,11 @@ class DBRepresentationFactory extends AbstractRepresentationFactory {
         }
 
         if (parentPath.endsWith("/")) {
-            rep.addLink(new Link("rh:db", URLUtils.removeTrailingSlashes(
-                    URLUtils.getParentPath(requestPath)) + "{dbname}", true));
+            rep.addLink(new Link("rh:db", MongoURLUtils.removeTrailingSlashes(
+                    MongoURLUtils.getParentPath(requestPath)) + "{dbname}", true));
         } else {
-            rep.addLink(new Link("rh:db", URLUtils.removeTrailingSlashes(
-                    URLUtils.getParentPath(requestPath)) + "/{dbname}", true));
+            rep.addLink(new Link("rh:db", MongoURLUtils.removeTrailingSlashes(
+                    MongoURLUtils.getParentPath(requestPath)) + "/{dbname}", true));
         }
 
         rep.addLink(new Link("rh:coll", requestPath + "/{collname}", true));
@@ -190,7 +190,7 @@ class DBRepresentationFactory extends AbstractRepresentationFactory {
                         BsonString id = _id.asString();
 
                         // avoid starting double slash in self href for root URI
-                        String rp = URLUtils.removeTrailingSlashes(requestPath);
+                        String rp = MongoURLUtils.removeTrailingSlashes(requestPath);
                         rp = "/".equals(rp) ? "" : rp;
 
                         final Resource nrep;

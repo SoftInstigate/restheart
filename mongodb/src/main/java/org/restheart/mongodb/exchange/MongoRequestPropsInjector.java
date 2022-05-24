@@ -50,7 +50,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.mongodb.handlers.aggregation.AggregationPipeline;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
@@ -373,7 +373,7 @@ public class MongoRequestPropsInjector {
             String _docId = request.getDocumentIdRaw();
 
             try {
-                request.setDocumentId(URLUtils.getDocumentIdFromURI(_docId, docIdType));
+                request.setDocumentId(MongoURLUtils.getDocumentIdFromURI(_docId, docIdType));
             } catch (UnsupportedDocumentIdException idide) {
                 response.setInError(HttpStatus.SC_BAD_REQUEST, "wrong document id format: not a valid " + docIdType.name(), idide);
                 return;

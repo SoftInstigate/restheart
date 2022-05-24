@@ -33,7 +33,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.Documents;
 import org.restheart.mongodb.utils.ResponseHelper;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RepresentationUtils;
 
@@ -152,7 +152,7 @@ public class PostCollectionHandler extends PipelinedHandler {
         // insert the Location handler for new documents
         // note, next handlers might change the status code
         if (result.getHttpCode() == HttpStatus.SC_CREATED) {
-            response.getHeaders().add(HttpString.tryFromString("Location"), RepresentationUtils.getReferenceLink(URLUtils.getRemappedRequestURL(exchange), result.getNewData().get("_id")));
+            response.getHeaders().add(HttpString.tryFromString("Location"), RepresentationUtils.getReferenceLink(MongoURLUtils.getRemappedRequestURL(exchange), result.getNewData().get("_id")));
         }
 
         next(exchange);

@@ -28,7 +28,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.GridFs;
 import org.restheart.mongodb.db.OperationResult;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RepresentationUtils;
 import org.slf4j.Logger;
@@ -110,7 +110,7 @@ public class PostBucketHandler extends PipelinedHandler {
 
         // insert the Location handler
         response.getHeaders().add(HttpString.tryFromString("Location"),
-            RepresentationUtils.getReferenceLink(URLUtils.getRemappedRequestURL(exchange), result.getNewId()));
+            RepresentationUtils.getReferenceLink(MongoURLUtils.getRemappedRequestURL(exchange), result.getNewId()));
 
         response.setStatusCode(result.getHttpCode());
 

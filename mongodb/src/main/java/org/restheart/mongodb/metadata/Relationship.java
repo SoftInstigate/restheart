@@ -30,7 +30,7 @@ import org.bson.BsonValue;
 import org.restheart.exchange.InvalidMetadataException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.UnsupportedDocumentIdException;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -307,7 +307,7 @@ public class Relationship {
                     id = id.asArray().get(0);
                 }
 
-                return URLUtils.getUriWithDocId(request, db, targetCollection, id);
+                return MongoURLUtils.getUriWithDocId(request, db, targetCollection, id);
             } else {
                 if (!_referenceValue.isArray()) {
                     throw new IllegalArgumentException(
@@ -328,21 +328,21 @@ public class Relationship {
                 List<BsonValue> bsonVals = _referenceValue.asArray().getValues();
                 BsonValue[] ids = bsonVals.toArray(new BsonValue[bsonVals.size()]);
 
-                return URLUtils.getUriWithFilterMany(request, db, targetCollection, ids);
+                return MongoURLUtils.getUriWithFilterMany(request, db, targetCollection, ids);
             }
         } else {
             // INVERSE
             BsonValue id = data.get("_id");
 
             if (type == TYPE.ONE_TO_ONE || type == TYPE.ONE_TO_MANY) {
-                return URLUtils.getUriWithFilterOne(
+                return MongoURLUtils.getUriWithFilterOne(
                         request,
                         db,
                         targetCollection,
                         referenceField,
                         id);
             } else if (type == TYPE.MANY_TO_ONE || type == TYPE.MANY_TO_MANY) {
-                return URLUtils.getUriWithFilterManyInverse(
+                return MongoURLUtils.getUriWithFilterManyInverse(
                         request,
                         db,
                         targetCollection,

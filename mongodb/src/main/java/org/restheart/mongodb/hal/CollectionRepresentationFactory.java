@@ -35,7 +35,7 @@ import static org.restheart.exchange.ExchangeKeys._STREAMS;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.mongodb.handlers.aggregation.AbstractAggregationOperation;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.RepresentationUtils;
 
 /**
@@ -241,13 +241,13 @@ class CollectionRepresentationFactory
         // link templates and curies
         if (request.isParentAccessible()) {
             // this can happen due to mongo-mounts mapped URL
-            rep.addLink(new Link(RHDB, URLUtils.getParentPath(requestPath)));
+            rep.addLink(new Link(RHDB, MongoURLUtils.getParentPath(requestPath)));
         }
 
         if (TYPE.FILES_BUCKET.equals(request.getType())) {
             rep.addLink(new Link(
                     RHBUCKET,
-                    URLUtils.getParentPath(requestPath)
+                    MongoURLUtils.getParentPath(requestPath)
                     + "/{bucketname}"
                     + FS_FILES_SUFFIX,
                     true));
@@ -259,7 +259,7 @@ class CollectionRepresentationFactory
 
             rep.addLink(new Link(
                     RHCOLL,
-                    URLUtils.getParentPath(requestPath) + "/{collname}",
+                    MongoURLUtils.getParentPath(requestPath) + "/{collname}",
                     true));
             rep.addLink(new Link(
                     RHDOCUMENT,
