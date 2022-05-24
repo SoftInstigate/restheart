@@ -21,10 +21,7 @@
 package org.restheart.mongodb.utils;
 
 import io.undertow.server.HttpServerExchange;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.Objects;
 import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
@@ -34,7 +31,6 @@ import org.bson.BsonNull;
 import org.bson.BsonNumber;
 import org.bson.BsonObjectId;
 import org.bson.BsonString;
-import org.bson.BsonType;
 import org.bson.BsonValue;
 import org.bson.types.ObjectId;
 import org.restheart.exchange.ExchangeKeys.DOC_ID_TYPE;
@@ -47,12 +43,13 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.MongoServiceConfiguration;
 import org.restheart.utils.BsonUtils;
+import org.restheart.utils.URLUtils;
 
 /**
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class URLUtils {
+public class MongoURLUtils extends URLUtils {
 
     /**
      *
@@ -60,41 +57,25 @@ public class URLUtils {
      * @return
      * @throws UnsupportedDocumentIdException
      */
-    public static DOC_ID_TYPE checkId(BsonValue id)
-            throws UnsupportedDocumentIdException {
+    public static DOC_ID_TYPE checkId(BsonValue id) throws UnsupportedDocumentIdException {
         Objects.requireNonNull(id);
 
-        BsonType type = id.getBsonType();
+        var type = id.getBsonType();
 
-        switch (type) {
-            case STRING:
-                return DOC_ID_TYPE.STRING;
-            case OBJECT_ID:
-                return DOC_ID_TYPE.OID;
-            case BOOLEAN:
-                return DOC_ID_TYPE.BOOLEAN;
-            case NULL:
-                return DOC_ID_TYPE.NULL;
-            case INT32:
-                return DOC_ID_TYPE.NUMBER;
-            case INT64:
-                return DOC_ID_TYPE.NUMBER;
-            case DOUBLE:
-                return DOC_ID_TYPE.NUMBER;
-            case MAX_KEY:
-                return DOC_ID_TYPE.MAXKEY;
-            case MIN_KEY:
-                return DOC_ID_TYPE.MINKEY;
-            case DATE_TIME:
-                return DOC_ID_TYPE.DATE;
-            case TIMESTAMP:
-                return DOC_ID_TYPE.DATE;
-            default:
-                throw new UnsupportedDocumentIdException(
-                        "unknown _id type: "
-                        + id.getClass()
-                                .getSimpleName());
-        }
+        return switch (type) {
+            case STRING -> DOC_ID_TYPE.STRING;
+            case OBJECT_ID -> DOC_ID_TYPE.OID;
+            case BOOLEAN -> DOC_ID_TYPE.BOOLEAN;
+            case NULL -> DOC_ID_TYPE.NULL;
+            case INT32 -> DOC_ID_TYPE.NUMBER;
+            case INT64 -> DOC_ID_TYPE.NUMBER;
+            case DOUBLE -> DOC_ID_TYPE.NUMBER;
+            case MAX_KEY -> DOC_ID_TYPE.MAXKEY;
+            case MIN_KEY -> DOC_ID_TYPE.MINKEY;
+            case DATE_TIME -> DOC_ID_TYPE.DATE;
+            case TIMESTAMP -> DOC_ID_TYPE.DATE;
+            default -> throw new UnsupportedDocumentIdException("unknown _id type: " + id.getClass().getSimpleName());
+        };
     }
 
     /**
@@ -107,8 +88,7 @@ public class URLUtils {
      * @return
      * @throws UnsupportedDocumentIdException
      */
-    public static BsonValue getDocumentIdFromURI(String id, DOC_ID_TYPE type)
-            throws UnsupportedDocumentIdException {
+    public static BsonValue getDocumentIdFromURI(String id, DOC_ID_TYPE type) throws UnsupportedDocumentIdException {
         if (id == null) {
             return null;
         }
@@ -143,85 +123,20 @@ public class URLUtils {
         }
 
         try {
-            switch (type) {
-                case STRING_OID:
-                    return getIdAsStringOrObjectId(id);
-                case OID:
-                    return getIdAsObjectId(id);
-                case STRING:
-                    return new BsonString(id);
-                case NUMBER:
-                    return getIdAsNumber(id);
-                case MINKEY:
-                    return new BsonMinKey();
-                case MAXKEY:
-                    return new BsonMaxKey();
-                case DATE:
-                    return getIdAsDate(id);
-                case BOOLEAN:
-                    return getIdAsBoolean(id);
-                case NULL:
-                    return new BsonNull();
-            }
+            return switch (type) {
+                case STRING_OID -> getIdAsStringOrObjectId(id);
+                case OID -> getIdAsObjectId(id);
+                case STRING -> new BsonString(id);
+                case NUMBER -> getIdAsNumber(id);
+                case MINKEY -> new BsonMinKey();
+                case MAXKEY -> new BsonMaxKey();
+                case DATE -> getIdAsDate(id);
+                case BOOLEAN -> getIdAsBoolean(id);
+                case NULL -> new BsonNull();
+                default -> new BsonString(id);
+            };
         } catch (IllegalArgumentException iar) {
             throw new UnsupportedDocumentIdException(iar);
-        }
-
-        return new BsonString(id);
-    }
-
-    /**
-     * given string /ciao/this/has/trailings///// returns
-     * /ciao/this/has/trailings
-     *
-     * @param s
-     * @return the string s without the trailing slashes
-     */
-    static public String removeTrailingSlashes(String s) {
-        if (s == null || s.length() < 2) {
-            return s;
-        }
-
-        if (s.trim().charAt(s.length() - 1) == '/') {
-            return removeTrailingSlashes(s.substring(0, s.length() - 1));
-        } else {
-            return s.trim();
-        }
-    }
-
-    /**
-     * decode the percent encoded query string
-     *
-     * @param qs
-     * @return the undecoded string
-     */
-    static public String decodeQueryString(String qs) {
-        try {
-            return URLDecoder.decode(
-                    qs.replace("+", "%2B"), "UTF-8").replace("%2B", "+");
-        } catch (UnsupportedEncodingException ex) {
-            return null;
-        }
-    }
-
-    /**
-     *
-     * @param path
-     * @return
-     */
-    static public String getParentPath(String path) {
-        if (path == null || path.isEmpty() || path.equals("/")) {
-            return path;
-        }
-
-        int lastSlashPos = path.lastIndexOf('/');
-
-        if (lastSlashPos > 0) {
-            return path.substring(0, lastSlashPos); //strip off the slash
-        } else if (lastSlashPos == 0) {
-            return "/";
-        } else {
-            return ""; //we expect people to add  + "/somedir on their own
         }
     }
 
@@ -234,13 +149,12 @@ public class URLUtils {
      * @return
      */
     static public String getRemappedRequestURL(HttpServerExchange exchange) {
-        String ibu = MongoServiceConfiguration.get().getInstanceBaseURL();
+        var ibu = MongoServiceConfiguration.get().getInstanceBaseURL();
 
         if (ibu == null) {
             return exchange.getRequestURL();
         } else {
-            return removeTrailingSlashes(ibu)
-                    .concat(exchange.getRelativePath());
+            return removeTrailingSlashes(ibu).concat(exchange.getRelativePath());
         }
     }
 
@@ -254,28 +168,24 @@ public class URLUtils {
      * @throws org.restheart.exchange.UnsupportedDocumentIdException
      */
     static public String getUriWithDocId(
-            MongoRequest request,
-            String dbName,
-            String collName,
-            BsonValue id)
-            throws UnsupportedDocumentIdException {
-        DOC_ID_TYPE docIdType = URLUtils.checkId(id);
+        MongoRequest request,
+        String dbName,
+        String collName,
+        BsonValue id) throws UnsupportedDocumentIdException {
+        var docIdType = MongoURLUtils.checkId(id);
 
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
 
-        sb
-                .append("/")
-                .append(dbName)
-                .append("/")
-                .append(collName)
-                .append("/")
-                .append(getIdAsStringNoBrachets(id));
+        sb.append("/")
+            .append(dbName)
+            .append("/")
+            .append(collName)
+            .append("/")
+            .append(getIdAsStringNoBrachets(id));
 
-        if (docIdType == DOC_ID_TYPE.STRING
-                && ObjectId.isValid(id.asString().getValue())) {
+        if (docIdType == DOC_ID_TYPE.STRING && ObjectId.isValid(id.asString().getValue())) {
             sb.append("?id_type=STRING");
-        } else if (docIdType != DOC_ID_TYPE.STRING
-                && docIdType != DOC_ID_TYPE.OID) {
+        } else if (docIdType != DOC_ID_TYPE.STRING && docIdType != DOC_ID_TYPE.OID) {
             sb.append("?id_type=").append(docIdType.name());
         }
 
@@ -292,19 +202,18 @@ public class URLUtils {
      * @throws org.restheart.exchange.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterMany(
-            MongoRequest request,
-            String dbName,
-            String collName,
-            BsonValue[] ids)
-            throws UnsupportedDocumentIdException {
-        StringBuilder sb = new StringBuilder();
+        MongoRequest request,
+        String dbName,
+        String collName,
+        BsonValue[] ids) throws UnsupportedDocumentIdException {
+        var sb = new StringBuilder();
 
         ///db/coll/?filter={"ref":{"$in":{"a","b","c"}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-                .append("filter={").append("'")
-                .append("_id").append("'").append(":")
-                .append("{'$in'").append(":")
-                .append(getIdsString(ids)).append("}}");
+            .append("filter={").append("'")
+            .append("_id").append("'").append(":")
+            .append("{'$in'").append(":")
+            .append(getIdsString(ids)).append("}}");
 
         return request.mapUri(sb.toString());
     }
@@ -320,21 +229,20 @@ public class URLUtils {
      * @throws org.restheart.exchange.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterOne(
-            MongoRequest request,
-            String dbName,
-            String collName,
-            String referenceField,
-            BsonValue id)
-            throws UnsupportedDocumentIdException {
-        StringBuilder sb = new StringBuilder();
+        MongoRequest request,
+        String dbName,
+        String collName,
+        String referenceField,
+        BsonValue id) throws UnsupportedDocumentIdException {
+        var sb = new StringBuilder();
 
         ///db/coll/?filter={"ref":{"$in":{"a","b","c"}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-                .append("filter={").append("'")
-                .append(referenceField).append("'")
-                .append(":")
-                .append(getIdString(id))
-                .append("}");
+            .append("filter={").append("'")
+            .append(referenceField).append("'")
+            .append(":")
+            .append(getIdString(id))
+            .append("}");
 
         return request.mapUri(sb.toString());
     }
@@ -350,52 +258,24 @@ public class URLUtils {
      * @throws org.restheart.exchange.UnsupportedDocumentIdException
      */
     static public String getUriWithFilterManyInverse(
-            MongoRequest request,
-            String dbName,
-            String collName,
-            String referenceField,
-            BsonValue id)
-            throws UnsupportedDocumentIdException {
-        StringBuilder sb = new StringBuilder();
+        MongoRequest request,
+        String dbName,
+        String collName,
+        String referenceField,
+        BsonValue id) throws UnsupportedDocumentIdException {
+        var sb = new StringBuilder();
 
         ///db/coll/?filter={'referenceField':{"$elemMatch":{'ids'}}}
         sb.append("/").append(dbName).append("/").append(collName).append("?")
-                .append("filter={'").append(referenceField)
-                .append("':{").append("'$elemMatch':{'$eq':")
-                .append(getIdString(id)).append("}}}");
+            .append("filter={'").append(referenceField)
+            .append("':{").append("'$elemMatch':{'$eq':")
+            .append(getIdString(id)).append("}}}");
 
         return BsonUtils.minify(request.mapUri(sb.toString()));
     }
 
-    /**
-     *
-     * @param exchange
-     * @param paramsToRemove
-     * @return
-     */
-    public static String getQueryStringRemovingParams(HttpServerExchange exchange, String... paramsToRemove) {
-        String ret = exchange.getQueryString();
-
-        if (ret == null || ret.isEmpty() || paramsToRemove == null) {
-            return ret;
-        }
-
-        for (String key : paramsToRemove) {
-            Deque<String> values = exchange.getQueryParameters().get(key);
-
-            if (values != null) {
-                for (String value : values) {
-                    ret = ret.replaceAll(key + "=" + value + "&", "");
-                    ret = ret.replaceAll(key + "=" + value + "$", "");
-                }
-            }
-        }
-
-        return ret;
-    }
-
     private static BsonNumber getIdAsNumber(String id) throws IllegalArgumentException {
-        BsonValue ret = BsonUtils.parse(id);
+        var ret = BsonUtils.parse(id);
 
         if (ret.isNumber()) {
             return ret.asNumber();
@@ -405,7 +285,7 @@ public class URLUtils {
     }
 
     private static BsonDateTime getIdAsDate(String id) throws IllegalArgumentException {
-        BsonValue ret = BsonUtils.parse(id);
+        var ret = BsonUtils.parse(id);
 
         if (ret.isDateTime()) {
             return ret.asDateTime();
@@ -431,8 +311,7 @@ public class URLUtils {
         return null;
     }
 
-    private static BsonObjectId getIdAsObjectId(String id)
-            throws IllegalArgumentException {
+    private static BsonObjectId getIdAsObjectId(String id) throws IllegalArgumentException {
         if (!ObjectId.isValid(id)) {
             throw new IllegalArgumentException("The id is not a valid ObjectId " + id);
         }
@@ -448,8 +327,7 @@ public class URLUtils {
         return new BsonString(id);
     }
 
-    private static String getIdAsStringNoBrachets(BsonValue id)
-            throws UnsupportedDocumentIdException {
+    private static String getIdAsStringNoBrachets(BsonValue id) throws UnsupportedDocumentIdException {
         if (id == null) {
             return null;
         } else if (id.isString()) {
@@ -461,31 +339,13 @@ public class URLUtils {
         }
     }
 
-    /**
-     *
-     * @param id
-     * @return
-     * @throws UnsupportedDocumentIdException
-     */
-    public static String getIdString(BsonValue id)
-            throws UnsupportedDocumentIdException {
-        if (id == null) {
-            return null;
-        } else if (id.isString()) {
-            return "'" + id.asString().getValue() + "'";
-        } else {
-            return BsonUtils.toJson(id).replace("\"", "'");
-        }
-    }
-
-    private static String getIdsString(BsonValue[] ids)
-            throws UnsupportedDocumentIdException {
+    private static String getIdsString(BsonValue[] ids) throws UnsupportedDocumentIdException {
         if (ids == null) {
             return null;
         }
 
-        int cont = 0;
-        String[] _ids = new String[ids.length];
+        var cont = 0;
+        var _ids = new String[ids.length];
 
         for (BsonValue id : ids) {
             _ids[cont] = getIdString(id);
@@ -495,6 +355,6 @@ public class URLUtils {
         return BsonUtils.minify(Arrays.toString(_ids));
     }
 
-    private URLUtils() {
+    private MongoURLUtils() {
     }
 }

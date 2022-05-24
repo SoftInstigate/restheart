@@ -25,7 +25,7 @@ import org.bson.BsonArray;
 import org.bson.BsonInt32;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 
 /**
  *
@@ -92,7 +92,7 @@ class AggregationResultRepresentationFactory
     private void addLinkTemplates(final Resource rep,
             final String requestPath) {
         rep.addLink(new Link("rh:collection",
-                URLUtils.getParentPath(URLUtils.getParentPath(requestPath))));
+                MongoURLUtils.getParentPath(MongoURLUtils.getParentPath(requestPath))));
     }
 
     private void embeddedDocuments(BsonArray embeddedData,

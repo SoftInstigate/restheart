@@ -30,7 +30,7 @@ import static org.restheart.exchange.ExchangeKeys.FS_FILES_SUFFIX;
 import org.restheart.exchange.ExchangeKeys.TYPE;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,13 +62,13 @@ class IndexesRepresentationFactory extends AbstractRepresentationFactory {
             throws IllegalQueryParamenterException {
         var request = MongoRequest.of(exchange);
 
-        String requestPath = URLUtils.removeTrailingSlashes(
+        String requestPath = MongoURLUtils.removeTrailingSlashes(
                 request.getUnmappedRequestUri());
 
         String queryString = exchange.getQueryString() == null
                 || exchange.getQueryString().isEmpty()
                 ? ""
-                : "?" + URLUtils.decodeQueryString(exchange.getQueryString());
+                : "?" + MongoURLUtils.decodeQueryString(exchange.getQueryString());
 
         Resource rep;
 
@@ -112,11 +112,11 @@ class IndexesRepresentationFactory extends AbstractRepresentationFactory {
                         FS_FILES_SUFFIX)) {
                     rep.addLink(new Link(
                             "rh:bucket",
-                            URLUtils.getParentPath(requestPath)));
+                            MongoURLUtils.getParentPath(requestPath)));
                 } else {
                     rep.addLink(new Link(
                             "rh:coll",
-                            URLUtils.getParentPath(requestPath)));
+                            MongoURLUtils.getParentPath(requestPath)));
                 }
             }
 

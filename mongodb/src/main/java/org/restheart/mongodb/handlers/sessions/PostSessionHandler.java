@@ -33,7 +33,7 @@ import org.restheart.handlers.PipelinedHandler;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.db.sessions.SessionOptions;
 import org.restheart.mongodb.db.sessions.Sid;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.RepresentationUtils;
 import org.slf4j.Logger;
@@ -86,7 +86,7 @@ public class PostSessionHandler extends PipelinedHandler {
             response.getHeaders()
                     .add(HttpString.tryFromString("Location"),
                             RepresentationUtils.getReferenceLink(
-                                    URLUtils.getRemappedRequestURL(exchange),
+                                    MongoURLUtils.getRemappedRequestURL(exchange),
                                     new BsonString(sid.toString())));
 
             response.setContentTypeAsJson();

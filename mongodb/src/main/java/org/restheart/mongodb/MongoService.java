@@ -51,7 +51,7 @@ import org.restheart.mongodb.handlers.OptionsHandler;
 import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
@@ -265,9 +265,9 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         if ("".equals(myURI) || "/".equals(myURI)) {
             return uri;
         } else if (uri == null) {
-            return URLUtils.removeTrailingSlashes(myURI);
+            return MongoURLUtils.removeTrailingSlashes(myURI);
         } else {
-            return URLUtils.removeTrailingSlashes(myURI.concat(uri));
+            return MongoURLUtils.removeTrailingSlashes(myURI.concat(uri));
         }
     }
 
@@ -291,7 +291,7 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
         if (uri instanceof String) {
             var _uri = (String) uri;
             // make sure myURI does not end with /
-            _uri = URLUtils.removeTrailingSlashes(_uri);
+            _uri = MongoURLUtils.removeTrailingSlashes(_uri);
 
             return _uri;
         } else {

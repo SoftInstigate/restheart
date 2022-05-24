@@ -22,7 +22,7 @@ package org.restheart.utils;
 import io.undertow.server.HttpServerExchange;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.util.Deque;
+
 import org.bson.BsonValue;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 
@@ -74,14 +74,14 @@ public class URLUtils {
     /**
      *
      * @param path
-     * @return
+     * @return the parent path of path
      */
     static public String getParentPath(String path) {
         if (path == null || path.isEmpty() || path.equals("/")) {
             return path;
         }
 
-        int lastSlashPos = path.lastIndexOf('/');
+        var lastSlashPos = path.lastIndexOf('/');
 
         if (lastSlashPos > 0) {
             return path.substring(0, lastSlashPos); // strip off the slash
@@ -95,7 +95,7 @@ public class URLUtils {
     /**
      *
      * @param exchange
-     * @return
+     * @return the prefix url of the exchange
      */
     static public String getPrefixUrl(HttpServerExchange exchange) {
         return exchange.getRequestURL().replaceAll(exchange.getRelativePath(), "");
@@ -108,14 +108,14 @@ public class URLUtils {
      * @return
      */
     public static String getQueryStringRemovingParams(HttpServerExchange exchange, String... paramsToRemove) {
-        String ret = exchange.getQueryString();
+        var ret = exchange.getQueryString();
 
         if (ret == null || ret.isEmpty() || paramsToRemove == null) {
             return ret;
         }
 
-        for (String key : paramsToRemove) {
-            Deque<String> values = exchange.getQueryParameters().get(key);
+        for (var key : paramsToRemove) {
+            var values = exchange.getQueryParameters().get(key);
 
             if (values != null) {
                 for (String value : values) {
@@ -134,8 +134,7 @@ public class URLUtils {
      * @return
      * @throws UnsupportedDocumentIdException
      */
-    public static String getIdString(BsonValue id)
-            throws UnsupportedDocumentIdException {
+    public static String getIdString(BsonValue id) throws UnsupportedDocumentIdException {
         if (id == null) {
             return null;
         } else if (id.isString()) {

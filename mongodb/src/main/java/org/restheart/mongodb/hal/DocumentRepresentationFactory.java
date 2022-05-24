@@ -34,7 +34,7 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.metadata.Relationship;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.RepresentationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,7 +137,7 @@ class DocumentRepresentationFactory {
         var rep = request.isFullHalMode() && data != null
                 ? new Resource(RepresentationUtils
                         .getReferenceLink(response,
-                                URLUtils.getParentPath(href),
+                                MongoURLUtils.getParentPath(href),
                                 data.get("_id")))
                 : new Resource();
 
@@ -149,7 +149,7 @@ class DocumentRepresentationFactory {
         }
 
         // link templates and curies
-        String requestPath = URLUtils.removeTrailingSlashes(exchange.getRequestPath());
+        String requestPath = MongoURLUtils.removeTrailingSlashes(exchange.getRequestPath());
 
         String parentPath;
 
@@ -161,7 +161,7 @@ class DocumentRepresentationFactory {
         if (isEmbedded) {
             parentPath = requestPath;
         } else {
-            parentPath = URLUtils.getParentPath(requestPath);
+            parentPath = MongoURLUtils.getParentPath(requestPath);
         }
 
         if (data != null && isBinaryFile(data)) {

@@ -27,7 +27,7 @@ import org.bson.BsonArray;
 import org.bson.BsonInt32;
 import org.restheart.exchange.IllegalQueryParamenterException;
 import org.restheart.exchange.MongoRequest;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.utils.RepresentationUtils;
 
 /**
@@ -113,7 +113,7 @@ abstract class AbstractRepresentationFactory {
                 = exchange.getQueryString() == null
                 || exchange.getQueryString().isEmpty()
                 ? ""
-                : "?" + URLUtils.decodeQueryString(
+                : "?" + MongoURLUtils.decodeQueryString(
                         exchange.getQueryString());
 
         Resource rep;
@@ -133,7 +133,7 @@ abstract class AbstractRepresentationFactory {
      * @return
      */
     protected String buildRequestPath(final HttpServerExchange exchange) {
-        String requestPath = URLUtils.removeTrailingSlashes(
+        String requestPath = MongoURLUtils.removeTrailingSlashes(
                 exchange.getRequestPath());
         return requestPath;
     }

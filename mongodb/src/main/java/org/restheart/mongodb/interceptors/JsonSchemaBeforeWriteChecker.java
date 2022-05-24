@@ -34,7 +34,7 @@ import org.restheart.exchange.MongoResponse;
 import org.restheart.exchange.UnsupportedDocumentIdException;
 import org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton;
 import org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException;
-import org.restheart.mongodb.utils.URLUtils;
+import org.restheart.mongodb.utils.MongoURLUtils;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
@@ -140,7 +140,7 @@ public class JsonSchemaBeforeWriteChecker implements MongoInterceptor {
         }
 
         try {
-            URLUtils.checkId(schemaId);
+            MongoURLUtils.checkId(schemaId);
         } catch (UnsupportedDocumentIdException ex) {
             response.setInError(HttpStatus.SC_INTERNAL_SERVER_ERROR,
                     "wrong 'jsonSchema': "
