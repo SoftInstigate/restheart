@@ -77,6 +77,22 @@ public class URLUtilsTest {
     }
 
     @Test
+    public void testRemoveTrailingSlashesEdge() {
+        String s = "/ciao/this/has/trailings/////     ";
+        String expResult = "/ciao/this/has/trailings";
+        String result = URLUtils.removeTrailingSlashes(s);
+        assertEquals(expResult, result);
+    }
+
+    @Test
+    public void testRemoveTrailingSlashesEdgeTwo() {
+        String s = "/58b862ef-fb70-44c5-938d-5a8d02271cd5 ";
+        String expResult = "/58b862ef-fb70-44c5-938d-5a8d02271cd5";
+        String result = URLUtils.removeTrailingSlashes(s);
+        assertEquals(expResult, result);
+    }
+
+    @Test
     public void testDecodeQueryString() {
         String qs = "one%2Btwo";
         String expResult = "one+two";
