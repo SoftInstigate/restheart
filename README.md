@@ -14,7 +14,9 @@ RESTHeart provides:
 2. **Declarative authentication, authorization and user management** for your applications.
 3. **Polyglot development framework** supporting Java, Kotlin, JavaScript and TypeScript.
 
-> **Note**: With RESTHeart you can access 100% of MongoDB capabilities with plain HTTP calls, no programming is needed!
+With RESTHeart you can access **100% of MongoDB capabilities with plain HTTP calls**, no programming is needed!
+
+> **Note**: Book a [free 1-to-1 demo](https://calendly.com/restheart) and ask us anything!
 
 At startup, RESTHeart **connects automatically to the configured MongoDB database** and exposes it via a complete API. See the below example session that uses [HTTPie](https://httpie.io) for REST calls:
 
@@ -110,6 +112,7 @@ You can also have a look at our [introductory video](https://youtu.be/9KroH-RvjS
 - Ask technical questions on [Stackoverflow](https://stackoverflow.com/questions/ask?tags=restheart).
 - Chat with us on [Gitter](https://gitter.im/SoftInstigate/restheart).
 - Send us an [e-mail](mailto://ask@restheart.org) for general or commercial inquiries.
+- Book a [free 1-to-1 demo](https://calendly.com/restheart) with us!
 
 ## Become a Sponsor
 
