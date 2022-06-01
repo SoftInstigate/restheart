@@ -441,7 +441,7 @@
                                         </excludes>
                                     </requireReleaseDeps>
                                     <requireJavaVersion>
-                                        <version>16</version>
+                                        <version>17</version>
                                     </requireJavaVersion>
                                 </rules>
                                 <fail>true</fail>
