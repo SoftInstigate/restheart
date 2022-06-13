@@ -169,14 +169,14 @@ auth-mechanisms:
     enabled: true
     authenticator: mongoRealmAuthenticator
   jwtAuthenticationMechanism:
-    enabled: true
+    enabled: false
     algorithm: HS256
     key: secret
     base64Encoded: false
     usernameClaim: sub
     rolesClaim: null
     fixedRoles:
-      - test-jwt
+    #  - jwt-role
     issuer: myIssuer
     audience: myAudience
   digestAuthMechanism:
