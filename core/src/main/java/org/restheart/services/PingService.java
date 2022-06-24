@@ -21,11 +21,9 @@
 package org.restheart.services;
 
 import java.util.Map;
-import org.restheart.ConfigurationException;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
@@ -44,8 +42,8 @@ public class PingService implements ByteArrayService {
     private String msg = null;
 
     @InjectConfiguration
-    public void init(Map<String, Object> args) throws ConfigurationException {
-        this.msg = argValue(args, "msg");
+    public void init(Map<String, Object> args) {
+        this.msg = argOrDefault(args, "msg", "Greetings from RESTHeart!");
     }
 
     /**

@@ -44,7 +44,6 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.exchange.Request;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InjectPluginsRegistry;
@@ -91,18 +90,18 @@ public class MongoAclAuthorizer implements Authorizer {
 
     @InjectConfiguration
     public void initConfiguration(Map<String, Object> args) {
-        this.aclDb = argValue(args, "acl-db");
-        this.aclCollection = argValue(args, "acl-collection");
-        this.rootRole = argValue(args, "root-role");
+        this.aclDb = arg(args, "acl-db");
+        this.aclCollection = arg(args, "acl-collection");
+        this.rootRole = arg(args, "root-role");
 
         if (args != null && args.containsKey("cache-enabled")) {
-            this.cacheEnabled = argValue(args, "cache-enabled");
+            this.cacheEnabled = arg(args, "cache-enabled");
 
             if (this.cacheEnabled) {
-                this.cacheSize = argValue(args, "cache-size");
-                this.cacheTTL = argValue(args, "cache-ttl");
+                this.cacheSize = arg(args, "cache-size");
+                this.cacheTTL = arg(args, "cache-ttl");
 
-                String _cacheExpirePolicy = argValue(args, "cache-expire-policy");
+                String _cacheExpirePolicy = arg(args, "cache-expire-policy");
 
                 if (_cacheExpirePolicy != null) {
                     try {

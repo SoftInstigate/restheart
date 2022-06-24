@@ -25,9 +25,6 @@ import io.undertow.server.HttpServerExchange;
 
 import java.util.List;
 import java.util.Map;
-
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
-
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
@@ -55,7 +52,7 @@ public class FilterOperatorsBlacklist implements Initializer {
 
     @InjectConfiguration
     public void configuration(Map<String, Object> args) {
-        this.blacklist = argValue(args, "blacklist");
+        this.blacklist = arg(args, "blacklist");
 
         if (!blacklist.stream().allMatch(o -> o.startsWith("$"))) {
             throw new IllegalArgumentException("All entries of blacklist must start with $");

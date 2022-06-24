@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import org.restheart.ConfigurationException;
 import org.restheart.security.BaseAccount;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
@@ -54,10 +53,9 @@ public class IdentityAuthMechanism implements AuthMechanism {
     private List<String> roles;
 
     @InjectConfiguration
-    public void init(Map<String, Object> confArgs)
-            throws ConfigurationException {
-        this.username = argValue(confArgs, "username");
-        this.roles = argValue(confArgs, "roles");
+    public void init(Map<String, Object> confArgs) throws ConfigurationException {
+        this.username = arg(confArgs, "username");
+        this.roles = arg(confArgs, "roles");
     }
 
     @Override

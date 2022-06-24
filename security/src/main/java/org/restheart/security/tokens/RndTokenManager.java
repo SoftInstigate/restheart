@@ -38,7 +38,6 @@ import org.restheart.exchange.JsonProxyRequest;
 import org.restheart.security.FileRealmAccount;
 import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.PwdCredentialAccount;
-import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
@@ -66,9 +65,9 @@ public class RndTokenManager implements TokenManager {
     @InjectConfiguration
     @InjectPluginsRegistry
     public void init(Map<String, Object> confArgs, PluginsRegistry pluginsRegistry) throws ConfigurationException {
-        this.ttl = ConfigurablePlugin.argValue(confArgs, "ttl");
+        this.ttl = arg(confArgs, "ttl");
 
-        this.srvURI = ConfigurablePlugin.argValue(confArgs, "srv-uri");
+        this.srvURI = arg(confArgs, "srv-uri");
 
         CACHE = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, ttl * 60 * 1_000);
 

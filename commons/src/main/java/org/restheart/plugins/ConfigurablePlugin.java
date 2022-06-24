@@ -43,4 +43,20 @@ public interface ConfigurablePlugin extends Plugin {
             return (V) args.get(argKey);
         }
     }
+
+    public static <V extends Object> V argValueOrDefault(final Map<String, Object> args, final String argKey, V value) throws ConfigurationException {
+        if (args == null || !args.containsKey(argKey)) {
+            return value;
+        } else {
+            return argValue(args, argKey);
+        }
+    }
+
+    default public <V extends Object> V arg(final Map<String, Object> args, final String argKey) throws ConfigurationException {
+        return argValue(args, argKey);
+    }
+
+    default public <V extends Object> V argOrDefault(final Map<String, Object> args, final String argKey, V value) throws ConfigurationException {
+        return argValueOrDefault(args, argKey, value);
+    }
 }

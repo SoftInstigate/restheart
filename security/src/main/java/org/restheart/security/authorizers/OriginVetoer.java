@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
-import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
@@ -52,7 +51,7 @@ public class OriginVetoer implements Authorizer {
     @InjectConfiguration
     public void setConfiguration(Map<String, Object> args) {
         try {
-            List<String> _whitelist = ConfigurablePlugin.argValue(args, "whitelist");
+            List<String> _whitelist = arg(args, "whitelist");
             this.whitelist = _whitelist.stream()
                 .filter(item -> item != null)
                 .map(item -> item.trim())
@@ -68,7 +67,7 @@ public class OriginVetoer implements Authorizer {
         }
 
         try {
-            List<String> _ingoreList = ConfigurablePlugin.argValue(args, "ignore-paths");
+            List<String> _ingoreList = arg(args, "ignore-paths");
             _ingoreList.stream()
                 .filter(item -> item != null)
                 .map(item -> item.trim())

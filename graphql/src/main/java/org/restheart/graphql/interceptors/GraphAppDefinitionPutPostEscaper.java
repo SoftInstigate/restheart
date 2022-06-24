@@ -34,8 +34,6 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
 
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
-
 import java.util.Map;
 
 
@@ -53,11 +51,11 @@ public class GraphAppDefinitionPutPostEscaper implements MongoInterceptor {
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void conf(Map<String, Object> args) {
         try {
-            Map<String, Object> pluginsArgs = argValue(args, ConfigurationKeys.PLUGINS_ARGS_KEY);
-            Map<String, Object> graphqlArgs = argValue(pluginsArgs, "graphql");
+            Map<String, Object> pluginsArgs = arg(args, ConfigurationKeys.PLUGINS_ARGS_KEY);
+            Map<String, Object> graphqlArgs = arg(pluginsArgs, "graphql");
 
-            this.db = argValue(graphqlArgs, "db");
-            this.coll = argValue(graphqlArgs, "collection");
+            this.db = arg(graphqlArgs, "db");
+            this.coll = arg(graphqlArgs, "collection");
         } catch(ConfigurationException ce) {
             // nothing to do, using default values
         }

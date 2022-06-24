@@ -47,7 +47,6 @@ import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.PwdCredentialAccount;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InjectPluginsRegistry;
@@ -99,13 +98,13 @@ public class MongoRealmAuthenticator implements Authenticator {
 
     @InjectConfiguration
     public void setConf(Map<String, Object> args) {
-        this.setUsersDb(argValue(args, "users-db"));
-        this.usersCollection = argValue(args, "users-collection");
-        this.cacheEnabled = argValue(args, "cache-enabled");
-        this.cacheSize = argValue(args, "cache-size");
-        this.cacheTTL = argValue(args, "cache-ttl");
+        this.setUsersDb(arg(args, "users-db"));
+        this.usersCollection = arg(args, "users-collection");
+        this.cacheEnabled = arg(args, "cache-enabled");
+        this.cacheSize = arg(args, "cache-size");
+        this.cacheTTL = arg(args, "cache-ttl");
 
-        String _cacheExpirePolicy = argValue(args, "cache-expire-policy");
+        String _cacheExpirePolicy = arg(args, "cache-expire-policy");
         if (_cacheExpirePolicy != null) {
             try {
                 this.cacheExpirePolicy = Cache.EXPIRE_POLICY.valueOf((String) _cacheExpirePolicy);
@@ -114,14 +113,14 @@ public class MongoRealmAuthenticator implements Authenticator {
             }
         }
 
-        this.enforceMinimumPasswordStrenght = argValue(args, "enforce-minimum-password-strenght");
-        this.minimumPasswordStrength = argValue(args, "minimum-password-strength");
+        this.enforceMinimumPasswordStrenght = argOrDefault(args, "enforce-minimum-password-strenght", false);
+        this.minimumPasswordStrength = argOrDefault(args, "minimum-password-strength", 3);
 
-        this.bcryptHashedPassword = argValue(args, "bcrypt-hashed-password");
-        this.bcryptComplexity = argValue(args, "bcrypt-complexity");
+        this.bcryptHashedPassword = arg(args, "bcrypt-hashed-password");
+        this.bcryptComplexity = arg(args, "bcrypt-complexity");
 
-        this.createUser = argValue(args, "create-user");
-        String _createUserDocument = argValue(args, "create-user-document");
+        this.createUser = arg(args, "create-user");
+        String _createUserDocument = arg(args, "create-user-document");
 
         // check createUserDocument
         try {
@@ -130,19 +129,19 @@ public class MongoRealmAuthenticator implements Authenticator {
             throw new ConfigurationException("wrong configuration file format. create-user-document must be a json document", ex);
         }
 
-        this.propId = argValue(args, "prop-id");
+        this.propId = arg(args, "prop-id");
 
         if (this.propId.startsWith("$")) {
             throw new ConfigurationException("prop-id must be a root property name not a json path expression. It can use the dot notation.");
         }
 
-        this.propPassword = argValue(args, "prop-password");
+        this.propPassword = arg(args, "prop-password");
 
         if (this.propPassword.contains(".")) {
             throw new ConfigurationException("prop-password must be a root level property and cannot contain the char '.'");
         }
 
-        this.jsonPathRoles = argValue(args, "json-path-roles");
+        this.jsonPathRoles = arg(args, "json-path-roles");
     }
 
     @InjectMongoClient
