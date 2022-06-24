@@ -39,6 +39,7 @@ public class MetricsUtils {
     public enum FAILED_AUTH_KEY { REMOTE_IP, X_FORWARDED_FOR }
 
     private static FAILED_AUTH_KEY collectFailedAuthBy = FAILED_AUTH_KEY.REMOTE_IP;
+    private static int xffReverseIndex = 0;
 
      /**
      *
@@ -53,7 +54,7 @@ public class MetricsUtils {
                 var xff = ExchangeAttributes.requestHeader(_X_FORWARDED_FOR).readAttribute(exchange);
                 yield xff == null
                     ? MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", "not-set")
-                    : MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", last(xff));
+                    : MetricRegistry.name(Authenticator.class, "failed-auth-x-forwarded-for", xffValue(xff, xffReverseIndex));
             }
         };
     }
@@ -69,14 +70,34 @@ public class MetricsUtils {
      * NOTE: this is the behavior of AWS ALB
      *
      * @param xff
+     * @param rindex @see useXForwaderdedElement()
      * @return the last element of a comma separated list
      */
-    static String last(String xff) {
+    public static String xffValue(String xff, int rindex) {
         if (xff == null) {
             return null;
         } else {
+            xff = xff.trim();
+
+            if (xff.startsWith("[")) {
+                xff = xff.substring(1);
+            }
+
+            if (xff.endsWith("]")) {
+                xff = xff.substring(0, xff.length()-1);
+            }
+
             var elements = xff.split(",");
-            return elements[elements.length - 1].trim();
+
+            if (elements.length >= rindex) {
+                if (rindex >= elements.length) {
+                    return elements[0].trim();
+                } else {
+                    return elements[elements.length - 1 - rindex].trim();
+                }
+            } else {
+                return elements[elements.length - 1].trim();
+            }
         }
     }
 
@@ -87,5 +108,18 @@ public class MetricsUtils {
      */
     public static void collectFailedAuthBy(FAILED_AUTH_KEY key) {
         collectFailedAuthBy = key;
+    }
+
+    /**
+     * Set the xffReverseIndex, i.e. if X-ForwardedFor header has multiple values,
+     * take into account the n-th value from last
+     * e.g. with [x.x.x.x, y.y.y.y., z.z.z.z, k.k.k.k]
+     * 0 -> k.k.k.k
+     * 2 -> y.y.y.y
+     *
+     * @param ridx the reverse index (element from last)
+     */
+    public static void xffValueRIndex(int ridx) {
+        xffReverseIndex = ridx;
     }
 }

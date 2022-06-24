@@ -329,12 +329,18 @@ plugins-args:
   # are received in last 10 seconds from the same ip
   bruteForceAttackGuard:
     enabled: false
-    # if true, the source ip is obtained from X-Forwarded-For header
-    # this requires that header beeing set by the proxy, dangerous otherwise
-    trust-x-forwarded-for: false
     # max number of failed attempts in 10 seconds sliding window
     # before returning 429 Too Many Requests
     max-failed-attempts: 5
+    # if true, the source ip is obtained from X-Forwarded-For header
+    # this requires that header beeing set by the proxy, dangerous otherwise
+    trust-x-forwarded-for: false
+    # when X-Forwarded-For has multiple values,
+    # take into account the n-th from last element
+    # e.g. with [x.x.x.x, y.y.y.y., z.z.z.z, k.k.k.k]
+    # 0 -> k.k.k.k
+    # 2 -> y.y.y.y
+    x-forwarded-for-value-from-last-element: 0
 
 #### Logging
 
