@@ -29,6 +29,8 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
 import static org.restheart.utils.MetricsUtils.collectFailedAuthBy;
+import static org.restheart.utils.MetricsUtils.xffValueRIndex;
+import static org.restheart.utils.MetricsUtils.xffValue;
 import static org.restheart.utils.MetricsUtils.failedAuthHistogramName;
 import org.restheart.utils.LogUtils;
 import org.restheart.utils.MetricsUtils.FAILED_AUTH_KEY;
@@ -61,6 +63,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
     private static final Logger LOGGER = LoggerFactory.getLogger(BruteForceAttackGuard.class);
 
     private static final MetricRegistry AUTH_METRIC_REGISTRY = SharedMetricRegistries.getOrCreate("AUTH");
+    private static int xForwardedForValueFromLast = 0;
 
     private int maxFailedAttempts = 5;
 
@@ -70,14 +73,22 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
             boolean trustXForwardedFor = argValue(args, "trust-x-forwarded-for");
 
             if (trustXForwardedFor) {
-                LOGGER.info("Failed auth requests will be counted based on X-Forwarded-For header");
+                xForwardedForValueFromLast = argValue(args, "x-forwarded-for-value-from-last");
+
+                if (xForwardedForValueFromLast < 0) {
+                    LOGGER.warn("x-forwarded-for-value-from-last is negative, set to 0");
+                    xForwardedForValueFromLast = 0;
+                }
+
+                LOGGER.info("Failed auth requests will be counted on X-Forwarded-For header, tracking the {}th value from the last", xForwardedForValueFromLast);
                 collectFailedAuthBy(FAILED_AUTH_KEY.X_FORWARDED_FOR);
+                xffValueRIndex(xForwardedForValueFromLast);
             } else {
-                LOGGER.info("Failed auth requests will be counted based on remote ip");
+                LOGGER.info("Failed auth requests will be counted on remote ip");
                 collectFailedAuthBy(FAILED_AUTH_KEY.REMOTE_IP);
             }
         } catch(ConfigurationException ce) {
-            LOGGER.info("Failed auth requests will be counted based on remote ip");
+            LOGGER.info("Failed auth requests will be counted on remote ip");
             collectFailedAuthBy(FAILED_AUTH_KEY.REMOTE_IP);
         }
 
@@ -108,13 +119,15 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
     }
 
     private void logWarning(HttpServerExchange exchange, double mean) {
+        var xff = ExchangeAttributes.requestHeader(HttpString.tryFromString(HttpHeaders.X_FORWARDED_FOR)).readAttribute(exchange);
         LogUtils.boxedWarn(LOGGER,
             "A brute force attack might be in progress...",
             "",
             "Got too many of failed auth attempts in last 10 seconds from:",
             "",
             "remote ip: " + ExchangeAttributes.remoteIp().readAttribute(exchange),
-            "X-Forwarded-For header: " + ExchangeAttributes.requestHeader(HttpString.tryFromString(HttpHeaders.X_FORWARDED_FOR)).readAttribute(exchange),
+            "X-Forwarded-For header: " + xff,
+            "X-Forwarded-For tracked value: " + xffValue(xff, xForwardedForValueFromLast),
             "",
             "transport protocol: " + ExchangeAttributes.transportProtocol().readAttribute(exchange),
             "request method: " + ExchangeAttributes.requestMethod().readAttribute(exchange),
