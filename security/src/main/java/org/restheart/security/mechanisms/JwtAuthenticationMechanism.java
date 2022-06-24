@@ -51,7 +51,6 @@ import org.apache.commons.codec.binary.StringUtils;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
 import org.restheart.security.JwtAccount;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.ConsumingPlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
@@ -86,14 +85,14 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
     @InjectConfiguration
     public void init(Map<String, Object> args) throws ConfigurationException {
         // get configuration arguments
-        base64Encoded = argValue(args, "base64Encoded");
-        algorithm = argValue(args, "algorithm");
-        key = argValue(args, "key");
-        usernameClaim = argValue(args, "usernameClaim");
-        rolesClaim = argValue(args, "rolesClaim");
-        fixedRoles = argValue(args, "fixedRoles");
-        issuer = argValue(args, "issuer");
-        audience = argValue(args, "audience");
+        base64Encoded = arg(args, "base64Encoded");
+        algorithm = arg(args, "algorithm");
+        key = arg(args, "key");
+        usernameClaim = arg(args, "usernameClaim");
+        rolesClaim = arg(args, "rolesClaim");
+        fixedRoles = arg(args, "fixedRoles");
+        issuer = arg(args, "issuer");
+        audience = arg(args, "audience");
 
         Algorithm _algorithm;
 

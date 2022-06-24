@@ -33,7 +33,6 @@ import org.restheart.ConfigurationException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.security.BaseAccount;
-import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.JsonService;
@@ -166,7 +165,7 @@ public class RndTokenService implements JsonService {
         }
 
         try {
-            return ConfigurablePlugin.argValue(confArgs, "uri");
+            return arg(confArgs, "uri");
         }
         catch (ConfigurationException ex) {
             return "/tokens";

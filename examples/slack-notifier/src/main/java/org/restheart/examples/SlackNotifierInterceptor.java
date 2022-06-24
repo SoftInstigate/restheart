@@ -11,7 +11,6 @@ import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import static org.restheart.utils.GsonUtils.object;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +29,10 @@ public class SlackNotifierInterceptor implements MongoInterceptor {
 
     @InjectConfiguration
     public void init(Map<String, Object> config) {
-        this.channel = argValue(config, "channel");
-        this.oauthToken = argValue(config, "oauth-token");
-        this.db = argValue(config, "db");
-        this.collection = argValue(config, "collection");
+        this.channel = arg(config, "channel");
+        this.oauthToken = arg(config, "oauth-token");
+        this.db = arg(config, "db");
+        this.collection = arg(config, "collection");
 
         LOGGER.debug("SlackNotifierInterceptor initialized with channel: {}, oauthToken: {}, db: {}, collection: {}", channel, oauthToken, db, collection);
     }

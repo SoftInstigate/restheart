@@ -26,7 +26,6 @@ import io.undertow.server.HttpServerExchange;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 import java.util.Map;
 import org.restheart.ConfigurationException;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
@@ -54,7 +53,7 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
     public void init(final Map<String, Object> args, PluginsRegistry pluginsRegistry) throws ConfigurationException {
         // the authenticator specified in auth mechanism configuration
         setIdentityManager(pluginsRegistry
-                .getAuthenticator(argValue(args, "authenticator"))
+                .getAuthenticator(arg(args, "authenticator"))
                 .getInstance());
     }
 

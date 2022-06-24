@@ -22,7 +22,6 @@ package org.restheart.security.authorizers;
 
 import java.util.Map;
 import org.restheart.exchange.Request;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
@@ -59,7 +58,7 @@ public class FullAuthorizer implements Authorizer {
 
     @InjectConfiguration
     public void initConf(Map<String, Object> confArgs) {
-        this.authenticationRequired = argValue(confArgs, "authentication-required");
+        this.authenticationRequired = arg(confArgs, "authentication-required");
     }
 
     @Override

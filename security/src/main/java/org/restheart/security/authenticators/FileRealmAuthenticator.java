@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.restheart.ConfigurationException;
 import org.restheart.security.FileRealmAccount;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.FileConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.RegisterPlugin;
@@ -75,12 +74,12 @@ public class FileRealmAuthenticator
     public Consumer<? super Map<String, Object>> consumeConfiguration() {
         return u -> {
             try {
-                String userid = argValue(u, "userid");
-                String _password = argValue(u, "password");
+                String userid = arg(u, "userid");
+                String _password = arg(u, "password");
                 char[] password = ((String) _password).toCharArray();
 
                 @SuppressWarnings("rawtypes")
-                List _roles = argValue(u, "roles");
+                List _roles = arg(u, "roles");
 
                 if (((Collection<?>) _roles).stream().anyMatch(i -> !(i instanceof String))) {
                     throw new IllegalArgumentException(

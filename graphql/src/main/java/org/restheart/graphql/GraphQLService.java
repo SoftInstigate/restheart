@@ -78,9 +78,9 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
 
         if (args != null) {
             try {
-                this.db = ConfigurablePlugin.argValue(args, "db");
-                this.collection = ConfigurablePlugin.argValue(args, "collection");
-                this.verbose = ConfigurablePlugin.argValue(args, "verbose");
+                this.db = arg(args, "db");
+                this.collection = arg(args, "collection");
+                this.verbose = arg(args, "verbose");
             } catch (ConfigurationException ex) {
                 // nothing to do, using default values
             }

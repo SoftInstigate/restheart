@@ -24,7 +24,6 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
@@ -51,13 +50,13 @@ public class EmailVerificationSender implements MongoInterceptor {
 
     @InjectConfiguration
     public void init(Map<String, Object> confs) {
-        from = argValue(confs, "from");
-        fromName = argValue(confs, "from-name");
-        smptUsername = argValue(confs, "smtp-username");
-        smtpPassword = argValue(confs, "smtp-password");
-        host = argValue(confs, "host");
-        port = argValue(confs, "port");
-        verifierSrvUrl = argValue(confs, "verifier-srv-url");
+        from = arg(confs, "from");
+        fromName = arg(confs, "from-name");
+        smptUsername = arg(confs, "smtp-username");
+        smtpPassword = arg(confs, "smtp-password");
+        host = arg(confs, "host");
+        port = arg(confs, "port");
+        verifierSrvUrl = arg(confs, "verifier-srv-url");
     }
 
     @Override

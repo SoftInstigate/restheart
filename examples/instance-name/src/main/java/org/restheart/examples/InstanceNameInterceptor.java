@@ -9,7 +9,6 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import io.undertow.util.HttpString;
 
-import static org.restheart.plugins.ConfigurablePlugin.argValue;
 import static org.restheart.ConfigurationKeys.INSTANCE_NAME_KEY;
 
 @RegisterPlugin(name = "instanceNameInterceptor",
@@ -22,9 +21,7 @@ public class InstanceNameInterceptor implements MongoInterceptor {
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void conf(Map<String, Object> args) {
-        this.instanceName = args.containsKey(INSTANCE_NAME_KEY)
-            ? argValue(args, INSTANCE_NAME_KEY)
-            : "unknown";
+        this.instanceName = argOrDefault(INSTANCE_NAME_KEY, "unknown");
     }
 
     @Override

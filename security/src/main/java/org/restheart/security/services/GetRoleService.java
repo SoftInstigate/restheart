@@ -24,7 +24,6 @@ import java.util.Map;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
-import org.restheart.plugins.ConfigurablePlugin;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
@@ -62,7 +61,7 @@ public class GetRoleService implements JsonService {
         }
 
         try {
-            this.myURI = URLUtils.removeTrailingSlashes(ConfigurablePlugin.argValue(confArgs, "uri"));
+            this.myURI = URLUtils.removeTrailingSlashes(arg(confArgs, "uri"));
         } catch (ConfigurationException ex) {
             this.myURI = "/roles";
         }
