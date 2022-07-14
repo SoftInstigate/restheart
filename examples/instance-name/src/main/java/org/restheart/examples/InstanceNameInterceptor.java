@@ -21,7 +21,7 @@ public class InstanceNameInterceptor implements MongoInterceptor {
 
     @InjectConfiguration(scope = ConfigurationScope.ALL)
     public void conf(Map<String, Object> args) {
-        this.instanceName = argOrDefault(INSTANCE_NAME_KEY, "unknown");
+        this.instanceName = argOrDefault(args, INSTANCE_NAME_KEY, "unknown");
     }
 
     @Override
