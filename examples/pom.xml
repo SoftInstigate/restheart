@@ -28,6 +28,7 @@
         <module>slack-notifier</module>
         <module>form-handler</module>
         <module>protobuffer-contacts</module>
+        <module>greeter-service</module>
     </modules>
 
     <dependencyManagement>
