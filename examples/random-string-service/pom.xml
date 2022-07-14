@@ -14,6 +14,7 @@
     <dependency>
       <groupId>org.restheart</groupId>
       <artifactId>restheart-commons</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
