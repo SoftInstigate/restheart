@@ -56,6 +56,7 @@
         <module>security</module>
         <module>mongodb</module>
         <module>test-plugins</module>
+        <module>examples</module>
     </modules>
 
     <!-- Project Information -->
@@ -353,6 +354,16 @@
                 <artifactId>zxcvbn</artifactId>
                 <version>1.5.2</version>
             </dependency>
+            <dependency>
+                <groupId>org.graalvm.js</groupId>
+                <artifactId>js-scriptengine</artifactId>
+                <version>${graalvm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.js</groupId>
+                <artifactId>js</artifactId>
+                <version>${graalvm.version}</version>
+            </dependency>
             <!-- BEGIN Test dependencies -->
             <dependency>
                 <groupId>junit</groupId>
@@ -370,16 +381,6 @@
                  to match the used GraalVM version
                  otherwise the tests execution will hang
             -->
-            <dependency>
-                <groupId>org.graalvm.js</groupId>
-                <artifactId>js-scriptengine</artifactId>
-                <version>${graalvm.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.graalvm.js</groupId>
-                <artifactId>js</artifactId>
-                <version>${graalvm.version}</version>
-            </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
