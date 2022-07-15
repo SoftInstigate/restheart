@@ -2,8 +2,17 @@ package org.restheart.examples;
 
 import static org.restheart.utils.GsonUtils.object;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
 import java.util.Map;
 
+import org.bson.BsonDocument;
 import org.bson.json.JsonWriterSettings;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -14,8 +23,7 @@ import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
+import com.google.gson.JsonObject;
 
 @RegisterPlugin(
         name = "slackNotifierInterceptor",
@@ -37,28 +45,41 @@ public class SlackNotifierInterceptor implements MongoInterceptor {
         this.db = arg(config, "db");
         this.collection = arg(config, "collection");
 
-        LOGGER.info("SlackNotifierInterceptor initialized with channel: {}, oauthToken: {}, db: {}, collection: {}",
-                channel, oauthToken, db, collection);
+        LOGGER.info("SlackNotifierInterceptor initialized with db: {}, collection: {}", db, collection);
+        LOGGER.debug("   Slack channel: {}, oauthToken: {}", channel, oauthToken);
     }
 
     @Override
-    public void handle(MongoRequest request, MongoResponse response) throws UnirestException {
-        var doc = response.getDbOperationResult().getNewData();
+    public void handle(MongoRequest mongoRequest, MongoResponse mongoResponse) throws IOException, InterruptedException {
+        final BsonDocument doc = mongoResponse.getDbOperationResult().getNewData();
 
-        var body = object()
+        final JsonObject jsonObject = object()
                 .put("text",
-                        ":tada: New document\n```" + doc.toJson(JsonWriterSettings.builder().indent(true).build())
-                                + "```")
-                .put("channel", this.channel);
+                        ":tada: New document\n```" 
+                        + doc.toJson(JsonWriterSettings.builder().indent(true).build())
+                        + "```")
+                .put("channel", this.channel)
+                .get();
 
-        var resp = Unirest.post("https://slack.com/api/chat.postMessage")
+        final String json = jsonObject.toString();
+        LOGGER.info("Body: \n{}", json);
+
+        HttpClient httpClient = HttpClient.newBuilder()
+                        .version(HttpClient.Version.HTTP_1_1)
+                        .connectTimeout(Duration.ofSeconds(10))
+                        .build();
+
+        HttpRequest httpRequest = HttpRequest.newBuilder()
+                .uri(URI.create("https://slack.com/api/chat.postMessage"))
                 .header("Authorization", "Bearer " + this.oauthToken)
-                .header("Content-Type", "application/json")
-                .body(body)
-                .asJson();
+                .header("Content-Type", "application/json; charset=utf-8")
+                .POST(BodyPublishers.ofString(json))
+                .build();
 
-        LOGGER.info("SlackNotifierInterceptor sent message to slack channel: {} with status {}", resp.getBody(),
-                resp.getStatus());
+        final HttpResponse<String> httpResponse = httpClient.send(httpRequest, BodyHandlers.ofString());
+
+        LOGGER.info("SlackNotifierInterceptor sent message to Slack channel: {} with status {}", 
+                        httpResponse.body(), httpResponse.statusCode());
     }
 
     @Override
