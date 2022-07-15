@@ -4,7 +4,7 @@
   "description": "test js plugins for RESTHeart",
   "main": "index.mjs",
   "dependencies": {
-    "moment": "^2.29.2",
+    "moment": "^2.29.4",
     "one-liner-joke": "^1.2.0"
   },
   "devDependencies": {},
