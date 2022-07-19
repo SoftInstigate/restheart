@@ -401,7 +401,7 @@ public class AclVarsInterpolator {
 
         var m = regex.matcher(predicate);
 
-        var sb = new StringBuffer();
+        var sb = new StringBuilder();
 
         while (m.find()) {
             // we ignore the strings delimited by "
