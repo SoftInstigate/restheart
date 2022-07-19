@@ -36,9 +36,9 @@ import org.restheart.utils.HttpStatus;
     description = "simple ping service",
     secure = false,
     enabledByDefault = true,
-    defaultURI = "/ping")
+    defaultURI = "/ping",
+    blocking = false)
 public class PingService implements ByteArrayService {
-
     private String msg = null;
 
     @InjectConfiguration

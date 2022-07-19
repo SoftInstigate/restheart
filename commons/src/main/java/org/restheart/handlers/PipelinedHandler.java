@@ -21,6 +21,8 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -89,6 +91,11 @@ public abstract class PipelinedHandler implements HttpHandler {
         if (Objects.isNull(handlers)) {
             return null;
         }
+
+        // remove null entries in handlers array
+        handlers = Arrays.stream(handlers)
+            .filter(s -> s != null)
+            .toArray(PipelinedHandler[]::new);
 
         for (var idx = 0; idx < handlers.length - 1; idx++) {
             handlers[idx].setNext(handlers[idx + 1]);

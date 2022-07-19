@@ -56,7 +56,7 @@ public abstract class Request<T> extends Exchange<T> {
     public static final String PATCH = "PATCH";
     public static final String UNDERSCORE = "_";
 
-    private static final AttachmentKey<PipelineInfo> PIPELINE_INFO_KEY = AttachmentKey.create(PipelineInfo.class);
+    public static final AttachmentKey<PipelineInfo> PIPELINE_INFO_KEY = AttachmentKey.create(PipelineInfo.class);
 
     private static final AttachmentKey<Long> START_TIME_KEY = AttachmentKey.create(Long.class);
 
@@ -342,6 +342,15 @@ public abstract class Request<T> extends Exchange<T> {
      */
     public PipelineInfo getPipelineInfo() {
         return getWrappedExchange().getAttachment(PIPELINE_INFO_KEY);
+    }
+
+    /**
+     *
+     * @return the PipelineInfo that allows to know which pipeline (service, proxy
+     *         or static resource) is handling the exchange
+     */
+    public static PipelineInfo getPipelineInfo(HttpServerExchange exchange) {
+        return exchange.getAttachment(PIPELINE_INFO_KEY);
     }
 
     /**

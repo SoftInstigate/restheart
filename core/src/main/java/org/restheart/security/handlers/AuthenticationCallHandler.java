@@ -86,11 +86,6 @@ public class AuthenticationCallHandler extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (exchange.isInIoThread()) {
-            exchange.dispatch(this);
-            return;
-        }
-
         var sc = exchange.getSecurityContext();
 
         if (Request.of(exchange).isBlockForTooManyRequests()) {

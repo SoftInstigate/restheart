@@ -53,6 +53,7 @@ import org.restheart.handlers.RequestLogger;
 import org.restheart.handlers.ResponseInterceptorsExecutor;
 import org.restheart.handlers.ResponseSender;
 import org.restheart.handlers.ServiceExchangeInitializer;
+import org.restheart.handlers.WorkingThreadsPoolDispatcher;
 import org.restheart.handlers.TracingInstrumentationHandler;
 import org.restheart.handlers.injectors.PipelineInfoInjector;
 import org.restheart.handlers.injectors.XPoweredByInjector;
@@ -421,7 +422,12 @@ public class PluginsRegistryImpl implements PluginsRegistry {
                 securityHandler = new SecurityHandler(mechanisms, _fauthorizers, tokenManager);
             }
 
+            var blockingSrv = PluginUtils.blocking(srv.getInstance());
+
             var _srv = pipe(new PipelineInfoInjector(),
+                // if service is blocking (i.e. @RegisterPlugin(blocking=true))
+                // add WorkingThreadsPoolDispatcher to the pipe
+                blockingSrv ? new WorkingThreadsPoolDispatcher() : null,
                 new TracingInstrumentationHandler(),
                 new RequestLogger(),
                 new BeforeExchangeInitInterceptorsExecutor(),

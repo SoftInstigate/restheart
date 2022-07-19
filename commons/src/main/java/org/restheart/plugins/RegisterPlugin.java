@@ -138,4 +138,12 @@ public @interface RegisterPlugin {
      * @return the authorizer type
      */
     Authorizer.TYPE authorizerType() default Authorizer.TYPE.ALLOWER;
+
+    /**
+     * Set to true to have the service dispached to the working thread pool, false
+     * to be executed directly by the IO thread
+     *
+     * @return true if the service executes blocking calls
+     */
+    boolean blocking() default true;
 }

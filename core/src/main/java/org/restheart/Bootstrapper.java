@@ -121,7 +121,6 @@ import org.xnio.ssl.XnioSsl;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.handlers.AllowedMethodsHandler;
-import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.handlers.GracefulShutdownHandler;
 import io.undertow.server.handlers.HttpContinueAcceptingHandler;
 import io.undertow.server.handlers.RequestLimit;
@@ -662,9 +661,8 @@ public final class Bootstrapper {
             new RequestLimitingHandler(
                 new RequestLimit(configuration.getRequestsLimit()),
                 new AllowedMethodsHandler(
-                    new BlockingHandler(
-                            new ErrorHandler(
-                                    new HttpContinueAcceptingHandler(PluginsRegistryImpl.getInstance().getRootPathHandler()))),
+                    new ErrorHandler(
+                        new HttpContinueAcceptingHandler(PluginsRegistryImpl.getInstance().getRootPathHandler())),
                     // allowed methods
                     HttpString.tryFromString(ExchangeKeys.METHOD.GET.name()),
                     HttpString.tryFromString(ExchangeKeys.METHOD.POST.name()),

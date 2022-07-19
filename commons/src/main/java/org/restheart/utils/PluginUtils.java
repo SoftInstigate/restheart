@@ -258,6 +258,20 @@ public class PluginUtils {
         }
     }
 
+    public static boolean blocking(Service<?,?> service) {
+        if (service == null) {
+            return true;
+        }
+
+        var a = service.getClass().getDeclaredAnnotation(RegisterPlugin.class);
+
+        if (a == null) {
+            return true;
+        } else {
+            return a.blocking();
+        }
+    }
+
     /**
      *
      * @param registry
@@ -281,7 +295,7 @@ public class PluginUtils {
      */
     @SuppressWarnings("rawtypes")
     public static PluginRecord<Service> handlingServicePluginRecord(PluginsRegistry registry, HttpServerExchange exchange) {
-        var pi = Request.of(exchange).getPipelineInfo();
+        var pi = Request.getPipelineInfo(exchange);
 
         if (pi != null && pi.getType() == SERVICE) {
             var srvName = pi.getName();
