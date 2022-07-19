@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import org.restheart.exchange.ByteArrayProxyResponse;
 import org.restheart.exchange.PipelineInfo;
 import org.restheart.exchange.ServiceResponse;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 
 /**
@@ -34,6 +35,8 @@ import org.restheart.plugins.PluginsRegistryImpl;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public class ResponseSender extends PipelinedHandler {
+    private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();
+
     /**
      *
      */
@@ -56,13 +59,12 @@ public class ResponseSender extends PipelinedHandler {
     @Override
     @SuppressWarnings({"unchecked","rawtypes"})
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var registry = PluginsRegistryImpl.getInstance();
         var path = exchange.getRequestPath();
 
-        var pi = registry.getPipelineInfo(path);
+        var pi = pluginsRegistry.getPipelineInfo(path);
 
         if (pi.getType() == PipelineInfo.PIPELINE_TYPE.SERVICE) {
-            var srv = registry.getServices().stream()
+            var srv = pluginsRegistry.getServices().stream()
                     .filter(s -> s.getName().equals(pi.getName()))
                     .findAny();
 

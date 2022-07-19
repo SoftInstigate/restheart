@@ -79,7 +79,7 @@ public class RequestLogger extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (configuration.logExchangeDump() > 0) {
+        if (configuration.logExchangeDump() > 0 && LOGGER.isInfoEnabled()) {
             dumpExchange(exchange, configuration.logExchangeDump());
         }
 

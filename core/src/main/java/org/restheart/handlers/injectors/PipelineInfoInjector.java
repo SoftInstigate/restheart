@@ -23,6 +23,7 @@ package org.restheart.handlers.injectors;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.exchange.Request;
 import org.restheart.handlers.PipelinedHandler;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 
 /**
@@ -34,6 +35,7 @@ import org.restheart.plugins.PluginsRegistryImpl;
  * Request.getPipelineInfo()
  */
 public class PipelineInfoInjector extends PipelinedHandler {
+    private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();
 
     /**
      * Creates a new instance of PipelineInfoInjector
@@ -59,8 +61,7 @@ public class PipelineInfoInjector extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        Request.setPipelineInfo(exchange, PluginsRegistryImpl.getInstance()
-                    .getPipelineInfo(exchange.getRequestPath()));
+        Request.setPipelineInfo(exchange, pluginsRegistry.getPipelineInfo(exchange.getRequestPath()));
 
         next(exchange);
     }

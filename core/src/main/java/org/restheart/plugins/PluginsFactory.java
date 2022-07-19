@@ -50,6 +50,8 @@ public class PluginsFactory {
 
     private static final PluginsFactory SINGLETON = new PluginsFactory();
 
+    private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();
+
     public static PluginsFactory getInstance() {
         return SINGLETON;
     }
@@ -374,7 +376,7 @@ public class PluginsFactory {
             if (InjectPluginsRegistry.class.equals(injection.clazz) && ip.descriptor.injections.stream().filter(p -> p.methodHash == injection.methodHash).count() == 1) {
                 // try to inovke @InjectPluginRegistry method
                 try {
-                    ip.clazz.getDeclaredMethod(injection.method, PluginsRegistry.class).invoke(ip.instance, PluginsRegistryImpl.getInstance());
+                    ip.clazz.getDeclaredMethod(injection.method, PluginsRegistry.class).invoke(ip.instance, pluginsRegistry);
                     LOGGER.trace("Injected PluginsRegistry into {}.{}()", ip.clazz.getSimpleName(), injection.method);
                 } catch (NoSuchMethodException nme) {
                     throw new ConfigurationException(ip.type + " " + ip.name
@@ -411,7 +413,7 @@ public class PluginsFactory {
 
             // try to inovke @InjectConfiguration method
             try {
-                ip.clazz.getDeclaredMethod(injection.method, Map.class, PluginsRegistry.class).invoke(ip.instance, scopedConf, PluginsRegistryImpl.getInstance());
+                ip.clazz.getDeclaredMethod(injection.method, Map.class, PluginsRegistry.class).invoke(ip.instance, scopedConf, pluginsRegistry);
                 LOGGER.trace("Injected PluginsRegistry and Configuration into {}.{}()", ip.clazz.getSimpleName(), injection.method);
             } catch (NoSuchMethodException nme) {
                 throw new ConfigurationException(ip.type + " " + ip.name + " has an invalid method with @InjectConfiguration"

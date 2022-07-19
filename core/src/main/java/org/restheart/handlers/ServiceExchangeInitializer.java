@@ -27,6 +27,7 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.Exchange;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
@@ -42,6 +43,9 @@ import org.slf4j.LoggerFactory;
  */
 public class ServiceExchangeInitializer extends PipelinedHandler {
     private final Logger LOGGER = LoggerFactory.getLogger(ServiceExchangeInitializer.class);
+
+    private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();
+
     /**
      * Creates a new instance of RequestInitializer
      *
@@ -53,12 +57,11 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
     @Override
     @SuppressWarnings("unchecked")
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var registry = PluginsRegistryImpl.getInstance();
         var path = exchange.getRequestPath();
 
-        var pi = registry.getPipelineInfo(path);
+        var pi = pluginsRegistry.getPipelineInfo(path);
 
-        var srv = registry.getServices().stream()
+        var srv = pluginsRegistry.getServices().stream()
             .filter(s -> s.getName().equals(pi.getName()))
             .findAny();
 

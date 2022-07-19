@@ -33,6 +33,7 @@ import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import static org.restheart.plugins.InterceptPoint.RESPONSE_ASYNC;
 
 import org.restheart.plugins.Interceptor;
+import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import static org.restheart.utils.PluginUtils.requiresContent;
 
@@ -63,6 +64,8 @@ public class ConduitInjector extends PipelinedHandler {
 
     public static final AttachmentKey<HeaderMap> ORIGINAL_ACCEPT_ENCODINGS_KEY = AttachmentKey.create(HeaderMap.class);
 
+    private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();
+
     @SuppressWarnings("rawtypes")
     private final List<Interceptor> inteceptors = new ArrayList<>();
     /**
@@ -77,9 +80,8 @@ public class ConduitInjector extends PipelinedHandler {
      */
     public ConduitInjector(PipelinedHandler next) {
         super(next);
-        var registry = PluginsRegistryImpl.getInstance();
-        this.inteceptors.addAll(registry.getProxyInterceptors(RESPONSE));
-        this.inteceptors.addAll(registry.getProxyInterceptors(RESPONSE_ASYNC));
+        this.inteceptors.addAll(pluginsRegistry.getProxyInterceptors(RESPONSE));
+        this.inteceptors.addAll(pluginsRegistry.getProxyInterceptors(RESPONSE_ASYNC));
     }
 
     /**
