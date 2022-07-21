@@ -269,42 +269,44 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     }
 
     @SuppressWarnings("rawtypes")
-    private LoadingCache<AbstractMap.SimpleEntry<Service, InterceptPoint>, List<Interceptor>> SRV_INTERCEPTORS_CACHE = CacheFactory
+    private LoadingCache<AbstractMap.SimpleEntry<String, InterceptPoint>, List<Interceptor>> SRV_INTERCEPTORS_CACHE = CacheFactory
         .createHashMapLoadingCache((key) -> __interceptors(key.getKey(), key.getValue()));
 
     @SuppressWarnings("rawtypes")
-    private List<Interceptor> __interceptors(Service service, InterceptPoint interceptPoint) {
-        if (service != null) {
+    private List<Interceptor> __interceptors(String serviceName, InterceptPoint interceptPoint) {
+        Optional<PluginRecord<Service>> _service = serviceName == null ? Optional.empty() : getServices().stream().filter(pr -> serviceName.equals(pr.getName())).findFirst();
+
+        if (_service.isPresent()) {
             // if the request is handled by a service set to not execute interceptors
             // at this interceptPoint, skip interceptors execution
             // var vip = PluginUtils.dontIntercept(PluginsRegistryImpl.getInstance(), exchange);
-            var vip = PluginUtils.dontIntercept(service);
+            var vip = PluginUtils.dontIntercept(_service.get().getInstance());
             if (Arrays.stream(vip).anyMatch(interceptPoint::equals)) {
                 return Lists.newArrayList();
             }
         }
 
         return getInterceptors()
-                .stream()
-                .filter(ri -> ri.isEnabled())
-                .map(ri -> ri.getInstance())
-                // IMPORTANT: An interceptor can intercept:
-                // - service requests handled by a Service when its request and response
-                //   types are equal to the ones declared by the Service
-                // - request handled by a Service when its request and response
-                //   are WildcardRequest and WildcardResponse
-                // - request handled by a Proxy when its request and response
-                //   are ByteArrayProxyRequest and ByteArrayProxyResponse
-                .filter(ri
-                    -> (service != null
-                    && PluginUtils.cachedRequestType(ri).equals(PluginUtils.cachedRequestType(service))
-                    && PluginUtils.cachedResponseType(ri).equals(PluginUtils.cachedResponseType(service)))
-                    || (service != null && ri instanceof WildcardInterceptor)
-                    || (service == null
+            .stream()
+            .filter(ri -> ri.isEnabled())
+            .map(ri -> ri.getInstance())
+            // IMPORTANT: An interceptor can intercept:
+            // - service requests handled by a Service when its request and response
+            //   types are equal to the ones declared by the Service
+            // - request handled by a Service when its request and response
+            //   are WildcardRequest and WildcardResponse
+            // - request handled by a Proxy when its request and response
+            //   are ByteArrayProxyRequest and ByteArrayProxyResponse
+            .filter(ri
+                -> (_service.isPresent()
+                    && PluginUtils.cachedRequestType(ri).equals(PluginUtils.cachedRequestType(_service.get().getInstance()))
+                    && PluginUtils.cachedResponseType(ri).equals(PluginUtils.cachedResponseType(_service.get().getInstance())))
+                || (_service.isPresent() && ri instanceof WildcardInterceptor)
+                || (_service.isEmpty()
                     && PluginUtils.cachedRequestType(ri).equals(ByteArrayProxyRequest.type())
                     && PluginUtils.cachedResponseType(ri).equals(ByteArrayProxyResponse.type())))
-                .filter(ri -> interceptPoint == PluginUtils.interceptPoint(ri))
-                .collect(Collectors.toList());
+            .filter(ri -> interceptPoint == PluginUtils.interceptPoint(ri))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -319,7 +321,9 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         Objects.requireNonNull(srv);
         Objects.requireNonNull(interceptPoint);
 
-        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<Service, InterceptPoint>(srv, interceptPoint));
+        var serviceName = PluginUtils.name(srv);
+
+        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<String, InterceptPoint>(serviceName, interceptPoint));
 
         return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
     }
@@ -332,7 +336,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     @SuppressWarnings("rawtypes")
     public List<Interceptor> getProxyInterceptors(InterceptPoint interceptPoint) {
-        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<Service, InterceptPoint>(null, interceptPoint));
+        var _ret =  SRV_INTERCEPTORS_CACHE.getLoading(new AbstractMap.SimpleEntry<String, InterceptPoint>(null, interceptPoint));
 
         return _ret.isPresent() ? _ret.get() : Lists.newArrayList();
     }

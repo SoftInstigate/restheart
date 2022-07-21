@@ -53,7 +53,7 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
 
     private final InterceptPoint interceptPoint;
 
-    private final PluginsRegistry pluginsRegistry;
+    private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();
 
     /**
      *
@@ -62,7 +62,6 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
     public RequestInterceptorsExecutor(InterceptPoint interceptPoint) {
         super(null);
         this.interceptPoint = interceptPoint;
-        this.pluginsRegistry = PluginsRegistryImpl.getInstance();
     }
 
     /**
@@ -72,7 +71,6 @@ public class RequestInterceptorsExecutor extends PipelinedHandler {
     public RequestInterceptorsExecutor(PipelinedHandler next, InterceptPoint interceptPoint) {
         super(next);
         this.interceptPoint = interceptPoint;
-        this.pluginsRegistry = PluginsRegistryImpl.getInstance();
     }
 
     /**

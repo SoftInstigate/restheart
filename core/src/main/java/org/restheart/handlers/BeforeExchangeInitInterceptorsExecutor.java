@@ -22,6 +22,7 @@ package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
 
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.UninitializedRequest;
@@ -34,6 +35,8 @@ import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import graphql.com.google.common.collect.Lists;
+
 /**
  * Executes the Interceptor with interceptPoint REQUEST_BEFORE_EXCHANGE_INIT
  *
@@ -43,8 +46,9 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BeforeExchangeInitInterceptorsExecutor.class);
 
+    private ArrayList<WildcardInterceptor> wildCardInterceptors = Lists.newArrayList();
 
-    private final PluginsRegistry pluginsRegistry;
+    private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();;
 
     /**
      *
@@ -52,7 +56,13 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
      */
     public BeforeExchangeInitInterceptorsExecutor() {
         super(null);
-        this.pluginsRegistry = PluginsRegistryImpl.getInstance();
+        this.wildCardInterceptors = pluginsRegistry.getInterceptors().stream()
+            .filter(pr -> pr.isEnabled())
+            .map(pr -> pr.getInstance())
+            .filter(i -> PluginUtils.interceptPoint(i) == REQUEST_BEFORE_EXCHANGE_INIT)
+            .filter(i -> i instanceof WildcardInterceptor)
+            .map(i -> (WildcardInterceptor) i)
+            .collect(Collectors.toCollection(ArrayList::new));
     }
 
     /**
@@ -61,7 +71,6 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
      */
     public BeforeExchangeInitInterceptorsExecutor(PipelinedHandler next) {
         super(next);
-        this.pluginsRegistry = PluginsRegistryImpl.getInstance();
     }
 
     /**
@@ -70,18 +79,10 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
      * @throws Exception
      */
     @Override
-    @SuppressWarnings({"unchecked"})
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var interceptors = pluginsRegistry.getInterceptors().stream()
-            .filter(pr -> pr.isEnabled())
-            .map(pr -> pr.getInstance())
-            .filter(i -> PluginUtils.interceptPoint(i) == REQUEST_BEFORE_EXCHANGE_INIT)
-            .filter(i -> i instanceof WildcardInterceptor)
-            .collect(Collectors.toList());
-
         var request = new UninitializedRequest(exchange);
 
-        interceptors.stream().filter(ri -> {
+        this.wildCardInterceptors.stream().filter(ri -> {
             try {
                 return ri.resolve(request, null);
             } catch (Exception e) {
