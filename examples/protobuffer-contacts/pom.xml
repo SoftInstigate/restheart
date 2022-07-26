@@ -25,10 +25,32 @@
             <artifactId>protobuf-java-format</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.gaplotech</groupId>
+            <artifactId>kotlin-protobuf-bson-codec</artifactId>
+            <version>0.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+            <version>1.6.21</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>bson</artifactId>
+            <version>4.4.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.mashape.unirest</groupId>
             <artifactId>unirest-java</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+          </dependency>
     </dependencies>
 
     <build>

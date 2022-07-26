@@ -35,7 +35,6 @@ public class BsonToProtobuf implements MongoInterceptor {
      */
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return request.isPost()
-            && "/proto".equals(request.getPath());
+        return request.isPost() && "/proto".equals(request.getPath());
     }
 }

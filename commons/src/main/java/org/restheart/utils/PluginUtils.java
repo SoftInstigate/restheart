@@ -20,18 +20,11 @@
 package org.restheart.utils;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.AttachmentKey;
-
 import java.lang.reflect.Type;
 import java.util.Map;
-import java.util.function.Consumer;
-
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.exchange.Request;
-import org.restheart.exchange.ServiceRequest;
-import org.restheart.exchange.UninitializedRequest;
-
 import static org.restheart.exchange.PipelineInfo.PIPELINE_TYPE.SERVICE;
 import org.restheart.plugins.ExchangeTypeResolver;
 import org.restheart.plugins.InitPoint;
@@ -353,38 +346,5 @@ public class PluginUtils {
     @SuppressWarnings("rawtypes")
     public static Type cachedResponseType(ExchangeTypeResolver plugin) {
         return SC.getLoading(plugin).get();
-    }
-
-    private static final AttachmentKey<Consumer<HttpServerExchange>> CUSTOM_REQUEST_INITIALIZER_KEY = AttachmentKey.create(Consumer.class);
-
-    /**
-     * attach a custom request initializer to the exchange
-     *
-     * the custom request will be used to initialize the request in place
-     * of the default service one
-     *
-     * the custom request must be attached before request initialization
-     * for instance by an Interceptor at IntercepPoint.BEFORE_EXCHAGE_INIIT
-     *
-     * @param request the uninitialized request
-     * @param exchange the exchange
-     * @throws IllegalStateException if the request is not an instance of UnitializedRequest
-     *
-     */
-    public static void attachCustomRequestInitializer(ServiceRequest<?> request, Consumer<HttpServerExchange> initializer) {
-        if (request instanceof UninitializedRequest) {
-            request.getExchange().putAttachment(CUSTOM_REQUEST_INITIALIZER_KEY, initializer);
-        } else {
-            throw new IllegalStateException("Tried to attach a custom request initializer to a request that is not an UnitializedRequest");
-        }
-    }
-
-    /**
-     *
-     * @param exchange
-     * @return the custom initializer attached to the exchange, can be null
-     */
-    public static Consumer<HttpServerExchange> customInitializer(HttpServerExchange exchange) {
-        return exchange.getAttachment(CUSTOM_REQUEST_INITIALIZER_KEY);
     }
 }

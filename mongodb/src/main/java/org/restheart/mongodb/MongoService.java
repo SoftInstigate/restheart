@@ -57,6 +57,7 @@ import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
+import org.restheart.utils.MongoServiceAttachments;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
@@ -229,8 +230,19 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
 
             // MongoRequestPropsInjector and MongoRequestContentInjector requires
             // that both MongoRequest and MongoResponse are initialized
+            // so we need to inject the content of both here
+
             MongoRequestPropsInjector.inject(e);
-            MongoRequestContentInjector.inject(e);
+
+            // the MongoRequest content can have been already attached to the exchange
+            // with MongoServiceAttachments.attacheBsonContent()
+            // for instance, by an Interceptor at interceptPoint=BEFORE_EXCHANGE_INIT
+            var attacheBsonContent = MongoServiceAttachments.attachedBsonContent(e);
+            if (attacheBsonContent == null) {
+                MongoRequestContentInjector.inject(e);
+            } else {
+                MongoRequest.of(e).setContent(attacheBsonContent);
+            }
         };
     }
 

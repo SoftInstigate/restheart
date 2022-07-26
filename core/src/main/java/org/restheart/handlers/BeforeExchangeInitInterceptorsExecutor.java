@@ -80,7 +80,7 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = new UninitializedRequest(exchange);
+        var request = UninitializedRequest.of(exchange);
 
         this.wildCardInterceptors.stream().filter(ri -> {
             try {

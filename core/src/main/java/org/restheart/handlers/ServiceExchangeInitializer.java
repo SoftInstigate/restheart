@@ -27,10 +27,10 @@ import org.bson.BsonInt32;
 import org.bson.BsonString;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.Exchange;
+import org.restheart.exchange.UninitializedRequest;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
-import org.restheart.utils.PluginUtils;
 import org.restheart.utils.BsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,20 +67,18 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
 
         if (srv.isPresent()) {
             try {
-                // execute the service request initializer or a custom one if
-                // attached to the exchange
+                // execute the service request initializer or a custom one
+                var customRequestInitializer = UninitializedRequest.of(exchange).customRequestInitializer();
 
-                var customInitializer = PluginUtils.customInitializer(exchange);
-
-                if (customInitializer == null) {
+                if (customRequestInitializer == null) {
                     // service default request initializer
                     srv.get().getInstance().requestInitializer().accept(exchange);
                 } else {
-                    // custom initializer
-                    customInitializer.accept(exchange);
+                    // custom request initializer
+                    customRequestInitializer.accept(exchange);
                 }
 
-                // execute the response initializer
+                // service default response initializer
                 srv.get().getInstance().responseInitializer().accept(exchange);
             } catch (BadRequestException bre) {
                 LOGGER.debug("Error handling the request: {}", bre.getMessage(), bre);

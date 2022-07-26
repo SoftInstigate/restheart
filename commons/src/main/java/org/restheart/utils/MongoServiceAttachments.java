@@ -18,7 +18,7 @@
  * =========================LICENSE_END==================================
  */
 
-package org.restheart.mongodb;
+package org.restheart.utils;
 
 import org.bson.BsonValue;
 
@@ -30,7 +30,7 @@ import io.undertow.util.AttachmentKey;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-public class ExchangeAttachmentKeys {
+public class MongoServiceAttachments {
     private static final AttachmentKey<BsonValue> MONGO_REQUEST_CONTENT_KEY = AttachmentKey.create(BsonValue.class);
 
     /**
