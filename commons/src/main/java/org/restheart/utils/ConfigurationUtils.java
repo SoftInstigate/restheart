@@ -39,6 +39,10 @@ import org.xnio.Option;
 import io.undertow.UndertowOptions;
 import io.undertow.Undertow.Builder;
 
+/**
+ *
+ * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
+ */
 public class ConfigurationUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(Configuration.class);
 

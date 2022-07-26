@@ -33,8 +33,7 @@ import io.undertow.util.AttachmentKey;
  * @param <T> generic type
  */
 public abstract class ServiceResponse<T> extends Response<T> {
-    private static final AttachmentKey<ServiceResponse<?>> RESPONSE_KEY
-            = AttachmentKey.create(ServiceResponse.class);
+    private static final AttachmentKey<ServiceResponse<?>> RESPONSE_KEY = AttachmentKey.create(ServiceResponse.class);
 
     protected T content;
     private Runnable customSender = null;
