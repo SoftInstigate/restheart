@@ -38,12 +38,15 @@ public class ProtobufToBson implements WildcardInterceptor {
         var uninitializedRequest = (UninitializedRequest) request;
 
         uninitializedRequest.setCustomRequestInitializer(e -> {
-            LOGGER.debug("******* custom initializer!");
             var req = (UninitializedRequest) request;
 
             try {
                 // parse the protocol buffer request
                 var helloReq = ContactPostRequest.parseFrom(req.getRawContent());
+
+                // MongoRequest.init() will skip the parsing of the request content
+                // and use the Bson attached to the exchange
+                // with MongoServiceAttachments.attachBsonContent()
                 MongoServiceAttachments.attachBsonContent(request.getExchange(), decode(helloReq));
             } catch(Throwable ex) {
                 var r = MongoRequest.init(e, "/proto", "/restheart/contacts");
@@ -51,10 +54,6 @@ public class ProtobufToBson implements WildcardInterceptor {
             }
 
             // we remap the request to the collection restheart.coll
-            //
-            // MongoRequest.init() will skip the parsing of the request content
-            // and use the Bson attached to the exchange
-            // with ExchangeAttachmentKeys.attachBsonContent()
             MongoRequest.init(e, "/proto", "/restheart/contacts");
         });
     }

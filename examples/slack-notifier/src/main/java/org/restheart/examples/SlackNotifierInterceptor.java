@@ -7,12 +7,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Map;
-
-import org.bson.BsonDocument;
 import org.bson.json.JsonWriterSettings;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
@@ -22,8 +19,6 @@ import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.gson.JsonObject;
 
 @RegisterPlugin(
         name = "slackNotifierInterceptor",
@@ -51,34 +46,34 @@ public class SlackNotifierInterceptor implements MongoInterceptor {
 
     @Override
     public void handle(MongoRequest mongoRequest, MongoResponse mongoResponse) throws IOException, InterruptedException {
-        final BsonDocument doc = mongoResponse.getDbOperationResult().getNewData();
+        final var doc = mongoResponse.getDbOperationResult().getNewData();
 
-        final JsonObject jsonObject = object()
+        final var jsonObject = object()
                 .put("text",
-                        ":tada: New document\n```" 
+                        ":tada: New document\n```"
                         + doc.toJson(JsonWriterSettings.builder().indent(true).build())
                         + "```")
                 .put("channel", this.channel)
                 .get();
 
-        final String json = jsonObject.toString();
+        final var json = jsonObject.toString();
         LOGGER.info("Body: \n{}", json);
 
-        HttpClient httpClient = HttpClient.newBuilder()
+        var httpClient = HttpClient.newBuilder()
                         .version(HttpClient.Version.HTTP_1_1)
                         .connectTimeout(Duration.ofSeconds(10))
                         .build();
 
-        HttpRequest httpRequest = HttpRequest.newBuilder()
+        var httpRequest = HttpRequest.newBuilder()
                 .uri(URI.create("https://slack.com/api/chat.postMessage"))
                 .header("Authorization", "Bearer " + this.oauthToken)
                 .header("Content-Type", "application/json; charset=utf-8")
                 .POST(BodyPublishers.ofString(json))
                 .build();
 
-        final HttpResponse<String> httpResponse = httpClient.send(httpRequest, BodyHandlers.ofString());
+        final var httpResponse = httpClient.send(httpRequest, BodyHandlers.ofString());
 
-        LOGGER.info("SlackNotifierInterceptor sent message to Slack channel: {} with status {}", 
+        LOGGER.info("SlackNotifierInterceptor sent message to Slack channel: {} with status {}",
                         httpResponse.body(), httpResponse.statusCode());
     }
 

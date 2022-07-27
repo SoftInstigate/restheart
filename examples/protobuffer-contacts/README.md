@@ -77,20 +77,39 @@ In order to allow the `MongoService` to be used with the Protocol Buffer format,
 
 This can be achieved with a `WildcardInterceptor` with `interceptPoint=REQUEST_BEFORE_EXCHANGE_INIT`.
 
-The `handle(request, response)` method receives an object of class `UninitializedRequest` as request argument, and `null` as response argument. `UninitializedRequest.getRawContent()` and `UninitializedRequest.setRawContent()` allows to get and overwrite the request raw body.
+The `handle(request, response)` method receives an object of class `UninitializedRequest` as request argument, and `UninitializedResponse` as response argument. `UninitializedRequest.getRawContent()` and `UninitializedRequest.setRawContent()` allows to get and overwrite the request raw body.
 
-Once that the request raw content is modified from Protocol Buffer to JSON, the request will be correctly handled by the `MongoService` as it was a JSON over HTTP request.
+The Interceptor sets a custom request initializer (that will be executed in place of the default request initializer defined by the MongoService) to translate the protobuf payload to BSON using the great [kotlin-protobuf-bson-codec library](https://github.com/gaplotech/kotlin-protobuf-bson-codec).
 
-Last, the Interceptor sets a custom initializer to remap the request from the URI `/proto` to the resource `restheart.coll` using `MongoRequest.init()` that allows to specify the URI/MongoDB resource mapping.
 
 ```java
-PluginUtils.attachCustomRequestInitializer(request, e -> {
-    LOGGER.debug("******* custom initializer!");
-    // we remap the request to the collection restheart.coll
-    // with a custom request initializer
-    MongoRequest.init(e, "/proto", "/restheart/contacts");
-});
+var uninitializedRequest = (UninitializedRequest) request;
+
+        uninitializedRequest.setCustomRequestInitializer(e -> {
+            var req = (UninitializedRequest) request;
+
+            try {
+                // parse the protocol buffer request
+                var helloReq = ContactPostRequest.parseFrom(req.getRawContent());
+
+                // MongoRequest.init() will skip the parsing of the request content
+                // and use the Bson attached to the exchange
+                // with MongoServiceAttachments.attachBsonContent()
+                MongoServiceAttachments.attachBsonContent(request.getExchange(), decode(helloReq));
+            } catch(Throwable ex) {
+                var r = MongoRequest.init(e, "/proto", "/restheart/contacts");
+                r.setInError(true);
+            }
+
+            // we remap the request to the collection restheart.coll
+            MongoRequest.init(e, "/proto", "/restheart/contacts");
+        });
 ```
+
+
+The custom also remaps the request URI `/proto` to the database resource `restheart.coll` using `MongoRequest.init()` that allows to specify the URI/MongoDB resource mapping.
+
+
 
 ## Response transformation
 
