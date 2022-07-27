@@ -45,7 +45,8 @@ public abstract class ServiceRequest<T> extends Request<T> {
      *
      * An intialized request is attached to the exchange using the REQUEST_KEY
      *
-     * With dontAttach=true, instantiates the ServiceRequest without initializing the request
+     * With dontAttach=true, instantiates the ServiceRequest without attaching the request
+     * to the exchange
      *
      * @param exchange
      * @param dontAttach true, if the request won't be attached to the exchange

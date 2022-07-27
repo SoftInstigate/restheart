@@ -39,17 +39,34 @@ public abstract class ServiceResponse<T> extends Response<T> {
     private Runnable customSender = null;
 
     protected ServiceResponse(HttpServerExchange exchange) {
+        this(exchange, false);
+    }
+
+    /**
+     *
+     * An intialized response is attached to the exchange using the REQUEST_KEY
+     *
+     * With dontAttach=true, instantiates the ServiceResponse without attaching the request
+     * to the exchange
+     *
+     * @param exchange
+     * @param dontAttach true, if the request won't be attached to the exchange
+     *
+     */
+    protected ServiceResponse(HttpServerExchange exchange, boolean dontAttach) {
         super(exchange);
 
-        if (exchange.getAttachment(RESPONSE_KEY) != null) {
-            throw new IllegalStateException("Error instantiating response object "
-                    + getClass().getSimpleName()
-                    + ", "
-                    + exchange.getAttachment(RESPONSE_KEY).getClass().getSimpleName()
-                    + " already bound to the exchange");
-        }
+        if (!dontAttach) {
+            if (exchange.getAttachment(RESPONSE_KEY) != null) {
+                throw new IllegalStateException("Error instantiating response object "
+                        + getClass().getSimpleName()
+                        + ", "
+                        + exchange.getAttachment(RESPONSE_KEY).getClass().getSimpleName()
+                        + " already bound to the exchange");
+            }
 
-        exchange.putAttachment(RESPONSE_KEY, this);
+            exchange.putAttachment(RESPONSE_KEY, this);
+     }
     }
 
     public static ServiceResponse<?> of(HttpServerExchange exchange) {

@@ -9,7 +9,8 @@ import io.undertow.util.AttachmentKey;
 
 /**
  * UninitializedRequest wraps the exchage and provides access to
- * request attributes (such as getPath()).
+ * request attributes (such as getPath()) and allows
+ * setting a customRequestInitializer
  *
  * The request content can be only accessed in raw format
  * with getRawContent() and setRawContent()

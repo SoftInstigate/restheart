@@ -21,12 +21,11 @@
 package org.restheart.handlers;
 
 import io.undertow.server.HttpServerExchange;
-
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.UninitializedRequest;
-import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT;
+import org.restheart.exchange.UninitializedResponse;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.plugins.WildcardInterceptor;
@@ -35,7 +34,7 @@ import org.restheart.utils.PluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import graphql.com.google.common.collect.Lists;
+import static org.restheart.plugins.InterceptPoint.REQUEST_BEFORE_EXCHANGE_INIT;
 
 /**
  * Executes the Interceptor with interceptPoint REQUEST_BEFORE_EXCHANGE_INIT
@@ -46,7 +45,7 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BeforeExchangeInitInterceptorsExecutor.class);
 
-    private ArrayList<WildcardInterceptor> wildCardInterceptors = Lists.newArrayList();
+    private ArrayList<WildcardInterceptor> wildCardInterceptors = new ArrayList<>();
 
     private final PluginsRegistry pluginsRegistry = PluginsRegistryImpl.getInstance();;
 
@@ -81,10 +80,11 @@ public class BeforeExchangeInitInterceptorsExecutor extends PipelinedHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         var request = UninitializedRequest.of(exchange);
+        var response = UninitializedResponse.of(exchange);
 
         this.wildCardInterceptors.stream().filter(ri -> {
             try {
-                return ri.resolve(request, null);
+                return ri.resolve(request, response);
             } catch (Exception e) {
                 LOGGER.warn("Error resolving interceptor {} for {} on intercept point {}", ri.getClass().getSimpleName(), exchange.getRequestPath(), REQUEST_BEFORE_EXCHANGE_INIT, e);
 

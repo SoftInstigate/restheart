@@ -28,6 +28,7 @@ import org.bson.BsonString;
 import org.restheart.exchange.BadRequestException;
 import org.restheart.exchange.Exchange;
 import org.restheart.exchange.UninitializedRequest;
+import org.restheart.exchange.UninitializedResponse;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.PluginsRegistryImpl;
 import org.restheart.utils.HttpStatus;
@@ -78,8 +79,16 @@ public class ServiceExchangeInitializer extends PipelinedHandler {
                     customRequestInitializer.accept(exchange);
                 }
 
-                // service default response initializer
-                srv.get().getInstance().responseInitializer().accept(exchange);
+                // execute the service respnse initializer or a custom one
+                var customResponseInitializer = UninitializedResponse.of(exchange).customResponseInitializer();
+
+                if (customResponseInitializer == null) {
+                    // service default response initializer
+                    srv.get().getInstance().responseInitializer().accept(exchange);
+                } else {
+                    // custom response initializer
+                    customResponseInitializer.accept(exchange);
+                }
             } catch (BadRequestException bre) {
                 LOGGER.debug("Error handling the request: {}", bre.getMessage(), bre);
                 exchange.setStatusCode(bre.getStatusCode());
