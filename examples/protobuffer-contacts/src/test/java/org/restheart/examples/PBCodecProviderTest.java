@@ -9,9 +9,9 @@ import org.junit.Test;
 
 import io.github.gaplotech.PBCodecProvider;
 
-public class XxxTest {
+public class PBCodecProviderTest {
     @Test
-    public void testCodec() {
+    public void testPBCodec() {
         var registry = CodecRegistries.fromRegistries(
             CodecRegistries.fromProviders(new PBCodecProvider()),
             MongoClientSettings.getDefaultCodecRegistry());
