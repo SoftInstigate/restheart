@@ -5,12 +5,14 @@ import com.mongodb.MongoClientSettings;
 import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistries;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import io.github.gaplotech.PBCodecProvider;
 
 public class PBCodecProviderTest {
     @Test
+    @Ignore
     public void testPBCodec() {
         var registry = CodecRegistries.fromRegistries(
             CodecRegistries.fromProviders(new PBCodecProvider()),
