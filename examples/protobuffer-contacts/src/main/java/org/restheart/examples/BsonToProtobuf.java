@@ -17,10 +17,13 @@ import org.restheart.utils.LambdaUtils;
 public class BsonToProtobuf implements MongoInterceptor {
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {
+        // get the created document id
         var id = BsonUtils.toJson(response.getDbOperationResult().getNewId(), JsonMode.RELAXED);
-        // transform the json to a protobuf
+
+        // build the ContactPostReply
         var builder = ContactPostReply.newBuilder().setId(id);
 
+        // the custom sender will send the ContactPostReply in place of request content (that is a BsonValue)
         response.setCustomSender(() -> {
             try {
                 response.getExchange().getResponseSender().send(builder.build().toByteString().toStringUtf8());
@@ -31,10 +34,13 @@ public class BsonToProtobuf implements MongoInterceptor {
     }
 
     /**
-     * @return true if the request is a POST to /proto
+     * @return true if the request is a insert POST to /proto
      */
     @Override
     public boolean resolve(MongoRequest request, MongoResponse response) {
-        return request.isPost() && "/proto".equals(request.getPath());
+        return request.isPost()
+            && "/proto".equals(request.getPath())
+            && response.getDbOperationResult() != null
+            && response.getDbOperationResult().getNewId() != null;
     }
 }
