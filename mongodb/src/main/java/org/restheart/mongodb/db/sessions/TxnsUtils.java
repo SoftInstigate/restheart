@@ -182,12 +182,7 @@ public class TxnsUtils {
      * @return
      */
     private static String removeWithTxnNumber(String s) {
-        return s == null ? null :
-            s.contains("{")
-            // MongoDB 6 returns with { thxNumber: 1 }
-            ? s.replaceAll("with \\{ txnNumber:", "").replaceAll("\\}", "").trim()
-            // MongoDB <6 returns with thxNumber 1
-            : s.replaceAll("with txnNumber", "").trim();
+        return s == null ? null : s.replaceAll("with txnNumber", "").trim();
     }
 
     /**
