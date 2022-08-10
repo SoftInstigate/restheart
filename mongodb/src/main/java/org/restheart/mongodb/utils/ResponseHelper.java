@@ -152,7 +152,7 @@ public class ResponseHelper {
             // 56, 40353 FieldPath must not end with a '.'
             // 40352 FieldPath cannot be constructed with empty string
             // 51091 Regular expression is invalid: unmatched parentheses
-            case 56, 40353, 40352, 51091  -> HttpStatus.SC_BAD_REQUEST;
+            case 56, 40353, 40352, 51091, 40323  -> HttpStatus.SC_BAD_REQUEST;
             // 31253 Cannot do inclusion on field xxxx in exclusion projection
             case 31253 -> HttpStatus.SC_BAD_REQUEST;
             // 15974 Illegal key in $sort specification
@@ -225,6 +225,7 @@ public class ResponseHelper {
             case 15974, 17312 -> "Invalid sort parameter";
             // 31138 Illegal $meta sort
             case 31138 -> "Invalid $meta sort";
+            case 40323 -> "A pipeline stage specification object must contain exactly one field.";
             default -> "Error handling the request, see log for more information";
         };
     }
