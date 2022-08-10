@@ -69,7 +69,7 @@ jobs:
           context: ./core/
           platforms: linux/amd64,linux/arm64,linux/ppc64le,linux/s390x,linux/arm/v7
           push: true
-          tags: softinstigate/restheart:latest,softinstigate/restheart:6,softinstigate/restheart:6.3,softinstigate/restheart:${{steps.vars.outputs.VERSION}}
+          tags: softinstigate/restheart:6.3,softinstigate/restheart:${{steps.vars.outputs.VERSION}}
 
       - name: Build and Push GraalVM Docker image
         if: ${{ matrix.deploy }}
@@ -78,7 +78,7 @@ jobs:
           context: ./core/
           file: ./core/Dockerfile.graalvm
           push: true
-          tags: softinstigate/restheart:graalvm,softinstigate/restheart:6-graalvm,softinstigate/restheart:6.3-graalvm,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
+          tags: softinstigate/restheart:6.3-graalvm,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-graalvm
 
       - name: Build and Push distroless docker image
         if: ${{ matrix.deploy }}
@@ -87,7 +87,7 @@ jobs:
           context: ./core/
           file: ./core/Dockerfile.distroless
           push: true
-          tags: softinstigate/restheart:distroless,softinstigate/restheart:6-distroless,softinstigate/restheart:6.3-distroless,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
+          tags: softinstigate/restheart:6.3-distroless,softinstigate/restheart:${{steps.vars.outputs.VERSION}}-distroless
 
       - name: Upload GitHub release
         if: ${{ matrix.deploy }}
