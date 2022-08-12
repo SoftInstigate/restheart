@@ -30,7 +30,7 @@ https-listener:
   keystore-password: null
   certificate-password: null
 
-ajp-host-listener:
+ajp-listener:
   enabled: false
   host: localhosst
   port: 8009
