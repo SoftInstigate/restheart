@@ -138,16 +138,6 @@
 
     <repositories>
         <repository>
-            <id>releases-repo</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
             <id>snapshots-repo</id>
             <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
             <releases>
