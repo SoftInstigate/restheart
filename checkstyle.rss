@@ -19,14 +19,14 @@ under the License.
 -->
 <rss version="0.91">
   <channel>
-    <title>restheart-graphql - Checkstyle report</title>
+    <title>restheart-mongodb - Checkstyle report</title>
     <link>http://www.restheart.org</link>
-    <description>restheart-graphql - Checkstyle report</description>
+    <description>restheart-mongodb - Checkstyle report</description>
     <language>en-us</language>
-    <copyright>&#169;2020 - 2022 SoftInstigate</copyright>
+    <copyright>&#169;2014 - 2022 SoftInstigate</copyright>
     <item>
-      <title>File: 39,
-             Errors: 20,
+      <title>File: 157,
+             Errors: 10,
              Warnings: 0,
              Infos: 0
       </title>
@@ -46,7 +46,7 @@ under the License.
           <tbody>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonInt64Coercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonInt64Coercing.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.bulk.package-info.java">org/restheart/mongodb/handlers/bulk/package-info.java</a>
                 </td>
                 <td>
                   0
@@ -60,7 +60,203 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.GraphQLAppDeserializer.java">org/restheart/graphql/GraphQLAppDeserializer.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.sessions.TxnsActivator.java">org/restheart/mongodb/handlers/sessions/TxnsActivator.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.document.package-info.java">org/restheart/mongodb/handlers/document/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.ChangeStreamOperation.java">org/restheart/mongodb/handlers/changestreams/ChangeStreamOperation.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.ObsoleteChangeStreamRemover.java">org/restheart/mongodb/handlers/changestreams/ObsoleteChangeStreamRemover.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.aggregation.AbstractAggregationOperation.java">org/restheart/mongodb/handlers/aggregation/AbstractAggregationOperation.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.Databases.java">org/restheart/mongodb/db/Databases.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.sessions.SessionsUtils.java">org/restheart/mongodb/db/sessions/SessionsUtils.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.ChangeStreamSubscriber.java">org/restheart/mongodb/handlers/changestreams/ChangeStreamSubscriber.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.indexes.GetIndexesHandler.java">org/restheart/mongodb/handlers/indexes/GetIndexesHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.schema.JsonMetaSchemaChecker.java">org/restheart/mongodb/handlers/schema/JsonMetaSchemaChecker.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.package-info.java">org/restheart/mongodb/hal/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.database.PutDBHandler.java">org/restheart/mongodb/handlers/database/PutDBHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.MongoServiceConfigurationKeys.java">org/restheart/mongodb/MongoServiceConfigurationKeys.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.schema.SchemaStoreClient.java">org/restheart/mongodb/handlers/schema/SchemaStoreClient.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.MongoServiceConfiguration.java">org/restheart/mongodb/MongoServiceConfiguration.java</a>
                 </td>
                 <td>
                   0
@@ -74,7 +270,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.dataloaders.QueryBatchLoader.java">org/restheart/graphql/dataloaders/QueryBatchLoader.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.Resource.java">org/restheart/mongodb/hal/Resource.java</a>
                 </td>
                 <td>
                   0
@@ -88,7 +284,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonBooleanCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonBooleanCoercing.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.DbUtils.java">org/restheart/mongodb/db/DbUtils.java</a>
                 </td>
                 <td>
                   0
@@ -102,7 +298,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.GraphQLAppDefNotFoundException.java">org/restheart/graphql/GraphQLAppDefNotFoundException.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.ChangeStreamWebSocketSession.java">org/restheart/mongodb/handlers/changestreams/ChangeStreamWebSocketSession.java</a>
                 </td>
                 <td>
                   0
@@ -116,49 +312,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.QueryMapping.java">org/restheart/graphql/models/QueryMapping.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.FieldMapping.java">org/restheart/graphql/models/FieldMapping.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.interceptors.GraphAppDefinitionPutPostChecker.java">org/restheart/graphql/interceptors/GraphAppDefinitionPutPostChecker.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.cache.AppDefinitionLoader.java">org/restheart/graphql/cache/AppDefinitionLoader.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.sessions.TxnClientSessionImpl.java">org/restheart/mongodb/db/sessions/TxnClientSessionImpl.java</a>
                 </td>
                 <td>
                   0
@@ -172,7 +326,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.FieldRenaming.java">org/restheart/graphql/models/FieldRenaming.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.injectors.package-info.java">org/restheart/mongodb/handlers/injectors/package-info.java</a>
                 </td>
                 <td>
                   0
@@ -186,21 +340,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonDocumentCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonDocumentCoercing.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  3
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonObjectIdCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonObjectIdCoercing.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.files.DeleteFileHandler.java">org/restheart/mongodb/handlers/files/DeleteFileHandler.java</a>
                 </td>
                 <td>
                   0
@@ -214,7 +354,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.interceptors.GraphAppDefinitionPutPostEscaper.java">org/restheart/graphql/interceptors/GraphAppDefinitionPutPostEscaper.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.DBRepresentationFactory.java">org/restheart/mongodb/hal/DBRepresentationFactory.java</a>
                 </td>
                 <td>
                   0
@@ -228,7 +368,1071 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonInt32Coercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonInt32Coercing.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.exchange.BsonRequestContentInjector.java">org/restheart/mongodb/exchange/BsonRequestContentInjector.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.document.GetDocumentHandler.java">org/restheart/mongodb/handlers/document/GetDocumentHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.CursorPool.java">org/restheart/mongodb/db/CursorPool.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.root.package-info.java">org/restheart/mongodb/handlers/root/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.WebSocketSessionsRegistry.java">org/restheart/mongodb/handlers/changestreams/WebSocketSessionsRegistry.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.files.PostBucketHandler.java">org/restheart/mongodb/handlers/files/PostBucketHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.MongoClientSingleton.java">org/restheart/mongodb/db/MongoClientSingleton.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.interceptors.MetadataCachesSingleton.java">org/restheart/mongodb/interceptors/MetadataCachesSingleton.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.metadata.Relationship.java">org/restheart/mongodb/metadata/Relationship.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.aggregation.AggregationPipeline.java">org/restheart/mongodb/handlers/aggregation/AggregationPipeline.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.GzipEncodingHandler.java">org/restheart/mongodb/handlers/GzipEncodingHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.injectors.ETagPolicyInjector.java">org/restheart/mongodb/handlers/injectors/ETagPolicyInjector.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.files.GetFileHandler.java">org/restheart/mongodb/handlers/files/GetFileHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.security.FilterOperatorsBlacklist.java">org/restheart/mongodb/security/FilterOperatorsBlacklist.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.SizeRequestTransformer.java">org/restheart/mongodb/handlers/SizeRequestTransformer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.MongoServiceInitializer.java">org/restheart/mongodb/MongoServiceInitializer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.services.CacheInvalidator.java">org/restheart/mongodb/services/CacheInvalidator.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.MongoService.java">org/restheart/mongodb/MongoService.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.Link.java">org/restheart/mongodb/hal/Link.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.files.GetBucketHandler.java">org/restheart/mongodb/handlers/files/GetBucketHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.sessions.DeleteTxnHandler.java">org/restheart/mongodb/handlers/sessions/DeleteTxnHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.AggregationResultRepresentationFactory.java">org/restheart/mongodb/hal/AggregationResultRepresentationFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.CursorPoolEntryKey.java">org/restheart/mongodb/db/CursorPoolEntryKey.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.interceptors.JsonSchemaAfterWriteChecker.java">org/restheart/mongodb/interceptors/JsonSchemaAfterWriteChecker.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.utils.MongoURLUtils.java">org/restheart/mongodb/utils/MongoURLUtils.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.schema.JsonSchemaNotFoundException.java">org/restheart/mongodb/handlers/schema/JsonSchemaNotFoundException.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.bulk.BulkPatchDocumentsHandler.java">org/restheart/mongodb/handlers/bulk/BulkPatchDocumentsHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.MetaRequestTransformer.java">org/restheart/mongodb/handlers/MetaRequestTransformer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.utils.OSChecker.java">org/restheart/mongodb/utils/OSChecker.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.files.PutBucketHandler.java">org/restheart/mongodb/handlers/files/PutBucketHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.utils.package-info.java">org/restheart/mongodb/utils/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.RootRepresentationFactory.java">org/restheart/mongodb/hal/RootRepresentationFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.CollectionRepresentationFactory.java">org/restheart/mongodb/hal/CollectionRepresentationFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  5
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.sessions.TxnsUtils.java">org/restheart/mongodb/db/sessions/TxnsUtils.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.collection.PatchCollectionHandler.java">org/restheart/mongodb/handlers/collection/PatchCollectionHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.sessions.SessionOptions.java">org/restheart/mongodb/db/sessions/SessionOptions.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.DocumentRepresentationFactory.java">org/restheart/mongodb/hal/DocumentRepresentationFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.interceptors.AddRequestProperties.java">org/restheart/mongodb/interceptors/AddRequestProperties.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.ErrorHandler.java">org/restheart/mongodb/handlers/ErrorHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.utils.LoggingInitializer.java">org/restheart/mongodb/utils/LoggingInitializer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.injectors.ClientSessionInjector.java">org/restheart/mongodb/handlers/injectors/ClientSessionInjector.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.HeadersManager.java">org/restheart/mongodb/handlers/HeadersManager.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.indexes.package-info.java">org/restheart/mongodb/handlers/indexes/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.bulk.BulkPostCollectionHandler.java">org/restheart/mongodb/handlers/bulk/BulkPostCollectionHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.WebSocketNotificationSubscriber.java">org/restheart/mongodb/handlers/changestreams/WebSocketNotificationSubscriber.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.files.package-info.java">org/restheart/mongodb/handlers/files/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.aggregation.MapReduce.java">org/restheart/mongodb/handlers/aggregation/MapReduce.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.files.GetFileBinaryHandler.java">org/restheart/mongodb/handlers/files/GetFileBinaryHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.exchange.BsonRequestPropsInjector.java">org/restheart/mongodb/exchange/BsonRequestPropsInjector.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.indexes.PutIndexHandler.java">org/restheart/mongodb/handlers/indexes/PutIndexHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.collection.package-info.java">org/restheart/mongodb/handlers/collection/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.bulk.BulkResultRepresentationFactory.java">org/restheart/mongodb/handlers/bulk/BulkResultRepresentationFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.ChangeStreamsRegistry.java">org/restheart/mongodb/handlers/changestreams/ChangeStreamsRegistry.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.package-info.java">org/restheart/mongodb/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.security.ProjectResponse.java">org/restheart/mongodb/security/ProjectResponse.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.IndexesRepresentationFactory.java">org/restheart/mongodb/hal/IndexesRepresentationFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.OptionsHandler.java">org/restheart/mongodb/handlers/OptionsHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.HALRepresentation.java">org/restheart/mongodb/hal/HALRepresentation.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.ConfigurationHelper.java">org/restheart/mongodb/ConfigurationHelper.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.document.DeleteDocumentHandler.java">org/restheart/mongodb/handlers/document/DeleteDocumentHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.utils.ResponseHelper.java">org/restheart/mongodb/utils/ResponseHelper.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.sessions.TxnClientSessionFactory.java">org/restheart/mongodb/db/sessions/TxnClientSessionFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.SessionInfo.java">org/restheart/mongodb/handlers/changestreams/SessionInfo.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.schema.JsonSchemaCacheSingleton.java">org/restheart/mongodb/handlers/schema/JsonSchemaCacheSingleton.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.sessions.Txn.java">org/restheart/mongodb/db/sessions/Txn.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.database.GetDBHandler.java">org/restheart/mongodb/handlers/database/GetDBHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.root.GetRootHandler.java">org/restheart/mongodb/handlers/root/GetRootHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.sessions.SimpleServerSessionPool.java">org/restheart/mongodb/db/sessions/SimpleServerSessionPool.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.metrics.MetricsJsonGenerator.java">org/restheart/mongodb/handlers/metrics/MetricsJsonGenerator.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.metadata.package-info.java">org/restheart/mongodb/metadata/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.interceptors.DbPropsInjector.java">org/restheart/mongodb/interceptors/DbPropsInjector.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.utils.LogUtils.java">org/restheart/mongodb/utils/LogUtils.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.services.CsvLoader.java">org/restheart/mongodb/services/CsvLoader.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.security.AllowMgmtRequests.java">org/restheart/mongodb/security/AllowMgmtRequests.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.Indexes.java">org/restheart/mongodb/db/Indexes.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.ChangeStreamNotification.java">org/restheart/mongodb/handlers/changestreams/ChangeStreamNotification.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.metrics.MetricsInstrumentationInterceptor.java">org/restheart/mongodb/handlers/metrics/MetricsInstrumentationInterceptor.java</a>
                 </td>
                 <td>
                   0
@@ -242,7 +1446,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.datafetchers.GraphQLDataFetcher.java">org/restheart/graphql/datafetchers/GraphQLDataFetcher.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.database.PatchDBHandler.java">org/restheart/mongodb/handlers/database/PatchDBHandler.java</a>
                 </td>
                 <td>
                   0
@@ -256,7 +1460,105 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.datafetchers.GQLQueryDataFetcher.java">org/restheart/graphql/datafetchers/GQLQueryDataFetcher.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.AbstractRepresentationFactory.java">org/restheart/mongodb/hal/AbstractRepresentationFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.collection.GetCollectionHandler.java">org/restheart/mongodb/handlers/collection/GetCollectionHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#META-INF.native-image.org.restheart.restheart-mongodb.native-image.properties">META-INF/native-image/org.restheart/restheart-mongodb/native-image.properties</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.services.package-info.java">org/restheart/mongodb/services/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.MongoReactiveClientSingleton.java">org/restheart/mongodb/db/MongoReactiveClientSingleton.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.interceptors.CollectionPropsInjector.java">org/restheart/mongodb/interceptors/CollectionPropsInjector.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.hal.BulkResultRepresentationFactory.java">org/restheart/mongodb/hal/BulkResultRepresentationFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.GridFs.java">org/restheart/mongodb/db/GridFs.java</a>
                 </td>
                 <td>
                   0
@@ -270,35 +1572,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.BsonScalars.java">org/restheart/graphql/scalars/BsonScalars.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  8
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.java">org/restheart/graphql/scalars/bsonCoercing/CoercingUtils.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  3
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.interceptors.GraphAppDefinitionPatchChecker.java">org/restheart/graphql/interceptors/GraphAppDefinitionPatchChecker.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.security.package-info.java">org/restheart/mongodb/security/package-info.java</a>
                 </td>
                 <td>
                   0
@@ -312,7 +1586,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.datafetchers.GQLRenamingDataFetcher.java">org/restheart/graphql/datafetchers/GQLRenamingDataFetcher.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.sessions.ServerSessionImpl.java">org/restheart/mongodb/db/sessions/ServerSessionImpl.java</a>
                 </td>
                 <td>
                   0
@@ -326,7 +1600,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonDoubleCoerching.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonDoubleCoerching.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.schema.SchemaStoreURL.java">org/restheart/mongodb/handlers/schema/SchemaStoreURL.java</a>
                 </td>
                 <td>
                   0
@@ -340,7 +1614,609 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.GraphQLService.java">org/restheart/graphql/GraphQLService.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.collection.PutCollectionHandler.java">org/restheart/mongodb/handlers/collection/PutCollectionHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.sessions.Sid.java">org/restheart/mongodb/db/sessions/Sid.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.collection.PostCollectionHandler.java">org/restheart/mongodb/handlers/collection/PostCollectionHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.aggregation.GetAggregationHandler.java">org/restheart/mongodb/handlers/aggregation/GetAggregationHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.sessions.PostTxnsHandler.java">org/restheart/mongodb/handlers/sessions/PostTxnsHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.Collections.java">org/restheart/mongodb/db/Collections.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.document.PatchDocumentHandler.java">org/restheart/mongodb/handlers/document/PatchDocumentHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.utils.RequestHelper.java">org/restheart/mongodb/utils/RequestHelper.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.interceptors.ContentSizeChecker.java">org/restheart/mongodb/interceptors/ContentSizeChecker.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.security.RequestFilters.java">org/restheart/mongodb/security/RequestFilters.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.sessions.PatchTxnHandler.java">org/restheart/mongodb/handlers/sessions/PatchTxnHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.SessionKey.java">org/restheart/mongodb/handlers/changestreams/SessionKey.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.schema.package-info.java">org/restheart/mongodb/handlers/schema/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.database.package-info.java">org/restheart/mongodb/handlers/database/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.metrics.SharedMongoMetricRegistryProxy.java">org/restheart/mongodb/handlers/metrics/SharedMongoMetricRegistryProxy.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.package-info.java">org/restheart/mongodb/db/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.security.AllowBulkRequests.java">org/restheart/mongodb/security/AllowBulkRequests.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.NormalOrBulkDispatcherHandler.java">org/restheart/mongodb/handlers/NormalOrBulkDispatcherHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.security.BaseAllowInitializer.java">org/restheart/mongodb/security/BaseAllowInitializer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.interceptors.JsonSchemaBeforeWriteChecker.java">org/restheart/mongodb/interceptors/JsonSchemaBeforeWriteChecker.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.database.DeleteDBHandler.java">org/restheart/mongodb/handlers/database/DeleteDBHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.RequestDispatcherHandler.java">org/restheart/mongodb/handlers/RequestDispatcherHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.aggregation.AggregationTransformer.java">org/restheart/mongodb/handlers/aggregation/AggregationTransformer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.sessions.PostSessionHandler.java">org/restheart/mongodb/handlers/sessions/PostSessionHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.CORSHandler.java">org/restheart/mongodb/handlers/CORSHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.files.PutFileHandler.java">org/restheart/mongodb/handlers/files/PutFileHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.collection.DeleteCollectionHandler.java">org/restheart/mongodb/handlers/collection/DeleteCollectionHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.ChangeStreamWebsocketCallback.java">org/restheart/mongodb/handlers/changestreams/ChangeStreamWebsocketCallback.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.SkippedFindIterable.java">org/restheart/mongodb/db/SkippedFindIterable.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.package-info.java">org/restheart/mongodb/handlers/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.bulk.BulkDeleteDocumentsHandler.java">org/restheart/mongodb/handlers/bulk/BulkDeleteDocumentsHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.sessions.GetTxnHandler.java">org/restheart/mongodb/handlers/sessions/GetTxnHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.security.MergeRequest.java">org/restheart/mongodb/security/MergeRequest.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.sessions.ClientSessionFactory.java">org/restheart/mongodb/db/sessions/ClientSessionFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.files.FileMetadataHandler.java">org/restheart/mongodb/handlers/files/FileMetadataHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.security.AllowWriteMode.java">org/restheart/mongodb/security/AllowWriteMode.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.interceptors.NamespacesResponseFlattener.java">org/restheart/mongodb/interceptors/NamespacesResponseFlattener.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.files.DeleteBucketHandler.java">org/restheart/mongodb/handlers/files/DeleteBucketHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.GetChangeStreamHandler.java">org/restheart/mongodb/handlers/changestreams/GetChangeStreamHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.db.Documents.java">org/restheart/mongodb/db/Documents.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.indexes.DeleteIndexHandler.java">org/restheart/mongodb/handlers/indexes/DeleteIndexHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.changestreams.ChangeStreamsActivator.java">org/restheart/mongodb/handlers/changestreams/ChangeStreamsActivator.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.document.PutDocumentHandler.java">org/restheart/mongodb/handlers/document/PutDocumentHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.schema.JsonSchemaTransformer.java">org/restheart/mongodb/handlers/schema/JsonSchemaTransformer.java</a>
                 </td>
                 <td>
                   0
@@ -354,231 +2230,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonDecimal128Coercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonDecimal128Coercing.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.exchange.GraphQLRequest.java">org/restheart/graphql/exchange/GraphQLRequest.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.GraphQLApp.java">org/restheart/graphql/models/GraphQLApp.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonTimestampCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonTimestampCoercing.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.TypeMapping.java">org/restheart/graphql/models/TypeMapping.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.datafetchers.GQLBatchDataFetcher.java">org/restheart/graphql/datafetchers/GQLBatchDataFetcher.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.GraphQLIllegalAppDefinitionException.java">org/restheart/graphql/GraphQLIllegalAppDefinitionException.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.DataLoaderSettings.java">org/restheart/graphql/models/DataLoaderSettings.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.ObjectMapping.java">org/restheart/graphql/models/ObjectMapping.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#META-INF.native-image.org.restheart.restheart-graphql.native-image.properties">META-INF/native-image/org.restheart/restheart-graphql/native-image.properties</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.interceptors.GraphAppDefinitionEscaper.java">org/restheart/graphql/interceptors/GraphAppDefinitionEscaper.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.cache.AppDefinitionLoadingCache.java">org/restheart/graphql/cache/AppDefinitionLoadingCache.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonDateCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonDateCoercing.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonStringCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonStringCoercing.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  1
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.AppDescriptor.java">org/restheart/graphql/models/AppDescriptor.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.Batchable.java">org/restheart/graphql/models/Batchable.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonRegexCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonRegexCoercing.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.mongodb.handlers.metrics.MetricsHandler.java">org/restheart/mongodb/handlers/metrics/MetricsHandler.java</a>
                 </td>
                 <td>
                   0
