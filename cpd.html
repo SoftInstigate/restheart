@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-mongodb &#x2013; CPD Results</title>
+    <title>restheart-security &#x2013; CPD Results</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-mongodb
+<div id="bannerLeft">restheart-security
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-mongodb">restheart-mongodb</a>      </div>
+      <div class="xright"><a href="./" title="restheart-security">restheart-security</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -69,408 +69,83 @@
 <th>File</th>
 <th>Line</th></tr>
 <tr class="b">
-<td>org/restheart/mongodb/handlers/bulk/BulkResultRepresentationFactory.java</td>
-<td>82</td></tr>
+<td>org/restheart/security/authorizers/FileAclAuthorizer.java</td>
+<td>190</td></tr>
 <tr class="a">
-<td>org/restheart/mongodb/handlers/bulk/BulkResultRepresentationFactory.java</td>
-<td>116</td></tr>
+<td>org/restheart/security/authorizers/MongoAclAuthorizer.java</td>
+<td>244</td></tr>
 <tr class="b"><td colspan='2'>
 <div>
-<pre>if (wr.wasAcknowledged()) {
-            if (wr.getUpserts() != null || wr.getInserts() != null) {
-                rep.put(&quot;inserted&quot;, new BsonInt32((wr.getUpserts() != null ? wr.getUpserts().size() : 0)
-                        + (wr.getInserts() != null ? wr.getInserts().size() : 0)));
+<pre>public boolean isAuthenticationRequired(Request&lt;?&gt; request) {
+        // don't require authentication for OPTIONS requests
+        if (request.isOptions()) {
+            return false;
+        }
 
-                var links = new BsonArray();
+        var exchange = request.getExchange();
 
-                // add links to new, upserted documents
-                if (wr.getUpserts() != null) {
-                        wr.getUpserts().stream().forEach(update -&gt; links.add(new BsonString(
-                                RepresentationUtils.getReferenceLink(requestPath, update.getId()))));
-                }
+        var ps = rolePermissions($UNAUTHENTICATED);
 
-                // add links to new, inserted documents
-                if (wr.getInserts() != null) {
-                        wr.getInserts().stream().forEach(update -&gt; links.add(new BsonString(
-                                        RepresentationUtils.getReferenceLink(requestPath,update.getId()))));
-                }
-
-                rep.put(&quot;links&quot;, links);
+        if (ps != null) {
+            // this fixes undertow bug 377
+            // https://issues.jboss.org/browse/UNDERTOW-377
+            if (exchange.getAttachment(PREDICATE_CONTEXT) == null) {
+                exchange.putAttachment(PREDICATE_CONTEXT, new TreeMap&lt;&gt;());
             }
 
-            rep.put(&quot;deleted&quot;,
-                    new BsonInt32(wr.getDeletedCount()));
+            // Predicate.resolve() uses getRelativePath() that is the path relative to
+            // the last PathHandler we want to check against the full request path
+            // see https://issues.jboss.org/browse/UNDERTOW-1317
+            exchange.setRelativePath(request.getPath());
 
-            rep.put(&quot;modified&quot;,
-                    new BsonInt32(wr.getModifiedCount()));
-
-            rep.put(&quot;matched&quot;,
-                    new BsonInt32(wr.getMatchedCount()));
-        }
-    }
-
-    private void addWriteResult(final BulkWriteResult wr, final BsonDocument rep, final String requestPath) {</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/mongodb/handlers/schema/JsonMetaSchemaChecker.java</td>
-<td>88</td></tr>
-<tr class="a">
-<td>org/restheart/mongodb/interceptors/JsonSchemaBeforeWriteChecker.java</td>
-<td>180</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>schema.validate(new JSONObject(contentToCheck.toString()));
-        } catch (ValidationException ve) {
-            var errors = new ArrayList&lt;String&gt;();
-
-            errors.add(ve.getMessage().replaceAll(&quot;#: &quot;, &quot;&quot;));
-
-            ve.getCausingExceptions().stream()
-                    .map(ValidationException::getMessage)
-                    .forEach(errors::add);
-
-            var errMsgBuilder = new StringBuilder();
-
-            errors.stream()
-                    .map(e -&gt; e.replaceAll(&quot;#: &quot;, &quot;&quot;))
-                    .forEachOrdered(e -&gt; errMsgBuilder.append(e).append(&quot;, &quot;));
-
-            var errMsg = errMsgBuilder.toString();
-
-            if (errMsg.length() &gt; 2
-                    &amp;&amp; &quot;, &quot;.equals(errMsg.substring(errMsg.length() - 2, errMsg.length()))) {
-                errMsg = errMsg.substring(0, errMsg.length() - 2);
-
-            }
-
-            response.setInError(HttpStatus.SC_BAD_REQUEST,</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/mongodb/handlers/database/PatchDBHandler.java</td>
-<td>87</td></tr>
-<tr class="a">
-<td>org/restheart/mongodb/handlers/database/PutDBHandler.java</td>
-<td>83</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>}
-
-        // cannot PATCH an array
-        if (!_content.isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, &quot;data must be a json object&quot;);
-            next(exchange);
-            return;
-        }
-
-        var content = _content.asDocument();
-
-        var result = dbs.upsertDB(
-            Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            request.getMethod(),
-            request.getDbProps() != null, // true if updating
-            content,
-            request.getETag(),
-            request.isETagCheckRequired());
-
-        response.setDbOperationResult(result);
-
-        // inject the etag
-        if (result.getEtag() != null) {
-            ResponseHelper.injectEtagHeader(exchange, result.getEtag());
-        }
-
-        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setInError(HttpStatus.SC_CONFLICT, &quot;The database's ETag must be provided using the '&quot; + Headers.IF_MATCH + &quot;' header.&quot;);
-            next(exchange);
-            return;
-        }</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/mongodb/handlers/aggregation/AbstractAggregationOperation.java</td>
-<td>110</td></tr>
-<tr class="a">
-<td>org/restheart/mongodb/handlers/changestreams/ChangeStreamOperation.java</td>
-<td>81</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>}
-
-    /**
-     * checks if the aggregation variable start with $ this is not allowed since
-     * the client would be able to modify the aggregation stages
-     *
-     * @param aVars RequestContext.getAggregationVars()
-     */
-    public static void checkAggregationVariables(BsonValue aVars) throws SecurityException {
-        if (aVars == null) {
-            return;
-        }
-
-        if (aVars.isDocument()) {
-            var _obj = aVars.asDocument();
-
-            _obj.forEach((key, value) -&gt; {
-                if (key.startsWith(&quot;$&quot;)) {
-                    throw new SecurityException(&quot;aggregation variables cannot include operators&quot;);
-                }
-
-                if (value.isDocument() || value.isArray()) {
-                    checkAggregationVariables(value);
-                }
-            });
-        } else if (aVars.isArray()) {
-            aVars.asArray().getValues().stream()
-                    .filter(el -&gt; (el.isDocument() || el.isArray()))
-                    .forEachOrdered(AbstractAggregationOperation::checkAggregationVariables);</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/mongodb/db/Documents.java</td>
-<td>392</td></tr>
-<tr class="a">
-<td>org/restheart/mongodb/db/GridFs.java</td>
-<td>399</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>return new OperationResult(HttpStatus.SC_CONFLICT, oldEtag, oldDocument, null);
-        }
-
-        BsonValue _requestEtag;
-
-        if (ObjectId.isValid(requestEtag)) {
-            _requestEtag = new BsonObjectId(new ObjectId(requestEtag));
+            return !ps.stream().anyMatch(r -&gt; r.allow(request));
         } else {
-            // restheart generates ObjectId etags, but here we support
-            // strings as well
-            _requestEtag = new BsonString(requestEtag);
+            return true;
         }
-
-        if (Objects.equals(_requestEtag, oldEtag)) {
-            var query = eq(&quot;_id&quot;, oldDocument.get(&quot;_id&quot;));
-
-            var newDocument = cs.isPresent() ? coll.find(cs.get(), query).first() : coll.find(query).first();
-
-            return new OperationResult(httpStatusIfOk, newEtag, oldDocument, newDocument);
-        } else {</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/mongodb/hal/BulkResultRepresentationFactory.java</td>
-<td>93</td></tr>
-<tr class="a">
-<td>org/restheart/mongodb/hal/BulkResultRepresentationFactory.java</td>
-<td>131</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>BulkWriteResult wr = result.getBulkResult();
-
-        if (wr.wasAcknowledged()) {
-            if (wr.getUpserts() != null || wr.getInserts() != null) {
-                    nrep.addProperty(&quot;inserted&quot;, new BsonInt32(
-                            (wr.getUpserts() != null ? wr.getUpserts().size() : 0) +
-                            (wr.getInserts() != null ? wr.getInserts().size() : 0)));
-
-                    // add links to new, upserted documents
-                    if (wr.getUpserts() != null) {
-                            wr.getUpserts().stream().forEach(update -&gt; nrep.addLink(new Link(&quot;rh:newdoc&quot;,
-                                            RepresentationUtils.getReferenceLink(response, requestPath, update.getId())), true));</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/mongodb/handlers/changestreams/ChangeStreamSubscriber.java</td>
-<td>129</td></tr>
-<tr class="a">
-<td>org/restheart/mongodb/handlers/changestreams/ObsoleteChangeStreamRemover.java</td>
-<td>88</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>private void closeAllOnError(String db, String collection) {
-        var webSocketSessions = WebSocketSessionsRegistry.getInstance();
-        var changeStreams = ChangeStreamsRegistry.getInstance();
-
-        var sessionKeys = changeStreams.getSessionKeysOnCollection(db, collection);
-
-        sessionKeys.stream()
-            .collect(Collectors.toSet())
-            .forEach(sk -&gt; {
-            var _webSocketSession = webSocketSessions.get(sk);
-            _webSocketSession.stream()
-                .collect(Collectors.toSet())
-                .forEach(wss -&gt; {
-                    try {
-                        wss.close();
-                        webSocketSessions.remove(sk, wss);
-                    } catch(IOException ioe) {
-                        // LOGGER
-                    }
-            });
-
-            changeStreams.remove(sk);
-        });
-    }</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/mongodb/handlers/collection/PostCollectionHandler.java</td>
-<td>58</td></tr>
-<tr class="a">
-<td>org/restheart/mongodb/handlers/collection/PutCollectionHandler.java</td>
-<td>53</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>public PostCollectionHandler(PipelinedHandler next) {
-        super(next);
     }
 
+    private Stream&lt;String&gt; roles(HttpServerExchange exchange) {
+        return account(exchange).getRoles().stream();
+    }
 
-    /**
-     *
-     * @param exchange
-     * @throws Exception
-     */
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = MongoRequest.of(exchange);
-        var response = MongoResponse.of(exchange);
-
-        if (request.isInError()) {
-            next(exchange);
-            return;
-        }
-
-        var _content = request.getContent();
-
-        if (_content == null) {
-            _content = new BsonDocument();
-        }
-
-        // cannot POST an array
-        if (!_content.isDocument()) {
-            response.setInError(HttpStatus.SC_NOT_ACCEPTABLE, &quot;data must be a json object&quot;);
-            next(exchange);
-            return;
-        }</pre></div></td></tr></table>
+    private LinkedHashSet&lt;FileAclPermission&gt; rolePermissions(final String role) {</pre></div></td></tr></table>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>File</th>
 <th>Line</th></tr>
 <tr class="b">
-<td>org/restheart/mongodb/handlers/collection/DeleteCollectionHandler.java</td>
-<td>55</td></tr>
-<tr class="a">
-<td>org/restheart/mongodb/handlers/database/DeleteDBHandler.java</td>
+<td>org/restheart/security/authenticators/DenyFilterOnUserPwd.java</td>
 <td>57</td></tr>
+<tr class="a">
+<td>org/restheart/security/authenticators/UserPwdRemover.java</td>
+<td>56</td></tr>
 <tr class="b"><td colspan='2'>
 <div>
-<pre>public DeleteCollectionHandler(PipelinedHandler next) {
-        super(next);
-    }
+<pre>@InjectPluginsRegistry
+    public void init(PluginsRegistry registry) {
+        PluginRecord&lt;Authenticator&gt; _mra;
 
-    /**
-     *
-     * @param exchange
-     * @throws Exception
-     */
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        var request = MongoRequest.of(exchange);
-        var response = MongoResponse.of(exchange);
-
-        if (request.isInError()) {
-            next(exchange);
+        try {
+            _mra = registry.getAuthenticator(&quot;mongoRealmAuthenticator&quot;);
+        } catch (ConfigurationException ce) {
+            enabled = false;
             return;
         }
 
-        var etag = request.getETag() == null
-                ? null
-                : ObjectId.isValid(request.getETag())
-                ? new BsonObjectId(new ObjectId(request.getETag()))
-                : new BsonObjectId();
+        if (_mra == null || !_mra.isEnabled()) {
+            enabled = false;
+        } else {
+            var rhAuth = (MongoRealmAuthenticator) _mra.getInstance();
 
-        var result = dbs.deleteCollection(</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/mongodb/handlers/database/DeleteDBHandler.java</td>
-<td>86</td></tr>
-<tr class="a">
-<td>org/restheart/mongodb/handlers/database/PatchDBHandler.java</td>
-<td>105</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>etag,
-            request.isETagCheckRequired());
+            this.usersDb = rhAuth.getUsersDb();
+            this.usersCollection = rhAuth.getUsersCollection();
+            this.propNamePassword = rhAuth.getPropPassword();
 
-        response.setDbOperationResult(result);
-
-        // inject the etag
-        if (result.getEtag() != null) {
-            ResponseHelper.injectEtagHeader(exchange, result.getEtag());
-        }
-
-        if (result.getHttpCode() == HttpStatus.SC_CONFLICT) {
-            response.setInError(HttpStatus.SC_CONFLICT, &quot;The database's ETag must be provided using the '&quot; + Headers.IF_MATCH + &quot;' header.&quot;);
-            next(exchange);
-            return;
-        }
-
-        response.setStatusCode(result.getHttpCode());
-
-        MetadataCachesSingleton.getInstance().invalidateDb(request.getDBName());
-
-        next(exchange);
-    }
-}</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/mongodb/handlers/document/PatchDocumentHandler.java</td>
-<td>88</td></tr>
-<tr class="a">
-<td>org/restheart/mongodb/handlers/document/PutDocumentHandler.java</td>
-<td>99</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>var result = documents.writeDocument(
-            Optional.ofNullable(request.getClientSession()),
-            request.rsOps(),
-            request.getDBName(),
-            request.getCollectionName(),
-            request.getMethod(),
-            request.getWriteMode(),
-            Optional.of(request.getDocumentId()),
-            Optional.ofNullable(request.getFiltersDocument()),
-            Optional.ofNullable(request.getShardKey()),
-            content,
-            request.getETag(),
-            request.isETagCheckRequired());
-
-        response.setDbOperationResult(result);
-
-        if (RequestHelper.isResponseInConflict(result, exchange)) {</pre></div></td></tr></table></section>
+            if (usersDb == null
+                    || usersCollection == null
+                    || propNamePassword == null) {
+                LOGGER.error(&quot;Wrong configuration of mongoRealmAuthenticator! &quot;
+                        + &quot;Requests with filters on the password property &quot;</pre></div></td></tr></table></section>
       </div>
     </div>
     <div class="clear">
@@ -478,7 +153,7 @@
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2014&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2018&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>

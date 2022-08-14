@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-mongodb &#x2013; SpotBugs Bug Detector Report</title>
+    <title>restheart-security &#x2013; SpotBugs Bug Detector Report</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-mongodb
+<div id="bannerLeft">restheart-security
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-mongodb">restheart-mongodb</a>      </div>
+      <div class="xright"><a href="./" title="restheart-security">restheart-security</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -74,120 +74,55 @@
 <th>Errors</th>
 <th>Missing Classes</th></tr>
 <tr class="b">
-<td>198</td>
-<td>53</td>
+<td>50</td>
+<td>20</td>
 <td>0</td>
-<td>13</td></tr></table></section><section>
+<td>6</td></tr></table></section><section>
 <h1><a name="Files"></a>Files</h1>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Class</th>
 <th>Bugs</th></tr>
 <tr class="b">
-<td><a href="#org.restheart.mongodb.MongoServiceConfiguration">org.restheart.mongodb.MongoServiceConfiguration</a></td>
-<td>2</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.db.CursorPoolEntryKey">org.restheart.mongodb.db.CursorPoolEntryKey</a></td>
-<td>10</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.mongodb.db.Databases">org.restheart.mongodb.db.Databases</a></td>
+<td><a href="#org.restheart.security.authenticators.MongoRealmAuthenticator">org.restheart.security.authenticators.MongoRealmAuthenticator</a></td>
 <td>1</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.mongodb.db.Documents">org.restheart.mongodb.db.Documents</a></td>
-<td>1</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.mongodb.db.GridFs">org.restheart.mongodb.db.GridFs</a></td>
-<td>1</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.db.MongoClientSingleton">org.restheart.mongodb.db.MongoClientSingleton</a></td>
+<td><a href="#org.restheart.security.authorizers.FileAclAuthorizer">org.restheart.security.authorizers.FileAclAuthorizer</a></td>
 <td>2</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.mongodb.db.MongoClientSingleton$MongoClientSingletonHolder">org.restheart.mongodb.db.MongoClientSingleton$MongoClientSingletonHolder</a></td>
+<td><a href="#org.restheart.security.authorizers.GlobalPredicatesVetoer">org.restheart.security.authorizers.GlobalPredicatesVetoer</a></td>
 <td>1</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.mongodb.db.MongoReactiveClientSingleton$MongoDBClientSingletonHolder">org.restheart.mongodb.db.MongoReactiveClientSingleton$MongoDBClientSingletonHolder</a></td>
-<td>1</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.mongodb.db.sessions.ServerSessionImpl">org.restheart.mongodb.db.sessions.ServerSessionImpl</a></td>
-<td>1</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.exchange.BsonRequestContentInjector">org.restheart.mongodb.exchange.BsonRequestContentInjector</a></td>
-<td>1</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.mongodb.exchange.BsonRequestPropsInjector">org.restheart.mongodb.exchange.BsonRequestPropsInjector</a></td>
-<td>2</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.hal.CollectionRepresentationFactory">org.restheart.mongodb.hal.CollectionRepresentationFactory</a></td>
-<td>1</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.mongodb.hal.DBRepresentationFactory">org.restheart.mongodb.hal.DBRepresentationFactory</a></td>
-<td>1</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.hal.DocumentRepresentationFactory">org.restheart.mongodb.hal.DocumentRepresentationFactory</a></td>
-<td>1</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.mongodb.handlers.HeadersManager">org.restheart.mongodb.handlers.HeadersManager</a></td>
-<td>1</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.handlers.NormalOrBulkDispatcherHandler">org.restheart.mongodb.handlers.NormalOrBulkDispatcherHandler</a></td>
+<td><a href="#org.restheart.security.authorizers.MongoAclAuthorizer">org.restheart.security.authorizers.MongoAclAuthorizer</a></td>
 <td>2</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.mongodb.handlers.aggregation.AggregationPipeline">org.restheart.mongodb.handlers.aggregation.AggregationPipeline</a></td>
+<td><a href="#org.restheart.security.interceptors.BruteForceAttackGuard">org.restheart.security.interceptors.BruteForceAttackGuard</a></td>
 <td>1</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.mongodb.handlers.changestreams.ChangeStreamOperation">org.restheart.mongodb.handlers.changestreams.ChangeStreamOperation</a></td>
+<td><a href="#org.restheart.security.interceptors.TokenCORSResponseInterceptor">org.restheart.security.interceptors.TokenCORSResponseInterceptor</a></td>
 <td>1</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.mongodb.handlers.changestreams.ChangeStreamSubscriber">org.restheart.mongodb.handlers.changestreams.ChangeStreamSubscriber</a></td>
-<td>4</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.handlers.changestreams.ChangeStreamWebSocketSession">org.restheart.mongodb.handlers.changestreams.ChangeStreamWebSocketSession</a></td>
-<td>2</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.mongodb.handlers.changestreams.SessionInfo">org.restheart.mongodb.handlers.changestreams.SessionInfo</a></td>
+<td><a href="#org.restheart.security.mechanisms.DigestAuthMechanism">org.restheart.security.mechanisms.DigestAuthMechanism</a></td>
 <td>2</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.mongodb.handlers.changestreams.SessionKey">org.restheart.mongodb.handlers.changestreams.SessionKey</a></td>
+<td><a href="#org.restheart.security.predicates.BsonRequestBlacklistPredicate">org.restheart.security.predicates.BsonRequestBlacklistPredicate</a></td>
+<td>1</td></tr>
+<tr class="b">
+<td><a href="#org.restheart.security.predicates.BsonRequestContainsPredicate">org.restheart.security.predicates.BsonRequestContainsPredicate</a></td>
+<td>1</td></tr>
+<tr class="a">
+<td><a href="#org.restheart.security.predicates.BsonRequestWhitelistPredicate">org.restheart.security.predicates.BsonRequestWhitelistPredicate</a></td>
+<td>1</td></tr>
+<tr class="b">
+<td><a href="#org.restheart.security.predicates.InPredicate">org.restheart.security.predicates.InPredicate</a></td>
+<td>2</td></tr>
+<tr class="a">
+<td><a href="#org.restheart.security.services.RndTokenService">org.restheart.security.services.RndTokenService</a></td>
 <td>2</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.mongodb.handlers.files.GetFileBinaryHandler">org.restheart.mongodb.handlers.files.GetFileBinaryHandler</a></td>
-<td>7</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.security.AllowBulkRequests">org.restheart.mongodb.security.AllowBulkRequests</a></td>
-<td>1</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.mongodb.security.AllowMgmtRequests">org.restheart.mongodb.security.AllowMgmtRequests</a></td>
-<td>1</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.security.AllowWriteMode">org.restheart.mongodb.security.AllowWriteMode</a></td>
-<td>1</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.mongodb.security.FilterOperatorsBlacklist">org.restheart.mongodb.security.FilterOperatorsBlacklist</a></td>
-<td>1</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.utils.LogUtils">org.restheart.mongodb.utils.LogUtils</a></td>
-<td>1</td></tr></table></section><a name="org.restheart.mongodb.MongoServiceConfiguration"></a><section>
-<h2><a name="org.restheart.mongodb.MongoServiceConfiguration"></a>org.restheart.mongodb.MongoServiceConfiguration</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>org.restheart.mongodb.MongoServiceConfiguration.getEagerLinearSliceHeights() may expose internal representation by returning MongoServiceConfiguration.eagerLinearSliceHeights</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>798</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>org.restheart.mongodb.MongoServiceConfiguration.getPluginsArgs() may expose internal representation by returning MongoServiceConfiguration.pluginsArgs</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>833</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.db.CursorPoolEntryKey"></a><section>
-<h2><a name="org.restheart.mongodb.db.CursorPoolEntryKey"></a>org.restheart.mongodb.db.CursorPoolEntryKey</h2>
+<td><a href="#org.restheart.security.tokens.RndTokenManager">org.restheart.security.tokens.RndTokenManager</a></td>
+<td>3</td></tr></table></section><a name="org.restheart.security.authenticators.MongoRealmAuthenticator"></a><section>
+<h2><a name="org.restheart.security.authenticators.MongoRealmAuthenticator"></a>org.restheart.security.authenticators.MongoRealmAuthenticator</h2>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Bug</th>
@@ -196,204 +131,32 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="b">
-<td>org.restheart.mongodb.db.CursorPoolEntryKey.collection() may expose internal representation by returning CursorPoolEntryKey.collection</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>34</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>org.restheart.mongodb.db.CursorPoolEntryKey.filter() may expose internal representation by returning CursorPoolEntryKey.filter</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>34</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>org.restheart.mongodb.db.CursorPoolEntryKey.hint() may expose internal representation by returning CursorPoolEntryKey.hint</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>34</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>org.restheart.mongodb.db.CursorPoolEntryKey.keys() may expose internal representation by returning CursorPoolEntryKey.keys</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>34</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>org.restheart.mongodb.db.CursorPoolEntryKey.sort() may expose internal representation by returning CursorPoolEntryKey.sort</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>34</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>new org.restheart.mongodb.db.CursorPoolEntryKey(Optional, MongoCollection, BsonDocument, BsonDocument, BsonDocument, BsonDocument, int, long) may expose internal representation by storing an externally mutable object into CursorPoolEntryKey.collection</td>
+<td>org.restheart.security.authenticators.MongoRealmAuthenticator.setRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into MongoRealmAuthenticator.registry</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>34</td>
-<td>Medium</td></tr>
+<td>179</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.authorizers.FileAclAuthorizer"></a><section>
+<h2><a name="org.restheart.security.authorizers.FileAclAuthorizer"></a>org.restheart.security.authorizers.FileAclAuthorizer</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
 <tr class="b">
-<td>new org.restheart.mongodb.db.CursorPoolEntryKey(Optional, MongoCollection, BsonDocument, BsonDocument, BsonDocument, BsonDocument, int, long) may expose internal representation by storing an externally mutable object into CursorPoolEntryKey.filter</td>
+<td>org.restheart.security.authorizers.FileAclAuthorizer.initRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into FileAclAuthorizer.registry</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>34</td>
+<td>84</td>
 <td>Medium</td></tr>
 <tr class="a">
-<td>new org.restheart.mongodb.db.CursorPoolEntryKey(Optional, MongoCollection, BsonDocument, BsonDocument, BsonDocument, BsonDocument, int, long) may expose internal representation by storing an externally mutable object into CursorPoolEntryKey.hint</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>34</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>new org.restheart.mongodb.db.CursorPoolEntryKey(Optional, MongoCollection, BsonDocument, BsonDocument, BsonDocument, BsonDocument, int, long) may expose internal representation by storing an externally mutable object into CursorPoolEntryKey.keys</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>34</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>new org.restheart.mongodb.db.CursorPoolEntryKey(Optional, MongoCollection, BsonDocument, BsonDocument, BsonDocument, BsonDocument, int, long) may expose internal representation by storing an externally mutable object into CursorPoolEntryKey.sort</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>34</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.db.Databases"></a><section>
-<h2><a name="org.restheart.mongodb.db.Databases"></a>org.restheart.mongodb.db.Databases</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>Public static org.restheart.mongodb.db.Databases.get() may expose internal representation by returning Databases.INSTANCE</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#MS_EXPOSE_REP">MS_EXPOSE_REP</a></td>
-<td>95</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.db.Documents"></a><section>
-<h2><a name="org.restheart.mongodb.db.Documents"></a>org.restheart.mongodb.db.Documents</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>Public static org.restheart.mongodb.db.Documents.get() may expose internal representation by returning Documents.INSTANCE</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#MS_EXPOSE_REP">MS_EXPOSE_REP</a></td>
-<td>65</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.db.GridFs"></a><section>
-<h2><a name="org.restheart.mongodb.db.GridFs"></a>org.restheart.mongodb.db.GridFs</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>Public static org.restheart.mongodb.db.GridFs.get() may expose internal representation by returning GridFs.INSTANCE</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#MS_EXPOSE_REP">MS_EXPOSE_REP</a></td>
-<td>75</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.db.MongoClientSingleton"></a><section>
-<h2><a name="org.restheart.mongodb.db.MongoClientSingleton"></a>org.restheart.mongodb.db.MongoClientSingleton</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>org.restheart.mongodb.db.MongoClientSingleton.init(ConnectionString, PluginsRegistry) may expose internal static state by storing a mutable object into a static field org.restheart.mongodb.db.MongoClientSingleton.pluginsRegistry</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_STATIC_REP2">EI_EXPOSE_STATIC_REP2</a></td>
-<td>63</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>org.restheart.mongodb.db.MongoClientSingleton defines equals and uses Object.hashCode()</td>
-<td>BAD_PRACTICE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#HE_EQUALS_USE_HASHCODE">HE_EQUALS_USE_HASHCODE</a></td>
-<td>202</td>
-<td>High</td></tr></table></section><a name="org.restheart.mongodb.db.MongoClientSingletonMongoClientSingletonHolder"></a><section>
-<h2><a name="org.restheart.mongodb.db.MongoClientSingleton.24MongoClientSingletonHolder"></a>org.restheart.mongodb.db.MongoClientSingleton$MongoClientSingletonHolder</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>Static field &quot;INSTANCE&quot; is modified by an instance level synchronization lock.</td>
-<td>MT_CORRECTNESS</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#SSD_DO_NOT_USE_INSTANCE_LOCK_ON_SHARED_STATIC_DATA">SSD_DO_NOT_USE_INSTANCE_LOCK_ON_SHARED_STATIC_DATA</a></td>
-<td>228</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.db.MongoReactiveClientSingletonMongoDBClientSingletonHolder"></a><section>
-<h2><a name="org.restheart.mongodb.db.MongoReactiveClientSingleton.24MongoDBClientSingletonHolder"></a>org.restheart.mongodb.db.MongoReactiveClientSingleton$MongoDBClientSingletonHolder</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>Static field &quot;INSTANCE&quot; is modified by an instance level synchronization lock.</td>
-<td>MT_CORRECTNESS</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#SSD_DO_NOT_USE_INSTANCE_LOCK_ON_SHARED_STATIC_DATA">SSD_DO_NOT_USE_INSTANCE_LOCK_ON_SHARED_STATIC_DATA</a></td>
-<td>148</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.db.sessions.ServerSessionImpl"></a><section>
-<h2><a name="org.restheart.mongodb.db.sessions.ServerSessionImpl"></a>org.restheart.mongodb.db.sessions.ServerSessionImpl</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>org.restheart.mongodb.db.sessions.ServerSessionImpl.getIdentifier() may expose internal representation by returning ServerSessionImpl.identifier</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>96</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.exchange.BsonRequestContentInjector"></a><section>
-<h2><a name="org.restheart.mongodb.exchange.BsonRequestContentInjector"></a>org.restheart.mongodb.exchange.BsonRequestContentInjector</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>Redundant nullcheck of _id, which is known to be non-null in org.restheart.mongodb.exchange.BsonRequestContentInjector.lambda$inject$2(MongoResponse, BsonValue)</td>
+<td>Redundant nullcheck of ps, which is known to be non-null in org.restheart.security.authorizers.FileAclAuthorizer.isAuthenticationRequired(Request)</td>
 <td>STYLE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
-<td>340</td>
-<td>High</td></tr></table></section><a name="org.restheart.mongodb.exchange.BsonRequestPropsInjector"></a><section>
-<h2><a name="org.restheart.mongodb.exchange.BsonRequestPropsInjector"></a>org.restheart.mongodb.exchange.BsonRequestPropsInjector</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>Repeated conditional test in org.restheart.mongodb.exchange.BsonRequestPropsInjector.lambda$inject$2(String)</td>
-<td>CORRECTNESS</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#RpC_REPEATED_CONDITIONAL_TEST">RpC_REPEATED_CONDITIONAL_TEST</a></td>
-<td>243</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Repeated conditional test in org.restheart.mongodb.exchange.BsonRequestPropsInjector.lambda$inject$2(String)</td>
-<td>CORRECTNESS</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#RpC_REPEATED_CONDITIONAL_TEST">RpC_REPEATED_CONDITIONAL_TEST</a></td>
-<td>243</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.hal.CollectionRepresentationFactory"></a><section>
-<h2><a name="org.restheart.mongodb.hal.CollectionRepresentationFactory"></a>org.restheart.mongodb.hal.CollectionRepresentationFactory</h2>
+<td>200</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.authorizers.GlobalPredicatesVetoer"></a><section>
+<h2><a name="org.restheart.security.authorizers.GlobalPredicatesVetoer"></a>org.restheart.security.authorizers.GlobalPredicatesVetoer</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -402,54 +165,12 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
-<td>instanceof will always return false in org.restheart.mongodb.hal.CollectionRepresentationFactory.addSpecialProperties(Resource, ExchangeKeys$TYPE, BsonDocument), since a org.bson.BsonValue cannot be a org.bson.types.ObjectId</td>
-<td>CORRECTNESS</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#BC_IMPOSSIBLE_INSTANCEOF">BC_IMPOSSIBLE_INSTANCEOF</a></td>
-<td>84</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.hal.DBRepresentationFactory"></a><section>
-<h2><a name="org.restheart.mongodb.hal.DBRepresentationFactory"></a>org.restheart.mongodb.hal.DBRepresentationFactory</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>instanceof will always return false in org.restheart.mongodb.hal.DBRepresentationFactory.addSpecialProperties(Resource, ExchangeKeys$TYPE, BsonDocument), since a org.bson.BsonValue cannot be a org.bson.types.ObjectId</td>
-<td>CORRECTNESS</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#BC_IMPOSSIBLE_INSTANCEOF">BC_IMPOSSIBLE_INSTANCEOF</a></td>
-<td>63</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.hal.DocumentRepresentationFactory"></a><section>
-<h2><a name="org.restheart.mongodb.hal.DocumentRepresentationFactory"></a>org.restheart.mongodb.hal.DocumentRepresentationFactory</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>instanceof will always return false in org.restheart.mongodb.hal.DocumentRepresentationFactory.addSpecialProperties(Resource, ExchangeKeys$TYPE, BsonDocument), since a org.bson.BsonValue cannot be a org.bson.types.ObjectId</td>
-<td>CORRECTNESS</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#BC_IMPOSSIBLE_INSTANCEOF">BC_IMPOSSIBLE_INSTANCEOF</a></td>
-<td>76</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.handlers.HeadersManager"></a><section>
-<h2><a name="org.restheart.mongodb.handlers.HeadersManager"></a>org.restheart.mongodb.handlers.HeadersManager</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>new org.restheart.mongodb.handlers.HeadersManager(HttpServerExchange) may expose internal representation by storing an externally mutable object into HeadersManager.exchange</td>
+<td>org.restheart.security.authorizers.GlobalPredicatesVetoer.setPluginsRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into GlobalPredicatesVetoer.registry</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>39</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.handlers.NormalOrBulkDispatcherHandler"></a><section>
-<h2><a name="org.restheart.mongodb.handlers.NormalOrBulkDispatcherHandler"></a>org.restheart.mongodb.handlers.NormalOrBulkDispatcherHandler</h2>
+<td>40</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.authorizers.MongoAclAuthorizer"></a><section>
+<h2><a name="org.restheart.security.authorizers.MongoAclAuthorizer"></a>org.restheart.security.authorizers.MongoAclAuthorizer</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -458,98 +179,46 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
-<td>new org.restheart.mongodb.handlers.NormalOrBulkDispatcherHandler(PipelinedHandler, PipelinedHandler) may expose internal representation by storing an externally mutable object into NormalOrBulkDispatcherHandler.nextBulk</td>
+<td>org.restheart.security.authorizers.MongoAclAuthorizer.initRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into MongoAclAuthorizer.registry</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>48</td>
+<td>143</td>
 <td>Medium</td></tr>
 <tr class="b">
-<td>new org.restheart.mongodb.handlers.NormalOrBulkDispatcherHandler(PipelinedHandler, PipelinedHandler) may expose internal representation by storing an externally mutable object into NormalOrBulkDispatcherHandler.nextNormal</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>47</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.handlers.aggregation.AggregationPipeline"></a><section>
-<h2><a name="org.restheart.mongodb.handlers.aggregation.AggregationPipeline"></a>org.restheart.mongodb.handlers.aggregation.AggregationPipeline</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>org.restheart.mongodb.handlers.aggregation.AggregationPipeline.getStages() may expose internal representation by returning AggregationPipeline.stages</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>120</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.handlers.changestreams.ChangeStreamOperation"></a><section>
-<h2><a name="org.restheart.mongodb.handlers.changestreams.ChangeStreamOperation"></a>org.restheart.mongodb.handlers.changestreams.ChangeStreamOperation</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>org.restheart.mongodb.handlers.changestreams.ChangeStreamOperation.getStages() may expose internal representation by returning ChangeStreamOperation.stages</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>170</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.handlers.changestreams.ChangeStreamSubscriber"></a><section>
-<h2><a name="org.restheart.mongodb.handlers.changestreams.ChangeStreamSubscriber"></a>org.restheart.mongodb.handlers.changestreams.ChangeStreamSubscriber</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>new org.restheart.mongodb.handlers.changestreams.ChangeStreamSubscriber(SessionKey, List, String, String) may expose internal representation by storing an externally mutable object into ChangeStreamSubscriber.resolvedStages</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>68</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>new org.restheart.mongodb.handlers.changestreams.ChangeStreamSubscriber(SessionKey, List, String, String, boolean) may expose internal representation by storing an externally mutable object into ChangeStreamSubscriber.resolvedStages</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>77</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>Possible null pointer dereference in org.restheart.mongodb.handlers.changestreams.ChangeStreamSubscriber.getDocument(ChangeStreamDocument) due to return value of called method</td>
+<td>Redundant nullcheck of permissions, which is known to be non-null in org.restheart.security.authorizers.MongoAclAuthorizer.findRolePermissions(String)</td>
 <td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>210</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Possible null pointer dereference in org.restheart.mongodb.handlers.changestreams.ChangeStreamSubscriber.getDocument(ChangeStreamDocument) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>219</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.handlers.changestreams.ChangeStreamWebSocketSession"></a><section>
-<h2><a name="org.restheart.mongodb.handlers.changestreams.ChangeStreamWebSocketSession"></a>org.restheart.mongodb.handlers.changestreams.ChangeStreamWebSocketSession</h2>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
+<td>335</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.interceptors.BruteForceAttackGuard"></a><section>
+<h2><a name="org.restheart.security.interceptors.BruteForceAttackGuard"></a>org.restheart.security.interceptors.BruteForceAttackGuard</h2>
 <table border="0" class="bodyTable">
-<tr class="b">
+<tr class="a">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="a">
-<td>org.restheart.mongodb.handlers.changestreams.ChangeStreamWebSocketSession.getChannel() may expose internal representation by returning ChangeStreamWebSocketSession.webSocketChannel</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>65</td>
-<td>Medium</td></tr>
 <tr class="b">
-<td>new org.restheart.mongodb.handlers.changestreams.ChangeStreamWebSocketSession(WebSocketChannel, SessionKey) may expose internal representation by storing an externally mutable object into ChangeStreamWebSocketSession.webSocketChannel</td>
+<td>Write to static field org.restheart.security.interceptors.BruteForceAttackGuard.xForwardedForValueFromLast from instance method org.restheart.security.interceptors.BruteForceAttackGuard.config(Map)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD">ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD</a></td>
+<td>75</td>
+<td>High</td></tr></table></section><a name="org.restheart.security.interceptors.TokenCORSResponseInterceptor"></a><section>
+<h2><a name="org.restheart.security.interceptors.TokenCORSResponseInterceptor"></a>org.restheart.security.interceptors.TokenCORSResponseInterceptor</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="b">
+<td>org.restheart.security.interceptors.TokenCORSResponseInterceptor.setHeaders(String[]) may expose internal representation by storing an externally mutable object into TokenCORSResponseInterceptor.headers</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>45</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.handlers.changestreams.SessionInfo"></a><section>
-<h2><a name="org.restheart.mongodb.handlers.changestreams.SessionInfo"></a>org.restheart.mongodb.handlers.changestreams.SessionInfo</h2>
+<td>98</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.mechanisms.DigestAuthMechanism"></a><section>
+<h2><a name="org.restheart.security.mechanisms.DigestAuthMechanism"></a>org.restheart.security.mechanisms.DigestAuthMechanism</h2>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Bug</th>
@@ -558,102 +227,80 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="b">
-<td>org.restheart.mongodb.handlers.changestreams.SessionInfo.equals(Object) checks for operand being a SessionKey</td>
-<td>BAD_PRACTICE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EQ_CHECK_FOR_OPERAND_NOT_COMPATIBLE_WITH_THIS">EQ_CHECK_FOR_OPERAND_NOT_COMPATIBLE_WITH_THIS</a></td>
-<td>49</td>
-<td>High</td></tr>
-<tr class="a">
-<td>org.restheart.mongodb.handlers.changestreams.SessionInfo.equals(Object) is unusual</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EQ_UNUSUAL">EQ_UNUSUAL</a></td>
-<td>49</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.handlers.changestreams.SessionKey"></a><section>
-<h2><a name="org.restheart.mongodb.handlers.changestreams.SessionKey"></a>org.restheart.mongodb.handlers.changestreams.SessionKey</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>org.restheart.mongodb.handlers.changestreams.SessionKey.getAvars() may expose internal representation by returning SessionKey.avars</td>
+<td>new org.restheart.security.mechanisms.DigestAuthMechanism(List, List, String, String, NonceManager, String, IdentityManager) may expose internal representation by storing an externally mutable object into DigestAuthMechanism.supportedAlgorithms</td>
 <td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>106</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>167</td>
 <td>Medium</td></tr>
+<tr class="a">
+<td>new org.restheart.security.mechanisms.DigestAuthMechanism(List, List, String, String, NonceManager, String, IdentityManager) may expose internal representation by storing an externally mutable object into DigestAuthMechanism.supportedQops</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>168</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.predicates.BsonRequestBlacklistPredicate"></a><section>
+<h2><a name="org.restheart.security.predicates.BsonRequestBlacklistPredicate"></a>org.restheart.security.predicates.BsonRequestBlacklistPredicate</h2>
+<table border="0" class="bodyTable">
 <tr class="b">
-<td>new org.restheart.mongodb.handlers.changestreams.SessionKey(String, BsonDocument, JsonMode) may expose internal representation by storing an externally mutable object into SessionKey.avars</td>
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>Load of known null value in org.restheart.security.predicates.BsonRequestBlacklistPredicate.resolve(HttpServerExchange)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_LOAD_OF_KNOWN_NULL_VALUE">NP_LOAD_OF_KNOWN_NULL_VALUE</a></td>
+<td>61</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.predicates.BsonRequestContainsPredicate"></a><section>
+<h2><a name="org.restheart.security.predicates.BsonRequestContainsPredicate"></a>org.restheart.security.predicates.BsonRequestContainsPredicate</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>Load of known null value in org.restheart.security.predicates.BsonRequestContainsPredicate.resolve(HttpServerExchange)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_LOAD_OF_KNOWN_NULL_VALUE">NP_LOAD_OF_KNOWN_NULL_VALUE</a></td>
+<td>62</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.predicates.BsonRequestWhitelistPredicate"></a><section>
+<h2><a name="org.restheart.security.predicates.BsonRequestWhitelistPredicate"></a>org.restheart.security.predicates.BsonRequestWhitelistPredicate</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>Load of known null value in org.restheart.security.predicates.BsonRequestWhitelistPredicate.resolve(HttpServerExchange)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_LOAD_OF_KNOWN_NULL_VALUE">NP_LOAD_OF_KNOWN_NULL_VALUE</a></td>
+<td>60</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.predicates.InPredicate"></a><section>
+<h2><a name="org.restheart.security.predicates.InPredicate"></a>org.restheart.security.predicates.InPredicate</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>new org.restheart.security.predicates.InPredicate(String[], ExchangeAttribute) may expose internal representation by storing an externally mutable object into InPredicate.array</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
 <td>43</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.handlers.files.GetFileBinaryHandler"></a><section>
-<h2><a name="org.restheart.mongodb.handlers.files.GetFileBinaryHandler"></a>org.restheart.mongodb.handlers.files.GetFileBinaryHandler</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>Possible null pointer dereference in org.restheart.mongodb.handlers.files.GetFileBinaryHandler.checkEtag(HttpServerExchange, GridFSFile) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>125</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Possible null pointer dereference in org.restheart.mongodb.handlers.files.GetFileBinaryHandler.checkEtag(HttpServerExchange, GridFSFile) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>126</td>
 <td>Medium</td></tr>
 <tr class="b">
-<td>Possible null pointer dereference in org.restheart.mongodb.handlers.files.GetFileBinaryHandler.sendBinaryContent(MongoRequest, MongoResponse, GridFSBucket, GridFSFile, HttpServerExchange) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>169</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Possible null pointer dereference in org.restheart.mongodb.handlers.files.GetFileBinaryHandler.sendBinaryContent(MongoRequest, MongoResponse, GridFSBucket, GridFSFile, HttpServerExchange) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>170</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>Possible null pointer dereference in org.restheart.mongodb.handlers.files.GetFileBinaryHandler.sendBinaryContent(MongoRequest, MongoResponse, GridFSBucket, GridFSFile, HttpServerExchange) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>171</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Possible null pointer dereference in org.restheart.mongodb.handlers.files.GetFileBinaryHandler.sendBinaryContent(MongoRequest, MongoResponse, GridFSBucket, GridFSFile, HttpServerExchange) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>172</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>Redundant nullcheck of com.mongodb.client.gridfs.model.GridFSFile.getFilename(), which is known to be non-null in org.restheart.mongodb.handlers.files.GetFileBinaryHandler.extractFilename(GridFSFile)</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
-<td>197</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.security.AllowBulkRequests"></a><section>
-<h2><a name="org.restheart.mongodb.security.AllowBulkRequests"></a>org.restheart.mongodb.security.AllowBulkRequests</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>org.restheart.mongodb.security.AllowBulkRequests.initRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into AllowBulkRequests.registry</td>
+<td>new org.restheart.security.predicates.InPredicate(String[], ExchangeAttribute) may expose internal representation by storing an externally mutable object into InPredicate.value</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>48</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.security.AllowMgmtRequests"></a><section>
-<h2><a name="org.restheart.mongodb.security.AllowMgmtRequests"></a>org.restheart.mongodb.security.AllowMgmtRequests</h2>
+<td>44</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.services.RndTokenService"></a><section>
+<h2><a name="org.restheart.security.services.RndTokenService"></a>org.restheart.security.services.RndTokenService</h2>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Bug</th>
@@ -662,52 +309,42 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="b">
-<td>org.restheart.mongodb.security.AllowMgmtRequests.initRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into AllowMgmtRequests.registry</td>
+<td>org.restheart.security.services.RndTokenService.init(Map) may expose internal representation by storing an externally mutable object into RndTokenService.confArgs</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>45</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.security.AllowWriteMode"></a><section>
-<h2><a name="org.restheart.mongodb.security.AllowWriteMode"></a>org.restheart.mongodb.security.AllowWriteMode</h2>
-<table border="0" class="bodyTable">
+<td>80</td>
+<td>Medium</td></tr>
 <tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>org.restheart.mongodb.security.AllowWriteMode.initRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into AllowWriteMode.registry</td>
+<td>org.restheart.security.services.RndTokenService.setPluginRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into RndTokenService.pluginRegistry</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>48</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.security.FilterOperatorsBlacklist"></a><section>
-<h2><a name="org.restheart.mongodb.security.FilterOperatorsBlacklist"></a>org.restheart.mongodb.security.FilterOperatorsBlacklist</h2>
+<td>69</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.tokens.RndTokenManager"></a><section>
+<h2><a name="org.restheart.security.tokens.RndTokenManager"></a>org.restheart.security.tokens.RndTokenManager</h2>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
-<td>org.restheart.mongodb.security.FilterOperatorsBlacklist.registry(PluginsRegistry) may expose internal representation by storing an externally mutable object into FilterOperatorsBlacklist.registry</td>
+<tr class="a">
+<td>org.restheart.security.tokens.RndTokenManager.getCACHE() may expose internal representation by returning RndTokenManager.CACHE</td>
 <td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>50</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.mongodb.utils.LogUtils"></a><section>
-<h2><a name="org.restheart.mongodb.utils.LogUtils"></a>org.restheart.mongodb.utils.LogUtils</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
+<td>119</td>
+<td>Medium</td></tr>
 <tr class="b">
-<td>org.restheart.mongodb.utils.LogUtils.pad(String, int) invokes inefficient new String(String) constructor</td>
-<td>PERFORMANCE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_STRING_CTOR">DM_STRING_CTOR</a></td>
-<td>186</td>
+<td>Result of integer multiplication cast to long in org.restheart.security.tokens.RndTokenManager.init(Map, PluginsRegistry)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#ICAST_INTEGER_MULTIPLY_CAST_TO_LONG">ICAST_INTEGER_MULTIPLY_CAST_TO_LONG</a></td>
+<td>72</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>Write to static field org.restheart.security.tokens.RndTokenManager.CACHE from instance method org.restheart.security.tokens.RndTokenManager.init(Map, PluginsRegistry)</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD">ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD</a></td>
+<td>72</td>
 <td>Medium</td></tr></table></section>
       </div>
     </div>
@@ -716,7 +353,7 @@
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2014&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2018&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>

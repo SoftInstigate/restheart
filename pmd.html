@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-mongodb &#x2013; PMD Results</title>
+    <title>restheart-security &#x2013; PMD Results</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-mongodb
+<div id="bannerLeft">restheart-security
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-mongodb">restheart-mongodb</a>      </div>
+      <div class="xright"><a href="./" title="restheart-security">restheart-security</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -64,8 +64,19 @@
 <h1><a name="PMD_Results"></a>PMD Results</h1>
 <p>The following document contains the results of <a class="externalLink" href="https://pmd.github.io">PMD</a> 6.46.0.</p></section><section>
 <h1><a name="Violations_By_Priority"></a>Violations By Priority</h1><section>
+<h2><a name="Priority_2"></a>Priority 2</h2><section>
+<h3><a name="org.2Frestheart.2Fsecurity.2Fmechanisms.2FDigestAuthMechanism.java"></a>org/restheart/security/mechanisms/DigestAuthMechanism.java</h3>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Rule</th>
+<th>Violation</th>
+<th>Line</th></tr>
+<tr class="b">
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#avoidbranchingstatementaslastinloop">AvoidBranchingStatementAsLastInLoop</a></td>
+<td>Avoid using a branching statement as the last in a loop.</td>
+<td>228</td></tr></table></section></section><section>
 <h2><a name="Priority_3"></a>Priority 3</h2><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2FMongoService.java"></a>org/restheart/mongodb/MongoService.java</h3>
+<h3><a name="org.2Frestheart.2Fsecurity.2Fauthorizers.2FMongoAclAuthorizer.java"></a>org/restheart/security/authorizers/MongoAclAuthorizer.java</h3>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Rule</th>
@@ -74,188 +85,18 @@
 <tr class="b">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
 <td>Too many static imports may lead to messy code</td>
-<td>21&#x2013;350</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#simplifiedternary">SimplifiedTernary</a></td>
-<td>Ternary operators that can be simplified with || or &amp;&amp;</td>
-<td>186&#x2013;188</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2FMongoServiceConfigurationKeys.java"></a>org/restheart/mongodb/MongoServiceConfigurationKeys.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_MONGO_URI': the field is declared in an interface type</td>
-<td>34</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_REPRESENTATION_FORMAT': the field is declared in an interface type</td>
-<td>40&#x2013;41</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_DB_ETAG_CHECK_POLICY': the field is declared in an interface type</td>
-<td>46&#x2013;47</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_COLL_ETAG_CHECK_POLICY': the field is declared in an interface type</td>
-<td>52&#x2013;53</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_DOC_ETAG_CHECK_POLICY': the field is declared in an interface type</td>
-<td>58&#x2013;59</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_MAX_DOC_ETAG_CHECK_POLICY': the field is declared in an interface type</td>
-<td>64</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_MAX_PAGESIZE': the field is declared in an interface type</td>
-<td>69</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_DEFAULT_PAGESIZE': the field is declared in an interface type</td>
-<td>74</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_CURSOR_BATCH_SIZE': the field is declared in an interface type</td>
-<td>79</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'PLUGINS_ARGS_KEY': the field is declared in an interface type</td>
-<td>84</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'LOCAL_CACHE_ENABLED_KEY': the field is declared in an interface type</td>
-<td>89</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'LOCAL_CACHE_TTL_KEY': the field is declared in an interface type</td>
-<td>94</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'SCHEMA_CACHE_ENABLED_KEY': the field is declared in an interface type</td>
-<td>99</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'SCHEMA_CACHE_TTL_KEY': the field is declared in an interface type</td>
-<td>104</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'REQUESTS_LIMIT_KEY': the field is declared in an interface type</td>
-<td>109</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'QUERY_TIME_LIMIT_KEY': the field is declared in an interface type</td>
-<td>114</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'AGGREGATION_TIME_LIMIT_KEY': the field is declared in an interface type</td>
-<td>119</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'AGGREGATION_CHECK_OPERATORS': the field is declared in an interface type</td>
-<td>124</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'MONGO_URI_KEY': the field is declared in an interface type</td>
-<td>129</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'MONGO_MOUNTS_KEY': the field is declared in an interface type</td>
-<td>134</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'MONGO_MOUNT_WHAT_KEY': the field is declared in an interface type</td>
-<td>139</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'MONGO_MOUNT_WHERE_KEY': the field is declared in an interface type</td>
-<td>144</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_MONGO_MOUNT_WHERE': the field is declared in an interface type</td>
-<td>149</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_MONGO_MOUNT_WHAT': the field is declared in an interface type</td>
-<td>154</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'INSTANCE_BASE_URL_KEY': the field is declared in an interface type</td>
-<td>160</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'REPRESENTATION_FORMAT_KEY': the field is declared in an interface type</td>
-<td>165</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_POOL_SIZE': the field is declared in an interface type</td>
-<td>170</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_LINEAR_SLICE_WIDHT': the field is declared in an interface type</td>
-<td>175</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_LINEAR_SLICE_DELTA': the field is declared in an interface type</td>
-<td>180</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_LINEAR_HEIGHTS': the field is declared in an interface type</td>
-<td>185</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_RND_SLICE_MIN_WIDHT': the field is declared in an interface type</td>
-<td>190</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_RND_MAX_CURSORS': the field is declared in an interface type</td>
-<td>196</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'ETAG_CHECK_POLICY_KEY': the field is declared in an interface type</td>
-<td>202</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'ETAG_CHECK_POLICY_DB_KEY': the field is declared in an interface type</td>
-<td>207</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'ETAG_CHECK_POLICY_COLL_KEY': the field is declared in an interface type</td>
-<td>212</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'ETAG_CHECK_POLICY_DOC_KEY': the field is declared in an interface type</td>
-<td>217</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'METRICS_GATHERING_LEVEL_KEY': the field is declared in an interface type</td>
-<td>225</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'MAX_PAGESIZE_KEY': the field is declared in an interface type</td>
-<td>230</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_PAGESIZE_KEY': the field is declared in an interface type</td>
-<td>235</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'CURSOR_BATCH_SIZE_KEY': the field is declared in an interface type</td>
-<td>240</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fdb.2FCollections.java"></a>org/restheart/mongodb/db/Collections.java</h3>
+<td>21&#x2013;393</td></tr></table></section><section>
+<h3><a name="org.2Frestheart.2Fsecurity.2Finterceptors.2FBruteForceAttackGuard.java"></a>org/restheart/security/interceptors/BruteForceAttackGuard.java</h3>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Rule</th>
 <th>Violation</th>
 <th>Line</th></tr>
 <tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>480&#x2013;490</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fdb.2FCursorPool.java"></a>org/restheart/mongodb/db/CursorPool.java</h3>
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_bestpractices.html#unusedformalparameter">UnusedFormalParameter</a></td>
+<td>Avoid unused method parameters such as 'mean'.</td>
+<td>120</td></tr></table></section><section>
+<h3><a name="org.2Frestheart.2Fsecurity.2Fmechanisms.2FDigestAuthMechanism.java"></a>org/restheart/security/mechanisms/DigestAuthMechanism.java</h3>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Rule</th>
@@ -264,285 +105,45 @@
 <tr class="b">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
 <td>Too many static imports may lead to messy code</td>
-<td>21&#x2013;343</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarysemicolon">UnnecessarySemicolon</a></td>
-<td>Unnecessary semicolon</td>
-<td>342</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fdb.2FDatabases.java"></a>org/restheart/mongodb/db/Databases.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
+<td>21&#x2013;682</td></tr>
 <tr class="a">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_bestpractices.html#unusedformalparameter">UnusedFormalParameter</a></td>
-<td>Avoid unused method parameters such as 'rsOps'.</td>
-<td>349</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fdb.2FGridFs.java"></a>org/restheart/mongodb/db/GridFs.java</h3>
-<table border="0" class="bodyTable">
+<td>Avoid unused constructor parameters such as 'mechanismName'.</td>
+<td>166</td></tr>
 <tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarysemicolon">UnnecessarySemicolon</a></td>
-<td>Unnecessary semicolon</td>
-<td>63</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fdb.2FMongoClientSingleton.java"></a>org/restheart/mongodb/db/MongoClientSingleton.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>21&#x2013;239</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#overridebothequalsandhashcode">OverrideBothEqualsAndHashcode</a></td>
-<td>Ensure you override both equals() and hashCode()</td>
-<td>201</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fdb.2Fsessions.2FTxnClientSessionImpl.java"></a>org/restheart/mongodb/db/sessions/TxnClientSessionImpl.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#emptycatchblock">EmptyCatchBlock</a></td>
-<td>Avoid empty catch blocks</td>
-<td>175&#x2013;177</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#emptycontrolstatement">EmptyControlStatement</a></td>
-<td>Empty finally clause</td>
-<td>188&#x2013;192</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fdb.2Fsessions.2FTxnsUtils.java"></a>org/restheart/mongodb/db/sessions/TxnsUtils.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
 <td>These nested if statements could be combined</td>
-<td>209&#x2013;212</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fexchange.2FBsonRequestContentInjector.java"></a>org/restheart/mongodb/exchange/BsonRequestContentInjector.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>21&#x2013;380</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fexchange.2FBsonRequestPropsInjector.java"></a>org/restheart/mongodb/exchange/BsonRequestPropsInjector.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>21&#x2013;556</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhal.2FCollectionRepresentationFactory.java"></a>org/restheart/mongodb/hal/CollectionRepresentationFactory.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>85&#x2013;90</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhal.2FDBRepresentationFactory.java"></a>org/restheart/mongodb/hal/DBRepresentationFactory.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>64&#x2013;69</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhal.2FDocumentRepresentationFactory.java"></a>org/restheart/mongodb/hal/DocumentRepresentationFactory.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>65&#x2013;70</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhal.2FHALRepresentation.java"></a>org/restheart/mongodb/hal/HALRepresentation.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>240&#x2013;257</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhal.2FIndexesRepresentationFactory.java"></a>org/restheart/mongodb/hal/IndexesRepresentationFactory.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
+<td>307&#x2013;309</td></tr>
 <tr class="a">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_bestpractices.html#unusedformalparameter">UnusedFormalParameter</a></td>
-<td>Avoid unused method parameters such as 'requestPath'.</td>
-<td>131</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2FCORSHandler.java"></a>org/restheart/mongodb/handlers/CORSHandler.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>21&#x2013;129</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fbulk.2FBulkPostCollectionHandler.java"></a>org/restheart/mongodb/handlers/bulk/BulkPostCollectionHandler.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>142&#x2013;146</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fchangestreams.2FChangeStreamSubscriber.java"></a>org/restheart/mongodb/handlers/changestreams/ChangeStreamSubscriber.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#emptycatchblock">EmptyCatchBlock</a></td>
-<td>Avoid empty catch blocks</td>
-<td>145&#x2013;147</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fchangestreams.2FObsoleteChangeStreamRemover.java"></a>org/restheart/mongodb/handlers/changestreams/ObsoleteChangeStreamRemover.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#emptycatchblock">EmptyCatchBlock</a></td>
-<td>Avoid empty catch blocks</td>
-<td>79&#x2013;81</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#emptycatchblock">EmptyCatchBlock</a></td>
-<td>Avoid empty catch blocks</td>
-<td>104&#x2013;106</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fcollection.2FPostCollectionHandler.java"></a>org/restheart/mongodb/handlers/collection/PostCollectionHandler.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>102&#x2013;106</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fdocument.2FGetDocumentHandler.java"></a>org/restheart/mongodb/handlers/document/GetDocumentHandler.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>21&#x2013;221</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Findexes.2FPutIndexHandler.java"></a>org/restheart/mongodb/handlers/indexes/PutIndexHandler.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarysemicolon">UnnecessarySemicolon</a></td>
-<td>Unnecessary semicolon</td>
-<td>72</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fmetrics.2FMetricsHandler.java"></a>org/restheart/mongodb/handlers/metrics/MetricsHandler.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>21&#x2013;517</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Froot.2FGetRootHandler.java"></a>org/restheart/mongodb/handlers/root/GetRootHandler.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>101&#x2013;119</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fschema.2FJsonSchemaCacheSingleton.java"></a>org/restheart/mongodb/handlers/schema/JsonSchemaCacheSingleton.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarysemicolon">UnnecessarySemicolon</a></td>
-<td>Unnecessary semicolon</td>
-<td>54</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fsecurity.2FProjectResponse.java"></a>org/restheart/mongodb/security/ProjectResponse.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarysemicolon">UnnecessarySemicolon</a></td>
-<td>Unnecessary semicolon</td>
-<td>105</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Futils.2FLogUtils.java"></a>org/restheart/mongodb/utils/LogUtils.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifier 'static' on enum 'Level': nested enums are implicitly static</td>
-<td>40&#x2013;66</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Futils.2FMongoURLUtils.java"></a>org/restheart/mongodb/utils/MongoURLUtils.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>21&#x2013;360</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Futils.2FRequestHelper.java"></a>org/restheart/mongodb/utils/RequestHelper.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
+<td>Avoid unused method parameters such as 'securityContext'.</td>
+<td>482</td></tr>
 <tr class="b">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#simplifiedternary">SimplifiedTernary</a></td>
 <td>Ternary operators that can be simplified with || or &amp;&amp;</td>
-<td>55</td></tr></table></section></section><section>
+<td>484</td></tr></table></section><section>
+<h3><a name="org.2Frestheart.2Fsecurity.2Fmechanisms.2FTokenBasicAuthMechanism.java"></a>org/restheart/security/mechanisms/TokenBasicAuthMechanism.java</h3>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Rule</th>
+<th>Violation</th>
+<th>Line</th></tr>
+<tr class="b">
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#emptycatchblock">EmptyCatchBlock</a></td>
+<td>Avoid empty catch blocks</td>
+<td>98&#x2013;100</td></tr></table></section><section>
+<h3><a name="org.2Frestheart.2Fsecurity.2Fservices.2FGetRoleService.java"></a>org/restheart/security/services/GetRoleService.java</h3>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Rule</th>
+<th>Violation</th>
+<th>Line</th></tr>
+<tr class="b">
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
+<td>Too many static imports may lead to messy code</td>
+<td>21&#x2013;119</td></tr></table></section></section><section>
 <h2><a name="Priority_4"></a>Priority 4</h2><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fdb.2FGridFs.java"></a>org/restheart/mongodb/db/GridFs.java</h3>
+<h3><a name="org.2Frestheart.2Fsecurity.2Fauthorizers.2FMongoAclAuthorizer.java"></a>org/restheart/security/authorizers/MongoAclAuthorizer.java</h3>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Rule</th>
@@ -550,79 +151,9 @@
 <th>Line</th></tr>
 <tr class="b">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_OK' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>332</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_OK' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>336</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_CONFLICT' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>338</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_CONFLICT' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>346</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_OK' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>356</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_OK' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>366</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_CONFLICT' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>399</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_PRECONDITION_FAILED' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>430</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fdb.2Fsessions.2FTxnClientSessionFactory.java"></a>org/restheart/mongodb/db/sessions/TxnClientSessionFactory.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'Txn.TransactionStatus.IN' due to existing static import 'org.restheart.mongodb.db.sessions.Txn.TransactionStatus.IN'</td>
-<td>108</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fdb.2Fsessions.2FTxnClientSessionImpl.java"></a>org/restheart/mongodb/db/sessions/TxnClientSessionImpl.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>68</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fexchange.2FBsonRequestContentInjector.java"></a>org/restheart/mongodb/exchange/BsonRequestContentInjector.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>74&#x2013;75</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>76&#x2013;77</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>235</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>235</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhal.2FHALRepresentation.java"></a>org/restheart/mongodb/hal/HALRepresentation.java</h3>
+<td>Unnecessary use of fully qualified name 'Sets.newHashSet' due to existing static import 'com.google.common.collect.Sets.newHashSet'</td>
+<td>171</td></tr></table></section><section>
+<h3><a name="org.2Frestheart.2Fsecurity.2Fmechanisms.2FDigestAuthMechanism.java"></a>org/restheart/security/mechanisms/DigestAuthMechanism.java</h3>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Rule</th>
@@ -631,46 +162,8 @@
 <tr class="b">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
 <td>Useless parentheses.</td>
-<td>59</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>118&#x2013;122</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Faggregation.2FAbstractAggregationOperation.java"></a>org/restheart/mongodb/handlers/aggregation/AbstractAggregationOperation.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>137</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Faggregation.2FAggregationPipeline.java"></a>org/restheart/mongodb/handlers/aggregation/AggregationPipeline.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>137</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fchangestreams.2FChangeStreamOperation.java"></a>org/restheart/mongodb/handlers/changestreams/ChangeStreamOperation.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>109</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>187</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fchangestreams.2FObsoleteChangeStreamRemover.java"></a>org/restheart/mongodb/handlers/changestreams/ObsoleteChangeStreamRemover.java</h3>
+<td>412</td></tr></table></section><section>
+<h3><a name="org.2Frestheart.2Fsecurity.2Fpredicates.2FQParamsContainPredicate.java"></a>org/restheart/security/predicates/QParamsContainPredicate.java</h3>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Rule</th>
@@ -679,86 +172,12 @@
 <tr class="b">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
 <td>Useless parentheses.</td>
-<td>54</td></tr>
+<td>51</td></tr>
 <tr class="a">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
 <td>Useless parentheses.</td>
-<td>55</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>56&#x2013;57</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>115</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>116</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>117</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>118</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fcollection.2FPatchCollectionHandler.java"></a>org/restheart/mongodb/handlers/collection/PatchCollectionHandler.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>81</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fdocument.2FGetDocumentHandler.java"></a>org/restheart/mongodb/handlers/document/GetDocumentHandler.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>192</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fmetrics.2FMetricsHandler.java"></a>org/restheart/mongodb/handlers/metrics/MetricsHandler.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>388&#x2013;389</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fsessions.2FDeleteTxnHandler.java"></a>org/restheart/mongodb/handlers/sessions/DeleteTxnHandler.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryimport">UnnecessaryImport</a></td>
-<td>Unused import 'org.restheart.mongodb.db.sessions.TxnClientSessionImpl'</td>
-<td>30</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Finterceptors.2FContentSizeChecker.java"></a>org/restheart/mongodb/interceptors/ContentSizeChecker.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>82&#x2013;84</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>108&#x2013;110</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Finterceptors.2FJsonSchemaAfterWriteChecker.java"></a>org/restheart/mongodb/interceptors/JsonSchemaAfterWriteChecker.java</h3>
+<td>52&#x2013;53</td></tr></table></section><section>
+<h3><a name="org.2Frestheart.2Fsecurity.2Fpredicates.2FQParamsSizePredicate.java"></a>org/restheart/security/predicates/QParamsSizePredicate.java</h3>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Rule</th>
@@ -767,119 +186,13 @@
 <tr class="a">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
 <td>Useless parentheses.</td>
-<td>69</td></tr>
+<td>45</td></tr>
 <tr class="b">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
 <td>Useless parentheses.</td>
-<td>76&#x2013;77</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Finterceptors.2FJsonSchemaBeforeWriteChecker.java"></a>org/restheart/mongodb/interceptors/JsonSchemaBeforeWriteChecker.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>237</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>238</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fmetadata.2FRelationship.java"></a>org/restheart/mongodb/metadata/Relationship.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>294</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fsecurity.2FAllowBulkRequests.java"></a>org/restheart/mongodb/security/AllowBulkRequests.java</h3>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>75</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>76</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fsecurity.2FAllowMgmtRequests.java"></a>org/restheart/mongodb/security/AllowMgmtRequests.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>71</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>72</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>72</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>73</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>74</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>76</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>78</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>79</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>80</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>82</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>83</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>84</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>85</td></tr></table></section><section>
-<h3><a name="org.2Frestheart.2Fmongodb.2Fsecurity.2FAllowWriteMode.java"></a>org/restheart/mongodb/security/AllowWriteMode.java</h3>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>74&#x2013;75</td></tr></table></section></section></section><section>
+<td>46</td></tr></table></section></section></section><section>
 <h1><a name="Files"></a>Files</h1><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2FMongoService.java"></a>org/restheart/mongodb/MongoService.java</h2>
+<h2><a name="org.2Frestheart.2Fsecurity.2Fauthorizers.2FMongoAclAuthorizer.java"></a>org/restheart/security/authorizers/MongoAclAuthorizer.java</h2>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Rule</th>
@@ -890,249 +203,13 @@
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
 <td>Too many static imports may lead to messy code</td>
 <td>3</td>
-<td>21&#x2013;350</td></tr>
+<td>21&#x2013;393</td></tr>
 <tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#simplifiedternary">SimplifiedTernary</a></td>
-<td>Ternary operators that can be simplified with || or &amp;&amp;</td>
-<td>3</td>
-<td>186&#x2013;188</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2FMongoServiceConfigurationKeys.java"></a>org/restheart/mongodb/MongoServiceConfigurationKeys.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_MONGO_URI': the field is declared in an interface type</td>
-<td>3</td>
-<td>34</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_REPRESENTATION_FORMAT': the field is declared in an interface type</td>
-<td>3</td>
-<td>40&#x2013;41</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_DB_ETAG_CHECK_POLICY': the field is declared in an interface type</td>
-<td>3</td>
-<td>46&#x2013;47</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_COLL_ETAG_CHECK_POLICY': the field is declared in an interface type</td>
-<td>3</td>
-<td>52&#x2013;53</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_DOC_ETAG_CHECK_POLICY': the field is declared in an interface type</td>
-<td>3</td>
-<td>58&#x2013;59</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_MAX_DOC_ETAG_CHECK_POLICY': the field is declared in an interface type</td>
-<td>3</td>
-<td>64</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_MAX_PAGESIZE': the field is declared in an interface type</td>
-<td>3</td>
-<td>69</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_DEFAULT_PAGESIZE': the field is declared in an interface type</td>
-<td>3</td>
-<td>74</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_CURSOR_BATCH_SIZE': the field is declared in an interface type</td>
-<td>3</td>
-<td>79</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'PLUGINS_ARGS_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>84</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'LOCAL_CACHE_ENABLED_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>89</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'LOCAL_CACHE_TTL_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>94</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'SCHEMA_CACHE_ENABLED_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>99</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'SCHEMA_CACHE_TTL_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>104</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'REQUESTS_LIMIT_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>109</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'QUERY_TIME_LIMIT_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>114</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'AGGREGATION_TIME_LIMIT_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>119</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'AGGREGATION_CHECK_OPERATORS': the field is declared in an interface type</td>
-<td>3</td>
-<td>124</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'MONGO_URI_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>129</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'MONGO_MOUNTS_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>134</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'MONGO_MOUNT_WHAT_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>139</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'MONGO_MOUNT_WHERE_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>144</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_MONGO_MOUNT_WHERE': the field is declared in an interface type</td>
-<td>3</td>
-<td>149</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_MONGO_MOUNT_WHAT': the field is declared in an interface type</td>
-<td>3</td>
-<td>154</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'INSTANCE_BASE_URL_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>160</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'REPRESENTATION_FORMAT_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>165</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_POOL_SIZE': the field is declared in an interface type</td>
-<td>3</td>
-<td>170</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_LINEAR_SLICE_WIDHT': the field is declared in an interface type</td>
-<td>3</td>
-<td>175</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_LINEAR_SLICE_DELTA': the field is declared in an interface type</td>
-<td>3</td>
-<td>180</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_LINEAR_HEIGHTS': the field is declared in an interface type</td>
-<td>3</td>
-<td>185</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_RND_SLICE_MIN_WIDHT': the field is declared in an interface type</td>
-<td>3</td>
-<td>190</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'EAGER_RND_MAX_CURSORS': the field is declared in an interface type</td>
-<td>3</td>
-<td>196</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'ETAG_CHECK_POLICY_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>202</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'ETAG_CHECK_POLICY_DB_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>207</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'ETAG_CHECK_POLICY_COLL_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>212</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'ETAG_CHECK_POLICY_DOC_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>217</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'METRICS_GATHERING_LEVEL_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>225</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'MAX_PAGESIZE_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>230</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'DEFAULT_PAGESIZE_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>235</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifiers 'public static final' on field 'CURSOR_BATCH_SIZE_KEY': the field is declared in an interface type</td>
-<td>3</td>
-<td>240</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fdb.2FCollections.java"></a>org/restheart/mongodb/db/Collections.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>3</td>
-<td>480&#x2013;490</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fdb.2FCursorPool.java"></a>org/restheart/mongodb/db/CursorPool.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>3</td>
-<td>21&#x2013;343</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarysemicolon">UnnecessarySemicolon</a></td>
-<td>Unnecessary semicolon</td>
-<td>3</td>
-<td>342</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fdb.2FDatabases.java"></a>org/restheart/mongodb/db/Databases.java</h2>
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
+<td>Unnecessary use of fully qualified name 'Sets.newHashSet' due to existing static import 'com.google.common.collect.Sets.newHashSet'</td>
+<td>4</td>
+<td>171</td></tr></table></section><section>
+<h2><a name="org.2Frestheart.2Fsecurity.2Finterceptors.2FBruteForceAttackGuard.java"></a>org/restheart/security/interceptors/BruteForceAttackGuard.java</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Rule</th>
@@ -1141,62 +218,10 @@
 <th>Line</th></tr>
 <tr class="a">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_bestpractices.html#unusedformalparameter">UnusedFormalParameter</a></td>
-<td>Avoid unused method parameters such as 'rsOps'.</td>
+<td>Avoid unused method parameters such as 'mean'.</td>
 <td>3</td>
-<td>349</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fdb.2FGridFs.java"></a>org/restheart/mongodb/db/GridFs.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarysemicolon">UnnecessarySemicolon</a></td>
-<td>Unnecessary semicolon</td>
-<td>3</td>
-<td>63</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_OK' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>4</td>
-<td>332</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_OK' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>4</td>
-<td>336</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_CONFLICT' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>4</td>
-<td>338</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_CONFLICT' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>4</td>
-<td>346</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_OK' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>4</td>
-<td>356</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_OK' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>4</td>
-<td>366</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_CONFLICT' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>4</td>
-<td>399</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'HttpStatus.SC_PRECONDITION_FAILED' due to existing static import 'org.restheart.utils.HttpStatus.*'</td>
-<td>4</td>
-<td>430</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fdb.2FMongoClientSingleton.java"></a>org/restheart/mongodb/db/MongoClientSingleton.java</h2>
+<td>120</td></tr></table></section><section>
+<h2><a name="org.2Frestheart.2Fsecurity.2Fmechanisms.2FDigestAuthMechanism.java"></a>org/restheart/security/mechanisms/DigestAuthMechanism.java</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Rule</th>
@@ -1207,619 +232,95 @@
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
 <td>Too many static imports may lead to messy code</td>
 <td>3</td>
-<td>21&#x2013;239</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#overridebothequalsandhashcode">OverrideBothEqualsAndHashcode</a></td>
-<td>Ensure you override both equals() and hashCode()</td>
-<td>3</td>
-<td>201</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fdb.2Fsessions.2FTxnClientSessionFactory.java"></a>org/restheart/mongodb/db/sessions/TxnClientSessionFactory.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryfullyqualifiedname">UnnecessaryFullyQualifiedName</a></td>
-<td>Unnecessary use of fully qualified name 'Txn.TransactionStatus.IN' due to existing static import 'org.restheart.mongodb.db.sessions.Txn.TransactionStatus.IN'</td>
-<td>4</td>
-<td>108</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fdb.2Fsessions.2FTxnClientSessionImpl.java"></a>org/restheart/mongodb/db/sessions/TxnClientSessionImpl.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>68</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#emptycatchblock">EmptyCatchBlock</a></td>
-<td>Avoid empty catch blocks</td>
-<td>3</td>
-<td>175&#x2013;177</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#emptycontrolstatement">EmptyControlStatement</a></td>
-<td>Empty finally clause</td>
-<td>3</td>
-<td>188&#x2013;192</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fdb.2Fsessions.2FTxnsUtils.java"></a>org/restheart/mongodb/db/sessions/TxnsUtils.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>3</td>
-<td>209&#x2013;212</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fexchange.2FBsonRequestContentInjector.java"></a>org/restheart/mongodb/exchange/BsonRequestContentInjector.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>3</td>
-<td>21&#x2013;380</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>74&#x2013;75</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>76&#x2013;77</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>235</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>235</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fexchange.2FBsonRequestPropsInjector.java"></a>org/restheart/mongodb/exchange/BsonRequestPropsInjector.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>3</td>
-<td>21&#x2013;556</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhal.2FCollectionRepresentationFactory.java"></a>org/restheart/mongodb/hal/CollectionRepresentationFactory.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>3</td>
-<td>85&#x2013;90</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhal.2FDBRepresentationFactory.java"></a>org/restheart/mongodb/hal/DBRepresentationFactory.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>3</td>
-<td>64&#x2013;69</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhal.2FDocumentRepresentationFactory.java"></a>org/restheart/mongodb/hal/DocumentRepresentationFactory.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>3</td>
-<td>65&#x2013;70</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhal.2FHALRepresentation.java"></a>org/restheart/mongodb/hal/HALRepresentation.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>59</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>118&#x2013;122</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>3</td>
-<td>240&#x2013;257</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhal.2FIndexesRepresentationFactory.java"></a>org/restheart/mongodb/hal/IndexesRepresentationFactory.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
+<td>21&#x2013;682</td></tr>
 <tr class="b">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_bestpractices.html#unusedformalparameter">UnusedFormalParameter</a></td>
-<td>Avoid unused method parameters such as 'requestPath'.</td>
+<td>Avoid unused constructor parameters such as 'mechanismName'.</td>
 <td>3</td>
-<td>131</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2FCORSHandler.java"></a>org/restheart/mongodb/handlers/CORSHandler.java</h2>
-<table border="0" class="bodyTable">
+<td>166</td></tr>
 <tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>3</td>
-<td>21&#x2013;129</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Faggregation.2FAbstractAggregationOperation.java"></a>org/restheart/mongodb/handlers/aggregation/AbstractAggregationOperation.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>137</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Faggregation.2FAggregationPipeline.java"></a>org/restheart/mongodb/handlers/aggregation/AggregationPipeline.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>137</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fbulk.2FBulkPostCollectionHandler.java"></a>org/restheart/mongodb/handlers/bulk/BulkPostCollectionHandler.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#avoidbranchingstatementaslastinloop">AvoidBranchingStatementAsLastInLoop</a></td>
+<td>Avoid using a branching statement as the last in a loop.</td>
+<td>2</td>
+<td>228</td></tr>
 <tr class="b">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
 <td>These nested if statements could be combined</td>
 <td>3</td>
-<td>142&#x2013;146</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fchangestreams.2FChangeStreamOperation.java"></a>org/restheart/mongodb/handlers/changestreams/ChangeStreamOperation.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>109</td></tr>
+<td>307&#x2013;309</td></tr>
 <tr class="a">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
 <td>Useless parentheses.</td>
 <td>4</td>
-<td>187</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fchangestreams.2FChangeStreamSubscriber.java"></a>org/restheart/mongodb/handlers/changestreams/ChangeStreamSubscriber.java</h2>
-<table border="0" class="bodyTable">
+<td>412</td></tr>
 <tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#emptycatchblock">EmptyCatchBlock</a></td>
-<td>Avoid empty catch blocks</td>
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_bestpractices.html#unusedformalparameter">UnusedFormalParameter</a></td>
+<td>Avoid unused method parameters such as 'securityContext'.</td>
 <td>3</td>
-<td>145&#x2013;147</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fchangestreams.2FObsoleteChangeStreamRemover.java"></a>org/restheart/mongodb/handlers/changestreams/ObsoleteChangeStreamRemover.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>54</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>55</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>56&#x2013;57</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#emptycatchblock">EmptyCatchBlock</a></td>
-<td>Avoid empty catch blocks</td>
-<td>3</td>
-<td>79&#x2013;81</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#emptycatchblock">EmptyCatchBlock</a></td>
-<td>Avoid empty catch blocks</td>
-<td>3</td>
-<td>104&#x2013;106</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>115</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>116</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>117</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>118</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fcollection.2FPatchCollectionHandler.java"></a>org/restheart/mongodb/handlers/collection/PatchCollectionHandler.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>81</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fcollection.2FPostCollectionHandler.java"></a>org/restheart/mongodb/handlers/collection/PostCollectionHandler.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>3</td>
-<td>102&#x2013;106</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fdocument.2FGetDocumentHandler.java"></a>org/restheart/mongodb/handlers/document/GetDocumentHandler.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>3</td>
-<td>21&#x2013;221</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>192</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Findexes.2FPutIndexHandler.java"></a>org/restheart/mongodb/handlers/indexes/PutIndexHandler.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarysemicolon">UnnecessarySemicolon</a></td>
-<td>Unnecessary semicolon</td>
-<td>3</td>
-<td>72</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fmetrics.2FMetricsHandler.java"></a>org/restheart/mongodb/handlers/metrics/MetricsHandler.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>3</td>
-<td>21&#x2013;517</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>388&#x2013;389</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Froot.2FGetRootHandler.java"></a>org/restheart/mongodb/handlers/root/GetRootHandler.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#collapsibleifstatements">CollapsibleIfStatements</a></td>
-<td>These nested if statements could be combined</td>
-<td>3</td>
-<td>101&#x2013;119</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fschema.2FJsonSchemaCacheSingleton.java"></a>org/restheart/mongodb/handlers/schema/JsonSchemaCacheSingleton.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarysemicolon">UnnecessarySemicolon</a></td>
-<td>Unnecessary semicolon</td>
-<td>3</td>
-<td>54</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fhandlers.2Fsessions.2FDeleteTxnHandler.java"></a>org/restheart/mongodb/handlers/sessions/DeleteTxnHandler.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessaryimport">UnnecessaryImport</a></td>
-<td>Unused import 'org.restheart.mongodb.db.sessions.TxnClientSessionImpl'</td>
-<td>4</td>
-<td>30</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Finterceptors.2FContentSizeChecker.java"></a>org/restheart/mongodb/interceptors/ContentSizeChecker.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>82&#x2013;84</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>108&#x2013;110</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Finterceptors.2FJsonSchemaAfterWriteChecker.java"></a>org/restheart/mongodb/interceptors/JsonSchemaAfterWriteChecker.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>69</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>76&#x2013;77</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Finterceptors.2FJsonSchemaBeforeWriteChecker.java"></a>org/restheart/mongodb/interceptors/JsonSchemaBeforeWriteChecker.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>237</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>238</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fmetadata.2FRelationship.java"></a>org/restheart/mongodb/metadata/Relationship.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>294</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fsecurity.2FAllowBulkRequests.java"></a>org/restheart/mongodb/security/AllowBulkRequests.java</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>75</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>76</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fsecurity.2FAllowMgmtRequests.java"></a>org/restheart/mongodb/security/AllowMgmtRequests.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>71</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>72</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>72</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>73</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>74</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>76</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>78</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>79</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>80</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>82</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>83</td></tr>
-<tr class="b">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>84</td></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>85</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fsecurity.2FAllowWriteMode.java"></a>org/restheart/mongodb/security/AllowWriteMode.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
-<td>Useless parentheses.</td>
-<td>4</td>
-<td>74&#x2013;75</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Fsecurity.2FProjectResponse.java"></a>org/restheart/mongodb/security/ProjectResponse.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarysemicolon">UnnecessarySemicolon</a></td>
-<td>Unnecessary semicolon</td>
-<td>3</td>
-<td>105</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Futils.2FLogUtils.java"></a>org/restheart/mongodb/utils/LogUtils.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#unnecessarymodifier">UnnecessaryModifier</a></td>
-<td>Unnecessary modifier 'static' on enum 'Level': nested enums are implicitly static</td>
-<td>3</td>
-<td>40&#x2013;66</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Futils.2FMongoURLUtils.java"></a>org/restheart/mongodb/utils/MongoURLUtils.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
-<td>Too many static imports may lead to messy code</td>
-<td>3</td>
-<td>21&#x2013;360</td></tr></table></section><section>
-<h2><a name="org.2Frestheart.2Fmongodb.2Futils.2FRequestHelper.java"></a>org/restheart/mongodb/utils/RequestHelper.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Rule</th>
-<th>Violation</th>
-<th>Priority</th>
-<th>Line</th></tr>
+<td>482</td></tr>
 <tr class="a">
 <td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_design.html#simplifiedternary">SimplifiedTernary</a></td>
 <td>Ternary operators that can be simplified with || or &amp;&amp;</td>
 <td>3</td>
-<td>55</td></tr></table></section></section>
+<td>484</td></tr></table></section><section>
+<h2><a name="org.2Frestheart.2Fsecurity.2Fmechanisms.2FTokenBasicAuthMechanism.java"></a>org/restheart/security/mechanisms/TokenBasicAuthMechanism.java</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Rule</th>
+<th>Violation</th>
+<th>Priority</th>
+<th>Line</th></tr>
+<tr class="a">
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_errorprone.html#emptycatchblock">EmptyCatchBlock</a></td>
+<td>Avoid empty catch blocks</td>
+<td>3</td>
+<td>98&#x2013;100</td></tr></table></section><section>
+<h2><a name="org.2Frestheart.2Fsecurity.2Fpredicates.2FQParamsContainPredicate.java"></a>org/restheart/security/predicates/QParamsContainPredicate.java</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Rule</th>
+<th>Violation</th>
+<th>Priority</th>
+<th>Line</th></tr>
+<tr class="a">
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
+<td>Useless parentheses.</td>
+<td>4</td>
+<td>51</td></tr>
+<tr class="b">
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
+<td>Useless parentheses.</td>
+<td>4</td>
+<td>52&#x2013;53</td></tr></table></section><section>
+<h2><a name="org.2Frestheart.2Fsecurity.2Fpredicates.2FQParamsSizePredicate.java"></a>org/restheart/security/predicates/QParamsSizePredicate.java</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Rule</th>
+<th>Violation</th>
+<th>Priority</th>
+<th>Line</th></tr>
+<tr class="b">
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
+<td>Useless parentheses.</td>
+<td>4</td>
+<td>45</td></tr>
+<tr class="a">
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#uselessparentheses">UselessParentheses</a></td>
+<td>Useless parentheses.</td>
+<td>4</td>
+<td>46</td></tr></table></section><section>
+<h2><a name="org.2Frestheart.2Fsecurity.2Fservices.2FGetRoleService.java"></a>org/restheart/security/services/GetRoleService.java</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Rule</th>
+<th>Violation</th>
+<th>Priority</th>
+<th>Line</th></tr>
+<tr class="a">
+<td><a class="externalLink" href="https://pmd.github.io/pmd-6.46.0/pmd_rules_java_codestyle.html#toomanystaticimports">TooManyStaticImports</a></td>
+<td>Too many static imports may lead to messy code</td>
+<td>3</td>
+<td>21&#x2013;119</td></tr></table></section></section>
       </div>
     </div>
     <div class="clear">
@@ -1827,7 +328,7 @@
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2014&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2018&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>

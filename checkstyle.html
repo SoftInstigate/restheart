@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-mongodb &#x2013; Checkstyle Results</title>
+    <title>restheart-security &#x2013; Checkstyle Results</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-mongodb
+<div id="bannerLeft">restheart-security
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-mongodb">restheart-mongodb</a>      </div>
+      <div class="xright"><a href="./" title="restheart-security">restheart-security</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -71,10 +71,10 @@
 <th><figure><img src="images/icon_warning_sml.gif" alt="" /></figure>&#160;Warnings</th>
 <th><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Errors</th></tr>
 <tr class="b">
-<td>157</td>
+<td>38</td>
 <td>0</td>
 <td>0</td>
-<td>10</td></tr></table></section><section>
+<td>2</td></tr></table></section><section>
 <h1><a name="Files"></a>Files</h1>
 <table border="0" class="bodyTable">
 <tr class="a">
@@ -83,32 +83,12 @@
 <th><figure><img src="images/icon_warning_sml.gif" alt="" /></figure>&#160;W</th>
 <th><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;E</th></tr>
 <tr class="b">
-<td><a href="#org.restheart.mongodb.MongoServiceConfiguration.java">org/restheart/mongodb/MongoServiceConfiguration.java</a></td>
+<td><a href="#org.restheart.security.authorizers.FileAclAuthorizer.java">org/restheart/security/authorizers/FileAclAuthorizer.java</a></td>
 <td>0</td>
 <td>0</td>
 <td>1</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.mongodb.db.GridFs.java">org/restheart/mongodb/db/GridFs.java</a></td>
-<td>0</td>
-<td>0</td>
-<td>1</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.mongodb.db.sessions.TxnClientSessionImpl.java">org/restheart/mongodb/db/sessions/TxnClientSessionImpl.java</a></td>
-<td>0</td>
-<td>0</td>
-<td>1</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.hal.CollectionRepresentationFactory.java">org/restheart/mongodb/hal/CollectionRepresentationFactory.java</a></td>
-<td>0</td>
-<td>0</td>
-<td>5</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.mongodb.handlers.metrics.MetricsInstrumentationInterceptor.java">org/restheart/mongodb/handlers/metrics/MetricsInstrumentationInterceptor.java</a></td>
-<td>0</td>
-<td>0</td>
-<td>1</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.mongodb.handlers.schema.JsonSchemaTransformer.java">org/restheart/mongodb/handlers/schema/JsonSchemaTransformer.java</a></td>
+<td><a href="#org.restheart.security.authorizers.MongoAclAuthorizer.java">org/restheart/security/authorizers/MongoAclAuthorizer.java</a></td>
 <td>0</td>
 <td>0</td>
 <td>1</td></tr></table></section><section>
@@ -120,64 +100,12 @@
 <th>Violations</th>
 <th>Severity</th></tr>
 <tr class="a">
-<td>blocks</td>
-<td><a class="externalLink" href="http://checkstyle.sourceforge.net/config_blocks.html#EmptyBlock">EmptyBlock</a></td>
-<td>1</td>
-<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td></tr>
-<tr class="b">
-<td>imports</td>
-<td><a class="externalLink" href="http://checkstyle.sourceforge.net/config_imports.html#AvoidStarImport">AvoidStarImport</a></td>
-<td>3</td>
-<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td></tr>
-<tr class="a">
 <td>naming</td>
 <td><a class="externalLink" href="http://checkstyle.sourceforge.net/config_naming.html#ConstantName">ConstantName</a></td>
-<td>6</td>
+<td>2</td>
 <td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td></tr></table></section><section>
 <h1><a name="Details"></a>Details</h1><section>
-<h2 id="org.restheart.mongodb.MongoServiceConfiguration.java">org/restheart/mongodb/MongoServiceConfiguration.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Severity</th>
-<th>Category</th>
-<th>Rule</th>
-<th>Message</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
-<td>imports</td>
-<td>AvoidStarImport</td>
-<td>Using the '.*' form of import should be avoided - org.restheart.mongodb.MongoServiceConfigurationKeys.*.</td>
-<td>44</td></tr></table></section><section>
-<h2 id="org.restheart.mongodb.db.GridFs.java">org/restheart/mongodb/db/GridFs.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Severity</th>
-<th>Category</th>
-<th>Rule</th>
-<th>Message</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
-<td>imports</td>
-<td>AvoidStarImport</td>
-<td>Using the '.*' form of import should be avoided - org.restheart.utils.HttpStatus.*.</td>
-<td>50</td></tr></table></section><section>
-<h2 id="org.restheart.mongodb.db.sessions.TxnClientSessionImpl.java">org/restheart/mongodb/db/sessions/TxnClientSessionImpl.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Severity</th>
-<th>Category</th>
-<th>Rule</th>
-<th>Message</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
-<td>blocks</td>
-<td>EmptyBlock</td>
-<td>Must have at least one statement.</td>
-<td>188</td></tr></table></section><section>
-<h2 id="org.restheart.mongodb.hal.CollectionRepresentationFactory.java">org/restheart/mongodb/hal/CollectionRepresentationFactory.java</h2>
+<h2 id="org.restheart.security.authorizers.FileAclAuthorizer.java">org/restheart/security/authorizers/FileAclAuthorizer.java</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Severity</th>
@@ -189,47 +117,9 @@
 <td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
 <td>naming</td>
 <td>ConstantName</td>
-<td>Name '_ETAG' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
-<td>48</td></tr>
-<tr class="b">
-<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
-<td>naming</td>
-<td>ConstantName</td>
-<td>Name '_TYPE' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
-<td>49</td></tr>
-<tr class="a">
-<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
-<td>naming</td>
-<td>ConstantName</td>
-<td>Name '_LASTUPDATED_ON' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
-<td>50</td></tr>
-<tr class="b">
-<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
-<td>naming</td>
-<td>ConstantName</td>
-<td>Name '_RETURNED' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
-<td>52</td></tr>
-<tr class="a">
-<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
-<td>naming</td>
-<td>ConstantName</td>
-<td>Name '_ID' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
-<td>63</td></tr></table></section><section>
-<h2 id="org.restheart.mongodb.handlers.metrics.MetricsInstrumentationInterceptor.java">org/restheart/mongodb/handlers/metrics/MetricsInstrumentationInterceptor.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Severity</th>
-<th>Category</th>
-<th>Rule</th>
-<th>Message</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
-<td>imports</td>
-<td>AvoidStarImport</td>
-<td>Using the '.*' form of import should be avoided - org.restheart.mongodb.MongoServiceConfiguration.METRICS_GATHERING_LEVEL.*.</td>
-<td>38</td></tr></table></section><section>
-<h2 id="org.restheart.mongodb.handlers.schema.JsonSchemaTransformer.java">org/restheart/mongodb/handlers/schema/JsonSchemaTransformer.java</h2>
+<td>Name '$UNAUTHENTICATED' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>65</td></tr></table></section><section>
+<h2 id="org.restheart.security.authorizers.MongoAclAuthorizer.java">org/restheart/security/authorizers/MongoAclAuthorizer.java</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Severity</th>
@@ -241,8 +131,8 @@
 <td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
 <td>naming</td>
 <td>ConstantName</td>
-<td>Name '$SCHEMA' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
-<td>49</td></tr></table></section></section>
+<td>Name '$UNAUTHENTICATED' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>75</td></tr></table></section></section>
       </div>
     </div>
     <div class="clear">
@@ -250,7 +140,7 @@
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2014&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2018&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>
