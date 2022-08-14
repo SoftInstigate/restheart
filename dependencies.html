@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-commons &#x2013; Project Dependencies</title>
+    <title>restheart-polyglot &#x2013; Project Dependencies</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-commons
+<div id="bannerLeft">restheart-polyglot
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-commons">restheart-commons</a>      </div>
+      <div class="xright"><a href="./" title="restheart-polyglot">restheart-polyglot</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -66,9 +66,32 @@
     <div id="bodyColumn">
       <div id="contentBox">
 <a name="Project_Dependencies"></a><section>
-<h1><a name="Project_Dependencies"></a>Project Dependencies</h1><a name="Project_Dependencies_compile"></a><section>
-<h2><a name="compile"></a>compile</h2>
-<p>The following is a list of compile dependencies for this project. These dependencies are required to compile and run the application:</p>
+<h1><a name="Project_Dependencies"></a>Project Dependencies</h1><a name="Project_Dependencies_provided"></a><section>
+<h2><a name="provided"></a>provided</h2>
+<p>The following is a list of provided dependencies for this project. These dependencies are required to compile the application, but should be provided by default when using the library:</p>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>GroupId</th>
+<th>ArtifactId</th>
+<th>Version</th>
+<th>Type</th>
+<th>Licenses</th></tr>
+<tr class="b">
+<td align="left">org.graalvm.sdk</td>
+<td><a class="externalLink" href="https://github.com/oracle/graal">graal-sdk</a></td>
+<td>22.1.0</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://opensource.org/licenses/UPL">Universal Permissive License, Version 1.0</a></td></tr>
+<tr class="a">
+<td align="left">org.restheart</td>
+<td><a class="externalLink" href="https://restheart.org">restheart-commons</a></td>
+<td>6.4.1-SNAPSHOT</td>
+<td>jar</td>
+<td><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></td></tr></table></section></section><a name="Project_Transitive_Dependencies"></a><section>
+<h1><a name="Project_Transitive_Dependencies"></a>Project Transitive Dependencies</h1>
+<p>The following is a list of transitive dependencies for this project. Transitive dependencies are the dependencies of the project dependencies.</p><a name="Project_Transitive_Dependencies_provided"></a><section>
+<h2><a name="provided"></a>provided</h2>
+<p>The following is a list of provided dependencies for this project. These dependencies are required to compile the application, but should be provided by default when using the library:</p>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>GroupId</th>
@@ -83,17 +106,29 @@
 <td>jar</td>
 <td><a class="externalLink" href="http://www.eclipse.org/legal/epl-v10.html">Eclipse Public License - v 1.0</a><a class="externalLink" href="http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">GNU Lesser General Public License</a></td></tr>
 <tr class="a">
+<td align="left">ch.qos.logback</td>
+<td><a class="externalLink" href="http://logback.qos.ch/logback-core">logback-core</a></td>
+<td>1.2.11</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://www.eclipse.org/legal/epl-v10.html">Eclipse Public License - v 1.0</a><a class="externalLink" href="http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">GNU Lesser General Public License</a></td></tr>
+<tr class="b">
 <td align="left">com.github.ben-manes.caffeine</td>
 <td><a class="externalLink" href="https://github.com/ben-manes/caffeine">caffeine</a></td>
 <td>3.0.5</td>
 <td>jar</td>
 <td><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></td></tr>
-<tr class="b">
+<tr class="a">
 <td align="left">com.github.spullara.mustache.java</td>
 <td><a class="externalLink" href="http://github.com/spullara/mustache.java">compiler</a></td>
 <td>0.9.10</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a></td></tr>
+<tr class="b">
+<td align="left">com.google.code.findbugs</td>
+<td><a class="externalLink" href="http://findbugs.sourceforge.net/">jsr305</a></td>
+<td>3.0.2</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></td></tr>
 <tr class="a">
 <td align="left">com.google.code.gson</td>
 <td><a class="externalLink" href="https://github.com/google/gson/gson">gson</a></td>
@@ -101,11 +136,35 @@
 <td>jar</td>
 <td><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache-2.0</a></td></tr>
 <tr class="b">
+<td align="left">com.google.errorprone</td>
+<td><a class="externalLink" href="https://errorprone.info/error_prone_annotations">error_prone_annotations</a></td>
+<td>2.11.0</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache 2.0</a></td></tr>
+<tr class="a">
+<td align="left">com.google.guava</td>
+<td><a class="externalLink" href="https://github.com/google/guava/failureaccess">failureaccess</a></td>
+<td>1.0.1</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></td></tr>
+<tr class="b">
 <td align="left">com.google.guava</td>
 <td><a class="externalLink" href="https://github.com/google/guava">guava</a></td>
 <td>31.1-jre</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></td></tr>
+<tr class="a">
+<td align="left">com.google.guava</td>
+<td><a class="externalLink" href="https://github.com/google/guava/listenablefuture">listenablefuture</a></td>
+<td>9999.0-empty-to-avoid-conflict-with-guava</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></td></tr>
+<tr class="b">
+<td align="left">com.google.j2objc</td>
+<td><a class="externalLink" href="https://github.com/google/j2objc/">j2objc-annotations</a></td>
+<td>1.3</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></td></tr>
 <tr class="a">
 <td align="left">com.jayway.jsonpath</td>
 <td><a class="externalLink" href="https://github.com/jayway/JsonPath">json-path</a></td>
@@ -125,103 +184,17 @@
 <td>jar</td>
 <td><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache License 2.0</a></td></tr>
 <tr class="b">
+<td align="left">io.projectreactor</td>
+<td><a class="externalLink" href="https://github.com/reactor/reactor-core">reactor-core</a></td>
+<td>3.2.22.RELEASE</td>
+<td>jar</td>
+<td><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></td></tr>
+<tr class="a">
 <td align="left">io.undertow</td>
 <td><a class="externalLink" href="http://www.jboss.org/undertow-parent/undertow-core">undertow-core</a></td>
 <td>2.2.18.Final</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://repository.jboss.org/licenses/apache-2.0.txt">Apache License Version 2.0</a></td></tr>
-<tr class="a">
-<td align="left">org.fusesource.jansi</td>
-<td><a class="externalLink" href="http://fusesource.github.io/jansi">jansi</a></td>
-<td>2.4.0</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></td></tr>
-<tr class="b">
-<td align="left">org.mongodb</td>
-<td><a class="externalLink" href="https://www.mongodb.com/">mongodb-driver-reactivestreams</a></td>
-<td>4.7.1</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></td></tr>
-<tr class="a">
-<td align="left">org.mongodb</td>
-<td><a class="externalLink" href="https://www.mongodb.com/">mongodb-driver-sync</a></td>
-<td>4.7.1</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></td></tr>
-<tr class="b">
-<td align="left">org.yaml</td>
-<td><a class="externalLink" href="https://bitbucket.org/snakeyaml/snakeyaml">snakeyaml</a></td>
-<td>1.30</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></td></tr></table></section><a name="Project_Dependencies_test"></a><section>
-<h2><a name="test"></a>test</h2>
-<p>The following is a list of test dependencies for this project. These dependencies are only required to compile and run unit tests for the application:</p>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>GroupId</th>
-<th>ArtifactId</th>
-<th>Version</th>
-<th>Type</th>
-<th>Licenses</th></tr>
-<tr class="b">
-<td align="left">junit</td>
-<td><a class="externalLink" href="http://junit.org">junit</a></td>
-<td>4.13.2</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.eclipse.org/legal/epl-v10.html">Eclipse Public License 1.0</a></td></tr>
-<tr class="a">
-<td align="left">org.mockito</td>
-<td><a class="externalLink" href="https://github.com/mockito/mockito">mockito-core</a></td>
-<td>4.7.0</td>
-<td>jar</td>
-<td><a class="externalLink" href="https://github.com/mockito/mockito/blob/main/LICENSE">The MIT License</a></td></tr></table></section></section><a name="Project_Transitive_Dependencies"></a><section>
-<h1><a name="Project_Transitive_Dependencies"></a>Project Transitive Dependencies</h1>
-<p>The following is a list of transitive dependencies for this project. Transitive dependencies are the dependencies of the project dependencies.</p><a name="Project_Transitive_Dependencies_compile"></a><section>
-<h2><a name="compile"></a>compile</h2>
-<p>The following is a list of compile dependencies for this project. These dependencies are required to compile and run the application:</p>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>GroupId</th>
-<th>ArtifactId</th>
-<th>Version</th>
-<th>Type</th>
-<th>Licenses</th></tr>
-<tr class="b">
-<td align="left">ch.qos.logback</td>
-<td><a class="externalLink" href="http://logback.qos.ch/logback-core">logback-core</a></td>
-<td>1.2.11</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.eclipse.org/legal/epl-v10.html">Eclipse Public License - v 1.0</a><a class="externalLink" href="http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">GNU Lesser General Public License</a></td></tr>
-<tr class="a">
-<td align="left">com.google.code.findbugs</td>
-<td><a class="externalLink" href="http://findbugs.sourceforge.net/">jsr305</a></td>
-<td>3.0.2</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></td></tr>
-<tr class="b">
-<td align="left">com.google.errorprone</td>
-<td><a class="externalLink" href="https://errorprone.info/error_prone_annotations">error_prone_annotations</a></td>
-<td>2.11.0</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache 2.0</a></td></tr>
-<tr class="a">
-<td align="left">com.google.guava</td>
-<td><a class="externalLink" href="https://github.com/google/guava/failureaccess">failureaccess</a></td>
-<td>1.0.1</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></td></tr>
-<tr class="b">
-<td align="left">com.google.guava</td>
-<td><a class="externalLink" href="https://github.com/google/guava/listenablefuture">listenablefuture</a></td>
-<td>9999.0-empty-to-avoid-conflict-with-guava</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></td></tr>
-<tr class="a">
-<td align="left">com.google.j2objc</td>
-<td><a class="externalLink" href="https://github.com/google/j2objc/">j2objc-annotations</a></td>
-<td>1.3</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></td></tr>
 <tr class="b">
 <td align="left">net.minidev</td>
 <td><a class="externalLink" href="https://urielch.github.io/">accessors-smart</a></td>
@@ -241,20 +214,32 @@
 <td>jar</td>
 <td><a class="externalLink" href="http://opensource.org/licenses/MIT">The MIT License</a></td></tr>
 <tr class="a">
+<td align="left">org.fusesource.jansi</td>
+<td><a class="externalLink" href="http://fusesource.github.io/jansi">jansi</a></td>
+<td>2.4.0</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></td></tr>
+<tr class="b">
 <td align="left">org.jboss.logging</td>
 <td><a class="externalLink" href="http://www.jboss.org">jboss-logging</a></td>
 <td>3.4.1.Final</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, version 2.0</a></td></tr>
-<tr class="b">
+<tr class="a">
 <td align="left">org.jboss.threads</td>
 <td><a class="externalLink" href="http://www.jboss.org/jboss-threads">jboss-threads</a></td>
 <td>3.1.0.Final</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache License 2.0</a></td></tr>
-<tr class="a">
+<tr class="b">
 <td align="left">org.jboss.xnio</td>
 <td><a class="externalLink" href="http://www.jboss.org/xnio">xnio-api</a></td>
+<td>3.8.7.Final</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://repository.jboss.org/licenses/apache-2.0.txt">Apache License 2.0</a></td></tr>
+<tr class="a">
+<td align="left">org.jboss.xnio</td>
+<td><a class="externalLink" href="http://www.jboss.org/xnio-all/xnio-nio">xnio-nio</a></td>
 <td>3.8.7.Final</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://repository.jboss.org/licenses/apache-2.0.txt">Apache License 2.0</a></td></tr>
@@ -266,98 +251,62 @@
 <td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></td></tr>
 <tr class="a">
 <td align="left">org.mongodb</td>
-<td><a class="externalLink" href="https://www.mongodb.com/">mongodb-driver-core</a></td>
+<td><a class="externalLink" href="https://www.mongodb.com/">bson-record-codec</a></td>
 <td>4.7.1</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></td></tr>
 <tr class="b">
+<td align="left">org.mongodb</td>
+<td><a class="externalLink" href="https://www.mongodb.com/">mongodb-driver-core</a></td>
+<td>4.7.1</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></td></tr>
+<tr class="a">
+<td align="left">org.mongodb</td>
+<td><a class="externalLink" href="https://www.mongodb.com/">mongodb-driver-reactivestreams</a></td>
+<td>4.7.1</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></td></tr>
+<tr class="b">
+<td align="left">org.mongodb</td>
+<td><a class="externalLink" href="https://www.mongodb.com/">mongodb-driver-sync</a></td>
+<td>4.7.1</td>
+<td>jar</td>
+<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></td></tr>
+<tr class="a">
 <td align="left">org.ow2.asm</td>
 <td><a class="externalLink" href="http://asm.ow2.io/">asm</a></td>
 <td>9.1</td>
 <td>jar</td>
 <td><a class="externalLink" href="https://asm.ow2.io/license.html">BSD-3-Clause</a></td></tr>
-<tr class="a">
+<tr class="b">
 <td align="left">org.reactivestreams</td>
 <td><a class="externalLink" href="http://www.reactive-streams.org/">reactive-streams</a></td>
 <td>1.0.3</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://creativecommons.org/publicdomain/zero/1.0/">CC0</a></td></tr>
-<tr class="b">
+<tr class="a">
 <td align="left">org.slf4j</td>
 <td><a class="externalLink" href="http://www.slf4j.org">slf4j-api</a></td>
 <td>1.7.32</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://www.opensource.org/licenses/mit-license.php">MIT License</a></td></tr>
-<tr class="a">
+<tr class="b">
 <td align="left">org.wildfly.client</td>
 <td><a class="externalLink" href="http://www.jboss.org/wildfly-client-config">wildfly-client-config</a></td>
 <td>1.0.1.Final</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://repository.jboss.org/licenses/apache-2.0.txt">Apache License 2.0</a></td></tr>
-<tr class="b">
+<tr class="a">
 <td align="left">org.wildfly.common</td>
 <td><a class="externalLink" href="http://www.jboss.org/wildfly-common">wildfly-common</a></td>
 <td>1.5.4.Final</td>
 <td>jar</td>
-<td><a class="externalLink" href="http://repository.jboss.org/licenses/apache-2.0.txt">Apache License 2.0</a></td></tr></table></section><a name="Project_Transitive_Dependencies_runtime"></a><section>
-<h2><a name="runtime"></a>runtime</h2>
-<p>The following is a list of runtime dependencies for this project. These dependencies are required to run the application:</p>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>GroupId</th>
-<th>ArtifactId</th>
-<th>Version</th>
-<th>Type</th>
-<th>Licenses</th></tr>
-<tr class="b">
-<td align="left">io.projectreactor</td>
-<td><a class="externalLink" href="https://github.com/reactor/reactor-core">reactor-core</a></td>
-<td>3.2.22.RELEASE</td>
-<td>jar</td>
-<td><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></td></tr>
-<tr class="a">
-<td align="left">org.jboss.xnio</td>
-<td><a class="externalLink" href="http://www.jboss.org/xnio-all/xnio-nio">xnio-nio</a></td>
-<td>3.8.7.Final</td>
-<td>jar</td>
 <td><a class="externalLink" href="http://repository.jboss.org/licenses/apache-2.0.txt">Apache License 2.0</a></td></tr>
 <tr class="b">
-<td align="left">org.mongodb</td>
-<td><a class="externalLink" href="https://www.mongodb.com/">bson-record-codec</a></td>
-<td>4.7.1</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></td></tr></table></section><a name="Project_Transitive_Dependencies_test"></a><section>
-<h2><a name="test"></a>test</h2>
-<p>The following is a list of test dependencies for this project. These dependencies are only required to compile and run unit tests for the application:</p>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>GroupId</th>
-<th>ArtifactId</th>
-<th>Version</th>
-<th>Type</th>
-<th>Licenses</th></tr>
-<tr class="b">
-<td align="left">net.bytebuddy</td>
-<td><a class="externalLink" href="https://bytebuddy.net/byte-buddy">byte-buddy</a></td>
-<td>1.12.13</td>
-<td>jar</td>
-<td><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></td></tr>
-<tr class="a">
-<td align="left">net.bytebuddy</td>
-<td><a class="externalLink" href="https://bytebuddy.net/byte-buddy-agent">byte-buddy-agent</a></td>
-<td>1.12.13</td>
-<td>jar</td>
-<td><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></td></tr>
-<tr class="b">
-<td align="left">org.hamcrest</td>
-<td><a class="externalLink" href="https://github.com/hamcrest/JavaHamcrest/hamcrest-core">hamcrest-core</a></td>
-<td>1.3</td>
-<td>jar</td>
-<td><a class="externalLink" href="http://www.opensource.org/licenses/bsd-license.php">New BSD License</a></td></tr>
-<tr class="a">
-<td align="left">org.objenesis</td>
-<td><a class="externalLink" href="http://objenesis.org/objenesis">objenesis</a></td>
-<td>3.2</td>
+<td align="left">org.yaml</td>
+<td><a class="externalLink" href="https://bitbucket.org/snakeyaml/snakeyaml">snakeyaml</a></td>
+<td>1.30</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></td></tr></table></section></section><a name="Project_Dependency_Graph"></a><section>
 <h1><a name="Project_Dependency_Graph"></a>Project Dependency Graph</h1>
@@ -383,7 +332,17 @@
 <a name="Dependency_Tree"></a><section>
 <h2><a name="Dependency_Tree"></a>Dependency Tree</h2>
 <ul>
-<li>org.restheart:restheart-commons:jar:6.4.1-SNAPSHOT <img id="_img1" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep0', '_img1' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep0" style="display:none">
+<li>org.restheart:restheart-polyglot:jar:6.4.1-SNAPSHOT <img id="_img1" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep0', '_img1' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep0" style="display:none">
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>restheart-polyglot</th></tr>
+<tr class="b">
+<td>
+<p><b>Description: </b>RESTHeart Polyglot Service - Hanlde polyglot GraalVM Plugins</p>
+<p><b>URL: </b><a class="externalLink" href="https://restheart.org">https://restheart.org</a></p>
+<p><b>Project Licenses: </b><a class="externalLink" href="http://www.gnu.org/licenses/agpl-3.0.html">GNU Affero General Public License (AGPL) version 3.0</a></p></td></tr></table></div>
+<ul>
+<li>org.restheart:restheart-commons:jar:6.4.1-SNAPSHOT (provided) <img id="_img3" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep2', '_img3' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep2" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>restheart-commons</th></tr>
@@ -393,7 +352,7 @@
 <p><b>URL: </b><a class="externalLink" href="https://restheart.org">https://restheart.org</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></p></td></tr></table></div>
 <ul>
-<li>io.undertow:undertow-core:jar:2.2.18.Final (compile) <img id="_img3" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep2', '_img3' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep2" style="display:none">
+<li>io.undertow:undertow-core:jar:2.2.18.Final (provided) <img id="_img5" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep4', '_img5' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep4" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Undertow Core</th></tr>
@@ -403,7 +362,7 @@
 <p><b>URL: </b><a class="externalLink" href="http://www.jboss.org/undertow-parent/undertow-core">http://www.jboss.org/undertow-parent/undertow-core</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://repository.jboss.org/licenses/apache-2.0.txt">Apache License Version 2.0</a></p></td></tr></table></div>
 <ul>
-<li>org.jboss.logging:jboss-logging:jar:3.4.1.Final (compile) <img id="_img5" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep4', '_img5' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep4" style="display:none">
+<li>org.jboss.logging:jboss-logging:jar:3.4.1.Final (provided) <img id="_img7" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep6', '_img7' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep6" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>JBoss Logging 3</th></tr>
@@ -412,7 +371,7 @@
 <p><b>Description: </b>The JBoss Logging Framework</p>
 <p><b>URL: </b><a class="externalLink" href="http://www.jboss.org">http://www.jboss.org</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, version 2.0</a></p></td></tr></table></div></li>
-<li>org.jboss.xnio:xnio-api:jar:3.8.7.Final (compile) <img id="_img7" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep6', '_img7' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep6" style="display:none">
+<li>org.jboss.xnio:xnio-api:jar:3.8.7.Final (provided) <img id="_img9" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep8', '_img9' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep8" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>XNIO API</th></tr>
@@ -422,7 +381,7 @@
 <p><b>URL: </b><a class="externalLink" href="http://www.jboss.org/xnio">http://www.jboss.org/xnio</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://repository.jboss.org/licenses/apache-2.0.txt">Apache License 2.0</a></p></td></tr></table></div>
 <ul>
-<li>org.wildfly.common:wildfly-common:jar:1.5.4.Final (compile) <img id="_img9" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep8', '_img9' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep8" style="display:none">
+<li>org.wildfly.common:wildfly-common:jar:1.5.4.Final (provided) <img id="_img11" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep10', '_img11' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep10" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>wildfly-common</th></tr>
@@ -431,7 +390,7 @@
 <p><b>Description: </b>Provides, via submodules, a base configuration for JBoss project builds, as well as a derived configuration supporting multi-release JARs</p>
 <p><b>URL: </b><a class="externalLink" href="http://www.jboss.org/wildfly-common">http://www.jboss.org/wildfly-common</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://repository.jboss.org/licenses/apache-2.0.txt">Apache License 2.0</a></p></td></tr></table></div></li>
-<li>org.wildfly.client:wildfly-client-config:jar:1.0.1.Final (compile) <img id="_img11" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep10', '_img11' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep10" style="display:none">
+<li>org.wildfly.client:wildfly-client-config:jar:1.0.1.Final (provided) <img id="_img13" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep12', '_img13' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep12" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>WildFly Client Configuration</th></tr>
@@ -440,7 +399,7 @@
 <p><b>Description: </b>Library for supporting WildFly common client configuration</p>
 <p><b>URL: </b><a class="externalLink" href="http://www.jboss.org/wildfly-client-config">http://www.jboss.org/wildfly-client-config</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://repository.jboss.org/licenses/apache-2.0.txt">Apache License 2.0</a></p></td></tr></table></div></li></ul></li>
-<li>org.jboss.xnio:xnio-nio:jar:3.8.7.Final (runtime) <img id="_img13" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep12', '_img13' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep12" style="display:none">
+<li>org.jboss.xnio:xnio-nio:jar:3.8.7.Final (provided) <img id="_img15" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep14', '_img15' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep14" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>XNIO NIO Implementation</th></tr>
@@ -449,7 +408,7 @@
 <p><b>Description: </b>The NIO implementation of the XNIO project</p>
 <p><b>URL: </b><a class="externalLink" href="http://www.jboss.org/xnio-all/xnio-nio">http://www.jboss.org/xnio-all/xnio-nio</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://repository.jboss.org/licenses/apache-2.0.txt">Apache License 2.0</a></p></td></tr></table></div></li>
-<li>org.jboss.threads:jboss-threads:jar:3.1.0.Final (compile) <img id="_img15" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep14', '_img15' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep14" style="display:none">
+<li>org.jboss.threads:jboss-threads:jar:3.1.0.Final (provided) <img id="_img17" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep16', '_img17' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep16" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>JBoss Threads</th></tr>
@@ -458,7 +417,7 @@
 <p><b>Description: </b>Provides, via submodules, a base configuration for JBoss project builds, as well as a derived configuration supporting multi-release JARs</p>
 <p><b>URL: </b><a class="externalLink" href="http://www.jboss.org/jboss-threads">http://www.jboss.org/jboss-threads</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache License 2.0</a></p></td></tr></table></div></li></ul></li>
-<li>org.mongodb:mongodb-driver-sync:jar:4.7.1 (compile) <img id="_img17" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep16', '_img17' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep16" style="display:none">
+<li>org.mongodb:mongodb-driver-sync:jar:4.7.1 (provided) <img id="_img19" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep18', '_img19' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep18" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>MongoDB Driver</th></tr>
@@ -468,7 +427,7 @@
 <p><b>URL: </b><a class="externalLink" href="https://www.mongodb.com/">https://www.mongodb.com/</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></p></td></tr></table></div>
 <ul>
-<li>org.mongodb:bson:jar:4.7.1 (compile) <img id="_img19" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep18', '_img19' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep18" style="display:none">
+<li>org.mongodb:bson:jar:4.7.1 (provided) <img id="_img21" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep20', '_img21' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep20" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>BSON</th></tr>
@@ -477,7 +436,7 @@
 <p><b>Description: </b>The BSON library</p>
 <p><b>URL: </b><a class="externalLink" href="https://bsonspec.org">https://bsonspec.org</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></p></td></tr></table></div></li>
-<li>org.mongodb:mongodb-driver-core:jar:4.7.1 (compile) <img id="_img21" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep20', '_img21' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep20" style="display:none">
+<li>org.mongodb:mongodb-driver-core:jar:4.7.1 (provided) <img id="_img23" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep22', '_img23' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep22" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>MongoDB Java Driver Core</th></tr>
@@ -488,7 +447,7 @@
 <p><b>URL: </b><a class="externalLink" href="https://www.mongodb.com/">https://www.mongodb.com/</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></p></td></tr></table></div>
 <ul>
-<li>org.mongodb:bson-record-codec:jar:4.7.1 (runtime) <img id="_img23" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep22', '_img23' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep22" style="display:none">
+<li>org.mongodb:bson-record-codec:jar:4.7.1 (provided) <img id="_img25" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep24', '_img25' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep24" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>BSON Record Codec</th></tr>
@@ -497,7 +456,7 @@
 <p><b>Description: </b>The BSON Codec for Java records</p>
 <p><b>URL: </b><a class="externalLink" href="https://www.mongodb.com/">https://www.mongodb.com/</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></p></td></tr></table></div></li></ul></li></ul></li>
-<li>org.mongodb:mongodb-driver-reactivestreams:jar:4.7.1 (compile) <img id="_img25" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep24', '_img25' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep24" style="display:none">
+<li>org.mongodb:mongodb-driver-reactivestreams:jar:4.7.1 (provided) <img id="_img27" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep26', '_img27' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep26" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>The MongoDB Reactive Streams Driver</th></tr>
@@ -507,7 +466,7 @@
 <p><b>URL: </b><a class="externalLink" href="https://www.mongodb.com/">https://www.mongodb.com/</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache License, Version 2.0</a></p></td></tr></table></div>
 <ul>
-<li>org.reactivestreams:reactive-streams:jar:1.0.3 (compile) <img id="_img27" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep26', '_img27' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep26" style="display:none">
+<li>org.reactivestreams:reactive-streams:jar:1.0.3 (provided) <img id="_img29" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep28', '_img29' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep28" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>reactive-streams</th></tr>
@@ -516,7 +475,7 @@
 <p><b>Description: </b>A Protocol for Asynchronous Non-Blocking Data Sequence</p>
 <p><b>URL: </b><a class="externalLink" href="http://www.reactive-streams.org/">http://www.reactive-streams.org/</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://creativecommons.org/publicdomain/zero/1.0/">CC0</a></p></td></tr></table></div></li>
-<li>io.projectreactor:reactor-core:jar:3.2.22.RELEASE (runtime) <img id="_img29" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep28', '_img29' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep28" style="display:none">
+<li>io.projectreactor:reactor-core:jar:3.2.22.RELEASE (provided) <img id="_img31" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep30', '_img31' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep30" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Non-Blocking Reactive Foundation for the JVM</th></tr>
@@ -525,7 +484,7 @@
 <p><b>Description: </b>Non-Blocking Reactive Foundation for the JVM</p>
 <p><b>URL: </b><a class="externalLink" href="https://github.com/reactor/reactor-core">https://github.com/reactor/reactor-core</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></p></td></tr></table></div></li></ul></li>
-<li>com.google.guava:guava:jar:31.1-jre (compile) <img id="_img31" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep30', '_img31' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep30" style="display:none">
+<li>com.google.guava:guava:jar:31.1-jre (provided) <img id="_img33" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep32', '_img33' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep32" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Guava: Google Core Libraries for Java</th></tr>
@@ -537,7 +496,7 @@
 <p><b>URL: </b><a class="externalLink" href="https://github.com/google/guava">https://github.com/google/guava</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></p></td></tr></table></div>
 <ul>
-<li>com.google.guava:failureaccess:jar:1.0.1 (compile) <img id="_img33" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep32', '_img33' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep32" style="display:none">
+<li>com.google.guava:failureaccess:jar:1.0.1 (provided) <img id="_img35" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep34', '_img35' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep34" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Guava InternalFutureFailureAccess and InternalFutures</th></tr>
@@ -552,7 +511,7 @@
     listenablefuture artifact).</p>
 <p><b>URL: </b><a class="externalLink" href="https://github.com/google/guava/failureaccess">https://github.com/google/guava/failureaccess</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></p></td></tr></table></div></li>
-<li>com.google.guava:listenablefuture:jar:9999.0-empty-to-avoid-conflict-with-guava (compile) <img id="_img35" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep34', '_img35' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep34" style="display:none">
+<li>com.google.guava:listenablefuture:jar:9999.0-empty-to-avoid-conflict-with-guava (provided) <img id="_img37" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep36', '_img37' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep36" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Guava ListenableFuture only</th></tr>
@@ -577,7 +536,7 @@
     use 9999.0-....</p>
 <p><b>URL: </b><a class="externalLink" href="https://github.com/google/guava/listenablefuture">https://github.com/google/guava/listenablefuture</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></p></td></tr></table></div></li>
-<li>com.google.code.findbugs:jsr305:jar:3.0.2 (compile) <img id="_img37" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep36', '_img37' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep36" style="display:none">
+<li>com.google.code.findbugs:jsr305:jar:3.0.2 (provided) <img id="_img39" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep38', '_img39' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep38" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>FindBugs-jsr305</th></tr>
@@ -586,7 +545,7 @@
 <p><b>Description: </b>JSR305 Annotations for Findbugs</p>
 <p><b>URL: </b><a class="externalLink" href="http://findbugs.sourceforge.net/">http://findbugs.sourceforge.net/</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></p></td></tr></table></div></li>
-<li>org.checkerframework:checker-qual:jar:3.12.0 (compile) <img id="_img39" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep38', '_img39' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep38" style="display:none">
+<li>org.checkerframework:checker-qual:jar:3.12.0 (provided) <img id="_img41" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep40', '_img41' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep40" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Checker Qual</th></tr>
@@ -596,7 +555,7 @@
 writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>URL: </b><a class="externalLink" href="https://checkerframework.org">https://checkerframework.org</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://opensource.org/licenses/MIT">The MIT License</a></p></td></tr></table></div></li>
-<li>com.google.errorprone:error_prone_annotations:jar:2.11.0 (compile) <img id="_img41" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep40', '_img41' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep40" style="display:none">
+<li>com.google.errorprone:error_prone_annotations:jar:2.11.0 (provided) <img id="_img43" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep42', '_img43' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep42" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>error-prone annotations</th></tr>
@@ -605,7 +564,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>Description: </b>Error Prone is a static analysis tool for Java that catches common programming mistakes at compile-time.</p>
 <p><b>URL: </b><a class="externalLink" href="https://errorprone.info/error_prone_annotations">https://errorprone.info/error_prone_annotations</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache 2.0</a></p></td></tr></table></div></li>
-<li>com.google.j2objc:j2objc-annotations:jar:1.3 (compile) <img id="_img43" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep42', '_img43' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep42" style="display:none">
+<li>com.google.j2objc:j2objc-annotations:jar:1.3 (provided) <img id="_img45" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep44', '_img45' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep44" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>J2ObjC Annotations</th></tr>
@@ -615,7 +574,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
     translator to modify the result of translation.</p>
 <p><b>URL: </b><a class="externalLink" href="https://github.com/google/j2objc/">https://github.com/google/j2objc/</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></p></td></tr></table></div></li></ul></li>
-<li>com.github.ben-manes.caffeine:caffeine:jar:3.0.5 (compile) <img id="_img45" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep44', '_img45' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep44" style="display:none">
+<li>com.github.ben-manes.caffeine:caffeine:jar:3.0.5 (provided) <img id="_img47" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep46', '_img47' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep46" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Caffeine cache</th></tr>
@@ -624,7 +583,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>Description: </b>A high performance caching library</p>
 <p><b>URL: </b><a class="externalLink" href="https://github.com/ben-manes/caffeine">https://github.com/ben-manes/caffeine</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></p></td></tr></table></div></li>
-<li>org.yaml:snakeyaml:jar:1.30 (compile) <img id="_img47" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep46', '_img47' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep46" style="display:none">
+<li>org.yaml:snakeyaml:jar:1.30 (provided) <img id="_img49" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep48', '_img49' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep48" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>SnakeYAML</th></tr>
@@ -633,7 +592,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>Description: </b>YAML 1.1 parser and emitter for Java</p>
 <p><b>URL: </b><a class="externalLink" href="https://bitbucket.org/snakeyaml/snakeyaml">https://bitbucket.org/snakeyaml/snakeyaml</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></p></td></tr></table></div></li>
-<li>com.google.code.gson:gson:jar:2.8.9 (compile) <img id="_img49" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep48', '_img49' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep48" style="display:none">
+<li>com.google.code.gson:gson:jar:2.8.9 (provided) <img id="_img51" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep50', '_img51' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep50" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Gson</th></tr>
@@ -642,7 +601,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>Description: </b>Gson JSON library</p>
 <p><b>URL: </b><a class="externalLink" href="https://github.com/google/gson/gson">https://github.com/google/gson/gson</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache-2.0</a></p></td></tr></table></div></li>
-<li>ch.qos.logback:logback-classic:jar:1.2.11 (compile) <img id="_img51" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep50', '_img51' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep50" style="display:none">
+<li>ch.qos.logback:logback-classic:jar:1.2.11 (provided) <img id="_img53" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep52', '_img53' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep52" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Logback Classic Module</th></tr>
@@ -652,7 +611,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>URL: </b><a class="externalLink" href="http://logback.qos.ch/logback-classic">http://logback.qos.ch/logback-classic</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.eclipse.org/legal/epl-v10.html">Eclipse Public License - v 1.0</a>, <a class="externalLink" href="http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">GNU Lesser General Public License</a></p></td></tr></table></div>
 <ul>
-<li>ch.qos.logback:logback-core:jar:1.2.11 (compile) <img id="_img53" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep52', '_img53' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep52" style="display:none">
+<li>ch.qos.logback:logback-core:jar:1.2.11 (provided) <img id="_img55" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep54', '_img55' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep54" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Logback Core Module</th></tr>
@@ -661,7 +620,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>Description: </b>logback-core module</p>
 <p><b>URL: </b><a class="externalLink" href="http://logback.qos.ch/logback-core">http://logback.qos.ch/logback-core</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.eclipse.org/legal/epl-v10.html">Eclipse Public License - v 1.0</a>, <a class="externalLink" href="http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">GNU Lesser General Public License</a></p></td></tr></table></div></li>
-<li>org.slf4j:slf4j-api:jar:1.7.32 (compile) <img id="_img55" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep54', '_img55' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep54" style="display:none">
+<li>org.slf4j:slf4j-api:jar:1.7.32 (provided) <img id="_img57" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep56', '_img57' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep56" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>SLF4J API Module</th></tr>
@@ -670,7 +629,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>Description: </b>The slf4j API</p>
 <p><b>URL: </b><a class="externalLink" href="http://www.slf4j.org">http://www.slf4j.org</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.opensource.org/licenses/mit-license.php">MIT License</a></p></td></tr></table></div></li></ul></li>
-<li>org.fusesource.jansi:jansi:jar:2.4.0 (compile) <img id="_img57" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep56', '_img57' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep56" style="display:none">
+<li>org.fusesource.jansi:jansi:jar:2.4.0 (provided) <img id="_img59" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep58', '_img59' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep58" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>jansi</th></tr>
@@ -679,7 +638,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>Description: </b>Jansi is a java library for generating and interpreting ANSI escape sequences.</p>
 <p><b>URL: </b><a class="externalLink" href="http://fusesource.github.io/jansi">http://fusesource.github.io/jansi</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></p></td></tr></table></div></li>
-<li>com.jayway.jsonpath:json-path:jar:2.6.0 (compile) <img id="_img59" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep58', '_img59' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep58" style="display:none">
+<li>com.jayway.jsonpath:json-path:jar:2.6.0 (provided) <img id="_img61" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep60', '_img61' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep60" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>project ':json-path'</th></tr>
@@ -689,7 +648,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>URL: </b><a class="externalLink" href="https://github.com/jayway/JsonPath">https://github.com/jayway/JsonPath</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></p></td></tr></table></div>
 <ul>
-<li>net.minidev:json-smart:jar:2.4.7 (compile) <img id="_img61" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep60', '_img61' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep60" style="display:none">
+<li>net.minidev:json-smart:jar:2.4.7 (provided) <img id="_img63" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep62', '_img63' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep62" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>JSON Small and Fast Parser</th></tr>
@@ -699,7 +658,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>URL: </b><a class="externalLink" href="https://urielch.github.io/">https://urielch.github.io/</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></p></td></tr></table></div>
 <ul>
-<li>net.minidev:accessors-smart:jar:2.4.7 (compile) <img id="_img63" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep62', '_img63' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep62" style="display:none">
+<li>net.minidev:accessors-smart:jar:2.4.7 (provided) <img id="_img65" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep64', '_img65' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep64" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>ASM based accessors helper used by json-smart</th></tr>
@@ -709,7 +668,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>URL: </b><a class="externalLink" href="https://urielch.github.io/">https://urielch.github.io/</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></p></td></tr></table></div>
 <ul>
-<li>org.ow2.asm:asm:jar:9.1 (compile) <img id="_img65" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep64', '_img65' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep64" style="display:none">
+<li>org.ow2.asm:asm:jar:9.1 (provided) <img id="_img67" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep66', '_img67' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep66" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>asm</th></tr>
@@ -718,7 +677,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>Description: </b>ASM, a very small and fast Java bytecode manipulation framework</p>
 <p><b>URL: </b><a class="externalLink" href="http://asm.ow2.io/">http://asm.ow2.io/</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="https://asm.ow2.io/license.html">BSD-3-Clause</a></p></td></tr></table></div></li></ul></li></ul></li></ul></li>
-<li>com.github.spullara.mustache.java:compiler:jar:0.9.10 (compile) <img id="_img67" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep66', '_img67' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep66" style="display:none">
+<li>com.github.spullara.mustache.java:compiler:jar:0.9.10 (provided) <img id="_img69" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep68', '_img69' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep68" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>compiler</th></tr>
@@ -727,7 +686,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>Description: </b>Implementation of mustache.js for Java</p>
 <p><b>URL: </b><a class="externalLink" href="http://github.com/spullara/mustache.java">http://github.com/spullara/mustache.java</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a></p></td></tr></table></div></li>
-<li>commons-jxpath:commons-jxpath:jar:1.3 (compile) <img id="_img69" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep68', '_img69' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep68" style="display:none">
+<li>commons-jxpath:commons-jxpath:jar:1.3 (provided) <img id="_img71" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep70', '_img71' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep70" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Commons JXPath</th></tr>
@@ -736,7 +695,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <p><b>Description: </b>A Java-based implementation of XPath 1.0 that, in addition to XML processing, can inspect/modify Java object graphs (the library's explicit purpose) and even mixed Java/XML structures.</p>
 <p><b>URL: </b><a class="externalLink" href="http://commons.apache.org/jxpath/">http://commons.apache.org/jxpath/</a></p>
 <p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></p></td></tr></table></div></li>
-<li>io.dropwizard.metrics:metrics-core:jar:4.2.9 (compile) <img id="_img71" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep70', '_img71' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep70" style="display:none">
+<li>io.dropwizard.metrics:metrics-core:jar:4.2.9 (provided) <img id="_img73" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep72', '_img73' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep72" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Metrics Core</th></tr>
@@ -746,79 +705,32 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
         production. Metrics provides a powerful toolkit of ways to measure the behavior of critical
         components in your production environment.</p>
 <p><b>URL: </b><a class="externalLink" href="https://metrics.dropwizard.io/metrics-core">https://metrics.dropwizard.io/metrics-core</a></p>
-<p><b>Project Licenses: </b><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache License 2.0</a></p></td></tr></table></div></li>
-<li>junit:junit:jar:4.13.2 (test) <img id="_img73" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep72', '_img73' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep72" style="display:none">
+<p><b>Project Licenses: </b><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.html">Apache License 2.0</a></p></td></tr></table></div></li></ul></li>
+<li>org.graalvm.sdk:graal-sdk:jar:22.1.0 (provided) <img id="_img75" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep74', '_img75' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep74" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
-<th>JUnit</th></tr>
+<th>Graal Sdk</th></tr>
 <tr class="b">
 <td>
-<p><b>Description: </b>JUnit is a unit testing framework for Java, created by Erich Gamma and Kent Beck.</p>
-<p><b>URL: </b><a class="externalLink" href="http://junit.org">http://junit.org</a></p>
-<p><b>Project Licenses: </b><a class="externalLink" href="http://www.eclipse.org/legal/epl-v10.html">Eclipse Public License 1.0</a></p></td></tr></table></div>
-<ul>
-<li>org.hamcrest:hamcrest-core:jar:1.3 (test) <img id="_img75" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep74', '_img75' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep74" style="display:none">
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Hamcrest Core</th></tr>
-<tr class="b">
-<td>
-<p><b>Description: </b>This is the core API of hamcrest matcher framework to be used by third-party framework providers. This includes the a foundation set of matcher implementations for common operations.</p>
-<p><b>URL: </b><a class="externalLink" href="https://github.com/hamcrest/JavaHamcrest/hamcrest-core">https://github.com/hamcrest/JavaHamcrest/hamcrest-core</a></p>
-<p><b>Project Licenses: </b><a class="externalLink" href="http://www.opensource.org/licenses/bsd-license.php">New BSD License</a></p></td></tr></table></div></li></ul></li>
-<li>org.mockito:mockito-core:jar:4.7.0 (test) <img id="_img77" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep76', '_img77' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep76" style="display:none">
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>mockito-core</th></tr>
-<tr class="b">
-<td>
-<p><b>Description: </b>Mockito mock objects library core API and implementation</p>
-<p><b>URL: </b><a class="externalLink" href="https://github.com/mockito/mockito">https://github.com/mockito/mockito</a></p>
-<p><b>Project Licenses: </b><a class="externalLink" href="https://github.com/mockito/mockito/blob/main/LICENSE">The MIT License</a></p></td></tr></table></div>
-<ul>
-<li>net.bytebuddy:byte-buddy:jar:1.12.13 (test) <img id="_img79" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep78', '_img79' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep78" style="display:none">
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Byte Buddy (without dependencies)</th></tr>
-<tr class="b">
-<td>
-<p><b>Description: </b>Byte Buddy is a Java library for creating Java classes at run time.
-        This artifact is a build of Byte Buddy with all ASM dependencies repackaged into its own name space.</p>
-<p><b>URL: </b><a class="externalLink" href="https://bytebuddy.net/byte-buddy">https://bytebuddy.net/byte-buddy</a></p>
-<p><b>Project Licenses: </b><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></p></td></tr></table></div></li>
-<li>net.bytebuddy:byte-buddy-agent:jar:1.12.13 (test) <img id="_img81" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep80', '_img81' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep80" style="display:none">
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Byte Buddy agent</th></tr>
-<tr class="b">
-<td>
-<p><b>Description: </b>The Byte Buddy agent offers convenience for attaching an agent to the local or a remote VM.</p>
-<p><b>URL: </b><a class="externalLink" href="https://bytebuddy.net/byte-buddy-agent">https://bytebuddy.net/byte-buddy-agent</a></p>
-<p><b>Project Licenses: </b><a class="externalLink" href="https://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></p></td></tr></table></div></li>
-<li>org.objenesis:objenesis:jar:3.2 (test) <img id="_img83" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep82', '_img83' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep82" style="display:none">
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Objenesis</th></tr>
-<tr class="b">
-<td>
-<p><b>Description: </b>A library for instantiating Java objects</p>
-<p><b>URL: </b><a class="externalLink" href="http://objenesis.org/objenesis">http://objenesis.org/objenesis</a></p>
-<p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">Apache License, Version 2.0</a></p></td></tr></table></div></li></ul></li></ul></li></ul></section></section><a name="Licenses"></a><section>
+<p><b>Description: </b>GraalVM is an ecosystem for compiling and running applications written in multiple languages.
+GraalVM removes the isolation between programming languages and enables interoperability in a shared runtime.</p>
+<p><b>URL: </b><a class="externalLink" href="https://github.com/oracle/graal">https://github.com/oracle/graal</a></p>
+<p><b>Project Licenses: </b><a class="externalLink" href="http://opensource.org/licenses/UPL">Universal Permissive License, Version 1.0</a></p></td></tr></table></div></li></ul></li></ul></section></section><a name="Licenses"></a><section>
 <h1><a name="Licenses"></a>Licenses</h1>
 <p><b>Apache License, version 2.0: </b>JBoss Logging 3</p>
 <p><b>Apache License Version 2.0: </b>Undertow Core</p>
 <p><b>The Apache License, Version 2.0: </b>BSON, BSON Record Codec, MongoDB Driver, MongoDB Java Driver Core, The MongoDB Reactive Streams Driver</p>
 <p><b>Apache 2.0: </b>error-prone annotations</p>
-<p><b>Eclipse Public License 1.0: </b>JUnit</p>
 <p><b>MIT License: </b>SLF4J API Module</p>
 <p><b>BSD-3-Clause: </b>asm</p>
 <p><b>GNU Lesser General Public License: </b>Logback Classic Module, Logback Core Module</p>
-<p><b>New BSD License: </b>Hamcrest Core</p>
 <p><b>CC0: </b>reactive-streams</p>
 <p><b>Apache License 2.0: </b>JBoss Threads, Metrics Core, WildFly Client Configuration, XNIO API, XNIO NIO Implementation, compiler, wildfly-common</p>
-<p><b>The MIT License: </b>Checker Qual, mockito-core</p>
-<p><b>Apache License, Version 2.0: </b>Byte Buddy (without dependencies), Byte Buddy agent, Caffeine cache, Guava: Google Core Libraries for Java, Non-Blocking Reactive Foundation for the JVM, Objenesis, SnakeYAML, restheart-commons</p>
+<p><b>The MIT License: </b>Checker Qual</p>
+<p><b>Universal Permissive License, Version 1.0: </b>Graal Sdk</p>
+<p><b>Apache License, Version 2.0: </b>Caffeine cache, Guava: Google Core Libraries for Java, Non-Blocking Reactive Foundation for the JVM, SnakeYAML, restheart-commons</p>
 <p><b>Apache-2.0: </b>Gson</p>
+<p><b>GNU Affero General Public License (AGPL) version 3.0: </b>restheart-polyglot</p>
 <p><b>The Apache Software License, Version 2.0: </b>ASM based accessors helper used by json-smart, Commons JXPath, FindBugs-jsr305, Guava InternalFutureFailureAccess and InternalFutures, Guava ListenableFuture only, J2ObjC Annotations, JSON Small and Fast Parser, jansi, project ':json-path'</p>
 <p><b>Eclipse Public License - v 1.0: </b>Logback Classic Module, Logback Core Module</p></section><a name="Dependency_File_Details"></a><section>
 <h1><a name="Dependency_File_Details"></a>Dependency File Details</h1>
@@ -960,30 +872,6 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <td align="center">1.8</td>
 <td align="center">Yes</td></tr>
 <tr class="b">
-<td align="left">junit-4.13.2.jar</td>
-<td align="right">384.6 kB</td>
-<td align="right">389</td>
-<td align="right">350</td>
-<td align="right">32</td>
-<td align="center">1.5</td>
-<td align="center">Yes</td></tr>
-<tr class="a">
-<td align="left">byte-buddy-1.12.13.jar</td>
-<td align="right">3.9 MB</td>
-<td align="right">2705</td>
-<td align="right">2651</td>
-<td align="right">39</td>
-<td align="center">-</td>
-<td align="center">Yes</td></tr>
-<tr class="b">
-<td align="left">byte-buddy-agent-1.12.13.jar</td>
-<td align="right">256.5 kB</td>
-<td align="right">90</td>
-<td align="right">70</td>
-<td align="right">3</td>
-<td align="center">-</td>
-<td align="center">Yes</td></tr>
-<tr class="a">
 <td align="left">accessors-smart-2.4.7.jar</td>
 <td align="right">29.5 kB</td>
 <td align="right">24</td>
@@ -991,7 +879,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <td align="right">2</td>
 <td align="center">1.8</td>
 <td align="center">Yes</td></tr>
-<tr class="b">
+<tr class="a">
 <td align="left">json-smart-2.4.7.jar</td>
 <td align="right">119.2 kB</td>
 <td align="right">107</td>
@@ -999,7 +887,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <td align="right">5</td>
 <td align="center">1.8</td>
 <td align="center">Yes</td></tr>
-<tr class="a">
+<tr class="b">
 <td align="left">checker-qual-3.12.0.jar</td>
 <td align="right">208.8 kB</td>
 <td align="right">399</td>
@@ -1007,7 +895,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <td align="right">29</td>
 <td align="center">1.8</td>
 <td align="center">Yes</td></tr>
-<tr class="b">
+<tr class="a">
 <td align="left">jansi-2.4.0.jar</td>
 <td align="right">221 kB</td>
 <td align="right">98</td>
@@ -1015,15 +903,15 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <td align="right">3</td>
 <td align="center">1.7</td>
 <td align="center">Yes</td></tr>
-<tr class="a">
-<td align="left">hamcrest-core-1.3.jar</td>
-<td align="right">45 kB</td>
-<td align="right">52</td>
-<td align="right">45</td>
-<td align="right">3</td>
-<td align="center">1.5</td>
-<td align="center">Yes</td></tr>
 <tr class="b">
+<td align="left">graal-sdk-22.1.0.jar</td>
+<td align="right">644.6 kB</td>
+<td align="right">319</td>
+<td align="right">314</td>
+<td align="right">21</td>
+<td align="center">-</td>
+<td align="center">Yes</td></tr>
+<tr class="a">
 <td align="left">jboss-logging-3.4.1.Final.jar</td>
 <td align="right">60.8 kB</td>
 <td align="right">47</td>
@@ -1031,7 +919,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <td align="right">1</td>
 <td align="center">1.8</td>
 <td align="center">Yes</td></tr>
-<tr class="a">
+<tr class="b">
 <td align="left">jboss-threads-3.1.0.Final.jar</td>
 <td align="right">96 kB</td>
 <td align="right">86</td>
@@ -1039,7 +927,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <td align="right">2</td>
 <td align="center">-</td>
 <td align="center">Yes</td></tr>
-<tr class="b">
+<tr class="a">
 <td align="left">xnio-api-3.8.7.Final.jar</td>
 <td align="right">584.8 kB</td>
 <td align="right">443</td>
@@ -1047,20 +935,12 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <td align="right">9</td>
 <td align="center">1.8</td>
 <td align="center">Yes</td></tr>
-<tr class="a">
+<tr class="b">
 <td align="left">xnio-nio-3.8.7.Final.jar</td>
 <td align="right">111.4 kB</td>
 <td align="right">69</td>
 <td align="right">54</td>
 <td align="right">1</td>
-<td align="center">1.8</td>
-<td align="center">Yes</td></tr>
-<tr class="b">
-<td align="left">mockito-core-4.7.0.jar</td>
-<td align="right">668.9 kB</td>
-<td align="right">641</td>
-<td align="right">569</td>
-<td align="right">64</td>
 <td align="center">1.8</td>
 <td align="center">Yes</td></tr>
 <tr class="a">
@@ -1104,14 +984,6 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <td align="center">1.8</td>
 <td align="center">Yes</td></tr>
 <tr class="b">
-<td align="left">objenesis-3.2.jar</td>
-<td align="right">49.4 kB</td>
-<td align="right">59</td>
-<td align="right">43</td>
-<td align="right">10</td>
-<td align="center">1.8</td>
-<td align="center">Yes</td></tr>
-<tr class="a">
 <td align="left">asm-9.1.jar</td>
 <td align="right">121.8 kB</td>
 <td align="right">44</td>
@@ -1119,7 +991,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <td align="right">3</td>
 <td align="center">-</td>
 <td align="center">Yes</td></tr>
-<tr class="b">
+<tr class="a">
 <td align="left">reactive-streams-1.0.3.jar</td>
 <td align="right">11.4 kB</td>
 <td align="right">17</td>
@@ -1127,6 +999,14 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <td align="right">1</td>
 <td align="center">1.6</td>
 <td align="center">Yes</td></tr>
+<tr class="b">
+<td align="left">commons/target/classes</td>
+<td align="right">-</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="center">-</td>
+<td align="center">No</td></tr>
 <tr class="a">
 <td align="left">slf4j-api-1.7.32.jar</td>
 <td align="right">41.5 kB</td>
@@ -1168,37 +1048,21 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
 <th>Java Version</th>
 <th>Debug Information</th></tr>
 <tr class="b">
-<td align="right">41</td>
-<td align="right">19.5 MB</td>
-<td align="right">14445</td>
-<td align="right">13428</td>
-<td align="right">521</td>
+<td align="right">37</td>
+<td align="right">14.9 MB</td>
+<td align="right">10828</td>
+<td align="right">10014</td>
+<td align="right">391</td>
 <td align="center">1.8</td>
-<td align="right">40</td></tr>
+<td align="right">35</td></tr>
 <tr class="a">
-<td align="right">compile: 32</td>
-<td align="right">compile: 12.6 MB</td>
-<td align="right">compile: 9586</td>
-<td align="right">compile: 8812</td>
-<td align="right">compile: 358</td>
+<td align="right">provided: 37</td>
+<td align="right">provided: 14.9 MB</td>
+<td align="right">provided: 10828</td>
+<td align="right">provided: 10014</td>
+<td align="right">provided: 391</td>
 <td align="center">-</td>
-<td align="right">compile: 31</td></tr>
-<tr class="b">
-<td align="right">test: 6</td>
-<td align="right">test: 5.3 MB</td>
-<td align="right">test: 3936</td>
-<td align="right">test: 3728</td>
-<td align="right">test: 151</td>
-<td align="center">-</td>
-<td align="right">test: 6</td></tr>
-<tr class="a">
-<td align="right">runtime: 3</td>
-<td align="right">runtime: 1.6 MB</td>
-<td align="right">runtime: 923</td>
-<td align="right">runtime: 888</td>
-<td align="right">runtime: 12</td>
-<td align="center">-</td>
-<td align="right">runtime: 3</td></tr></table></section>
+<td align="right">provided: 35</td></tr></table></section>
       </div>
     </div>
     <div class="clear">
@@ -1206,7 +1070,7 @@ writes to specify Java code for type-checking by the Checker Framework.</p>
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2019&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2020&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>

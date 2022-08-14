@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-commons &#x2013; CPD Results</title>
+    <title>restheart-polyglot &#x2013; CPD Results</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-commons
+<div id="bannerLeft">restheart-polyglot
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-commons">restheart-commons</a>      </div>
+      <div class="xright"><a href="./" title="restheart-polyglot">restheart-polyglot</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -69,133 +69,27 @@
 <th>File</th>
 <th>Line</th></tr>
 <tr class="b">
-<td>org/restheart/exchange/Request.java</td>
-<td>149</td></tr>
+<td>org/restheart/polyglot/PolyglotDeployer.java</td>
+<td>387</td></tr>
 <tr class="a">
-<td>org/restheart/exchange/Response.java</td>
-<td>136</td></tr>
+<td>org/restheart/polyglot/PolyglotDeployer.java</td>
+<td>423</td></tr>
 <tr class="b"><td colspan='2'>
 <div>
-<pre>return wrapped.getRequestHeaders();
-    }
+<pre>srv.getDescription(),
+                srv.isSecured(),
+                true,
+                srv.getClass().getName(),
+                srv,
+                new HashMap&lt;&gt;());
 
-    /**
-     * note: an header can have multiple values. This only returns the first one.
-     * use getHeaders() to get all the header's values
-     *
-     * @param name the name of the header to return
-     * @return the first value of the header
-     */
-    public String getHeader(String name) {
-        return getHeaders().getFirst(HttpString.tryFromString(name));
-    }
+            registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
 
-    /**
-     * note: an header can have multiple values. This sets the given value clearing
-     * existing ones. use getHeaders().add(value) to add the value without clearing.
-     *
-     * @param name the name of the header to return
-     */
-    public void setHeader(HttpString name, String value) {
-        if (getHeaders().get(name) == null) {
-            getHeaders().put(name, value);
-        } else {
-            getHeaders().get(name).clear();
-            getHeaders().get(name).add(value);
-        }
-    }
+            DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
 
-    /**
-     * note: an header can have multiple values. This sets the given value clearing
-     * existing ones. use getHeaders().add(value) to add the value without clearing.
-     *
-     * @param name the name of the header to return
-     */
-    public void setHeader(String name, String value) {
-        if (getHeaders().get(name) == null) {
-            getHeaders().put(HttpString.tryFromString(name), value);
-        } else {
-            getHeaders().get(HttpString.tryFromString(name)).clear();
-            getHeaders().get(HttpString.tryFromString(name)).add(value);
-        }
-    }
-
-    /**
-     * @param name the name of the cookie to return
-     * @return a the cookie
-     */
-    public Cookie getCookie(String name) {</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/exchange/ByteArrayProxyResponse.java</td>
-<td>96</td></tr>
-<tr class="a">
-<td>org/restheart/exchange/JsonProxyResponse.java</td>
-<td>103</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>protected byte[] getErrorContent(int code, String httpStatusText, String message, Throwable t, boolean includeStackTrace) throws IOException {
-        var resp = new JsonObject();
-        resp.add(&quot;http status code&quot;, new JsonPrimitive(code));
-        resp.add(&quot;http status description&quot;, new JsonPrimitive(httpStatusText));
-        if (message != null) {
-            resp.add(&quot;message&quot;, new JsonPrimitive(avoidEscapedChars(message)));
-        }
-        var nrep = new JsonObject();
-        if (t != null) {
-            nrep.add(&quot;class&quot;, new JsonPrimitive(t.getClass().getName()));
-            if (includeStackTrace) {
-                JsonArray stackTrace = getStackTrace(t);
-                if (stackTrace != null) {
-                    nrep.add(&quot;stack trace&quot;, stackTrace);
-                }
-            }
-            resp.add(&quot;exception&quot;, nrep);
-        }
-        return resp.toString().getBytes();</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/cache/impl/CaffeineCache.java</td>
-<td>82</td></tr>
-<tr class="a">
-<td>org/restheart/cache/impl/CaffeineLoadingCache.java</td>
-<td>75</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>return wrapped.getIfPresent(key);
-    }
-
-    @Override
-    public void put(K key, V value) {
-        wrapped.put(key, Optional.ofNullable(value));
-    }
-
-    @Override
-    public void invalidate(K key) {
-        wrapped.invalidate(key);
-    }
-
-    @Override
-    public void invalidateAll() {
-        wrapped.invalidateAll();
-    }
-
-    @Override
-    public Map&lt;K, Optional&lt;V&gt;&gt; asMap() {
-        return wrapped.asMap();
-    }
-
-    @Override
-    public void cleanUp() {
-        wrapped.cleanUp();
-    }
-}</pre></div></td></tr></table></section>
+            LOGGER.info(ansi().fg(GREEN).a(&quot;URI {} bound to service {}, description: {}, secured: {}, uri match {}&quot;).reset().toString(),
+                srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
+        } catch(IllegalArgumentException | IllegalStateException e) {</pre></div></td></tr></table></section>
       </div>
     </div>
     <div class="clear">
@@ -203,7 +97,7 @@
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2019&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2020&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>
