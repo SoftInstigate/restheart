@@ -19,14 +19,14 @@ under the License.
 -->
 <rss version="0.91">
   <channel>
-    <title>restheart-test-plugins - Checkstyle report</title>
+    <title>restheart-core - Checkstyle report</title>
     <link>https://restheart.org</link>
-    <description>restheart-test-plugins - Checkstyle report</description>
+    <description>restheart-core - Checkstyle report</description>
     <language>en-us</language>
-    <copyright>&#169;2020 - 2022 SoftInstigate</copyright>
+    <copyright>&#169;2014 - 2022 SoftInstigate</copyright>
     <item>
-      <title>File: 14,
-             Errors: 0,
+      <title>File: 50,
+             Errors: 1,
              Warnings: 0,
              Infos: 0
       </title>
@@ -46,7 +46,7 @@ under the License.
           <tbody>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.services.EchoService.java">org/restheart/test/plugins/services/EchoService.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.injectors.XForwardedHeadersInjector.java">org/restheart/handlers/injectors/XForwardedHeadersInjector.java</a>
                 </td>
                 <td>
                   0
@@ -60,7 +60,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor.java">org/restheart/test/plugins/interceptors/EchoProxyRequestInterceptor.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.security.handlers.AuthenticatorMechanismsHandler.java">org/restheart/security/handlers/AuthenticatorMechanismsHandler.java</a>
                 </td>
                 <td>
                   0
@@ -74,7 +74,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.services.IEchoService.java">org/restheart/test/plugins/services/IEchoService.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.package-info.java">org/restheart/package-info.java</a>
                 </td>
                 <td>
                   0
@@ -88,7 +88,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.initializers.ExtraJwtVerifier.java">org/restheart/test/plugins/initializers/ExtraJwtVerifier.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.graal.NativeImageBuildTimeChecker.java">org/restheart/graal/NativeImageBuildTimeChecker.java</a>
                 </td>
                 <td>
                   0
@@ -102,7 +102,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.interceptors.EchoRequestInterceptor.java">org/restheart/test/plugins/interceptors/EchoRequestInterceptor.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.CORSHandler.java">org/restheart/handlers/CORSHandler.java</a>
                 </td>
                 <td>
                   0
@@ -116,7 +116,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.interceptors.EchoAsyncResponseInterceptor.java">org/restheart/test/plugins/interceptors/EchoAsyncResponseInterceptor.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.RequestNotManagedHandler.java">org/restheart/handlers/RequestNotManagedHandler.java</a>
                 </td>
                 <td>
                   0
@@ -130,7 +130,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.interceptors.WriteResultInterceptor.java">org/restheart/test/plugins/interceptors/WriteResultInterceptor.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.injectors.XPoweredByInjector.java">org/restheart/handlers/injectors/XPoweredByInjector.java</a>
                 </td>
                 <td>
                   0
@@ -144,7 +144,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.services.SEchoService.java">org/restheart/test/plugins/services/SEchoService.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.graal.RuntimeReflectionRegistrationFeature.java">org/restheart/graal/RuntimeReflectionRegistrationFeature.java</a>
                 </td>
                 <td>
                   0
@@ -158,7 +158,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor.java">org/restheart/test/plugins/interceptors/EchoProxyResponseInterceptor.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.TracingInstrumentationHandler.java">org/restheart/handlers/TracingInstrumentationHandler.java</a>
                 </td>
                 <td>
                   0
@@ -172,7 +172,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.initializers.TestInitializer.java">org/restheart/test/plugins/initializers/TestInitializer.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.utils.package-info.java">org/restheart/utils/package-info.java</a>
                 </td>
                 <td>
                   0
@@ -186,7 +186,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.interceptors.EchoResponseInterceptor.java">org/restheart/test/plugins/interceptors/EchoResponseInterceptor.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.ConfigurationHelper.java">org/restheart/ConfigurationHelper.java</a>
                 </td>
                 <td>
                   0
@@ -200,7 +200,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.services.DelegateHandleService.java">org/restheart/test/plugins/services/DelegateHandleService.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.RequestInterceptorsExecutor.java">org/restheart/handlers/RequestInterceptorsExecutor.java</a>
                 </td>
                 <td>
                   0
@@ -214,7 +214,21 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.interceptors.SecretHider.java">org/restheart/test/plugins/interceptors/SecretHider.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.graal.GenerateGraalvmReflectConfig.java">org/restheart/graal/GenerateGraalvmReflectConfig.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  1
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.security.handlers.AuthorizersHandler.java">org/restheart/security/handlers/AuthorizersHandler.java</a>
                 </td>
                 <td>
                   0
@@ -228,7 +242,497 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.test.plugins.interceptors.SnooperHook.java">org/restheart/test/plugins/interceptors/SnooperHook.java</a>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.security.authorizers.package-info.java">org/restheart/security/authorizers/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.ProxyExchangeBuffersCloser.java">org/restheart/handlers/ProxyExchangeBuffersCloser.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.injectors.ConduitInjector.java">org/restheart/handlers/injectors/ConduitInjector.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.injectors.AuthHeadersRemover.java">org/restheart/handlers/injectors/AuthHeadersRemover.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.injectors.package-info.java">org/restheart/handlers/injectors/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.plugins.PluginsScanner.java">org/restheart/plugins/PluginsScanner.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.utils.LoggingInitializer.java">org/restheart/utils/LoggingInitializer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.injectors.PipelineInfoInjector.java">org/restheart/handlers/injectors/PipelineInfoInjector.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.ConfigurableEncodingHandler.java">org/restheart/handlers/ConfigurableEncodingHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.plugins.PluginsRegistryImpl.java">org/restheart/plugins/PluginsRegistryImpl.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.services.PingService.java">org/restheart/services/PingService.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.utils.FileUtils.java">org/restheart/utils/FileUtils.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.ErrorHandler.java">org/restheart/handlers/ErrorHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.ResponseSender.java">org/restheart/handlers/ResponseSender.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.security.handlers.SecurityHandler.java">org/restheart/security/handlers/SecurityHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.utils.OSChecker.java">org/restheart/utils/OSChecker.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.security.handlers.AuthenticationCallHandler.java">org/restheart/security/handlers/AuthenticationCallHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.ContentStreamSinkConduit.java">org/restheart/handlers/ContentStreamSinkConduit.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.plugins.PluginsFactory.java">org/restheart/plugins/PluginsFactory.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.injectors.TokenInjector.java">org/restheart/handlers/injectors/TokenInjector.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.utils.RESTHeartDaemon.java">org/restheart/utils/RESTHeartDaemon.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.Bootstrapper.java">org/restheart/Bootstrapper.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.PipedHttpHandler.java">org/restheart/handlers/PipedHttpHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.ResponseInterceptorsExecutor.java">org/restheart/handlers/ResponseInterceptorsExecutor.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#META-INF.native-image.org.restheart.restheart.native-image.properties">META-INF/native-image/org.restheart/restheart/native-image.properties</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.security.handlers.AuthenticatorMechanismWrapper.java">org/restheart/security/handlers/AuthenticatorMechanismWrapper.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.RequestLogger.java">org/restheart/handlers/RequestLogger.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.package-info.java">org/restheart/handlers/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.security.handlers.SecurityInitialHandler.java">org/restheart/security/handlers/SecurityInitialHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.ModifiableContentSinkConduit.java">org/restheart/handlers/ModifiableContentSinkConduit.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.security.handlers.package-info.java">org/restheart/security/handlers/package-info.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.Shutdowner.java">org/restheart/Shutdowner.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.security.authorizers.FullAuthorizer.java">org/restheart/security/authorizers/FullAuthorizer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.ServiceExchangeInitializer.java">org/restheart/handlers/ServiceExchangeInitializer.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.security.handlers.AuthenticationConstraintHandler.java">org/restheart/security/handlers/AuthenticationConstraintHandler.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="https://restheart.org/checkstyle.html#org.restheart.handlers.injectors.RequestContentInjector.java">org/restheart/handlers/injectors/RequestContentInjector.java</a>
                 </td>
                 <td>
                   0

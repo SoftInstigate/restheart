@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-test-plugins &#x2013; SpotBugs Bug Detector Report</title>
+    <title>restheart-core &#x2013; SpotBugs Bug Detector Report</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-test-plugins
+<div id="bannerLeft">restheart-core
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-test-plugins">restheart-test-plugins</a>      </div>
+      <div class="xright"><a href="./" title="restheart-core">restheart-core</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -74,40 +74,52 @@
 <th>Errors</th>
 <th>Missing Classes</th></tr>
 <tr class="b">
-<td>15</td>
-<td>8</td>
+<td>57</td>
+<td>25</td>
 <td>0</td>
-<td>5</td></tr></table></section><section>
+<td>11</td></tr></table></section><section>
 <h1><a name="Files"></a>Files</h1>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Class</th>
 <th>Bugs</th></tr>
 <tr class="b">
-<td><a href="#org.restheart.test.plugins.initializers.ExtraJwtVerifier">org.restheart.test.plugins.initializers.ExtraJwtVerifier</a></td>
-<td>1</td></tr>
+<td><a href="#org.restheart.Bootstrapper">org.restheart.Bootstrapper</a></td>
+<td>5</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.test.plugins.initializers.TestInitializer">org.restheart.test.plugins.initializers.TestInitializer</a></td>
+<td><a href="#org.restheart.Bootstrapper$Args">org.restheart.Bootstrapper$Args</a></td>
 <td>1</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor">org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor</a></td>
+<td><a href="#org.restheart.handlers.ContentStreamSinkConduit">org.restheart.handlers.ContentStreamSinkConduit</a></td>
 <td>1</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor">org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor</a></td>
+<td><a href="#org.restheart.handlers.ModifiableContentSinkConduit">org.restheart.handlers.ModifiableContentSinkConduit</a></td>
 <td>1</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.test.plugins.interceptors.EchoRequestInterceptor">org.restheart.test.plugins.interceptors.EchoRequestInterceptor</a></td>
+<td><a href="#org.restheart.handlers.RequestLogger">org.restheart.handlers.RequestLogger</a></td>
 <td>1</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.test.plugins.interceptors.EchoResponseInterceptor">org.restheart.test.plugins.interceptors.EchoResponseInterceptor</a></td>
+<td><a href="#org.restheart.plugins.PluginsRegistryImpl">org.restheart.plugins.PluginsRegistryImpl</a></td>
+<td>3</td></tr>
+<tr class="b">
+<td><a href="#org.restheart.plugins.PluginsScanner$RuntimeClassGraph">org.restheart.plugins.PluginsScanner$RuntimeClassGraph</a></td>
+<td>3</td></tr>
+<tr class="a">
+<td><a href="#org.restheart.security.handlers.AuthorizersHandler">org.restheart.security.handlers.AuthorizersHandler</a></td>
 <td>1</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.test.plugins.services.EchoService">org.restheart.test.plugins.services.EchoService</a></td>
-<td>1</td></tr>
+<td><a href="#org.restheart.security.handlers.SecurityHandler">org.restheart.security.handlers.SecurityHandler</a></td>
+<td>2</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.test.plugins.services.MyService">org.restheart.test.plugins.services.MyService</a></td>
-<td>1</td></tr></table></section><a name="org.restheart.test.plugins.initializers.ExtraJwtVerifier"></a><section>
-<h2><a name="org.restheart.test.plugins.initializers.ExtraJwtVerifier"></a>org.restheart.test.plugins.initializers.ExtraJwtVerifier</h2>
+<td><a href="#org.restheart.services.PingService">org.restheart.services.PingService</a></td>
+<td>1</td></tr>
+<tr class="b">
+<td><a href="#org.restheart.utils.FileUtils">org.restheart.utils.FileUtils</a></td>
+<td>4</td></tr>
+<tr class="a">
+<td><a href="#org.restheart.utils.RESTHeartDaemon">org.restheart.utils.RESTHeartDaemon</a></td>
+<td>2</td></tr></table></section><a name="org.restheart.Bootstrapper"></a><section>
+<h2><a name="org.restheart.Bootstrapper"></a>org.restheart.Bootstrapper</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -116,12 +128,158 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
-<td>org.restheart.test.plugins.initializers.ExtraJwtVerifier.init(PluginsRegistry) may expose internal representation by storing an externally mutable object into ExtraJwtVerifier.registry</td>
+<td>Found reliance on default encoding in org.restheart.Bootstrapper.loadConfiguration(): new java.io.FileReader(File)</td>
+<td>I18N</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>346</td>
+<td>High</td></tr>
+<tr class="b">
+<td>This API (java/io/File.&lt;init&gt;(Ljava/lang/String;)V) reads a file whose location might be specified by user input</td>
+<td>SECURITY</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#PATH_TRAVERSAL_IN">PATH_TRAVERSAL_IN</a></td>
+<td>760</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>This API (java/io/File.&lt;init&gt;(Ljava/lang/String;)V) reads a file whose location might be specified by user input</td>
+<td>SECURITY</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#PATH_TRAVERSAL_IN">PATH_TRAVERSAL_IN</a></td>
+<td>1085</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>This API (java/nio/file/Paths.get(Ljava/lang/String;[Ljava/lang/String;)Ljava/nio/file/Path;) reads a file whose location might be specified by user input</td>
+<td>SECURITY</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#PATH_TRAVERSAL_IN">PATH_TRAVERSAL_IN</a></td>
+<td>1087</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>This API (java/io/File.&lt;init&gt;(Ljava/lang/String;)V) reads a file whose location might be specified by user input</td>
+<td>SECURITY</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#PATH_TRAVERSAL_IN">PATH_TRAVERSAL_IN</a></td>
+<td>1092</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.BootstrapperArgs"></a><section>
+<h2><a name="org.restheart.Bootstrapper.24Args"></a>org.restheart.Bootstrapper$Args</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>Unread field: org.restheart.Bootstrapper$Args.help</td>
+<td>PERFORMANCE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#URF_UNREAD_FIELD">URF_UNREAD_FIELD</a></td>
+<td>1131</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.handlers.ContentStreamSinkConduit"></a><section>
+<h2><a name="org.restheart.handlers.ContentStreamSinkConduit"></a>org.restheart.handlers.ContentStreamSinkConduit</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>new org.restheart.handlers.ContentStreamSinkConduit(StreamSinkConduit, HttpServerExchange) may expose internal representation by storing an externally mutable object into ContentStreamSinkConduit._next</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>58</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.handlers.ModifiableContentSinkConduit"></a><section>
+<h2><a name="org.restheart.handlers.ModifiableContentSinkConduit"></a>org.restheart.handlers.ModifiableContentSinkConduit</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>new org.restheart.handlers.ModifiableContentSinkConduit(StreamSinkConduit, HttpServerExchange) may expose internal representation by storing an externally mutable object into ModifiableContentSinkConduit.exchange</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>68</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.handlers.RequestLogger"></a><section>
+<h2><a name="org.restheart.handlers.RequestLogger"></a>org.restheart.handlers.RequestLogger</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>Useless condition: it's known that logLevel &gt;= 2 at this point</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#UC_USELESS_CONDITION">UC_USELESS_CONDITION</a></td>
+<td>124</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.plugins.PluginsRegistryImpl"></a><section>
+<h2><a name="org.restheart.plugins.PluginsRegistryImpl"></a>org.restheart.plugins.PluginsRegistryImpl</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>org.restheart.plugins.PluginsRegistryImpl.getGlobalSecurityPredicates() may expose internal representation by returning PluginsRegistryImpl.globalSecurityPredicates</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
+<td>360</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>org.restheart.plugins.PluginsRegistryImpl.getPermissionTransformers() may expose internal representation by returning PluginsRegistryImpl.permissionTransformers</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
+<td>192</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>Public static org.restheart.plugins.PluginsRegistryImpl.getInstance() may expose internal representation by returning PluginsRegistryImpl.HOLDER</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#MS_EXPOSE_REP">MS_EXPOSE_REP</a></td>
+<td>91</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.plugins.PluginsScannerRuntimeClassGraph"></a><section>
+<h2><a name="org.restheart.plugins.PluginsScanner.24RuntimeClassGraph"></a>org.restheart.plugins.PluginsScanner$RuntimeClassGraph</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>new org.restheart.plugins.PluginsScanner$RuntimeClassGraph() creates a java.net.URLClassLoader classloader, which should be performed within a doPrivileged block</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DP_CREATE_CLASSLOADER_INSIDE_DO_PRIVILEGED">DP_CREATE_CLASSLOADER_INSIDE_DO_PRIVILEGED</a></td>
+<td>205</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>This API (java/nio/file/Paths.get(Ljava/lang/String;[Ljava/lang/String;)Ljava/nio/file/Path;) reads a file whose location might be specified by user input</td>
+<td>SECURITY</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#PATH_TRAVERSAL_IN">PATH_TRAVERSAL_IN</a></td>
+<td>228</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>This API (java/io/File.&lt;init&gt;(Ljava/lang/String;)V) reads a file whose location might be specified by user input</td>
+<td>SECURITY</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#PATH_TRAVERSAL_IN">PATH_TRAVERSAL_IN</a></td>
+<td>234</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.handlers.AuthorizersHandler"></a><section>
+<h2><a name="org.restheart.security.handlers.AuthorizersHandler"></a>org.restheart.security.handlers.AuthorizersHandler</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>new org.restheart.security.handlers.AuthorizersHandler(Set, PipelinedHandler) may expose internal representation by storing an externally mutable object into AuthorizersHandler.authorizers</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
 <td>52</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.test.plugins.initializers.TestInitializer"></a><section>
-<h2><a name="org.restheart.test.plugins.initializers.TestInitializer"></a>org.restheart.test.plugins.initializers.TestInitializer</h2>
+<td>Medium</td></tr></table></section><a name="org.restheart.security.handlers.SecurityHandler"></a><section>
+<h2><a name="org.restheart.security.handlers.SecurityHandler"></a>org.restheart.security.handlers.SecurityHandler</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -130,12 +288,64 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
-<td>org.restheart.test.plugins.initializers.TestInitializer.setPluginRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into TestInitializer.pluginRegistry</td>
+<td>new org.restheart.security.handlers.SecurityHandler(Set, Set, PluginRecord) may expose internal representation by storing an externally mutable object into SecurityHandler.authorizers</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>59</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor"></a><section>
-<h2><a name="org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor"></a>org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor</h2>
+<td>86</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>new org.restheart.security.handlers.SecurityHandler(Set, Set, PluginRecord) may expose internal representation by storing an externally mutable object into SecurityHandler.mechanisms</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>85</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.services.PingService"></a><section>
+<h2><a name="org.restheart.services.PingService"></a>org.restheart.services.PingService</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="b">
+<td>Found reliance on default encoding in org.restheart.services.PingService.handle(ByteArrayRequest, ByteArrayResponse): String.getBytes()</td>
+<td>I18N</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>60</td>
+<td>High</td></tr></table></section><a name="org.restheart.utils.FileUtils"></a><section>
+<h2><a name="org.restheart.utils.FileUtils"></a>org.restheart.utils.FileUtils</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="b">
+<td>Hard coded reference to an absolute pathname in org.restheart.utils.FileUtils.&lt;static initializer for FileUtils&gt;()</td>
+<td>STYLE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DMI_HARDCODED_ABSOLUTE_FILENAME">DMI_HARDCODED_ABSOLUTE_FILENAME</a></td>
+<td>65</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>Found reliance on default encoding in org.restheart.utils.FileUtils.createPidFile(Path): new java.io.FileWriter(File)</td>
+<td>I18N</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>182</td>
+<td>High</td></tr>
+<tr class="b">
+<td>Found reliance on default encoding in org.restheart.utils.FileUtils.getConfiguration(Path, Path, boolean): new java.io.FileReader(File)</td>
+<td>I18N</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>113</td>
+<td>High</td></tr>
+<tr class="a">
+<td>Found reliance on default encoding in org.restheart.utils.FileUtils.getPidFromFile(Path): new java.io.FileReader(File)</td>
+<td>I18N</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>191</td>
+<td>High</td></tr></table></section><a name="org.restheart.utils.RESTHeartDaemon"></a><section>
+<h2><a name="org.restheart.utils.RESTHeartDaemon"></a>org.restheart.utils.RESTHeartDaemon</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -144,81 +354,17 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
-<td>Found reliance on default encoding in org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor.handle(ByteArrayProxyRequest, ByteArrayProxyResponse): String.getBytes()</td>
-<td>I18N</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
-<td>68</td>
-<td>High</td></tr></table></section><a name="org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor"></a><section>
-<h2><a name="org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor"></a>org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor</h2>
-<table border="0" class="bodyTable">
+<td>This usage of java/lang/ProcessBuilder.command([Ljava/lang/String;)Ljava/lang/ProcessBuilder; can be vulnerable to Command Injection</td>
+<td>SECURITY</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#COMMAND_INJECTION">COMMAND_INJECTION</a></td>
+<td>76</td>
+<td>Medium</td></tr>
 <tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>Found reliance on default encoding in org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor.handle(ByteArrayProxyRequest, ByteArrayProxyResponse): String.getBytes()</td>
-<td>I18N</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
-<td>74</td>
-<td>High</td></tr></table></section><a name="org.restheart.test.plugins.interceptors.EchoRequestInterceptor"></a><section>
-<h2><a name="org.restheart.test.plugins.interceptors.EchoRequestInterceptor"></a>org.restheart.test.plugins.interceptors.EchoRequestInterceptor</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>Found reliance on default encoding in org.restheart.test.plugins.interceptors.EchoRequestInterceptor.handle(ByteArrayRequest, ByteArrayResponse): String.getBytes()</td>
-<td>I18N</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
-<td>59</td>
-<td>High</td></tr></table></section><a name="org.restheart.test.plugins.interceptors.EchoResponseInterceptor"></a><section>
-<h2><a name="org.restheart.test.plugins.interceptors.EchoResponseInterceptor"></a>org.restheart.test.plugins.interceptors.EchoResponseInterceptor</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>Found reliance on default encoding in org.restheart.test.plugins.interceptors.EchoResponseInterceptor.handle(ByteArrayRequest, ByteArrayResponse): String.getBytes()</td>
-<td>I18N</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
-<td>77</td>
-<td>High</td></tr></table></section><a name="org.restheart.test.plugins.services.EchoService"></a><section>
-<h2><a name="org.restheart.test.plugins.services.EchoService"></a>org.restheart.test.plugins.services.EchoService</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>Found reliance on default encoding in org.restheart.test.plugins.services.EchoService.handle(ByteArrayRequest, ByteArrayResponse): String.getBytes()</td>
-<td>I18N</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
-<td>111</td>
-<td>High</td></tr></table></section><a name="org.restheart.test.plugins.services.MyService"></a><section>
-<h2><a name="org.restheart.test.plugins.services.MyService"></a>org.restheart.test.plugins.services.MyService</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>Found reliance on default encoding in org.restheart.test.plugins.services.MyService.lambda$new$0(ByteArrayRequest, ByteArrayResponse): String.getBytes()</td>
-<td>I18N</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
-<td>55</td>
-<td>High</td></tr></table></section>
+<td>org.restheart.utils.RESTHeartDaemon.daemonize() invokes System.exit(...), which shuts down the entire virtual machine</td>
+<td>BAD_PRACTICE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_EXIT">DM_EXIT</a></td>
+<td>81</td>
+<td>Medium</td></tr></table></section>
       </div>
     </div>
     <div class="clear">
@@ -226,7 +372,7 @@
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2020&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2014&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>

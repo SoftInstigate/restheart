@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-test-plugins &#x2013; CPD Results</title>
+    <title>restheart-core &#x2013; CPD Results</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-test-plugins
+<div id="bannerLeft">restheart-core
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-test-plugins">restheart-test-plugins</a>      </div>
+      <div class="xright"><a href="./" title="restheart-core">restheart-core</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -64,7 +64,98 @@
 <h1><a name="CPD_Results"></a>CPD Results</h1>
 <p>The following document contains the results of PMD's  <a class="externalLink" href="https://pmd.github.io/latest/pmd_userdocs_cpd.html">CPD</a> 6.46.0.</p></section><section>
 <h1><a name="Duplications"></a>Duplications</h1>
-<p>CPD found no problems in your source code.</p></section>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>File</th>
+<th>Line</th></tr>
+<tr class="b">
+<td>org/restheart/plugins/PluginsFactory.java</td>
+<td>355</td></tr>
+<tr class="a">
+<td>org/restheart/plugins/PluginsFactory.java</td>
+<td>428</td></tr>
+<tr class="b"><td colspan='2'>
+<div>
+<pre>.filter(p -&gt; p.methodHash == injection.methodHash).count() == 1) {
+
+                // check configuration scope
+                var allConfScope = injection.params.stream()
+                        .anyMatch(p -&gt; &quot;scope&quot;.equals(p.getKey())
+                                &amp;&amp; (ConfigurationScope.class.getName() + &quot;.&quot; + ConfigurationScope.ALL.name())
+                                        .equals(p.getValue().toString()));
+
+                var scopedConf = (Map) (allConfScope ? Bootstrapper.getConfiguration().toMap()
+                        : ip.confs != null ? ip.confs.get(ip.name) : null);
+
+                if (scopedConf == null) {
+                    LOGGER.warn(
+                            &quot;{} {} defines method {} with @InjectConfiguration &quot; + &quot;but no configuration found for it&quot;,
+                            ip.type, ip.name, injection.method);
+                }
+
+                // try to inovke @InjectConfiguration method
+                try {
+                    ip.clazz.getDeclaredMethod(injection.method, Map.class).invoke(ip.instance, scopedConf);</pre></div></td></tr></table>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>File</th>
+<th>Line</th></tr>
+<tr class="b">
+<td>org/restheart/plugins/PluginsFactory.java</td>
+<td>294</td></tr>
+<tr class="a">
+<td>org/restheart/plugins/PluginsFactory.java</td>
+<td>316</td></tr>
+<tr class="b"><td colspan='2'>
+<div>
+<pre>invokeCoreInjectMethods(ip);
+            } catch (InvocationTargetException ite) {
+                if (ite.getCause() != null &amp;&amp; ite.getCause() instanceof NoClassDefFoundError) {
+                    var errMsg = &quot;Error handling the request. &quot; + &quot;An external dependency is missing for &quot; + ip.type
+                            + &quot; &quot; + ip.name + &quot;. Copy the missing dependency jar to the plugins directory &quot;
+                            + &quot;to add it to the classpath&quot;;
+
+                    LOGGER.error(errMsg, ite);
+                } else {
+                    LOGGER.error(&quot;Error injecting dependency to {} {}: {}&quot;, ip.type, ip.name,
+                            getRootException(ite).getMessage(), ite);
+                }
+            } catch (ConfigurationException | InstantiationException | IllegalAccessException ex) {
+                LOGGER.error(&quot;Error injecting dependency to {} {}: {}&quot;, ip.type, ip.name,
+                        getRootException(ex).getMessage(), ex);
+            }
+        }
+    }</pre></div></td></tr></table>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>File</th>
+<th>Line</th></tr>
+<tr class="b">
+<td>org/restheart/Bootstrapper.java</td>
+<td>523</td></tr>
+<tr class="a">
+<td>org/restheart/Bootstrapper.java</td>
+<td>565</td></tr>
+<tr class="b"><td colspan='2'>
+<div>
+<pre>.filter(i -&gt; initPoint(i.getInstance()) == BEFORE_STARTUP)
+            .forEach(i -&gt; {
+                try {
+                    i.getInstance().init();
+                } catch (NoClassDefFoundError iae) {
+                    // this occurs executing interceptors missing external dependencies
+                    LOGGER.error(&quot;Error executing initializer {}. An external dependency is missing. Copy the missing dependency jar to the plugins directory to add it to the classpath&quot;, i.getName(), iae);
+                } catch (LinkageError le) {
+                    // this occurs executing plugin code compiled
+                    // with wrong version of restheart-commons
+
+                    var version = Version.getInstance().getVersion() == null
+                        ? &quot;of correct version&quot;
+                        : &quot;v&quot; + Version.getInstance().getVersion();
+
+                    LOGGER.error(&quot;Linkage error executing initializer {}. Check that it was compiled against restheart-commons {}&quot;, i.getName(), version, le);
+                } catch (Throwable t) {
+                    LOGGER.error(&quot;Error executing initializer {}&quot;, i.getName());</pre></div></td></tr></table></section>
       </div>
     </div>
     <div class="clear">
@@ -72,7 +163,7 @@
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2020&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2014&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>
