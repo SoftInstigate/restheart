@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-parent &#x2013; Property Updates Report</title>
+    <title>restheart-commons &#x2013; Property Updates Report</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-parent
+<div id="bannerLeft">restheart-commons
 </div>
       <div class="clear">
         <hr/>
@@ -28,22 +28,16 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-parent">restheart-parent</a>      </div>
+      <div class="xright"><a href="./" title="restheart-commons">restheart-commons</a>      </div>
       <div class="clear">
         <hr/>
       </div>
     </div>
     <div id="leftColumn">
       <div id="navcolumn">
-       <h5>Modules</h5>
+       <h5>Parent Project</h5>
     <ul>
-     <li class="none"><a href="restheart-commons/index.html" title="restheart-commons">restheart-commons</a></li>
-     <li class="none"><a href="restheart-polyglot/index.html" title="restheart-polyglot">restheart-polyglot</a></li>
-     <li class="none"><a href="restheart-graphql/index.html" title="restheart-graphql">restheart-graphql</a></li>
-     <li class="none"><a href="restheart/index.html" title="restheart-core">restheart-core</a></li>
-     <li class="none"><a href="restheart-security/index.html" title="restheart-security">restheart-security</a></li>
-     <li class="none"><a href="restheart-mongodb/index.html" title="restheart-mongodb">restheart-mongodb</a></li>
-     <li class="none"><a href="restheart-test-plugins/index.html" title="restheart-test-plugins">restheart-test-plugins</a></li>
+     <li class="none"><a href="../index.html" title="restheart-parent">restheart-parent</a></li>
     </ul>
        <h5>Project Documentation</h5>
     <ul>
@@ -53,6 +47,8 @@
        <li class="none"><a href="dependency-updates-report.html" title="Dependency Updates Report">Dependency Updates Report</a></li>
        <li class="none"><a href="plugin-updates-report.html" title="Plugin Updates Report">Plugin Updates Report</a></li>
        <li class="none"><strong>Property Updates Report</strong></li>
+       <li class="none"><a href="checkstyle.html" title="Checkstyle">Checkstyle</a></li>
+       <li class="none"><a href="spotbugs.html" title="SpotBugs">SpotBugs</a></li>
        <li class="none"><a href="cpd.html" title="CPD">CPD</a></li>
        <li class="none"><a href="pmd.html" title="PMD">PMD</a></li>
       </ul></li>
@@ -75,7 +71,7 @@
 <tr class="b">
 <td><img src="images/icon_warning_sml.gif" alt="" /></td>
 <td># of properties where the next version available is smaller than an incremental version update</td>
-<td>1</td></tr>
+<td>0</td></tr>
 <tr class="a">
 <td><img src="images/icon_warning_sml.gif" alt="" /></td>
 <td># of properties where the next version available is an incremental version update</td>
@@ -89,65 +85,9 @@
 <td># of properties where the next version available is a major version update</td>
 <td>0</td></tr></table><section>
 <h2><a name="Summary_of_properties_associated_with_artifact_versions"></a>Summary of properties associated with artifact versions</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Status</th>
-<th>Property</th>
-<th>Current Version</th>
-<th>Latest Subincremental</th>
-<th>Latest Incremental</th>
-<th>Latest Minor</th>
-<th>Latest Major</th></tr>
-<tr class="a">
-<td><img src="images/icon_warning_sml.gif" alt="" /></td>
-<td>${graalvm.version}</td>
-<td>22.1.0</td>
-<td><b>22.1.0.1</b></td>
-<td></td>
-<td><b>22.2.0</b></td>
-<td></td></tr>
-<tr class="b">
-<th>Status</th>
-<th>Property</th>
-<th>Current Version</th>
-<th>Latest Subincremental</th>
-<th>Latest Incremental</th>
-<th>Latest Minor</th>
-<th>Latest Major</th></tr></table></section></section><section>
+<p>No properties associated with artifacts have been defined.</p></section></section><section>
 <h1><a name="Properties_associated_with_artifact_versions"></a>Properties associated with artifact versions</h1>
-<p></p><section>
-<h2><a name="a.24.7Bgraalvm.version"></a>${graalvm.version</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th width="80%">Status</th>
-<td align="left"><img src="images/icon_warning_sml.gif" alt="" />&#160;There is at least one newer version available.</td></tr>
-<tr class="b">
-<th width="80%">Property</th>
-<td align="left">${graalvm.version}</td></tr>
-<tr class="a">
-<th width="80%">Associated artifacts</th>
-<td align="left">org.graalvm.js:js<br />org.graalvm.js:js-scriptengine<br />org.graalvm.sdk:graal-sdk</td></tr>
-<tr class="b">
-<th width="80%">Current Version</th>
-<td align="left">22.1.0</td></tr>
-<tr class="a">
-<th width="80%">Newer versions</th>
-<td align="left"><b>22.1.0.1</b>&#160;<i>Next Version</i><br /><b>22.2.0</b>&#160;<i>Next Minor</i></td></tr>
-<tr class="b">
-<th width="80%">Allowed version range</th>
-<td align="left">[,)</td></tr>
-<tr class="a">
-<th width="80%">Infer associations from project</th>
-<td align="left">Yes</td></tr>
-<tr class="b">
-<th width="80%">Only use release versions</th>
-<td align="left">No</td></tr>
-<tr class="a">
-<th width="80%">Include projects from reactor</th>
-<td align="left">Yes</td></tr>
-<tr class="b">
-<th width="80%">Always use reactor projects (even if older or -SNAPSHOT)</th>
-<td align="left">Yes</td></tr></table></section></section>
+<p></p></section>
       </div>
     </div>
     <div class="clear">
@@ -155,7 +95,7 @@
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2014&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2019&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>

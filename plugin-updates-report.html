@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-parent &#x2013; Plugin Updates Report</title>
+    <title>restheart-commons &#x2013; Plugin Updates Report</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-parent
+<div id="bannerLeft">restheart-commons
 </div>
       <div class="clear">
         <hr/>
@@ -28,22 +28,16 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-parent">restheart-parent</a>      </div>
+      <div class="xright"><a href="./" title="restheart-commons">restheart-commons</a>      </div>
       <div class="clear">
         <hr/>
       </div>
     </div>
     <div id="leftColumn">
       <div id="navcolumn">
-       <h5>Modules</h5>
+       <h5>Parent Project</h5>
     <ul>
-     <li class="none"><a href="restheart-commons/index.html" title="restheart-commons">restheart-commons</a></li>
-     <li class="none"><a href="restheart-polyglot/index.html" title="restheart-polyglot">restheart-polyglot</a></li>
-     <li class="none"><a href="restheart-graphql/index.html" title="restheart-graphql">restheart-graphql</a></li>
-     <li class="none"><a href="restheart/index.html" title="restheart-core">restheart-core</a></li>
-     <li class="none"><a href="restheart-security/index.html" title="restheart-security">restheart-security</a></li>
-     <li class="none"><a href="restheart-mongodb/index.html" title="restheart-mongodb">restheart-mongodb</a></li>
-     <li class="none"><a href="restheart-test-plugins/index.html" title="restheart-test-plugins">restheart-test-plugins</a></li>
+     <li class="none"><a href="../index.html" title="restheart-parent">restheart-parent</a></li>
     </ul>
        <h5>Project Documentation</h5>
     <ul>
@@ -53,6 +47,8 @@
        <li class="none"><a href="dependency-updates-report.html" title="Dependency Updates Report">Dependency Updates Report</a></li>
        <li class="none"><strong>Plugin Updates Report</strong></li>
        <li class="none"><a href="property-updates-report.html" title="Property Updates Report">Property Updates Report</a></li>
+       <li class="none"><a href="checkstyle.html" title="Checkstyle">Checkstyle</a></li>
+       <li class="none"><a href="spotbugs.html" title="SpotBugs">SpotBugs</a></li>
        <li class="none"><a href="cpd.html" title="CPD">CPD</a></li>
        <li class="none"><a href="pmd.html" title="PMD">PMD</a></li>
       </ul></li>
@@ -83,7 +79,7 @@
 <tr class="b">
 <td><img src="images/icon_warning_sml.gif" alt="" /></td>
 <td># of plugins where the next version available is a minor version update</td>
-<td>4</td></tr>
+<td>5</td></tr>
 <tr class="a">
 <td><img src="images/icon_warning_sml.gif" alt="" /></td>
 <td># of plugins where the next version available is a major version update</td>
@@ -367,6 +363,16 @@
 <td><b>3.0.1</b></td>
 <td><img src="images/icon_success_sml.gif" alt="" /></td></tr>
 <tr class="b">
+<td><img src="images/icon_warning_sml.gif" alt="" /></td>
+<td>org.apache.maven.plugins</td>
+<td>maven-resources-plugin</td>
+<td>2.6</td>
+<td></td>
+<td></td>
+<td><b>2.7</b></td>
+<td><b>3.3.0</b></td>
+<td><img src="images/icon_success_sml.gif" alt="" /></td></tr>
+<tr class="a">
 <th>Status</th>
 <th>Group Id</th>
 <th>Artifact Id</th>
@@ -380,16 +386,16 @@
 <p></p><section>
 <h2><a name="Plugin_com.github.github:site-maven-plugin"></a>Plugin com.github.github:site-maven-plugin</h2>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th width="80%">Status</th>
 <td align="left"><img src="images/icon_success_sml.gif" alt="" />&#160;No newer versions available.</td></tr>
-<tr class="b">
+<tr class="a">
 <th width="80%">Group Id</th>
 <td align="left">com.github.github</td></tr>
-<tr class="a">
+<tr class="b">
 <th width="80%">Artifact Id</th>
 <td align="left">site-maven-plugin</td></tr>
-<tr class="b">
+<tr class="a">
 <th width="80%">Current Version</th>
 <td align="left">0.12</td></tr></table></section><section>
 <h2><a name="Plugin_com.github.spotbugs:spotbugs-maven-plugin"></a>Plugin com.github.spotbugs:spotbugs-maven-plugin</h2>
@@ -689,6 +695,23 @@
 <tr class="b">
 <th width="80%">Current Version</th>
 <td align="left">3.0.0-M6</td></tr></table></section><section>
+<h2><a name="Plugin_org.apache.maven.plugins:maven-resources-plugin"></a>Plugin org.apache.maven.plugins:maven-resources-plugin</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th width="80%">Status</th>
+<td align="left"><img src="images/icon_warning_sml.gif" alt="" />&#160;There is at least one newer minor version available. Minor updates are sometimes passive.</td></tr>
+<tr class="b">
+<th width="80%">Group Id</th>
+<td align="left">org.apache.maven.plugins</td></tr>
+<tr class="a">
+<th width="80%">Artifact Id</th>
+<td align="left">maven-resources-plugin</td></tr>
+<tr class="b">
+<th width="80%">Current Version</th>
+<td align="left">2.6</td></tr>
+<tr class="a">
+<th width="80%">Newer versions</th>
+<td align="left"><b>2.7</b>&#160;<i>Next Minor</i><br /><b>3.0.0</b>&#160;<i>Next Major</i><br />3.0.1<br />3.0.2<br />3.1.0<br />3.2.0<br /><b>3.3.0</b>&#160;<i>Latest Major</i></td></tr></table></section><section>
 <h2><a name="Plugin_org.apache.maven.plugins:maven-shade-plugin"></a>Plugin org.apache.maven.plugins:maven-shade-plugin</h2>
 <table border="0" class="bodyTable">
 <tr class="a">
@@ -794,7 +817,7 @@
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2014&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2019&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>
