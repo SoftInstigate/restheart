@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-security &#x2013; CPD Results</title>
+    <title>restheart-test-plugins &#x2013; CPD Results</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-security
+<div id="bannerLeft">restheart-test-plugins
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-security">restheart-security</a>      </div>
+      <div class="xright"><a href="./" title="restheart-test-plugins">restheart-test-plugins</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -64,88 +64,7 @@
 <h1><a name="CPD_Results"></a>CPD Results</h1>
 <p>The following document contains the results of PMD's  <a class="externalLink" href="https://pmd.github.io/latest/pmd_userdocs_cpd.html">CPD</a> 6.46.0.</p></section><section>
 <h1><a name="Duplications"></a>Duplications</h1>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/security/authorizers/FileAclAuthorizer.java</td>
-<td>190</td></tr>
-<tr class="a">
-<td>org/restheart/security/authorizers/MongoAclAuthorizer.java</td>
-<td>244</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>public boolean isAuthenticationRequired(Request&lt;?&gt; request) {
-        // don't require authentication for OPTIONS requests
-        if (request.isOptions()) {
-            return false;
-        }
-
-        var exchange = request.getExchange();
-
-        var ps = rolePermissions($UNAUTHENTICATED);
-
-        if (ps != null) {
-            // this fixes undertow bug 377
-            // https://issues.jboss.org/browse/UNDERTOW-377
-            if (exchange.getAttachment(PREDICATE_CONTEXT) == null) {
-                exchange.putAttachment(PREDICATE_CONTEXT, new TreeMap&lt;&gt;());
-            }
-
-            // Predicate.resolve() uses getRelativePath() that is the path relative to
-            // the last PathHandler we want to check against the full request path
-            // see https://issues.jboss.org/browse/UNDERTOW-1317
-            exchange.setRelativePath(request.getPath());
-
-            return !ps.stream().anyMatch(r -&gt; r.allow(request));
-        } else {
-            return true;
-        }
-    }
-
-    private Stream&lt;String&gt; roles(HttpServerExchange exchange) {
-        return account(exchange).getRoles().stream();
-    }
-
-    private LinkedHashSet&lt;FileAclPermission&gt; rolePermissions(final String role) {</pre></div></td></tr></table>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>File</th>
-<th>Line</th></tr>
-<tr class="b">
-<td>org/restheart/security/authenticators/DenyFilterOnUserPwd.java</td>
-<td>57</td></tr>
-<tr class="a">
-<td>org/restheart/security/authenticators/UserPwdRemover.java</td>
-<td>56</td></tr>
-<tr class="b"><td colspan='2'>
-<div>
-<pre>@InjectPluginsRegistry
-    public void init(PluginsRegistry registry) {
-        PluginRecord&lt;Authenticator&gt; _mra;
-
-        try {
-            _mra = registry.getAuthenticator(&quot;mongoRealmAuthenticator&quot;);
-        } catch (ConfigurationException ce) {
-            enabled = false;
-            return;
-        }
-
-        if (_mra == null || !_mra.isEnabled()) {
-            enabled = false;
-        } else {
-            var rhAuth = (MongoRealmAuthenticator) _mra.getInstance();
-
-            this.usersDb = rhAuth.getUsersDb();
-            this.usersCollection = rhAuth.getUsersCollection();
-            this.propNamePassword = rhAuth.getPropPassword();
-
-            if (usersDb == null
-                    || usersCollection == null
-                    || propNamePassword == null) {
-                LOGGER.error(&quot;Wrong configuration of mongoRealmAuthenticator! &quot;
-                        + &quot;Requests with filters on the password property &quot;</pre></div></td></tr></table></section>
+<p>CPD found no problems in your source code.</p></section>
       </div>
     </div>
     <div class="clear">
@@ -153,7 +72,7 @@
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2018&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2020&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>

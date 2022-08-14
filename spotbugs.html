@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-security &#x2013; SpotBugs Bug Detector Report</title>
+    <title>restheart-test-plugins &#x2013; SpotBugs Bug Detector Report</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-security
+<div id="bannerLeft">restheart-test-plugins
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-security">restheart-security</a>      </div>
+      <div class="xright"><a href="./" title="restheart-test-plugins">restheart-test-plugins</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -74,89 +74,68 @@
 <th>Errors</th>
 <th>Missing Classes</th></tr>
 <tr class="b">
-<td>50</td>
-<td>20</td>
+<td>15</td>
+<td>8</td>
 <td>0</td>
-<td>6</td></tr></table></section><section>
+<td>5</td></tr></table></section><section>
 <h1><a name="Files"></a>Files</h1>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Class</th>
 <th>Bugs</th></tr>
 <tr class="b">
-<td><a href="#org.restheart.security.authenticators.MongoRealmAuthenticator">org.restheart.security.authenticators.MongoRealmAuthenticator</a></td>
+<td><a href="#org.restheart.test.plugins.initializers.ExtraJwtVerifier">org.restheart.test.plugins.initializers.ExtraJwtVerifier</a></td>
 <td>1</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.security.authorizers.FileAclAuthorizer">org.restheart.security.authorizers.FileAclAuthorizer</a></td>
-<td>2</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.security.authorizers.GlobalPredicatesVetoer">org.restheart.security.authorizers.GlobalPredicatesVetoer</a></td>
-<td>1</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.security.authorizers.MongoAclAuthorizer">org.restheart.security.authorizers.MongoAclAuthorizer</a></td>
-<td>2</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.security.interceptors.BruteForceAttackGuard">org.restheart.security.interceptors.BruteForceAttackGuard</a></td>
-<td>1</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.security.interceptors.TokenCORSResponseInterceptor">org.restheart.security.interceptors.TokenCORSResponseInterceptor</a></td>
+<td><a href="#org.restheart.test.plugins.initializers.TestInitializer">org.restheart.test.plugins.initializers.TestInitializer</a></td>
 <td>1</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.security.mechanisms.DigestAuthMechanism">org.restheart.security.mechanisms.DigestAuthMechanism</a></td>
-<td>2</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.security.predicates.BsonRequestBlacklistPredicate">org.restheart.security.predicates.BsonRequestBlacklistPredicate</a></td>
-<td>1</td></tr>
-<tr class="b">
-<td><a href="#org.restheart.security.predicates.BsonRequestContainsPredicate">org.restheart.security.predicates.BsonRequestContainsPredicate</a></td>
+<td><a href="#org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor">org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor</a></td>
 <td>1</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.security.predicates.BsonRequestWhitelistPredicate">org.restheart.security.predicates.BsonRequestWhitelistPredicate</a></td>
+<td><a href="#org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor">org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor</a></td>
 <td>1</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.security.predicates.InPredicate">org.restheart.security.predicates.InPredicate</a></td>
-<td>2</td></tr>
+<td><a href="#org.restheart.test.plugins.interceptors.EchoRequestInterceptor">org.restheart.test.plugins.interceptors.EchoRequestInterceptor</a></td>
+<td>1</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.security.services.RndTokenService">org.restheart.security.services.RndTokenService</a></td>
-<td>2</td></tr>
+<td><a href="#org.restheart.test.plugins.interceptors.EchoResponseInterceptor">org.restheart.test.plugins.interceptors.EchoResponseInterceptor</a></td>
+<td>1</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.security.tokens.RndTokenManager">org.restheart.security.tokens.RndTokenManager</a></td>
-<td>3</td></tr></table></section><a name="org.restheart.security.authenticators.MongoRealmAuthenticator"></a><section>
-<h2><a name="org.restheart.security.authenticators.MongoRealmAuthenticator"></a>org.restheart.security.authenticators.MongoRealmAuthenticator</h2>
-<table border="0" class="bodyTable">
+<td><a href="#org.restheart.test.plugins.services.EchoService">org.restheart.test.plugins.services.EchoService</a></td>
+<td>1</td></tr>
 <tr class="a">
+<td><a href="#org.restheart.test.plugins.services.MyService">org.restheart.test.plugins.services.MyService</a></td>
+<td>1</td></tr></table></section><a name="org.restheart.test.plugins.initializers.ExtraJwtVerifier"></a><section>
+<h2><a name="org.restheart.test.plugins.initializers.ExtraJwtVerifier"></a>org.restheart.test.plugins.initializers.ExtraJwtVerifier</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
-<td>org.restheart.security.authenticators.MongoRealmAuthenticator.setRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into MongoRealmAuthenticator.registry</td>
+<tr class="a">
+<td>org.restheart.test.plugins.initializers.ExtraJwtVerifier.init(PluginsRegistry) may expose internal representation by storing an externally mutable object into ExtraJwtVerifier.registry</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>179</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.security.authorizers.FileAclAuthorizer"></a><section>
-<h2><a name="org.restheart.security.authorizers.FileAclAuthorizer"></a>org.restheart.security.authorizers.FileAclAuthorizer</h2>
+<td>52</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.test.plugins.initializers.TestInitializer"></a><section>
+<h2><a name="org.restheart.test.plugins.initializers.TestInitializer"></a>org.restheart.test.plugins.initializers.TestInitializer</h2>
 <table border="0" class="bodyTable">
-<tr class="a">
+<tr class="b">
 <th>Bug</th>
 <th>Category</th>
 <th>Details</th>
 <th>Line</th>
 <th>Priority</th></tr>
-<tr class="b">
-<td>org.restheart.security.authorizers.FileAclAuthorizer.initRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into FileAclAuthorizer.registry</td>
+<tr class="a">
+<td>org.restheart.test.plugins.initializers.TestInitializer.setPluginRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into TestInitializer.pluginRegistry</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>84</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Redundant nullcheck of ps, which is known to be non-null in org.restheart.security.authorizers.FileAclAuthorizer.isAuthenticationRequired(Request)</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
-<td>200</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.security.authorizers.GlobalPredicatesVetoer"></a><section>
-<h2><a name="org.restheart.security.authorizers.GlobalPredicatesVetoer"></a>org.restheart.security.authorizers.GlobalPredicatesVetoer</h2>
+<td>59</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor"></a><section>
+<h2><a name="org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor"></a>org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -165,12 +144,12 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
-<td>org.restheart.security.authorizers.GlobalPredicatesVetoer.setPluginsRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into GlobalPredicatesVetoer.registry</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>40</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.security.authorizers.MongoAclAuthorizer"></a><section>
-<h2><a name="org.restheart.security.authorizers.MongoAclAuthorizer"></a>org.restheart.security.authorizers.MongoAclAuthorizer</h2>
+<td>Found reliance on default encoding in org.restheart.test.plugins.interceptors.EchoProxyRequestInterceptor.handle(ByteArrayProxyRequest, ByteArrayProxyResponse): String.getBytes()</td>
+<td>I18N</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>68</td>
+<td>High</td></tr></table></section><a name="org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor"></a><section>
+<h2><a name="org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor"></a>org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -179,66 +158,12 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
-<td>org.restheart.security.authorizers.MongoAclAuthorizer.initRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into MongoAclAuthorizer.registry</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>143</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>Redundant nullcheck of permissions, which is known to be non-null in org.restheart.security.authorizers.MongoAclAuthorizer.findRolePermissions(String)</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE">RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE</a></td>
-<td>335</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.security.interceptors.BruteForceAttackGuard"></a><section>
-<h2><a name="org.restheart.security.interceptors.BruteForceAttackGuard"></a>org.restheart.security.interceptors.BruteForceAttackGuard</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>Write to static field org.restheart.security.interceptors.BruteForceAttackGuard.xForwardedForValueFromLast from instance method org.restheart.security.interceptors.BruteForceAttackGuard.config(Map)</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD">ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD</a></td>
-<td>75</td>
-<td>High</td></tr></table></section><a name="org.restheart.security.interceptors.TokenCORSResponseInterceptor"></a><section>
-<h2><a name="org.restheart.security.interceptors.TokenCORSResponseInterceptor"></a>org.restheart.security.interceptors.TokenCORSResponseInterceptor</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>org.restheart.security.interceptors.TokenCORSResponseInterceptor.setHeaders(String[]) may expose internal representation by storing an externally mutable object into TokenCORSResponseInterceptor.headers</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>98</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.security.mechanisms.DigestAuthMechanism"></a><section>
-<h2><a name="org.restheart.security.mechanisms.DigestAuthMechanism"></a>org.restheart.security.mechanisms.DigestAuthMechanism</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>new org.restheart.security.mechanisms.DigestAuthMechanism(List, List, String, String, NonceManager, String, IdentityManager) may expose internal representation by storing an externally mutable object into DigestAuthMechanism.supportedAlgorithms</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>167</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>new org.restheart.security.mechanisms.DigestAuthMechanism(List, List, String, String, NonceManager, String, IdentityManager) may expose internal representation by storing an externally mutable object into DigestAuthMechanism.supportedQops</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>168</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.security.predicates.BsonRequestBlacklistPredicate"></a><section>
-<h2><a name="org.restheart.security.predicates.BsonRequestBlacklistPredicate"></a>org.restheart.security.predicates.BsonRequestBlacklistPredicate</h2>
+<td>Found reliance on default encoding in org.restheart.test.plugins.interceptors.EchoProxyResponseInterceptor.handle(ByteArrayProxyRequest, ByteArrayProxyResponse): String.getBytes()</td>
+<td>I18N</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>74</td>
+<td>High</td></tr></table></section><a name="org.restheart.test.plugins.interceptors.EchoRequestInterceptor"></a><section>
+<h2><a name="org.restheart.test.plugins.interceptors.EchoRequestInterceptor"></a>org.restheart.test.plugins.interceptors.EchoRequestInterceptor</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -247,12 +172,12 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
-<td>Load of known null value in org.restheart.security.predicates.BsonRequestBlacklistPredicate.resolve(HttpServerExchange)</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_LOAD_OF_KNOWN_NULL_VALUE">NP_LOAD_OF_KNOWN_NULL_VALUE</a></td>
-<td>61</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.security.predicates.BsonRequestContainsPredicate"></a><section>
-<h2><a name="org.restheart.security.predicates.BsonRequestContainsPredicate"></a>org.restheart.security.predicates.BsonRequestContainsPredicate</h2>
+<td>Found reliance on default encoding in org.restheart.test.plugins.interceptors.EchoRequestInterceptor.handle(ByteArrayRequest, ByteArrayResponse): String.getBytes()</td>
+<td>I18N</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>59</td>
+<td>High</td></tr></table></section><a name="org.restheart.test.plugins.interceptors.EchoResponseInterceptor"></a><section>
+<h2><a name="org.restheart.test.plugins.interceptors.EchoResponseInterceptor"></a>org.restheart.test.plugins.interceptors.EchoResponseInterceptor</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -261,12 +186,12 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
-<td>Load of known null value in org.restheart.security.predicates.BsonRequestContainsPredicate.resolve(HttpServerExchange)</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_LOAD_OF_KNOWN_NULL_VALUE">NP_LOAD_OF_KNOWN_NULL_VALUE</a></td>
-<td>62</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.security.predicates.BsonRequestWhitelistPredicate"></a><section>
-<h2><a name="org.restheart.security.predicates.BsonRequestWhitelistPredicate"></a>org.restheart.security.predicates.BsonRequestWhitelistPredicate</h2>
+<td>Found reliance on default encoding in org.restheart.test.plugins.interceptors.EchoResponseInterceptor.handle(ByteArrayRequest, ByteArrayResponse): String.getBytes()</td>
+<td>I18N</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>77</td>
+<td>High</td></tr></table></section><a name="org.restheart.test.plugins.services.EchoService"></a><section>
+<h2><a name="org.restheart.test.plugins.services.EchoService"></a>org.restheart.test.plugins.services.EchoService</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -275,12 +200,12 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
-<td>Load of known null value in org.restheart.security.predicates.BsonRequestWhitelistPredicate.resolve(HttpServerExchange)</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_LOAD_OF_KNOWN_NULL_VALUE">NP_LOAD_OF_KNOWN_NULL_VALUE</a></td>
-<td>60</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.security.predicates.InPredicate"></a><section>
-<h2><a name="org.restheart.security.predicates.InPredicate"></a>org.restheart.security.predicates.InPredicate</h2>
+<td>Found reliance on default encoding in org.restheart.test.plugins.services.EchoService.handle(ByteArrayRequest, ByteArrayResponse): String.getBytes()</td>
+<td>I18N</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>111</td>
+<td>High</td></tr></table></section><a name="org.restheart.test.plugins.services.MyService"></a><section>
+<h2><a name="org.restheart.test.plugins.services.MyService"></a>org.restheart.test.plugins.services.MyService</h2>
 <table border="0" class="bodyTable">
 <tr class="b">
 <th>Bug</th>
@@ -289,63 +214,11 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="a">
-<td>new org.restheart.security.predicates.InPredicate(String[], ExchangeAttribute) may expose internal representation by storing an externally mutable object into InPredicate.array</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>43</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>new org.restheart.security.predicates.InPredicate(String[], ExchangeAttribute) may expose internal representation by storing an externally mutable object into InPredicate.value</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>44</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.security.services.RndTokenService"></a><section>
-<h2><a name="org.restheart.security.services.RndTokenService"></a>org.restheart.security.services.RndTokenService</h2>
-<table border="0" class="bodyTable">
-<tr class="a">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="b">
-<td>org.restheart.security.services.RndTokenService.init(Map) may expose internal representation by storing an externally mutable object into RndTokenService.confArgs</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>80</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>org.restheart.security.services.RndTokenService.setPluginRegistry(PluginsRegistry) may expose internal representation by storing an externally mutable object into RndTokenService.pluginRegistry</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>69</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.security.tokens.RndTokenManager"></a><section>
-<h2><a name="org.restheart.security.tokens.RndTokenManager"></a>org.restheart.security.tokens.RndTokenManager</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>org.restheart.security.tokens.RndTokenManager.getCACHE() may expose internal representation by returning RndTokenManager.CACHE</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
-<td>119</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>Result of integer multiplication cast to long in org.restheart.security.tokens.RndTokenManager.init(Map, PluginsRegistry)</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#ICAST_INTEGER_MULTIPLY_CAST_TO_LONG">ICAST_INTEGER_MULTIPLY_CAST_TO_LONG</a></td>
-<td>72</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Write to static field org.restheart.security.tokens.RndTokenManager.CACHE from instance method org.restheart.security.tokens.RndTokenManager.init(Map, PluginsRegistry)</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD">ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD</a></td>
-<td>72</td>
-<td>Medium</td></tr></table></section>
+<td>Found reliance on default encoding in org.restheart.test.plugins.services.MyService.lambda$new$0(ByteArrayRequest, ByteArrayResponse): String.getBytes()</td>
+<td>I18N</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#DM_DEFAULT_ENCODING">DM_DEFAULT_ENCODING</a></td>
+<td>55</td>
+<td>High</td></tr></table></section>
       </div>
     </div>
     <div class="clear">
@@ -353,7 +226,7 @@
     </div>
     <div id="footer">
       <div class="xright">
-        Copyright &#169;      2018&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
+        Copyright &#169;      2020&#x2013;${currentYear}<a href="https://softinstigate.com">SoftInstigate</a>.
 .      </div>
       <div class="clear">
         <hr/>
