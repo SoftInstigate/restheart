@@ -19,20 +19,20 @@ under the License.
 -->
 <rss version="0.91">
   <channel>
-    <title>restheart-polyglot - Checkstyle report</title>
-    <link>https://restheart.org</link>
-    <description>restheart-polyglot - Checkstyle report</description>
+    <title>restheart-graphql - Checkstyle report</title>
+    <link>http://www.restheart.org</link>
+    <description>restheart-graphql - Checkstyle report</description>
     <language>en-us</language>
     <copyright>&#169;2020 - 2022 SoftInstigate</copyright>
     <item>
-      <title>File: 15,
-             Errors: 5,
+      <title>File: 39,
+             Errors: 20,
              Warnings: 0,
              Infos: 0
       </title>
-            <link>https://restheart.org/checkstyle.html</link>
+            <link>http://www.restheart.org/checkstyle.html</link>
       <description>
-        <p>Click <a href="https://restheart.org/checkstyle.html">here</a> for the full Checkstyle report.</p>
+        <p>Click <a href="http://www.restheart.org/checkstyle.html">here</a> for the full Checkstyle report.</p>
 
         <table summary="Files" boder="1">
           <thead>
@@ -46,7 +46,7 @@ under the License.
           <tbody>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.interceptors.ByteArrayProxyJSInterceptor.java">org/restheart/polyglot/interceptors/ByteArrayProxyJSInterceptor.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonInt64Coercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonInt64Coercing.java</a>
                 </td>
                 <td>
                   0
@@ -60,147 +60,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.PolyglotDeployer.java">org/restheart/polyglot/PolyglotDeployer.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.JSInterceptorFactory.java">org/restheart/polyglot/JSInterceptorFactory.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  2
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.interceptors.JsonJSInterceptor.java">org/restheart/polyglot/interceptors/JsonJSInterceptor.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.interceptors.AbstractJSInterceptor.java">org/restheart/polyglot/interceptors/AbstractJSInterceptor.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.interceptors.BsonJSInterceptor.java">org/restheart/polyglot/interceptors/BsonJSInterceptor.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.interceptors.ByteArrayJSInterceptor.java">org/restheart/polyglot/interceptors/ByteArrayJSInterceptor.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.JavaScriptService.java">org/restheart/polyglot/JavaScriptService.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  2
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.interceptors.StringJSInterceptor.java">org/restheart/polyglot/interceptors/StringJSInterceptor.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.interceptors.MongoJSInterceptor.java">org/restheart/polyglot/interceptors/MongoJSInterceptor.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.interceptors.CsvJSInterceptor.java">org/restheart/polyglot/interceptors/CsvJSInterceptor.java</a>
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-                <td>
-                  0
-                </td>
-              </tr>
-                          <tr>
-                <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.NodeService.java">org/restheart/polyglot/NodeService.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.GraphQLAppDeserializer.java">org/restheart/graphql/GraphQLAppDeserializer.java</a>
                 </td>
                 <td>
                   0
@@ -214,7 +74,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.interceptors.JsonProxyJSInterceptor.java">org/restheart/polyglot/interceptors/JsonProxyJSInterceptor.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.dataloaders.QueryBatchLoader.java">org/restheart/graphql/dataloaders/QueryBatchLoader.java</a>
                 </td>
                 <td>
                   0
@@ -228,7 +88,7 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#org.restheart.polyglot.AbstractJSPlugin.java">org/restheart/polyglot/AbstractJSPlugin.java</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonBooleanCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonBooleanCoercing.java</a>
                 </td>
                 <td>
                   0
@@ -242,7 +102,483 @@ under the License.
               </tr>
                           <tr>
                 <td>
-                  <a href="https://restheart.org/checkstyle.html#META-INF.native-image.org.restheart.restheart-polyglot.native-image.properties">META-INF/native-image/org.restheart/restheart-polyglot/native-image.properties</a>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.GraphQLAppDefNotFoundException.java">org/restheart/graphql/GraphQLAppDefNotFoundException.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.QueryMapping.java">org/restheart/graphql/models/QueryMapping.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.FieldMapping.java">org/restheart/graphql/models/FieldMapping.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.interceptors.GraphAppDefinitionPutPostChecker.java">org/restheart/graphql/interceptors/GraphAppDefinitionPutPostChecker.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.cache.AppDefinitionLoader.java">org/restheart/graphql/cache/AppDefinitionLoader.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  1
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.FieldRenaming.java">org/restheart/graphql/models/FieldRenaming.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonDocumentCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonDocumentCoercing.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  3
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonObjectIdCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonObjectIdCoercing.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.interceptors.GraphAppDefinitionPutPostEscaper.java">org/restheart/graphql/interceptors/GraphAppDefinitionPutPostEscaper.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonInt32Coercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonInt32Coercing.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  1
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.datafetchers.GraphQLDataFetcher.java">org/restheart/graphql/datafetchers/GraphQLDataFetcher.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.datafetchers.GQLQueryDataFetcher.java">org/restheart/graphql/datafetchers/GQLQueryDataFetcher.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  1
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.BsonScalars.java">org/restheart/graphql/scalars/BsonScalars.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  8
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.java">org/restheart/graphql/scalars/bsonCoercing/CoercingUtils.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  3
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.interceptors.GraphAppDefinitionPatchChecker.java">org/restheart/graphql/interceptors/GraphAppDefinitionPatchChecker.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.datafetchers.GQLRenamingDataFetcher.java">org/restheart/graphql/datafetchers/GQLRenamingDataFetcher.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonDoubleCoerching.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonDoubleCoerching.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.GraphQLService.java">org/restheart/graphql/GraphQLService.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  1
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonDecimal128Coercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonDecimal128Coercing.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.exchange.GraphQLRequest.java">org/restheart/graphql/exchange/GraphQLRequest.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.GraphQLApp.java">org/restheart/graphql/models/GraphQLApp.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonTimestampCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonTimestampCoercing.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.TypeMapping.java">org/restheart/graphql/models/TypeMapping.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.datafetchers.GQLBatchDataFetcher.java">org/restheart/graphql/datafetchers/GQLBatchDataFetcher.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.GraphQLIllegalAppDefinitionException.java">org/restheart/graphql/GraphQLIllegalAppDefinitionException.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.DataLoaderSettings.java">org/restheart/graphql/models/DataLoaderSettings.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.ObjectMapping.java">org/restheart/graphql/models/ObjectMapping.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#META-INF.native-image.org.restheart.restheart-graphql.native-image.properties">META-INF/native-image/org.restheart/restheart-graphql/native-image.properties</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.interceptors.GraphAppDefinitionEscaper.java">org/restheart/graphql/interceptors/GraphAppDefinitionEscaper.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.cache.AppDefinitionLoadingCache.java">org/restheart/graphql/cache/AppDefinitionLoadingCache.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonDateCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonDateCoercing.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonStringCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonStringCoercing.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  1
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.AppDescriptor.java">org/restheart/graphql/models/AppDescriptor.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.models.Batchable.java">org/restheart/graphql/models/Batchable.java</a>
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+                <td>
+                  0
+                </td>
+              </tr>
+                          <tr>
+                <td>
+                  <a href="http://www.restheart.org/checkstyle.html#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonRegexCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonRegexCoercing.java</a>
                 </td>
                 <td>
                   0

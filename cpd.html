@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-polyglot &#x2013; CPD Results</title>
+    <title>restheart-graphql &#x2013; CPD Results</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-polyglot
+<div id="bannerLeft">restheart-graphql
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-polyglot">restheart-polyglot</a>      </div>
+      <div class="xright"><a href="./" title="restheart-graphql">restheart-graphql</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -69,27 +69,74 @@
 <th>File</th>
 <th>Line</th></tr>
 <tr class="b">
-<td>org/restheart/polyglot/PolyglotDeployer.java</td>
-<td>387</td></tr>
+<td>org/restheart/graphql/interceptors/GraphAppDefinitionEscaper.java</td>
+<td>45</td></tr>
 <tr class="a">
-<td>org/restheart/polyglot/PolyglotDeployer.java</td>
-<td>423</td></tr>
-<tr class="b"><td colspan='2'>
+<td>org/restheart/graphql/interceptors/GraphAppDefinitionPutPostChecker.java</td>
+<td>48</td></tr>
+<tr class="b">
+<td>org/restheart/graphql/interceptors/GraphAppDefinitionPutPostEscaper.java</td>
+<td>45</td></tr>
+<tr class="a"><td colspan='2'>
 <div>
-<pre>srv.getDescription(),
-                srv.isSecured(),
-                true,
-                srv.getClass().getName(),
-                srv,
-                new HashMap&lt;&gt;());
+<pre>public class GraphAppDefinitionEscaper implements MongoInterceptor {
+    private String db = GraphQLService.DEFAULT_APP_DEF_DB;
+    private String coll = GraphQLService.DEFAULT_APP_DEF_COLLECTION;
 
-            registry.plugService(record, srv.getUri(), srv.getMatchPolicy(), srv.isSecured());
+    private boolean enabled = false;
 
-            DEPLOYEES.put(pluginPath.toAbsolutePath(), srv);
+    @InjectConfiguration(scope = ConfigurationScope.ALL)
+    public void conf(Map&lt;String, Object&gt; args) {
+        try {
+            Map&lt;String, Object&gt; pluginsArgs = arg(args, ConfigurationKeys.PLUGINS_ARGS_KEY);
+            Map&lt;String, Object&gt; graphqlArgs = arg(pluginsArgs, &quot;graphql&quot;);
 
-            LOGGER.info(ansi().fg(GREEN).a(&quot;URI {} bound to service {}, description: {}, secured: {}, uri match {}&quot;).reset().toString(),
-                srv.getUri(), srv.getName(), srv.getDescription(), srv.isSecured(), srv.getMatchPolicy());
-        } catch(IllegalArgumentException | IllegalStateException e) {</pre></div></td></tr></table></section>
+            this.db = arg(graphqlArgs, &quot;db&quot;);
+            this.coll = arg(graphqlArgs, &quot;collection&quot;);
+        } catch(ConfigurationException ce) {
+            // nothing to do, using default values
+        }
+
+        this.enabled = true;
+    }
+
+    @Override
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {</pre></div></td></tr></table>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>File</th>
+<th>Line</th></tr>
+<tr class="a">
+<td>org/restheart/graphql/interceptors/GraphAppDefinitionEscaper.java</td>
+<td>51</td></tr>
+<tr class="b">
+<td>org/restheart/graphql/interceptors/GraphAppDefinitionPatchChecker.java</td>
+<td>62</td></tr>
+<tr class="a">
+<td>org/restheart/graphql/interceptors/GraphAppDefinitionPutPostChecker.java</td>
+<td>54</td></tr>
+<tr class="b">
+<td>org/restheart/graphql/interceptors/GraphAppDefinitionPutPostEscaper.java</td>
+<td>51</td></tr>
+<tr class="a"><td colspan='2'>
+<div>
+<pre>@InjectConfiguration(scope = ConfigurationScope.ALL)
+    public void conf(Map&lt;String, Object&gt; args) {
+        try {
+            Map&lt;String, Object&gt; pluginsArgs = arg(args, ConfigurationKeys.PLUGINS_ARGS_KEY);
+            Map&lt;String, Object&gt; graphqlArgs = arg(pluginsArgs, &quot;graphql&quot;);
+
+            this.db = arg(graphqlArgs, &quot;db&quot;);
+            this.coll = arg(graphqlArgs, &quot;collection&quot;);
+        } catch(ConfigurationException ce) {
+            // nothing to do, using default values
+        }
+
+        this.enabled = true;
+    }
+
+    @Override
+    public void handle(MongoRequest request, MongoResponse response) throws Exception {</pre></div></td></tr></table></section>
       </div>
     </div>
     <div class="clear">

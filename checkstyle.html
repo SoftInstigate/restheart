@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-polyglot &#x2013; Checkstyle Results</title>
+    <title>restheart-graphql &#x2013; Checkstyle Results</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-polyglot
+<div id="bannerLeft">restheart-graphql
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-polyglot">restheart-polyglot</a>      </div>
+      <div class="xright"><a href="./" title="restheart-graphql">restheart-graphql</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -71,10 +71,10 @@
 <th><figure><img src="images/icon_warning_sml.gif" alt="" /></figure>&#160;Warnings</th>
 <th><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Errors</th></tr>
 <tr class="b">
-<td>15</td>
+<td>39</td>
 <td>0</td>
 <td>0</td>
-<td>5</td></tr></table></section><section>
+<td>20</td></tr></table></section><section>
 <h1><a name="Files"></a>Files</h1>
 <table border="0" class="bodyTable">
 <tr class="a">
@@ -83,17 +83,47 @@
 <th><figure><img src="images/icon_warning_sml.gif" alt="" /></figure>&#160;W</th>
 <th><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;E</th></tr>
 <tr class="b">
-<td><a href="#org.restheart.polyglot.JSInterceptorFactory.java">org/restheart/polyglot/JSInterceptorFactory.java</a></td>
+<td><a href="#org.restheart.graphql.GraphQLAppDeserializer.java">org/restheart/graphql/GraphQLAppDeserializer.java</a></td>
 <td>0</td>
 <td>0</td>
-<td>2</td></tr>
+<td>1</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.polyglot.JavaScriptService.java">org/restheart/polyglot/JavaScriptService.java</a></td>
+<td><a href="#org.restheart.graphql.GraphQLService.java">org/restheart/graphql/GraphQLService.java</a></td>
 <td>0</td>
 <td>0</td>
-<td>2</td></tr>
+<td>1</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.polyglot.NodeService.java">org/restheart/polyglot/NodeService.java</a></td>
+<td><a href="#org.restheart.graphql.cache.AppDefinitionLoader.java">org/restheart/graphql/cache/AppDefinitionLoader.java</a></td>
+<td>0</td>
+<td>0</td>
+<td>1</td></tr>
+<tr class="a">
+<td><a href="#org.restheart.graphql.datafetchers.GQLQueryDataFetcher.java">org/restheart/graphql/datafetchers/GQLQueryDataFetcher.java</a></td>
+<td>0</td>
+<td>0</td>
+<td>1</td></tr>
+<tr class="b">
+<td><a href="#org.restheart.graphql.scalars.BsonScalars.java">org/restheart/graphql/scalars/BsonScalars.java</a></td>
+<td>0</td>
+<td>0</td>
+<td>8</td></tr>
+<tr class="a">
+<td><a href="#org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.java">org/restheart/graphql/scalars/bsonCoercing/CoercingUtils.java</a></td>
+<td>0</td>
+<td>0</td>
+<td>3</td></tr>
+<tr class="b">
+<td><a href="#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonDocumentCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonDocumentCoercing.java</a></td>
+<td>0</td>
+<td>0</td>
+<td>3</td></tr>
+<tr class="a">
+<td><a href="#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonInt32Coercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonInt32Coercing.java</a></td>
+<td>0</td>
+<td>0</td>
+<td>1</td></tr>
+<tr class="b">
+<td><a href="#org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonStringCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonStringCoercing.java</a></td>
 <td>0</td>
 <td>0</td>
 <td>1</td></tr></table></section><section>
@@ -105,12 +135,129 @@
 <th>Violations</th>
 <th>Severity</th></tr>
 <tr class="b">
+<td>imports</td>
+<td><a class="externalLink" href="http://checkstyle.sourceforge.net/config_imports.html#AvoidStarImport">AvoidStarImport</a></td>
+<td>10</td>
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td></tr>
+<tr class="a">
 <td>naming</td>
 <td><a class="externalLink" href="http://checkstyle.sourceforge.net/config_naming.html#ConstantName">ConstantName</a></td>
-<td>5</td>
+<td>10</td>
 <td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td></tr></table></section><section>
 <h1><a name="Details"></a>Details</h1><section>
-<h2 id="org.restheart.polyglot.JSInterceptorFactory.java">org/restheart/polyglot/JSInterceptorFactory.java</h2>
+<h2 id="org.restheart.graphql.GraphQLAppDeserializer.java">org/restheart/graphql/GraphQLAppDeserializer.java</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Severity</th>
+<th>Category</th>
+<th>Rule</th>
+<th>Message</th>
+<th>Line</th></tr>
+<tr class="a">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>imports</td>
+<td>AvoidStarImport</td>
+<td>Using the '.*' form of import should be avoided - org.restheart.graphql.models.*.</td>
+<td>26</td></tr></table></section><section>
+<h2 id="org.restheart.graphql.GraphQLService.java">org/restheart/graphql/GraphQLService.java</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Severity</th>
+<th>Category</th>
+<th>Rule</th>
+<th>Message</th>
+<th>Line</th></tr>
+<tr class="a">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>imports</td>
+<td>AvoidStarImport</td>
+<td>Using the '.*' form of import should be avoided - org.restheart.plugins.*.</td>
+<td>46</td></tr></table></section><section>
+<h2 id="org.restheart.graphql.cache.AppDefinitionLoader.java">org/restheart/graphql/cache/AppDefinitionLoader.java</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Severity</th>
+<th>Category</th>
+<th>Rule</th>
+<th>Message</th>
+<th>Line</th></tr>
+<tr class="a">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>imports</td>
+<td>AvoidStarImport</td>
+<td>Using the '.*' form of import should be avoided - org.restheart.graphql.models.*.</td>
+<td>28</td></tr></table></section><section>
+<h2 id="org.restheart.graphql.datafetchers.GQLQueryDataFetcher.java">org/restheart/graphql/datafetchers/GQLQueryDataFetcher.java</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Severity</th>
+<th>Category</th>
+<th>Rule</th>
+<th>Message</th>
+<th>Line</th></tr>
+<tr class="a">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>imports</td>
+<td>AvoidStarImport</td>
+<td>Using the '.*' form of import should be avoided - org.bson.*.</td>
+<td>26</td></tr></table></section><section>
+<h2 id="org.restheart.graphql.scalars.BsonScalars.java">org/restheart/graphql/scalars/BsonScalars.java</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Severity</th>
+<th>Category</th>
+<th>Rule</th>
+<th>Message</th>
+<th>Line</th></tr>
+<tr class="a">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>imports</td>
+<td>AvoidStarImport</td>
+<td>Using the '.*' form of import should be avoided - org.restheart.graphql.scalars.bsonCoercing.*.</td>
+<td>23</td></tr>
+<tr class="b">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>naming</td>
+<td>ConstantName</td>
+<td>Name 'GraphQLBsonObjectId' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>34</td></tr>
+<tr class="a">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>naming</td>
+<td>ConstantName</td>
+<td>Name 'GraphQLBsonDecimal128' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>37</td></tr>
+<tr class="b">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>naming</td>
+<td>ConstantName</td>
+<td>Name 'GraphQLBsonTimestamp' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>40</td></tr>
+<tr class="a">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>naming</td>
+<td>ConstantName</td>
+<td>Name 'GraphQLBsonDocument' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>43</td></tr>
+<tr class="b">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>naming</td>
+<td>ConstantName</td>
+<td>Name 'GraphQLBsonDate' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>46</td></tr>
+<tr class="a">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>naming</td>
+<td>ConstantName</td>
+<td>Name 'GraphQLBsonRegularExpression' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>49</td></tr>
+<tr class="b">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>naming</td>
+<td>ConstantName</td>
+<td>Name 'GraphQLBsonInt64' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>52</td></tr></table></section><section>
+<h2 id="org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.java">org/restheart/graphql/scalars/bsonCoercing/CoercingUtils.java</h2>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Severity</th>
@@ -122,35 +269,21 @@
 <td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
 <td>naming</td>
 <td>ConstantName</td>
-<td>Name 'handleResolveHint' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
-<td>339</td></tr>
+<td>Name 'builtInScalars' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>37</td></tr>
 <tr class="a">
 <td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
 <td>naming</td>
 <td>ConstantName</td>
-<td>Name 'packageHint' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
-<td>353</td></tr></table></section><section>
-<h2 id="org.restheart.polyglot.JavaScriptService.java">org/restheart/polyglot/JavaScriptService.java</h2>
-<table border="0" class="bodyTable">
-<tr class="b">
-<th>Severity</th>
-<th>Category</th>
-<th>Rule</th>
-<th>Message</th>
-<th>Line</th></tr>
-<tr class="a">
-<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
-<td>naming</td>
-<td>ConstantName</td>
-<td>Name 'handleHint' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
-<td>47</td></tr>
+<td>Name 'replacements' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>45</td></tr>
 <tr class="b">
 <td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
 <td>naming</td>
 <td>ConstantName</td>
-<td>Name 'packageHint' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
-<td>62</td></tr></table></section><section>
-<h2 id="org.restheart.polyglot.NodeService.java">org/restheart/polyglot/NodeService.java</h2>
+<td>Name 'builtInCoercing' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
+<td>53</td></tr></table></section><section>
+<h2 id="org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonDocumentCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonDocumentCoercing.java</h2>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Severity</th>
@@ -160,10 +293,50 @@
 <th>Line</th></tr>
 <tr class="b">
 <td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
-<td>naming</td>
-<td>ConstantName</td>
-<td>Name 'errorHint' must match pattern '^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$'.</td>
-<td>52</td></tr></table></section></section>
+<td>imports</td>
+<td>AvoidStarImport</td>
+<td>Using the '.*' form of import should be avoided - graphql.language.*.</td>
+<td>23</td></tr>
+<tr class="a">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>imports</td>
+<td>AvoidStarImport</td>
+<td>Using the '.*' form of import should be avoided - org.bson.*.</td>
+<td>28</td></tr>
+<tr class="b">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>imports</td>
+<td>AvoidStarImport</td>
+<td>Using the '.*' form of import should be avoided - java.util.*.</td>
+<td>31</td></tr></table></section><section>
+<h2 id="org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonInt32Coercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonInt32Coercing.java</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Severity</th>
+<th>Category</th>
+<th>Rule</th>
+<th>Message</th>
+<th>Line</th></tr>
+<tr class="b">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>imports</td>
+<td>AvoidStarImport</td>
+<td>Using the '.*' form of import should be avoided - graphql.schema.*.</td>
+<td>23</td></tr></table></section><section>
+<h2 id="org.restheart.graphql.scalars.bsonCoercing.GraphQLBsonStringCoercing.java">org/restheart/graphql/scalars/bsonCoercing/GraphQLBsonStringCoercing.java</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Severity</th>
+<th>Category</th>
+<th>Rule</th>
+<th>Message</th>
+<th>Line</th></tr>
+<tr class="b">
+<td><figure><img src="images/icon_error_sml.gif" alt="" /></figure>&#160;Error</td>
+<td>imports</td>
+<td>AvoidStarImport</td>
+<td>Using the '.*' form of import should be avoided - graphql.schema.*.</td>
+<td>22</td></tr></table></section></section>
       </div>
     </div>
     <div class="clear">

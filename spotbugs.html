@@ -9,7 +9,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content="Apache Maven Doxia Site Renderer 2.0.0-M3" />
-    <title>restheart-polyglot &#x2013; SpotBugs Bug Detector Report</title>
+    <title>restheart-graphql &#x2013; SpotBugs Bug Detector Report</title>
     <link rel="stylesheet" href="./css/maven-base.css" />
     <link rel="stylesheet" href="./css/maven-theme.css" />
     <link rel="stylesheet" href="./css/site.css" />
@@ -17,7 +17,7 @@
   </head>
   <body class="composite">
     <div id="banner">
-<div id="bannerLeft">restheart-polyglot
+<div id="bannerLeft">restheart-graphql
 </div>
       <div class="clear">
         <hr/>
@@ -28,7 +28,7 @@
         <span id="publishDate">Last Published: $dateValue</span>
            | <span id="projectVersion">Version: 6.4.1-SNAPSHOT</span>
       </div>
-      <div class="xright"><a href="./" title="restheart-polyglot">restheart-polyglot</a>      </div>
+      <div class="xright"><a href="./" title="restheart-graphql">restheart-graphql</a>      </div>
       <div class="clear">
         <hr/>
       </div>
@@ -74,60 +74,43 @@
 <th>Errors</th>
 <th>Missing Classes</th></tr>
 <tr class="b">
-<td>14</td>
-<td>12</td>
+<td>43</td>
+<td>21</td>
 <td>0</td>
-<td>6</td></tr></table></section><section>
+<td>5</td></tr></table></section><section>
 <h1><a name="Files"></a>Files</h1>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Class</th>
 <th>Bugs</th></tr>
 <tr class="b">
-<td><a href="#org.restheart.polyglot.JSInterceptorFactory">org.restheart.polyglot.JSInterceptorFactory</a></td>
+<td><a href="#org.restheart.graphql.datafetchers.GraphQLDataFetcher">org.restheart.graphql.datafetchers.GraphQLDataFetcher</a></td>
+<td>1</td></tr>
+<tr class="a">
+<td><a href="#org.restheart.graphql.exchange.GraphQLRequest">org.restheart.graphql.exchange.GraphQLRequest</a></td>
+<td>1</td></tr>
+<tr class="b">
+<td><a href="#org.restheart.graphql.models.GraphQLApp">org.restheart.graphql.models.GraphQLApp</a></td>
+<td>6</td></tr>
+<tr class="a">
+<td><a href="#org.restheart.graphql.models.GraphQLApp$Builder">org.restheart.graphql.models.GraphQLApp$Builder</a></td>
+<td>2</td></tr>
+<tr class="b">
+<td><a href="#org.restheart.graphql.models.QueryMapping">org.restheart.graphql.models.QueryMapping</a></td>
+<td>3</td></tr>
+<tr class="a">
+<td><a href="#org.restheart.graphql.models.QueryMapping$Builder">org.restheart.graphql.models.QueryMapping$Builder</a></td>
 <td>4</td></tr>
-<tr class="a">
-<td><a href="#org.restheart.polyglot.JavaScriptService">org.restheart.polyglot.JavaScriptService</a></td>
-<td>3</td></tr>
 <tr class="b">
-<td><a href="#org.restheart.polyglot.PolyglotDeployer">org.restheart.polyglot.PolyglotDeployer</a></td>
-<td>3</td></tr>
+<td><a href="#org.restheart.graphql.models.TypeMapping">org.restheart.graphql.models.TypeMapping</a></td>
+<td>2</td></tr>
 <tr class="a">
-<td><a href="#org.restheart.polyglot.interceptors.AbstractJSInterceptor">org.restheart.polyglot.interceptors.AbstractJSInterceptor</a></td>
-<td>2</td></tr></table></section><a name="org.restheart.polyglot.JSInterceptorFactory"></a><section>
-<h2><a name="org.restheart.polyglot.JSInterceptorFactory"></a>org.restheart.polyglot.JSInterceptorFactory</h2>
-<table border="0" class="bodyTable">
+<td><a href="#org.restheart.graphql.scalars.BsonScalars">org.restheart.graphql.scalars.BsonScalars</a></td>
+<td>1</td></tr>
 <tr class="b">
-<th>Bug</th>
-<th>Category</th>
-<th>Details</th>
-<th>Line</th>
-<th>Priority</th></tr>
-<tr class="a">
-<td>new org.restheart.polyglot.JSInterceptorFactory(MongoClient, Map) may expose internal representation by storing an externally mutable object into JSInterceptorFactory.pluginsArgs</td>
-<td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>66</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>Possible null pointer dereference in org.restheart.polyglot.JSInterceptorFactory.create(Path) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>74</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Possible null pointer dereference in org.restheart.polyglot.JSInterceptorFactory.create(Path) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>74</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>Possible null pointer dereference in org.restheart.polyglot.JSInterceptorFactory.create(Path) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>74</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.polyglot.JavaScriptService"></a><section>
-<h2><a name="org.restheart.polyglot.JavaScriptService"></a>org.restheart.polyglot.JavaScriptService</h2>
+<td><a href="#org.restheart.graphql.scalars.bsonCoercing.CoercingUtils">org.restheart.graphql.scalars.bsonCoercing.CoercingUtils</a></td>
+<td>1</td></tr></table></section><a name="org.restheart.graphql.datafetchers.GraphQLDataFetcher"></a><section>
+<h2><a name="org.restheart.graphql.datafetchers.GraphQLDataFetcher"></a>org.restheart.graphql.datafetchers.GraphQLDataFetcher</h2>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Bug</th>
@@ -136,24 +119,12 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="b">
-<td>Possible null pointer dereference in new org.restheart.polyglot.JavaScriptService(Path, MongoClient, Map) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>82</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>Possible null pointer dereference in new org.restheart.polyglot.JavaScriptService(Path, MongoClient, Map) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>82</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>Possible null pointer dereference in new org.restheart.polyglot.JavaScriptService(Path, MongoClient, Map) due to return value of called method</td>
-<td>STYLE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE">NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE</a></td>
-<td>82</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.polyglot.PolyglotDeployer"></a><section>
-<h2><a name="org.restheart.polyglot.PolyglotDeployer"></a>org.restheart.polyglot.PolyglotDeployer</h2>
+<td>org.restheart.graphql.datafetchers.GraphQLDataFetcher.mongoClient should be package protected</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#MS_PKGPROTECT">MS_PKGPROTECT</a></td>
+<td></td>
+<td>Medium</td></tr></table></section><a name="org.restheart.graphql.exchange.GraphQLRequest"></a><section>
+<h2><a name="org.restheart.graphql.exchange.GraphQLRequest"></a>org.restheart.graphql.exchange.GraphQLRequest</h2>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Bug</th>
@@ -162,24 +133,12 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="b">
-<td>org.restheart.polyglot.PolyglotDeployer.reg(PluginsRegistry) may expose internal representation by storing an externally mutable object into PolyglotDeployer.registry</td>
+<td>org.restheart.graphql.exchange.GraphQLRequest.getAppDefinition() may expose internal representation by returning GraphQLRequest.appDefinition</td>
 <td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>87</td>
-<td>Medium</td></tr>
-<tr class="a">
-<td>This API (java/nio/file/Paths.get(Ljava/lang/String;[Ljava/lang/String;)Ljava/nio/file/Path;) reads a file whose location might be specified by user input</td>
-<td>SECURITY</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#PATH_TRAVERSAL_IN">PATH_TRAVERSAL_IN</a></td>
-<td>221</td>
-<td>Medium</td></tr>
-<tr class="b">
-<td>This API (java/io/File.&lt;init&gt;(Ljava/lang/String;)V) reads a file whose location might be specified by user input</td>
-<td>SECURITY</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#PATH_TRAVERSAL_IN">PATH_TRAVERSAL_IN</a></td>
-<td>227</td>
-<td>Medium</td></tr></table></section><a name="org.restheart.polyglot.interceptors.AbstractJSInterceptor"></a><section>
-<h2><a name="org.restheart.polyglot.interceptors.AbstractJSInterceptor"></a>org.restheart.polyglot.interceptors.AbstractJSInterceptor</h2>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
+<td>116</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.graphql.models.GraphQLApp"></a><section>
+<h2><a name="org.restheart.graphql.models.GraphQLApp"></a>org.restheart.graphql.models.GraphQLApp</h2>
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Bug</th>
@@ -188,16 +147,166 @@
 <th>Line</th>
 <th>Priority</th></tr>
 <tr class="b">
-<td>new org.restheart.polyglot.interceptors.AbstractJSInterceptor(String, String, String, InterceptPoint, Source, Source, MongoClient, Map, Map) may expose internal representation by storing an externally mutable object into AbstractJSInterceptor.contextOptions</td>
+<td>org.restheart.graphql.models.GraphQLApp.getDescriptor() may expose internal representation by returning GraphQLApp.descriptor</td>
 <td>MALICIOUS_CODE</td>
-<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>61</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
+<td>55</td>
 <td>Medium</td></tr>
 <tr class="a">
-<td>new org.restheart.polyglot.interceptors.AbstractJSInterceptor(String, String, String, InterceptPoint, Source, Source, MongoClient, Map, Map) may expose internal representation by storing an externally mutable object into AbstractJSInterceptor.pluginArgs</td>
+<td>org.restheart.graphql.models.GraphQLApp.getMappings() may expose internal representation by returning GraphQLApp.mappings</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
+<td>71</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>new org.restheart.graphql.models.GraphQLApp(AppDescriptor, String, Map, GraphQLSchema) may expose internal representation by storing an externally mutable object into GraphQLApp.descriptor</td>
 <td>MALICIOUS_CODE</td>
 <td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
-<td>63</td>
+<td>48</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>new org.restheart.graphql.models.GraphQLApp(AppDescriptor, String, Map, GraphQLSchema) may expose internal representation by storing an externally mutable object into GraphQLApp.mappings</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>50</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>org.restheart.graphql.models.GraphQLApp.setDescriptor(AppDescriptor) may expose internal representation by storing an externally mutable object into GraphQLApp.descriptor</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>59</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>org.restheart.graphql.models.GraphQLApp.setMappings(Map) may expose internal representation by storing an externally mutable object into GraphQLApp.mappings</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>75</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.graphql.models.GraphQLAppBuilder"></a><section>
+<h2><a name="org.restheart.graphql.models.GraphQLApp.24Builder"></a>org.restheart.graphql.models.GraphQLApp$Builder</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>org.restheart.graphql.models.GraphQLApp$Builder.appDescriptor(AppDescriptor) may expose internal representation by storing an externally mutable object into GraphQLApp$Builder.descriptor</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>94</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>org.restheart.graphql.models.GraphQLApp$Builder.mappings(Map) may expose internal representation by storing an externally mutable object into GraphQLApp$Builder.mappings</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>104</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.graphql.models.QueryMapping"></a><section>
+<h2><a name="org.restheart.graphql.models.QueryMapping"></a>org.restheart.graphql.models.QueryMapping</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="b">
+<td>org.restheart.graphql.models.QueryMapping.getDataLoaderSettings() may expose internal representation by returning QueryMapping.dataLoaderSettings</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
+<td>127</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>org.restheart.graphql.models.QueryMapping.getFind() may expose internal representation by returning QueryMapping.find</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
+<td>111</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>org.restheart.graphql.models.QueryMapping.getSort() may expose internal representation by returning QueryMapping.sort</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
+<td>115</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.graphql.models.QueryMappingBuilder"></a><section>
+<h2><a name="org.restheart.graphql.models.QueryMapping.24Builder"></a>org.restheart.graphql.models.QueryMapping$Builder</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="b">
+<td>org.restheart.graphql.models.QueryMapping$Builder.DataLoaderSettings(DataLoaderSettings) may expose internal representation by storing an externally mutable object into QueryMapping$Builder.dataLoaderSettings</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>278</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>org.restheart.graphql.models.QueryMapping$Builder.find(BsonDocument) may expose internal representation by storing an externally mutable object into QueryMapping$Builder.find</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>258</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>org.restheart.graphql.models.QueryMapping$Builder.sort(BsonDocument) may expose internal representation by storing an externally mutable object into QueryMapping$Builder.sort</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>263</td>
+<td>Medium</td></tr>
+<tr class="a">
+<td>The method name org.restheart.graphql.models.QueryMapping$Builder.DataLoaderSettings(DataLoaderSettings) doesn't start with a lower case letter</td>
+<td>BAD_PRACTICE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#NM_METHOD_NAMING_CONVENTION">NM_METHOD_NAMING_CONVENTION</a></td>
+<td>278</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.graphql.models.TypeMapping"></a><section>
+<h2><a name="org.restheart.graphql.models.TypeMapping"></a>org.restheart.graphql.models.TypeMapping</h2>
+<table border="0" class="bodyTable">
+<tr class="b">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="a">
+<td>org.restheart.graphql.models.TypeMapping.getFieldMappingMap() may expose internal representation by returning TypeMapping.fieldMappingMap</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP">EI_EXPOSE_REP</a></td>
+<td>39</td>
+<td>Medium</td></tr>
+<tr class="b">
+<td>new org.restheart.graphql.models.TypeMapping(String, Map) may expose internal representation by storing an externally mutable object into TypeMapping.fieldMappingMap</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#EI_EXPOSE_REP2">EI_EXPOSE_REP2</a></td>
+<td>35</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.graphql.scalars.BsonScalars"></a><section>
+<h2><a name="org.restheart.graphql.scalars.BsonScalars"></a>org.restheart.graphql.scalars.BsonScalars</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="b">
+<td>org.restheart.graphql.scalars.BsonScalars.BSON_SCALARS is a mutable collection which should be package protected</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#MS_MUTABLE_COLLECTION_PKGPROTECT">MS_MUTABLE_COLLECTION_PKGPROTECT</a></td>
+<td>55</td>
+<td>Medium</td></tr></table></section><a name="org.restheart.graphql.scalars.bsonCoercing.CoercingUtils"></a><section>
+<h2><a name="org.restheart.graphql.scalars.bsonCoercing.CoercingUtils"></a>org.restheart.graphql.scalars.bsonCoercing.CoercingUtils</h2>
+<table border="0" class="bodyTable">
+<tr class="a">
+<th>Bug</th>
+<th>Category</th>
+<th>Details</th>
+<th>Line</th>
+<th>Priority</th></tr>
+<tr class="b">
+<td>org.restheart.graphql.scalars.bsonCoercing.CoercingUtils.builtInCoercing is a mutable collection which should be package protected</td>
+<td>MALICIOUS_CODE</td>
+<td><a class="externalLink" href="https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html#MS_MUTABLE_COLLECTION_PKGPROTECT">MS_MUTABLE_COLLECTION_PKGPROTECT</a></td>
+<td>53</td>
 <td>Medium</td></tr></table></section>
       </div>
     </div>
