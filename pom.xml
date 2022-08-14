@@ -20,7 +20,6 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.source>17</maven.compiler.source>
-        <checkstyle.file.path>checkstyle-checker.xml</checkstyle.file.path>
         <dependency.locations.enabled>false</dependency.locations.enabled>
         <!--
             mvn install -DskipUTs   : Skips Unit tests
