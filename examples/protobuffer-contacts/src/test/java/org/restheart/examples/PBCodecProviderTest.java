@@ -41,6 +41,7 @@ public class PBCodecProviderTest {
     }
 
     @Test
+    @Ignore
     /**
      * converts a message to Bson using PBBsonWriter
      */
@@ -60,6 +61,7 @@ public class PBCodecProviderTest {
     }
 
     @Test
+    @Ignore
     /**
      * converts a message to Bson using JsonFormat.printer()
      */
@@ -73,6 +75,7 @@ public class PBCodecProviderTest {
     }
 
     @Test
+    @Ignore
     /**
      * converts a Bson to ContactPostRequest using JsonFormat.parser()
      */
