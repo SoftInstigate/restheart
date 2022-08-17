@@ -103,6 +103,8 @@ public class PluginsRegistryImpl implements PluginsRegistry {
 
     private Optional<PluginRecord<TokenManager>> tokenManager;
 
+    private Set<PluginRecord<Provider<?>>> providers;
+
     @SuppressWarnings("rawtypes")
     private Set<PluginRecord<Service>> services = new LinkedHashSet<>();
     // keep track of service initialization, to allow initializers to add services
@@ -132,6 +134,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         factory.authenticators();
         factory.interceptors();
         factory.services();
+        factory.providers();
 
         factory.injectCoreDependencies();
     }
@@ -244,8 +247,19 @@ public class PluginsRegistryImpl implements PluginsRegistry {
             this.interceptors.addAll(PluginsFactory.getInstance().interceptors());
         }
 
-        // service might change, invalidate cache
         return Collections.unmodifiableSet(this.interceptors);
+    }
+
+     /**
+     * @return the authenticators
+     */
+    @Override
+    public Set<PluginRecord<Provider<?>>> getProviders() {
+        if (this.providers == null) {
+            this.providers = PluginsFactory.getInstance().providers();
+        }
+
+        return Collections.unmodifiableSet(this.providers);
     }
 
     @Override

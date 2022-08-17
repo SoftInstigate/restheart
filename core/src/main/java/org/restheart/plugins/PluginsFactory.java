@@ -191,6 +191,19 @@ public class PluginsFactory {
         return servicesCache;
     }
 
+    private Set<PluginRecord<Provider<?>>> providersCache = null;
+
+    /**
+     * creates the providers
+     */
+    Set<PluginRecord<Provider<?>>> providers() {
+        if (providersCache == null) {
+            providersCache = createPlugins(PluginsScanner.PROVIDERS, "Provider", PLUGINS_CONFS);
+        }
+
+        return providersCache;
+    }
+
     /**
      * @param type the class of the plugin , e.g. Initializer.class
      */
@@ -328,6 +341,51 @@ public class PluginsFactory {
         invokeInjectPluginsRegistryMethods(ip);
 
         invokeInjectConfigurationAndPluginsRegistryMethods(ip);
+
+        invokeInjectMethods(ip);
+    }
+
+    private void invokeInjectMethods(InstatiatedPlugin ip) throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        // finds @Inject methods
+
+        // we need to process methods that are annotated only with @Inject
+        // and have only one method parameter
+
+        for (var injection : ip.descriptor.injections) {
+            if (injection.methodParams.size() == 1 && Inject.class.equals(injection.clazz) && ip.descriptor.injections.stream().filter(p -> p.methodHash == injection.methodHash).count() == 1) {
+
+                // check argument class
+
+                var clazzName = injection.methodParams.get(0);
+
+                var provider = providers().stream().filter(p -> {
+                    var value = p.getInstance().get();
+                    var valueClazzName = value.getClass().getName();
+
+                    return valueClazzName.equals(clazzName);
+                }).findAny();
+
+                // find the provider of this class
+
+                if (provider.isEmpty()) {
+                    throw new ConfigurationException(ip.type + " " + ip.name
+                        + " no provider found for "
+                        + injection.method + "(" + clazzName + " arg)");
+                } else {
+                    // try to inovke @Inject method
+                    try {
+                        ip.clazz.getDeclaredMethod(injection.method, Class.forName(clazzName)).invoke(ip.instance, provider.get().getInstance().get());
+                        LOGGER.trace("Injected {} into {}.{}()", clazzName, ip.clazz.getSimpleName(), injection.method);
+                    } catch (NoSuchMethodException nme) {
+                        throw new ConfigurationException(ip.type + " " + ip.name
+                            + " has an invalid method with @Inject. " + "Method signature must be "
+                            + injection.method + "(" + clazzName + "argument)");
+                    } catch (Throwable t) {
+                        throw new ConfigurationException("Error injecting " + clazzName + " on " + ip.type + " " + ip.name, getRootException(t));
+                    }
+                }
+            }
+        }
     }
 
     @SuppressWarnings("rawtypes")
@@ -341,7 +399,7 @@ public class PluginsFactory {
         for (var injection : ip.descriptor.injections) {
             if (InjectConfiguration.class.equals(injection.clazz) && ip.descriptor.injections.stream().filter(p -> p.methodHash == injection.methodHash).count() == 1) {
                 // check configuration scope
-                var allConfScope = injection.params.stream().anyMatch(p -> "scope".equals(p.getKey()) && (ConfigurationScope.class.getName() + "." + ConfigurationScope.ALL.name()).equals(p.getValue().toString()));
+                var allConfScope = injection.annotationParams.stream().anyMatch(p -> "scope".equals(p.getKey()) && (ConfigurationScope.class.getName() + "." + ConfigurationScope.ALL.name()).equals(p.getValue().toString()));
 
                 var scopedConf = (Map) (allConfScope ? Bootstrapper.getConfiguration().toMap() : ip.confs != null ? ip.confs.get(ip.name) : null);
 
@@ -403,7 +461,7 @@ public class PluginsFactory {
         // finds @InjectConfiguration methods
         for (var injection : bothMethods) {
             // check configuration scope
-            var allConfScope = injection.params.stream().anyMatch(p -> "scope".equals(p.getKey()) && (ConfigurationScope.class.getName() + "." + ConfigurationScope.ALL.name()).equals(p.getValue().toString()));
+            var allConfScope = injection.annotationParams.stream().anyMatch(p -> "scope".equals(p.getKey()) && (ConfigurationScope.class.getName() + "." + ConfigurationScope.ALL.name()).equals(p.getValue().toString()));
 
             var scopedConf = (Map) (allConfScope ? Bootstrapper.getConfiguration().toMap() : ip.confs != null ? ip.confs.get(ip.name) : null);
 

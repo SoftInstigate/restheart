@@ -63,6 +63,7 @@ public class PluginsScanner {
     private static final String AUTHENTICATOR_CLASS_NAME = Authenticator.class.getName();
     private static final String INTERCEPTOR_CLASS_NAME = Interceptor.class.getName();
     private static final String SERVICE_CLASS_NAME = Service.class.getName();
+    private static final String PROVIDERR_CLASS_NAME = Provider.class.getName();
 
     static final ArrayList<PluginDescriptor> INITIALIZERS = new ArrayList<>();
     static final ArrayList<PluginDescriptor> AUTH_MECHANISMS = new ArrayList<>();
@@ -71,6 +72,8 @@ public class PluginsScanner {
     static final ArrayList<PluginDescriptor> AUTHENTICATORS = new ArrayList<>();
     static final ArrayList<PluginDescriptor> INTERCEPTORS = new ArrayList<>();
     static final ArrayList<PluginDescriptor> SERVICES = new ArrayList<>();
+
+    static final ArrayList<PluginDescriptor> PROVIDERS = new ArrayList<>();
 
     public static final ArrayList<InjectionDescriptor> INJECTIONS = new ArrayList<>();
 
@@ -104,6 +107,8 @@ public class PluginsScanner {
             AUTHENTICATORS.addAll(collectPlugins(scanResult, AUTHENTICATOR_CLASS_NAME));
             INTERCEPTORS.addAll(collectPlugins(scanResult, INTERCEPTOR_CLASS_NAME));
             SERVICES.addAll(collectPlugins(scanResult, SERVICE_CLASS_NAME));
+
+            PROVIDERS.addAll(collectProviders(scanResult));
         }
     }
 
@@ -131,10 +136,24 @@ public class PluginsScanner {
 
         var plugins = registeredPlugins.intersect(listOfType);
 
-        plugins.stream().forEachOrdered(plugin -> {
-            ret.add(new PluginDescriptor(plugin.getName(),
-            collectInjections(plugin)));
-        });
+        plugins.stream().forEachOrdered(plugin -> ret.add(new PluginDescriptor(plugin.getName(), collectInjections(plugin))));
+
+        return ret;
+    }
+
+    /**
+     * @param type the class of the plugin , e.g. Initializer.class
+     */
+    private static ArrayList<PluginDescriptor> collectProviders(ScanResult scanResult) {
+        var ret = new ArrayList<PluginDescriptor>();
+
+        var providers = scanResult.getClassesImplementing(PROVIDERR_CLASS_NAME);
+
+        if (providers == null || providers.isEmpty()) {
+            return ret;
+        }
+
+        providers.stream().forEachOrdered(provider -> ret.add(new PluginDescriptor(provider.getName(), collectInjections(provider))));
 
         return ret;
     }
@@ -145,6 +164,7 @@ public class PluginsScanner {
         ret.addAll(collectInjections(pluginClassInfo, InjectConfiguration.class));
         ret.addAll(collectInjections(pluginClassInfo, InjectPluginsRegistry.class));
         ret.addAll(collectInjections(pluginClassInfo, InjectMongoClient.class));
+        ret.addAll(collectInjections(pluginClassInfo, Inject.class));
 
         return ret;
     }
@@ -157,16 +177,24 @@ public class PluginsScanner {
 
         for (var mi : mil) {
             if (mi.hasAnnotation(clazz.getName())) {
-                ArrayList<AbstractMap.SimpleEntry<String, Object>> params = new ArrayList<>();
+                ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams = new ArrayList<>();
                 for (var p : mi.getAnnotationInfo(clazz.getName()).getParameterValues()) {
                     var value = p.getValue();
                     if (value instanceof AnnotationEnumValue) {
                         removeRefToScanResult((AnnotationEnumValue)value);
                     }
-                    params.add(new AbstractMap.SimpleEntry<String, Object>(p.getName(), value));
+                    annotationParams.add(new AbstractMap.SimpleEntry<String, Object>(p.getName(), value));
                 }
 
-                ret.add(new InjectionDescriptor(mi.getName(), clazz, params, mi.hashCode()));
+                var td = mi.getParameterInfo();
+
+                var methodParams = new ArrayList<String>();
+
+                for (var idx = 0; idx < td.length; idx++) {
+                    methodParams.add(td[idx].getTypeDescriptor().toString());
+                }
+
+                ret.add(new InjectionDescriptor(mi.getName(), clazz, annotationParams, methodParams, mi.hashCode()));
             }
         }
 
@@ -301,18 +329,20 @@ class PluginDescriptor {
 class InjectionDescriptor {
     final String method;
     final Class clazz;
-    final ArrayList<AbstractMap.SimpleEntry<String, Object>> params;
+    final ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams;
+    final ArrayList<String> methodParams;
     final int methodHash;
 
-    InjectionDescriptor(String method, Class clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> params, int methodHash) {
+    InjectionDescriptor(String method, Class clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams, int methodHash) {
         this.method = method;
         this.clazz = clazz;
-        this.params = params;
+        this.annotationParams = annotationParams;
+        this.methodParams = methodParams;
         this.methodHash = methodHash;
     }
 
     @Override
     public String toString() {
-        return "{ method:" + this.method + ", injection: " + this.clazz + ", params: " + this.params+ ", methodHash: " + this.methodHash + " }";
+        return "{ method:" + this.method + ", injection: " + this.clazz + ", annotationParams: " + this.annotationParams + ", methodParams: " + this.methodParams + ", methodHash: " + this.methodHash + " }";
     }
 }

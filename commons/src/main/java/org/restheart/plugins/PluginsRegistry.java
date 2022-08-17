@@ -78,6 +78,11 @@ public interface PluginsRegistry {
     public Set<PluginRecord<Initializer>> getInitializers();
 
     /**
+     * @return the providers
+     */
+    public Set<PluginRecord<Provider<?>>> getProviders();
+
+    /**
      * @return add the interceptor
      */
     @SuppressWarnings("rawtypes")
