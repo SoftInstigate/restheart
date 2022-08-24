@@ -36,6 +36,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.AbstractMap;
 
 import org.restheart.Bootstrapper;
@@ -72,10 +74,9 @@ public class PluginsScanner {
     static final ArrayList<PluginDescriptor> AUTHENTICATORS = new ArrayList<>();
     static final ArrayList<PluginDescriptor> INTERCEPTORS = new ArrayList<>();
     static final ArrayList<PluginDescriptor> SERVICES = new ArrayList<>();
-
     static final ArrayList<PluginDescriptor> PROVIDERS = new ArrayList<>();
 
-    public static final ArrayList<InjectionDescriptor> INJECTIONS = new ArrayList<>();
+    public static final ArrayList<MethodInjectionDescriptor> INJECTIONS = new ArrayList<>();
 
     static URL[] jars = null;
 
@@ -92,7 +93,7 @@ public class PluginsScanner {
                     .disableRuntimeInvisibleAnnotations() // added for GraalVM
                     .overrideClassLoaders(PluginsScanner.class.getClassLoader()) // added for GraalVM. Mandatory,
                                                                                  // otherwise build fails
-                    .enableAnnotationInfo().enableMethodInfo().initializeLoadedClasses();
+                    .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
         } else {
             var rtcg = new RuntimeClassGraph();
             classGraph = rtcg.get();
@@ -107,9 +108,22 @@ public class PluginsScanner {
             AUTHENTICATORS.addAll(collectPlugins(scanResult, AUTHENTICATOR_CLASS_NAME));
             INTERCEPTORS.addAll(collectPlugins(scanResult, INTERCEPTOR_CLASS_NAME));
             SERVICES.addAll(collectPlugins(scanResult, SERVICE_CLASS_NAME));
-
             PROVIDERS.addAll(collectProviders(scanResult));
         }
+    }
+
+    public static List<String> allPluginsClassNames() {
+        var ret = new ArrayList<String>();
+        INITIALIZERS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        AUTH_MECHANISMS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        AUTHORIZERS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        TOKEN_MANAGERS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        AUTHENTICATORS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        INTERCEPTORS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        SERVICES.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        PROVIDERS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+
+        return ret;
     }
 
     /**
@@ -161,16 +175,19 @@ public class PluginsScanner {
     private static ArrayList<InjectionDescriptor> collectInjections(ClassInfo pluginClassInfo) {
         var ret = new ArrayList<InjectionDescriptor>();
 
-        ret.addAll(collectInjections(pluginClassInfo, InjectConfiguration.class));
-        ret.addAll(collectInjections(pluginClassInfo, InjectPluginsRegistry.class));
-        ret.addAll(collectInjections(pluginClassInfo, InjectMongoClient.class));
-        ret.addAll(collectInjections(pluginClassInfo, Inject.class));
+        // **** old DI ****
+        ret.addAll(collectMethodInjections(pluginClassInfo, InjectConfiguration.class));
+        ret.addAll(collectMethodInjections(pluginClassInfo, InjectPluginsRegistry.class));
+        ret.addAll(collectMethodInjections(pluginClassInfo, InjectMongoClient.class));
+
+        // **** new DI ****
+        ret.addAll(collectFieldInjections(pluginClassInfo, Inject.class));
+        ret.addAll(collectMethodInjections(pluginClassInfo, OnInit.class));
 
         return ret;
     }
 
-    @SuppressWarnings("rawtypes")
-    private static ArrayList<InjectionDescriptor> collectInjections(ClassInfo pluginClassInfo, Class clazz) {
+    private static ArrayList<InjectionDescriptor> collectMethodInjections(ClassInfo pluginClassInfo, Class<?> clazz) {
         var ret = new ArrayList<InjectionDescriptor>();
 
         var mil = pluginClassInfo.getDeclaredMethodInfo();
@@ -186,15 +203,34 @@ public class PluginsScanner {
                     annotationParams.add(new AbstractMap.SimpleEntry<String, Object>(p.getName(), value));
                 }
 
-                var td = mi.getParameterInfo();
-
                 var methodParams = new ArrayList<String>();
 
-                for (var idx = 0; idx < td.length; idx++) {
-                    methodParams.add(td[idx].getTypeDescriptor().toString());
+                Arrays.stream(mi.getParameterInfo()).forEachOrdered(pi -> methodParams.add(pi.getTypeDescriptor().toString()));
+
+                ret.add(new MethodInjectionDescriptor(mi.getName(), clazz, annotationParams, methodParams, mi.hashCode()));
+            }
+        }
+
+        return ret;
+    }
+
+    private static ArrayList<InjectionDescriptor> collectFieldInjections(ClassInfo pluginClassInfo, Class<?> clazz) {
+        var ret = new ArrayList<InjectionDescriptor>();
+
+        var fil = pluginClassInfo.getDeclaredFieldInfo();
+
+        for (var fi : fil) {
+            if (fi.hasAnnotation(clazz.getName())) {
+                ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams = new ArrayList<>();
+                for (var p : fi.getAnnotationInfo(clazz.getName()).getParameterValues()) {
+                    var value = p.getValue();
+                    if (value instanceof AnnotationEnumValue) {
+                        removeRefToScanResult((AnnotationEnumValue)value);
+                    }
+                    annotationParams.add(new AbstractMap.SimpleEntry<String, Object>(p.getName(), value));
                 }
 
-                ret.add(new InjectionDescriptor(mi.getName(), clazz, annotationParams, methodParams, mi.hashCode()));
+                ret.add(new FieldInjectionDescriptor(fi.getName(), clazz, annotationParams, fi.hashCode()));
             }
         }
 
@@ -232,11 +268,11 @@ public class PluginsScanner {
                 this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
                         .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
                         .addClassLoader(new URLClassLoader((jars))).addClassLoader(ClassLoader.getSystemClassLoader())
-                        .enableAnnotationInfo().enableMethodInfo().initializeLoadedClasses();
+                        .enableAnnotationInfo().enableMethodInfo().enableFieldInfo().ignoreFieldVisibility().initializeLoadedClasses();
             } else {
                 this.classGraph = new ClassGraph().disableModuleScanning().disableDirScanning()
                         .disableNestedJarScanning().disableRuntimeInvisibleAnnotations()
-                        .addClassLoader(ClassLoader.getSystemClassLoader()).enableAnnotationInfo().enableMethodInfo()
+                        .addClassLoader(ClassLoader.getSystemClassLoader()).enableAnnotationInfo().ignoreFieldVisibility().enableMethodInfo().enableFieldInfo()
                         .initializeLoadedClasses();
             }
         }
@@ -325,15 +361,18 @@ class PluginDescriptor {
     }
 }
 
-@SuppressWarnings("rawtypes")
-class InjectionDescriptor {
+interface InjectionDescriptor {
+
+}
+
+class MethodInjectionDescriptor implements InjectionDescriptor {
     final String method;
-    final Class clazz;
+    final Class<?> clazz;
     final ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams;
     final ArrayList<String> methodParams;
     final int methodHash;
 
-    InjectionDescriptor(String method, Class clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams, int methodHash) {
+    MethodInjectionDescriptor(String method, Class<?> clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, ArrayList<String> methodParams, int methodHash) {
         this.method = method;
         this.clazz = clazz;
         this.annotationParams = annotationParams;
@@ -344,5 +383,24 @@ class InjectionDescriptor {
     @Override
     public String toString() {
         return "{ method:" + this.method + ", injection: " + this.clazz + ", annotationParams: " + this.annotationParams + ", methodParams: " + this.methodParams + ", methodHash: " + this.methodHash + " }";
+    }
+}
+
+class FieldInjectionDescriptor implements InjectionDescriptor {
+    final String field;
+    final Class<?> clazz;
+    final ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams;
+    final int fieldHash;
+
+    FieldInjectionDescriptor(String field, Class<?> clazz, ArrayList<AbstractMap.SimpleEntry<String, Object>> annotationParams, int fieldHash) {
+        this.field = field;
+        this.clazz = clazz;
+        this.annotationParams = annotationParams;
+        this.fieldHash = fieldHash;
+    }
+
+    @Override
+    public String toString() {
+        return "{ field:" + this.field + ", injection: " + this.clazz + ", annotationParams: " + this.annotationParams + ", fieldHash: " + this.fieldHash + " }";
     }
 }

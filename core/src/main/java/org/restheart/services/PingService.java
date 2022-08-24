@@ -26,6 +26,7 @@ import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.Inject;
 import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 
@@ -47,10 +48,15 @@ public class PingService implements ByteArrayService {
 
     private String msg = null;
 
-    @Inject
-    //TODO remove this
-    public void testInject(String s) {
-        LOGGER.debug("*************** wow we got: {} via @Inject", s);
+    @Inject("foo")
+    private String foo;
+
+    @Inject("bar")
+    private String bar;
+
+    @OnInit
+    public void setup() {
+        LOGGER.debug("*************** wow we got: {} and {} via @Inject", foo, bar);
     }
 
     @InjectConfiguration

@@ -336,54 +336,54 @@ public class PluginsFactory {
     }
 
     private void invokeCoreInjectMethods(InstatiatedPlugin ip) throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        // **** old DI ****
         invokeInjectConfigurationMethods(ip);
 
         invokeInjectPluginsRegistryMethods(ip);
 
         invokeInjectConfigurationAndPluginsRegistryMethods(ip);
 
-        invokeInjectMethods(ip);
+        // **** new DI ****
+        setInjectFields(ip);
+
+        invokeOnInitMethods(ip);
     }
 
-    private void invokeInjectMethods(InstatiatedPlugin ip) throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
+    private void setInjectFields(InstatiatedPlugin ip) throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
         // finds @Inject methods
 
         // we need to process methods that are annotated only with @Inject
         // and have only one method parameter
 
-        for (var injection : ip.descriptor.injections) {
-            if (injection.methodParams.size() == 1 && Inject.class.equals(injection.clazz) && ip.descriptor.injections.stream().filter(p -> p.methodHash == injection.methodHash).count() == 1) {
+        var injections = new ArrayList<FieldInjectionDescriptor>();
+        ip.descriptor.injections.stream()
+            .filter(i -> i instanceof FieldInjectionDescriptor)
+            .map(i -> (FieldInjectionDescriptor) i)
+            .forEach(injections::add);
 
-                // check argument class
+        for (var injection : injections) {
+            // try to set @Inject field
+            try {
+                var field = ip.clazz.getDeclaredField(injection.field);
 
-                var clazzName = injection.methodParams.get(0);
+                // find the provider
 
-                var provider = providers().stream().filter(p -> {
-                    var value = p.getInstance().get();
-                    var valueClazzName = value.getClass().getName();
+                var providerName = injection.annotationParams.get(0).getValue();
 
-                    return valueClazzName.equals(clazzName);
-                }).findAny();
+                var _provider = providers().stream().filter(p -> p.getName().equals(providerName)).findFirst();
 
-                // find the provider of this class
-
-                if (provider.isEmpty()) {
-                    throw new ConfigurationException(ip.type + " " + ip.name
-                        + " no provider found for "
-                        + injection.method + "(" + clazzName + " arg)");
+                if (_provider.isPresent()) {
+                    var value = _provider.get().getInstance().get();
+                    field.setAccessible(true);
+                    LOGGER.debug("injecting {} to field {} of class {}", value, field.getName(), injection.clazz);
+                    field.set(ip.instance, value);
                 } else {
-                    // try to inovke @Inject method
-                    try {
-                        ip.clazz.getDeclaredMethod(injection.method, Class.forName(clazzName)).invoke(ip.instance, provider.get().getInstance().get());
-                        LOGGER.trace("Injected {} into {}.{}()", clazzName, ip.clazz.getSimpleName(), injection.method);
-                    } catch (NoSuchMethodException nme) {
-                        throw new ConfigurationException(ip.type + " " + ip.name
-                            + " has an invalid method with @Inject. " + "Method signature must be "
-                            + injection.method + "(" + clazzName + "argument)");
-                    } catch (Throwable t) {
-                        throw new ConfigurationException("Error injecting " + clazzName + " on " + ip.type + " " + ip.name, getRootException(t));
-                    }
+                    throw new ConfigurationException(ip.type + " " + ip.name + " no provider found for @Inject(\"" + providerName + "\") " + injection.field);
                 }
+            } catch (NoSuchFieldException nfe) {
+                throw new ConfigurationException(ip.type + " " + ip.name + " has an invalid method @Inject on field " + injection.field, nfe);
+            } catch (Throwable t) {
+                throw new ConfigurationException("Error injecting field " + injection.field + " of class" + ip.type, getRootException(t));
             }
         }
     }
@@ -396,8 +396,17 @@ public class PluginsFactory {
         // a method can have both @InjectConfiguration and @InjectPluginsRegistry
         // so we check that method has only one annotation
 
-        for (var injection : ip.descriptor.injections) {
-            if (InjectConfiguration.class.equals(injection.clazz) && ip.descriptor.injections.stream().filter(p -> p.methodHash == injection.methodHash).count() == 1) {
+        var injections = new ArrayList<MethodInjectionDescriptor>();
+        ip.descriptor.injections.stream()
+            .filter(i -> i instanceof MethodInjectionDescriptor)
+            .map(i -> (MethodInjectionDescriptor) i)
+            .forEach(injections::add);
+
+        for (var injection : injections) {
+            if (InjectConfiguration.class.equals(injection.clazz) && ip.descriptor.injections.stream()
+                                                                        .filter(p -> p instanceof MethodInjectionDescriptor)
+                                                                        .map(p -> (MethodInjectionDescriptor) p)
+                                                                        .filter(p -> p.methodHash == injection.methodHash).count() == 1) {
                 // check configuration scope
                 var allConfScope = injection.annotationParams.stream().anyMatch(p -> "scope".equals(p.getKey()) && (ConfigurationScope.class.getName() + "." + ConfigurationScope.ALL.name()).equals(p.getValue().toString()));
 
@@ -422,16 +431,24 @@ public class PluginsFactory {
         }
     }
 
-    private void invokeInjectPluginsRegistryMethods(InstatiatedPlugin ip)
-            throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
+    private void invokeInjectPluginsRegistryMethods(InstatiatedPlugin ip) throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
         // finds @InjectPluginRegistry methods
 
         // we need to process methods that are annotated only with @InjectConfiguration
         // a method can have both @InjectConfiguration and @InjectPluginsRegistry
         // so we check that method has only one annotation
 
-        for (var injection : ip.descriptor.injections) {
-            if (InjectPluginsRegistry.class.equals(injection.clazz) && ip.descriptor.injections.stream().filter(p -> p.methodHash == injection.methodHash).count() == 1) {
+        var injections = new ArrayList<MethodInjectionDescriptor>();
+        ip.descriptor.injections.stream()
+            .filter(i -> i instanceof MethodInjectionDescriptor)
+            .map(i -> (MethodInjectionDescriptor) i)
+            .forEach(injections::add);
+
+        for (var injection : injections) {
+            if (InjectPluginsRegistry.class.equals(injection.clazz) && ip.descriptor.injections.stream()
+                                                                            .filter(p -> p instanceof MethodInjectionDescriptor)
+                                                                            .map(p -> (MethodInjectionDescriptor) p)
+                                                                            .filter(p -> p.methodHash == injection.methodHash).count() == 1) {
                 // try to inovke @InjectPluginRegistry method
                 try {
                     ip.clazz.getDeclaredMethod(injection.method, PluginsRegistry.class).invoke(ip.instance, pluginsRegistry);
@@ -449,11 +466,10 @@ public class PluginsFactory {
 
     @SuppressWarnings("rawtypes")
     private void invokeInjectConfigurationAndPluginsRegistryMethods(InstatiatedPlugin ip) throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
-
         // we need to process methods that are annotated only with @InjectConfiguration
 
-        var confMethods = ip.descriptor.injections.stream().filter(p -> InjectConfiguration.class.equals(p.clazz)).collect(Collectors.toList());
-        var regiMethods = ip.descriptor.injections.stream().filter(p -> InjectPluginsRegistry.class.equals(p.clazz)).collect(Collectors.toList());
+        var confMethods = ip.descriptor.injections.stream().filter(p -> p instanceof MethodInjectionDescriptor).map(p -> (MethodInjectionDescriptor) p).filter(p -> InjectConfiguration.class.equals(p.clazz)).collect(Collectors.toList());
+        var regiMethods = ip.descriptor.injections.stream().filter(p -> p instanceof MethodInjectionDescriptor).map(p -> (MethodInjectionDescriptor) p).filter(p -> InjectPluginsRegistry.class.equals(p.clazz)).collect(Collectors.toList());
 
         // intersect
         var bothMethods = confMethods.stream().filter(c -> regiMethods.stream().anyMatch(r -> r.methodHash == c.methodHash)).collect(Collectors.toList());
@@ -483,11 +499,14 @@ public class PluginsFactory {
         }
     }
 
-    private void invokeInjectMongoClientMethods(InstatiatedPlugin ip, MongoClient mclient)
-            throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        // finds @InjectMongoClient methods
+    private void invokeInjectMongoClientMethods(InstatiatedPlugin ip, MongoClient mclient) throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        var injections = new ArrayList<MethodInjectionDescriptor>();
+        ip.descriptor.injections.stream()
+            .filter(i -> i instanceof MethodInjectionDescriptor)
+            .map(i -> (MethodInjectionDescriptor) i)
+            .forEach(injections::add);
 
-        for (var injection : ip.descriptor.injections) {
+        for (var injection : injections) {
             if (InjectMongoClient.class.equals(injection.clazz)) {
                 // try to inovke @InjectMongoClient method
                 try {
@@ -498,6 +517,35 @@ public class PluginsFactory {
                     throw new ConfigurationException(ip.type + " " + ip.name
                             + " has an invalid method with @InjectMongoClient. " + "Method signature must be "
                             + injection.method + "(MongoClient mclient)");
+                }
+            }
+        }
+    }
+
+    private void invokeOnInitMethods(InstatiatedPlugin ip) throws ConfigurationException, InstantiationException, IllegalAccessException, InvocationTargetException {
+        // finds @Inject methods
+
+        // we need to process methods that are annotated only with @Inject
+        // and have only one method parameter
+
+        var injections = new ArrayList<MethodInjectionDescriptor>();
+        ip.descriptor.injections.stream()
+            .filter(i -> i instanceof MethodInjectionDescriptor)
+            .map(i -> (MethodInjectionDescriptor) i)
+            .forEach(injections::add);
+
+        for (var injection : injections) {
+            if (OnInit.class.equals(injection.clazz) && ip.descriptor.injections.stream()
+                                                            .filter(p -> p instanceof MethodInjectionDescriptor)
+                                                            .map(p -> (MethodInjectionDescriptor) p)
+                                                            .filter(p -> p.methodHash == injection.methodHash).count() == 1) {
+                // try to inovke @OnInit() method
+                try {
+                    ip.clazz.getDeclaredMethod(injection.method).invoke(ip.instance);
+                } catch (NoSuchMethodException nme) {
+                    throw new ConfigurationException(ip.type + " " + ip.name + " has an invalid method @OnInit " + injection.method + "()");
+                } catch (Throwable t) {
+                    throw new ConfigurationException("Error injecting dependencies on " + ip.type + " " + ip.name, getRootException(t));
                 }
             }
         }
