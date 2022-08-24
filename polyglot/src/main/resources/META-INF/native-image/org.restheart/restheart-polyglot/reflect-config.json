@@ -4,18 +4,6 @@
     "fields": [{ "name": "interceptPoint" }, { "name": "name" }]
   },
   {
-    "name": "org.restheart.polyglot.PolyglotDeployer",
-    "methods": [
-      { "name": "<init>", "parameterTypes": [] },
-      { "name": "init", "parameterTypes": ["java.util.Map"] },
-      { "name": "mc", "parameterTypes": ["com.mongodb.client.MongoClient"] },
-      {
-        "name": "reg",
-        "parameterTypes": ["org.restheart.plugins.PluginsRegistry"]
-      }
-    ]
-  },
-  {
     "name": "org.restheart.polyglot.JSInterceptorFactory",
     "allPublicFields": true,
     "allPublicConstructors": true,
