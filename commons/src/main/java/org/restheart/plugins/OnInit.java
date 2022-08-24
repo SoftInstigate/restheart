@@ -29,7 +29,6 @@ import java.lang.annotation.Target;
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface Inject {
-    String value();
+@Target(ElementType.METHOD)
+public @interface OnInit {
 }

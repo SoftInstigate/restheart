@@ -19,11 +19,39 @@
  */
 package org.restheart.plugins;
 
+import java.lang.reflect.Type;
+
+import org.restheart.utils.PluginUtils;
+
+import com.google.common.reflect.TypeToken;
+
 /**
  * Base interface for dependency providers
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
 public interface Provider<T> extends Plugin {
-    T get();
+    /**
+     *
+     * @return the provided object
+     */
+    public T get();
+
+    /**
+     *
+     * @return the name of the provider
+     */
+    public default String name() {
+        return PluginUtils.name(this);
+    }
+
+    /**
+     *
+     * @return the Type of the generic parameter T
+     */
+    default Type type() {
+        return new TypeToken<T>(getClass()) {
+			private static final long serialVersionUID = 1363463867743712234L;
+        }.getType();
+    }
 }
