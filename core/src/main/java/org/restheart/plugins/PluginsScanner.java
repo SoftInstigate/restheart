@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.AbstractMap;
 
 import org.restheart.Bootstrapper;
@@ -105,6 +106,19 @@ public class PluginsScanner {
             INTERCEPTORS.addAll(collectPlugins(scanResult, INTERCEPTOR_CLASS_NAME));
             SERVICES.addAll(collectPlugins(scanResult, SERVICE_CLASS_NAME));
         }
+    }
+
+    public static List<String> allPluginsClassNames() {
+        var ret = new ArrayList<String>();
+        INITIALIZERS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        AUTH_MECHANISMS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        AUTHORIZERS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        TOKEN_MANAGERS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        AUTHENTICATORS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        INTERCEPTORS.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+        SERVICES.stream().map(p -> p.clazz).forEachOrdered(ret::add);
+
+        return ret;
     }
 
     /**

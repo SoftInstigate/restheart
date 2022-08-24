@@ -27,18 +27,15 @@ package org.restheart.graal;
 
 import com.oracle.svm.core.annotate.AutomaticFeature;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
-import org.restheart.plugins.Inject;
 import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InjectMongoClient;
 import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsScanner;
 
 @AutomaticFeature
@@ -71,22 +68,7 @@ public class PluginsReflectionRegistrationFeature implements Feature {
     private void registerAll(Class<?> clazz) {
         RuntimeReflection.register(clazz);
         RuntimeReflection.registerForReflectiveInstantiation(clazz);
-        RuntimeReflection.register(annotated(clazz.getDeclaredFields()));
         RuntimeReflection.register(annotated(clazz.getDeclaredMethods()));
-    }
-
-    /**
-     * selects fields annotated with @Inject
-     *
-     * @param fields
-     * @return an array of fileds that are annotated with @Inject
-     */
-    private Field[] annotated(Field... fields) {
-        var list = Arrays.stream(fields)
-                .filter((f -> f.getAnnotation(Inject.class) != null))
-                .collect(Collectors.toList());
-
-        return list.toArray(new Field[list.size()]);
     }
 
     /**
@@ -95,12 +77,11 @@ public class PluginsReflectionRegistrationFeature implements Feature {
      *
      * @param fields
      * @return an array of methods that are annotated
-     *         with @OnInit, @InjectMongoClient, @InjectConfiguration, @InjectPluginsRegistry
+     *         with @InjectMongoClient, @InjectConfiguration, @InjectPluginsRegistry
      */
     private Method[] annotated(Method... methods) {
         var list = Arrays.stream(methods)
-                .filter(m -> m.getAnnotation(OnInit.class) != null
-                        || m.getAnnotation(InjectMongoClient.class) != null
+                .filter(m -> m.getAnnotation(InjectMongoClient.class) != null
                         || m.getAnnotation(InjectConfiguration.class) != null
                         || m.getAnnotation(InjectPluginsRegistry.class) != null)
                 .collect(Collectors.toList());
