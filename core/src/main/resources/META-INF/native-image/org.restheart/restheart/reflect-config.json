@@ -1278,13 +1278,6 @@
     ]}
 ,
 {
-  "name":"org.restheart.services.PingService",
-  "methods":[
-    {"name":"<init>","parameterTypes":[] }, 
-    {"name":"init","parameterTypes":["java.util.Map"] }
-  ]}
-,
-{
   "name":"org.slf4j.Logger"}
 ,
 {
