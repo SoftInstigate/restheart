@@ -45,13 +45,11 @@ import static org.fusesource.jansi.Ansi.ansi;
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 
 import org.graalvm.polyglot.Source;
-import org.restheart.ConfigurationException;
+import org.restheart.Configuration;
 import org.restheart.ConfigurationKeys;
-import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.Initializer;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectMongoClient;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
@@ -72,58 +70,37 @@ public class PolyglotDeployer implements Initializer {
 
     private Path pluginsDirectory = null;
 
-    private PluginsRegistry registry = null;
-
     private static final Map<Path, AbstractJSPlugin> DEPLOYEES = new HashMap<>();
-
-    private MongoClient mclient;
-
-    private Map<String, Object> pluginsArgs;
 
     private JSInterceptorFactory jsInterceptorFactory;
 
-    @InjectPluginsRegistry
-    public void reg(PluginsRegistry registry) {
-        this.registry = registry;
+    @Inject("mclient")
+    private MongoClient mclient;
 
-        // make sure to invoke this after all @Injected methods are invoked
-        if (pluginsDirectory != null && mclient != null) {
-            this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.pluginsArgs);
-            deployAll(pluginsDirectory);
-            watch(pluginsDirectory);
-        }
-    }
+    @Inject("registry")
+    private PluginsRegistry registry;
 
-    @InjectConfiguration(scope = ConfigurationScope.ALL)
-    public void init(Map<String, Object> args) throws ConfigurationException {
+    @Inject("rh-config")
+    private Configuration config;
+
+    private Map<String, Object> pluginsArgs;
+
+    @OnInit
+    private void onInit() {
         if (!isRunningOnGraalVM()) {
             LOGGER.warn("Not running on GraalVM, polyglot plugins deployer disabled!");
             return;
         }
 
-        pluginsDirectory = getPluginsDirectory(args);
+        pluginsDirectory = getPluginsDirectory(config.toMap());
 
-        this.pluginsArgs = getPluginsArgs(args);
+        this.pluginsArgs = getPluginsArgs(config.toMap());
 
-        // make sure to invoke this after all @Injected methods are invoked
-        if (registry != null && mclient != null) {
-            this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.pluginsArgs);
-            deployAll(pluginsDirectory);
-            watch(pluginsDirectory);
-        }
+        this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.config.toMap());
+        deployAll(pluginsDirectory);
+        watch(pluginsDirectory);
     }
 
-    @InjectMongoClient
-    public void mc(MongoClient mclient) {
-        this.mclient = mclient;
-
-        // make sure to invoke this after all @Injected methods are invoked
-        if (pluginsDirectory != null && registry != null) {
-            this.jsInterceptorFactory = new JSInterceptorFactory(this.mclient, this.pluginsArgs);
-            deployAll(pluginsDirectory);
-            watch(pluginsDirectory);
-        }
-    }
 
     private boolean isRunningOnGraalVM() {
         try {

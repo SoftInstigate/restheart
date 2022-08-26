@@ -36,7 +36,7 @@ public interface ConfigurablePlugin extends Plugin {
      * @throws ConfigurationException
      */
     @SuppressWarnings("unchecked")
-    public static <V extends Object> V argValue(final Map<String, Object> args, final String argKey) throws ConfigurationException {
+    public static <V extends Object> V argValue(final Map<String, ?> args, final String argKey) throws ConfigurationException {
         if (args == null || !args.containsKey(argKey)) {
             throw new ConfigurationException("The plugin" + " requires the argument '" + argKey + "'");
         } else {
@@ -44,7 +44,7 @@ public interface ConfigurablePlugin extends Plugin {
         }
     }
 
-    public static <V extends Object> V argValueOrDefault(final Map<String, Object> args, final String argKey, V value) throws ConfigurationException {
+    public static <V extends Object> V argValueOrDefault(final Map<String, ?> args, final String argKey, V value) throws ConfigurationException {
         if (args == null || !args.containsKey(argKey)) {
             return value;
         } else {
@@ -52,11 +52,11 @@ public interface ConfigurablePlugin extends Plugin {
         }
     }
 
-    default public <V extends Object> V arg(final Map<String, Object> args, final String argKey) throws ConfigurationException {
+    default public <V extends Object> V arg(final Map<String, ?> args, final String argKey) throws ConfigurationException {
         return argValue(args, argKey);
     }
 
-    default public <V extends Object> V argOrDefault(final Map<String, Object> args, final String argKey, V value) throws ConfigurationException {
+    default public <V extends Object> V argOrDefault(final Map<String, ?> args, final String argKey, V value) throws ConfigurationException {
         return argValueOrDefault(args, argKey, value);
     }
 }

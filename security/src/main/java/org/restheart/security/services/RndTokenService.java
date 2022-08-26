@@ -33,8 +33,7 @@ import org.restheart.ConfigurationException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
 import org.restheart.security.BaseAccount;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
@@ -60,25 +59,11 @@ public class RndTokenService implements JsonService {
     // used to compare the requested URI containing escaped chars
     private static final Escaper ESCAPER = UrlEscapers.urlPathSegmentEscaper();
 
-    private Map<String, Object> confArgs = null;
+    @Inject("registry")
+    private PluginsRegistry registry;
 
-    private PluginsRegistry pluginRegistry;
-
-    @InjectPluginsRegistry
-    public void setPluginRegistry(PluginsRegistry pluginRegistry) {
-        this.pluginRegistry = pluginRegistry;
-    }
-
-    /**
-     * init the service
-     * @param confArgs
-     * @throws org.restheart.ConfigurationException
-     */
-    @InjectConfiguration
-    public void init(Map<String, Object> confArgs)
-            throws ConfigurationException {
-        this.confArgs = confArgs;
-    }
+    @Inject("config")
+    private Map<String, Object> config;
 
     /**
      * @param request JsonRequest
@@ -142,7 +127,7 @@ public class RndTokenService implements JsonService {
     }
 
     private void invalidate(Account account) {
-        var tokenManager = this.pluginRegistry
+        var tokenManager = this.registry
                 .getTokenManager();
 
         if (tokenManager == null) {
@@ -160,12 +145,12 @@ public class RndTokenService implements JsonService {
     }
 
     private String getUri() {
-        if (confArgs == null) {
+        if (config == null) {
             return "/tokens";
         }
 
         try {
-            return arg(confArgs, "uri");
+            return arg(config, "uri");
         }
         catch (ConfigurationException ex) {
             return "/tokens";

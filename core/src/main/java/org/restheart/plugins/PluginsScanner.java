@@ -175,12 +175,6 @@ public class PluginsScanner {
     private static ArrayList<InjectionDescriptor> collectInjections(ClassInfo pluginClassInfo) {
         var ret = new ArrayList<InjectionDescriptor>();
 
-        // **** old DI ****
-        ret.addAll(collectMethodInjections(pluginClassInfo, InjectConfiguration.class));
-        ret.addAll(collectMethodInjections(pluginClassInfo, InjectPluginsRegistry.class));
-        ret.addAll(collectMethodInjections(pluginClassInfo, InjectMongoClient.class));
-
-        // **** new DI ****
         ret.addAll(collectFieldInjections(pluginClassInfo, Inject.class));
         ret.addAll(collectMethodInjections(pluginClassInfo, OnInit.class));
 

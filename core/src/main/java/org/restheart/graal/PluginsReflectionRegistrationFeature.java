@@ -31,13 +31,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.restheart.plugins.Inject;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectMongoClient;
-import org.restheart.plugins.InjectPluginsRegistry;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsScanner;
 
@@ -90,8 +86,7 @@ public class PluginsReflectionRegistrationFeature implements Feature {
     }
 
     /**
-     * selects methods annotated
-     * with @OnInit, @InjectMongoClient, @InjectConfiguration, @InjectPluginsRegistry
+     * selects methods annotated with @OnInit
      *
      * @param fields
      * @return an array of methods that are annotated
@@ -99,10 +94,7 @@ public class PluginsReflectionRegistrationFeature implements Feature {
      */
     private Method[] annotated(Method... methods) {
         var list = Arrays.stream(methods)
-                .filter(m -> m.getAnnotation(OnInit.class) != null
-                        || m.getAnnotation(InjectMongoClient.class) != null
-                        || m.getAnnotation(InjectConfiguration.class) != null
-                        || m.getAnnotation(InjectPluginsRegistry.class) != null)
+                .filter(m -> m.getAnnotation(OnInit.class) != null)
                 .collect(Collectors.toList());
 
         return list.toArray(new Method[list.size()]);

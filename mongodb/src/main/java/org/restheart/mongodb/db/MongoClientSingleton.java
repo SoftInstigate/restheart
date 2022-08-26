@@ -33,7 +33,6 @@ import com.mongodb.MongoClientSettings;
 
 import org.bson.BsonDocument;
 import org.bson.BsonInt32;
-import org.restheart.plugins.PluginsRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +47,6 @@ public class MongoClientSingleton {
 
     private static boolean initialized = false;
     private static ConnectionString mongoUri;
-    private static PluginsRegistry pluginsRegistry;
     private String serverVersion = null;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoClientSingleton.class);
@@ -58,9 +56,8 @@ public class MongoClientSingleton {
      * @param uri
      * @param pr
      */
-    public static void init(ConnectionString uri, PluginsRegistry pr) {
+    public static void init(ConnectionString uri) {
         mongoUri = uri;
-        pluginsRegistry = pr;
         initialized = true;
     }
 
@@ -164,12 +161,6 @@ public class MongoClientSingleton {
                 + "the configuration property 'mongo-uri' "
                 + "is set properly");
             serverVersion = "?";
-        }
-
-        // invoke Plugins methods annotated with @InjectMongoClient
-        // passing them the MongoClient
-        if (pluginsRegistry != null) {
-            pluginsRegistry.injectDependency(mclient);
         }
     }
 

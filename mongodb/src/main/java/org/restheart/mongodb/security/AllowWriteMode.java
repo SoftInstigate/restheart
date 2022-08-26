@@ -34,19 +34,15 @@ import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
 
 @RegisterPlugin(name = "mongoPermissionAllowWriteMode",
     description = "Allow clients to specify the write mode according to the mongo.allowWriteMode ACL permission",
     initPoint = InitPoint.BEFORE_STARTUP,
     enabledByDefault = true)
 public class AllowWriteMode extends BaseAllowInitializer implements Initializer {
+    @Inject("registry")
     private PluginsRegistry registry;
-
-    @InjectPluginsRegistry
-    public void initRegistry(PluginsRegistry registry) {
-        this.registry = registry;
-    }
 
     @Override
     public void init() {

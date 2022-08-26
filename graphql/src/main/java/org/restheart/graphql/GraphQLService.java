@@ -48,13 +48,12 @@ import org.restheart.graphql.scalars.bsonCoercing.CoercingUtils;
 import org.restheart.plugins.*;
 import org.restheart.utils.HttpStatus;
 import org.restheart.utils.BsonUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RegisterPlugin(name = "graphql", description = "Service that handles GraphQL requests", secure = true, enabledByDefault = true, defaultURI = "/graphql")
 
@@ -66,42 +65,28 @@ public class GraphQLService implements Service<GraphQLRequest, MongoResponse> {
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphQLService.class);
 
     private GraphQL gql;
-    private MongoClient mongoClient = null;
     private String db = DEFAULT_APP_DEF_DB;
     private String collection = DEFAULT_APP_DEF_COLLECTION;
     private Boolean verbose = DEFAULT_VERBOSE;
 
-    @InjectConfiguration
-    public void initConf(Map<String, Object> args)
-            throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
+    @Inject("mclient")
+    private MongoClient mclient;
+
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @OnInit
+    public void init()throws ConfigurationException, NoSuchFieldException, IllegalAccessException {
         CoercingUtils.replaceBuiltInCoercing();
 
-        if (args != null) {
-            try {
-                this.db = arg(args, "db");
-                this.collection = arg(args, "collection");
-                this.verbose = arg(args, "verbose");
-            } catch (ConfigurationException ex) {
-                // nothing to do, using default values
-            }
-        }
+        this.db = argOrDefault(config, "db", DEFAULT_APP_DEF_DB);
+        this.collection = argOrDefault(config, "collection", DEFAULT_APP_DEF_COLLECTION);
+        this.verbose = argOrDefault(config, "verbose", DEFAULT_VERBOSE);
 
-        if (mongoClient != null) {
-            QueryBatchLoader.setMongoClient(mongoClient);
-            AggregationBatchLoader.setMongoClient(mongoClient);
-            GraphQLDataFetcher.setMongoClient(mongoClient);
-            AppDefinitionLoader.setup(db, collection, mongoClient);
-        }
-    }
-
-    @InjectMongoClient
-    public void initMongoClient(MongoClient mClient) {
-        this.mongoClient = mClient;
-        if (db != null && collection != null) {
-            QueryBatchLoader.setMongoClient(mongoClient);
-            GraphQLDataFetcher.setMongoClient(mongoClient);
-            AppDefinitionLoader.setup(db, collection, mongoClient);
-        }
+        QueryBatchLoader.setMongoClient(mclient);
+        AggregationBatchLoader.setMongoClient(mclient);
+        GraphQLDataFetcher.setMongoClient(mclient);
+        AppDefinitionLoader.setup(db, collection, mclient);
     }
 
     @Override

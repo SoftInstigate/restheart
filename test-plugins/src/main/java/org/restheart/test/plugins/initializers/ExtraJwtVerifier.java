@@ -25,7 +25,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import org.restheart.ConfigurationException;
 import org.restheart.plugins.ConsumingPlugin;
 import org.restheart.plugins.Initializer;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
@@ -45,12 +45,8 @@ import org.slf4j.LoggerFactory;
 public class ExtraJwtVerifier implements Initializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExtraJwtVerifier.class);
 
+    @Inject("registry")
     private PluginsRegistry registry;
-
-    @InjectPluginsRegistry
-    public void init(PluginsRegistry registry) {
-        this.registry = registry;
-    }
 
     @Override
     @SuppressWarnings("unchecked")

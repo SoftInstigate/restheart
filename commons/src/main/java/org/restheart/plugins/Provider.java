@@ -32,10 +32,10 @@ import com.google.common.reflect.TypeToken;
  */
 public interface Provider<T> extends Plugin {
     /**
-     *
+     * @param caller the PluginRecord of the plugin that requires this dependency
      * @return the provided object
      */
-    public T get();
+    public T get(PluginRecord<?> caller);
 
     /**
      *

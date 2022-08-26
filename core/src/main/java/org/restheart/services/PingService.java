@@ -25,13 +25,9 @@ import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayService;
 import org.restheart.plugins.Inject;
-import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -44,24 +40,14 @@ import org.slf4j.LoggerFactory;
     defaultURI = "/ping",
     blocking = false)
 public class PingService implements ByteArrayService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PingService.class);
-
     private String msg = null;
 
-    @Inject("foo")
-    private String foo;
-
-    @Inject("bar")
-    private String bar;
+    @Inject("config")
+    private Map<String, Object> config;
 
     @OnInit
     public void setup() {
-        LOGGER.debug("*************** wow we got: {} and {} via @Inject", foo, bar);
-    }
-
-    @InjectConfiguration
-    public void init(Map<String, Object> args) {
-        this.msg = argOrDefault(args, "msg", "Greetings from RESTHeart!");
+        this.msg = argOrDefault(this.config, "msg", "Greetings from RESTHeart!");
     }
 
     /**

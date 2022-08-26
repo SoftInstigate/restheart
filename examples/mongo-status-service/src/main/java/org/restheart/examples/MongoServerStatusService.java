@@ -7,7 +7,7 @@ import org.bson.BsonInt32;
 import org.restheart.exchange.BsonRequest;
 import org.restheart.exchange.BsonResponse;
 import org.restheart.plugins.BsonService;
-import org.restheart.plugins.InjectMongoClient;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
 import org.slf4j.Logger;
@@ -18,14 +18,10 @@ public class MongoServerStatusService implements BsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoServerStatusService.class);
 
-    private MongoClient mongoClient;
+    @Inject("mclient")
+    private MongoClient mclient;
 
     private static final BsonDocument DEFAULT_COMMAND = new BsonDocument("serverStatus", new BsonInt32(1));
-
-    @InjectMongoClient
-    public void init(MongoClient mongoClient) {
-        this.mongoClient = mongoClient;
-    }
 
     @Override
     public void handle(BsonRequest request, BsonResponse response) {
@@ -36,7 +32,7 @@ public class MongoServerStatusService implements BsonService {
 
             LOGGER.debug("### command=" + command);
 
-            var serverStatus = mongoClient.getDatabase("admin").runCommand(command, BsonDocument.class);
+            var serverStatus = mclient.getDatabase("admin").runCommand(command, BsonDocument.class);
 
             response.setContent(serverStatus);
             response.setStatusCode(HttpStatus.SC_OK);

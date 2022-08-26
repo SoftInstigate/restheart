@@ -1,6 +1,6 @@
 
 Feature: Test mongodb permissions in acl file
-  
+
 Background:
     * url 'http://localhost:8080'
     * def basic =
@@ -15,13 +15,13 @@ Background:
 
 
     * def addressSchema = { _id: "address", "$schema": "https://json-schema.org/draft-04/schema#","type": "object","properties": { "address": { "type": "string" },"city": { "type": "string" },"postal-code": { "type": "string" },"country": { "type": "string"}},"required": ["address", "city", "country"]}
-    
-    
+
+
     * def admin = basic({username: 'admin', password: 'secret'})
     * def mongo = basic({username: 'mongoPermissions', password: 'secret' })
 
-    * def setup = call read("mongodbPermissions-setup.feature") {db: '/test-all-permissions/', coll: 'allowAll/'} 
-      
+    * def setup = call read("mongodbPermissions-setup.feature") {db: '/test-all-permissions/', coll: 'allowAll/'}
+
     * def dbName = '/test-all-permissions/'
 
 Scenario: [Allowed] Test bulk PATCH
@@ -282,7 +282,7 @@ Scenario: [Allowed] Create and delete a database
     Then status 204
 
 Scenario: [Allowed] Create and delete index
-    
+
     # create index on allowAll collection (created in setup)
     * headers { Authorization: '#(mongo)' }
     Given path dbName + "allowAll/_indexes/nameIndex"
@@ -296,7 +296,7 @@ Scenario: [Allowed] Create and delete index
     Given path dbName + "allowAll/_indexes/nameIndex"
     When method DELETE
     Then status 204
- 
+
 
     # delete database test-db
     * headers { "Authorization" : '#(admin)', 'If-Match': '#(setup.ETAG)' }
@@ -383,5 +383,3 @@ Scenario: [Allowed] Create, modify and delete a schema
     When method DELETE
     Then status 204
 
-
-    

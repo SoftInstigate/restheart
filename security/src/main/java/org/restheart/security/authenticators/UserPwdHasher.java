@@ -29,9 +29,10 @@ import org.mindrot.jbcrypt.BCrypt;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginRecord;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
@@ -59,8 +60,11 @@ public class UserPwdHasher implements MongoInterceptor {
 
     private boolean enabled = false;
 
-    @InjectPluginsRegistry
-    public void init(PluginsRegistry registry) {
+    @Inject("registry")
+    private PluginsRegistry registry;
+
+    @OnInit
+    public void init() {
         PluginRecord<Authenticator> _mra;
 
         try {

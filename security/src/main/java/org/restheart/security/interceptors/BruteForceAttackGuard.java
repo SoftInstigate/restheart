@@ -23,8 +23,9 @@ package org.restheart.security.interceptors;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.ServiceRequest;
 import org.restheart.exchange.ServiceResponse;
-import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.WildcardInterceptor;
 import static org.restheart.utils.MetricsUtils.collectFailedAuthBy;
@@ -66,13 +67,16 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
 
     private int maxFailedAttempts = 5;
 
-    @InjectConfiguration
-    public void config(Map<String, Object> args) {
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @OnInit
+    public void init() {
         try {
-            boolean trustXForwardedFor = arg(args, "trust-x-forwarded-for");
+            boolean trustXForwardedFor = arg(config, "trust-x-forwarded-for");
 
             if (trustXForwardedFor) {
-                xForwardedForValueFromLast = arg(args, "x-forwarded-for-value-from-last");
+                xForwardedForValueFromLast = arg(config, "x-forwarded-for-value-from-last");
 
                 if (xForwardedForValueFromLast < 0) {
                     LOGGER.warn("x-forwarded-for-value-from-last is negative, set to 0");
@@ -92,7 +96,7 @@ public class BruteForceAttackGuard implements WildcardInterceptor {
         }
 
         try {
-            this.maxFailedAttempts = arg(args, "max-failed-attempts");
+            this.maxFailedAttempts = arg(config, "max-failed-attempts");
         } catch(ConfigurationException ce) {
             this.maxFailedAttempts = 5;
         }

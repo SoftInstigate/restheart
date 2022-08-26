@@ -842,7 +842,7 @@ public final class Bootstrapper {
      */
     private static void plugStaticResourcesHandlers(final Configuration conf) {
         if (conf.getStaticResourcesMounts() == null || conf.getStaticResourcesMounts().isEmpty()) {
-            LOGGER.debug("No {} specified", ConfigurationKeys.STATIC_RESOURCES_MOUNT_EMBEDDED_KEY);
+            LOGGER.debug("No {} specified", ConfigurationKeys.STATIC_RESOURCES_MOUNTS_KEY);
             return;
         }
 

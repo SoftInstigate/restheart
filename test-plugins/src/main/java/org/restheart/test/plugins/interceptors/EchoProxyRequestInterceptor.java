@@ -24,15 +24,11 @@ package org.restheart.test.plugins.interceptors;
 import com.google.gson.JsonParser;
 import io.undertow.util.HttpString;
 import java.nio.charset.Charset;
-import java.util.Map;
 import org.restheart.exchange.ByteArrayProxyRequest;
 import org.restheart.exchange.ByteArrayProxyResponse;
-import org.restheart.plugins.InjectConfiguration;
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 import org.restheart.plugins.ProxyInterceptor;
 import org.restheart.plugins.RegisterPlugin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -40,19 +36,6 @@ import org.slf4j.LoggerFactory;
  */
 @RegisterPlugin(name = "echoProxyRequestInterceptor", description = "used for testing purposes", enabledByDefault = false, requiresContent = true, interceptPoint = REQUEST_AFTER_AUTH)
 public class EchoProxyRequestInterceptor implements ProxyInterceptor {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(EchoProxyRequestInterceptor.class);
-
-    /**
-     * shows how to inject configuration via @OnInit
-     *
-     * @param args
-     */
-    @InjectConfiguration
-    public void init(Map<String, Object> args) {
-        LOGGER.trace("got args {}", args);
-    }
-
     @Override
     public void handle(ByteArrayProxyRequest request, ByteArrayProxyResponse response) throws Exception {
         request.getHeaders().add(HttpString.tryFromString("header"), "added by echoProxyRequestInterceptor " + request.getPath());

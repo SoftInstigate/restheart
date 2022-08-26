@@ -25,15 +25,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.undertow.util.HttpString;
 import java.nio.charset.Charset;
-import java.util.Map;
 import org.restheart.exchange.ByteArrayRequest;
 import org.restheart.exchange.ByteArrayResponse;
 import org.restheart.plugins.ByteArrayInterceptor;
-import org.restheart.plugins.InjectConfiguration;
 import static org.restheart.plugins.InterceptPoint.RESPONSE;
 import org.restheart.plugins.RegisterPlugin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -46,19 +42,6 @@ import org.slf4j.LoggerFactory;
         requiresContent = true,
         interceptPoint = RESPONSE)
 public class EchoResponseInterceptor implements ByteArrayInterceptor {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(EchoResponseInterceptor.class);
-
-    /**
-     * shows how to inject configuration via @OnInit
-     *
-     * @param args
-     */
-    @InjectConfiguration
-    public void init(Map<String, Object> args) {
-        LOGGER.trace("got args {}", args);
-    }
-
     @Override
     public void handle(ByteArrayRequest request, ByteArrayResponse response) throws Exception {
         response.getHeaders()

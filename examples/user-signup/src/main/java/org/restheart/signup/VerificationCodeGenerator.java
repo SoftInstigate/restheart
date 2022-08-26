@@ -26,7 +26,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.InjectMongoClient;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
@@ -48,12 +48,8 @@ public class VerificationCodeGenerator implements MongoInterceptor {
 
     private static final SecureRandom RND_GENERATOR = new SecureRandom();
 
-    MongoClient mclient;
-
-    @InjectMongoClient
-    public void setMClient(MongoClient mclient) {
-        this.mclient = mclient;
-    }
+    @Inject("mclient")
+    private MongoClient mclient;
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {

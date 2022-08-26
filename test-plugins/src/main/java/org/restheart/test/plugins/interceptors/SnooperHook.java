@@ -21,12 +21,10 @@
 
 package org.restheart.test.plugins.interceptors;
 
-import java.util.Map;
 import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.InjectConfiguration;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
 import org.restheart.plugins.RegisterPlugin;
@@ -44,13 +42,7 @@ import org.slf4j.LoggerFactory;
         enabledByDefault = false,
         interceptPoint = InterceptPoint.RESPONSE_ASYNC)
 public class SnooperHook implements MongoInterceptor {
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger(SnooperHook.class);
-
-    @InjectConfiguration
-    public void init(Map<String, Object> conf) {
-        LOGGER.debug("Configuration args {}", conf);
-    }
+    private static final Logger LOGGER = LoggerFactory.getLogger(SnooperHook.class);
 
     @Override
     public void handle(MongoRequest request, MongoResponse response) throws Exception {

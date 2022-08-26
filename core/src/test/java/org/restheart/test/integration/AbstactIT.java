@@ -87,7 +87,7 @@ public abstract class AbstactIT {
     static {
         LOG.info("BASE_URL={}", HTTP_HOST.toURI());
         LOG.info("mongo-uri={}", MONGO_URI.toString());
-        MongoClientSingleton.init(MONGO_URI, null);
+        MongoClientSingleton.init(MONGO_URI);
     }
 
     /**

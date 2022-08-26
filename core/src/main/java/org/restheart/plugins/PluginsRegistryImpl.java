@@ -34,8 +34,6 @@ import java.util.stream.Collectors;
 import java.util.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.mongodb.client.MongoClient;
-
 import org.restheart.ConfigurationException;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
@@ -136,7 +134,7 @@ public class PluginsRegistryImpl implements PluginsRegistry {
         factory.services();
         factory.providers();
 
-        factory.injectCoreDependencies();
+        factory.injectDependencies();
     }
 
     /**
@@ -378,15 +376,6 @@ public class PluginsRegistryImpl implements PluginsRegistry {
     @Override
     public Set<Predicate> getGlobalSecurityPredicates() {
         return globalSecurityPredicates;
-    }
-
-    @Override
-    public void injectDependency(Object mclient) {
-        if (mclient instanceof MongoClient) {
-            PluginsFactory.getInstance().injectMongoDbDependencies((MongoClient) mclient);
-        } else {
-            throw new IllegalArgumentException("Unkwnown dependency type");
-        }
     }
 
     @Override

@@ -40,7 +40,8 @@ import java.util.function.Consumer;
 import org.restheart.ConfigurationException;
 import org.restheart.security.FileRealmAccount;
 import org.restheart.plugins.FileConfigurablePlugin;
-import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
 import org.restheart.utils.LambdaUtils;
@@ -57,16 +58,16 @@ import org.restheart.utils.LambdaUtils;
         name = "fileRealmAuthenticator",
         description = "authenticates clients credentials defined in a configuration file",
         enabledByDefault = false)
-public class FileRealmAuthenticator
-        extends FileConfigurablePlugin
-        implements Authenticator {
+public class FileRealmAuthenticator extends FileConfigurablePlugin implements Authenticator {
 
     private final Map<String, FileRealmAccount> accounts = new HashMap<>();
 
-    @InjectConfiguration
-    public void init(Map<String, Object> confArgs)
-            throws FileNotFoundException, ConfigurationException {
-        init(confArgs, "users");
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @OnInit
+    public void init() throws FileNotFoundException, ConfigurationException {
+        init(config, "users");
     }
 
     @Override

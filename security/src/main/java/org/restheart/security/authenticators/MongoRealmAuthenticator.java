@@ -47,9 +47,8 @@ import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.PwdCredentialAccount;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectMongoClient;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authenticator;
@@ -93,18 +92,24 @@ public class MongoRealmAuthenticator implements Authenticator {
 
     private static final transient Cache<String, String> USERS_PWDS_CACHE = CacheFactory.createLocalCache(1_000l, Cache.EXPIRE_POLICY.AFTER_READ, 20 * 60 * 1_000l);
 
+    @Inject("registry")
     private PluginsRegistry registry;
+
+    @Inject("config")
+    Map<String, Object> config;
+
+    @Inject("mclient")
     private MongoClient mclient;
 
-    @InjectConfiguration
-    public void setConf(Map<String, Object> args) {
-        this.setUsersDb(arg(args, "users-db"));
-        this.usersCollection = arg(args, "users-collection");
-        this.cacheEnabled = arg(args, "cache-enabled");
-        this.cacheSize = arg(args, "cache-size");
-        this.cacheTTL = arg(args, "cache-ttl");
+    @OnInit
+    public void init() {
+        this.setUsersDb(arg(config, "users-db"));
+        this.usersCollection = arg(config, "users-collection");
+        this.cacheEnabled = arg(config, "cache-enabled");
+        this.cacheSize = arg(config, "cache-size");
+        this.cacheTTL = arg(config, "cache-ttl");
 
-        String _cacheExpirePolicy = arg(args, "cache-expire-policy");
+        String _cacheExpirePolicy = arg(config, "cache-expire-policy");
         if (_cacheExpirePolicy != null) {
             try {
                 this.cacheExpirePolicy = Cache.EXPIRE_POLICY.valueOf((String) _cacheExpirePolicy);
@@ -113,14 +118,14 @@ public class MongoRealmAuthenticator implements Authenticator {
             }
         }
 
-        this.enforceMinimumPasswordStrenght = argOrDefault(args, "enforce-minimum-password-strenght", false);
-        this.minimumPasswordStrength = argOrDefault(args, "minimum-password-strength", 3);
+        this.enforceMinimumPasswordStrenght = argOrDefault(config, "enforce-minimum-password-strenght", false);
+        this.minimumPasswordStrength = argOrDefault(config, "minimum-password-strength", 3);
 
-        this.bcryptHashedPassword = arg(args, "bcrypt-hashed-password");
-        this.bcryptComplexity = arg(args, "bcrypt-complexity");
+        this.bcryptHashedPassword = arg(config, "bcrypt-hashed-password");
+        this.bcryptComplexity = arg(config, "bcrypt-complexity");
 
-        this.createUser = arg(args, "create-user");
-        String _createUserDocument = arg(args, "create-user-document");
+        this.createUser = arg(config, "create-user");
+        String _createUserDocument = arg(config, "create-user-document");
 
         // check createUserDocument
         try {
@@ -129,24 +134,19 @@ public class MongoRealmAuthenticator implements Authenticator {
             throw new ConfigurationException("wrong configuration file format. create-user-document must be a json document", ex);
         }
 
-        this.propId = arg(args, "prop-id");
+        this.propId = arg(config, "prop-id");
 
         if (this.propId.startsWith("$")) {
             throw new ConfigurationException("prop-id must be a root property name not a json path expression. It can use the dot notation.");
         }
 
-        this.propPassword = arg(args, "prop-password");
+        this.propPassword = arg(config, "prop-password");
 
         if (this.propPassword.contains(".")) {
             throw new ConfigurationException("prop-password must be a root level property and cannot contain the char '.'");
         }
 
-        this.jsonPathRoles = arg(args, "json-path-roles");
-    }
-
-    @InjectMongoClient
-    public void setMongoClient(MongoClient mclient) {
-        this.mclient = mclient;
+        this.jsonPathRoles = arg(config, "json-path-roles");
 
         if (this.cacheEnabled) {
             this.USERS_CACHE = CacheFactory.createLocalLoadingCache(
@@ -172,11 +172,6 @@ public class MongoRealmAuthenticator implements Authenticator {
         } catch(IllegalStateException ise) {
             LOGGER.error(ise.getMessage());
         }
-    }
-
-    @InjectPluginsRegistry
-    public void setRegistry(PluginsRegistry registry) {
-        this.registry = registry;
     }
 
     @Override

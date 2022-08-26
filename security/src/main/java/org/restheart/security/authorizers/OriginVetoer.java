@@ -26,7 +26,8 @@ import java.util.stream.Collectors;
 
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
-import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 import org.restheart.plugins.security.Authorizer.TYPE;
@@ -48,10 +49,13 @@ public class OriginVetoer implements Authorizer {
     private List<String> whitelist = null;
     private PathTemplateMatcher<Boolean> ignoreLists = new PathTemplateMatcher<>();
 
-    @InjectConfiguration
-    public void setConfiguration(Map<String, Object> args) {
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @OnInit
+    public void init() {
         try {
-            List<String> _whitelist = arg(args, "whitelist");
+            List<String> _whitelist = arg(config, "whitelist");
             this.whitelist = _whitelist.stream()
                 .filter(item -> item != null)
                 .map(item -> item.trim())
@@ -67,7 +71,7 @@ public class OriginVetoer implements Authorizer {
         }
 
         try {
-            List<String> _ingoreList = arg(args, "ignore-paths");
+            List<String> _ingoreList = arg(config, "ignore-paths");
             _ingoreList.stream()
                 .filter(item -> item != null)
                 .map(item -> item.trim())

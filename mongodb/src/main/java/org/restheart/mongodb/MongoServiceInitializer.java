@@ -22,15 +22,15 @@ package org.restheart.mongodb;
 
 import java.util.Map;
 import static org.restheart.mongodb.MongoServiceConfigurationKeys.PLUGINS_ARGS_KEY;
+
+import org.restheart.Configuration;
 import org.restheart.mongodb.db.MongoClientSingleton;
 import org.restheart.mongodb.db.sessions.TxnClientSessionFactory;
 import org.restheart.mongodb.interceptors.MetadataCachesSingleton;
-import org.restheart.plugins.ConfigurationScope;
 import org.restheart.plugins.InitPoint;
 import org.restheart.plugins.Initializer;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 
 /**
@@ -44,13 +44,25 @@ import org.restheart.plugins.RegisterPlugin;
 public class MongoServiceInitializer implements Initializer {
     private boolean mongoSrvEnabled = false;
 
-    @InjectConfiguration(scope = ConfigurationScope.ALL)
-    public void init(Map<String, Object> confArgs) {
-        MongoServiceConfiguration.init(confArgs);
+    @Inject("rh-config")
+    private Configuration config;
+
+    @OnInit
+    public void onInit() {
+        MongoServiceConfiguration.init(config.toMap());
 
         TxnClientSessionFactory.init(MongoServiceConfiguration.get().getMongoUri());
 
-        this.mongoSrvEnabled = isMongoEnabled(confArgs);
+        this.mongoSrvEnabled = isMongoEnabled(config.toMap());
+
+        if (!this.mongoSrvEnabled) {
+            return;
+        }
+
+        MongoClientSingleton.init(MongoServiceConfiguration.get().getMongoUri());
+
+        // force first connection to MongoDb
+        MongoClientSingleton.getInstance();
     }
 
     @Override
@@ -61,18 +73,6 @@ public class MongoServiceInitializer implements Initializer {
 
         // initialize MetadataCachesSingleton
         MetadataCachesSingleton.init(MongoServiceConfiguration.get());
-    }
-
-    @InjectPluginsRegistry
-    public void injectPluginsRegistry(PluginsRegistry pluginsRegistry) {
-        if (!this.mongoSrvEnabled) {
-            return;
-        }
-
-        MongoClientSingleton.init(MongoServiceConfiguration.get().getMongoUri(), pluginsRegistry);
-
-        // force first connection to MongoDb
-        MongoClientSingleton.getInstance();
     }
 
     private boolean isMongoEnabled(Map<String, Object> confArgs) {

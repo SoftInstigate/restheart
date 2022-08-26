@@ -52,7 +52,8 @@ import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
 import org.restheart.security.JwtAccount;
 import org.restheart.plugins.ConsumingPlugin;
-import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
 import org.slf4j.Logger;
@@ -82,17 +83,20 @@ public class JwtAuthenticationMechanism implements AuthMechanism, ConsumingPlugi
     private String issuer;
     private String audience;
 
-    @InjectConfiguration
-    public void init(Map<String, Object> args) throws ConfigurationException {
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @OnInit
+    public void init() throws ConfigurationException {
         // get configuration arguments
-        base64Encoded = arg(args, "base64Encoded");
-        algorithm = arg(args, "algorithm");
-        key = arg(args, "key");
-        usernameClaim = arg(args, "usernameClaim");
-        rolesClaim = arg(args, "rolesClaim");
-        fixedRoles = arg(args, "fixedRoles");
-        issuer = arg(args, "issuer");
-        audience = arg(args, "audience");
+        base64Encoded = arg(config, "base64Encoded");
+        algorithm = arg(config, "algorithm");
+        key = arg(config, "key");
+        usernameClaim = arg(config, "usernameClaim");
+        rolesClaim = arg(config, "rolesClaim");
+        fixedRoles = arg(config, "fixedRoles");
+        issuer = arg(config, "issuer");
+        audience = arg(config, "audience");
 
         Algorithm _algorithm;
 

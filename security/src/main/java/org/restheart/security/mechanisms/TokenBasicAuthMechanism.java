@@ -31,7 +31,8 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import org.restheart.ConfigurationException;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
@@ -63,6 +64,9 @@ public class TokenBasicAuthMechanism extends BasicAuthenticationMechanism implem
 
     private TokenManager tokenManager = null;
 
+    @Inject("registry")
+    private PluginsRegistry registry;
+
     private static void clear(final char[] array) {
         for (int i = 0; i < array.length; i++) {
             array[i] = 0x00;
@@ -77,11 +81,11 @@ public class TokenBasicAuthMechanism extends BasicAuthenticationMechanism implem
         super("RESTHeart Realm", "tokenBasicAuthMechanism", true);
     }
 
-    @InjectPluginsRegistry
-    public void init(PluginsRegistry pluginsRegistry) throws ConfigurationException {
-        this.tokenManager = pluginsRegistry.getTokenManager() != null
-                ? pluginsRegistry.getTokenManager().getInstance()
-                : null;
+    @OnInit
+    public void init() throws ConfigurationException {
+        this.tokenManager = registry.getTokenManager() != null
+            ? registry.getTokenManager().getInstance()
+            : null;
     }
 
     @Override

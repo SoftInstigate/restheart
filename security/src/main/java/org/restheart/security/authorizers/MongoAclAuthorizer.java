@@ -44,9 +44,8 @@ import org.restheart.cache.Cache;
 import org.restheart.cache.CacheFactory;
 import org.restheart.cache.LoadingCache;
 import org.restheart.exchange.Request;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectMongoClient;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
@@ -62,8 +61,7 @@ import static org.restheart.mongodb.ConnectionChecker.connected;
  *
  * @author Andrea Di Cesare {@literal <andrea@softinstigate.com>}
  */
-@RegisterPlugin(name = "mongoAclAuthorizer",
-        description = "authorizes requests against acl stored in mongodb")
+@RegisterPlugin(name = "mongoAclAuthorizer", description = "authorizes requests against acl stored in mongodb")
 public class MongoAclAuthorizer implements Authorizer {
     private static final Logger LOGGER = LoggerFactory.getLogger(MongoAclAuthorizer.class);
 
@@ -84,24 +82,29 @@ public class MongoAclAuthorizer implements Authorizer {
 
     private LoadingCache<String, LinkedHashSet<MongoAclPermission>> acl = null;
 
+    @Inject("mclient")
     private MongoClient mclient;
 
+    @Inject("registry")
     private PluginsRegistry registry;
 
-    @InjectConfiguration
-    public void initConfiguration(Map<String, Object> args) {
-        this.aclDb = arg(args, "acl-db");
-        this.aclCollection = arg(args, "acl-collection");
-        this.rootRole = arg(args, "root-role");
+    @Inject("config")
+    private Map<String, Object> config;
 
-        if (args != null && args.containsKey("cache-enabled")) {
-            this.cacheEnabled = arg(args, "cache-enabled");
+    @OnInit
+    public void init() {
+        this.aclDb = arg(config, "acl-db");
+        this.aclCollection = arg(config, "acl-collection");
+        this.rootRole = arg(config, "root-role");
+
+        if (config != null && config.containsKey("cache-enabled")) {
+            this.cacheEnabled = arg(config, "cache-enabled");
 
             if (this.cacheEnabled) {
-                this.cacheSize = arg(args, "cache-size");
-                this.cacheTTL = arg(args, "cache-ttl");
+                this.cacheSize = arg(config, "cache-size");
+                this.cacheTTL = arg(config, "cache-ttl");
 
-                String _cacheExpirePolicy = arg(args, "cache-expire-policy");
+                String _cacheExpirePolicy = arg(config, "cache-expire-policy");
 
                 if (_cacheExpirePolicy != null) {
                     try {
@@ -123,11 +126,6 @@ public class MongoAclAuthorizer implements Authorizer {
                     });
             }
         }
-    }
-
-    @InjectMongoClient
-    public void initMongoClient(MongoClient mclient) {
-        this.mclient = mclient;
 
         try {
             if (!checkAclCollection()) {
@@ -136,11 +134,6 @@ public class MongoAclAuthorizer implements Authorizer {
         } catch(IllegalStateException ise) {
             LOGGER.error(ise.getMessage());
         }
-    }
-
-    @InjectPluginsRegistry
-    public void initRegistry(PluginsRegistry registry) {
-        this.registry = registry;
     }
 
     /**

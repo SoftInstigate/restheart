@@ -52,7 +52,7 @@ public class SkipTimeTest {
      */
     @BeforeClass
     public static void setUpClass() throws Exception {
-        MongoClientSingleton.init(MONGO_URI, null);
+        MongoClientSingleton.init(MONGO_URI);
     }
 
     /**

@@ -30,8 +30,8 @@ import org.bson.BsonDocument;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.Initializer;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 
@@ -42,17 +42,17 @@ import org.restheart.plugins.RegisterPlugin;
     description = "forbids requests containing filter qparameter using operator in blacklist",
     enabledByDefault = false)
 public class FilterOperatorsBlacklist implements Initializer {
+    @Inject("registry")
     private PluginsRegistry registry;
+
+    @Inject("config")
+    private Map<String, Object> config;
+
     private List<String> blacklist;
 
-    @InjectPluginsRegistry
-    public void registry(PluginsRegistry registry) {
-        this.registry = registry;
-    }
-
-    @InjectConfiguration
-    public void configuration(Map<String, Object> args) {
-        this.blacklist = arg(args, "blacklist");
+    @OnInit
+    public void onInit() {
+        this.blacklist = arg(config, "blacklist");
 
         if (!blacklist.stream().allMatch(o -> o.startsWith("$"))) {
             throw new IllegalArgumentException("All entries of blacklist must start with $");

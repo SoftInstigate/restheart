@@ -22,7 +22,8 @@ package org.restheart.security.authorizers;
 
 import java.util.Map;
 import org.restheart.exchange.Request;
-import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
 
@@ -37,6 +38,14 @@ import org.restheart.plugins.security.Authorizer;
 public class FullAuthorizer implements Authorizer {
 
     private boolean authenticationRequired;
+
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @OnInit
+    public void init() {
+        this.authenticationRequired = arg(this.config, "authentication-required");
+    }
 
     /**
      * this Authorizer allows any operation to any user
@@ -54,11 +63,6 @@ public class FullAuthorizer implements Authorizer {
      */
     public FullAuthorizer() {
         this(false);
-    }
-
-    @InjectConfiguration
-    public void initConf(Map<String, Object> confArgs) {
-        this.authenticationRequired = arg(confArgs, "authentication-required");
     }
 
     @Override

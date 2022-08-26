@@ -53,8 +53,8 @@ import java.util.Map;
 import java.util.Set;
 import org.restheart.ConfigurationException;
 import org.restheart.handlers.QueryStringRebuilder;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
@@ -86,17 +86,20 @@ public class DigestAuthMechanism implements AuthMechanism {
                 null);
     }
 
-    @InjectConfiguration
-    @InjectPluginsRegistry
-    public void init(final Map<String, Object> args,
-            PluginsRegistry pluginsRegistry)
-            throws ConfigurationException {
-        this.realmName = arg(args, "realm");
-        this.domain = arg(args, "domain");
+    @Inject("registry")
+    private PluginsRegistry registry;
+
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @OnInit
+    public void init() throws ConfigurationException {
+        this.realmName = arg(config, "realm");
+        this.domain = arg(config, "domain");
 
         // the authenticator specified in auth mechanism configuration
-        this.identityManager = pluginsRegistry
-                .getAuthenticator(arg(args, "authenticator"))
+        this.identityManager = registry
+                .getAuthenticator(arg(config, "authenticator"))
                 .getInstance();
     }
 

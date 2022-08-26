@@ -26,8 +26,8 @@ import io.undertow.server.HttpServerExchange;
 import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 import java.util.Map;
 import org.restheart.ConfigurationException;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.AuthMechanism;
@@ -48,12 +48,17 @@ public class BasicAuthMechanism extends io.undertow.security.impl.BasicAuthentic
         super("RESTHeart Realm", "basicAuthMechanism", false);
     }
 
-    @InjectConfiguration
-    @InjectPluginsRegistry
-    public void init(final Map<String, Object> args, PluginsRegistry pluginsRegistry) throws ConfigurationException {
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @Inject("registry")
+    private PluginsRegistry registry;
+
+    @OnInit
+    public void init() throws ConfigurationException {
         // the authenticator specified in auth mechanism configuration
-        setIdentityManager(pluginsRegistry
-                .getAuthenticator(arg(args, "authenticator"))
+        setIdentityManager(registry
+                .getAuthenticator(arg(config, "authenticator"))
                 .getInstance());
     }
 

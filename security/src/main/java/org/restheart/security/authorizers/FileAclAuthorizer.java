@@ -43,8 +43,8 @@ import com.google.common.collect.Sets;
 import org.restheart.ConfigurationException;
 import org.restheart.exchange.Request;
 import org.restheart.plugins.FileConfigurablePlugin;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.Authorizer;
@@ -66,22 +66,21 @@ public class FileAclAuthorizer extends FileConfigurablePlugin implements Authori
 
     private final Set<FileAclPermission> permissions = new LinkedHashSet<>();
 
+    @Inject("registry")
     private PluginsRegistry registry;
 
-    @InjectConfiguration
-    public void initConfiguration(Map<String, Object> confArgs) throws FileNotFoundException, ConfigurationException {
-        init(confArgs, "permissions");
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @OnInit
+    public void init() throws FileNotFoundException, ConfigurationException {
+        init(config, "permissions");
 
         // reverse oreder, the first permission in the acl.yml must be on top
         var list = new ArrayList<FileAclPermission>(this.permissions);
         Collections.reverse(list);
         this.permissions.clear();
         list.stream().forEach(permissions::add);
-    }
-
-    @InjectPluginsRegistry
-    public void initRegistry(PluginsRegistry registry) throws FileNotFoundException, ConfigurationException {
-        this.registry = registry;
     }
 
     @Override

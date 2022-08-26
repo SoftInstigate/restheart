@@ -21,11 +21,11 @@
 package org.restheart.security.services;
 
 import java.util.Map;
-import org.restheart.ConfigurationException;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
-import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_HEADER;
 import static org.restheart.plugins.security.TokenManager.AUTH_TOKEN_LOCATION_HEADER;
@@ -49,22 +49,21 @@ import org.restheart.utils.URLUtils;
 public class GetRoleService implements JsonService {
     private String myURI = null;
 
+    @Inject("config")
+    private Map<String, Object> config;
+
     /**
      * init the service
      *
      * @param confArgs
      */
-    @InjectConfiguration
-    public void init(Map<String, Object> confArgs) {
-        if (confArgs == null) {
+    @OnInit
+    public void init() {
+        if (config == null) {
             this.myURI = "/roles";
         }
 
-        try {
-            this.myURI = URLUtils.removeTrailingSlashes(arg(confArgs, "uri"));
-        } catch (ConfigurationException ex) {
-            this.myURI = "/roles";
-        }
+        this.myURI = URLUtils.removeTrailingSlashes(argOrDefault(config, "uri", "/roles"));
     }
 
     /**

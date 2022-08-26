@@ -41,8 +41,8 @@ import org.restheart.security.FileRealmAccount;
 import org.restheart.security.JwtAccount;
 import org.restheart.security.MongoRealmAccount;
 import org.restheart.security.PwdCredentialAccount;
-import org.restheart.plugins.InjectConfiguration;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.security.TokenManager;
@@ -66,12 +66,17 @@ public class RndTokenManager implements TokenManager {
     private int ttl = -1;
     private String srvURI = null;
 
-    @InjectConfiguration
-    @InjectPluginsRegistry
-    public void init(Map<String, Object> confArgs, PluginsRegistry pluginsRegistry) throws ConfigurationException {
-        this.ttl = arg(confArgs, "ttl");
+    @Inject("registry")
+    private PluginsRegistry registry;
 
-        this.srvURI = arg(confArgs, "srv-uri");
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @OnInit
+    public void init() throws ConfigurationException {
+        this.ttl = arg(config, "ttl");
+
+        this.srvURI = arg(config, "srv-uri");
 
         CACHE = CacheFactory.createLocalCache(Long.MAX_VALUE, Cache.EXPIRE_POLICY.AFTER_READ, ttl * 60 * 1_000);
 
@@ -79,7 +84,7 @@ public class RndTokenManager implements TokenManager {
         // using helper interceptor tokenCORSResponseInterceptor
         String[] headers = {AUTH_TOKEN_HEADER.toString(), AUTH_TOKEN_VALID_HEADER.toString(), AUTH_TOKEN_LOCATION_HEADER.toString()};
 
-        var ti = pluginsRegistry.getInterceptors()
+        var ti = registry.getInterceptors()
                 .stream().filter(i -> "tokenCORSResponseInterceptor".equals(i.getName()))
                 .findFirst();
 

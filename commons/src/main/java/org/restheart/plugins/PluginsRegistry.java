@@ -174,9 +174,4 @@ public interface PluginsRegistry {
      */
     public PipelineInfo getPipelineInfo(String path);
 
-    /**
-     *
-     * @param dependency
-     */
-    public void injectDependency(Object dependency);
 }

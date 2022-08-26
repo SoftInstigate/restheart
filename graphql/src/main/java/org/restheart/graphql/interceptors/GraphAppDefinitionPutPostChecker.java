@@ -20,8 +20,8 @@
  */
 package org.restheart.graphql.interceptors;
 
+import org.restheart.Configuration;
 import org.restheart.ConfigurationException;
-import org.restheart.ConfigurationKeys;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
 import org.restheart.graphql.GraphQLAppDeserializer;
@@ -30,9 +30,9 @@ import org.restheart.graphql.GraphQLService;
 
 import static org.restheart.plugins.InterceptPoint.REQUEST_AFTER_AUTH;
 
-import org.restheart.plugins.ConfigurationScope;
-import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.BsonUtils;
 import org.restheart.utils.HttpStatus;
@@ -51,10 +51,13 @@ public class GraphAppDefinitionPutPostChecker implements MongoInterceptor {
 
     private boolean enabled = false;
 
-    @InjectConfiguration(scope = ConfigurationScope.ALL)
-    public void conf(Map<String, Object> args) {
+    @Inject("rh-config")
+    private Configuration config;
+
+    @OnInit
+    public void init() {
         try {
-            Map<String, Object> pluginsArgs = arg(args, ConfigurationKeys.PLUGINS_ARGS_KEY);
+            var pluginsArgs = config.getPluginsArgs();
             Map<String, Object> graphqlArgs = arg(pluginsArgs, "graphql");
 
             this.db = arg(graphqlArgs, "db");

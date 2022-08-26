@@ -95,7 +95,7 @@ public abstract class AbstractPT {
         }
 
         try {
-            MongoClientSingleton.init(MONGO_URI, null);
+            MongoClientSingleton.init(MONGO_URI);
         } catch (ConfigurationException ex) {
             System.exit(-1);
         }

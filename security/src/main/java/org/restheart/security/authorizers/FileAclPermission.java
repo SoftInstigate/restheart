@@ -61,8 +61,7 @@ public class FileAclPermission extends BaseAclPermission {
         var roles = new LinkedHashSet<String>();
 
         if (args.containsKey("role") && args.containsKey("roles")) {
-            throw new ConfigurationException(
-                    "Wrong permission: it specifies both 'role' and 'roles'; it requires just one or the other.");
+            throw new ConfigurationException("Wrong permission: it specifies both 'role' and 'roles'; it requires just one or the other.");
         } else if (args.containsKey("role")) {
             roles.add(argValue(args, "role"));
         } else if (args.containsKey("roles")) {

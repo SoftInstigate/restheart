@@ -30,7 +30,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.restheart.exchange.JsonRequest;
 import org.restheart.exchange.JsonResponse;
-import org.restheart.plugins.InjectMongoClient;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.JsonService;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.utils.HttpStatus;
@@ -48,16 +48,13 @@ import org.restheart.utils.HttpStatus;
         description = "verifies user",
         defaultURI = "/verify")
 public class UserVerifier implements JsonService {
+    @Inject("mclient")
     private MongoClient mclient;
+
     private final String userDb = "restheart";
     private final String usersCollection = "users";
     private final String propId = "_id";
     private final String rolesProperty = "roles";
-
-    @InjectMongoClient
-    public void setMClient(MongoClient mclient) {
-        this.mclient = mclient;
-    }
 
     @Override
     public void handle(JsonRequest request, JsonResponse response)

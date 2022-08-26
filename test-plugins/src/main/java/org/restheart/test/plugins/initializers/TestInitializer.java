@@ -25,7 +25,8 @@ import io.undertow.predicate.Predicate;
 import io.undertow.server.HttpServerExchange;
 import org.restheart.exchange.JsonProxyRequest;
 import org.restheart.plugins.Initializer;
-import org.restheart.plugins.InjectPluginsRegistry;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.PluginsRegistry;
 import org.restheart.plugins.RegisterPlugin;
 import static org.restheart.utils.URLUtils.removeTrailingSlashes;
@@ -52,12 +53,12 @@ public class TestInitializer implements Initializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestInitializer.class);
 
-    private PluginsRegistry pluginRegistry;
+    @Inject("registry")
+    private PluginsRegistry registry;
 
-    @InjectPluginsRegistry
-    public void setPluginRegistry(PluginsRegistry pluginRegistry) {
-        this.pluginRegistry = pluginRegistry;
-        pluginRegistry.getServices();
+    @OnInit
+    public void onInit() {
+        registry.getServices();
     }
 
     @Override
@@ -67,7 +68,7 @@ public class TestInitializer implements Initializer {
         LOGGER.info("\tadds a request and a response interceptors for /iecho and /siecho");
 
         // add a global security predicate
-        this.pluginRegistry.getGlobalSecurityPredicates()
+        this.registry.getGlobalSecurityPredicates()
                 .add((Predicate) (HttpServerExchange exchange) -> {
                     var request = JsonProxyRequest.of(exchange);
                     return !(request.isGet() && "/secho/foo".equals(removeTrailingSlashes(request.getPath())));

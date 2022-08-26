@@ -53,8 +53,7 @@ import org.restheart.mongodb.handlers.RequestDispatcherHandler;
 import org.restheart.mongodb.handlers.injectors.ClientSessionInjector;
 import org.restheart.mongodb.handlers.injectors.ETagPolicyInjector;
 import org.restheart.mongodb.utils.MongoURLUtils;
-import org.restheart.plugins.InjectPluginsRegistry;
-import org.restheart.plugins.PluginsRegistry;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.restheart.plugins.Service;
 import org.restheart.utils.MongoServiceAttachments;
@@ -89,8 +88,8 @@ public class MongoService implements Service<MongoRequest, MongoResponse> {
     private PathMatcher<MongoMount> mongoMounts = null;
     private PathTemplateMatcher<MongoMount> templateMongoMounts = null;
 
-    @InjectPluginsRegistry
-    public void init(PluginsRegistry registry) {
+    @OnInit
+    public void init() {
         this.myURI = myURI();
         this.pipeline = getBasePipeline();
 

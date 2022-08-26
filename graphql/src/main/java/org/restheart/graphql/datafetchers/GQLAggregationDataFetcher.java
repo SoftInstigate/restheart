@@ -1,18 +1,17 @@
 package org.restheart.graphql.datafetchers;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.mongodb.client.AggregateIterable;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
+import org.restheart.Configuration;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.models.AggregationMapping;
-import org.restheart.plugins.ConfigurationScope;
-import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.Inject;
+import org.restheart.plugins.OnInit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,13 +24,17 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
     private static final String AGGREGATION_TIME_LIMIT_KEY = "aggregation-time-limit";
     private long aggregationTimeLimit;
 
-    @InjectConfiguration(scope = ConfigurationScope.ALL)
-    public void initConfig(Map<String, Object> config) {
+    @Inject("rh-config")
+    private Configuration config;
 
-        if(config.containsKey(AGGREGATION_TIME_LIMIT_KEY)) {
-            Object limit = config.get(AGGREGATION_TIME_LIMIT_KEY);
+    @OnInit
+    public void init() {
+        var _config = config.toMap();
+
+        if(_config.containsKey(AGGREGATION_TIME_LIMIT_KEY)) {
+            var limit = _config.get(AGGREGATION_TIME_LIMIT_KEY);
             if(limit instanceof Number) {
-                this.aggregationTimeLimit = Long.parseLong(config.get(AGGREGATION_TIME_LIMIT_KEY).toString());  
+                this.aggregationTimeLimit = Long.parseLong(_config.get(AGGREGATION_TIME_LIMIT_KEY).toString());  
             } else {
                 this.aggregationTimeLimit = 0;
             }
@@ -45,7 +48,6 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
 
     @Override
     public Object get(DataFetchingEnvironment environment) throws Exception {
-        
         return CompletableFuture.supplyAsync(() -> {
 
             AggregationMapping aggregation = ((AggregationMapping) this.fieldMapping);
@@ -60,19 +62,17 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
             AggregateIterable<BsonDocument> res = null;
             try {
                 var aggregationList = aggregation.getResolvedStagesAsList(environment);
-                
+
                 // If user does not pass any stage return an empty array
                 if(aggregationList.size() == 0 ) {
                     return new BsonArray();
                 }
-                
+
                 res = mongoClient
                         .getDatabase(aggregation.getDb().getValue())
                         .getCollection(aggregation.getCollection().getValue())
                         .withDocumentClass(BsonDocument.class)
-                        .aggregate(
-                            aggregationList
-                        )
+                        .aggregate(aggregationList)
                         .allowDiskUse(aggregation.getAllowDiskUse().getValue())
                         .maxTime(this.aggregationTimeLimit, TimeUnit.MILLISECONDS);
 
@@ -81,8 +81,8 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
                 e.printStackTrace();
             }
 
-            List<BsonDocument> stageOutput = new ArrayList<>();
-            
+            var stageOutput = new ArrayList<BsonDocument>();
+
             if(res != null) {
                 res.forEach(doc -> stageOutput.add(doc));
             }
@@ -90,5 +90,4 @@ public class GQLAggregationDataFetcher extends GraphQLDataFetcher {
             return stageOutput;
         });
     }
-    
 }

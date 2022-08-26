@@ -13,9 +13,10 @@ import java.util.Map;
 import org.bson.json.JsonWriterSettings;
 import org.restheart.exchange.MongoRequest;
 import org.restheart.exchange.MongoResponse;
-import org.restheart.plugins.InjectConfiguration;
+import org.restheart.plugins.Inject;
 import org.restheart.plugins.InterceptPoint;
 import org.restheart.plugins.MongoInterceptor;
+import org.restheart.plugins.OnInit;
 import org.restheart.plugins.RegisterPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +34,11 @@ public class SlackNotifierInterceptor implements MongoInterceptor {
     private String db = null;
     private String collection = null;
 
-    @InjectConfiguration
-    public void init(Map<String, Object> config) {
+    @Inject("config")
+    private Map<String, Object> config;
+
+    @OnInit
+    public void init() {
         this.channel = arg(config, "channel");
         this.oauthToken = arg(config, "oauth-token");
         this.db = arg(config, "db");
