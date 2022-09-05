@@ -20,16 +20,20 @@
  */
 package org.restheart.graphql.datafetchers;
 
-import com.mongodb.client.FindIterable;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLList;
-import org.bson.*;
+
+import org.bson.BsonArray;
+import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.restheart.exchange.QueryVariableNotBoundException;
 import org.restheart.graphql.models.QueryMapping;
-
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GQLQueryDataFetcher extends GraphQLDataFetcher {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GQLQueryDataFetcher.class);
 
     private static final String SORT_FIELD = "sort";
     private static final String FIND_FIELD = "find";
@@ -42,10 +46,8 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
 
     @Override
     public Object get(DataFetchingEnvironment dataFetchingEnvironment) throws Exception {
-
         return CompletableFuture.supplyAsync(() ->{
-
-            QueryMapping queryMapping = (QueryMapping) this.fieldMapping;
+            var queryMapping = (QueryMapping) this.fieldMapping;
 
             BsonDocument int_args = null;
             try {
@@ -54,36 +56,36 @@ public class GQLQueryDataFetcher extends GraphQLDataFetcher {
                 e.printStackTrace();
             }
 
-            FindIterable<BsonValue> query = mongoClient.getDatabase(queryMapping.getDb())
-                    .getCollection(queryMapping.getCollection(), BsonValue.class)
-                    .find(int_args.containsKey(FIND_FIELD) ? int_args.get(FIND_FIELD).asDocument(): new BsonDocument());
+            var _find = int_args.containsKey(FIND_FIELD) ? int_args.get(FIND_FIELD).asDocument(): new BsonDocument();
+            var _sort = int_args.containsKey(SORT_FIELD) && int_args.get(SORT_FIELD) != null ? int_args.get(SORT_FIELD).asDocument() : null;
+            var _skip = int_args.containsKey(SKIP_FIELD) && int_args.get(SKIP_FIELD) != null ? int_args.get(SKIP_FIELD).asInt32().getValue() : null;
+            var _limit = int_args.containsKey(LIMIT_FIELD) && int_args.get(LIMIT_FIELD) != null ? int_args.get(LIMIT_FIELD).asInt32().getValue() : null;
 
-            if (int_args.containsKey(SORT_FIELD) && int_args.get(SORT_FIELD) != null){
-                query = query.sort(int_args.get(SORT_FIELD).asDocument());
+            LOGGER.debug("Executing query: find {}, sort {}, skip {}, limit {}", _find, _sort, _skip, _limit);
+
+            var query = mongoClient.getDatabase(queryMapping.getDb()).getCollection(queryMapping.getCollection(), BsonValue.class).find(_find);
+
+            if (_sort != null) {
+                query = query.sort(_sort);
             }
 
-            if (int_args.containsKey(SKIP_FIELD) && int_args.get(SKIP_FIELD) != null){
-                query = query.skip(int_args.get(SKIP_FIELD).asInt32().getValue());
+            if (_skip != null) {
+                query = query.skip(_skip);
             }
 
-            if (int_args.containsKey(LIMIT_FIELD) && int_args.get(LIMIT_FIELD) != null){
-                query = query.limit(int_args.get(LIMIT_FIELD).asInt32().getValue());
+            if (_limit != null) {
+                query = query.limit(_limit);
             }
 
             boolean isMultiple = dataFetchingEnvironment.getFieldDefinition().getType() instanceof GraphQLList;
 
-            BsonValue queryResult;
             if (isMultiple) {
-                BsonArray results = new BsonArray();
-                query.into(results);
-                queryResult = results;
+                var queryResult = new BsonArray();
+                query.into(queryResult.asArray());
+                return queryResult;
             } else {
-                queryResult = query.first();
+                return query.first();
             }
-
-            return queryResult;
-
         });
-
     }
 }

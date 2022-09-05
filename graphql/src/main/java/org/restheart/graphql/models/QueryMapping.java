@@ -133,11 +133,11 @@ public class QueryMapping extends FieldMapping implements Batchable{
 
         Field[] fields = (QueryMapping.class).getDeclaredFields();
         for (Field field: fields){
-            if(field.getType() == BsonValue.class || field.getType() == BsonDocument.class){
-                BsonValue bsonValue = (BsonValue) field.get(this);
-                if (bsonValue != null && bsonValue.isDocument()){
-                    result.put(field.getName(), searchOperators((BsonDocument) bsonValue, env));
-                }
+            var value = field.get(this);
+            if(value instanceof BsonDocument bsonDoc) {
+                result.put(field.getName(), searchOperators(bsonDoc, env));
+            } else if (value instanceof BsonValue bsonVal && !bsonVal.isNull()) {
+                result.put(field.getName(), bsonVal);
             }
         }
         return result;
@@ -145,7 +145,7 @@ public class QueryMapping extends FieldMapping implements Batchable{
 
     private BsonValue searchOperators(BsonDocument docToAnalyze, DataFetchingEnvironment env) throws QueryVariableNotBoundException {
 
-        for (String operator: OPERATORS){
+        for (String operator: OPERATORS) {
             if (docToAnalyze.containsKey(operator)){
                 String valueToInterpolate = docToAnalyze.getString(operator).getValue();
 

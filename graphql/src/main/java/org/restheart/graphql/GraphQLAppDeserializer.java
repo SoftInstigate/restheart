@@ -208,7 +208,7 @@ public class GraphQLAppDeserializer {
                                     queryMappingBuilder.skip(fieldMappingDoc.getDocument("skip"));
                                 }
                                 else if(fieldMappingDoc.get("skip").isNumber()){
-                                    queryMappingBuilder.limit(fieldMappingDoc.getNumber("skip"));
+                                    queryMappingBuilder.skip(fieldMappingDoc.getNumber("skip"));
                                 }
                                 else {
                                     throwIllegalDefinitionException(field, type, "skip", "DOCUMENT", fieldMappingDoc.get("skip"));
