@@ -343,7 +343,7 @@ plugins-args:
     uri: /graphql
     db: restheart
     collection: gql-apps
-    verbose: true
+    verbose: false
   # a global blacklist for mongodb operators in filter query parameter
   filterOperatorsBlacklist:
     blacklist: [ "$where" ]
